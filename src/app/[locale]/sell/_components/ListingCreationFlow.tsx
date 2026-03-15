@@ -1,0 +1,291 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { Button } from '@/components/ui';
+import { createListing } from '@/lib/listings/actions';
+import type { ListingCondition, VersionSource } from '@/lib/listings/types';
+import { GameSearchStep } from './GameSearchStep';
+import type { EnrichedGame } from './GameSearchStep';
+import { VersionStep } from './VersionStep';
+import { PhotoUploadStep } from './PhotoUploadStep';
+import { ConditionStep } from './ConditionStep';
+import { PriceStep } from './PriceStep';
+import { ReviewStep } from './ReviewStep';
+
+const STEPS = [
+  { number: 1, label: 'Game' },
+  { number: 2, label: 'Edition' },
+  { number: 3, label: 'Photos' },
+  { number: 4, label: 'Condition' },
+  { number: 5, label: 'Price' },
+  { number: 6, label: 'Review' },
+] as const;
+
+export interface FormData {
+  // Step 1: Game
+  bgg_game_id: number | null;
+  game_name: string;
+  game_year: number | null;
+  game_thumbnail: string | null;
+  game_image: string | null;
+  game_player_count: string | null;
+  // Step 2: Version
+  version_source: VersionSource | null;
+  bgg_version_id: number | null;
+  version_name: string | null;
+  publisher: string | null;
+  language: string | null;
+  edition_year: number | null;
+  // Step 3: Photos
+  photos: string[];
+  // Step 4: Condition
+  condition: ListingCondition | null;
+  // Step 5: Price & description
+  price_cents: number;
+  description: string;
+}
+
+const initialFormData: FormData = {
+  bgg_game_id: null,
+  game_name: '',
+  game_year: null,
+  game_thumbnail: null,
+  game_image: null,
+  game_player_count: null,
+  version_source: null,
+  bgg_version_id: null,
+  version_name: null,
+  publisher: null,
+  language: null,
+  edition_year: null,
+  photos: [],
+  condition: null,
+  price_cents: 0,
+  description: '',
+};
+
+export function ListingCreationFlow() {
+  const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [selectedGame, setSelectedGame] = useState<EnrichedGame | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateFormData = useCallback((updates: Partial<FormData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const canProceed = (): boolean => {
+    switch (step) {
+      case 1:
+        return formData.bgg_game_id !== null;
+      case 2:
+        return true; // Version is optional
+      case 3:
+        return formData.photos.length >= 1;
+      case 4:
+        return formData.condition !== null;
+      case 5:
+        return formData.price_cents >= 50;
+      case 6:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (canProceed() && step < 6) {
+      setStep(step + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (publishing) return;
+    if (!formData.bgg_game_id || !formData.condition) return;
+
+    setPublishing(true);
+    setError(null);
+
+    const result = await createListing({
+      bgg_game_id: formData.bgg_game_id,
+      game_name: formData.game_name,
+      game_year: formData.game_year,
+      version_source: formData.version_source ?? 'manual',
+      bgg_version_id: formData.bgg_version_id,
+      version_name: formData.version_name,
+      publisher: formData.publisher,
+      language: formData.language,
+      edition_year: formData.edition_year,
+      condition: formData.condition,
+      price_cents: formData.price_cents,
+      description: formData.description || null,
+      photos: formData.photos,
+    });
+
+    if ('error' in result) {
+      setError(result.error);
+      setPublishing(false);
+    } else {
+      router.push(`/${locale}/listings/${result.listingId}`);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Progress bar */}
+      <nav aria-label="Listing creation progress">
+        <ol className="flex items-center gap-1 sm:gap-2">
+          {STEPS.map(({ number, label }) => (
+            <li key={number} className="flex-1">
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className={`h-1.5 w-full rounded-full transition-colors ${
+                    number <= step
+                      ? 'bg-semantic-primary'
+                      : 'bg-semantic-border-subtle'
+                  }`}
+                />
+                <span
+                  className={`text-xs hidden sm:block ${
+                    number === step
+                      ? 'font-medium text-semantic-text-primary'
+                      : 'text-semantic-text-muted'
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="text-sm text-semantic-text-muted mt-2 sm:hidden">
+          Step {step} of 6: {STEPS[step - 1].label}
+        </p>
+      </nav>
+
+      {/* Step content */}
+      <div className="min-h-[300px]">
+        {step === 1 && (
+          <GameSearchStep
+            selectedGameId={formData.bgg_game_id}
+            selectedGame={selectedGame}
+            onSelect={(game) => {
+              // If selecting a different game, reset version/condition/etc fields
+              if (formData.bgg_game_id !== null && formData.bgg_game_id !== game.id) {
+                updateFormData({
+                  bgg_game_id: game.id,
+                  game_name: game.name,
+                  game_year: game.yearpublished,
+                  game_thumbnail: game.thumbnail,
+                  game_image: game.image,
+                  game_player_count: game.player_count,
+                  // Reset version fields
+                  version_source: null,
+                  bgg_version_id: null,
+                  version_name: null,
+                  publisher: null,
+                  language: null,
+                  edition_year: null,
+                  // Reset condition
+                  condition: null,
+                });
+              } else {
+                updateFormData({
+                  bgg_game_id: game.id,
+                  game_name: game.name,
+                  game_year: game.yearpublished,
+                  game_thumbnail: game.thumbnail,
+                  game_image: game.image,
+                  game_player_count: game.player_count,
+                });
+              }
+              setSelectedGame(game);
+            }}
+          />
+        )}
+
+        {step === 2 && formData.bgg_game_id && (
+          <VersionStep
+            gameId={formData.bgg_game_id}
+            gameName={formData.game_name}
+            selectedVersionId={formData.bgg_version_id}
+            selectedVersionSource={formData.version_source}
+            onSelect={(version) => {
+              updateFormData({
+                version_source: version.version_source,
+                bgg_version_id: version.bgg_version_id,
+                version_name: version.version_name,
+                publisher: version.publisher,
+                language: version.language,
+                edition_year: version.edition_year,
+              });
+            }}
+          />
+        )}
+
+        {step === 3 && (
+          <PhotoUploadStep
+            photos={formData.photos}
+            onPhotosChange={(photos) => updateFormData({ photos })}
+          />
+        )}
+
+        {step === 4 && (
+          <ConditionStep
+            selectedCondition={formData.condition}
+            onSelect={(condition) => updateFormData({ condition })}
+          />
+        )}
+
+        {step === 5 && (
+          <PriceStep
+            priceCents={formData.price_cents}
+            description={formData.description}
+            onPriceChange={(price_cents) => updateFormData({ price_cents })}
+            onDescriptionChange={(description) => updateFormData({ description })}
+          />
+        )}
+
+        {step === 6 && (
+          <ReviewStep
+            formData={formData}
+            onPublish={handlePublish}
+            publishing={publishing}
+            error={error}
+          />
+        )}
+      </div>
+
+      {/* Navigation */}
+      {step < 6 && (
+        <div className="flex items-center justify-between pt-4 border-t border-semantic-border-subtle">
+          <div>
+            {step > 1 && (
+              <Button variant="ghost" onClick={handleBack}>
+                Back
+              </Button>
+            )}
+          </div>
+          <Button
+            variant="primary"
+            onClick={handleNext}
+            disabled={!canProceed()}
+          >
+            Continue
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

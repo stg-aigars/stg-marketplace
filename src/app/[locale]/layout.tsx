@@ -5,6 +5,8 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SiteHeader } from '@/components/layout/SiteHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import '../globals.css';
 
 const inter = Inter({
@@ -44,7 +46,11 @@ export default async function LocaleLayout({
       <body className={`${inter.variable} font-sans min-h-screen antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
-            {children}
+            <SiteHeader />
+            <main className="min-h-[calc(100vh-theme(spacing.16))]">
+              {children}
+            </main>
+            <SiteFooter />
           </AuthProvider>
         </NextIntlClientProvider>
       </body>
