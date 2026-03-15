@@ -4,6 +4,7 @@ export interface UserProfile {
   id: string;
   full_name: string | null;
   email: string | null;
+  phone: string | null;
   country: CountryCode;
   preferred_locale: string;
   is_staff: boolean;

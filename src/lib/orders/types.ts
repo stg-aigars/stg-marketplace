@@ -39,6 +39,18 @@ export interface OrderRow {
   wallet_credited_at: string | null;
   refund_status: string | null;
   refund_amount_cents: number | null;
+  unisend_parcel_id: number | null;
+  barcode: string | null;
+  tracking_url: string | null;
+  shipping_method: string | null;
+  buyer_phone: string | null;
+  seller_phone: string | null;
+  accepted_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  disputed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,8 +64,8 @@ export interface OrderWithDetails extends OrderRow {
     photos: string[];
     games: { thumbnail: string | null } | null;
   };
-  buyer_profile: { full_name: string | null; country: string } | null;
-  seller_profile: { full_name: string | null; country: string } | null;
+  buyer_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
+  seller_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
 }
 
 /** Input params for creating an order after payment is confirmed */
@@ -67,4 +79,8 @@ export interface CreateOrderParams {
   paymentReference: string;
   paymentState: string;
   paymentMethod: PaymentMethod;
+  terminalId: string;
+  terminalName: string;
+  terminalCountry: string;
+  buyerPhone: string;
 }

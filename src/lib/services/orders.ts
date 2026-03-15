@@ -60,6 +60,10 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
       platform_commission_cents: pricing.commissionCents,
       seller_wallet_credit_cents: pricing.walletCreditCents,
       buyer_wallet_debit_cents: 0, // No wallet for MVP
+      terminal_id: params.terminalId,
+      terminal_name: params.terminalName,
+      terminal_country: params.terminalCountry,
+      buyer_phone: params.buyerPhone,
     })
     .select()
     .single<OrderRow>();
@@ -98,8 +102,8 @@ export async function getOrder(orderId: string): Promise<OrderWithDetails | null
     .select(`
       *,
       listings(game_name, game_year, condition, photos, games(thumbnail)),
-      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country),
-      seller_profile:user_profiles!orders_seller_id_fkey(full_name, country)
+      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
+      seller_profile:user_profiles!orders_seller_id_fkey(full_name, country, phone, email)
     `)
     .eq('id', orderId)
     .single<OrderWithDetails>();
@@ -128,8 +132,8 @@ export async function getUserOrders(
     .select(`
       *,
       listings(game_name, game_year, condition, photos, games(thumbnail)),
-      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country),
-      seller_profile:user_profiles!orders_seller_id_fkey(full_name, country)
+      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
+      seller_profile:user_profiles!orders_seller_id_fkey(full_name, country, phone, email)
     `)
     .eq(column, userId)
     .order('created_at', { ascending: false });

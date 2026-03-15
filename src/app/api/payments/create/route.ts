@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { createPayment } from '@/lib/services/everypay/client';
 import { calculateBuyerPricing } from '@/lib/services/pricing';
 import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
+import { createServiceClient } from '@/lib/supabase';
+import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
 
 export async function POST(request: Request) {
@@ -12,11 +14,26 @@ export async function POST(request: Request) {
 
   // 2. Parse body
   let listingId: string;
+  let terminalId: string;
+  let terminalName: string;
+  let terminalCountry: string;
+  let buyerPhone: string;
   try {
     const body = await request.json();
     listingId = body.listingId;
+    terminalId = body.terminalId;
+    terminalName = body.terminalName;
+    terminalCountry = body.terminalCountry;
+    buyerPhone = body.buyerPhone;
+
     if (!listingId) {
       return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
+    }
+    if (!terminalId || !terminalName || !terminalCountry) {
+      return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
+    }
+    if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
+      return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
     }
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
@@ -54,8 +71,8 @@ export async function POST(request: Request) {
 
   // 5. Calculate shipping
   const sellerCountry = listing.country as TerminalCountry;
-  const buyerCountry = buyerProfile.country as TerminalCountry;
-  const shippingEur = getShippingPrice(sellerCountry, buyerCountry);
+  const buyerCountryCode = buyerProfile.country as TerminalCountry;
+  const shippingEur = getShippingPrice(sellerCountry, buyerCountryCode);
 
   if (shippingEur === null) {
     return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
@@ -66,17 +83,36 @@ export async function POST(request: Request) {
   // 6. Calculate pricing
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
 
-  // 7. Create order reference (base64 of listingId:buyerId)
-  const orderReference = Buffer.from(`${listingId}:${user.id}`).toString('base64');
+  // 7. Create checkout session
+  const serviceClient = createServiceClient();
+  const { data: session, error: sessionError } = await serviceClient
+    .from('checkout_sessions')
+    .insert({
+      listing_id: listingId,
+      buyer_id: user.id,
+      terminal_id: terminalId,
+      terminal_name: terminalName,
+      terminal_country: terminalCountry,
+      buyer_phone: buyerPhone,
+      amount_cents: pricing.totalChargeCents,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
+
+  if (sessionError || !session) {
+    console.error('[Payments] Failed to create checkout session:', sessionError);
+    return NextResponse.json({ error: 'Failed to start checkout. Please try again.' }, { status: 500 });
+  }
 
   // 8. Build callback URL
   const callbackUrl = `${env.app.url}/api/payments/callback`;
 
-  // 9. Create EveryPay payment
+  // 9. Create EveryPay payment with session UUID as order reference
   try {
     const paymentResponse = await createPayment(
       pricing.totalChargeCents,
-      orderReference,
+      session.id,
       callbackUrl,
       {
         email: user.email,

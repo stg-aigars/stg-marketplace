@@ -8,7 +8,8 @@ import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
-import { CheckoutButton } from './CheckoutButton';
+import { getTerminals } from '@/lib/services/unisend/client';
+import { CheckoutForm } from './CheckoutForm';
 
 interface CheckoutListingRow {
   id: string;
@@ -124,6 +125,17 @@ export default async function CheckoutPage({
 
   const shippingCents = Math.round(shippingEur * 100);
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
+
+  // Fetch terminals for buyer's country
+  let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
+  try {
+    const rawTerminals = await getTerminals(buyerCountry);
+    terminals = rawTerminals
+      .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
+      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, countryCode: t.countryCode }));
+  } catch (error) {
+    console.error('[Checkout] Failed to fetch terminals:', error);
+  }
 
   const badgeKey = conditionToBadgeKey[listing.condition];
   const conditionInfo = conditionConfig[badgeKey];
@@ -277,12 +289,13 @@ export default async function CheckoutPage({
             </div>
 
             <div className="mt-6">
-              <CheckoutButton listingId={listing.id} />
+              <CheckoutForm
+                listingId={listing.id}
+                buyerCountry={buyerCountry}
+                buyerPhone={profile?.phone ?? ''}
+                terminals={terminals}
+              />
             </div>
-
-            <p className="mt-4 text-xs text-semantic-text-muted text-center">
-              You will be redirected to a secure payment page
-            </p>
           </div>
         </div>
       </div>

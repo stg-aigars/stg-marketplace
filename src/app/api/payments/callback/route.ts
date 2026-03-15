@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { createOrder } from '@/lib/services/orders';
 import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
 import { env } from '@/lib/env';
+import type { CheckoutSession } from '@/lib/checkout/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,17 +13,6 @@ export async function GET(request: Request) {
   const orderReference = searchParams.get('order_reference');
 
   if (!paymentReference || !orderReference) {
-    return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
-  }
-
-  // Decode order reference
-  let listingId: string;
-  let buyerId: string;
-  try {
-    const decoded = Buffer.from(orderReference, 'base64').toString('utf-8');
-    [listingId, buyerId] = decoded.split(':');
-    if (!listingId || !buyerId) throw new Error('Invalid format');
-  } catch {
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
 
@@ -39,6 +29,34 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${env.app.url}/orders/${existingOrder.id}`);
   }
 
+  // Look up checkout session by UUID (order_reference = session ID)
+  const { data: session, error: sessionError } = await serviceClient
+    .from('checkout_sessions')
+    .select('*')
+    .eq('id', orderReference)
+    .single<CheckoutSession>();
+
+  if (sessionError || !session) {
+    console.error('[Payments] Checkout session not found:', orderReference);
+    return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
+  }
+
+  if (session.status === 'completed') {
+    // Session already processed — find the order
+    const { data: orderForSession } = await serviceClient
+      .from('orders')
+      .select('id')
+      .eq('listing_id', session.listing_id)
+      .eq('buyer_id', session.buyer_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (orderForSession) {
+      return NextResponse.redirect(`${env.app.url}/orders/${orderForSession.id}`);
+    }
+  }
+
   // Verify payment with EveryPay
   let paymentStatus;
   try {
@@ -46,7 +64,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('[Payments] Failed to verify payment:', error);
     return NextResponse.redirect(
-      `${env.app.url}/checkout/${listingId}?error=verification_failed`
+      `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
     );
   }
 
@@ -57,7 +75,7 @@ export async function GET(request: Request) {
       paymentStatus.error
     );
     return NextResponse.redirect(
-      `${env.app.url}/checkout/${listingId}?error=${errorCategory}`
+      `${env.app.url}/checkout/${session.listing_id}?error=${errorCategory}`
     );
   }
 
@@ -65,33 +83,26 @@ export async function GET(request: Request) {
   const { data: listing } = await serviceClient
     .from('listings')
     .select('id, seller_id, price_cents, status, country')
-    .eq('id', listingId)
+    .eq('id', session.listing_id)
     .single();
 
   if (!listing || listing.status !== 'active') {
-    // Payment succeeded but listing no longer available — will need manual refund
-    console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${listingId} is no longer available`);
+    console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${session.listing_id} is no longer available`);
     return NextResponse.redirect(
-      `${env.app.url}/checkout/${listingId}?error=listing_unavailable`
+      `${env.app.url}/checkout/${session.listing_id}?error=listing_unavailable`
     );
   }
 
-  // Get buyer and seller countries for shipping calculation
-  const { data: buyerProfile } = await serviceClient
-    .from('user_profiles')
-    .select('country')
-    .eq('id', buyerId)
-    .single();
-
+  // Calculate shipping from seller/buyer countries
   const sellerCountry = listing.country as TerminalCountry;
-  const buyerCountry = (buyerProfile?.country ?? sellerCountry) as TerminalCountry;
+  const buyerCountry = session.terminal_country as TerminalCountry;
   const shippingEur = getShippingPrice(sellerCountry, buyerCountry);
   const shippingCents = shippingEur !== null ? Math.round(shippingEur * 100) : 0;
 
-  // Create the order
+  // Create the order with terminal and phone data from session
   try {
     const order = await createOrder({
-      buyerId,
+      buyerId: session.buyer_id,
       sellerId: listing.seller_id,
       listingId: listing.id,
       itemsTotalCents: listing.price_cents,
@@ -100,13 +111,23 @@ export async function GET(request: Request) {
       paymentReference,
       paymentState: paymentStatus.payment_state,
       paymentMethod: 'card',
+      terminalId: session.terminal_id,
+      terminalName: session.terminal_name,
+      terminalCountry: session.terminal_country,
+      buyerPhone: session.buyer_phone,
     });
+
+    // Mark checkout session as completed
+    await serviceClient
+      .from('checkout_sessions')
+      .update({ status: 'completed' })
+      .eq('id', session.id);
 
     return NextResponse.redirect(`${env.app.url}/orders/${order.id}`);
   } catch (error) {
     console.error('[Payments] Failed to create order:', error);
     return NextResponse.redirect(
-      `${env.app.url}/checkout/${listingId}?error=order_creation_failed`
+      `${env.app.url}/checkout/${session.listing_id}?error=order_creation_failed`
     );
   }
 }

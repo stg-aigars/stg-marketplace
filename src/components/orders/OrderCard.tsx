@@ -16,6 +16,11 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
   const statusConfig = ORDER_STATUS_CONFIG[order.status as OrderStatus];
   const gameImage = order.listings?.games?.thumbnail ?? null;
 
+  // Action needed: seller has pending order, or buyer has delivered order
+  const actionNeeded =
+    (showAs === 'seller' && order.status === 'pending_seller') ||
+    (showAs === 'buyer' && order.status === 'delivered');
+
   // Show the other party
   const counterparty = showAs === 'buyer'
     ? order.seller_profile
@@ -63,6 +68,12 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
                   <Badge variant={statusConfig.badgeVariant}>
                     {statusConfig.label}
                   </Badge>
+                )}
+                {actionNeeded && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Action needed
+                  </span>
                 )}
                 <span className="text-xs text-semantic-text-muted">
                   {formatDate(order.created_at)}
