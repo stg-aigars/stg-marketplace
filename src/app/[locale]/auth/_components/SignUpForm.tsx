@@ -1,0 +1,135 @@
+'use client';
+
+import { useState } from 'react';
+import { Input, Button, Select } from '@/components/ui';
+import { signUpWithEmail } from '@/lib/auth/actions';
+import { COUNTRIES } from '@/lib/country-utils';
+import { OAuthButton } from './OAuthButton';
+import { Link } from '@/i18n/navigation';
+import type { CountryCode } from '@/lib/country-utils';
+
+const countryOptions = COUNTRIES.map((c) => ({
+  value: c.code,
+  label: c.name,
+}));
+
+export function SignUpForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [country, setCountry] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+
+    if (!country) {
+      setError('Please select your country');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    const result = await signUpWithEmail({
+      email,
+      password,
+      displayName,
+      country: country as CountryCode,
+    });
+
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <OAuthButton />
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-semantic-border-subtle" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-semantic-bg-elevated px-2 text-semantic-text-muted">
+            or continue with email
+          </span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          id="displayName"
+          type="text"
+          label="Display name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          required
+          autoComplete="name"
+        />
+
+        <Input
+          id="email"
+          type="email"
+          label="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
+
+        <Input
+          id="password"
+          type="password"
+          label="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="new-password"
+          minLength={8}
+        />
+
+        <div>
+          <Select
+            id="country"
+            label="Your country"
+            options={countryOptions}
+            placeholder="Select your country"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            required
+          />
+          <p className="mt-1 text-sm text-semantic-text-muted">
+            This determines your shipping options and marketplace
+          </p>
+        </div>
+
+        {error && (
+          <p className="text-sm text-semantic-error">{error}</p>
+        )}
+
+        <Button type="submit" size="lg" loading={loading} className="w-full">
+          {loading ? 'Creating account...' : 'Create account'}
+        </Button>
+      </form>
+
+      <p className="text-center text-sm text-semantic-text-secondary">
+        Already have an account?{' '}
+        <Link
+          href="/auth/signin"
+          className="font-medium text-semantic-trust sm:hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </div>
+  );
+}

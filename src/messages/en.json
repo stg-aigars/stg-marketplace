@@ -1,0 +1,36 @@
+{
+  "common": {
+    "appName": "Second Turn Games",
+    "tagline": "Every game deserves a second turn",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "search": "Search",
+    "noResults": "No results found"
+  },
+  "nav": {
+    "browse": "Browse",
+    "sell": "Sell a game",
+    "messages": "Messages",
+    "profile": "Profile",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "hero": "Find your next favourite board game",
+    "heroSub": "Pre-loved board games from the Baltic community",
+    "browseCta": "Browse games",
+    "sellCta": "Sell a game"
+  },
+  "listing": {
+    "condition": "Condition",
+    "price": "Price",
+    "shipping": "Shipping",
+    "seller": "Seller",
+    "buyNow": "Buy now",
+    "preLovedGames": "Pre-loved games"
+  }
+}

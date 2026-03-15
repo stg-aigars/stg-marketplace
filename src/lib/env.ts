@@ -1,0 +1,127 @@
+/**
+ * Environment Variable Validation
+ * Validates all required environment variables at build/runtime
+ */
+
+const serverEnvSchema = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+
+  EVERYPAY_API_USERNAME: process.env.EVERYPAY_API_USERNAME,
+  EVERYPAY_API_SECRET: process.env.EVERYPAY_API_SECRET,
+  EVERYPAY_API_URL: process.env.EVERYPAY_API_URL,
+  EVERYPAY_ACCOUNT_NAME: process.env.EVERYPAY_ACCOUNT_NAME,
+
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+
+  UNISEND_API_URL: process.env.UNISEND_API_URL,
+  UNISEND_USERNAME: process.env.UNISEND_USERNAME,
+  UNISEND_PASSWORD: process.env.UNISEND_PASSWORD,
+
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+
+  CRON_SECRET: process.env.CRON_SECRET,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+} as const;
+
+type EnvKey = keyof typeof serverEnvSchema;
+
+interface ValidationResult {
+  valid: boolean;
+  missing: string[];
+  warnings: string[];
+}
+
+export function validateEnv(): ValidationResult {
+  const missing: string[] = [];
+  const warnings: string[] = [];
+
+  const required: EnvKey[] = [
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'EVERYPAY_API_USERNAME',
+    'EVERYPAY_API_SECRET',
+    'EVERYPAY_API_URL',
+    'EVERYPAY_ACCOUNT_NAME',
+    'RESEND_API_KEY',
+    'RESEND_FROM_EMAIL',
+    'UNISEND_API_URL',
+    'UNISEND_USERNAME',
+    'UNISEND_PASSWORD',
+    'NEXT_PUBLIC_APP_URL',
+  ];
+
+  const requiredInProduction: EnvKey[] = ['CRON_SECRET'];
+  const optional: EnvKey[] = ['NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'TURNSTILE_SECRET_KEY'];
+
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  for (const key of required) {
+    if (!serverEnvSchema[key]) missing.push(key);
+  }
+
+  for (const key of requiredInProduction) {
+    if (!serverEnvSchema[key]) {
+      if (isProduction) missing.push(key);
+      else warnings.push(`${key} not set (required in production)`);
+    }
+  }
+
+  for (const key of optional) {
+    if (!serverEnvSchema[key]) {
+      warnings.push(`${key} not set (feature will be disabled)`);
+    }
+  }
+
+  return { valid: missing.length === 0, missing, warnings };
+}
+
+export function assertEnv(): void {
+  const result = validateEnv();
+  if (result.warnings.length > 0) {
+    console.warn('Environment Warnings:');
+    result.warnings.forEach((w) => console.warn(`  - ${w}`));
+  }
+  if (!result.valid) {
+    console.error('Missing required environment variables:');
+    result.missing.forEach((k) => console.error(`  - ${k}`));
+    throw new Error(`Missing required environment variables: ${result.missing.join(', ')}`);
+  }
+}
+
+export const env = {
+  supabase: {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  },
+  everypay: {
+    apiUsername: process.env.EVERYPAY_API_USERNAME!,
+    apiSecret: process.env.EVERYPAY_API_SECRET!,
+    apiUrl: process.env.EVERYPAY_API_URL!,
+    accountName: process.env.EVERYPAY_ACCOUNT_NAME!,
+  },
+  resend: {
+    apiKey: process.env.RESEND_API_KEY!,
+    fromEmail: process.env.RESEND_FROM_EMAIL!,
+  },
+  unisend: {
+    apiUrl: process.env.UNISEND_API_URL!,
+    username: process.env.UNISEND_USERNAME!,
+    password: process.env.UNISEND_PASSWORD!,
+  },
+  app: {
+    url: process.env.NEXT_PUBLIC_APP_URL!,
+  },
+  cron: {
+    secret: process.env.CRON_SECRET,
+  },
+  turnstile: {
+    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    secretKey: process.env.TURNSTILE_SECRET_KEY,
+  },
+} as const;
