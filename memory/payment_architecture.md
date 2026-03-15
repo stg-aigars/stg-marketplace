@@ -33,9 +33,22 @@ type: project
 - Swedbank payment gateway for Baltic region
 - Supports card payments + bank links (Swedbank, SEB, Luminor, etc.)
 - HTTP Basic Auth with api_username:api_secret
-- Store checkout metadata in webhook events table BEFORE redirect
-- Callback handler is idempotent (checks processed_at)
+- Callback handler is idempotent (checks everypay_payment_reference on orders table)
 - Auto-refund if order creation fails after successful payment
+
+### Implementation (src/lib/services/everypay/)
+- `client.ts` — HTTP wrapper: createPayment, getPaymentStatus, refundPayment, capturePayment, voidPayment, getPaymentMethods
+- `types.ts` — SUCCESSFUL_STATES (authorised, settled), FAILED_STATES, PENDING_STATES, all request/response interfaces
+- `classify-error.ts` — classifyPaymentError() maps EveryPay errors to 6 user-facing categories (fraud_declined, card_declined, auth_failed, technical_error, user_cancelled, payment_failed)
+- Uses `env.everypay` from `src/lib/env.ts` for credentials (apiUrl, apiUsername, apiSecret, accountName)
+- EveryPayError class with optional code and response for debugging
+
+### Checkout Flow
+1. POST /api/payments/create — validates listing, calculates shipping via Unisend SHIPPING_PRICES, calls createPayment(), returns paymentLink
+2. Browser redirects to EveryPay hosted payment page
+3. GET /api/payments/callback — EveryPay redirects here with payment_reference + order_reference
+4. Callback verifies with getPaymentStatus(), checks SUCCESSFUL_STATES, creates order, updates listing to 'reserved'
+5. Order reference encoding: base64({listingId}:{buyerId}) — may need migration to UUID if EveryPay rejects format
 
 ## Refund Rules
 

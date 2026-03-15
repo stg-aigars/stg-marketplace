@@ -9,6 +9,8 @@
 ## Features & Flows
 - [ui_flows.md](ui_flows.md) - Browse, sell/create listing, checkout, order lifecycle
 - [shipping_model.md](shipping_model.md) - Unisend parcel lockers, route-based pricing, Baltic cross-border
+- [shipping_architecture.md](shipping_architecture.md) - Unisend implementation: price matrix, terminal API, label gen, tracking sync
+- [listing_creation.md](listing_creation.md) - Listing creation feature status, code review findings, deferred items
 
 ## Design & Localization
 - [design_tokens.md](design_tokens.md) - Nordic color palette, layout standards, component inventory

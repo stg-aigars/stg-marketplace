@@ -176,9 +176,9 @@ export default async function ListingDetailPage({
                 </Button>
               </div>
             ) : (
-              <Button disabled title="Coming soon">
-                Buy now
-              </Button>
+              <Link href={`/checkout/${listing.id}`}>
+                <Button>Buy now</Button>
+              </Link>
             )}
           </div>
 
