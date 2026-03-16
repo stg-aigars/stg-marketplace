@@ -31,6 +31,7 @@ export function VersionStep({
 }: VersionStepProps) {
   const [versions, setVersions] = useState<BGGVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manualPublisher, setManualPublisher] = useState('');
   const [manualLanguage, setManualLanguage] = useState('');
@@ -42,13 +43,19 @@ export function VersionStep({
 
     async function fetchVersions() {
       setLoading(true);
+      setFetchError(null);
       try {
         const res = await fetch(`/api/games/${gameId}/versions`);
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) {
-            setVersions(data.versions ?? []);
+        const data = await res.json();
+        if (!cancelled) {
+          setVersions(data.versions ?? []);
+          if (!res.ok && data.error) {
+            setFetchError(data.error);
           }
+        }
+      } catch {
+        if (!cancelled) {
+          setFetchError('Could not load editions. You can enter version details manually.');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -193,6 +200,12 @@ export function VersionStep({
       <p className="text-sm text-semantic-text-secondary">
         Select the edition that matches your copy of {gameName}. This helps buyers know exactly what they are getting.
       </p>
+
+      {fetchError && (
+        <p className="text-sm text-semantic-warning text-center py-2">
+          {fetchError}
+        </p>
+      )}
 
       {versions.length > 0 ? (
         <div className="space-y-2">

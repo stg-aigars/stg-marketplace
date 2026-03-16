@@ -1,17 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Input, Button, Select } from '@/components/ui';
+import { Input, Button } from '@/components/ui';
 import { signUpWithEmail } from '@/lib/auth/actions';
-import { COUNTRIES } from '@/lib/country-utils';
 import { OAuthButton } from './OAuthButton';
+import { CountrySelector } from './CountrySelector';
 import { Link } from '@/i18n/navigation';
 import type { CountryCode } from '@/lib/country-utils';
-
-const countryOptions = COUNTRIES.map((c) => ({
-  value: c.code,
-  label: c.name,
-}));
 
 export function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -97,20 +92,10 @@ export function SignUpForm() {
           minLength={8}
         />
 
-        <div>
-          <Select
-            id="country"
-            label="Your country"
-            options={countryOptions}
-            placeholder="Select your country"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            required
-          />
-          <p className="mt-1 text-sm text-semantic-text-muted">
-            This determines your shipping options and marketplace
-          </p>
-        </div>
+        <CountrySelector
+          value={country as CountryCode | ''}
+          onChange={(code) => setCountry(code)}
+        />
 
         {error && (
           <p className="text-sm text-semantic-error">{error}</p>

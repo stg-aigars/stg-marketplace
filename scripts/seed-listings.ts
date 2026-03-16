@@ -81,11 +81,11 @@ async function main() {
   // Fetch 20 random well-known games (high rating, not expansions)
   const { data: games, error: gamesError } = await supabase
     .from('games')
-    .select('id, name, year_published')
+    .select('id, name, yearpublished')
     .eq('is_expansion', false)
-    .not('year_published', 'is', null)
-    .gte('year_published', 1995)
-    .order('rating', { ascending: false })
+    .not('yearpublished', 'is', null)
+    .gte('yearpublished', 1995)
+    .order('bayesaverage', { ascending: false })
     .limit(200);
 
   if (gamesError || !games || games.length === 0) {
@@ -109,7 +109,7 @@ async function main() {
       seller_id: userId,
       bgg_game_id: game.id,
       game_name: game.name,
-      game_year: game.year_published,
+      game_year: game.yearpublished,
       version_source: 'manual',
       language: randomElement(['English', 'English', 'English', 'German', 'Latvian', 'Russian']),
       condition,

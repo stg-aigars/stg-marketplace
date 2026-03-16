@@ -17,7 +17,7 @@ import {
   sendOrderCompletedToSeller,
   sendOrderDeclinedToBuyer,
   sendOrderDisputedToSeller,
-} from '@/lib/email/stubs';
+} from '@/lib/email';
 
 /**
  * Load an order by ID using the service client (bypasses RLS).
@@ -143,7 +143,18 @@ export async function acceptOrder(
     },
   };
 
-  const { parcelId, barcode, trackingUrl } = await createAndShipParcel(parcelRequest);
+  let parcelId: number;
+  let barcode: string;
+  let trackingUrl: string | undefined;
+  try {
+    const result = await createAndShipParcel(parcelRequest);
+    parcelId = result.parcelId;
+    barcode = result.barcode;
+    trackingUrl = result.trackingUrl;
+  } catch (err) {
+    console.error(`[Order] Unisend shipping label failed for order ${orderId}:`, err);
+    throw new Error('Could not create shipping label. Please check the details and try again.');
+  }
 
   // Transition with shipping data
   const updatedOrder = await transitionOrder(orderId, 'accepted', userId, 'seller', {

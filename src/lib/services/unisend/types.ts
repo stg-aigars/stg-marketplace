@@ -211,19 +211,19 @@ export const PHONE_FORMATS: Record<TerminalCountry, PhoneFormat> = {
 // Shipping Price Matrix
 // ============================================
 
-// Shipping prices in EUR per route (price is the same regardless of parcel size)
-export const SHIPPING_PRICES: Record<TerminalCountry, Record<TerminalCountry, number>> = {
-  LT: { LT: 2.70, LV: 2.50, EE: 2.70 },
-  LV: { LT: 2.10, LV: 1.90, EE: 2.10 },
-  EE: { LT: 3.50, LV: 3.20, EE: 2.80 },
+// Shipping prices in INTEGER CENTS per route (price is the same regardless of parcel size)
+export const SHIPPING_PRICES_CENTS: Record<TerminalCountry, Record<TerminalCountry, number>> = {
+  LT: { LT: 270, LV: 250, EE: 270 },
+  LV: { LT: 210, LV: 190, EE: 210 },
+  EE: { LT: 350, LV: 320, EE: 280 },
 };
 
-// Get shipping price for a route
-export function getShippingPrice(
+// Get shipping price in cents for a route
+export function getShippingPriceCents(
   senderCountry: TerminalCountry,
   receiverCountry: TerminalCountry,
 ): number | null {
-  return SHIPPING_PRICES[senderCountry]?.[receiverCountry] ?? null;
+  return SHIPPING_PRICES_CENTS[senderCountry]?.[receiverCountry] ?? null;
 }
 
 // ============================================

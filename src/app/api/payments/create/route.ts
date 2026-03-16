@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { createPayment } from '@/lib/services/everypay/client';
 import { calculateBuyerPricing } from '@/lib/services/pricing';
-import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
@@ -72,13 +72,11 @@ export async function POST(request: Request) {
   // 5. Calculate shipping
   const sellerCountry = listing.country as TerminalCountry;
   const buyerCountryCode = buyerProfile.country as TerminalCountry;
-  const shippingEur = getShippingPrice(sellerCountry, buyerCountryCode);
+  const shippingCents = getShippingPriceCents(sellerCountry, buyerCountryCode);
 
-  if (shippingEur === null) {
+  if (shippingCents === null) {
     return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
   }
-
-  const shippingCents = Math.round(shippingEur * 100);
 
   // 6. Calculate pricing
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);

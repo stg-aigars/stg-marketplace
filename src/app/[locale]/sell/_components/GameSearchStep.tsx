@@ -59,9 +59,12 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
         if (res.ok) {
           const data = await res.json();
           setResults(data.games ?? []);
+        } else {
+          setError('Game search is temporarily unavailable. Please try again.');
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
+        setError('Could not reach the server. Please check your connection and try again.');
       } finally {
         if (!controller.signal.aborted) {
           setSearching(false);

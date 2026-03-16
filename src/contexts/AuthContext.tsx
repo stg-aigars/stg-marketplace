@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isGoogleUser =
       user.app_metadata?.provider === 'google' ||
       (Array.isArray(providers) && providers.includes('google'));
-    return isGoogleUser && profile.country === 'LV';
+    return isGoogleUser && !profile.country_confirmed;
   }, [user, profile]);
 
   const handleSignOut = useCallback(async () => {

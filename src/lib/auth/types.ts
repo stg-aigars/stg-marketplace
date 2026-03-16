@@ -7,6 +7,7 @@ export interface UserProfile {
   phone: string | null;
   country: CountryCode;
   preferred_locale: string;
+  country_confirmed: boolean;
   is_staff: boolean;
   created_at: string;
   updated_at: string;

@@ -1,15 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Input, Button, Select } from '@/components/ui';
+import { Input, Button } from '@/components/ui';
 import { updateProfile } from '@/lib/auth/actions';
-import { COUNTRIES } from '@/lib/country-utils';
+import { CountrySelector } from './CountrySelector';
 import type { CountryCode } from '@/lib/country-utils';
-
-const countryOptions = COUNTRIES.map((c) => ({
-  value: c.code,
-  label: c.name,
-}));
 
 export function CompleteProfileForm() {
   const [country, setCountry] = useState('');
@@ -41,18 +36,10 @@ export function CompleteProfileForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Select
-        id="country"
-        label="Your country"
-        options={countryOptions}
-        placeholder="Select your country"
-        value={country}
-        onChange={(e) => setCountry(e.target.value)}
-        required
+      <CountrySelector
+        value={country as CountryCode | ''}
+        onChange={(code) => setCountry(code)}
       />
-      <p className="-mt-2 text-sm text-semantic-text-muted">
-        Your country determines shipping routes and marketplace settings
-      </p>
 
       <Input
         id="displayName"

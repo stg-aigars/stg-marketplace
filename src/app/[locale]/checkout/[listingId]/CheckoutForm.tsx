@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { Button, Input } from '@/components/ui';
+import { sanitizeApiError } from '@/lib/utils/error-messages';
+import { PHONE_FORMATS, type TerminalCountry } from '@/lib/services/unisend/types';
 
 interface TerminalOption {
   id: string;
@@ -76,7 +78,7 @@ export function CheckoutForm({
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Something went wrong. Please try again.');
+        setError(sanitizeApiError(data.error));
         setLoading(false);
         return;
       }
@@ -97,7 +99,7 @@ export function CheckoutForm({
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="+3706XXXXXXX"
+          placeholder={PHONE_FORMATS[buyerCountry as TerminalCountry]?.placeholder ?? '+3706XXXXXXX'}
         />
         <p className="mt-1 text-xs text-semantic-text-muted">
           Required for parcel pickup notifications
@@ -114,7 +116,7 @@ export function CheckoutForm({
           value={terminalSearch}
           onChange={(e) => setTerminalSearch(e.target.value)}
           placeholder="Search by city or terminal name..."
-          className="w-full px-3 py-2.5 rounded-lg border border-semantic-border-subtle bg-semantic-bg-primary text-semantic-text-primary text-sm placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-primary/20 focus:border-semantic-primary min-h-[44px]"
+          className="w-full px-3 py-2.5 rounded-lg border border-semantic-border-default bg-semantic-bg-elevated text-semantic-text-primary text-sm placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent min-h-[44px]"
         />
         <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-semantic-border-subtle">
           {Object.keys(filteredTerminals).length === 0 ? (

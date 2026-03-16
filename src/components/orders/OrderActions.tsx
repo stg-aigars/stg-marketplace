@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Modal } from '@/components/ui';
+import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
 
 interface OrderActionsProps {
@@ -34,7 +35,7 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Something went wrong');
+        setError(sanitizeErrorMessage(data.error));
         setLoading(false);
         return;
       }

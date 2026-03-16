@@ -7,7 +7,7 @@ import { calculateBuyerPricing, formatCentsToCurrency } from '@/lib/services/pri
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
-import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { getTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
 import { CheckoutForm } from './CheckoutForm';
@@ -103,9 +103,9 @@ export default async function CheckoutPage({
   // Calculate shipping
   const sellerCountry = listing.country as TerminalCountry;
   const buyerCountry = (profile?.country ?? 'LV') as TerminalCountry;
-  const shippingEur = getShippingPrice(sellerCountry, buyerCountry);
+  const shippingCents = getShippingPriceCents(sellerCountry, buyerCountry);
 
-  if (shippingEur === null) {
+  if (shippingCents === null) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
@@ -123,7 +123,6 @@ export default async function CheckoutPage({
     );
   }
 
-  const shippingCents = Math.round(shippingEur * 100);
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
 
   // Fetch terminals for buyer's country

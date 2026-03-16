@@ -57,7 +57,7 @@ export async function signUpWithEmail(
     return { error: 'Something went wrong. Please try again' };
   }
 
-  redirect('/');
+  redirect('/browse?welcome=true');
 }
 
 export async function signOut(): Promise<void> {

@@ -7,7 +7,7 @@ import { generateShippingLabel, updateOrderWithShippingData, updateOrderLabelErr
 import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE, PHONE_FORMATS, type ParcelSize, type TerminalCountry } from './types';
 import { formatLabelError } from './format-label-error';
 import { detectPhoneCountry, composePhoneNumber, isValidPhoneNumber, getPhonePrefix, type PhoneCountryCode } from '@/lib/phone-utils';
-import { sendShippingLabelToSeller } from '@/lib/email/stubs';
+import { sendShippingLabelToSeller } from '@/lib/email';
 
 export interface LabelGenerationContext {
   orderId: string;

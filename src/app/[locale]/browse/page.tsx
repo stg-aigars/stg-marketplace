@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ListingCard } from '@/components/listings/ListingCard';
+import { WelcomeBanner } from '@/components/WelcomeBanner';
 import type { ListingCondition } from '@/lib/listings/types';
 
 const PAGE_SIZE = 24;
@@ -29,9 +30,10 @@ interface ListingRow {
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { page?: string; welcome?: string };
 }) {
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+  const showWelcome = searchParams.welcome === 'true';
   const offset = (page - 1) * PAGE_SIZE;
 
   const supabase = await createClient();
@@ -51,6 +53,8 @@ export default async function BrowsePage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      {showWelcome && <WelcomeBanner />}
+
       <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
         Browse pre-loved games
       </h1>

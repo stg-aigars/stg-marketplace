@@ -12,10 +12,13 @@ export function OAuthButton() {
     const supabase = createClient();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
+    // Preserve the current page so the user returns here after OAuth
+    const returnUrl = window.location.pathname;
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${appUrl}/auth/callback`,
+        redirectTo: `${appUrl}/auth/callback?returnUrl=${encodeURIComponent(returnUrl)}`,
       },
     });
   }

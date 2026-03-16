@@ -1,9 +1,23 @@
+/**
+ * Payment callback handler (EveryPay redirect).
+ *
+ * IMPORTANT: This is the ONLY mechanism that creates orders after payment.
+ * If the browser redirect fails (user closes browser, network drops), the
+ * payment is captured by EveryPay but NO order is created in STG.
+ *
+ * TODO (Week 2/5): Add a server-to-server webhook handler and/or a cron job
+ * to reconcile pending checkout_sessions against EveryPay payment statuses.
+ * This would catch paid-but-no-order cases and auto-create the missing orders.
+ * See: EveryPay API docs for payment notifications / webhooks.
+ */
+
 import { NextResponse } from 'next/server';
 import { getPaymentStatus, SUCCESSFUL_STATES } from '@/lib/services/everypay';
 import { classifyPaymentError } from '@/lib/services/everypay/classify-error';
 import { createServiceClient } from '@/lib/supabase';
 import { createOrder } from '@/lib/services/orders';
-import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
+import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { env } from '@/lib/env';
 import type { CheckoutSession } from '@/lib/checkout/types';
 
@@ -94,10 +108,10 @@ export async function GET(request: Request) {
     );
   }
 
-  // Re-fetch listing to get current data
+  // Re-fetch listing to get current data (include game_name for emails)
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country')
+    .select('id, seller_id, price_cents, status, country, game_name')
     .eq('id', session.listing_id)
     .single();
 
@@ -111,8 +125,7 @@ export async function GET(request: Request) {
   // Calculate shipping from seller/buyer countries
   const sellerCountry = listing.country as TerminalCountry;
   const buyerCountry = session.terminal_country as TerminalCountry;
-  const shippingEur = getShippingPrice(sellerCountry, buyerCountry);
-  const shippingCents = shippingEur !== null ? Math.round(shippingEur * 100) : 0;
+  const shippingCents = getShippingPriceCents(sellerCountry, buyerCountry) ?? 0;
 
   // Create the order with terminal and phone data from session
   try {
@@ -137,6 +150,50 @@ export async function GET(request: Request) {
       .from('checkout_sessions')
       .update({ status: 'completed' })
       .eq('id', session.id);
+
+    // Send emails — truly non-blocking (profile fetch + sends run after redirect)
+    void (async () => {
+      const { data: profiles } = await serviceClient
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .in('id', [session.buyer_id, listing.seller_id]);
+
+      const buyerProfile = profiles?.find(p => p.id === session.buyer_id);
+      const sellerProfile = profiles?.find(p => p.id === listing.seller_id);
+
+      if (!buyerProfile?.email || !sellerProfile?.email) {
+        console.error('[Email] Missing profile data for order emails:', {
+          orderId: order.id,
+          hasBuyer: !!buyerProfile?.email,
+          hasSeller: !!sellerProfile?.email,
+        });
+        return;
+      }
+
+      const emailData = {
+        orderNumber: order.order_number,
+        orderId: order.id,
+        gameName: listing.game_name ?? 'Game',
+        priceCents: listing.price_cents,
+        shippingCents: shippingCents,
+        terminalName: session.terminal_name,
+      };
+
+      sendNewOrderToSeller({
+        ...emailData,
+        sellerName: sellerProfile.full_name ?? 'Seller',
+        sellerEmail: sellerProfile.email,
+        buyerName: buyerProfile.full_name ?? 'Buyer',
+      }).catch((err) => console.error('[Email] Failed to notify seller:', err));
+
+      sendOrderConfirmationToBuyer({
+        ...emailData,
+        buyerName: buyerProfile.full_name ?? 'Buyer',
+        buyerEmail: buyerProfile.email,
+        sellerName: sellerProfile.full_name ?? 'Seller',
+        totalCents: order.total_amount_cents,
+      }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
+    })().catch((err) => console.error('[Email] Background email failed:', err));
 
     return NextResponse.redirect(`${env.app.url}/orders/${order.id}`);
   } catch (error) {
