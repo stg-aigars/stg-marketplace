@@ -62,6 +62,19 @@ export async function POST(request: Request) {
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
 
+  // Per-user photo quota: max 100 photos across all listings
+  const MAX_USER_PHOTOS = 100;
+  const { data: files, error: listError } = await supabase.storage
+    .from('listing-photos')
+    .list(user.id, { limit: MAX_USER_PHOTOS + 1 });
+
+  if (!listError && files && files.length >= MAX_USER_PHOTOS) {
+    return NextResponse.json(
+      { error: `Photo limit reached (${MAX_USER_PHOTOS}). Please remove unused photos before uploading new ones.` },
+      { status: 400 }
+    );
+  }
+
   // Content-Length pre-check to reject obviously oversized requests early
   const contentLength = request.headers.get('content-length');
   if (contentLength) {
