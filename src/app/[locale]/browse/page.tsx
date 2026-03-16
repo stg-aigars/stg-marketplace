@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { Button } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -75,11 +76,14 @@ export default async function BrowsePage({
             />
           </svg>
           <p className="text-semantic-text-secondary text-lg">
-            No listings yet
+            No games listed yet
           </p>
           <p className="text-semantic-text-muted mt-1">
-            Be the first to list a game.
+            Be the first to share a pre-loved game with the community.
           </p>
+          <Link href="/sell" className="inline-block mt-4">
+            <Button>List a game</Button>
+          </Link>
         </div>
       ) : (
         <>

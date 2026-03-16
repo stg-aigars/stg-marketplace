@@ -140,12 +140,12 @@ export default async function ListingDetailPage({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-semantic-text-muted">
-        <Link href="/browse" className="sm:hover:text-semantic-text-secondary transition-colors">
+      <nav className="mb-4 text-sm text-semantic-text-muted flex items-center min-w-0">
+        <Link href="/browse" className="shrink-0 sm:hover:text-semantic-text-secondary transition-colors">
           Browse
         </Link>
-        <span className="mx-2">/</span>
-        <span className="text-semantic-text-secondary">{listing.game_name}</span>
+        <span className="mx-2 shrink-0">/</span>
+        <span className="text-semantic-text-secondary truncate">{listing.game_name}</span>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

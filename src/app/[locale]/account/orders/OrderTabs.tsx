@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui';
 import { OrderCard } from '@/components/orders/OrderCard';
 import type { OrderWithDetails } from '@/lib/orders/types';
 
@@ -55,6 +57,9 @@ export function OrderTabs({ purchases, sales }: OrderTabsProps) {
               ? 'No purchases yet. Browse pre-loved games to find your next favourite.'
               : 'No sales yet. List a game to start selling.'}
           </p>
+          <Link href={activeTab === 'purchases' ? '/browse' : '/sell'} className="inline-block mt-4">
+            <Button>{activeTab === 'purchases' ? 'Browse games' : 'List a game'}</Button>
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">
