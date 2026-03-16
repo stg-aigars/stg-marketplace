@@ -8,6 +8,11 @@ const PAGE_SIZE = 24;
 
 export const metadata: Metadata = {
   title: 'Browse',
+  description: 'Browse pre-loved board games for sale in Latvia, Lithuania, and Estonia.',
+  openGraph: {
+    title: 'Browse | Second Turn Games',
+    description: 'Browse pre-loved board games for sale in Latvia, Lithuania, and Estonia.',
+  },
 };
 
 interface ListingRow {

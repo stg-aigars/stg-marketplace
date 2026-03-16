@@ -14,12 +14,27 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturngames.com';
+
 export const metadata: Metadata = {
   title: {
     default: 'Second Turn Games',
     template: '%s | Second Turn Games',
   },
   description: 'Every game deserves a second turn. Pre-loved board games for the Baltic region.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Second Turn Games',
+    title: 'Second Turn Games',
+    description: 'Every game deserves a second turn. Pre-loved board games for the Baltic region.',
+    url: baseUrl,
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Second Turn Games',
+    description: 'Every game deserves a second turn. Pre-loved board games for the Baltic region.',
+  },
+  metadataBase: new URL(baseUrl),
 };
 
 export const viewport: Viewport = {

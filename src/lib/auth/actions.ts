@@ -109,7 +109,10 @@ export async function updateProfile(data: {
     return { error: 'Not authenticated' };
   }
 
-  const updates: Record<string, unknown> = { country: data.country };
+  const updates: Record<string, unknown> = {
+    country: data.country,
+    country_confirmed: true,
+  };
   if (data.displayName) {
     updates.full_name = data.displayName;
   }

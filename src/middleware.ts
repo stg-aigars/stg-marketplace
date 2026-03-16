@@ -49,22 +49,22 @@ export default async function middleware(request: NextRequest) {
       return copySupabaseCookies(supabaseResponse, NextResponse.redirect(signinUrl));
     }
 
-    // 4. Redirect Google OAuth users who haven't set their country
+    // 4. Redirect OAuth users who haven't confirmed their country
     if (user) {
       const provider = user.app_metadata?.provider;
       const providers = user.app_metadata?.providers as string[] | undefined;
-      const isGoogleUser =
+      const isOAuthUser =
         provider === 'google' ||
         (Array.isArray(providers) && providers.includes('google'));
 
-      if (isGoogleUser) {
+      if (isOAuthUser) {
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('country')
+          .select('country_confirmed')
           .eq('id', user.id)
           .single();
 
-        if (profile?.country === 'LV') {
+        if (profile && !profile.country_confirmed) {
           const completeProfileUrl = new URL('/auth/complete-profile', request.url);
           return copySupabaseCookies(supabaseResponse, NextResponse.redirect(completeProfileUrl));
         }

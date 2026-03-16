@@ -47,12 +47,29 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { data } = await supabase
     .from('listings')
-    .select('game_name')
+    .select('game_name, price_cents, condition, games(image, thumbnail)')
     .eq('id', id)
-    .single();
+    .single<{
+      game_name: string;
+      price_cents: number;
+      condition: string;
+      games: { image: string | null; thumbnail: string | null } | null;
+    }>();
+
+  const title = data?.game_name ?? 'Listing';
+  const description = data
+    ? `${data.game_name} — ${data.condition} condition, ${formatCentsToCurrency(data.price_cents)}`
+    : 'Pre-loved board game listing on Second Turn Games';
+  const image = data?.games?.image ?? data?.games?.thumbnail ?? undefined;
 
   return {
-    title: data?.game_name ?? 'Listing',
+    title,
+    description,
+    openGraph: {
+      title: `${title} | Second Turn Games`,
+      description,
+      ...(image ? { images: [{ url: image }] } : {}),
+    },
   };
 }
 

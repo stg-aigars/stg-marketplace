@@ -57,7 +57,7 @@ export default async function AccountPage() {
       </Card>
 
       {/* Quick links */}
-      <div className="mt-6">
+      <div className="mt-6 space-y-3">
         <Link href="/account/orders">
           <Card hoverable>
             <CardBody>
@@ -66,6 +66,23 @@ export default async function AccountPage() {
                   <p className="font-medium text-semantic-text-heading">Your orders</p>
                   <p className="text-sm text-semantic-text-muted mt-0.5">
                     View your purchases and sales
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
+        <Link href="/account/listings">
+          <Card hoverable>
+            <CardBody>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-semantic-text-heading">My Listings</p>
+                  <p className="text-sm text-semantic-text-muted mt-0.5">
+                    Manage your active and past listings
                   </p>
                 </div>
                 <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

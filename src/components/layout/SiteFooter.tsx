@@ -7,13 +7,13 @@ function SiteFooter() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-semantic-text-muted">
           <p>&copy; 2026 Second Turn Games</p>
           <nav className="flex gap-6">
-            <Link href="#" className="sm:hover:text-semantic-text-secondary transition-colors">
+            <Link href="/terms" className="sm:hover:text-semantic-text-secondary transition-colors">
               Terms of Service
             </Link>
-            <Link href="#" className="sm:hover:text-semantic-text-secondary transition-colors">
+            <Link href="/privacy" className="sm:hover:text-semantic-text-secondary transition-colors">
               Privacy Policy
             </Link>
-            <Link href="#" className="sm:hover:text-semantic-text-secondary transition-colors">
+            <Link href="/contact" className="sm:hover:text-semantic-text-secondary transition-colors">
               Contact
             </Link>
           </nav>
