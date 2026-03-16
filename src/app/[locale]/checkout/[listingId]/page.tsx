@@ -9,6 +9,7 @@ import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { getShippingPrice, type TerminalCountry } from '@/lib/services/unisend/types';
 import { getTerminals } from '@/lib/services/unisend/client';
+import { createClient } from '@/lib/supabase/server';
 import { CheckoutForm } from './CheckoutForm';
 
 interface CheckoutListingRow {
@@ -47,8 +48,7 @@ export default async function CheckoutPage({
 }) {
   const { user, profile } = await requireServerAuth();
 
-  const supabase = (await import('@/lib/supabase/server')).createClient;
-  const client = await supabase();
+  const client = await createClient();
 
   const { data: listing } = await client
     .from('listings')
