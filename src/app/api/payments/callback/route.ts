@@ -57,6 +57,21 @@ export async function GET(request: Request) {
     }
   }
 
+  // Check if session has expired (30 minutes)
+  const SESSION_TTL_MS = 30 * 60 * 1000;
+  const sessionAge = Date.now() - new Date(session.created_at).getTime();
+  if (sessionAge > SESSION_TTL_MS && session.status === 'pending') {
+    await serviceClient
+      .from('checkout_sessions')
+      .update({ status: 'expired' })
+      .eq('id', session.id)
+      .eq('status', 'pending');
+
+    return NextResponse.redirect(
+      `${env.app.url}/checkout/${session.listing_id}?error=session_expired`
+    );
+  }
+
   // Verify payment with EveryPay
   let paymentStatus;
   try {
