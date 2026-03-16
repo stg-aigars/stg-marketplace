@@ -62,7 +62,7 @@ export function NewOrderSeller({
       </div>
 
       <div style={s.ctaSection}>
-        <Button style={styles.ctaOrange} href={orderUrl}>
+        <Button style={s.ctaOrange} href={orderUrl}>
           Review Order
         </Button>
       </div>
@@ -81,16 +81,6 @@ export function NewOrderSeller({
 
 // Template-specific styles only
 const styles = {
-  ctaOrange: {
-    backgroundColor: theme.orange,
-    borderRadius: '8px',
-    color: '#FEFEFE',
-    display: 'inline-block' as const,
-    fontSize: '15px',
-    fontWeight: '600' as const,
-    padding: '12px 32px',
-    textDecoration: 'none',
-  },
   noteSecondary: {
     color: theme.textSecondary,
     fontSize: '14px',

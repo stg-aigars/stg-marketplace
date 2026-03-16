@@ -16,7 +16,6 @@ interface OrderConfirmationBuyerProps {
   sellerName: string;
   priceCents: number;
   shippingCents: number;
-  totalCents: number;
   terminalName: string;
   appUrl: string;
 }
@@ -29,10 +28,10 @@ export function OrderConfirmationBuyer({
   sellerName,
   priceCents,
   shippingCents,
-  totalCents,
   terminalName,
   appUrl,
 }: OrderConfirmationBuyerProps) {
+  const totalCents = priceCents + shippingCents;
   const orderUrl = `${appUrl}/orders/${orderId}`;
 
   return (
@@ -81,7 +80,7 @@ export function OrderConfirmationBuyer({
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={styles.ctaFrost} href={orderUrl}>
+        <Button style={s.ctaFrost} href={orderUrl}>
           View Order
         </Button>
       </div>
@@ -95,16 +94,6 @@ export function OrderConfirmationBuyer({
 
 // Template-specific styles only
 const styles = {
-  ctaFrost: {
-    backgroundColor: theme.frost,
-    borderRadius: '8px',
-    color: '#FEFEFE',
-    display: 'inline-block' as const,
-    fontSize: '15px',
-    fontWeight: '600' as const,
-    padding: '12px 32px',
-    textDecoration: 'none',
-  },
   pricingSection: {
     borderTop: `1px solid ${theme.borderSubtle}`,
     margin: '4px 0 12px',

@@ -46,7 +46,6 @@ const KNOWN_USER_MESSAGES = new Set([
   'Shipping is not available for this route',
   'Please select a pickup terminal',
   'Please enter a valid phone number',
-  'listingId is required',
   'Listing not found',
   'Failed to start checkout. Please try again.',
   'Failed to initiate payment. Please try again.',
