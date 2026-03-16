@@ -19,4 +19,4 @@
 
 ## Planning
 - [weekly_plan.md](weekly_plan.md) - Week-by-week feature rollout plan with dependencies
-- [deployment.md](deployment.md) - Vercel workflow, staging→main, pre-deploy gate, rollback
+- [deployment.md](deployment.md) - Hetzner VPS + Coolify deployment, staging→main, pre-deploy gate, rollback

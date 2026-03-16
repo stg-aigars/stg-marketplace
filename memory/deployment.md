@@ -1,13 +1,13 @@
 ---
 name: Deployment
-description: Vercel deployment workflow, staging→main branch model, pre-deploy gate, rollback procedure
+description: Hetzner VPS + Coolify deployment, staging→main branch model, pre-deploy gate, rollback
 type: project
 ---
 
 ## Branch Model
 
 - **Develop on `staging`** — all day-to-day work happens here
-- **Production from `main`** — Vercel deploys when main is pushed
+- **Production from `main`** — Coolify auto-deploys when main is pushed (GitHub webhook)
 - Merge: `git checkout main && git merge staging --ff-only && git push origin main`
 - Always switch back to staging after deploying
 
@@ -22,7 +22,15 @@ type: project
 3. `git commit` + `git push origin staging`
 4. `git checkout main && git merge staging --ff-only && git push origin main`
 5. `git checkout staging`
-6. Verify at production URL
+6. Coolify auto-builds and deploys (~3-5 min)
+7. Verify at https://secondturn.games
+
+## Infrastructure
+
+- **Server:** Hetzner CX23 (2 vCPU, 4 GB RAM) in Helsinki
+- **PaaS:** Coolify (self-hosted, Docker-based)
+- **SSL:** Let's Encrypt via Coolify/Traefik
+- **Health check:** `/api/health`
 
 ## Rollback
 
@@ -32,16 +40,18 @@ git revert HEAD
 git push origin main
 git checkout staging
 ```
+Coolify triggers a new build from the reverted state.
+
+## NEXT_PUBLIC_ vars require redeploy
+
+`NEXT_PUBLIC_APP_URL` and other `NEXT_PUBLIC_` vars are baked into the client JS bundle at build time. Changing them requires a full redeploy (not just restart).
 
 ## External Integrations
 
 | Service | Purpose | Key Files |
 |---------|---------|-----------|
 | Supabase | DB, Auth, Storage | `lib/supabase/` |
-| EveryPay | Card + bank payments | `lib/everypay/` |
+| EveryPay | Card + bank payments | `lib/services/everypay/` |
 | Resend | Transactional emails | `lib/email/` |
-| Unisend | Parcel locker shipping | `lib/unisend/` |
+| Unisend | Parcel locker shipping | `lib/services/unisend/` |
 | BGG API | Game metadata + images | `lib/bgg/` |
-| Maplibre | Terminal selector maps | `components/ui/map/` |
-| Turnstile | Bot protection | `lib/security/` |
-| Sentry | Error monitoring | `instrumentation-client.ts` |
