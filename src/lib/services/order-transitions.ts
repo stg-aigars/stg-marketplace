@@ -9,7 +9,7 @@ import { UNISEND_DEFAULT_PARCEL_SIZE } from '@/lib/services/unisend/types';
 import type { TerminalCountry } from '@/lib/services/unisend/types';
 import type { CreateParcelRequest } from '@/lib/services/unisend/types';
 import { VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_TIMESTAMP_COLUMN } from '@/lib/orders/constants';
-import type { OrderStatus, OrderRow } from '@/lib/orders/types';
+import type { OrderStatus, OrderRow, OrderWithRelations } from '@/lib/orders/types';
 import {
   sendOrderAcceptedToBuyer,
   sendOrderShippedToBuyer,
@@ -22,7 +22,7 @@ import {
 /**
  * Load an order by ID using the service client (bypasses RLS).
  */
-async function loadOrder(orderId: string): Promise<OrderRow> {
+async function loadOrder(orderId: string): Promise<OrderWithRelations> {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -40,11 +40,7 @@ async function loadOrder(orderId: string): Promise<OrderRow> {
     throw new Error(`Order not found: ${orderId}`);
   }
 
-  return data as OrderRow & {
-    listings: { game_name: string; seller_id: string };
-    buyer_profile: { full_name: string | null; email: string | null; phone: string | null; country: string };
-    seller_profile: { full_name: string | null; email: string | null; phone: string | null; country: string };
-  };
+  return data as OrderWithRelations;
 }
 
 /**
@@ -115,8 +111,7 @@ export async function acceptOrder(
   userId: string,
   sellerPhone: string
 ): Promise<{ order: OrderRow; parcelId: number; barcode: string }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await loadOrder(orderId) as any;
+  const order = await loadOrder(orderId);
 
   if (order.seller_id !== userId) {
     throw new Error('Only the seller can accept this order');
@@ -175,8 +170,7 @@ export async function acceptOrder(
  * Seller declines an order. Restores listing to active.
  */
 export async function declineOrder(orderId: string, userId: string): Promise<OrderRow> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await loadOrder(orderId) as any;
+  const order = await loadOrder(orderId);
 
   const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller');
 
@@ -204,8 +198,7 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
  * Seller marks order as shipped (dropped at terminal).
  */
 export async function markShipped(orderId: string, userId: string): Promise<OrderRow> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await loadOrder(orderId) as any;
+  const order = await loadOrder(orderId);
   const updatedOrder = await transitionOrder(orderId, 'shipped', userId, 'seller');
 
   sendOrderShippedToBuyer({
@@ -225,8 +218,7 @@ export async function markShipped(orderId: string, userId: string): Promise<Orde
  * Buyer marks order as delivered (picked up from terminal).
  */
 export async function markDelivered(orderId: string, userId: string): Promise<OrderRow> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await loadOrder(orderId) as any;
+  const order = await loadOrder(orderId);
   const updatedOrder = await transitionOrder(orderId, 'delivered', userId, 'buyer');
 
   sendOrderDeliveredToBuyer({
@@ -244,8 +236,7 @@ export async function markDelivered(orderId: string, userId: string): Promise<Or
  * Buyer completes the order (confirms everything is good).
  */
 export async function completeOrder(orderId: string, userId: string): Promise<OrderRow> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await loadOrder(orderId) as any;
+  const order = await loadOrder(orderId);
   const updatedOrder = await transitionOrder(orderId, 'completed', userId, 'buyer');
 
   // TODO: credit seller wallet (Week 5)
@@ -266,8 +257,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
  * Buyer disputes the order.
  */
 export async function disputeOrder(orderId: string, userId: string, reason?: string): Promise<OrderRow> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await loadOrder(orderId) as any;
+  const order = await loadOrder(orderId);
   const updatedOrder = await transitionOrder(orderId, 'disputed', userId, 'buyer');
 
   sendOrderDisputedToSeller({

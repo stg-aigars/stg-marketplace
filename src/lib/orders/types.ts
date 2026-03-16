@@ -68,6 +68,13 @@ export interface OrderWithDetails extends OrderRow {
   seller_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
 }
 
+/** Order loaded with joined listing + profile data for transition logic */
+export interface OrderWithRelations extends OrderRow {
+  listings: { game_name: string; seller_id: string } | null;
+  buyer_profile: { full_name: string | null; email: string | null; phone: string | null; country: string } | null;
+  seller_profile: { full_name: string | null; email: string | null; phone: string | null; country: string } | null;
+}
+
 /** Input params for creating an order after payment is confirmed */
 export interface CreateOrderParams {
   buyerId: string;
