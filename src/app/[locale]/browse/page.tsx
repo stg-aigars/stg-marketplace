@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingCondition } from '@/lib/listings/types';
+
+const PAGE_SIZE = 24;
 
 export const metadata: Metadata = {
   title: 'Browse',
@@ -18,15 +21,28 @@ interface ListingRow {
   games: { thumbnail: string | null };
 }
 
-export default async function BrowsePage() {
+export default async function BrowsePage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+
   const supabase = await createClient();
 
-  const { data: listings } = await supabase
+  const { data: listings, count } = await supabase
     .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, games(thumbnail)')
+    .select('id, game_name, game_year, condition, price_cents, photos, country, games(thumbnail)', { count: 'exact' })
     .eq('status', 'active')
     .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
     .returns<ListingRow[]>();
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const showingFrom = totalCount === 0 ? 0 : offset + 1;
+  const showingTo = Math.min(offset + PAGE_SIZE, totalCount);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -57,21 +73,57 @@ export default async function BrowsePage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {listings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              id={listing.id}
-              gameTitle={listing.game_name}
-              gameYear={listing.game_year}
-              gameThumbnail={listing.games?.thumbnail ?? null}
-              firstPhoto={listing.photos?.[0] ?? null}
-              condition={listing.condition}
-              priceCents={listing.price_cents}
-              sellerCountry={listing.country}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                id={listing.id}
+                gameTitle={listing.game_name}
+                gameYear={listing.game_year}
+                gameThumbnail={listing.games?.thumbnail ?? null}
+                firstPhoto={listing.photos?.[0] ?? null}
+                condition={listing.condition}
+                priceCents={listing.price_cents}
+                sellerCountry={listing.country}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-8">
+              <p className="text-sm text-semantic-text-secondary">
+                Showing {showingFrom}–{showingTo} of {totalCount} listings
+              </p>
+              <div className="flex gap-2">
+                {page > 1 ? (
+                  <Link
+                    href={`/browse?page=${page - 1}`}
+                    className="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 text-sm rounded-lg font-medium bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-subtle shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    Previous
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 text-sm rounded-lg font-medium bg-semantic-bg-elevated text-semantic-text-muted border border-semantic-border-subtle opacity-50 cursor-not-allowed">
+                    Previous
+                  </span>
+                )}
+                {page < totalPages ? (
+                  <Link
+                    href={`/browse?page=${page + 1}`}
+                    className="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 text-sm rounded-lg font-medium bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-subtle shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    Next
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 text-sm rounded-lg font-medium bg-semantic-bg-elevated text-semantic-text-muted border border-semantic-border-subtle opacity-50 cursor-not-allowed">
+                    Next
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
