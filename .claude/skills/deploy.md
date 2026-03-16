@@ -1,58 +1,59 @@
 ---
 name: deploy
-description: Deploy STG marketplace to Vercel with pre-flight checks
+description: Deploy STG marketplace to Hetzner via Coolify with pre-flight checks. Use when the user says "deploy", "ship it", "push to production", or "go live". This skill assumes code is already committed — use /commit first if there are uncommitted changes.
 ---
 
 # Deploy to Production
 
-## Pre-flight Checks
+This skill handles the deploy gate and verification. It assumes code is already committed to main via `/commit`. If there are uncommitted changes, tell the user to run `/commit` first.
 
-1. Run the production build (the real gate):
+Coolify auto-deploys from `main` via GitHub webhook. The deploy flow is: push to main → Coolify detects → Docker build → container swap.
+
+## Step 1: Pre-flight checks
+
+Run in parallel:
+
 ```bash
+git status
 pnpm build
 ```
 
-2. If build fails, fix all errors before proceeding. Common issues:
-   - ESLint errors (unused imports, missing deps)
-   - TypeScript errors
-   - Missing translations
+- If there are uncommitted changes, stop and tell the user to `/commit` first
+- If build fails, fix all errors before proceeding (ESLint, TypeScript, missing deps)
+- Build passing is the deploy gate — nothing ships without it
 
-3. Check git status — ensure no unwanted files:
+## Step 2: Verify remote is up to date
+
 ```bash
-git status
+git log origin/main..HEAD --oneline
 ```
 
-## Deploy Sequence
+If there are local commits not yet pushed, push them:
 
-1. Stage and commit changes:
 ```bash
-# Stage specific files — NEVER use `git add -A` (risks committing .env, credentials, binaries)
-git add <specific-files>
-git commit -m "your commit message"
-git push origin staging
-```
-
-2. Merge staging into main (fast-forward):
-```bash
-git checkout main
-git merge staging --ff-only
 git push origin main
 ```
 
-3. Switch back to staging:
-```bash
-git checkout staging
-```
+## Step 3: Verify deployment
 
-4. Verify deployment at Vercel dashboard or production URL.
+Coolify auto-deploys on push to `main`. After pushing:
+
+1. Tell the user to check the Coolify dashboard for build status
+   - Build takes ~3-5 minutes on the Hetzner VPS
+   - Look for green "Running" status in Coolify
+2. Verify the health endpoint:
+```bash
+curl -s https://secondturn.games/api/health
+```
+3. Tell the user to verify core flows at the production URL
 
 ## Rollback
 
 If something goes wrong after deploy:
+
 ```bash
-# Revert the merge on main
-git checkout main
 git revert HEAD
 git push origin main
-git checkout staging
 ```
+
+This creates a new commit that undoes the last change. Coolify will auto-deploy the revert (requires a fresh build, ~3-5 min).

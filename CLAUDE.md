@@ -13,7 +13,7 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 - Unisend for parcel locker shipping (Baltic cross-border)
 - Resend for transactional emails
 - Tailwind CSS with custom design tokens (Nordic minimalist)
-- Deployed on Vercel
+- Deployed on Hetzner VPS (Helsinki) with Coolify (Docker-based)
 - pnpm (single package, not a monorepo)
 
 ## Commands
