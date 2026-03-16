@@ -122,6 +122,39 @@ function getPrimaryName(names: BGGXMLName[]): string {
   );
 }
 
+/**
+ * Shared helper: parse versions from a BGG XML item.
+ * Used by both fetchGameMetadata() and getGameVersions() to ensure
+ * identical BGGVersion[] shape regardless of which code path writes to the DB.
+ */
+function parseVersionsFromXML(item: BGGXMLItem): BGGVersion[] {
+  if (!item.versions?.item) return [];
+  const versionsData = item.versions.item;
+  const versionsArray: BGGXMLVersion[] = Array.isArray(versionsData) ? versionsData : [versionsData];
+
+  return versionsArray
+    .filter((v) => v['@_id'])
+    .map((version) => {
+      const vLinks = parseLinks(version);
+      const publisherLinks = vLinks.filter((l) => l['@_type'] === 'boardgamepublisher');
+      const languageLinks = vLinks.filter((l) => l['@_type'] === 'language');
+      const vNames = parseNames(version);
+
+      return {
+        id: parseInt(version['@_id']),
+        name: getPrimaryName(vNames) || 'Unknown Version',
+        publisher: publisherLinks[0] ? decodeHTMLEntities(publisherLinks[0]['@_value']) : undefined,
+        publishers: publisherLinks.length > 0 ? publisherLinks.map((l) => decodeHTMLEntities(l['@_value'])) : undefined,
+        language: languageLinks[0] ? decodeHTMLEntities(languageLinks[0]['@_value']) : undefined,
+        languages: languageLinks.length > 0 ? languageLinks.map((l) => decodeHTMLEntities(l['@_value'])) : undefined,
+        yearPublished: version.yearpublished ? parseInt(version.yearpublished['@_value']) : undefined,
+        productCode: version.productcode?.['@_value'],
+        thumbnail: version.thumbnail,
+        image: version.image,
+      };
+    });
+}
+
 // ============================================================================
 // Public API
 // ============================================================================
@@ -139,7 +172,7 @@ export async function fetchGameMetadata(gameId: number): Promise<BGGGameMetadata
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(
-      `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`,
+      `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1&versions=1`,
       { signal: controller.signal, headers: createBGGHeaders() }
     );
     clearTimeout(timeoutId);
@@ -196,9 +229,14 @@ export async function fetchGameMetadata(gameId: number): Promise<BGGGameMetadata
       bayesaverage: bayesaverage ? parseFloat(bayesaverage) : undefined,
       inboundLinks,
       outboundLinks,
+      versions: parseVersionsFromXML(item),
     };
 
-    setCache(cacheKey, metadata);
+    // Exclude versions from in-memory cache to avoid bloating the 200-entry Map
+    // (some games have 50+ versions). Versions are persisted to DB by ensureGameMetadata.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { versions: _cachedVersions, ...metadataWithoutVersions } = metadata;
+    setCache(cacheKey, metadataWithoutVersions);
     return metadata;
   } catch (error: unknown) {
     if (error instanceof BGGError) throw error;
@@ -336,48 +374,30 @@ export async function getGameVersions(gameId: number): Promise<BGGVersion[]> {
   const cached = getCached<BGGVersion[]>(cacheKey);
   if (cached) return cached;
 
-  try {
-    const response = await fetch(
-      `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&versions=1`,
-      { headers: createBGGHeaders() }
-    );
-    if (!response.ok) throw new Error(`BGG API error: ${response.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const xml = await response.text();
-    const parsed = parser.parse(xml) as BGGXMLResponse;
-    const item = parsed.items?.item as BGGXMLItem | undefined;
-    if (!item?.versions) return [];
+  const response = await fetch(
+    `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&versions=1`,
+    { signal: controller.signal, headers: createBGGHeaders() }
+  );
+  clearTimeout(timeoutId);
 
-    const versionsData = item.versions?.item || [];
-    const versionsArray: BGGXMLVersion[] = Array.isArray(versionsData) ? versionsData : [versionsData];
+  if (response.status === 429) throw createRateLimitError(5);
+  if (response.status >= 500) throw createAPIUnavailableError();
+  if (!response.ok) throw createAPIUnavailableError();
 
-    const versions: BGGVersion[] = versionsArray
-      .filter((v) => v['@_id'])
-      .map((version) => {
-        const vLinks = parseLinks(version);
-        const publisherLinks = vLinks.filter((l) => l['@_type'] === 'boardgamepublisher');
-        const languageLinks = vLinks.filter((l) => l['@_type'] === 'language');
-        const names = parseNames(version);
+  const xml = await response.text();
+  const parsed = parser.parse(xml) as BGGXMLResponse;
+  const item = parsed.items?.item as BGGXMLItem | undefined;
+  if (!item) return [];
 
-        return {
-          id: parseInt(version['@_id']),
-          name: getPrimaryName(names) || 'Unknown Version',
-          publisher: publisherLinks[0] ? decodeHTMLEntities(publisherLinks[0]['@_value']) : undefined,
-          publishers: publisherLinks.length > 0 ? publisherLinks.map((l) => decodeHTMLEntities(l['@_value'])) : undefined,
-          language: languageLinks[0] ? decodeHTMLEntities(languageLinks[0]['@_value']) : undefined,
-          languages: languageLinks.length > 0 ? languageLinks.map((l) => decodeHTMLEntities(l['@_value'])) : undefined,
-          yearPublished: version.yearpublished ? parseInt(version.yearpublished['@_value']) : undefined,
-          productCode: version.productcode?.['@_value'],
-          thumbnail: version.thumbnail,
-          image: version.image,
-        };
-      });
+  // Uses shared parseVersionsFromXML to ensure identical BGGVersion[] shape
+  // as fetchGameMetadata — both paths write to games.versions JSONB.
+  const versions = parseVersionsFromXML(item);
 
-    setCache(cacheKey, versions);
-    return versions;
-  } catch {
-    return [];
-  }
+  setCache(cacheKey, versions);
+  return versions;
 }
 
 // ============================================================================
@@ -396,10 +416,10 @@ export async function ensureGameMetadata(
   gameId: number,
   supabase: { from: (table: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<void> {
-  // Check if game already has metadata
+  // Check if game already has metadata + versions
   const { data: game, error: fetchError } = await supabase
     .from('games')
-    .select('player_count, thumbnail')
+    .select('player_count, thumbnail, versions_fetched_at')
     .eq('id', gameId)
     .single();
 
@@ -408,10 +428,31 @@ export async function ensureGameMetadata(
     return;
   }
 
-  // Already has metadata — nothing to do
-  if (game?.player_count && game?.thumbnail) return;
+  const hasMetadata = !!(game?.player_count && game?.thumbnail);
+  const hasVersions = !!game?.versions_fetched_at;
 
-  // Fetch from BGG API
+  // Already has metadata AND versions — nothing to do
+  if (hasMetadata && hasVersions) return;
+
+  // If metadata exists but versions don't (pre-migration game), only fetch versions.
+  // This avoids an unnecessary full BGG re-fetch for the ~170k already-enriched games.
+  if (hasMetadata && !hasVersions) {
+    const versions = await getGameVersions(gameId);
+    const { error: versionError } = await supabase
+      .from('games')
+      .update({
+        versions: versions.length > 0 ? versions : null,
+        versions_fetched_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', gameId);
+    if (versionError) {
+      console.error(`ensureGameMetadata: error updating versions for game ${gameId}:`, versionError);
+    }
+    return;
+  }
+
+  // Fetch full metadata + versions from BGG API (single combined request)
   const metadata = await fetchGameMetadata(gameId);
   if (!metadata) return;
 
@@ -427,6 +468,9 @@ export async function ensureGameMetadata(
       designers: metadata.designers?.length ? metadata.designers : null,
       alternate_names: metadata.alternateNames?.length ? metadata.alternateNames : null,
       bayesaverage: metadata.bayesaverage || null,
+      // Versions cached from the same BGG API call (uses parseVersionsFromXML)
+      versions: metadata.versions?.length ? metadata.versions : null,
+      versions_fetched_at: new Date().toISOString(),
       metadata_fetched_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -435,6 +479,63 @@ export async function ensureGameMetadata(
   if (updateError) {
     console.error(`ensureGameMetadata: error updating game ${gameId}:`, updateError);
   }
+}
+
+const VERSIONS_STALE_DAYS = 90;
+
+/**
+ * Ensures game versions are available, serving from DB cache when fresh.
+ * Falls back to BGG API if versions are missing or stale (>90 days).
+ * Uses parseVersionsFromXML via getGameVersions for identical JSONB shape.
+ *
+ * @param gameId - BGG game ID
+ * @param supabase - Supabase client with service role (for reading/writing games table)
+ */
+export async function ensureGameVersions(
+  gameId: number,
+  supabase: { from: (table: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
+): Promise<BGGVersion[]> {
+  // Check DB for cached versions
+  const { data: game, error: fetchError } = await supabase
+    .from('games')
+    .select('versions, versions_fetched_at')
+    .eq('id', gameId)
+    .single();
+
+  if (fetchError) {
+    console.error(`ensureGameVersions: error fetching game ${gameId}:`, fetchError);
+    // Fall through to BGG API — don't block the user
+  }
+
+  // Return cached versions if fresh (check versions_fetched_at only, not versions,
+  // so games with zero BGG versions don't re-fetch every time)
+  if (game?.versions_fetched_at) {
+    const ageMs = Date.now() - new Date(game.versions_fetched_at).getTime();
+    if (ageMs < VERSIONS_STALE_DAYS * 24 * 60 * 60 * 1000) {
+      return (game.versions as BGGVersion[]) ?? [];
+    }
+  }
+
+  // Fetch from BGG API — propagates BGGError (rate limit, timeout, unavailable)
+  // so the route can return appropriate status codes. Does NOT write
+  // versions_fetched_at on failure, avoiding poisoned cache entries.
+  const versions = await getGameVersions(gameId);
+
+  // Persist to DB (uses parseVersionsFromXML via getGameVersions for identical JSONB shape)
+  const { error: updateError } = await supabase
+    .from('games')
+    .update({
+      versions: versions.length > 0 ? versions : null,
+      versions_fetched_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', gameId);
+
+  if (updateError) {
+    console.error(`ensureGameVersions: error persisting versions for game ${gameId}:`, updateError);
+  }
+
+  return versions;
 }
 
 // ============================================================================

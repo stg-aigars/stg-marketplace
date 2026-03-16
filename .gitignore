@@ -34,6 +34,7 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+.fuse_hidden*
 
 # Supabase
 supabase/.temp/

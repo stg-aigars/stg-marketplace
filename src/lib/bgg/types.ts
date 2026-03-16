@@ -55,6 +55,7 @@ export interface BGGGameMetadata {
   bayesaverage?: number;
   inboundLinks: BGGInboundLink[];
   outboundLinks: BGGInboundLink[];
+  versions?: BGGVersion[]; // Parsed from BGG API when &versions=1 is included
 }
 
 // Manual version input — used when BGG API is unavailable or version not found
