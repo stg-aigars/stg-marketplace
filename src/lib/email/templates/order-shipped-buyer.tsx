@@ -73,7 +73,7 @@ export function OrderShippedBuyer({
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={styles.ctaFrost} href={orderUrl}>
+        <Button style={s.ctaFrost} href={orderUrl}>
           View Order
         </Button>
       </div>
@@ -87,16 +87,6 @@ export function OrderShippedBuyer({
 
 // Template-specific styles only
 const styles = {
-  ctaFrost: {
-    backgroundColor: theme.frost,
-    borderRadius: '8px',
-    color: '#FEFEFE',
-    display: 'inline-block' as const,
-    fontSize: '15px',
-    fontWeight: '600' as const,
-    padding: '12px 32px',
-    textDecoration: 'none',
-  },
   link: {
     color: theme.frostDark,
     textDecoration: 'underline' as const,

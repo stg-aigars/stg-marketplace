@@ -191,7 +191,6 @@ export async function GET(request: Request) {
         buyerName: buyerProfile.full_name ?? 'Buyer',
         buyerEmail: buyerProfile.email,
         sellerName: sellerProfile.full_name ?? 'Seller',
-        totalCents: order.total_amount_cents,
       }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
     })().catch((err) => console.error('[Email] Background email failed:', err));
 

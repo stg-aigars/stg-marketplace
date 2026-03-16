@@ -57,7 +57,6 @@ export async function sendOrderConfirmationToBuyer(params: {
   sellerName: string;
   priceCents: number;
   shippingCents: number;
-  totalCents: number;
   terminalName: string;
 }): Promise<void> {
   await sendEmail({
@@ -71,7 +70,6 @@ export async function sendOrderConfirmationToBuyer(params: {
       sellerName: params.sellerName,
       priceCents: params.priceCents,
       shippingCents: params.shippingCents,
-      totalCents: params.totalCents,
       terminalName: params.terminalName,
       appUrl: env.app.url,
     }),

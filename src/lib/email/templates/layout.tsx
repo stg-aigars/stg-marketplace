@@ -248,6 +248,26 @@ const templateStyles = {
     margin: '0 0 24px',
     whiteSpace: 'pre-line' as const,
   },
+  ctaFrost: {
+    backgroundColor: theme.frost,
+    borderRadius: '8px',
+    color: theme.bgCard,
+    display: 'inline-block' as const,
+    fontSize: '15px',
+    fontWeight: '600' as const,
+    padding: '12px 32px',
+    textDecoration: 'none',
+  },
+  ctaOrange: {
+    backgroundColor: theme.orange,
+    borderRadius: '8px',
+    color: theme.bgCard,
+    display: 'inline-block' as const,
+    fontSize: '15px',
+    fontWeight: '600' as const,
+    padding: '12px 32px',
+    textDecoration: 'none',
+  },
 } as const;
 
 // Export theme + shared styles for use in individual templates
