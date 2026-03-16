@@ -161,16 +161,16 @@ export default async function CheckoutPage({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-semantic-text-muted">
-        <Link href="/browse" className="sm:hover:text-semantic-text-secondary transition-colors">
+      <nav className="mb-4 text-sm text-semantic-text-muted flex items-center min-w-0">
+        <Link href="/browse" className="shrink-0 sm:hover:text-semantic-text-secondary transition-colors">
           Browse
         </Link>
-        <span className="mx-2">/</span>
-        <Link href={`/listings/${listing.id}`} className="sm:hover:text-semantic-text-secondary transition-colors">
+        <span className="mx-2 shrink-0">/</span>
+        <Link href={`/listings/${listing.id}`} className="truncate sm:hover:text-semantic-text-secondary transition-colors">
           {listing.game_name}
         </Link>
-        <span className="mx-2">/</span>
-        <span className="text-semantic-text-secondary">Checkout</span>
+        <span className="mx-2 shrink-0">/</span>
+        <span className="shrink-0 text-semantic-text-secondary">Checkout</span>
       </nav>
 
       <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
