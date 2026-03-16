@@ -15,3 +15,6 @@ export type { SelectProps, SelectOption } from './select';
 
 export { Modal } from './modal';
 export type { ModalProps } from './modal';
+
+export { Skeleton } from './skeleton';
+export type { SkeletonProps } from './skeleton';
