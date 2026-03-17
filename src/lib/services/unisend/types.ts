@@ -118,10 +118,6 @@ export interface BarcodeInfo {
   trackingUrl?: string;
 }
 
-export type LabelLayout = 'LAYOUT_10x15' | 'LAYOUT_A4' | 'LAYOUT_MAX';
-
-export type LabelOrientation = 'LANDSCAPE' | 'PORTRAIT';
-
 // ============================================
 // Tracking
 // ============================================

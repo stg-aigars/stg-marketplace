@@ -17,8 +17,6 @@ import {
   type ShippingInitiateResponse,
   type BarcodeInfo,
   type TrackingEvent,
-  type LabelLayout,
-  type LabelOrientation,
   type ValidationErrorItem,
   UnisendValidationError,
   UnisendApiError,
@@ -270,7 +268,7 @@ export async function createParcel(data: CreateParcelRequest): Promise<ParcelRes
   });
 }
 
-/** Initiate shipping (finalize and generate label) */
+/** Initiate shipping (finalize parcels and assign barcodes) */
 export async function initiateShipping(
   data: ShippingInitiateRequest
 ): Promise<ShippingInitiateResponse> {
@@ -313,31 +311,6 @@ export async function getBarcodes(parcelIds: number[]): Promise<BarcodeInfo[]> {
       trackingUrl: undefined,
     }));
   }
-}
-
-/** Generate shipping label PDF */
-export async function generateLabel(
-  parcelIds: number[],
-  layout: LabelLayout = 'LAYOUT_10x15',
-  orientation: LabelOrientation = 'LANDSCAPE'
-): Promise<Blob> {
-  const params = new URLSearchParams({ layout, labelOrientation: orientation });
-  parcelIds.forEach((id) => params.append('parcelIds', String(id)));
-
-  const accessToken = await getAccessToken();
-  const { apiUrl } = env.unisend;
-
-  const response = await fetch(`${apiUrl}/api/v2/label?${params}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new UnisendApiError('Failed to generate label', response.status);
-  }
-
-  return response.blob();
 }
 
 /** Get tracking events for a barcode */
@@ -410,7 +383,6 @@ const unisendClient = {
   createParcel,
   initiateShipping,
   getBarcodes,
-  generateLabel,
   getTrackingEvents,
   createAndShipParcel,
   clearTerminalCache,
