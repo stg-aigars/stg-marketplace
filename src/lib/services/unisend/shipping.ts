@@ -1,9 +1,6 @@
 /**
  * Shipping orchestration for T2T (Terminal-to-Terminal) orders.
  * Handles parcel creation, order updates, and seller notification.
- *
- * Replaces the old label-service.ts + prepare-and-generate-label.ts
- * with T2T-correct terminology and cleaner separation from order transitions.
  */
 
 import { createAndShipParcel } from './client';
@@ -64,10 +61,14 @@ export async function updateOrderShippingError(
   error: string
 ): Promise<void> {
   const supabase = createServiceClient();
-  await supabase
+  const { error: updateError } = await supabase
     .from('orders')
     .update({ shipping_error: error })
     .eq('id', orderId);
+
+  if (updateError) {
+    console.error(`[Shipping ${orderId}] Failed to store shipping error:`, updateError);
+  }
 }
 
 /**
