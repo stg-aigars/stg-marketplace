@@ -9,7 +9,7 @@
 import { createAndShipParcel } from './client';
 import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE, PHONE_FORMATS } from './types';
 import type { ParcelSize, TerminalCountry } from './types';
-import { formatLabelError } from './format-label-error';
+import { formatShippingError } from './format-shipping-error';
 import { createServiceClient } from '@/lib/supabase';
 import {
   detectPhoneCountry,
@@ -199,7 +199,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
   } catch (error) {
     console.error(`${logPrefix} Parcel creation failed:`, error);
 
-    const errorMessage = formatLabelError(error);
+    const errorMessage = formatShippingError(error);
     if (error instanceof UnisendValidationError) {
       console.error(`${logPrefix} Validation errors:`, error.validationErrors);
     }
