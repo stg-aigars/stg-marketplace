@@ -52,7 +52,7 @@ export function OrderCompletedSeller({
       </div>
 
       <Text style={s.body}>
-        Your earnings of {formatCentsToCurrency(earningsCents)} will be credited to your wallet.
+        Your earnings of {formatCentsToCurrency(earningsCents)} will be credited to your wallet once payouts are enabled.
       </Text>
 
       <div style={s.ctaSection}>

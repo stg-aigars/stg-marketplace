@@ -69,7 +69,7 @@ export function NewOrderSeller({
 
       <Text style={styles.noteSecondary}>
         Please accept or decline within 48 hours. The buyer has already paid —
-        if you accept, you will receive a shipping label and drop-off instructions.
+        if you accept, you will receive a parcel ID and drop-off instructions.
       </Text>
 
       <Text style={s.body}>

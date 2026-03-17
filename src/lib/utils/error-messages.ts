@@ -17,7 +17,6 @@ const ERROR_PATTERNS: [RegExp, string][] = [
   [/order status has changed/i, 'This order was updated by someone else. Please refresh the page.'],
   [/not authenticated/i, 'Please sign in to continue.'],
   [/listing is no longer available/i, 'This listing is no longer available.'],
-  [/shipping label/i, 'Could not create shipping label. Please check the details and try again.'],
 ];
 
 /**
