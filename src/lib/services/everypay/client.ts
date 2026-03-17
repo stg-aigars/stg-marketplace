@@ -104,7 +104,15 @@ async function request<T>(
       `EveryPay API unreachable (${method} ${url.replace(/\?.*$/, '')}): ${cause}`
     );
   }
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new EveryPayError(
+      `EveryPay API returned non-JSON response (${res.status})`,
+      res.status
+    );
+  }
 
   if (data?.error) {
     throw new EveryPayError(
