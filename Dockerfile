@@ -1,3 +1,5 @@
+# Production Dockerfile for STG marketplace (Hetzner + Coolify)
+
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
 RUN corepack enable pnpm
