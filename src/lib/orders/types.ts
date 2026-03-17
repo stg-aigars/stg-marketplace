@@ -43,6 +43,7 @@ export interface OrderRow {
   barcode: string | null;
   tracking_url: string | null;
   shipping_method: string | null;
+  shipping_error: string | null;
   buyer_phone: string | null;
   seller_phone: string | null;
   accepted_at: string | null;
