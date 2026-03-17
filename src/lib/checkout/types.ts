@@ -4,6 +4,7 @@
 
 export interface CheckoutSession {
   id: string;
+  order_number: string;
   listing_id: string;
   buyer_id: string;
   terminal_id: string;

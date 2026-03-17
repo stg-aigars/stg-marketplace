@@ -38,7 +38,7 @@ export function generateOrderNumber(): string {
 export async function createOrder(params: CreateOrderParams): Promise<OrderRow> {
   const serviceClient = createServiceClient();
 
-  const orderNumber = generateOrderNumber();
+  const orderNumber = params.orderNumber ?? generateOrderNumber();
   const pricing = calculateOrderPricing(params.itemsTotalCents, params.shippingCostCents);
 
   // Insert the order
