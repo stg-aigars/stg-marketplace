@@ -20,13 +20,14 @@ export async function POST(
       );
     }
 
-    const { order, parcelId, barcode } = await acceptOrder(params.id, user.id, sellerPhone);
+    const { order, parcelId, barcode, shippingError } = await acceptOrder(params.id, user.id, sellerPhone);
 
     return NextResponse.json({
       success: true,
       order: { id: order.id, status: order.status },
       parcelId,
       barcode,
+      shippingError,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to accept order';
