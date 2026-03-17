@@ -10,6 +10,7 @@ import { sendEmail } from './service';
 import { NewOrderSeller } from './templates/new-order-seller';
 import { OrderConfirmationBuyer } from './templates/order-confirmation-buyer';
 import { OrderShippedBuyer } from './templates/order-shipped-buyer';
+import { ShippingInstructionsSeller } from './templates/shipping-instructions-seller';
 import { env } from '@/lib/env';
 
 // ─── Week 1: Real implementations ───────────────────────────────────────────
@@ -105,8 +106,10 @@ export async function sendOrderShippedToBuyer(params: {
 
 // ─── Stubs: not yet implemented ─────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function sendShippingLabelToSeller(_params: {
+/**
+ * Shipping instructions → seller (after parcel is created for accepted order)
+ */
+export async function sendShippingInstructionsToSeller(params: {
   sellerName: string;
   sellerEmail: string;
   orderNumber: string;
@@ -118,7 +121,22 @@ export async function sendShippingLabelToSeller(_params: {
   barcode?: string;
   trackingUrl?: string;
 }): Promise<void> {
-  // No-op stub
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Shipping ready: Order ${params.orderNumber} — drop off at any Unisend terminal`,
+    react: React.createElement(ShippingInstructionsSeller, {
+      sellerName: params.sellerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      buyerName: params.buyerName,
+      destinationTerminalName: params.destinationTerminalName,
+      destinationTerminalAddress: params.destinationTerminalAddress,
+      parcelId: params.parcelId,
+      barcode: params.barcode,
+      trackingUrl: params.trackingUrl,
+      appUrl: env.app.url,
+    }),
+  });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
