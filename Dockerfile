@@ -28,7 +28,6 @@ RUN adduser --system --uid 1001 nextjs
 # Install sharp for Next.js image optimization
 RUN npm install --os=linux --cpu=x64 sharp
 
-COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
