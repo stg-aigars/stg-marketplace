@@ -18,6 +18,7 @@ interface CheckoutFormProps {
   buyerCountry: string;
   buyerPhone: string;
   terminals: TerminalOption[];
+  terminalsFetchFailed?: boolean;
 }
 
 export function CheckoutForm({
@@ -25,6 +26,7 @@ export function CheckoutForm({
   buyerCountry,
   buyerPhone: initialPhone,
   terminals,
+  terminalsFetchFailed,
 }: CheckoutFormProps) {
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminalId, setSelectedTerminalId] = useState('');
@@ -111,6 +113,11 @@ export function CheckoutForm({
         <label className="block text-sm font-medium text-semantic-text-secondary mb-1.5">
           Pickup terminal
         </label>
+        {terminalsFetchFailed && (
+          <div className="mb-2 p-4 rounded-lg bg-aurora-yellow/10 border border-aurora-yellow/30 text-sm text-semantic-text-secondary">
+            Pickup terminals could not be loaded. Please try refreshing the page. If the problem persists, try again in a few minutes.
+          </div>
+        )}
         <input
           type="text"
           value={terminalSearch}
@@ -163,7 +170,7 @@ export function CheckoutForm({
         size="lg"
         loading={loading}
         onClick={handleCheckout}
-        disabled={!canSubmit}
+        disabled={!canSubmit || terminalsFetchFailed}
         className="w-full"
       >
         Pay now

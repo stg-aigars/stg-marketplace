@@ -126,6 +126,7 @@ export default async function CheckoutPage({
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
 
   // Fetch terminals for buyer's country
+  let terminalsFetchFailed = false;
   let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
   try {
     const rawTerminals = await getTerminals(buyerCountry);
@@ -134,6 +135,7 @@ export default async function CheckoutPage({
       .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, countryCode: t.countryCode }));
   } catch (error) {
     console.error('[Checkout] Failed to fetch terminals:', error);
+    terminalsFetchFailed = true;
   }
 
   const badgeKey = conditionToBadgeKey[listing.condition];
@@ -293,6 +295,7 @@ export default async function CheckoutPage({
                 buyerCountry={buyerCountry}
                 buyerPhone={profile?.phone ?? ''}
                 terminals={terminals}
+                terminalsFetchFailed={terminalsFetchFailed}
               />
             </div>
           </div>
