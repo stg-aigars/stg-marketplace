@@ -18,7 +18,7 @@ import {
   getPhonePrefix,
   type PhoneCountryCode,
 } from '@/lib/phone-utils';
-import { sendShippingLabelToSeller } from '@/lib/email';
+import { sendShippingInstructionsToSeller } from '@/lib/email';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -180,7 +180,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
     }
 
     // 7. Send shipping instructions email to seller (non-blocking)
-    sendShippingLabelToSeller({
+    sendShippingInstructionsToSeller({
       sellerName: seller.fullName,
       sellerEmail: seller.email,
       orderNumber,
