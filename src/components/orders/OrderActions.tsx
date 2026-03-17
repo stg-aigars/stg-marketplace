@@ -142,16 +142,34 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
     }
 
     if (status === 'accepted') {
+      const hasShippingError = !!order.shipping_error && !order.unisend_parcel_id;
+
       return (
         <div className="space-y-3">
-          <Button
-            variant="primary"
-            loading={loading}
-            onClick={() => callAction('ship')}
-            className="w-full"
-          >
-            Mark as shipped
-          </Button>
+          {hasShippingError ? (
+            <>
+              <Button
+                variant="primary"
+                loading={loading}
+                onClick={() => callAction('retry-shipping')}
+                className="w-full"
+              >
+                Retry shipping setup
+              </Button>
+              <p className="text-xs text-semantic-text-muted text-center">
+                This will attempt to create the Unisend shipping parcel again
+              </p>
+            </>
+          ) : (
+            <Button
+              variant="primary"
+              loading={loading}
+              onClick={() => callAction('ship')}
+              className="w-full"
+            >
+              Mark as shipped
+            </Button>
+          )}
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
       );
