@@ -1,8 +1,7 @@
 /**
  * Email functions
  *
- * Real implementations for priority emails (Week 1).
- * Remaining functions are no-op stubs until their templates are built.
+ * All transactional email implementations for the order lifecycle.
  */
 
 import React from 'react';
@@ -11,9 +10,12 @@ import { NewOrderSeller } from './templates/new-order-seller';
 import { OrderConfirmationBuyer } from './templates/order-confirmation-buyer';
 import { OrderShippedBuyer } from './templates/order-shipped-buyer';
 import { ShippingInstructionsSeller } from './templates/shipping-instructions-seller';
+import { OrderAcceptedBuyer } from './templates/order-accepted-buyer';
+import { OrderDeliveredBuyer } from './templates/order-delivered-buyer';
+import { OrderCompletedSeller } from './templates/order-completed-seller';
+import { OrderDeclinedBuyer } from './templates/order-declined-buyer';
+import { OrderDisputedSeller } from './templates/order-disputed-seller';
 import { env } from '@/lib/env';
-
-// ─── Week 1: Real implementations ───────────────────────────────────────────
 
 /**
  * New order notification → seller (when order is created after payment)
@@ -137,10 +139,10 @@ export async function sendShippingInstructionsToSeller(params: {
   });
 }
 
-// ─── Stubs: not yet implemented ─────────────────────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function sendOrderAcceptedToBuyer(_params: {
+/**
+ * Order accepted notification → buyer
+ */
+export async function sendOrderAcceptedToBuyer(params: {
   buyerName: string;
   buyerEmail: string;
   orderNumber: string;
@@ -148,50 +150,116 @@ export async function sendOrderAcceptedToBuyer(_params: {
   gameName: string;
   sellerName: string;
 }): Promise<void> {
-  // No-op stub
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Order accepted: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderAcceptedBuyer, {
+      buyerName: params.buyerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      sellerName: params.sellerName,
+      appUrl: env.app.url,
+    }),
+  });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function sendOrderDeliveredToBuyer(_params: {
+/**
+ * Order delivered notification → buyer (prompts confirmation)
+ */
+export async function sendOrderDeliveredToBuyer(params: {
   buyerName: string;
   buyerEmail: string;
   orderNumber: string;
   orderId: string;
   gameName: string;
 }): Promise<void> {
-  // No-op stub
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Picked up: ${params.gameName} — please confirm`,
+    react: React.createElement(OrderDeliveredBuyer, {
+      buyerName: params.buyerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      appUrl: env.app.url,
+    }),
+  });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function sendOrderCompletedToSeller(_params: {
+/**
+ * Order completed notification → seller (earnings credited)
+ */
+export async function sendOrderCompletedToSeller(params: {
   sellerName: string;
   sellerEmail: string;
   orderNumber: string;
   orderId: string;
   gameName: string;
+  buyerName: string;
+  earningsCents: number;
 }): Promise<void> {
-  // No-op stub
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Order complete: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderCompletedSeller, {
+      sellerName: params.sellerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      buyerName: params.buyerName,
+      earningsCents: params.earningsCents,
+      appUrl: env.app.url,
+    }),
+  });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function sendOrderDeclinedToBuyer(_params: {
+/**
+ * Order declined notification → buyer (refund info)
+ */
+export async function sendOrderDeclinedToBuyer(params: {
   buyerName: string;
   buyerEmail: string;
   orderNumber: string;
   orderId: string;
   gameName: string;
 }): Promise<void> {
-  // No-op stub
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Order update: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderDeclinedBuyer, {
+      buyerName: params.buyerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      appUrl: env.app.url,
+    }),
+  });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function sendOrderDisputedToSeller(_params: {
+/**
+ * Order disputed notification → seller (issue reported)
+ */
+export async function sendOrderDisputedToSeller(params: {
   sellerName: string;
   sellerEmail: string;
   orderNumber: string;
   orderId: string;
   gameName: string;
+  buyerName: string;
   reason?: string;
 }): Promise<void> {
-  // No-op stub
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Issue reported: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderDisputedSeller, {
+      sellerName: params.sellerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      buyerName: params.buyerName,
+      reason: params.reason,
+      appUrl: env.app.url,
+    }),
+  });
 }
