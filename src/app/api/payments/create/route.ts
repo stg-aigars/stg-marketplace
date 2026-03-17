@@ -110,7 +110,7 @@ export async function POST(request: Request) {
   // 8. Build callback URL
   const callbackUrl = `${env.app.url}/api/payments/callback`;
 
-  // 9. Create EveryPay payment with session UUID as order reference
+  // 9. Create EveryPay payment with order number as order reference
   try {
     const paymentResponse = await createPayment(
       pricing.totalChargeCents,
