@@ -129,7 +129,7 @@ export async function acceptOrder(
     seller_phone: sellerPhone,
   });
 
-  // 2. Attempt shipping (non-blocking for the accept flow)
+  // 2. Attempt shipping — failure won't roll back the accept
   const shippingResult = await createOrderShipping({
     orderId,
     orderNumber: order.order_number,

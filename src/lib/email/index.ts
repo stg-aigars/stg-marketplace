@@ -104,8 +104,6 @@ export async function sendOrderShippedToBuyer(params: {
   });
 }
 
-// ─── Stubs: not yet implemented ─────────────────────────────────────────────
-
 /**
  * Shipping instructions → seller (after parcel is created for accepted order)
  */
@@ -138,6 +136,8 @@ export async function sendShippingInstructionsToSeller(params: {
     }),
   });
 }
+
+// ─── Stubs: not yet implemented ─────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function sendOrderAcceptedToBuyer(_params: {
