@@ -25,20 +25,20 @@ export type EveryPayPaymentState =
   | 'chargebacked';
 
 /** States that indicate a successful payment (funds secured) */
-export const SUCCESSFUL_STATES = new Set<EveryPayPaymentState>([
+export const SUCCESSFUL_STATES: ReadonlySet<EveryPayPaymentState> = new Set<EveryPayPaymentState>([
   'authorised',
   'settled',
 ]);
 
 /** States that indicate a failed/abandoned payment */
-export const FAILED_STATES = new Set<EveryPayPaymentState>([
+export const FAILED_STATES: ReadonlySet<EveryPayPaymentState> = new Set<EveryPayPaymentState>([
   'failed',
   'abandoned',
   'voided',
 ]);
 
 /** States that indicate payment is still in progress */
-export const PENDING_STATES = new Set<EveryPayPaymentState>([
+export const PENDING_STATES: ReadonlySet<EveryPayPaymentState> = new Set<EveryPayPaymentState>([
   'initial',
   'sent_for_processing',
   'waiting_for_3ds_response',
