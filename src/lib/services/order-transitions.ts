@@ -4,10 +4,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase';
-import { createAndShipParcel } from '@/lib/services/unisend/client';
-import { UNISEND_DEFAULT_PARCEL_SIZE } from '@/lib/services/unisend/types';
-import type { TerminalCountry } from '@/lib/services/unisend/types';
-import type { CreateParcelRequest } from '@/lib/services/unisend/types';
+import { createOrderShipping } from '@/lib/services/unisend/shipping';
 import { VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_TIMESTAMP_COLUMN } from '@/lib/orders/constants';
 import type { OrderStatus, OrderRow, OrderWithRelations } from '@/lib/orders/types';
 import {
@@ -104,13 +101,20 @@ async function transitionOrder(
 }
 
 /**
- * Seller accepts an order. Creates Unisend parcel and stores shipping data.
+ * Seller accepts an order. Transitions to 'accepted' first, then attempts
+ * Unisend parcel creation. If shipping fails, the order remains accepted
+ * and the seller can retry via the retry-shipping route.
  */
 export async function acceptOrder(
   orderId: string,
   userId: string,
   sellerPhone: string
-): Promise<{ order: OrderRow; parcelId: number; barcode: string }> {
+): Promise<{
+  order: OrderRow;
+  parcelId: number | null;
+  barcode: string | null;
+  shippingError?: string;
+}> {
   const order = await loadOrder(orderId);
 
   if (order.seller_id !== userId) {
@@ -120,51 +124,39 @@ export async function acceptOrder(
     throw new Error(`Cannot accept order in ${order.status} status`);
   }
 
-  // Create Unisend parcel
-  const parcelRequest: CreateParcelRequest = {
-    plan: { code: 'TERMINAL' },
-    parcel: {
-      type: 'T2T',
-      size: UNISEND_DEFAULT_PARCEL_SIZE,
-      weight: 2,
-    },
-    sender: {
-      name: order.seller_profile?.full_name ?? 'Seller',
-      address: { countryCode: (order.seller_profile?.country ?? order.seller_country) as TerminalCountry },
-      contacts: { phone: sellerPhone },
-    },
-    receiver: {
-      name: order.buyer_profile?.full_name ?? 'Buyer',
-      address: {
-        countryCode: order.terminal_country as TerminalCountry,
-        terminalId: order.terminal_id!,
-      },
-      contacts: { phone: order.buyer_phone! },
-    },
-  };
-
-  let parcelId: number;
-  let barcode: string;
-  let trackingUrl: string | undefined;
-  try {
-    const result = await createAndShipParcel(parcelRequest);
-    parcelId = result.parcelId;
-    barcode = result.barcode;
-    trackingUrl = result.trackingUrl;
-  } catch (err) {
-    console.error(`[Order] Unisend shipping label failed for order ${orderId}:`, err);
-    throw new Error('Could not create shipping label. Please check the details and try again.');
-  }
-
-  // Transition with shipping data
+  // 1. Transition to accepted FIRST — seller intent shouldn't be blocked by Unisend
   const updatedOrder = await transitionOrder(orderId, 'accepted', userId, 'seller', {
-    unisend_parcel_id: parcelId,
-    barcode,
-    tracking_url: trackingUrl ?? `https://www.post.lt/siuntu-sekimas/?parcels=${encodeURIComponent(barcode)}`,
     seller_phone: sellerPhone,
   });
 
-  // Email stub (non-blocking)
+  // 2. Attempt shipping (non-blocking for the accept flow)
+  const shippingResult = await createOrderShipping({
+    orderId,
+    orderNumber: order.order_number,
+    seller: {
+      fullName: order.seller_profile?.full_name ?? 'Seller',
+      phone: sellerPhone,
+      email: order.seller_profile?.email ?? '',
+      country: order.seller_profile?.country ?? order.seller_country,
+    },
+    buyer: {
+      fullName: order.buyer_profile?.full_name ?? 'Buyer',
+      email: order.buyer_profile?.email ?? '',
+    },
+    receiver: {
+      name: order.buyer_profile?.full_name ?? 'Buyer',
+      phone: order.buyer_phone ?? '',
+    },
+    destination: {
+      country: order.terminal_country,
+      terminalId: order.terminal_id ?? '',
+      terminalName: order.terminal_name ?? '',
+      terminalAddress: '',
+    },
+    parcelSize: null,
+  });
+
+  // 3. Email buyer about acceptance (non-blocking)
   sendOrderAcceptedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
@@ -174,7 +166,20 @@ export async function acceptOrder(
     sellerName: order.seller_profile?.full_name ?? 'Seller',
   }).catch(() => {});
 
-  return { order: updatedOrder, parcelId, barcode };
+  if (shippingResult.success) {
+    return {
+      order: updatedOrder,
+      parcelId: shippingResult.parcelId,
+      barcode: shippingResult.barcode,
+    };
+  }
+
+  return {
+    order: updatedOrder,
+    parcelId: null,
+    barcode: null,
+    shippingError: shippingResult.error,
+  };
 }
 
 /**
