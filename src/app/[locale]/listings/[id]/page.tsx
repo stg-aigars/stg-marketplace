@@ -148,6 +148,27 @@ export default async function ListingDetailPage({
         <span className="text-semantic-text-secondary truncate">{listing.game_name}</span>
       </nav>
 
+      {/* Owner status banner for non-active listings */}
+      {isOwner && listing.status !== 'active' && (
+        <div className="mb-6 p-4 rounded-lg bg-semantic-bg-subtle border border-semantic-border-subtle">
+          <p className="text-sm text-semantic-text-secondary">
+            {listing.status === 'reserved'
+              ? 'This listing is reserved — a buyer has purchased it and the order is being processed.'
+              : listing.status === 'sold'
+              ? 'This listing has been sold.'
+              : 'This listing has been cancelled.'}
+          </p>
+          {(listing.status === 'reserved' || listing.status === 'sold') && (
+            <Link
+              href="/account/orders"
+              className="text-sm text-semantic-primary font-medium mt-2 inline-block"
+            >
+              View your orders
+            </Link>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left: Photos */}
         <div>
