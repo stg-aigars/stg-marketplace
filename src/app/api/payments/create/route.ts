@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { createPayment } from '@/lib/services/everypay/client';
 import { calculateBuyerPricing } from '@/lib/services/pricing';
+import { generateOrderNumber } from '@/lib/services/orders';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
@@ -83,9 +84,12 @@ export async function POST(request: Request) {
 
   // 7. Create checkout session
   const serviceClient = createServiceClient();
+  const orderNumber = generateOrderNumber();
+
   const { data: session, error: sessionError } = await serviceClient
     .from('checkout_sessions')
     .insert({
+      order_number: orderNumber,
       listing_id: listingId,
       buyer_id: user.id,
       terminal_id: terminalId,
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
       amount_cents: pricing.totalChargeCents,
       status: 'pending',
     })
-    .select('id')
+    .select('id, order_number')
     .single();
 
   if (sessionError || !session) {
@@ -110,7 +114,7 @@ export async function POST(request: Request) {
   try {
     const paymentResponse = await createPayment(
       pricing.totalChargeCents,
-      session.id,
+      session.order_number,
       callbackUrl,
       {
         email: user.email,

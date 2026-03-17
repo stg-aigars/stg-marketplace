@@ -90,4 +90,5 @@ export interface CreateOrderParams {
   terminalName: string;
   terminalCountry: string;
   buyerPhone: string;
+  orderNumber?: string;
 }

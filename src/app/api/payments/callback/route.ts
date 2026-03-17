@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   const { data: session, error: sessionError } = await serviceClient
     .from('checkout_sessions')
     .select('*')
-    .eq('id', orderReference)
+    .eq('order_number', orderReference)
     .single<CheckoutSession>();
 
   if (sessionError || !session) {
@@ -60,10 +60,7 @@ export async function GET(request: Request) {
     const { data: orderForSession } = await serviceClient
       .from('orders')
       .select('id')
-      .eq('listing_id', session.listing_id)
-      .eq('buyer_id', session.buyer_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('order_number', session.order_number)
       .single();
 
     if (orderForSession) {
@@ -143,6 +140,7 @@ export async function GET(request: Request) {
       terminalName: session.terminal_name,
       terminalCountry: session.terminal_country,
       buyerPhone: session.buyer_phone,
+      orderNumber: session.order_number,
     });
 
     // Mark checkout session as completed
