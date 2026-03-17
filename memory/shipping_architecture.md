@@ -11,11 +11,10 @@ Unisend Terminal-to-Terminal (T2T) shipping for Baltic states (LT, LV, EE). Parc
 ## Implementation (src/lib/services/unisend/)
 
 - `types.ts` — All types, SHIPPING_PRICES matrix, getShippingPrice(), PHONE_FORMATS, parcel sizes, error classes, UI helpers
-- `client.ts` — OAuth token management (in-memory + cache fallback), all API methods
-- `label-service.ts` — generateShippingLabel(), updateOrderWithShippingData(), getTrackingUrl()
+- `client.ts` — OAuth token management (in-memory + cache fallback), all API methods (low-level)
+- `shipping.ts` — Shipping orchestration: createOrderShipping(), retryOrderShipping(), getTrackingUrl()
+- `format-shipping-error.ts` — User-friendly error formatting from UnisendValidationError
 - `tracking-service.ts` — syncTrackingForOrder(), syncAllActiveOrders() (cron)
-- `prepare-and-generate-label.ts` — Shared workflow for accept/retry-label routes (phone normalization, validation, label gen, email)
-- `format-label-error.ts` — User-friendly error formatting from UnisendValidationError
 
 ## Shipping Price Matrix (EUR)
 
@@ -50,15 +49,15 @@ EE       3.50   3.20   2.80
 - M: 38x39x64 cm, 30 kg (default for board games)
 - L: 35x61x74 cm, 30 kg
 
-## Label Generation Flow
+## Shipping Creation Flow
 
-1. Seller accepts order → prepareAndGenerateLabel()
-2. Normalize buyer/seller phones via phone-utils
-3. Validate phones against destination country format (PHONE_FORMATS)
-4. Create parcel + initiate shipping via Unisend API
-5. Store parcelId, barcode, trackingUrl on order
-6. Label URL: `unisend://terminal/{parcelId}` (seller prints at terminal)
-7. Send email to seller (stub for now)
+1. Seller accepts order → acceptOrder() transitions to 'accepted'
+2. createOrderShipping() called (non-blocking — failure doesn't roll back accept)
+3. Normalize buyer/seller phones via phone-utils
+4. Validate phones against destination country format (PHONE_FORMATS)
+5. Create parcel + initiate shipping via Unisend API
+6. On success: store parcelId, barcode, trackingUrl on order; send email to seller
+7. On failure: store shipping_error on order; seller can retry via retry-shipping route
 
 ## Tracking Sync (cron)
 
@@ -71,7 +70,7 @@ EE       3.50   3.20   2.80
 
 - `src/lib/cache.ts` — in-memory cache with TTL (no Redis)
 - `src/lib/phone-utils.ts` — Baltic phone detection, composition, validation
-- `src/lib/email/stubs.ts` — no-op email functions until email service built
+- `src/lib/email/` — sendShippingInstructionsToSeller() with React template
 
 ## Phone Formats
 
