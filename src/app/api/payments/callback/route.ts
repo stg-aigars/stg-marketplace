@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { getPaymentStatus, SUCCESSFUL_STATES } from '@/lib/services/everypay';
+import { refundPayment } from '@/lib/services/everypay/client';
 import { classifyPaymentError } from '@/lib/services/everypay/classify-error';
 import { createServiceClient } from '@/lib/supabase';
 import { createOrder } from '@/lib/services/orders';
@@ -20,6 +21,24 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { env } from '@/lib/env';
 import type { CheckoutSession } from '@/lib/checkout/types';
+
+async function attemptAutoRefund(
+  paymentReference: string,
+  amountCents: number,
+  reason: string
+): Promise<boolean> {
+  try {
+    await refundPayment(paymentReference, amountCents);
+    console.log(`[Payments] Auto-refunded ${paymentReference}: ${reason}`);
+    return true;
+  } catch (refundError) {
+    console.error(
+      `[Payments] CRITICAL: Auto-refund failed for ${paymentReference} (${reason}):`,
+      refundError
+    );
+    return false;
+  }
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -133,6 +152,7 @@ export async function GET(request: Request) {
 
   if (!listing || listing.status !== 'active') {
     console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${session.listing_id} is no longer available`);
+    await attemptAutoRefund(paymentReference, session.amount_cents, 'listing unavailable after payment');
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=listing_unavailable`
     );
@@ -214,6 +234,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${env.app.url}/orders/${order.id}`);
   } catch (error) {
     console.error('[Payments] Failed to create order:', error);
+    await attemptAutoRefund(paymentReference, session.amount_cents, `order creation failed: ${error instanceof Error ? error.message : 'unknown'}`);
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=order_creation_failed`
     );
