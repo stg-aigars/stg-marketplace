@@ -153,7 +153,6 @@ export default async function CheckoutPage({
     verification_failed: 'Payment verification failed. Please try again.',
     listing_unavailable: 'This listing was purchased while you were paying. Your payment will be refunded automatically.',
     order_creation_failed: 'Something went wrong creating your order. Your payment will be refunded automatically. If you do not see the refund within a few business days, please contact support.',
-    session_expired: 'Your checkout session expired. Please try again.',
   };
 
   const errorMessage = searchParams.error ? errorMessages[searchParams.error] ?? 'Something went wrong. Please try again.' : null;

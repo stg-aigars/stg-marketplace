@@ -62,14 +62,31 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${env.app.url}/orders/${existingOrder.id}`);
   }
 
-  // Look up checkout session by UUID (order_reference = session ID)
-  const { data: session, error: sessionError } = await serviceClient
+  // Look up checkout session by order_number (STG-YYYYMMDD-XXXX)
+  let session: CheckoutSession | null = null;
+  const { data: sessionByOrderNumber } = await serviceClient
     .from('checkout_sessions')
     .select('*')
     .eq('order_number', orderReference)
     .single<CheckoutSession>();
 
-  if (sessionError || !session) {
+  if (sessionByOrderNumber) {
+    session = sessionByOrderNumber;
+  } else {
+    // Fallback: legacy sessions created before order_number migration have UUID as order_reference
+    const { data: sessionById } = await serviceClient
+      .from('checkout_sessions')
+      .select('*')
+      .eq('id', orderReference)
+      .single<CheckoutSession>();
+
+    if (sessionById) {
+      console.log(`[Payments] Legacy session fallback: found session ${sessionById.id} by UUID (no order_number)`);
+      session = sessionById;
+    }
+  }
+
+  if (!session) {
     console.error('[Payments] Checkout session not found:', orderReference);
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
@@ -127,6 +144,7 @@ export async function GET(request: Request) {
     console.error(
       `[Payments] order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but session has "${session.order_number}"`
     );
+    await attemptAutoRefund(paymentReference, session.amount_cents, 'order_reference mismatch');
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
     );
@@ -138,6 +156,7 @@ export async function GET(request: Request) {
     console.error(
       `[Payments] Amount mismatch: EveryPay charged €${paymentStatus.amount} but session expected €${expectedAmount}`
     );
+    await attemptAutoRefund(paymentReference, session.amount_cents, `amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
     );
