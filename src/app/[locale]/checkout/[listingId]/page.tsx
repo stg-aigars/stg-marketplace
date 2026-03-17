@@ -151,8 +151,8 @@ export default async function CheckoutPage({
     technical_error: 'A technical error occurred. Please try again in a few minutes.',
     fraud_declined: 'Payment could not be processed. Please try a different payment method.',
     verification_failed: 'Payment verification failed. Please try again.',
-    listing_unavailable: 'This listing was purchased while you were paying. Your payment will be refunded.',
-    order_creation_failed: 'Something went wrong creating your order. Please contact support.',
+    listing_unavailable: 'This listing was purchased while you were paying. Your payment will be refunded automatically.',
+    order_creation_failed: 'Something went wrong creating your order. Your payment will be refunded automatically. If you do not see the refund within a few business days, please contact support.',
     session_expired: 'Your checkout session expired. Please try again.',
   };
 
