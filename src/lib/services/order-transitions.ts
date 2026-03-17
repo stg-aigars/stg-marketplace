@@ -264,6 +264,8 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
     orderNumber: order.order_number,
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
+    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
+    earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch(() => {});
 
   return updatedOrder;
@@ -282,6 +284,7 @@ export async function disputeOrder(orderId: string, userId: string, reason?: str
     orderNumber: order.order_number,
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
+    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     reason,
   }).catch(() => {});
 
