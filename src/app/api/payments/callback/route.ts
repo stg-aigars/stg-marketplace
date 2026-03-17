@@ -93,15 +93,22 @@ export async function GET(request: Request) {
 
   if (session.status === 'completed') {
     // Session already processed — find the order
-    const { data: orderForSession } = await serviceClient
-      .from('orders')
-      .select('id')
-      .eq('order_number', session.order_number)
-      .single();
+    let orderForSession = null;
+
+    if (session.order_number) {
+      const { data } = await serviceClient
+        .from('orders')
+        .select('id')
+        .eq('order_number', session.order_number)
+        .single();
+      orderForSession = data;
+    }
 
     if (orderForSession) {
       return NextResponse.redirect(`${env.app.url}/orders/${orderForSession.id}`);
     }
+    // Legacy completed sessions (order_number is null) fall through —
+    // the idempotency check above already handles it via payment_reference
   }
 
   // Verify payment with EveryPay
@@ -140,7 +147,7 @@ export async function GET(request: Request) {
   }
 
   // Verify the payment belongs to this checkout session
-  if (paymentStatus.order_reference !== session.order_number) {
+  if (session.order_number && paymentStatus.order_reference !== session.order_number) {
     console.error(
       `[Payments] order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but session has "${session.order_number}"`
     );
@@ -198,7 +205,7 @@ export async function GET(request: Request) {
       terminalName: session.terminal_name,
       terminalCountry: session.terminal_country,
       buyerPhone: session.buyer_phone,
-      orderNumber: session.order_number,
+      orderNumber: session.order_number ?? undefined,
     });
 
     // Mark checkout session as completed
