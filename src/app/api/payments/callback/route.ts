@@ -103,6 +103,27 @@ export async function GET(request: Request) {
     );
   }
 
+  // Verify the payment belongs to this checkout session
+  if (paymentStatus.order_reference !== session.order_number) {
+    console.error(
+      `[Payments] order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but session has "${session.order_number}"`
+    );
+    return NextResponse.redirect(
+      `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
+    );
+  }
+
+  // Verify the payment amount matches what we charged
+  const expectedAmount = (session.amount_cents / 100).toFixed(2);
+  if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
+    console.error(
+      `[Payments] Amount mismatch: EveryPay charged €${paymentStatus.amount} but session expected €${expectedAmount}`
+    );
+    return NextResponse.redirect(
+      `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
+    );
+  }
+
   // Re-fetch listing to get current data (include game_name for emails)
   const { data: listing } = await serviceClient
     .from('listings')
