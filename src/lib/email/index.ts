@@ -15,6 +15,7 @@ import { OrderDeliveredBuyer } from './templates/order-delivered-buyer';
 import { OrderCompletedSeller } from './templates/order-completed-seller';
 import { OrderDeclinedBuyer } from './templates/order-declined-buyer';
 import { OrderDisputedSeller } from './templates/order-disputed-seller';
+import { NewMessage } from './templates/new-message';
 import { env } from '@/lib/env';
 
 /**
@@ -260,6 +261,30 @@ export async function sendOrderDisputedToSeller(params: {
       buyerName: params.buyerName,
       reason: params.reason,
       appUrl: env.app.url,
+    }),
+  });
+}
+
+/**
+ * New message notification → recipient
+ */
+export async function sendNewMessageNotification(params: {
+  to: string;
+  recipientName: string;
+  senderName: string;
+  gameTitle: string;
+  messagePreview: string;
+  conversationId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.to,
+    subject: `New message from ${params.senderName} about ${params.gameTitle}`,
+    react: React.createElement(NewMessage, {
+      recipientName: params.recipientName,
+      senderName: params.senderName,
+      gameTitle: params.gameTitle,
+      messagePreview: params.messagePreview,
+      conversationUrl: `${env.app.url}/messages/${params.conversationId}`,
     }),
   });
 }

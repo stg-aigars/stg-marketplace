@@ -240,9 +240,20 @@ export default async function ListingDetailPage({
                 </Button>
               </div>
             ) : (
-              <Link href={`/checkout/${listing.id}`}>
-                <Button>Buy now</Button>
-              </Link>
+              <div className="flex gap-3">
+                <Link href={`/checkout/${listing.id}`}>
+                  <Button>Buy now</Button>
+                </Link>
+                {user ? (
+                  <Link href={`/messages?listing=${listing.id}`}>
+                    <Button variant="secondary">Message seller</Button>
+                  </Link>
+                ) : (
+                  <Link href="/auth/signin">
+                    <Button variant="secondary">Message seller</Button>
+                  </Link>
+                )}
+              </div>
             )}
           </div>
 
