@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getOrder } from '@/lib/services/orders';
+import { getReviewForOrder } from '@/lib/reviews/service';
+import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
 
 export async function generateMetadata({
@@ -31,11 +33,24 @@ export default async function OrderDetailPage({
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
+  // Fetch existing review (if any)
+  const existingReview = await getReviewForOrder(id);
+
+  // Compute review eligibility
+  const isReviewEligible =
+    userRole === 'buyer' &&
+    !existingReview &&
+    REVIEW_ELIGIBLE_STATUSES.includes(order.status as typeof REVIEW_ELIGIBLE_STATUSES[number]) &&
+    order.delivered_at != null &&
+    (Date.now() - new Date(order.delivered_at).getTime()) < REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
   return (
     <OrderDetailClient
       order={order}
       userRole={userRole}
       sellerPhone={sellerPhone}
+      existingReview={existingReview}
+      isReviewEligible={isReviewEligible}
     />
   );
 }

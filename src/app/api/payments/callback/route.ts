@@ -172,12 +172,18 @@ export async function GET(request: Request) {
   // Re-fetch listing to get current data (include game_name for emails)
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name')
+    .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
     .eq('id', session.listing_id)
     .single();
 
-  if (!listing || listing.status !== 'active') {
-    console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${session.listing_id} is no longer available`);
+  // Accept 'active' (timer expired but nobody else took it) or 'reserved' by this buyer
+  const isAvailable = listing && (
+    listing.status === 'active' ||
+    (listing.status === 'reserved' && listing.reserved_by === session.buyer_id)
+  );
+
+  if (!listing || !isAvailable) {
+    console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${session.listing_id} is no longer available (status: ${listing?.status}, reserved_by: ${listing?.reserved_by})`);
     await attemptAutoRefund(paymentReference, session.amount_cents, 'listing unavailable after payment');
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=listing_unavailable`

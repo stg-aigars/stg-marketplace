@@ -20,6 +20,7 @@ interface CheckoutListingRow {
   condition: ListingCondition;
   price_cents: number;
   status: string;
+  reserved_by: string | null;
   photos: string[];
   country: string;
   publisher: string | null;
@@ -62,8 +63,11 @@ export default async function CheckoutPage({
     notFound();
   }
 
-  // Listing must be active
-  if (listing.status !== 'active') {
+  // Listing must be active or reserved by this buyer
+  const canCheckout = listing.status === 'active' ||
+    (listing.status === 'reserved' && listing.reserved_by === user.id);
+
+  if (!canCheckout) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">

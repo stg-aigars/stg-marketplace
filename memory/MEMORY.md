@@ -20,3 +20,4 @@
 ## Planning
 - [weekly_plan.md](weekly_plan.md) - Week-by-week feature rollout plan with dependencies
 - [deployment.md](deployment.md) - Hetzner VPS + Coolify deployment, staging→main, pre-deploy gate, rollback
+- [reservation_cart_note.md](reservation_cart_note.md) - When cart ships, move reservation trigger from checkout to cart add
