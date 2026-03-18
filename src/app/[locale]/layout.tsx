@@ -14,7 +14,7 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturngames.com';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
 
 export const metadata: Metadata = {
   title: {

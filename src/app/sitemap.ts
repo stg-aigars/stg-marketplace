@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturngames.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

@@ -23,10 +23,10 @@ export default function ContactPage() {
               Email
             </h2>
             <a
-              href="mailto:hello@secondturngames.com"
+              href="mailto:info@secondturn.games"
               className="text-frost-arctic sm:hover:text-frost-ice transition-colors"
             >
-              hello@secondturngames.com
+              info@secondturn.games
             </a>
           </div>
 
