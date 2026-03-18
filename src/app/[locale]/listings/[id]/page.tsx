@@ -10,6 +10,7 @@ import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types
 import { formatDate } from '@/lib/date-utils';
 import { getWeightLabel } from '@/lib/bgg/utils';
 import { PhotoGallery } from './PhotoGallery';
+import { FavoriteButton } from '@/components/listings/FavoriteButton';
 
 interface ListingDetailRow {
   id: string;
@@ -102,6 +103,18 @@ export default async function ListingDetailPage({
   }
 
   const isOwner = user?.id === listing.seller_id;
+
+  // Check if user has favorited this listing
+  let isFavorited = false;
+  if (user && !isOwner) {
+    const { data: fav } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('listing_id', id)
+      .maybeSingle();
+    isFavorited = !!fav;
+  }
 
   // If listing is not active and viewer is not the seller, show unavailable message
   if (listing.status !== 'active' && !isOwner) {
@@ -205,9 +218,18 @@ export default async function ListingDetailPage({
 
           {/* Price & action */}
           <div className="space-y-3">
-            <p className="text-3xl font-bold text-semantic-text-heading">
-              {formatCentsToCurrency(listing.price_cents)}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-3xl font-bold text-semantic-text-heading">
+                {formatCentsToCurrency(listing.price_cents)}
+              </p>
+              {!isOwner && (
+                <FavoriteButton
+                  listingId={listing.id}
+                  initialFavorited={isFavorited}
+                  isAuthenticated={!!user}
+                />
+              )}
+            </div>
             {isOwner ? (
               <div className="flex gap-3">
                 <Button variant="secondary" disabled>
@@ -218,9 +240,20 @@ export default async function ListingDetailPage({
                 </Button>
               </div>
             ) : (
-              <Link href={`/checkout/${listing.id}`}>
-                <Button>Buy now</Button>
-              </Link>
+              <div className="flex gap-3">
+                <Link href={`/checkout/${listing.id}`}>
+                  <Button>Buy now</Button>
+                </Link>
+                {user ? (
+                  <Link href={`/messages?listing=${listing.id}`}>
+                    <Button variant="secondary">Message seller</Button>
+                  </Link>
+                ) : (
+                  <Link href="/auth/signin">
+                    <Button variant="secondary">Message seller</Button>
+                  </Link>
+                )}
+              </div>
             )}
           </div>
 

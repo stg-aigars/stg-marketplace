@@ -159,6 +159,27 @@ function getPrimaryName(names: BGGXMLName[]): string {
 }
 
 /**
+ * Parse a player_count string like "2-4" or "2" into min/max integer fields.
+ */
+function parsePlayerCountRange(playerCount: string | null | undefined): {
+  min_players: number | null;
+  max_players: number | null;
+} {
+  if (!playerCount) return { min_players: null, max_players: null };
+  // Handle en-dash and hyphen variants
+  const dashMatch = playerCount.match(/^(\d+)[–-](\d+)$/);
+  if (dashMatch) {
+    return { min_players: parseInt(dashMatch[1], 10), max_players: parseInt(dashMatch[2], 10) };
+  }
+  const singleMatch = playerCount.match(/^(\d+)$/);
+  if (singleMatch) {
+    const n = parseInt(singleMatch[1], 10);
+    return { min_players: n, max_players: n };
+  }
+  return { min_players: null, max_players: null };
+}
+
+/**
  * Shared helper: parse versions from a BGG XML item.
  * Used by both fetchGameMetadata() and getGameVersions() to ensure
  * identical BGGVersion[] shape regardless of which code path writes to the DB.
@@ -508,6 +529,7 @@ export async function ensureGameMetadata(
     .from('games')
     .update({
       player_count: metadata.playerCount || null,
+      ...parsePlayerCountRange(metadata.playerCount),
       min_age: metadata.minAge || null,
       playing_time: metadata.playingTime || null,
       thumbnail: metadata.thumbnail || null,
