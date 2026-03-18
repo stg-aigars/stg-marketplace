@@ -94,14 +94,25 @@ Always use these — do not write inline equivalents:
 
 | Pattern | Component | Location |
 |---------|-----------|----------|
-| All buttons | `Button` | `@/components/ui` |
-| Card wrappers | `Card` | `@/components/ui` |
+| All buttons | `Button` (variants: primary, secondary, ghost, danger; sizes: sm, md, lg) | `@/components/ui` |
+| Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
 | Form inputs | `Input`, `Select` | `@/components/ui` |
-| Modals | `Modal` | `@/components/ui` |
-| Condition badges | `Badge` | `@/components/ui` |
+| Modals / bottom sheets | `Modal` | `@/components/ui` |
+| Condition & status badges | `Badge` (variants: default, success, warning, error, trust; condition keys) | `@/components/ui` |
+| Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
+| Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible) | `@/components/ui` |
+| User avatars / initials | `Avatar` (sizes: sm, md) | `@/components/ui` |
+| Loading placeholders | `Skeleton` | `@/components/ui` |
 | Price formatting | `formatPrice()` / `formatCentsToCurrency()` | `@/lib/services/pricing` |
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |
+
+## Design System Rules
+- **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.
+- **No hardcoded colors.** Never use raw Tailwind color classes (`red-600`, `amber-500`, `blue-100`). Always use semantic tokens (`semantic-error`, `semantic-warning`, `semantic-primary`) or design palette tokens (`aurora-*`, `frost-*`, `condition-*`).
+- **No inline button/card/input styling.** If it looks like a button, use `<Button>`. If it's a bordered content area, use `<Card>`. If it's a text field, use `<Input>` or `<Select>`.
+- **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold`. Card-subsection H2 = `text-base font-semibold`.
+- **When adding a new UI component:** Add it to `@/components/ui/index.ts`, update the Shared Components table above, and flag in PR description that a new design system component was introduced.
 
 ## BGG Integration
 - BGG is the cornerstone of listing identity — game search, metadata, images, player count

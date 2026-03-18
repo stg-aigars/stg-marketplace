@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Badge, Button } from '@/components/ui';
+import { Alert, Avatar, Badge, Button, Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
@@ -167,7 +167,7 @@ export default async function ListingDetailPage({
 
       {/* Owner status banner for non-active listings */}
       {isOwner && listing.status !== 'active' && (
-        <div className="mb-6 p-4 rounded-lg bg-semantic-bg-subtle border border-semantic-border-subtle">
+        <Alert variant="info" className="mb-6">
           <p className="text-sm text-semantic-text-secondary">
             {listing.status === 'reserved'
               ? 'This listing is reserved — a buyer has purchased it and the order is being processed.'
@@ -183,7 +183,7 @@ export default async function ListingDetailPage({
               View your orders
             </Link>
           )}
-        </div>
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -271,131 +271,125 @@ export default async function ListingDetailPage({
 
           {/* Edition info */}
           {(listing.publisher || listing.language || listing.edition_year) && (
-            <div className="border border-semantic-border-subtle rounded-lg p-4 space-y-2">
-              <h2 className="text-base font-semibold text-semantic-text-heading">
-                Edition details
-              </h2>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                {listing.publisher && (
-                  <>
-                    <dt className="text-semantic-text-muted">Publisher</dt>
-                    <dd className="text-semantic-text-secondary">{listing.publisher}</dd>
-                  </>
-                )}
-                {listing.language && (
-                  <>
-                    <dt className="text-semantic-text-muted">Language</dt>
-                    <dd className="text-semantic-text-secondary">{listing.language}</dd>
-                  </>
-                )}
-                {listing.edition_year && (
-                  <>
-                    <dt className="text-semantic-text-muted">Year</dt>
-                    <dd className="text-semantic-text-secondary">{listing.edition_year}</dd>
-                  </>
-                )}
-              </dl>
-            </div>
+            <Card>
+              <CardBody className="space-y-2">
+                <h2 className="text-base font-semibold text-semantic-text-heading">
+                  Edition details
+                </h2>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  {listing.publisher && (
+                    <>
+                      <dt className="text-semantic-text-muted">Publisher</dt>
+                      <dd className="text-semantic-text-secondary">{listing.publisher}</dd>
+                    </>
+                  )}
+                  {listing.language && (
+                    <>
+                      <dt className="text-semantic-text-muted">Language</dt>
+                      <dd className="text-semantic-text-secondary">{listing.language}</dd>
+                    </>
+                  )}
+                  {listing.edition_year && (
+                    <>
+                      <dt className="text-semantic-text-muted">Year</dt>
+                      <dd className="text-semantic-text-secondary">{listing.edition_year}</dd>
+                    </>
+                  )}
+                </dl>
+              </CardBody>
+            </Card>
           )}
 
           {/* Seller info */}
-          <div className="border border-semantic-border-subtle rounded-lg p-4">
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
-              Seller
-            </h2>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-snow-storm-light flex items-center justify-center text-semantic-text-muted font-medium">
-                {(listing.user_profiles?.full_name ?? '?').charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <p className="font-medium text-semantic-text-heading">
-                  {listing.user_profiles?.full_name ?? 'Anonymous'}
-                </p>
-                <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
-                  {sellerFlagClass && (
-                    <span className={`${sellerFlagClass}`} title={sellerCountryName} />
-                  )}
-                  <span>{sellerCountryName}</span>
-                  <span className="mx-1">&middot;</span>
-                  <span>
-                    Member since{' '}
-                    {listing.user_profiles?.created_at
-                      ? formatDate(listing.user_profiles.created_at)
-                      : 'unknown'}
-                  </span>
+          <Card>
+            <CardBody>
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                Seller
+              </h2>
+              <div className="flex items-center gap-3">
+                <Avatar name={listing.user_profiles?.full_name ?? '?'} />
+                <div>
+                  <p className="font-medium text-semantic-text-heading">
+                    {listing.user_profiles?.full_name ?? 'Anonymous'}
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
+                    {sellerFlagClass && (
+                      <span className={`${sellerFlagClass}`} title={sellerCountryName} />
+                    )}
+                    <span>{sellerCountryName}</span>
+                    <span className="mx-1">&middot;</span>
+                    <span>
+                      Member since{' '}
+                      {listing.user_profiles?.created_at
+                        ? formatDate(listing.user_profiles.created_at)
+                        : 'unknown'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
 
           {/* Game details from BGG */}
           {(listing.games?.player_count || listing.games?.weight || listing.games?.description) && (
-            <div className="border border-semantic-border-subtle rounded-lg p-4 space-y-3">
-              <h2 className="text-base font-semibold text-semantic-text-heading">
-                Game details
-              </h2>
-              <div className="flex flex-wrap gap-x-6 gap-y-2">
-                {listing.games.player_count && (
-                  <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-                      />
-                    </svg>
-                    <span>{listing.games.player_count} players</span>
+            <Card>
+              <CardBody className="space-y-3">
+                <h2 className="text-base font-semibold text-semantic-text-heading">
+                  Game details
+                </h2>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {listing.games.player_count && (
+                    <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+                        />
+                      </svg>
+                      <span>{listing.games.player_count} players</span>
+                    </div>
+                  )}
+                  {listing.games.weight != null && listing.games.weight > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"
+                        />
+                      </svg>
+                      <span>{getWeightLabel(listing.games.weight)} ({listing.games.weight.toFixed(1)} / 5)</span>
+                    </div>
+                  )}
+                </div>
+                {listing.games.categories && listing.games.categories.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Categories</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {listing.games.categories.map((cat) => (
+                        <Badge key={cat} variant="default">{cat}</Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {listing.games.weight != null && listing.games.weight > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"
-                      />
-                    </svg>
-                    <span>{getWeightLabel(listing.games.weight)} ({listing.games.weight.toFixed(1)} / 5)</span>
+                {listing.games.mechanics && listing.games.mechanics.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Mechanics</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {listing.games.mechanics.map((mech) => (
+                        <Badge key={mech} variant="default">{mech}</Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-              {listing.games.categories && listing.games.categories.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Categories</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {listing.games.categories.map((cat) => (
-                      <span
-                        key={cat}
-                        className="inline-block px-2 py-0.5 text-xs rounded-full bg-semantic-bg-subtle text-semantic-text-secondary"
-                      >
-                        {cat}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {listing.games.mechanics && listing.games.mechanics.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Mechanics</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {listing.games.mechanics.map((mech) => (
-                      <span
-                        key={mech}
-                        className="inline-block px-2 py-0.5 text-xs rounded-full bg-semantic-bg-subtle text-semantic-text-secondary"
-                      >
-                        {mech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {listing.games.description && (
-                <p className="text-sm text-semantic-text-secondary line-clamp-6">
-                  {listing.games.description}
-                </p>
-              )}
-            </div>
+                {listing.games.description && (
+                  <p className="text-sm text-semantic-text-secondary line-clamp-6">
+                    {listing.games.description}
+                  </p>
+                )}
+              </CardBody>
+            </Card>
           )}
         </div>
       </div>

@@ -47,7 +47,7 @@ function ConversationList({ conversations, activeConversationId }: ConversationL
             href={`/messages/${conv.id}`}
             className={`flex items-center gap-3 px-4 py-3 transition-colors ${
               isActive
-                ? 'bg-frost-ice/10'
+                ? 'bg-semantic-trust/10'
                 : 'hover:bg-semantic-bg-subtle'
             }`}
           >

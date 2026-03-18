@@ -18,3 +18,7 @@ export type { ModalProps } from './modal';
 
 export { Skeleton } from './skeleton';
 export type { SkeletonProps } from './skeleton';
+
+export { Alert } from './alert';
+
+export { Avatar } from './avatar';

@@ -94,10 +94,10 @@ export function OrderTimeline({ status, timestamps }: OrderTimelineProps) {
       {isTerminal && (
         <div className="flex gap-3">
           <div className="flex flex-col items-center">
-            <div className="w-3 h-3 rounded-full flex-shrink-0 mt-1 bg-red-500 ring-4 ring-red-500/20" />
+            <div className="w-3 h-3 rounded-full flex-shrink-0 mt-1 bg-semantic-error ring-4 ring-semantic-error/20" />
           </div>
           <div>
-            <p className="text-sm font-medium text-red-600">
+            <p className="text-sm font-medium text-semantic-error">
               {isCancelled ? 'Cancelled' : 'Disputed'}
             </p>
             {isCancelled && timestamps.cancelled_at && (

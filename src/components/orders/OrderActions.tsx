@@ -102,13 +102,13 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
               variant="ghost"
               onClick={() => setShowDeclineModal(true)}
               disabled={loading}
-              className="text-red-600 sm:hover:text-red-700 sm:hover:bg-red-50"
+              className="text-semantic-error sm:hover:text-semantic-error-hover sm:hover:bg-semantic-error/10"
             >
               Decline
             </Button>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-semantic-error">{error}</p>}
 
           <Modal
             open={showDeclineModal}
@@ -170,7 +170,7 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
               Mark as shipped
             </Button>
           )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-semantic-error">{error}</p>}
         </div>
       );
     }
@@ -189,7 +189,7 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
           >
             I picked up my parcel
           </Button>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-semantic-error">{error}</p>}
         </div>
       );
     }
@@ -214,7 +214,7 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
               Report issue
             </Button>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-semantic-error">{error}</p>}
         </div>
       );
     }

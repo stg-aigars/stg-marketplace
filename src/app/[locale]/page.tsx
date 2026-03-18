@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { Button } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingCondition } from '@/lib/listings/types';
 
@@ -38,17 +39,11 @@ export default async function HomePage() {
           {t('home.heroSub')}
         </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/browse"
-            className="inline-flex items-center justify-center min-h-[48px] px-6 py-3 rounded-lg bg-semantic-primary text-semantic-text-inverse font-medium text-base active:scale-[0.98] transition-transform sm:hover:bg-semantic-primary-hover"
-          >
-            {t('home.browseCta')}
+          <Link href="/browse">
+            <Button size="lg">{t('home.browseCta')}</Button>
           </Link>
-          <Link
-            href="/sell"
-            className="inline-flex items-center justify-center min-h-[48px] px-6 py-3 rounded-lg bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default font-medium text-base active:scale-[0.98] transition-transform sm:hover:shadow-md"
-          >
-            {t('home.sellCta')}
+          <Link href="/sell">
+            <Button size="lg" variant="secondary">{t('home.sellCta')}</Button>
           </Link>
         </div>
       </section>
