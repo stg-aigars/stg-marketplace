@@ -8,7 +8,7 @@ import { XMLParser } from 'fast-xml-parser';
 import type { BGGGame, BGGVersion, BGGGameMetadata, BGGInboundLink } from './types';
 import { classifyGame } from './classifier';
 import { BGGError, createRateLimitError, createAPIUnavailableError, createTimeoutError, parseFetchError } from './errors';
-import { createBGGHeaders } from './config';
+import { createBGGHeaders, BGG_CONFIG } from './config';
 import { decodeHTMLEntities } from './utils';
 
 // Re-export for convenience
@@ -106,6 +106,41 @@ function setCache(key: string, data: unknown) {
 }
 
 // ============================================================================
+// Rate-limited fetch for BGG API
+// ============================================================================
+
+let lastBGGRequestTime = 0;
+const BGG_MAX_RETRIES = 3;
+
+/**
+ * Fetch wrapper that enforces BGG_API_RATE_LIMIT_MS between requests
+ * and retries with exponential backoff on 429 responses.
+ */
+async function rateLimitedFetch(url: string, init?: RequestInit): Promise<Response> {
+  for (let attempt = 0; attempt <= BGG_MAX_RETRIES; attempt++) {
+    // Enforce minimum delay between BGG requests
+    const now = Date.now();
+    const elapsed = now - lastBGGRequestTime;
+    if (elapsed < BGG_CONFIG.RATE_LIMIT_MS) {
+      await new Promise(resolve => setTimeout(resolve, BGG_CONFIG.RATE_LIMIT_MS - elapsed));
+    }
+    lastBGGRequestTime = Date.now();
+
+    const response = await fetch(url, init);
+
+    if (response.status === 429 && attempt < BGG_MAX_RETRIES) {
+      const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+
+    return response;
+  }
+
+  throw createRateLimitError(5);
+}
+
+// ============================================================================
 // Helper: parse names array from XML
 // ============================================================================
 
@@ -172,7 +207,7 @@ export async function fetchGameMetadata(gameId: number): Promise<BGGGameMetadata
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(
+    const response = await rateLimitedFetch(
       `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1&versions=1`,
       { signal: controller.signal, headers: createBGGHeaders() }
     );
@@ -343,7 +378,7 @@ export async function getGameDetails(gameId: number): Promise<BGGGame | null> {
   if (cached) return cached;
 
   try {
-    const response = await fetch(
+    const response = await rateLimitedFetch(
       `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`,
       { headers: createBGGHeaders() }
     );
@@ -390,7 +425,7 @@ export async function getGameVersions(gameId: number): Promise<BGGVersion[]> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  const response = await fetch(
+  const response = await rateLimitedFetch(
     `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&versions=1`,
     { signal: controller.signal, headers: createBGGHeaders() }
   );
@@ -560,7 +595,7 @@ export async function ensureGameVersions(
 
 async function performSearch(query: string, exact: boolean = false): Promise<BGGXMLSearchItem[]> {
   const exactParam = exact ? '&exact=1' : '';
-  const response = await fetch(
+  const response = await rateLimitedFetch(
     `https://boardgamegeek.com/xmlapi2/search?query=${encodeURIComponent(query)}&type=boardgame${exactParam}`,
     { headers: createBGGHeaders() }
   );

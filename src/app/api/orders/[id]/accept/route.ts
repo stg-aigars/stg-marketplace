@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { acceptOrder } from '@/lib/services/order-transitions';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
   const { response, user } = await requireAuth();
   if (response) return response;
 

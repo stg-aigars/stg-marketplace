@@ -67,7 +67,7 @@ export function CheckoutForm({
     try {
       const response = await fetch('/api/payments/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({
           listingId,
           terminalId: selectedTerminalId,
@@ -118,12 +118,11 @@ export function CheckoutForm({
             Pickup terminals could not be loaded. Please try refreshing the page. If the problem persists, try again in a few minutes.
           </div>
         )}
-        <input
+        <Input
           type="text"
           value={terminalSearch}
           onChange={(e) => setTerminalSearch(e.target.value)}
           placeholder="Search by city or terminal name..."
-          className="w-full px-3 py-2.5 rounded-lg border border-semantic-border-default bg-semantic-bg-elevated text-semantic-text-primary text-sm placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent min-h-[44px]"
         />
         <div className="mt-2 max-h-64 sm:max-h-48 overflow-y-auto rounded-lg border border-semantic-border-subtle">
           {Object.keys(filteredTerminals).length === 0 ? (

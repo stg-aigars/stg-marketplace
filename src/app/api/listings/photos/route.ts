@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 
 const EXTENSION_MAP: Record<string, string> = {
@@ -59,6 +60,9 @@ function detectImageType(buffer: Buffer): string | null {
 }
 
 export async function POST(request: Request) {
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
 

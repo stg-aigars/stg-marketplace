@@ -37,57 +37,74 @@ export function generateOrderNumber(): string {
  */
 export async function createOrder(params: CreateOrderParams): Promise<OrderRow> {
   const serviceClient = createServiceClient();
-
-  const orderNumber = params.orderNumber ?? generateOrderNumber();
   const pricing = calculateOrderPricing(params.itemsTotalCents, params.shippingCostCents);
 
-  // Insert the order
-  const { data: order, error: insertError } = await serviceClient
-    .from('orders')
-    .insert({
-      order_number: orderNumber,
-      buyer_id: params.buyerId,
-      seller_id: params.sellerId,
-      listing_id: params.listingId,
-      status: 'pending_seller',
-      total_amount_cents: pricing.totalChargeCents,
-      items_total_cents: pricing.itemsTotalCents,
-      shipping_cost_cents: pricing.shippingCostCents,
-      seller_country: params.sellerCountry,
-      everypay_payment_reference: params.paymentReference,
-      everypay_payment_state: params.paymentState,
-      payment_method: params.paymentMethod,
-      platform_commission_cents: pricing.commissionCents,
-      seller_wallet_credit_cents: pricing.walletCreditCents,
-      buyer_wallet_debit_cents: 0, // No wallet for MVP
-      terminal_id: params.terminalId,
-      terminal_name: params.terminalName,
-      terminal_country: params.terminalCountry,
-      buyer_phone: params.buyerPhone,
-    })
-    .select()
-    .single<OrderRow>();
+  const isPreAssigned = !!params.orderNumber;
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
 
-  if (insertError || !order) {
-    throw new Error(`Failed to create order: ${insertError?.message ?? 'Unknown error'}`);
+  for (let attempt = 0; attempt < (isPreAssigned ? 1 : MAX_RETRIES); attempt++) {
+    const orderNumber = isPreAssigned ? params.orderNumber! : generateOrderNumber();
+
+    const { data: order, error: insertError } = await serviceClient
+      .from('orders')
+      .insert({
+        order_number: orderNumber,
+        buyer_id: params.buyerId,
+        seller_id: params.sellerId,
+        listing_id: params.listingId,
+        status: 'pending_seller',
+        total_amount_cents: pricing.totalChargeCents,
+        items_total_cents: pricing.itemsTotalCents,
+        shipping_cost_cents: pricing.shippingCostCents,
+        seller_country: params.sellerCountry,
+        everypay_payment_reference: params.paymentReference,
+        everypay_payment_state: params.paymentState,
+        payment_method: params.paymentMethod,
+        platform_commission_cents: pricing.commissionCents,
+        seller_wallet_credit_cents: pricing.walletCreditCents,
+        buyer_wallet_debit_cents: 0, // No wallet for MVP
+        terminal_id: params.terminalId,
+        terminal_name: params.terminalName,
+        terminal_country: params.terminalCountry,
+        buyer_phone: params.buyerPhone,
+      })
+      .select()
+      .single<OrderRow>();
+
+    // Unique constraint violation — retry with a new number (random collision)
+    if (insertError?.code === '23505' && !isPreAssigned) {
+      lastError = new Error(`Order number collision on attempt ${attempt + 1}`);
+      continue;
+    }
+
+    if (insertError || !order) {
+      // Pre-assigned collision means checkout session reuse — fail with traceable message
+      const message = isPreAssigned && insertError?.code === '23505'
+        ? `Failed to create order: duplicate order number ${orderNumber}`
+        : `Failed to create order: ${insertError?.message ?? 'Unknown error'}`;
+      throw new Error(message);
+    }
+
+    // Update listing status to 'reserved' with race condition guard
+    const { data: updatedListing } = await serviceClient
+      .from('listings')
+      .update({ status: 'reserved' })
+      .eq('id', params.listingId)
+      .eq('status', 'active')
+      .select('id')
+      .single();
+
+    if (!updatedListing) {
+      // Listing was already reserved/sold — roll back the order
+      await serviceClient.from('orders').delete().eq('id', order.id);
+      throw new Error('This listing is no longer available');
+    }
+
+    return order;
   }
 
-  // Update listing status to 'reserved' with race condition guard
-  const { data: updatedListing } = await serviceClient
-    .from('listings')
-    .update({ status: 'reserved' })
-    .eq('id', params.listingId)
-    .eq('status', 'active')
-    .select('id')
-    .single();
-
-  if (!updatedListing) {
-    // Listing was already reserved/sold — roll back the order
-    await serviceClient.from('orders').delete().eq('id', order.id);
-    throw new Error('This listing is no longer available');
-  }
-
-  return order;
+  throw lastError ?? new Error('Failed to create order after retries');
 }
 
 /**

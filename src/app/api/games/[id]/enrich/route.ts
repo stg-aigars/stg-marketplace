@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createServiceClient } from '@/lib/supabase';
 import { ensureGameMetadata } from '@/lib/bgg';
 import { BGGError } from '@/lib/bgg/errors';
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
   const { response } = await requireAuth();
   if (response) return response;
 

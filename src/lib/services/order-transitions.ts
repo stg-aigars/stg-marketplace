@@ -49,9 +49,10 @@ async function transitionOrder(
   toStatus: OrderStatus,
   userId: string,
   role: 'buyer' | 'seller',
-  extraUpdates?: Record<string, unknown>
+  extraUpdates?: Record<string, unknown>,
+  preloadedOrder?: OrderWithRelations
 ): Promise<OrderRow> {
-  const order = await loadOrder(orderId);
+  const order = preloadedOrder ?? await loadOrder(orderId);
 
   // Verify role
   if (role === 'seller' && order.seller_id !== userId) {
@@ -84,7 +85,9 @@ async function transitionOrder(
 
   const supabase = createServiceClient();
 
-  // Optimistic locking: only update if status hasn't changed
+  // Optimistic locking: only update if status hasn't changed in the database.
+  // This is essential even when using a preloaded order — the DB check at update
+  // time is what prevents races, not the in-memory status read.
   const { data, error } = await supabase
     .from('orders')
     .update(updates)
@@ -127,7 +130,7 @@ export async function acceptOrder(
   // 1. Transition to accepted FIRST — seller intent shouldn't be blocked by Unisend
   const updatedOrder = await transitionOrder(orderId, 'accepted', userId, 'seller', {
     seller_phone: sellerPhone,
-  });
+  }, order);
 
   // 2. Attempt shipping — failure won't roll back the accept
   const shippingResult = await createOrderShipping({
@@ -164,7 +167,7 @@ export async function acceptOrder(
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
     sellerName: order.seller_profile?.full_name ?? 'Seller',
-  }).catch(() => {});
+  }).catch((err) => console.error('[Email] Failed to send order-accepted to buyer:', err));
 
   if (shippingResult.success) {
     return {
@@ -188,7 +191,7 @@ export async function acceptOrder(
 export async function declineOrder(orderId: string, userId: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
 
-  const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller');
+  const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller', undefined, order);
 
   // Restore listing to active
   const supabase = createServiceClient();
@@ -205,7 +208,7 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
     orderNumber: order.order_number,
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
-  }).catch(() => {});
+  }).catch((err) => console.error('[Email] Failed to send order-declined to buyer:', err));
 
   return updatedOrder;
 }
@@ -215,7 +218,7 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
  */
 export async function markShipped(orderId: string, userId: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'shipped', userId, 'seller');
+  const updatedOrder = await transitionOrder(orderId, 'shipped', userId, 'seller', undefined, order);
 
   sendOrderShippedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
@@ -225,7 +228,7 @@ export async function markShipped(orderId: string, userId: string): Promise<Orde
     gameName: order.listings?.game_name ?? 'Game',
     barcode: order.barcode ?? undefined,
     trackingUrl: order.tracking_url ?? undefined,
-  }).catch(() => {});
+  }).catch((err) => console.error('[Email] Failed to send order-shipped to buyer:', err));
 
   return updatedOrder;
 }
@@ -235,7 +238,7 @@ export async function markShipped(orderId: string, userId: string): Promise<Orde
  */
 export async function markDelivered(orderId: string, userId: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'delivered', userId, 'buyer');
+  const updatedOrder = await transitionOrder(orderId, 'delivered', userId, 'buyer', undefined, order);
 
   sendOrderDeliveredToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
@@ -243,7 +246,7 @@ export async function markDelivered(orderId: string, userId: string): Promise<Or
     orderNumber: order.order_number,
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
-  }).catch(() => {});
+  }).catch((err) => console.error('[Email] Failed to send order-delivered to buyer:', err));
 
   return updatedOrder;
 }
@@ -253,7 +256,7 @@ export async function markDelivered(orderId: string, userId: string): Promise<Or
  */
 export async function completeOrder(orderId: string, userId: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'completed', userId, 'buyer');
+  const updatedOrder = await transitionOrder(orderId, 'completed', userId, 'buyer', undefined, order);
 
   // TODO: credit seller wallet (Week 5)
   console.log(`TODO: credit seller wallet for order ${orderId}, amount: ${order.seller_wallet_credit_cents} cents`);
@@ -266,7 +269,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
     gameName: order.listings?.game_name ?? 'Game',
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
-  }).catch(() => {});
+  }).catch((err) => console.error('[Email] Failed to send order-completed to seller:', err));
 
   return updatedOrder;
 }
@@ -276,7 +279,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
  */
 export async function disputeOrder(orderId: string, userId: string, reason?: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'disputed', userId, 'buyer');
+  const updatedOrder = await transitionOrder(orderId, 'disputed', userId, 'buyer', undefined, order);
 
   sendOrderDisputedToSeller({
     sellerName: order.seller_profile?.full_name ?? 'Seller',
@@ -286,7 +289,7 @@ export async function disputeOrder(orderId: string, userId: string, reason?: str
     gameName: order.listings?.game_name ?? 'Game',
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     reason,
-  }).catch(() => {});
+  }).catch((err) => console.error('[Email] Failed to send order-disputed to seller:', err));
 
   return updatedOrder;
 }

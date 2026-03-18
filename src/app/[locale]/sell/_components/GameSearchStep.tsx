@@ -82,7 +82,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
     setEnriching(game.id);
     setError(null);
     try {
-      const res = await fetch(`/api/games/${game.id}/enrich`, { method: 'POST' });
+      const res = await fetch(`/api/games/${game.id}/enrich`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       if (res.ok) {
         const data = await res.json();
         const enriched: EnrichedGame = {

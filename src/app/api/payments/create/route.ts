@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createPayment } from '@/lib/services/everypay/client';
 import { calculateBuyerPricing } from '@/lib/services/pricing';
 import { generateOrderNumber } from '@/lib/services/orders';
@@ -9,6 +10,9 @@ import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
 
 export async function POST(request: Request) {
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
   // 1. Authenticate
   const { response, user, supabase } = await requireAuth();
   if (response) return response;

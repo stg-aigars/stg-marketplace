@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { createServiceClient } from '@/lib/supabase';
 
 export async function PATCH(request: Request) {
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
   const { response, user } = await requireAuth();
   if (response) return response;
 

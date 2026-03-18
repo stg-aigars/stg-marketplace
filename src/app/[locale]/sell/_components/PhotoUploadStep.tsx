@@ -164,6 +164,7 @@ export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps
 
           const res = await fetch('/api/listings/photos', {
             method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData,
           });
 

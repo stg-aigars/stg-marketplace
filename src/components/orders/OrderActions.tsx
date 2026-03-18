@@ -28,7 +28,7 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
     try {
       const res = await fetch(`/api/orders/${order.id}/${action}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify(body ?? {}),
       });
 
@@ -58,7 +58,7 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
     if (!sellerPhone) {
       await fetch('/api/profile/phone', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ phone }),
       });
     }
