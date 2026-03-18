@@ -11,6 +11,7 @@ import {
   filtersToSearchParams,
   hasActiveFilters,
 } from '@/lib/listings/filters';
+import { getUserFavoriteIds } from '@/lib/favorites/actions';
 
 const PAGE_SIZE = 24;
 
@@ -81,7 +82,12 @@ export default async function BrowsePage({
   // Paginate
   query = query.range(offset, offset + PAGE_SIZE - 1);
 
-  const { data: listings, count } = await query.returns<ListingRow[]>();
+  const [{ data: listings, count }, favoriteIds, { data: { user } }] = await Promise.all([
+    query.returns<ListingRow[]>(),
+    getUserFavoriteIds(),
+    supabase.auth.getUser(),
+  ]);
+  const isAuthenticated = !!user;
 
   // Filter by player count client-side (Supabase doesn't support filtering on joined columns directly)
   // We fetch all and filter, but since we're paginating this is already bounded
@@ -186,6 +192,8 @@ export default async function BrowsePage({
                 condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                isFavorited={favoriteIds.has(listing.id)}
+                isAuthenticated={isAuthenticated}
               />
             ))}
           </div>

@@ -6,6 +6,7 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { FavoriteButton } from './FavoriteButton';
 
 interface ListingCardProps {
   id: string;
@@ -16,6 +17,10 @@ interface ListingCardProps {
   condition: ListingCondition;
   priceCents: number;
   sellerCountry: string;
+  isFavorited?: boolean;
+  isAuthenticated?: boolean;
+  /** If true, show "Sold" or "No longer available" overlay */
+  unavailable?: boolean;
 }
 
 function ListingCard({
@@ -27,6 +32,9 @@ function ListingCard({
   condition,
   priceCents,
   sellerCountry,
+  isFavorited,
+  isAuthenticated = false,
+  unavailable = false,
 }: ListingCardProps) {
   const imageUrl = firstPhoto || gameThumbnail;
   const badgeKey = conditionToBadgeKey[condition];
@@ -35,8 +43,8 @@ function ListingCard({
   const countryName = getCountryName(sellerCountry);
 
   return (
-    <Link href={`/listings/${id}`} className="block">
-      <Card hoverable className="overflow-hidden">
+    <Link href={`/listings/${id}`} className={`block ${unavailable ? 'opacity-60' : ''}`}>
+      <Card hoverable={!unavailable} className="overflow-hidden">
         {/* Image */}
         <div className="h-40 sm:h-44 lg:h-48 bg-snow-storm-light flex items-center justify-center overflow-hidden relative">
           {imageUrl ? (
@@ -62,6 +70,21 @@ function ListingCard({
                 d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
               />
             </svg>
+          )}
+          {unavailable && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+              <span className="text-sm font-medium text-semantic-text-secondary bg-white/90 px-3 py-1 rounded-full">
+                No longer available
+              </span>
+            </div>
+          )}
+          {isFavorited !== undefined && (
+            <FavoriteButton
+              listingId={id}
+              initialFavorited={isFavorited}
+              isAuthenticated={isAuthenticated}
+              overlay
+            />
           )}
         </div>
 

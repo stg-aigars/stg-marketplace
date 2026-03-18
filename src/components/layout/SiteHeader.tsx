@@ -143,6 +143,14 @@ function SiteHeader() {
                     >
                       My Listings
                     </Link>
+                    <Link
+                      href="/account/favorites"
+                      role="menuitem"
+                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Favorites
+                    </Link>
                     <button
                       role="menuitem"
                       onClick={handleSignOut}
@@ -220,6 +228,13 @@ function SiteHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   My Listings
+                </Link>
+                <Link
+                  href="/account/favorites"
+                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Favorites
                 </Link>
                 <button
                   onClick={handleSignOut}
