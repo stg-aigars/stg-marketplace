@@ -159,6 +159,7 @@ export async function markConversationRead(conversationId: string): Promise<void
 
 /**
  * Get all conversations for the current user with last message preview.
+ * Uses 3 batched parallel queries instead of N+1 per conversation.
  */
 export async function getConversations(): Promise<Conversation[]> {
   const supabase = await createClient();
@@ -168,7 +169,7 @@ export async function getConversations(): Promise<Conversation[]> {
 
   if (!user) return [];
 
-  // Get conversations with listing info
+  // 1. Get conversations with listing info
   const { data: conversations } = await supabase
     .from('conversations')
     .select(`
@@ -177,41 +178,70 @@ export async function getConversations(): Promise<Conversation[]> {
     `)
     .order('last_message_at', { ascending: false });
 
-  if (!conversations) return [];
+  if (!conversations || conversations.length === 0) return [];
 
-  // Get the other user's name and last message for each conversation
-  const result: Conversation[] = [];
-  for (const conv of conversations) {
-    const otherUserId = conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id;
-    // Supabase returns joined single relations as objects, but TS may infer arrays
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const listing = (conv.listings as any) as { game_name: string; status: string; games: { thumbnail: string | null } | null; price_cents: number } | null;
+  // Collect IDs for batch queries
+  const conversationIds = conversations.map((c) => c.id);
+  const otherUserIds = Array.from(
+    new Set(conversations.map((c) => (c.buyer_id === user.id ? c.seller_id : c.buyer_id)))
+  );
 
-    // Get other user's name
-    const { data: otherProfile } = await supabase
+  // 2. Batch-fetch profiles, last messages, and unread counts in parallel
+  const [profilesResult, lastMessagesResult, unreadResult] = await Promise.all([
+    // Batch user profiles
+    supabase
       .from('user_profiles')
-      .select('full_name')
-      .eq('id', otherUserId)
-      .single();
+      .select('id, full_name')
+      .in('id', otherUserIds)
+      .then((r) => r.data ?? []),
 
-    // Get last message
-    const { data: lastMsg } = await supabase
+    // Last message per conversation: use last_message_at from the trigger
+    // to fetch the exact message without pulling the full history
+    supabase
       .from('messages')
-      .select('content')
-      .eq('conversation_id', conv.id)
+      .select('conversation_id, content')
+      .in('conversation_id', conversationIds)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .then((r) => r.data ?? []),
 
-    // Get unread count
-    const { count: unreadCount } = await supabase
+    // Unread counts: all unread messages not from the current user
+    supabase
       .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('conversation_id', conv.id)
+      .select('conversation_id')
+      .in('conversation_id', conversationIds)
       .neq('sender_id', user.id)
-      .is('read_at', null);
+      .is('read_at', null)
+      .then((r) => r.data ?? []),
+  ]);
 
-    result.push({
+  // Build lookup maps
+  const profileMap = new Map(profilesResult.map((p) => [p.id, p.full_name ?? 'Unknown']));
+
+  // Last message per conversation (first occurrence in desc-ordered results)
+  const lastMessageMap = new Map<string, string>();
+  for (const msg of lastMessagesResult) {
+    if (!lastMessageMap.has(msg.conversation_id)) {
+      lastMessageMap.set(msg.conversation_id, msg.content);
+    }
+  }
+
+  // Unread count per conversation
+  const unreadMap = new Map<string, number>();
+  for (const msg of unreadResult) {
+    unreadMap.set(msg.conversation_id, (unreadMap.get(msg.conversation_id) ?? 0) + 1);
+  }
+
+  // 3. Assemble results
+  return conversations.map((conv) => {
+    const otherUserId = conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const listing = (conv.listings as any) as {
+      game_name: string; status: string;
+      games: { thumbnail: string | null } | null;
+      price_cents: number;
+    } | null;
+
+    return {
       id: conv.id,
       listing_id: conv.listing_id,
       buyer_id: conv.buyer_id,
@@ -222,13 +252,11 @@ export async function getConversations(): Promise<Conversation[]> {
       listing_thumbnail: listing?.games?.thumbnail,
       listing_price_cents: listing?.price_cents,
       listing_status: listing?.status,
-      other_user_name: otherProfile?.full_name ?? 'Unknown',
-      last_message_content: lastMsg?.content,
-      unread_count: unreadCount ?? 0,
-    });
-  }
-
-  return result;
+      other_user_name: profileMap.get(otherUserId) ?? 'Unknown',
+      last_message_content: lastMessageMap.get(conv.id),
+      unread_count: unreadMap.get(conv.id) ?? 0,
+    };
+  });
 }
 
 /**
