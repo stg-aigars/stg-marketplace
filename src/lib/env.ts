@@ -25,6 +25,11 @@ const serverEnvSchema = {
   CRON_SECRET: process.env.CRON_SECRET,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+  SENTRY_ORG: process.env.SENTRY_ORG,
+  SENTRY_PROJECT: process.env.SENTRY_PROJECT,
 } as const;
 
 type EnvKey = keyof typeof serverEnvSchema;
@@ -56,7 +61,14 @@ export function validateEnv(): ValidationResult {
   ];
 
   const requiredInProduction: EnvKey[] = ['CRON_SECRET'];
-  const optional: EnvKey[] = ['NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'TURNSTILE_SECRET_KEY'];
+  const optional: EnvKey[] = [
+    'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
+    'TURNSTILE_SECRET_KEY',
+    'NEXT_PUBLIC_SENTRY_DSN',
+    'SENTRY_AUTH_TOKEN',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ];
 
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -123,5 +135,11 @@ export const env = {
   turnstile: {
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     secretKey: process.env.TURNSTILE_SECRET_KEY,
+  },
+  sentry: {
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
   },
 } as const;

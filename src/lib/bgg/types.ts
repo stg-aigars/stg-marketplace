@@ -53,6 +53,9 @@ export interface BGGGameMetadata {
   description?: string;
   rating?: number;
   bayesaverage?: number;
+  weight?: number;
+  categories?: string[];
+  mechanics?: string[];
   inboundLinks: BGGInboundLink[];
   outboundLinks: BGGInboundLink[];
   versions?: BGGVersion[]; // Parsed from BGG API when &versions=1 is included

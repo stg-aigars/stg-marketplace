@@ -16,7 +16,7 @@ Auth, list with BGG search, browse, buy, EveryPay payments, Unisend shipping, or
 ### Week 1 — Polish the Core
 Fix beta bugs. Better empty states. Email templates (order confirmation, seller notification, shipped). Mobile responsiveness fixes.
 
-### Week 2 — Better Listings
+### Week 2 — Better Listings ✓
 Enhanced BGG data (weight, categories, mechanics). Drag-and-drop photo upload with reorder. Condition grading guide modal. Sentry setup. Image optimization.
 
 ### Week 3 — Discovery + Communication + Latvian

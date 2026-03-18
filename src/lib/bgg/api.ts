@@ -59,6 +59,7 @@ interface BGGXMLItem {
     ratings?: {
       average?: { '@_value': string };
       bayesaverage?: { '@_value': string };
+      averageweight?: { '@_value': string };
     };
   };
 }
@@ -207,10 +208,19 @@ export async function fetchGameMetadata(gameId: number): Promise<BGGGameMetadata
       .filter((l) => l['@_type'] === 'boardgamedesigner')
       .map((l) => decodeHTMLEntities(l['@_value']));
 
+    const categories = links
+      .filter((l) => l['@_type'] === 'boardgamecategory')
+      .map((l) => decodeHTMLEntities(l['@_value']));
+
+    const mechanics = links
+      .filter((l) => l['@_type'] === 'boardgamemechanic')
+      .map((l) => decodeHTMLEntities(l['@_value']));
+
     const minPlayers = item.minplayers?.['@_value'];
     const maxPlayers = item.maxplayers?.['@_value'];
     const rating = item.statistics?.ratings?.average?.['@_value'];
     const bayesaverage = item.statistics?.ratings?.bayesaverage?.['@_value'];
+    const averageweight = item.statistics?.ratings?.averageweight?.['@_value'];
 
     const metadata: BGGGameMetadata = {
       id: parseInt(item['@_id']),
@@ -227,6 +237,9 @@ export async function fetchGameMetadata(gameId: number): Promise<BGGGameMetadata
       description: item.description,
       rating: rating ? parseFloat(rating) : undefined,
       bayesaverage: bayesaverage ? parseFloat(bayesaverage) : undefined,
+      weight: averageweight ? parseFloat(averageweight) : undefined,
+      categories: categories.length > 0 ? categories : undefined,
+      mechanics: mechanics.length > 0 ? mechanics : undefined,
       inboundLinks,
       outboundLinks,
       versions: parseVersionsFromXML(item),
@@ -468,6 +481,9 @@ export async function ensureGameMetadata(
       designers: metadata.designers?.length ? metadata.designers : null,
       alternate_names: metadata.alternateNames?.length ? metadata.alternateNames : null,
       bayesaverage: metadata.bayesaverage || null,
+      weight: metadata.weight || null,
+      categories: metadata.categories?.length ? metadata.categories : null,
+      mechanics: metadata.mechanics?.length ? metadata.mechanics : null,
       // Versions cached from the same BGG API call (uses parseVersionsFromXML)
       versions: metadata.versions?.length ? metadata.versions : null,
       versions_fetched_at: new Date().toISOString(),

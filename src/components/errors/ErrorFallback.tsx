@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { Button } from '@/components/ui';
 
 interface ErrorFallbackProps {
@@ -10,10 +12,14 @@ interface ErrorFallbackProps {
 }
 
 export function ErrorFallback({
+  error,
   reset,
   title = 'Something went wrong',
   message = 'An unexpected error occurred. Please try again.',
 }: ErrorFallbackProps) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="text-center py-16">

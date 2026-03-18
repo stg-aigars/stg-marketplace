@@ -1,11 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface PhotoGalleryProps {
   photos: string[];
   gameImage: string | null;
   gameTitle: string;
+}
+
+function isBGGImage(url: string): boolean {
+  return url.includes('cf.geekdo-images.com');
 }
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
@@ -32,14 +37,20 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
     );
   }
 
+  const activeUrl = images[activeIndex];
+
   return (
     <div className="space-y-3">
       {/* Main image */}
-      <div className="aspect-square bg-snow-storm-light rounded-lg overflow-hidden flex items-center justify-center">
-        <img
-          src={images[activeIndex]}
+      <div className="aspect-square bg-snow-storm-light rounded-lg overflow-hidden relative">
+        <Image
+          src={activeUrl}
           alt={`${gameTitle} - photo ${activeIndex + 1}`}
-          className="w-full h-full object-contain"
+          fill
+          className="object-contain"
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          priority={activeIndex === 0}
+          unoptimized={isBGGImage(activeUrl)}
         />
       </div>
 
@@ -50,16 +61,19 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             <button
               key={i}
               onClick={() => setActiveIndex(i)}
-              className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${
+              className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors relative ${
                 i === activeIndex
-                  ? 'border-semantic-primary'
-                  : 'border-semantic-border-subtle sm:hover:border-semantic-border-default'
+                  ? 'border-2 border-semantic-primary'
+                  : 'border border-semantic-border-subtle sm:hover:border-semantic-border-default'
               }`}
             >
-              <img
+              <Image
                 src={src}
                 alt={`${gameTitle} - thumbnail ${i + 1}`}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="64px"
+                unoptimized={isBGGImage(src)}
               />
             </button>
           ))}

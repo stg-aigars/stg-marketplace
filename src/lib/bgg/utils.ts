@@ -43,6 +43,17 @@ export function decodeHTMLEntitiesArray(arr: (string | undefined | null)[] | und
   return arr.map(decodeHTMLEntities).filter(Boolean);
 }
 
+/**
+ * Map BGG weight (1-5 scale) to a human-readable complexity label.
+ */
+export function getWeightLabel(weight: number): string {
+  if (weight < 1.5) return 'Light';
+  if (weight < 2.5) return 'Medium Light';
+  if (weight < 3.5) return 'Medium';
+  if (weight < 4.5) return 'Medium Heavy';
+  return 'Heavy';
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounce<T extends (...args: any[]) => unknown>(
   func: T,

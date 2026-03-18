@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -37,13 +38,15 @@ function ListingCard({
     <Link href={`/listings/${id}`} className="block">
       <Card hoverable className="overflow-hidden">
         {/* Image */}
-        <div className="h-40 sm:h-44 lg:h-48 bg-snow-storm-light flex items-center justify-center overflow-hidden">
+        <div className="h-40 sm:h-44 lg:h-48 bg-snow-storm-light flex items-center justify-center overflow-hidden relative">
           {imageUrl ? (
-            <img
+            <Image
               src={imageUrl}
               alt={gameTitle}
-              className="w-full h-full object-cover"
-              loading="lazy"
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              unoptimized={imageUrl.includes('cf.geekdo-images.com')}
             />
           ) : (
             <svg

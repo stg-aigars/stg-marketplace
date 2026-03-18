@@ -1,6 +1,23 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 
 interface PhotoUploadStepProps {
@@ -8,10 +25,105 @@ interface PhotoUploadStepProps {
   onPhotosChange: (photos: string[]) => void;
 }
 
+function SortablePhoto({
+  url,
+  index,
+  total,
+  sortId,
+  onRemove,
+}: {
+  url: string;
+  index: number;
+  total: number;
+  sortId: string;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: sortId });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative group aspect-square ${isDragging ? 'z-10 opacity-75' : ''}`}
+    >
+      <img
+        src={url}
+        alt={`Photo ${index + 1}`}
+        className="w-full h-full object-cover rounded-lg border border-semantic-border-subtle"
+      />
+      {/* Drag handle overlay */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute inset-0 rounded-lg cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus"
+        aria-label={`Drag to reorder photo ${index + 1} of ${total}`}
+        aria-roledescription="sortable"
+      />
+      {/* Drag handle icon */}
+      <div className="absolute top-1.5 left-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm pointer-events-none sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </div>
+      {/* Remove button */}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1.5 right-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:opacity-0 sm:group-hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus"
+        aria-label={`Remove photo ${index + 1}`}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      {/* Cover badge */}
+      {index === 0 && (
+        <span className="absolute bottom-1.5 left-1.5 text-xs bg-semantic-bg-overlay/80 text-semantic-text-inverse px-2 py-0.5 rounded-full backdrop-blur-sm">
+          Cover
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps) {
   const [uploading, setUploading] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const sortIds = photos.map((url, i) => `${i}-${url}`);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortIds.indexOf(active.id as string);
+    const newIndex = sortIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...photos];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    onPhotosChange(reordered);
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -97,6 +209,7 @@ export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps
       {/* Photo count */}
       <p className="text-sm text-semantic-text-muted">
         {photos.length}/{MAX_PHOTOS} photos
+        {photos.length > 1 && ' — drag to reorder'}
       </p>
 
       {/* Upload area — custom styled button needed for dropzone layout; Button component doesn't support this */}
@@ -143,34 +256,28 @@ export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps
         <p className="text-sm text-semantic-error">{error}</p>
       )}
 
-      {/* Photo grid */}
+      {/* Photo grid with drag-and-drop reorder */}
       {photos.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {photos.map((url, index) => (
-            <div key={url} className="relative group aspect-square">
-              <img
-                src={url}
-                alt={`Photo ${index + 1}`}
-                className="w-full h-full object-cover rounded-lg border border-semantic-border-subtle"
-              />
-              <button
-                type="button"
-                onClick={() => handleRemove(index)}
-                className="absolute top-1.5 right-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:opacity-0 sm:group-hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus"
-                aria-label={`Remove photo ${index + 1}`}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              {index === 0 && (
-                <span className="absolute bottom-1.5 left-1.5 text-xs bg-semantic-bg-overlay/80 text-semantic-text-inverse px-2 py-0.5 rounded-full backdrop-blur-sm">
-                  Cover
-                </span>
-              )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={sortIds} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {photos.map((url, index) => (
+                <SortablePhoto
+                  key={sortIds[index]}
+                  url={url}
+                  index={index}
+                  total={photos.length}
+                  sortId={sortIds[index]}
+                  onRemove={() => handleRemove(index)}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Minimum photo reminder */}

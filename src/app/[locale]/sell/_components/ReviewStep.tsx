@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Card, CardBody, Badge, Button } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey } from '@/lib/listings/types';
@@ -38,11 +39,16 @@ export function ReviewStep({
             {/* Game info */}
             <div className="flex items-start gap-4">
               {(formData.game_image || formData.game_thumbnail) && (
-                <img
-                  src={formData.game_image ?? formData.game_thumbnail ?? ''}
-                  alt={formData.game_name}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover shrink-0"
-                />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative">
+                  <Image
+                    src={formData.game_image ?? formData.game_thumbnail ?? ''}
+                    alt={formData.game_name}
+                    fill
+                    className="object-cover"
+                    sizes="96px"
+                    unoptimized
+                  />
+                </div>
               )}
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-semantic-text-heading text-lg">
@@ -118,12 +124,15 @@ export function ReviewStep({
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {formData.photos.map((url, index) => (
-                  <img
-                    key={url}
-                    src={url}
-                    alt={`Photo ${index + 1}`}
-                    className="aspect-square w-full object-cover rounded-lg border border-semantic-border-subtle"
-                  />
+                  <div key={url} className="aspect-square relative rounded-lg overflow-hidden border border-semantic-border-subtle">
+                    <Image
+                      src={url}
+                      alt={`Photo ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 25vw, 16vw"
+                    />
+                  </div>
                 ))}
               </div>
             </div>
