@@ -33,7 +33,7 @@ interface ListingRow {
   photos: string[];
   country: string;
   bgg_game_id: number;
-  games: { thumbnail: string | null; min_players: number | null; max_players: number | null };
+  games: { thumbnail: string | null };
 }
 
 export default async function BrowsePage({
@@ -47,11 +47,24 @@ export default async function BrowsePage({
 
   const supabase = await createClient();
 
+  // When player count filter is active, pre-fetch matching game IDs server-side
+  // so the main query returns correct counts and pagination works properly.
+  let playerCountGameIds: number[] | null = null;
+  if (filters.playerCount !== null) {
+    const pc = filters.playerCount;
+    const { data: matchingGames } = await supabase
+      .from('games')
+      .select('id')
+      .lte('min_players', pc)
+      .gte('max_players', pc);
+    playerCountGameIds = matchingGames?.map((g) => g.id) ?? [];
+  }
+
   // Build filtered query
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, games(thumbnail, min_players, max_players)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, games(thumbnail)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -68,6 +81,14 @@ export default async function BrowsePage({
   }
   if (filters.countries.length > 0) {
     query = query.in('country', filters.countries);
+  }
+  if (playerCountGameIds !== null) {
+    if (playerCountGameIds.length === 0) {
+      // No games match this player count — short-circuit to empty results
+      query = query.in('bgg_game_id', [-1]);
+    } else {
+      query = query.in('bgg_game_id', playerCountGameIds);
+    }
   }
 
   // Sort
@@ -89,22 +110,8 @@ export default async function BrowsePage({
   ]);
   const isAuthenticated = !!user;
 
-  // Filter by player count client-side (Supabase doesn't support filtering on joined columns directly)
-  // We fetch all and filter, but since we're paginating this is already bounded
-  let filteredListings = listings ?? [];
-  if (filters.playerCount !== null) {
-    const pc = filters.playerCount;
-    filteredListings = filteredListings.filter((l) => {
-      const min = l.games?.min_players;
-      const max = l.games?.max_players;
-      if (min === null || max === null) return false;
-      return min <= pc && max >= pc;
-    });
-  }
-
-  const totalCount = filters.playerCount !== null
-    ? filteredListings.length // Approximate when player filtering is active
-    : (count ?? 0);
+  const filteredListings = listings ?? [];
+  const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const showingFrom = totalCount === 0 ? 0 : offset + 1;
   const showingTo = Math.min(offset + PAGE_SIZE, totalCount);
