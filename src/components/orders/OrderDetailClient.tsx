@@ -12,11 +12,16 @@ import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
 import { OrderTimeline } from './OrderTimeline';
 import { ShippingInfo } from './ShippingInfo';
 import { OrderActions } from './OrderActions';
+import { ReviewForm, ReviewItem } from '@/components/reviews';
+import type { ReviewRow } from '@/lib/reviews/types';
+import { REVIEW_WINDOW_DAYS } from '@/lib/reviews/constants';
 
 interface OrderDetailClientProps {
   order: OrderWithDetails;
   userRole: 'buyer' | 'seller';
   sellerPhone: string | null;
+  existingReview: ReviewRow | null;
+  isReviewEligible: boolean;
 }
 
 /** Contextual status message for the current user */
@@ -47,7 +52,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
   return messages[role]?.[status] ?? null;
 }
 
-export function OrderDetailClient({ order, userRole, sellerPhone }: OrderDetailClientProps) {
+export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
   const condition = order.listings?.condition as ListingCondition | undefined;
@@ -112,6 +117,45 @@ export function OrderDetailClient({ order, userRole, sellerPhone }: OrderDetailC
           userRole={userRole}
           sellerPhone={sellerPhone}
         />
+
+        {/* Review section (buyer only) */}
+        {userRole === 'buyer' && (existingReview || isReviewEligible) && (
+          <Card>
+            <CardBody>
+              {existingReview ? (
+                <div>
+                  <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                    Your review
+                  </h2>
+                  <ReviewItem review={existingReview} reviewerName="You" />
+                </div>
+              ) : isReviewEligible ? (
+                <ReviewForm
+                  orderId={order.id}
+                  sellerId={order.seller_id}
+                  sellerName={order.seller_profile?.full_name ?? 'the seller'}
+                />
+              ) : null}
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Review window expired notice */}
+        {userRole === 'buyer'
+          && !existingReview
+          && !isReviewEligible
+          && ['delivered', 'completed'].includes(status)
+          && order.delivered_at
+          && (Date.now() - new Date(order.delivered_at).getTime()) >= REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000
+          && (
+          <Card>
+            <CardBody>
+              <p className="text-sm text-semantic-text-muted">
+                The review window for this order has closed.
+              </p>
+            </CardBody>
+          </Card>
+        )}
 
         {/* Timeline */}
         <Card>
@@ -244,9 +288,12 @@ export function OrderDetailClient({ order, userRole, sellerPhone }: OrderDetailC
                       title={getCountryName(order.seller_profile.country)}
                     />
                   )}
-                  <span className="text-sm text-semantic-text-primary">
+                  <Link
+                    href={`/sellers/${order.seller_id}`}
+                    className="text-sm text-semantic-text-primary sm:hover:text-semantic-primary transition-colors"
+                  >
                     {order.seller_profile?.full_name ?? 'Anonymous'}
-                  </span>
+                  </Link>
                 </div>
               </div>
             </div>

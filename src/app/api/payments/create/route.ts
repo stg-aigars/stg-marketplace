@@ -44,10 +44,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  // 3. Fetch listing
-  const { data: listing } = await supabase
+  // 3. Fetch listing (use service client to read reserved listings — RLS only
+  // exposes active listings + seller's own, so a buyer can't read their own reserved listing)
+  const serviceClient = createServiceClient();
+  const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country')
+    .select('id, seller_id, price_cents, status, country, reserved_by')
     .eq('id', listingId)
     .single();
 
@@ -55,7 +57,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
   }
 
-  if (listing.status !== 'active') {
+  // Allow 'active' or 'reserved' by the same buyer (retry/back-button case)
+  const canCheckout = listing.status === 'active' ||
+    (listing.status === 'reserved' && listing.reserved_by === user.id);
+
+  if (!canCheckout) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
   }
 
@@ -87,7 +93,6 @@ export async function POST(request: Request) {
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
 
   // 7. Create checkout session
-  const serviceClient = createServiceClient();
   const orderNumber = generateOrderNumber();
 
   const { data: session, error: sessionError } = await serviceClient
@@ -111,10 +116,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to start checkout. Please try again.' }, { status: 500 });
   }
 
-  // 8. Build callback URL
+  // 8. Reserve the listing (before payment, not after)
+  // Accept 'active' OR already reserved by same buyer (retry/back-button refreshes the timer)
+  const { data: reserved } = await serviceClient
+    .from('listings')
+    .update({
+      status: 'reserved',
+      reserved_at: new Date().toISOString(),
+      reserved_by: user.id,
+    })
+    .eq('id', listingId)
+    .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${user.id})`)
+    .select('id')
+    .single();
+
+  if (!reserved) {
+    // Race condition: another buyer reserved it between our check and this update
+    await serviceClient
+      .from('checkout_sessions')
+      .update({ status: 'expired' })
+      .eq('id', session.id);
+    return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
+  }
+
+  // 9. Build callback URL
   const callbackUrl = `${env.app.url}/api/payments/callback`;
 
-  // 9. Create EveryPay payment with order number as order reference
+  // 10. Create EveryPay payment with order number as order reference
   try {
     const paymentResponse = await createPayment(
       pricing.totalChargeCents,
@@ -131,6 +159,19 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('[Payments] Failed to create payment:', error);
+
+    // Revert the reservation so the listing isn't locked for 30 min
+    await serviceClient
+      .from('listings')
+      .update({ status: 'active', reserved_at: null, reserved_by: null })
+      .eq('id', listingId)
+      .eq('status', 'reserved');
+
+    await serviceClient
+      .from('checkout_sessions')
+      .update({ status: 'expired' })
+      .eq('id', session.id);
+
     return NextResponse.json(
       { error: 'Failed to initiate payment. Please try again.' },
       { status: 500 }

@@ -11,6 +11,9 @@ import { formatDate } from '@/lib/date-utils';
 import { getWeightLabel } from '@/lib/bgg/utils';
 import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
+import { SellerRating } from '@/components/reviews';
+import { getSellerRating } from '@/lib/reviews/service';
+import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 
 interface ListingDetailRow {
   id: string;
@@ -27,6 +30,8 @@ interface ListingDetailRow {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  reserved_at: string | null;
+  reserved_by: string | null;
   created_at: string;
   games: {
     thumbnail: string | null;
@@ -116,8 +121,13 @@ export default async function ListingDetailPage({
     isFavorited = !!fav;
   }
 
-  // If listing is not active and viewer is not the seller, show unavailable message
-  if (listing.status !== 'active' && !isOwner) {
+  // Fetch seller rating
+  const sellerRating = await getSellerRating(listing.seller_id);
+
+  const isReserver = listing.status === 'reserved' && listing.reserved_by === user?.id;
+
+  // If listing is not active/reserved and viewer is not the seller, show unavailable message
+  if (listing.status !== 'active' && listing.status !== 'reserved' && !isOwner) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
@@ -239,6 +249,23 @@ export default async function ListingDetailPage({
                   Remove listing
                 </Button>
               </div>
+            ) : listing.status === 'reserved' && !isReserver ? (
+              /* Another buyer has reserved this listing */
+              <ReservationCountdown reservedAt={listing.reserved_at!} />
+            ) : listing.status === 'reserved' && isReserver ? (
+              /* This buyer reserved it — prompt them to complete payment */
+              <div className="space-y-3">
+                <Card>
+                  <CardBody>
+                    <p className="text-sm text-semantic-text-secondary">
+                      You have reserved this game. Complete your payment to secure it.
+                    </p>
+                  </CardBody>
+                </Card>
+                <Link href={`/checkout/${listing.id}`}>
+                  <Button>Complete payment</Button>
+                </Link>
+              </div>
             ) : (
               <div className="flex gap-3">
                 <Link href={`/checkout/${listing.id}`}>
@@ -309,9 +336,12 @@ export default async function ListingDetailPage({
               <div className="flex items-center gap-3">
                 <Avatar name={listing.user_profiles?.full_name ?? '?'} />
                 <div>
-                  <p className="font-medium text-semantic-text-heading">
+                  <Link
+                    href={`/sellers/${listing.seller_id}`}
+                    className="font-medium text-semantic-text-heading sm:hover:text-semantic-primary transition-colors"
+                  >
                     {listing.user_profiles?.full_name ?? 'Anonymous'}
-                  </p>
+                  </Link>
                   <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
                     {sellerFlagClass && (
                       <span className={`${sellerFlagClass}`} title={sellerCountryName} />
@@ -324,6 +354,13 @@ export default async function ListingDetailPage({
                         ? formatDate(listing.user_profiles.created_at)
                         : 'unknown'}
                     </span>
+                  </div>
+                  <div className="mt-1">
+                    <SellerRating
+                      positivePct={sellerRating.positivePct}
+                      ratingCount={sellerRating.ratingCount}
+                      size="sm"
+                    />
                   </div>
                 </div>
               </div>

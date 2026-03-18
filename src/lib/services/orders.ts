@@ -87,16 +87,18 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
     }
 
     // Update listing status to 'reserved' with race condition guard
+    // Listing may already be 'reserved' (by this buyer via checkout initiation) or 'active'
+    // (if the reservation timer expired but nobody else took it)
     const { data: updatedListing } = await serviceClient
       .from('listings')
-      .update({ status: 'reserved' })
+      .update({ status: 'reserved', reserved_at: new Date().toISOString(), reserved_by: params.buyerId })
       .eq('id', params.listingId)
-      .eq('status', 'active')
+      .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${params.buyerId})`)
       .select('id')
       .single();
 
     if (!updatedListing) {
-      // Listing was already reserved/sold — roll back the order
+      // Listing was reserved by someone else or already sold — roll back the order
       await serviceClient.from('orders').delete().eq('id', order.id);
       throw new Error('This listing is no longer available');
     }

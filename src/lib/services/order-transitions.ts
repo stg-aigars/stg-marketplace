@@ -193,11 +193,11 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
 
   const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller', undefined, order);
 
-  // Restore listing to active
+  // Restore listing to active and clear reservation fields
   const supabase = createServiceClient();
   await supabase
     .from('listings')
-    .update({ status: 'active' })
+    .update({ status: 'active', reserved_at: null, reserved_by: null })
     .eq('id', order.listing_id)
     .eq('status', 'reserved');
 

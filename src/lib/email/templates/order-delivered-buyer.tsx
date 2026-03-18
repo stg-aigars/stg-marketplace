@@ -56,6 +56,10 @@ export function OrderDeliveredBuyer({
         </Button>
       </div>
 
+      <Text style={s.body}>
+        Once you have confirmed everything looks good, you can leave a review for the seller to help other buyers in the community.
+      </Text>
+
       <Text style={s.note}>
         Please confirm within 2 days. If you do not respond, the order will be completed automatically.
       </Text>
