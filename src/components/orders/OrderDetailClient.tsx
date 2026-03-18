@@ -14,6 +14,7 @@ import { ShippingInfo } from './ShippingInfo';
 import { OrderActions } from './OrderActions';
 import { ReviewForm, ReviewItem } from '@/components/reviews';
 import type { ReviewRow } from '@/lib/reviews/types';
+import { REVIEW_WINDOW_DAYS } from '@/lib/reviews/constants';
 
 interface OrderDetailClientProps {
   order: OrderWithDetails;
@@ -145,7 +146,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           && !isReviewEligible
           && ['delivered', 'completed'].includes(status)
           && order.delivered_at
-          && (Date.now() - new Date(order.delivered_at).getTime()) >= 30 * 24 * 60 * 60 * 1000
+          && (Date.now() - new Date(order.delivered_at).getTime()) >= REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000
           && (
           <Card>
             <CardBody>

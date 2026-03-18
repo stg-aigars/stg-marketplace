@@ -255,11 +255,13 @@ export default async function ListingDetailPage({
             ) : listing.status === 'reserved' && isReserver ? (
               /* This buyer reserved it — prompt them to complete payment */
               <div className="space-y-3">
-                <div className="rounded-lg border border-semantic-border-default bg-semantic-bg-subtle p-4">
-                  <p className="text-sm text-semantic-text-secondary">
-                    You have reserved this game. Complete your payment to secure it.
-                  </p>
-                </div>
+                <Card>
+                  <CardBody>
+                    <p className="text-sm text-semantic-text-secondary">
+                      You have reserved this game. Complete your payment to secure it.
+                    </p>
+                  </CardBody>
+                </Card>
                 <Link href={`/checkout/${listing.id}`}>
                   <Button>Complete payment</Button>
                 </Link>

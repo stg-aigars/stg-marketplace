@@ -44,8 +44,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  // 3. Fetch listing
-  const { data: listing } = await supabase
+  // 3. Fetch listing (use service client to read reserved listings — RLS only
+  // exposes active listings + seller's own, so a buyer can't read their own reserved listing)
+  const serviceClient = createServiceClient();
+  const { data: listing } = await serviceClient
     .from('listings')
     .select('id, seller_id, price_cents, status, country, reserved_by')
     .eq('id', listingId)
@@ -91,7 +93,6 @@ export async function POST(request: Request) {
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
 
   // 7. Create checkout session
-  const serviceClient = createServiceClient();
   const orderNumber = generateOrderNumber();
 
   const { data: session, error: sessionError } = await serviceClient
@@ -158,6 +159,19 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('[Payments] Failed to create payment:', error);
+
+    // Revert the reservation so the listing isn't locked for 30 min
+    await serviceClient
+      .from('listings')
+      .update({ status: 'active', reserved_at: null, reserved_by: null })
+      .eq('id', listingId)
+      .eq('status', 'reserved');
+
+    await serviceClient
+      .from('checkout_sessions')
+      .update({ status: 'expired' })
+      .eq('id', session.id);
+
     return NextResponse.json(
       { error: 'Failed to initiate payment. Please try again.' },
       { status: 500 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardBody } from '@/components/ui';
 import { RESERVATION_TTL_MS } from '@/lib/listings/constants';
 
 interface ReservationCountdownProps {
@@ -43,13 +44,15 @@ export function ReservationCountdown({ reservedAt }: ReservationCountdownProps) 
   const timeStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="rounded-lg border border-semantic-border-default bg-semantic-bg-subtle p-4">
-      <p className="text-sm text-semantic-text-secondary">
-        This game is currently reserved by another buyer.
-      </p>
-      <p className="text-sm text-semantic-text-muted mt-1">
-        Available in <span className="font-medium text-semantic-text-primary">{timeStr}</span>
-      </p>
-    </div>
+    <Card>
+      <CardBody>
+        <p className="text-sm text-semantic-text-secondary">
+          This game is currently reserved by another buyer.
+        </p>
+        <p className="text-sm text-semantic-text-muted mt-1">
+          Available in <span className="font-medium text-semantic-text-primary">{timeStr}</span>
+        </p>
+      </CardBody>
+    </Card>
   );
 }
