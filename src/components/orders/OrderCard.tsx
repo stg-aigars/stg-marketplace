@@ -70,8 +70,8 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
                   </Badge>
                 )}
                 {actionNeeded && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-semantic-warning-hover">
+                    <span className="w-1.5 h-1.5 rounded-full bg-semantic-warning" />
                     Action needed
                   </span>
                 )}

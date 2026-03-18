@@ -176,7 +176,7 @@ export function CheckoutForm({
       </Button>
 
       {error && (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-semantic-error">{error}</p>
       )}
 
       <p className="text-xs text-semantic-text-muted text-center">

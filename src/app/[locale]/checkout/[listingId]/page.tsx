@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Badge } from '@/components/ui';
+import { Alert, Badge, Card, CardBody } from '@/components/ui';
 import { calculateBuyerPricing, formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
@@ -179,126 +179,128 @@ export default async function CheckoutPage({
       </h1>
 
       {errorMessage && (
-        <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
-          {errorMessage}
-        </div>
+        <Alert variant="error" className="mb-6">{errorMessage}</Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Left: Order summary */}
         <div className="lg:col-span-3">
-          <div className="border border-semantic-border-subtle rounded-lg p-4 sm:p-6">
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
-              Order summary
-            </h2>
+          <Card>
+            <CardBody className="sm:p-6">
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+                Order summary
+              </h2>
 
-            <div className="flex gap-4">
-              {/* Game image */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
-                {gameImage ? (
-                  <img
-                    src={gameImage}
-                    alt={listing.game_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">
-                    No image
-                  </div>
-                )}
-              </div>
-
-              {/* Game details */}
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-semantic-text-heading truncate">
-                  {listing.game_name}
-                  {listing.game_year && (
-                    <span className="text-semantic-text-muted font-normal ml-1">
-                      ({listing.game_year})
-                    </span>
+              <div className="flex gap-4">
+                {/* Game image */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
+                  {gameImage ? (
+                    <img
+                      src={gameImage}
+                      alt={listing.game_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">
+                      No image
+                    </div>
                   )}
-                </h3>
-                <div className="mt-1">
-                  <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
                 </div>
 
-                {/* Edition info */}
-                {(listing.publisher || listing.language) && (
-                  <p className="mt-2 text-sm text-semantic-text-muted">
-                    {[listing.publisher, listing.language, listing.edition_year]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                )}
-              </div>
-            </div>
+                {/* Game details */}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-semantic-text-heading truncate">
+                    {listing.game_name}
+                    {listing.game_year && (
+                      <span className="text-semantic-text-muted font-normal ml-1">
+                        ({listing.game_year})
+                      </span>
+                    )}
+                  </h3>
+                  <div className="mt-1">
+                    <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
+                  </div>
 
-            {/* Seller info */}
-            <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-              <p className="text-sm text-semantic-text-muted">Seller</p>
-              <div className="flex items-center gap-2 mt-1">
-                {sellerFlagClass && (
-                  <span className={sellerFlagClass} title={sellerCountryName} />
-                )}
-                <span className="text-sm text-semantic-text-secondary">
-                  {listing.user_profiles?.full_name ?? 'Anonymous'}
-                </span>
-                <span className="text-sm text-semantic-text-muted">
-                  · {sellerCountryName}
-                </span>
+                  {/* Edition info */}
+                  {(listing.publisher || listing.language) && (
+                    <p className="mt-2 text-sm text-semantic-text-muted">
+                      {[listing.publisher, listing.language, listing.edition_year]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Shipping route */}
-            <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-              <p className="text-sm text-semantic-text-muted">Shipping</p>
-              <p className="text-sm text-semantic-text-secondary mt-1">
-                Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
-              </p>
-            </div>
-          </div>
+              {/* Seller info */}
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                <p className="text-sm text-semantic-text-muted">Seller</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {sellerFlagClass && (
+                    <span className={sellerFlagClass} title={sellerCountryName} />
+                  )}
+                  <span className="text-sm text-semantic-text-secondary">
+                    {listing.user_profiles?.full_name ?? 'Anonymous'}
+                  </span>
+                  <span className="text-sm text-semantic-text-muted">
+                    · {sellerCountryName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Shipping route */}
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                <p className="text-sm text-semantic-text-muted">Shipping</p>
+                <p className="text-sm text-semantic-text-secondary mt-1">
+                  Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
+                </p>
+              </div>
+            </CardBody>
+          </Card>
         </div>
 
         {/* Right: Payment card */}
         <div className="lg:col-span-2">
-          <div className="border border-semantic-border-subtle rounded-lg p-4 sm:p-6 lg:sticky lg:top-6">
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
-              Payment
-            </h2>
+          <Card className="lg:sticky lg:top-6">
+            <CardBody className="sm:p-6">
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+                Payment
+              </h2>
 
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-semantic-text-secondary">Item price</span>
-                <span className="text-semantic-text-primary">
-                  {formatCentsToCurrency(pricing.itemsTotalCents)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-semantic-text-secondary">Shipping</span>
-                <span className="text-semantic-text-primary">
-                  {formatCentsToCurrency(pricing.shippingCostCents)}
-                </span>
-              </div>
-              <div className="border-t border-semantic-border-subtle pt-3">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-semantic-text-heading">Total</span>
-                  <span className="text-semantic-text-heading">
-                    {formatCentsToCurrency(pricing.totalChargeCents)}
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-semantic-text-secondary">Item price</span>
+                  <span className="text-semantic-text-primary">
+                    {formatCentsToCurrency(pricing.itemsTotalCents)}
                   </span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-semantic-text-secondary">Shipping</span>
+                  <span className="text-semantic-text-primary">
+                    {formatCentsToCurrency(pricing.shippingCostCents)}
+                  </span>
+                </div>
+                <div className="border-t border-semantic-border-subtle pt-3">
+                  <div className="flex justify-between font-semibold">
+                    <span className="text-semantic-text-heading">Total</span>
+                    <span className="text-semantic-text-heading">
+                      {formatCentsToCurrency(pricing.totalChargeCents)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="mt-6">
-              <CheckoutForm
-                listingId={listing.id}
-                buyerCountry={buyerCountry}
-                buyerPhone={profile?.phone ?? ''}
-                terminals={terminals}
-                terminalsFetchFailed={terminalsFetchFailed}
-              />
-            </div>
-          </div>
+              <div className="mt-6">
+                <CheckoutForm
+                  listingId={listing.id}
+                  buyerCountry={buyerCountry}
+                  buyerPhone={profile?.phone ?? ''}
+                  terminals={terminals}
+                  terminalsFetchFailed={terminalsFetchFailed}
+                />
+              </div>
+            </CardBody>
+          </Card>
         </div>
       </div>
     </div>
