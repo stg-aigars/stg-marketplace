@@ -129,7 +129,7 @@ export default async function BrowsePage({
         Browse pre-loved games
       </h1>
 
-      <BrowseFilters currentFilters={filters} />
+      <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} />
 
       {filteredListings.length === 0 ? (
         <div className="text-center py-16">

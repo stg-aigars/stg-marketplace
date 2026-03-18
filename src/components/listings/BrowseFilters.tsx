@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Input, Select } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
@@ -24,7 +24,6 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Price: high to low' },
 ];
 
-// Map condition DB values to badge CSS classes for chip styling
 const conditionChipClasses: Record<string, { active: string; inactive: string }> = {
   likeNew: {
     active: 'bg-condition-like-new-bg text-condition-like-new-text border-condition-like-new border-2',
@@ -57,15 +56,12 @@ const COUNTRY_FLAGS: Record<string, string> = {
 function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Local draft state for mobile bottom sheet (apply on submit)
   const [draft, setDraft] = useState<BrowseFiltersType>(currentFilters);
 
   const activeCount = countActiveFilters(currentFilters);
 
   const applyFilters = useCallback(
     (filters: BrowseFiltersType) => {
-      // Reset to page 1 when filters change
       const url = `/browse${filtersToSearchParams({ ...filters, page: 1 })}`;
       router.push(url);
     },
@@ -137,145 +133,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
     setDraft(DEFAULT_FILTERS);
   };
 
-  // --- Shared filter controls renderer ---
-  const renderFilterControls = (
-    filters: BrowseFiltersType,
-    handlers: {
-      onToggleCondition: (c: ListingCondition) => void;
-      onToggleCountry: (c: CountryCode) => void;
-      onPriceMinChange: (val: string) => void;
-      onPriceMaxChange: (val: string) => void;
-      onPlayerCountChange: (val: string) => void;
-      onSortChange: (s: SortOption) => void;
-    },
-    isMobile: boolean
-  ) => (
-    <div className={isMobile ? 'space-y-5' : 'flex flex-wrap items-end gap-4'}>
-      {/* Condition chips */}
-      <div className={isMobile ? '' : ''}>
-        {isMobile && (
-          <p className="text-sm font-medium text-semantic-text-primary mb-2">Condition</p>
-        )}
-        <div className="flex flex-wrap gap-1.5">
-          {LISTING_CONDITIONS.map((condition) => {
-            const badgeKey = conditionToBadgeKey[condition];
-            const isActive = filters.conditions.includes(condition);
-            const chipStyle = conditionChipClasses[badgeKey];
-            return (
-              <button
-                key={condition}
-                type="button"
-                onClick={() => handlers.onToggleCondition(condition)}
-                className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[32px] ${
-                  isActive ? chipStyle.active : chipStyle.inactive
-                }`}
-              >
-                {conditionConfig[badgeKey].label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Price range */}
-      <div className={isMobile ? '' : 'flex items-end gap-2'}>
-        {isMobile && (
-          <p className="text-sm font-medium text-semantic-text-primary mb-2">Price range</p>
-        )}
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="Min €"
-            value={filters.priceMinCents !== null ? (filters.priceMinCents / 100).toString() : ''}
-            onChange={(e) => handlers.onPriceMinChange(e.target.value)}
-            className="w-20 min-h-[36px] rounded-lg border border-semantic-border-default px-2 py-1.5 text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-          />
-          <span className="text-semantic-text-muted text-sm">–</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="Max €"
-            value={filters.priceMaxCents !== null ? (filters.priceMaxCents / 100).toString() : ''}
-            onChange={(e) => handlers.onPriceMaxChange(e.target.value)}
-            className="w-20 min-h-[36px] rounded-lg border border-semantic-border-default px-2 py-1.5 text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-          />
-        </div>
-      </div>
-
-      {/* Player count */}
-      <div>
-        {isMobile && (
-          <p className="text-sm font-medium text-semantic-text-primary mb-2">Plays with</p>
-        )}
-        <div className="flex items-center gap-2">
-          {!isMobile && (
-            <span className="text-sm text-semantic-text-secondary whitespace-nowrap">Plays with</span>
-          )}
-          <input
-            type="number"
-            inputMode="numeric"
-            min="1"
-            max="20"
-            placeholder="#"
-            value={filters.playerCount !== null ? filters.playerCount.toString() : ''}
-            onChange={(e) => handlers.onPlayerCountChange(e.target.value)}
-            className="w-14 min-h-[36px] rounded-lg border border-semantic-border-default px-2 py-1.5 text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus text-center"
-          />
-          {!isMobile && (
-            <span className="text-sm text-semantic-text-muted">players</span>
-          )}
-        </div>
-      </div>
-
-      {/* Country chips */}
-      <div>
-        {isMobile && (
-          <p className="text-sm font-medium text-semantic-text-primary mb-2">Seller country</p>
-        )}
-        <div className="flex gap-1.5">
-          {COUNTRIES.map((country) => {
-            const isActive = filters.countries.includes(country.code);
-            return (
-              <button
-                key={country.code}
-                type="button"
-                onClick={() => handlers.onToggleCountry(country.code)}
-                className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[32px] ${
-                  isActive
-                    ? 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice'
-                    : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
-                }`}
-              >
-                <span>{COUNTRY_FLAGS[country.code]}</span>
-                {country.code}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Sort */}
-      <div className={isMobile ? '' : 'ml-auto'}>
-        {isMobile && (
-          <p className="text-sm font-medium text-semantic-text-primary mb-2">Sort by</p>
-        )}
-        <select
-          value={filters.sort}
-          onChange={(e) => handlers.onSortChange(e.target.value as SortOption)}
-          className="min-h-[36px] rounded-lg border border-semantic-border-default px-2 py-1.5 text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-
-  // Desktop price change handlers (apply on blur for better UX)
+  // Desktop price/player state (apply on blur)
   const [desktopPriceMin, setDesktopPriceMin] = useState(
     currentFilters.priceMinCents !== null ? (currentFilters.priceMinCents / 100).toString() : ''
   );
@@ -304,31 +162,77 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
     }
   }, [desktopPriceMin, desktopPriceMax, desktopPlayers, currentFilters, applyFilters]);
 
+  // --- Shared chip renderer (condition and country chips are custom toggle UI, not action buttons) ---
+  const renderConditionChips = (
+    conditions: ListingCondition[],
+    onToggle: (c: ListingCondition) => void
+  ) => (
+    <div className="flex flex-wrap gap-1.5">
+      {LISTING_CONDITIONS.map((condition) => {
+        const badgeKey = conditionToBadgeKey[condition];
+        const isActive = conditions.includes(condition);
+        const chipStyle = conditionChipClasses[badgeKey];
+        return (
+          <button
+            key={condition}
+            type="button"
+            onClick={() => onToggle(condition)}
+            className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
+              isActive ? chipStyle.active : chipStyle.inactive
+            }`}
+          >
+            {conditionConfig[badgeKey].label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderCountryChips = (
+    countries: CountryCode[],
+    onToggle: (c: CountryCode) => void
+  ) => (
+    <div className="flex gap-1.5">
+      {COUNTRIES.map((country) => {
+        const isActive = countries.includes(country.code);
+        return (
+          <button
+            key={country.code}
+            type="button"
+            onClick={() => onToggle(country.code)}
+            className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
+              isActive
+                ? 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice'
+                : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
+            }`}
+          >
+            <span>{COUNTRY_FLAGS[country.code]}</span>
+            {country.code}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
       {/* Mobile: filter button + sort */}
       <div className="sm:hidden flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={openMobileFilters}
-          className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg border border-semantic-border-default bg-semantic-bg-elevated text-sm font-medium text-semantic-text-primary shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-          </svg>
-          Filters{activeCount > 0 && ` (${activeCount})`}
-        </button>
-        <select
-          value={currentFilters.sort}
-          onChange={(e) => handleSortChange(e.target.value as SortOption)}
-          className="min-h-[44px] rounded-lg border border-semantic-border-default px-3 py-2.5 text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <Button variant="secondary" onClick={openMobileFilters}>
+          <span className="inline-flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+            </svg>
+            Filters{activeCount > 0 && ` (${activeCount})`}
+          </span>
+        </Button>
+        <div className="w-40">
+          <Select
+            options={SORT_OPTIONS}
+            value={currentFilters.sort}
+            onChange={(e) => handleSortChange(e.target.value as SortOption)}
+          />
+        </div>
         {activeCount > 0 && (
           <button
             type="button"
@@ -346,32 +250,81 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
         onClose={() => setMobileOpen(false)}
         title="Filter games"
       >
-        {renderFilterControls(draft, {
-          onToggleCondition: toggleDraftCondition,
-          onToggleCountry: toggleDraftCountry,
-          onPriceMinChange: (val) => {
-            const cents = val ? Math.round(parseFloat(val) * 100) : null;
-            setDraft((prev) => ({
-              ...prev,
-              priceMinCents: cents && cents > 0 ? cents : null,
-            }));
-          },
-          onPriceMaxChange: (val) => {
-            const cents = val ? Math.round(parseFloat(val) * 100) : null;
-            setDraft((prev) => ({
-              ...prev,
-              priceMaxCents: cents && cents > 0 ? cents : null,
-            }));
-          },
-          onPlayerCountChange: (val) => {
-            const n = val ? parseInt(val, 10) : null;
-            setDraft((prev) => ({
-              ...prev,
-              playerCount: n && n > 0 ? n : null,
-            }));
-          },
-          onSortChange: (sort) => setDraft((prev) => ({ ...prev, sort })),
-        }, true)}
+        <div className="space-y-5">
+          {/* Condition */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Condition</p>
+            {renderConditionChips(draft.conditions, toggleDraftCondition)}
+          </div>
+
+          {/* Price range */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Price range</p>
+            <div className="flex items-center gap-2">
+              <div className="w-24">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Min €"
+                  value={draft.priceMinCents !== null ? (draft.priceMinCents / 100).toString() : ''}
+                  onChange={(e) => {
+                    const cents = e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null;
+                    setDraft((prev) => ({ ...prev, priceMinCents: cents && cents > 0 ? cents : null }));
+                  }}
+                />
+              </div>
+              <span className="text-semantic-text-muted text-sm">–</span>
+              <div className="w-24">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Max €"
+                  value={draft.priceMaxCents !== null ? (draft.priceMaxCents / 100).toString() : ''}
+                  onChange={(e) => {
+                    const cents = e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null;
+                    setDraft((prev) => ({ ...prev, priceMaxCents: cents && cents > 0 ? cents : null }));
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Player count */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Plays with</p>
+            <div className="w-20">
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={20}
+                placeholder="#"
+                value={draft.playerCount !== null ? draft.playerCount.toString() : ''}
+                onChange={(e) => {
+                  const n = e.target.value ? parseInt(e.target.value, 10) : null;
+                  setDraft((prev) => ({ ...prev, playerCount: n && n > 0 ? n : null }));
+                }}
+                className="text-center"
+              />
+            </div>
+          </div>
+
+          {/* Country */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Seller country</p>
+            {renderCountryChips(draft.countries, toggleDraftCountry)}
+          </div>
+
+          {/* Sort */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Sort by</p>
+            <Select
+              options={SORT_OPTIONS}
+              value={draft.sort}
+              onChange={(e) => setDraft((prev) => ({ ...prev, sort: e.target.value as SortOption }))}
+            />
+          </div>
+        </div>
         <div className="flex gap-3 mt-6 pt-4 border-t border-semantic-border-subtle">
           <Button variant="secondary" onClick={clearMobileDraft} className="flex-1">
             Clear all
@@ -386,89 +339,56 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
       <div className="hidden sm:block mb-6">
         <div className="flex flex-wrap items-end gap-4">
           {/* Condition chips */}
-          <div className="flex flex-wrap gap-1.5">
-            {LISTING_CONDITIONS.map((condition) => {
-              const badgeKey = conditionToBadgeKey[condition];
-              const isActive = currentFilters.conditions.includes(condition);
-              const chipStyle = conditionChipClasses[badgeKey];
-              return (
-                <button
-                  key={condition}
-                  type="button"
-                  onClick={() => toggleCondition(condition)}
-                  className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[32px] ${
-                    isActive ? chipStyle.active : chipStyle.inactive
-                  }`}
-                >
-                  {conditionConfig[badgeKey].label}
-                </button>
-              );
-            })}
-          </div>
+          {renderConditionChips(currentFilters.conditions, toggleCondition)}
 
           {/* Price range */}
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder="Min €"
-              value={desktopPriceMin}
-              onChange={(e) => setDesktopPriceMin(e.target.value)}
-              onBlur={applyDesktopPriceAndPlayers}
-              onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
-              className="w-20 min-h-[32px] rounded-lg border border-semantic-border-default px-2 py-1 text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-            />
+            <div className="w-20">
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="Min €"
+                value={desktopPriceMin}
+                onChange={(e) => setDesktopPriceMin(e.target.value)}
+                onBlur={applyDesktopPriceAndPlayers}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
+              />
+            </div>
             <span className="text-semantic-text-muted text-sm">–</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder="Max €"
-              value={desktopPriceMax}
-              onChange={(e) => setDesktopPriceMax(e.target.value)}
-              onBlur={applyDesktopPriceAndPlayers}
-              onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
-              className="w-20 min-h-[32px] rounded-lg border border-semantic-border-default px-2 py-1 text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-            />
+            <div className="w-20">
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="Max €"
+                value={desktopPriceMax}
+                onChange={(e) => setDesktopPriceMax(e.target.value)}
+                onBlur={applyDesktopPriceAndPlayers}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
+              />
+            </div>
           </div>
 
           {/* Player count */}
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-semantic-text-secondary whitespace-nowrap">Plays with</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max="20"
-              placeholder="#"
-              value={desktopPlayers}
-              onChange={(e) => setDesktopPlayers(e.target.value)}
-              onBlur={applyDesktopPriceAndPlayers}
-              onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
-              className="w-12 min-h-[32px] rounded-lg border border-semantic-border-default px-2 py-1 text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus text-center"
-            />
+            <div className="w-14">
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={20}
+                placeholder="#"
+                value={desktopPlayers}
+                onChange={(e) => setDesktopPlayers(e.target.value)}
+                onBlur={applyDesktopPriceAndPlayers}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
+                className="text-center"
+              />
+            </div>
           </div>
 
           {/* Country chips */}
-          <div className="flex gap-1.5">
-            {COUNTRIES.map((country) => {
-              const isActive = currentFilters.countries.includes(country.code);
-              return (
-                <button
-                  key={country.code}
-                  type="button"
-                  onClick={() => toggleCountry(country.code)}
-                  className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[32px] ${
-                    isActive
-                      ? 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice'
-                      : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
-                  }`}
-                >
-                  <span>{COUNTRY_FLAGS[country.code]}</span>
-                  {country.code}
-                </button>
-              );
-            })}
-          </div>
+          {renderCountryChips(currentFilters.countries, toggleCountry)}
 
           {/* Sort + clear */}
           <div className="flex items-center gap-2 ml-auto">
@@ -476,22 +396,18 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="text-sm text-semantic-text-muted hover:text-semantic-text-secondary underline"
+                className="text-sm text-semantic-text-muted hover:text-semantic-text-secondary underline min-h-[44px] px-1"
               >
                 Clear filters
               </button>
             )}
-            <select
-              value={currentFilters.sort}
-              onChange={(e) => handleSortChange(e.target.value as SortOption)}
-              className="min-h-[32px] rounded-lg border border-semantic-border-default px-2 py-1 text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <div className="w-40">
+              <Select
+                options={SORT_OPTIONS}
+                value={currentFilters.sort}
+                onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              />
+            </div>
           </div>
         </div>
       </div>
