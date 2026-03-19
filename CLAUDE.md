@@ -150,6 +150,20 @@ Always use these — do not write inline equivalents:
 ## Supported Languages
 English (default). Latvian (lv) added ~Week 3-4.
 
+## Cron Routes
+All `/api/cron/*` routes follow the same pattern:
+- **Method**: `POST` (not GET)
+- **Auth**: `Authorization: Bearer ${CRON_SECRET}` header (not query params)
+- **Coolify command**: `curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/<name>`
+- **Auth check**: `request.headers.get('authorization') !== \`Bearer ${env.cron.secret}\`` → 401
+
+Existing cron routes:
+| Route | Frequency | Purpose |
+|-------|-----------|---------|
+| `/api/cron/expire-reservations` | Every 5 min | Release stale listing reservations |
+| `/api/cron/cleanup-sessions` | Every 10 min | Clean up expired checkout sessions |
+| `/api/cron/auto-complete` | Every 6 hours | Auto-complete delivered orders past 2-day dispute window |
+
 ## Important Notes
 - `pnpm build` is the real deploy gate, not `pnpm type-check` alone
 - Supabase RLS policies control data access — never skip them
