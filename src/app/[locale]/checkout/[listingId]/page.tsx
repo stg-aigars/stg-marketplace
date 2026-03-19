@@ -130,24 +130,27 @@ export default async function CheckoutPage({
 
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
 
-  // Fetch wallet balance for buyer
-  const walletBalanceCents = await getWalletBalance(user.id);
+  // Fetch wallet balance and terminals in parallel (independent operations)
+  let terminalsFetchFailed = false;
+  let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
+  const [walletBalanceCents, terminalsResult] = await Promise.all([
+    getWalletBalance(user.id),
+    getTerminals(buyerCountry).catch((error) => {
+      console.error('[Checkout] Failed to fetch terminals:', error);
+      terminalsFetchFailed = true;
+      return [] as Awaited<ReturnType<typeof getTerminals>>;
+    }),
+  ]);
+
+  if (!terminalsFetchFailed) {
+    terminals = terminalsResult
+      .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
+      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, countryCode: t.countryCode }));
+  }
+
   const walletPricing = walletBalanceCents > 0
     ? calculateCheckoutPricing(listing.price_cents, shippingCents, walletBalanceCents)
     : null;
-
-  // Fetch terminals for buyer's country
-  let terminalsFetchFailed = false;
-  let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
-  try {
-    const rawTerminals = await getTerminals(buyerCountry);
-    terminals = rawTerminals
-      .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
-      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, countryCode: t.countryCode }));
-  } catch (error) {
-    console.error('[Checkout] Failed to fetch terminals:', error);
-    terminalsFetchFailed = true;
-  }
 
   const badgeKey = conditionToBadgeKey[listing.condition];
   const conditionInfo = conditionConfig[badgeKey];
@@ -305,7 +308,7 @@ export default async function CheckoutPage({
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-semantic-text-secondary">Wallet balance</span>
-                    <span className="text-aurora-green">
+                    <span className="text-semantic-success">
                       -{formatCentsToCurrency(walletPricing.walletDebitCents)}
                     </span>
                   </div>

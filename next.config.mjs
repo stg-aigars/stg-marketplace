@@ -29,6 +29,8 @@ export default process.env.SENTRY_AUTH_TOKEN
       project: process.env.SENTRY_PROJECT,
       silent: !process.env.CI,
       widenClientFileUpload: true,
-      disableLogger: true,
+      bundleSizeOptimizations: {
+        excludeDebugStatements: true,
+      },
     })
   : config;

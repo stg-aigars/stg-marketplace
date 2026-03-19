@@ -30,18 +30,11 @@ export class InsufficientBalanceError extends Error {
 export async function getOrCreateWallet(userId: string): Promise<WalletRow> {
   const supabase = createServiceClient();
 
-  // Attempt insert; no-op if wallet already exists
-  await supabase
-    .from('wallets')
-    .insert({ user_id: userId })
-    .select()
-    .single();
-
-  // Always fetch to handle both new and existing wallets
+  // Upsert: insert if new, no-op update if exists — returns the row in both cases
   const { data: wallet, error } = await supabase
     .from('wallets')
+    .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true })
     .select('*')
-    .eq('user_id', userId)
     .single<WalletRow>();
 
   if (error || !wallet) {
@@ -315,9 +308,8 @@ export async function creditBackRejectedWithdrawal(
     throw new Error(`Withdrawal request not found: ${withdrawalId}`);
   }
 
-  // Status is already 'rejected' when called from the staff route (status updated first
-  // to prevent double-credit races). Accept rejected status in addition to pending/approved.
-  if (!['pending', 'approved', 'rejected'].includes(withdrawal.status)) {
+  // Status must be 'rejected' — the staff route atomically updates status before calling this
+  if (withdrawal.status !== 'rejected') {
     throw new Error(`Cannot credit back withdrawal in status: ${withdrawal.status}`);
   }
 

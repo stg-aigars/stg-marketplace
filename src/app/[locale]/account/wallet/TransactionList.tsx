@@ -25,7 +25,7 @@ interface TransactionListProps {
 
 export function TransactionList({ initialTransactions, initialTotal }: TransactionListProps) {
   const [transactions, setTransactions] = useState(initialTransactions);
-  const [total] = useState(initialTotal);
+  const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const limit = 20;
@@ -39,6 +39,7 @@ export function TransactionList({ initialTransactions, initialTotal }: Transacti
       if (res.ok) {
         const data = await res.json();
         setTransactions((prev) => [...prev, ...data.transactions]);
+        setTotal(data.total);
         setPage(nextPage);
       }
     } finally {
@@ -65,7 +66,7 @@ export function TransactionList({ initialTransactions, initialTotal }: Transacti
               </p>
             </div>
             <div className="text-right ml-4 shrink-0">
-              <p className={`font-semibold ${txn.type === 'credit' ? 'text-aurora-green' : 'text-semantic-text-primary'}`}>
+              <p className={`font-semibold ${txn.type === 'credit' ? 'text-semantic-success' : 'text-semantic-text-primary'}`}>
                 {txn.type === 'credit' ? '+' : '-'}{formatCentsToCurrency(txn.amount_cents)}
               </p>
               <p className="text-xs text-semantic-text-muted">

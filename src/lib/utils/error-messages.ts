@@ -48,6 +48,14 @@ const KNOWN_USER_MESSAGES = new Set([
   'Listing not found',
   'Failed to start checkout. Please try again.',
   'Failed to initiate payment. Please try again.',
+  'Wallet covers the full amount. Use wallet payment instead.',
+  'Insufficient wallet balance for full wallet payment',
+  'Insufficient wallet balance',
+  'Please enter a valid withdrawal amount',
+  'Please enter the bank account holder name',
+  'Please enter a valid Baltic IBAN (LV, LT, or EE)',
+  'Failed to create order. Please try again.',
+  'Withdrawal status has already changed',
 ]);
 
 export function sanitizeApiError(raw: string | undefined | null): string {

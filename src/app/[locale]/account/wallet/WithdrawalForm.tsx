@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Input, Modal } from '@/components/ui';
+import { Alert, Button, Input, Modal } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 
@@ -100,9 +100,7 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
                 placeholder="LV00XXXX0000000000000"
               />
 
-              {error && (
-                <p className="text-sm text-semantic-error">{error}</p>
-              )}
+              {error && <Alert variant="error">{error}</Alert>}
 
               <div className="flex gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setOpen(false)} className="flex-1">

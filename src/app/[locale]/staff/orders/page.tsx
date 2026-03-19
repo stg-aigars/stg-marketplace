@@ -4,6 +4,8 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
+import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
+import type { OrderStatus } from '@/lib/orders/types';
 
 export const metadata: Metadata = {
   title: 'All Orders — Staff',
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
 interface StaffOrderRow {
   id: string;
   order_number: string;
-  status: string;
+  status: OrderStatus;
   total_amount_cents: number;
   payment_method: string | null;
   created_at: string;
@@ -20,17 +22,6 @@ interface StaffOrderRow {
   buyer_profile: { full_name: string | null } | null;
   seller_profile: { full_name: string | null } | null;
 }
-
-const STATUS_BADGE: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
-  pending_seller: 'warning',
-  accepted: 'default',
-  shipped: 'default',
-  delivered: 'default',
-  completed: 'success',
-  cancelled: 'error',
-  disputed: 'error',
-  refunded: 'error',
-};
 
 export default async function StaffOrdersPage({
   searchParams,
@@ -85,7 +76,7 @@ export default async function StaffOrdersPage({
                 : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
             }`}
           >
-            {s.replace('_', ' ')}
+            {ORDER_STATUS_CONFIG[s as OrderStatus]?.label ?? s}
           </Link>
         ))}
       </div>
@@ -107,8 +98,8 @@ export default async function StaffOrdersPage({
                       <span className="font-mono text-sm text-semantic-text-heading">
                         {order.order_number}
                       </span>
-                      <Badge variant={STATUS_BADGE[order.status] ?? 'default'}>
-                        {order.status.replace('_', ' ')}
+                      <Badge variant={ORDER_STATUS_CONFIG[order.status]?.badgeVariant ?? 'default'}>
+                        {ORDER_STATUS_CONFIG[order.status]?.label ?? order.status}
                       </Badge>
                       {order.payment_method === 'wallet' && (
                         <Badge variant="default">wallet</Badge>

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
+import { Alert, Button } from '@/components/ui';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
+import type { WithdrawalStatus } from '@/lib/wallet/types';
 
 interface WithdrawalActionsProps {
   withdrawalId: string;
-  currentStatus: string;
+  currentStatus: WithdrawalStatus;
 }
 
 export function WithdrawalActions({ withdrawalId, currentStatus }: WithdrawalActionsProps) {
@@ -76,7 +77,7 @@ export function WithdrawalActions({ withdrawalId, currentStatus }: WithdrawalAct
           </Button>
         )}
       </div>
-      {error && <p className="text-xs text-semantic-error">{error}</p>}
+      {error && <Alert variant="error">{error}</Alert>}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
+import type { WithdrawalStatus } from '@/lib/wallet/types';
 import { WithdrawalActions } from './WithdrawalActions';
 
 export const metadata: Metadata = {
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
 interface WithdrawalRow {
   id: string;
   amount_cents: number;
-  status: string;
+  status: WithdrawalStatus;
   bank_account_holder: string;
   bank_iban: string;
   staff_notes: string | null;
@@ -22,7 +24,7 @@ interface WithdrawalRow {
   user_profiles: { full_name: string | null; email: string | null } | null;
 }
 
-const STATUS_BADGE: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+const STATUS_BADGE: Record<WithdrawalStatus, 'default' | 'success' | 'warning' | 'error'> = {
   pending: 'warning',
   approved: 'default',
   completed: 'success',
@@ -64,7 +66,7 @@ export default async function StaffWithdrawalsPage({
           { label: 'Completed', value: 'completed' },
           { label: 'Rejected', value: 'rejected' },
         ].map((filter) => (
-          <a
+          <Link
             key={filter.value}
             href={filter.value ? `/staff/withdrawals?status=${filter.value}` : '/staff/withdrawals'}
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
@@ -74,7 +76,7 @@ export default async function StaffWithdrawalsPage({
             }`}
           >
             {filter.label}
-          </a>
+          </Link>
         ))}
       </div>
 
