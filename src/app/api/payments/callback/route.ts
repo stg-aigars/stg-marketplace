@@ -147,21 +147,23 @@ export async function GET(request: Request) {
     );
   }
 
+  // Compute the actual amount EveryPay charged (total minus any wallet debit)
+  // Used for all refund calculations below
+  const walletDebit = session.wallet_debit_cents ?? 0;
+  const expectedEverypayAmountCents = session.amount_cents - walletDebit;
+
   // Verify the payment belongs to this checkout session
   if (session.order_number && paymentStatus.order_reference !== session.order_number) {
     console.error(
       `[Payments] order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but session has "${session.order_number}"`
     );
-    await attemptAutoRefund(paymentReference, session.amount_cents, 'order_reference mismatch');
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'order_reference mismatch');
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
     );
   }
 
   // Verify the payment amount matches what we charged
-  // When wallet is used, EveryPay only charges the remainder (total - wallet debit)
-  const walletDebit = session.wallet_debit_cents ?? 0;
-  const expectedEverypayAmountCents = session.amount_cents - walletDebit;
   const expectedAmount = (expectedEverypayAmountCents / 100).toFixed(2);
   if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
     console.error(
@@ -188,7 +190,7 @@ export async function GET(request: Request) {
 
   if (!listing || !isAvailable) {
     console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${session.listing_id} is no longer available (status: ${listing?.status}, reserved_by: ${listing?.reserved_by})`);
-    await attemptAutoRefund(paymentReference, session.amount_cents, 'listing unavailable after payment');
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'listing unavailable after payment');
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=listing_unavailable`
     );
@@ -232,9 +234,14 @@ export async function GET(request: Request) {
         );
       } catch (walletError) {
         // Wallet debit failed (e.g. balance changed) — log but don't fail the order.
-        // The EveryPay payment succeeded, order is created. The wallet debit shortfall
-        // is logged for manual reconciliation.
-        console.error(`[Payments] Wallet debit failed for order ${order.id}:`, walletError);
+        // The EveryPay payment succeeded, order is created. Reset buyer_wallet_debit_cents
+        // to 0 so the order accurately reflects what was actually debited, making the
+        // discrepancy visible in the staff dashboard for manual reconciliation.
+        console.error(`[Payments] RECONCILIATION NEEDED: Wallet debit failed for order ${order.id}, expected ${walletDebitCents} cents:`, walletError);
+        await serviceClient
+          .from('orders')
+          .update({ buyer_wallet_debit_cents: 0 })
+          .eq('id', order.id);
       }
     }
 
@@ -290,7 +297,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${env.app.url}/orders/${order.id}`);
   } catch (error) {
     console.error('[Payments] Failed to create order:', error);
-    await attemptAutoRefund(paymentReference, session.amount_cents, `order creation failed: ${error instanceof Error ? error.message : 'unknown'}`);
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, `order creation failed: ${error instanceof Error ? error.message : 'unknown'}`);
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=order_creation_failed`
     );

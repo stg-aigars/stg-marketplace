@@ -77,16 +77,18 @@ export async function creditWallet(
 
   const wallet = await getOrCreateWallet(userId);
 
-  // Atomic increment
+  // Atomic increment with optimistic lock (matches debitWallet pattern)
   const { data: updated, error: updateError } = await supabase
     .from('wallets')
     .update({ balance_cents: wallet.balance_cents + amountCents })
     .eq('id', wallet.id)
+    .eq('balance_cents', wallet.balance_cents) // Optimistic lock
     .select('balance_cents')
     .single<{ balance_cents: number }>();
 
   if (updateError || !updated) {
-    throw new Error(`Failed to credit wallet: ${updateError?.message}`);
+    // Optimistic lock failed — balance changed between read and write (concurrent operation)
+    throw new Error(`Failed to credit wallet: concurrent balance change detected`);
   }
 
   // Record transaction
@@ -313,22 +315,25 @@ export async function creditBackRejectedWithdrawal(
     throw new Error(`Withdrawal request not found: ${withdrawalId}`);
   }
 
-  if (withdrawal.status !== 'pending' && withdrawal.status !== 'approved') {
-    throw new Error(`Cannot reject withdrawal in status: ${withdrawal.status}`);
+  // Status is already 'rejected' when called from the staff route (status updated first
+  // to prevent double-credit races). Accept rejected status in addition to pending/approved.
+  if (!['pending', 'approved', 'rejected'].includes(withdrawal.status)) {
+    throw new Error(`Cannot credit back withdrawal in status: ${withdrawal.status}`);
   }
 
   const wallet = await getOrCreateWallet(withdrawal.user_id);
 
-  // Credit back the held amount
+  // Credit back the held amount with optimistic lock
   const { data: updated, error: updateError } = await supabase
     .from('wallets')
     .update({ balance_cents: wallet.balance_cents + withdrawal.amount_cents })
     .eq('id', wallet.id)
+    .eq('balance_cents', wallet.balance_cents) // Optimistic lock
     .select('balance_cents')
     .single<{ balance_cents: number }>();
 
   if (updateError || !updated) {
-    throw new Error(`Failed to credit back withdrawal: ${updateError?.message}`);
+    throw new Error(`Failed to credit back withdrawal: concurrent balance change detected`);
   }
 
   // Record the credit-back transaction

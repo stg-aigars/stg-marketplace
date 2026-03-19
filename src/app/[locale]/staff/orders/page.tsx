@@ -69,7 +69,7 @@ export default async function StaffOrdersPage({
           href="/staff/orders"
           className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
             !searchParams.status
-              ? 'bg-semantic-primary text-white border-semantic-primary'
+              ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
               : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
           }`}
         >
@@ -81,7 +81,7 @@ export default async function StaffOrdersPage({
             href={`/staff/orders?status=${s}`}
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
               searchParams.status === s
-                ? 'bg-semantic-primary text-white border-semantic-primary'
+                ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
                 : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
             }`}
           >

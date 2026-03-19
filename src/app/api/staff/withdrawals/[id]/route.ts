@@ -56,7 +56,8 @@ export async function PATCH(
   const now = new Date().toISOString();
 
   if (action === 'approve') {
-    await serviceClient
+    // Atomically update status with optimistic lock to prevent races
+    const { data: updated } = await serviceClient
       .from('withdrawal_requests')
       .update({
         status: 'approved',
@@ -64,16 +65,21 @@ export async function PATCH(
         reviewed_at: now,
         staff_notes: staffNotes ?? withdrawal.staff_notes,
       })
-      .eq('id', withdrawalId);
+      .eq('id', withdrawalId)
+      .eq('status', 'pending') // Optimistic lock — only approve if still pending
+      .select('id')
+      .single();
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Withdrawal status has already changed' }, { status: 409 });
+    }
 
     return NextResponse.json({ success: true });
   }
 
   if (action === 'reject') {
-    // Credit back the held funds to the user's wallet
-    await creditBackRejectedWithdrawal(withdrawalId);
-
-    await serviceClient
+    // Atomically update status FIRST to prevent double-credit from concurrent rejects
+    const { data: updated } = await serviceClient
       .from('withdrawal_requests')
       .update({
         status: 'rejected',
@@ -81,20 +87,37 @@ export async function PATCH(
         reviewed_at: now,
         staff_notes: staffNotes ?? withdrawal.staff_notes,
       })
-      .eq('id', withdrawalId);
+      .eq('id', withdrawalId)
+      .in('status', ['pending', 'approved']) // Optimistic lock
+      .select('id')
+      .single();
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Withdrawal status has already changed' }, { status: 409 });
+    }
+
+    // Credit back the held funds AFTER status is confirmed rejected
+    await creditBackRejectedWithdrawal(withdrawalId);
 
     return NextResponse.json({ success: true });
   }
 
   if (action === 'complete') {
-    await serviceClient
+    const { data: updated } = await serviceClient
       .from('withdrawal_requests')
       .update({
         status: 'completed',
         completed_at: now,
         staff_notes: staffNotes ?? withdrawal.staff_notes,
       })
-      .eq('id', withdrawalId);
+      .eq('id', withdrawalId)
+      .eq('status', 'approved') // Optimistic lock
+      .select('id')
+      .single();
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Withdrawal status has already changed' }, { status: 409 });
+    }
 
     return NextResponse.json({ success: true });
   }
