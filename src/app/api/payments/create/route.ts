@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createPayment } from '@/lib/services/everypay/client';
-import { calculateBuyerPricing } from '@/lib/services/pricing';
+import { calculateBuyerPricing, calculateCheckoutPricing } from '@/lib/services/pricing';
 import { generateOrderNumber } from '@/lib/services/orders';
+import { getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
   let terminalName: string;
   let terminalCountry: string;
   let buyerPhone: string;
+  let useWallet = false;
   try {
     const body = await request.json();
     listingId = body.listingId;
@@ -30,6 +32,7 @@ export async function POST(request: Request) {
     terminalName = body.terminalName;
     terminalCountry = body.terminalCountry;
     buyerPhone = body.buyerPhone;
+    useWallet = body.useWallet === true;
 
     if (!listingId) {
       return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
@@ -89,8 +92,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
   }
 
-  // 6. Calculate pricing
-  const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
+  // 6. Calculate pricing (with wallet if requested)
+  const buyerPricing = calculateBuyerPricing(listing.price_cents, shippingCents);
+  let walletDebitCents = 0;
+  let everypayChargeCents = buyerPricing.totalChargeCents;
+
+  if (useWallet) {
+    const walletBalance = await getWalletBalance(user.id);
+    if (walletBalance > 0) {
+      const checkoutPricing = calculateCheckoutPricing(listing.price_cents, shippingCents, walletBalance);
+      walletDebitCents = checkoutPricing.walletDebitCents;
+      everypayChargeCents = checkoutPricing.everypayChargeCents;
+    }
+  }
+
+  // If wallet covers the full amount, this route should not be used — use /api/payments/wallet-pay instead
+  if (everypayChargeCents <= 0) {
+    return NextResponse.json(
+      { error: 'Wallet covers the full amount. Use wallet payment instead.', walletCoversTotal: true },
+      { status: 400 }
+    );
+  }
 
   // 7. Create checkout session
   const orderNumber = generateOrderNumber();
@@ -105,7 +127,8 @@ export async function POST(request: Request) {
       terminal_name: terminalName,
       terminal_country: terminalCountry,
       buyer_phone: buyerPhone,
-      amount_cents: pricing.totalChargeCents,
+      amount_cents: buyerPricing.totalChargeCents,
+      wallet_debit_cents: walletDebitCents,
       status: 'pending',
     })
     .select('id, order_number')
@@ -145,7 +168,7 @@ export async function POST(request: Request) {
   // 10. Create EveryPay payment with order number as order reference
   try {
     const paymentResponse = await createPayment(
-      pricing.totalChargeCents,
+      everypayChargeCents,
       session.order_number,
       callbackUrl,
       {

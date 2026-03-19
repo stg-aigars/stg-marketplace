@@ -6,7 +6,7 @@
 
 import { createServiceClient } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
-import { calculateOrderPricing } from '@/lib/services/pricing';
+import { calculateOrderPricing, getVatRate, calculateVatSplit } from '@/lib/services/pricing';
 import { ORDER_NUMBER_PREFIX } from '@/lib/orders/constants';
 import type { CreateOrderParams, OrderRow, OrderWithDetails } from '@/lib/orders/types';
 
@@ -39,6 +39,11 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
   const serviceClient = createServiceClient();
   const pricing = calculateOrderPricing(params.itemsTotalCents, params.shippingCostCents);
 
+  // VAT breakdown for commission and shipping (based on seller's country)
+  const vatRate = getVatRate(params.sellerCountry);
+  const commissionVat = calculateVatSplit(pricing.commissionCents, vatRate);
+  const shippingVat = calculateVatSplit(params.shippingCostCents, vatRate);
+
   const isPreAssigned = !!params.orderNumber;
   const MAX_RETRIES = 3;
   let lastError: Error | null = null;
@@ -63,7 +68,11 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
         payment_method: params.paymentMethod,
         platform_commission_cents: pricing.commissionCents,
         seller_wallet_credit_cents: pricing.walletCreditCents,
-        buyer_wallet_debit_cents: 0, // No wallet for MVP
+        buyer_wallet_debit_cents: params.walletDebitCents ?? 0,
+        commission_net_cents: commissionVat.netCents,
+        commission_vat_cents: commissionVat.vatCents,
+        shipping_net_cents: shippingVat.netCents,
+        shipping_vat_cents: shippingVat.vatCents,
         terminal_id: params.terminalId,
         terminal_name: params.terminalName,
         terminal_country: params.terminalCountry,

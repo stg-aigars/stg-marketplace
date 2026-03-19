@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/middleware';
 const intlMiddleware = createIntlMiddleware(routing);
 
 // Routes that require authentication
-const PROTECTED_PREFIXES = ['/account', '/sell', '/orders', '/messages', '/checkout'];
+const PROTECTED_PREFIXES = ['/account', '/sell', '/orders', '/messages', '/checkout', '/staff'];
 
 // Routes that should never be blocked (prevent redirect loops)
 const AUTH_PREFIX = '/auth/';

@@ -1,0 +1,64 @@
+import type { Metadata } from 'next';
+import { requireServerAuth } from '@/lib/auth/helpers';
+import { getWalletBalance, getTransactionHistory } from '@/lib/services/wallet';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { Card, CardBody } from '@/components/ui';
+import { TransactionList } from './TransactionList';
+import { WithdrawalForm } from './WithdrawalForm';
+
+export const metadata: Metadata = {
+  title: 'Wallet',
+};
+
+export default async function WalletPage() {
+  const { user } = await requireServerAuth();
+
+  const [balanceCents, { transactions, total }] = await Promise.all([
+    getWalletBalance(user.id),
+    getTransactionHistory(user.id, 1, 20),
+  ]);
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
+        Wallet
+      </h1>
+
+      {/* Balance card */}
+      <Card>
+        <CardBody className="text-center py-8">
+          <p className="text-sm text-semantic-text-muted mb-1">Available balance</p>
+          <p className="text-4xl font-bold text-semantic-text-heading">
+            {formatCentsToCurrency(balanceCents)}
+          </p>
+          {balanceCents > 0 && (
+            <div className="mt-4">
+              <WithdrawalForm balanceCents={balanceCents} />
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Transaction history */}
+      <div className="mt-6">
+        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading mb-4">
+          Transaction history
+        </h2>
+        {transactions.length === 0 ? (
+          <Card>
+            <CardBody>
+              <p className="text-semantic-text-muted text-center py-8">
+                No transactions yet. Your wallet will be credited when buyers confirm orders.
+              </p>
+            </CardBody>
+          </Card>
+        ) : (
+          <TransactionList
+            initialTransactions={transactions}
+            initialTotal={total}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

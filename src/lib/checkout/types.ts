@@ -12,6 +12,7 @@ export interface CheckoutSession {
   terminal_country: string;
   buyer_phone: string;
   amount_cents: number;
+  wallet_debit_cents: number;
   status: 'pending' | 'completed' | 'expired';
   created_at: string;
 }

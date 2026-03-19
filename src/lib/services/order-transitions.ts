@@ -5,6 +5,7 @@
 
 import { createServiceClient } from '@/lib/supabase';
 import { createOrderShipping } from '@/lib/services/unisend/shipping';
+import { creditWallet } from '@/lib/services/wallet';
 import { VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_TIMESTAMP_COLUMN } from '@/lib/orders/constants';
 import type { OrderStatus, OrderRow, OrderWithRelations } from '@/lib/orders/types';
 import {
@@ -258,8 +259,8 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   const order = await loadOrder(orderId);
   const updatedOrder = await transitionOrder(orderId, 'completed', userId, 'buyer', undefined, order);
 
-  // TODO: credit seller wallet (Week 5)
-  console.log(`TODO: credit seller wallet for order ${orderId}, amount: ${order.seller_wallet_credit_cents} cents`);
+  // Credit seller wallet with earnings (idempotent — safe to retry)
+  await creditSellerWallet(orderId, order);
 
   sendOrderCompletedToSeller({
     sellerName: order.seller_profile?.full_name ?? 'Seller',
@@ -272,6 +273,80 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   }).catch((err) => console.error('[Email] Failed to send order-completed to seller:', err));
 
   return updatedOrder;
+}
+
+/**
+ * System auto-completes an order after the dispute window expires.
+ * Called by the escrow cron — no buyer role check needed.
+ * Idempotent: early-bail if already completed, plus creditWallet idempotency.
+ */
+export async function autoCompleteOrder(orderId: string): Promise<OrderRow | null> {
+  const order = await loadOrder(orderId);
+
+  // Early bail if already completed (guards against cron + manual race)
+  if (order.status === 'completed') return order;
+
+  if (order.status !== 'delivered') {
+    throw new Error(`Cannot auto-complete order in ${order.status} status`);
+  }
+
+  const supabase = createServiceClient();
+
+  // Transition to completed (optimistic lock on delivered status)
+  const { data, error } = await supabase
+    .from('orders')
+    .update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    })
+    .eq('id', orderId)
+    .eq('status', 'delivered')
+    .select()
+    .single<OrderRow>();
+
+  if (error || !data) {
+    // Status changed between load and update — another process handled it
+    return null;
+  }
+
+  // Credit seller wallet (idempotent)
+  await creditSellerWallet(orderId, order);
+
+  // Email seller about completion (non-blocking)
+  sendOrderCompletedToSeller({
+    sellerName: order.seller_profile?.full_name ?? 'Seller',
+    sellerEmail: order.seller_profile?.email ?? '',
+    orderNumber: order.order_number,
+    orderId,
+    gameName: order.listings?.game_name ?? 'Game',
+    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
+    earningsCents: order.seller_wallet_credit_cents ?? 0,
+  }).catch((err) => console.error('[Email] Failed to send auto-complete email to seller:', err));
+
+  return data;
+}
+
+/**
+ * Credit seller wallet on order completion.
+ * Shared by completeOrder (buyer-initiated) and autoCompleteOrder (cron).
+ * Idempotent via creditWallet's order_id + type='credit' check.
+ */
+async function creditSellerWallet(orderId: string, order: OrderWithRelations): Promise<void> {
+  if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
+
+  await creditWallet(
+    order.seller_id,
+    order.seller_wallet_credit_cents,
+    orderId,
+    `Sale: ${order.listings?.game_name ?? 'Game'} — ${order.order_number}`
+  );
+
+  // Mark wallet_credited_at on the order
+  const supabase = createServiceClient();
+  await supabase
+    .from('orders')
+    .update({ wallet_credited_at: new Date().toISOString() })
+    .eq('id', orderId);
 }
 
 /**
