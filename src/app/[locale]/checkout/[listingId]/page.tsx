@@ -55,7 +55,7 @@ export default async function CheckoutPage({
   const { data: listing } = await client
     .from('listings')
     .select(
-      '*, games(thumbnail, image), user_profiles(full_name, country)'
+      '*, games(thumbnail, image), user_profiles!listings_seller_id_fkey(full_name, country)'
     )
     .eq('id', listingId)
     .single<CheckoutListingRow>();

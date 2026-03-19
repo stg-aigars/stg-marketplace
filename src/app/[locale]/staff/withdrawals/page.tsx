@@ -40,7 +40,7 @@ export default async function StaffWithdrawalsPage({
 
   let query = serviceClient
     .from('withdrawal_requests')
-    .select('*, user_profiles(full_name, email)')
+    .select('*, user_profiles!withdrawal_requests_user_id_fkey(full_name, email)')
     .order('created_at', { ascending: false })
     .limit(100);
 

@@ -98,7 +98,7 @@ export default async function ListingDetailPage({
   const { data: listing } = await supabase
     .from('listings')
     .select(
-      '*, games(thumbnail, image, player_count, description, weight, categories, mechanics), user_profiles(full_name, country, created_at)'
+      '*, games(thumbnail, image, player_count, description, weight, categories, mechanics), user_profiles!listings_seller_id_fkey(full_name, country, created_at)'
     )
     .eq('id', id)
     .single<ListingDetailRow>();
