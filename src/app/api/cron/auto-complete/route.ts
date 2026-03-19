@@ -3,9 +3,9 @@
  * Finds delivered orders past the dispute window and auto-completes them,
  * crediting the seller's wallet.
  *
- * Authenticated via CRON_SECRET query parameter.
- * Should be called every 6 hours from Coolify cron:
- *   curl -s "${APP_URL}/api/cron/auto-complete?secret=${CRON_SECRET}"
+ * Authenticated via Bearer token (matches expire-reservations and cleanup-sessions pattern).
+ * Called every 6 hours from Coolify cron:
+ *   curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/auto-complete
  */
 
 import { NextResponse } from 'next/server';
@@ -16,12 +16,10 @@ import { env } from '@/lib/env';
 
 const BATCH_LIMIT = 50;
 
-export async function GET(request: Request) {
-  // Authenticate via secret
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get('secret');
-
-  if (!env.cron.secret || secret !== env.cron.secret) {
+export async function POST(request: Request) {
+  // Verify cron secret
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${env.cron.secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
