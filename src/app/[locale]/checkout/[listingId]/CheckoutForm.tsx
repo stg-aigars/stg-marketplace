@@ -19,6 +19,8 @@ interface CheckoutFormProps {
   buyerPhone: string;
   terminals: TerminalOption[];
   terminalsFetchFailed?: boolean;
+  walletBalanceCents?: number;
+  walletCoversTotal?: boolean;
 }
 
 export function CheckoutForm({
@@ -27,6 +29,8 @@ export function CheckoutForm({
   buyerPhone: initialPhone,
   terminals,
   terminalsFetchFailed,
+  walletBalanceCents = 0,
+  walletCoversTotal = false,
 }: CheckoutFormProps) {
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminalId, setSelectedTerminalId] = useState('');
@@ -58,34 +62,58 @@ export function CheckoutForm({
   const selectedTerminal = terminals.find((t) => t.id === selectedTerminalId);
   const canSubmit = phone.trim() && selectedTerminalId;
 
+  const useWallet = walletBalanceCents > 0;
+
   async function handleCheckout() {
     if (!canSubmit) return;
 
     setLoading(true);
     setError(null);
 
+    const commonBody = {
+      listingId,
+      terminalId: selectedTerminalId,
+      terminalName: selectedTerminal?.name ?? '',
+      terminalCountry: selectedTerminal?.countryCode ?? buyerCountry,
+      buyerPhone: phone.trim(),
+    };
+
     try {
-      const response = await fetch('/api/payments/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({
-          listingId,
-          terminalId: selectedTerminalId,
-          terminalName: selectedTerminal?.name ?? '',
-          terminalCountry: selectedTerminal?.countryCode ?? buyerCountry,
-          buyerPhone: phone.trim(),
-        }),
-      });
+      if (walletCoversTotal) {
+        // Full wallet payment — no EveryPay needed
+        const response = await fetch('/api/payments/wallet-pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify(commonBody),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        setError(sanitizeApiError(data.error));
-        setLoading(false);
-        return;
+        if (!response.ok) {
+          setError(sanitizeApiError(data.error));
+          setLoading(false);
+          return;
+        }
+
+        window.location.href = `/orders/${data.orderId}`;
+      } else {
+        // Card payment (with optional wallet partial debit)
+        const response = await fetch('/api/payments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ ...commonBody, useWallet }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(sanitizeApiError(data.error));
+          setLoading(false);
+          return;
+        }
+
+        window.location.href = data.paymentLink;
       }
-
-      window.location.href = data.paymentLink;
     } catch {
       setError('Connection error. Please check your internet and try again.');
       setLoading(false);
@@ -172,7 +200,7 @@ export function CheckoutForm({
         disabled={!canSubmit || terminalsFetchFailed}
         className="w-full"
       >
-        Pay now
+        {walletCoversTotal ? 'Pay with wallet' : 'Pay now'}
       </Button>
 
       {error && (
@@ -180,7 +208,9 @@ export function CheckoutForm({
       )}
 
       <p className="text-xs text-semantic-text-muted text-center">
-        You will be redirected to a secure payment page
+        {walletCoversTotal
+          ? 'Payment will be deducted from your wallet balance'
+          : 'You will be redirected to a secure payment page'}
       </p>
     </div>
   );

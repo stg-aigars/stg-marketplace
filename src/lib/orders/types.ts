@@ -37,6 +37,10 @@ export interface OrderRow {
   buyer_wallet_debit_cents: number;
   seller_wallet_credit_cents: number | null;
   wallet_credited_at: string | null;
+  commission_net_cents: number | null;
+  commission_vat_cents: number | null;
+  shipping_net_cents: number | null;
+  shipping_vat_cents: number | null;
   refund_status: string | null;
   refund_amount_cents: number | null;
   unisend_parcel_id: number | null;
@@ -84,9 +88,10 @@ export interface CreateOrderParams {
   itemsTotalCents: number;
   shippingCostCents: number;
   sellerCountry: string;
-  paymentReference: string;
-  paymentState: string;
+  paymentReference?: string;
+  paymentState?: string;
   paymentMethod: PaymentMethod;
+  walletDebitCents?: number;
   terminalId: string;
   terminalName: string;
   terminalCountry: string;

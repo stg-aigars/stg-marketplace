@@ -48,3 +48,35 @@ export async function requireServerAuth() {
     serviceClient,
   };
 }
+
+/**
+ * For staff API routes — returns 401 if not authenticated, 403 if not staff.
+ */
+export async function requireStaffAuth() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return {
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      user: null as never,
+      supabase: null as never,
+    };
+  }
+
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('is_staff')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.is_staff) {
+    return {
+      response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+      user: null as never,
+      supabase: null as never,
+    };
+  }
+
+  return { response: null, user, supabase };
+}

@@ -17,6 +17,7 @@ import { refundPayment } from '@/lib/services/everypay/client';
 import { classifyPaymentError } from '@/lib/services/everypay/classify-error';
 import { createServiceClient } from '@/lib/supabase';
 import { createOrder } from '@/lib/services/orders';
+import { debitWallet } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { env } from '@/lib/env';
@@ -158,12 +159,15 @@ export async function GET(request: Request) {
   }
 
   // Verify the payment amount matches what we charged
-  const expectedAmount = (session.amount_cents / 100).toFixed(2);
+  // When wallet is used, EveryPay only charges the remainder (total - wallet debit)
+  const walletDebit = session.wallet_debit_cents ?? 0;
+  const expectedEverypayAmountCents = session.amount_cents - walletDebit;
+  const expectedAmount = (expectedEverypayAmountCents / 100).toFixed(2);
   if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
     console.error(
-      `[Payments] Amount mismatch: EveryPay charged €${paymentStatus.amount} but session expected €${expectedAmount}`
+      `[Payments] Amount mismatch: EveryPay charged €${paymentStatus.amount} but expected €${expectedAmount} (total: ${session.amount_cents}, wallet: ${walletDebit})`
     );
-    await attemptAutoRefund(paymentReference, session.amount_cents, `amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, `amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
     return NextResponse.redirect(
       `${env.app.url}/checkout/${session.listing_id}?error=verification_failed`
     );
@@ -197,6 +201,8 @@ export async function GET(request: Request) {
 
   // Create the order with terminal and phone data from session
   try {
+    const walletDebitCents = session.wallet_debit_cents ?? 0;
+
     const order = await createOrder({
       buyerId: session.buyer_id,
       sellerId: listing.seller_id,
@@ -212,7 +218,25 @@ export async function GET(request: Request) {
       terminalCountry: session.terminal_country,
       buyerPhone: session.buyer_phone,
       orderNumber: session.order_number ?? undefined,
+      walletDebitCents,
     });
+
+    // Debit buyer wallet if they used wallet balance for part of the payment
+    if (walletDebitCents > 0) {
+      try {
+        await debitWallet(
+          session.buyer_id,
+          walletDebitCents,
+          order.id,
+          `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
+        );
+      } catch (walletError) {
+        // Wallet debit failed (e.g. balance changed) — log but don't fail the order.
+        // The EveryPay payment succeeded, order is created. The wallet debit shortfall
+        // is logged for manual reconciliation.
+        console.error(`[Payments] Wallet debit failed for order ${order.id}:`, walletError);
+      }
+    }
 
     // Mark checkout session as completed
     await serviceClient

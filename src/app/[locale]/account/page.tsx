@@ -3,6 +3,8 @@ import { Card, CardBody } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getCountryName, getCountryFlag } from '@/lib/country-utils';
 import { formatDate } from '@/lib/date-utils';
+import { getWalletBalance } from '@/lib/services/wallet';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 
 export const metadata = {
   title: 'Your profile',
@@ -10,6 +12,7 @@ export const metadata = {
 
 export default async function AccountPage() {
   const { user, profile } = await requireServerAuth();
+  const walletBalanceCents = await getWalletBalance(user.id);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -66,6 +69,25 @@ export default async function AccountPage() {
                   <p className="font-medium text-semantic-text-heading">Your orders</p>
                   <p className="text-sm text-semantic-text-muted mt-0.5">
                     View your purchases and sales
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
+        <Link href="/account/wallet">
+          <Card hoverable>
+            <CardBody>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-semantic-text-heading">Wallet</p>
+                  <p className="text-sm text-semantic-text-muted mt-0.5">
+                    {walletBalanceCents > 0
+                      ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}`
+                      : 'View your earnings and withdrawals'}
                   </p>
                 </div>
                 <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Alert, Badge, Card, CardBody } from '@/components/ui';
-import { calculateBuyerPricing, formatCentsToCurrency } from '@/lib/services/pricing';
+import { calculateBuyerPricing, calculateCheckoutPricing, formatCentsToCurrency } from '@/lib/services/pricing';
+import { getWalletBalance } from '@/lib/services/wallet';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -128,6 +129,12 @@ export default async function CheckoutPage({
   }
 
   const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
+
+  // Fetch wallet balance for buyer
+  const walletBalanceCents = await getWalletBalance(user.id);
+  const walletPricing = walletBalanceCents > 0
+    ? calculateCheckoutPricing(listing.price_cents, shippingCents, walletBalanceCents)
+    : null;
 
   // Fetch terminals for buyer's country
   let terminalsFetchFailed = false;
@@ -294,6 +301,27 @@ export default async function CheckoutPage({
                 </div>
               </div>
 
+              {walletBalanceCents > 0 && walletPricing && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-semantic-text-secondary">Wallet balance</span>
+                    <span className="text-aurora-green">
+                      -{formatCentsToCurrency(walletPricing.walletDebitCents)}
+                    </span>
+                  </div>
+                  <div className="border-t border-semantic-border-subtle pt-3">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-semantic-text-heading">
+                        {walletPricing.everypayChargeCents > 0 ? 'Card payment' : 'Wallet payment'}
+                      </span>
+                      <span className="text-semantic-text-heading">
+                        {formatCentsToCurrency(walletPricing.everypayChargeCents)}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="mt-6">
                 <CheckoutForm
                   listingId={listing.id}
@@ -301,6 +329,8 @@ export default async function CheckoutPage({
                   buyerPhone={profile?.phone ?? ''}
                   terminals={terminals}
                   terminalsFetchFailed={terminalsFetchFailed}
+                  walletBalanceCents={walletBalanceCents}
+                  walletCoversTotal={walletPricing?.everypayChargeCents === 0}
                 />
               </div>
             </CardBody>
