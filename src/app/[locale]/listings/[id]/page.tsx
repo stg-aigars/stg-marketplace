@@ -46,7 +46,7 @@ interface ListingDetailRow {
     full_name: string | null;
     country: string;
     created_at: string;
-  };
+  } | null;
 }
 
 export async function generateMetadata({
@@ -98,7 +98,7 @@ export default async function ListingDetailPage({
   const { data: listing } = await supabase
     .from('listings')
     .select(
-      '*, games(thumbnail, image, player_count, description, weight, categories, mechanics), user_profiles!listings_seller_id_fkey(full_name, country, created_at)'
+      '*, games(thumbnail, image, player_count, description, weight, categories, mechanics)'
     )
     .eq('id', id)
     .single<ListingDetailRow>();
@@ -106,6 +106,16 @@ export default async function ListingDetailPage({
   if (!listing) {
     notFound();
   }
+
+  // Fetch seller profile separately (public_profiles view — safe for anonymous access)
+  const { data: sellerProfile } = await supabase
+    .from('public_profiles')
+    .select('full_name, country, created_at')
+    .eq('id', listing.seller_id)
+    .single<{ full_name: string | null; country: string; created_at: string }>();
+
+  // Attach to listing shape for backward compatibility with template
+  listing.user_profiles = sellerProfile;
 
   const isOwner = user?.id === listing.seller_id;
 

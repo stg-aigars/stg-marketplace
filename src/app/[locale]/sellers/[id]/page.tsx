@@ -52,9 +52,9 @@ export default async function SellerProfilePage({
 }) {
   const supabase = await createClient();
 
-  // Fetch seller profile
+  // Fetch seller profile (public_profiles view — safe for anonymous access)
   const { data: profile } = await supabase
-    .from('user_profiles')
+    .from('public_profiles')
     .select('id, full_name, country, created_at')
     .eq('id', id)
     .single<SellerProfile>();
