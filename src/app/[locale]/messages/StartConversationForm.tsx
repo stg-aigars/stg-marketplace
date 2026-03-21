@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui';
+import { Button, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { startConversation } from '@/lib/messages/actions';
 import { MAX_MESSAGE_LENGTH } from '@/lib/messages/types';
 
@@ -14,6 +15,8 @@ function StartConversationForm({ listingId }: StartConversationFormProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
 
   const handleSubmit = useCallback(
@@ -25,15 +28,16 @@ function StartConversationForm({ listingId }: StartConversationFormProps) {
       setSending(true);
       setError(null);
 
-      const result = await startConversation(listingId, trimmed);
+      const result = await startConversation(listingId, trimmed, turnstileToken);
       if ('error' in result) {
         setError(result.error);
         setSending(false);
+        turnstileRef.current?.reset();
       } else {
         router.push(`/messages/${result.conversationId}`);
       }
     },
-    [message, sending, listingId, router]
+    [message, sending, listingId, router, turnstileToken]
   );
 
   return (
@@ -46,6 +50,7 @@ function StartConversationForm({ listingId }: StartConversationFormProps) {
         rows={3}
         className="w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus resize-none"
       />
+      <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
       {error && (
         <p className="mt-1 text-sm text-semantic-error">{error}</p>
       )}

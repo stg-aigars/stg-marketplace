@@ -106,6 +106,7 @@ Always use these — do not write inline equivalents:
 | Price formatting | `formatPrice()` / `formatCentsToCurrency()` | `@/lib/services/pricing` |
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |
+| Bot protection | `TurnstileWidget` (invisible; auto-resets on expiry; graceful skip when unconfigured) | `@/components/ui` |
 
 ## Design System Rules
 - **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.

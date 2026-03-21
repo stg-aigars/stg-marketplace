@@ -28,7 +28,9 @@ pnpm-debug.log*
 *.swp
 *.swo
 
-# Claude Code (contains MCP tokens)
+# Claude Code
+.claude/settings.local.json
+.claude/projects/
 .claude/mcp.json
 
 # OS

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Button, Input } from '@/components/ui';
+import { useState, useMemo, useRef } from 'react';
+import { Button, Input, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { PHONE_FORMATS, type TerminalCountry } from '@/lib/services/unisend/types';
 
@@ -37,6 +38,8 @@ export function CheckoutForm({
   const [terminalSearch, setTerminalSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   // Group and filter terminals by search
   const filteredTerminals = useMemo(() => {
@@ -76,6 +79,7 @@ export function CheckoutForm({
       terminalName: selectedTerminal?.name ?? '',
       terminalCountry: selectedTerminal?.countryCode ?? buyerCountry,
       buyerPhone: phone.trim(),
+      turnstileToken,
     };
 
     try {
@@ -92,6 +96,7 @@ export function CheckoutForm({
         if (!response.ok) {
           setError(sanitizeApiError(data.error));
           setLoading(false);
+          turnstileRef.current?.reset();
           return;
         }
 
@@ -109,6 +114,7 @@ export function CheckoutForm({
         if (!response.ok) {
           setError(sanitizeApiError(data.error));
           setLoading(false);
+          turnstileRef.current?.reset();
           return;
         }
 
@@ -117,6 +123,7 @@ export function CheckoutForm({
     } catch {
       setError('Connection error. Please check your internet and try again.');
       setLoading(false);
+      turnstileRef.current?.reset();
     }
   }
 
@@ -190,6 +197,8 @@ export function CheckoutForm({
           </p>
         )}
       </div>
+
+      <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
       {/* Pay button */}
       <Button

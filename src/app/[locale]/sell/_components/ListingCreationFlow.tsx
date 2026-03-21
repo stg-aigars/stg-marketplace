@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button } from '@/components/ui';
+import { Button, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, VersionSource } from '@/lib/listings/types';
 import { GameSearchStep } from './GameSearchStep';
@@ -74,6 +75,8 @@ export function ListingCreationFlow() {
   const [selectedGame, setSelectedGame] = useState<EnrichedGame | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const updateFormData = useCallback((updates: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -131,11 +134,12 @@ export function ListingCreationFlow() {
       price_cents: formData.price_cents,
       description: formData.description || null,
       photos: formData.photos,
-    });
+    }, turnstileToken);
 
     if ('error' in result) {
       setError(result.error);
       setPublishing(false);
+      turnstileRef.current?.reset();
     } else {
       router.push(`/${locale}/listings/${result.listingId}`);
     }
@@ -258,12 +262,15 @@ export function ListingCreationFlow() {
         )}
 
         {step === 6 && (
-          <ReviewStep
-            formData={formData}
-            onPublish={handlePublish}
-            publishing={publishing}
-            error={error}
-          />
+          <>
+            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
+            <ReviewStep
+              formData={formData}
+              onPublish={handlePublish}
+              publishing={publishing}
+              error={error}
+            />
+          </>
         )}
       </div>
 

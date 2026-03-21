@@ -19,21 +19,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://cf.geekdo-images.com data: blob:",
-              "font-src 'self'",
-              "connect-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://*.everypay.co https://*.unisend.com https://*.ingest.sentry.io",
-              "frame-src 'self' https://*.everypay.co",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
-          },
+          // CSP is now set dynamically in middleware.ts with per-request nonce
         ],
       },
       {

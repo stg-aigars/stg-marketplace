@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { MAX_MESSAGE_LENGTH, type Conversation, type Message } from './types';
 import { sendNewMessageNotification } from '@/lib/email';
+import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 
 /**
  * Start a new conversation about a listing, or get the existing one.
@@ -10,8 +11,12 @@ import { sendNewMessageNotification } from '@/lib/email';
  */
 export async function startConversation(
   listingId: string,
-  initialMessage: string
+  initialMessage: string,
+  turnstileToken?: string
 ): Promise<{ conversationId: string } | { error: string }> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const content = initialMessage.trim();
   if (!content || content.length > MAX_MESSAGE_LENGTH) {
     return { error: 'Message must be between 1 and 2000 characters' };
