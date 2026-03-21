@@ -1,19 +1,19 @@
 /**
  * In-memory sliding window rate limiter for single-server deployment.
- * Uses IP address (or other identifier) as the key.
+ * Assumes reverse proxy (Traefik) always sets x-forwarded-for.
  */
 
 import { NextResponse } from 'next/server';
 
 interface RateLimitOptions {
-  interval: number;   // Time window in milliseconds
-  maxRequests: number; // Max requests per window
+  interval: number;
+  maxRequests: number;
 }
 
 interface RateLimitResult {
   success: boolean;
   remaining: number;
-  resetTime: number; // Unix timestamp (ms) when the window resets
+  resetTime: number;
 }
 
 interface RateLimitEntry {
@@ -21,10 +21,8 @@ interface RateLimitEntry {
   resetTime: number;
 }
 
-interface RateLimiter {
+export interface RateLimiter {
   check(identifier: string): RateLimitResult;
-  /** Exposed for testing — the internal store */
-  _store: Map<string, RateLimitEntry>;
 }
 
 const CLEANUP_INTERVAL_MS = 60_000;
@@ -32,7 +30,6 @@ const CLEANUP_INTERVAL_MS = 60_000;
 export function rateLimit({ interval, maxRequests }: RateLimitOptions): RateLimiter {
   const store = new Map<string, RateLimitEntry>();
 
-  // Periodic cleanup to prevent memory leaks
   const cleanupTimer = setInterval(() => {
     const now = Date.now();
     store.forEach((entry, key) => {
@@ -42,19 +39,16 @@ export function rateLimit({ interval, maxRequests }: RateLimitOptions): RateLimi
     });
   }, CLEANUP_INTERVAL_MS);
 
-  // Allow Node.js to exit without waiting for this timer
   if (cleanupTimer.unref) {
     cleanupTimer.unref();
   }
 
   return {
-    _store: store,
     check(identifier: string): RateLimitResult {
       const now = Date.now();
       const entry = store.get(identifier);
 
       if (!entry || now > entry.resetTime) {
-        // New window
         const resetTime = now + interval;
         store.set(identifier, { count: 1, resetTime });
         return { success: true, remaining: maxRequests - 1, resetTime };
@@ -70,10 +64,6 @@ export function rateLimit({ interval, maxRequests }: RateLimitOptions): RateLimi
   };
 }
 
-/**
- * Extract client IP from request headers.
- * Reads x-forwarded-for (first IP in chain) → x-real-ip → 'unknown'.
- */
 export function getClientIP(request: Request): string {
   return (
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -82,15 +72,22 @@ export function getClientIP(request: Request): string {
   );
 }
 
-/**
- * Standard 429 response for rate-limited requests.
- */
-export function rateLimitResponse(resetTime: number): NextResponse {
+function rateLimitResponse(resetTime: number): NextResponse {
   const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
   return NextResponse.json(
     { error: 'Too many requests. Please try again later.', code: 'RATE_LIMITED' },
     { status: 429, headers: { 'Retry-After': String(Math.max(1, retryAfterSeconds)) } }
   );
+}
+
+/**
+ * Check rate limit for a request. Returns a 429 NextResponse if exceeded, null if OK.
+ * Follows the same null=ok pattern as requireBrowserOrigin.
+ */
+export function applyRateLimit(limiter: RateLimiter, request: Request): NextResponse | null {
+  const ip = getClientIP(request);
+  const result = limiter.check(ip);
+  return result.success ? null : rateLimitResponse(result.resetTime);
 }
 
 // Pre-configured limiters (singletons — persist across requests in same process)

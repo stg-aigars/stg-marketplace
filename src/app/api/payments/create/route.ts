@@ -9,13 +9,13 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
-import { paymentLimiter, getClientIP, rateLimitResponse } from '@/lib/rate-limit';
+import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
+import { validateTerminalInput } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
 
 export async function POST(request: Request) {
-  const ip = getClientIP(request);
-  const limit = paymentLimiter.check(ip);
-  if (!limit.success) return rateLimitResponse(limit.resetTime);
+  const rateLimitError = applyRateLimit(paymentLimiter, request);
+  if (rateLimitError) return rateLimitError;
 
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
@@ -46,15 +46,9 @@ export async function POST(request: Request) {
     if (!terminalId || !terminalName || !terminalCountry) {
       return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
     }
-    const validCountries = ['LV', 'LT', 'EE'];
-    if (!validCountries.includes(terminalCountry)) {
-      return NextResponse.json({ error: 'Invalid terminal country' }, { status: 400 });
-    }
-    if (terminalId.length > 50) {
-      return NextResponse.json({ error: 'Invalid terminal ID' }, { status: 400 });
-    }
-    // Cap terminal name length and strip control characters
-    terminalName = terminalName.slice(0, 200).replace(/[\x00-\x1f\x7f]/g, '');
+    const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
+    if (terminalCheck instanceof NextResponse) return terminalCheck;
+    terminalName = terminalCheck.sanitizedName;
     if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
       return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
     }

@@ -75,17 +75,26 @@ describe('rateLimit', () => {
     expect(result.resetTime).toBe(Date.now() + 60_000);
   });
 
-  it('cleanup removes expired entries from store', () => {
+  it('cleanup frees expired entries so new windows start fresh', () => {
     const limiter = rateLimit({ interval: 10_000, maxRequests: 1 });
 
+    // Exhaust limits for two IPs
     limiter.check('ip-1');
     limiter.check('ip-2');
-    expect(limiter._store.size).toBe(2);
+    expect(limiter.check('ip-1').success).toBe(false);
+    expect(limiter.check('ip-2').success).toBe(false);
 
     // Advance past interval + cleanup interval (60s)
     vi.advanceTimersByTime(10_001 + 60_000);
 
-    expect(limiter._store.size).toBe(0);
+    // After cleanup, both IPs start fresh windows
+    const r1 = limiter.check('ip-1');
+    expect(r1.success).toBe(true);
+    expect(r1.remaining).toBe(0);
+
+    const r2 = limiter.check('ip-2');
+    expect(r2.success).toBe(true);
+    expect(r2.remaining).toBe(0);
   });
 });
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
-import { photoUploadLimiter, getClientIP, rateLimitResponse } from '@/lib/rate-limit';
+import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 const EXTENSION_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -61,9 +61,8 @@ function detectImageType(buffer: Buffer): string | null {
 }
 
 export async function POST(request: Request) {
-  const ip = getClientIP(request);
-  const limit = photoUploadLimiter.check(ip);
-  if (!limit.success) return rateLimitResponse(limit.resetTime);
+  const rateLimitError = applyRateLimit(photoUploadLimiter, request);
+  if (rateLimitError) return rateLimitError;
 
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
