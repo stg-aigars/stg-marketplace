@@ -20,8 +20,14 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
+import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
+import { validateTerminalInput } from '@/lib/api/checkout-validation';
+import { logAuditEvent } from '@/lib/services/audit';
 
 export async function POST(request: Request) {
+  const rateLimitError = applyRateLimit(paymentLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 
@@ -48,6 +54,9 @@ export async function POST(request: Request) {
     if (!terminalId || !terminalName || !terminalCountry) {
       return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
     }
+    const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
+    if (terminalCheck instanceof NextResponse) return terminalCheck;
+    terminalName = terminalCheck.sanitizedName;
     if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
       return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
     }
@@ -212,6 +221,21 @@ export async function POST(request: Request) {
       sellerName: sellerProfile.full_name ?? 'Seller',
     }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
   })().catch((err) => console.error('[Email] Background email failed:', err));
+
+  void logAuditEvent({
+    actorId: user.id,
+    actorType: 'user',
+    action: 'payment.completed',
+    resourceType: 'order',
+    resourceId: order.id,
+    metadata: {
+      orderNumber: order.order_number,
+      listingId,
+      amountCents: pricing.totalChargeCents,
+      walletDebitCents: pricing.totalChargeCents,
+      paymentMethod: 'wallet',
+    },
+  });
 
   return NextResponse.json({ orderId: order.id });
 }

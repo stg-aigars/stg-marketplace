@@ -16,6 +16,7 @@ import {
   sendOrderDeclinedToBuyer,
   sendOrderDisputedToSeller,
 } from '@/lib/email';
+import { logAuditEvent } from '@/lib/services/audit';
 
 /**
  * Load an order by ID using the service client (bypasses RLS).
@@ -100,6 +101,15 @@ async function transitionOrder(
   if (error || !data) {
     throw new Error(`Failed to update order status: ${error?.message ?? 'Order status has changed'}`);
   }
+
+  void logAuditEvent({
+    actorId: userId,
+    actorType: 'user',
+    action: 'order.status_changed',
+    resourceType: 'order',
+    resourceId: orderId,
+    metadata: { from: currentStatus, to: toStatus, role },
+  });
 
   return data;
 }
@@ -308,6 +318,14 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     // Status changed between load and update — another process handled it
     return null;
   }
+
+  void logAuditEvent({
+    actorType: 'cron',
+    action: 'order.status_changed',
+    resourceType: 'order',
+    resourceId: orderId,
+    metadata: { from: 'delivered', to: 'completed', role: 'cron' },
+  });
 
   // Credit seller wallet (idempotent)
   await creditSellerWallet(orderId, order);

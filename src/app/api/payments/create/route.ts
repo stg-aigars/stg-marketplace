@@ -9,8 +9,14 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
+import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
+import { validateTerminalInput } from '@/lib/api/checkout-validation';
+import { logAuditEvent } from '@/lib/services/audit';
 
 export async function POST(request: Request) {
+  const rateLimitError = applyRateLimit(paymentLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 
@@ -40,6 +46,9 @@ export async function POST(request: Request) {
     if (!terminalId || !terminalName || !terminalCountry) {
       return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
     }
+    const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
+    if (terminalCheck instanceof NextResponse) return terminalCheck;
+    terminalName = terminalCheck.sanitizedName;
     if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
       return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
     }
@@ -116,11 +125,13 @@ export async function POST(request: Request) {
 
   // 7. Create checkout session
   const orderNumber = generateOrderNumber();
+  const callbackToken = crypto.randomUUID();
 
   const { data: session, error: sessionError } = await serviceClient
     .from('checkout_sessions')
     .insert({
       order_number: orderNumber,
+      callback_token: callbackToken,
       listing_id: listingId,
       buyer_id: user.id,
       terminal_id: terminalId,
@@ -131,7 +142,7 @@ export async function POST(request: Request) {
       wallet_debit_cents: walletDebitCents,
       status: 'pending',
     })
-    .select('id, order_number')
+    .select('id, order_number, callback_token')
     .single();
 
   if (sessionError || !session) {
@@ -162,8 +173,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
   }
 
-  // 9. Build callback URL
-  const callbackUrl = `${env.app.url}/api/payments/callback`;
+  // 9. Build callback URL with callback token for security
+  const callbackUrl = `${env.app.url}/api/payments/callback?token=${session.callback_token}`;
 
   // 10. Create EveryPay payment with order number as order reference
   try {
@@ -176,6 +187,15 @@ export async function POST(request: Request) {
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }
     );
+
+    void logAuditEvent({
+      actorId: user.id,
+      actorType: 'user',
+      action: 'payment.created',
+      resourceType: 'checkout_session',
+      resourceId: session.id,
+      metadata: { listingId, amountCents: buyerPricing.totalChargeCents, walletDebitCents, orderNumber },
+    });
 
     return NextResponse.json({
       paymentLink: paymentResponse.payment_link,

@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createWithdrawalRequest, InsufficientBalanceError } from '@/lib/services/wallet';
+import { withdrawalLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 // Basic IBAN validation for Baltic countries
 const IBAN_REGEX = /^(LV|LT|EE)\d{2}[A-Z0-9]{4,30}$/;
 
 export async function POST(request: Request) {
+  const rateLimitError = applyRateLimit(withdrawalLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

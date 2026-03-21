@@ -39,6 +39,12 @@ export interface Terminal {
 
 export type TerminalCountry = 'LT' | 'LV' | 'EE';
 
+export const TERMINAL_COUNTRIES: readonly TerminalCountry[] = ['LT', 'LV', 'EE'];
+
+export function isTerminalCountry(value: string): value is TerminalCountry {
+  return (TERMINAL_COUNTRIES as readonly string[]).includes(value);
+}
+
 // ============================================
 // Parcels
 // ============================================
