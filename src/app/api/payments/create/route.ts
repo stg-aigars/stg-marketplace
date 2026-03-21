@@ -45,6 +45,15 @@ export async function POST(request: Request) {
     if (!terminalId || !terminalName || !terminalCountry) {
       return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
     }
+    const validCountries = ['LV', 'LT', 'EE'];
+    if (!validCountries.includes(terminalCountry)) {
+      return NextResponse.json({ error: 'Invalid terminal country' }, { status: 400 });
+    }
+    if (terminalId.length > 50) {
+      return NextResponse.json({ error: 'Invalid terminal ID' }, { status: 400 });
+    }
+    // Cap terminal name length and strip control characters
+    terminalName = terminalName.slice(0, 200).replace(/[\x00-\x1f\x7f]/g, '');
     if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
       return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
     }
