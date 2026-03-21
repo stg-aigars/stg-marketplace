@@ -22,6 +22,7 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { env } from '@/lib/env';
 import type { CheckoutSession } from '@/lib/checkout/types';
+import { logAuditEvent } from '@/lib/services/audit';
 
 async function attemptAutoRefund(
   paymentReference: string,
@@ -31,6 +32,13 @@ async function attemptAutoRefund(
   try {
     await refundPayment(paymentReference, amountCents);
     console.log(`[Payments] Auto-refunded ${paymentReference}: ${reason}`);
+    void logAuditEvent({
+      actorType: 'system',
+      action: 'payment.refunded',
+      resourceType: 'payment',
+      resourceId: paymentReference,
+      metadata: { amountCents, reason },
+    });
     return true;
   } catch (refundError) {
     console.error(
@@ -300,6 +308,22 @@ export async function GET(request: Request) {
         sellerName: sellerProfile.full_name ?? 'Seller',
       }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
     })().catch((err) => console.error('[Email] Background email failed:', err));
+
+    void logAuditEvent({
+      actorId: session.buyer_id,
+      actorType: 'user',
+      action: 'payment.completed',
+      resourceType: 'order',
+      resourceId: order.id,
+      metadata: {
+        orderNumber: order.order_number,
+        paymentReference,
+        listingId: listing.id,
+        amountCents: session.amount_cents,
+        walletDebitCents: walletDebit,
+        paymentMethod: 'card',
+      },
+    });
 
     return NextResponse.redirect(`${env.app.url}/orders/${order.id}`);
   } catch (error) {

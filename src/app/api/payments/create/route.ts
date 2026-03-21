@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
 import { paymentLimiter, getClientIP, rateLimitResponse } from '@/lib/rate-limit';
+import { logAuditEvent } from '@/lib/services/audit';
 
 export async function POST(request: Request) {
   const ip = getClientIP(request);
@@ -192,6 +193,15 @@ export async function POST(request: Request) {
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }
     );
+
+    void logAuditEvent({
+      actorId: user.id,
+      actorType: 'user',
+      action: 'payment.created',
+      resourceType: 'checkout_session',
+      resourceId: session.id,
+      metadata: { listingId, amountCents: buyerPricing.totalChargeCents, walletDebitCents, orderNumber },
+    });
 
     return NextResponse.json({
       paymentLink: paymentResponse.payment_link,

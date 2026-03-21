@@ -21,6 +21,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { paymentLimiter, getClientIP, rateLimitResponse } from '@/lib/rate-limit';
+import { logAuditEvent } from '@/lib/services/audit';
 
 export async function POST(request: Request) {
   const ip = getClientIP(request);
@@ -226,6 +227,21 @@ export async function POST(request: Request) {
       sellerName: sellerProfile.full_name ?? 'Seller',
     }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
   })().catch((err) => console.error('[Email] Background email failed:', err));
+
+  void logAuditEvent({
+    actorId: user.id,
+    actorType: 'user',
+    action: 'payment.completed',
+    resourceType: 'order',
+    resourceId: order.id,
+    metadata: {
+      orderNumber: order.order_number,
+      listingId,
+      amountCents: pricing.totalChargeCents,
+      walletDebitCents: pricing.totalChargeCents,
+      paymentMethod: 'wallet',
+    },
+  });
 
   return NextResponse.json({ orderId: order.id });
 }

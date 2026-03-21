@@ -6,6 +6,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase';
+import { logAuditEvent } from '@/lib/services/audit';
 import type { WalletRow, WalletTransactionRow, WithdrawalRequestRow } from '@/lib/wallet/types';
 
 // ---------------------------------------------------------------------------
@@ -103,6 +104,15 @@ export async function creditWallet(
     throw new Error(`Failed to record credit transaction: ${txnError?.message}`);
   }
 
+  void logAuditEvent({
+    actorId: userId,
+    actorType: 'system',
+    action: 'wallet.credit',
+    resourceType: 'wallet_transaction',
+    resourceId: txn.id,
+    metadata: { amountCents, orderId, balanceAfterCents: updated.balance_cents },
+  });
+
   return txn;
 }
 
@@ -171,6 +181,15 @@ export async function debitWallet(
   if (txnError || !txn) {
     throw new Error(`Failed to record debit transaction: ${txnError?.message}`);
   }
+
+  void logAuditEvent({
+    actorId: userId,
+    actorType: 'user',
+    action: 'wallet.debit',
+    resourceType: 'wallet_transaction',
+    resourceId: txn.id,
+    metadata: { amountCents, orderId, balanceAfterCents: updated.balance_cents },
+  });
 
   return txn;
 }
@@ -286,6 +305,15 @@ export async function createWithdrawalRequest(
       withdrawal_id: withdrawal.id,
       description: `Withdrawal request — ${bankIban}`,
     });
+
+  void logAuditEvent({
+    actorId: userId,
+    actorType: 'user',
+    action: 'wallet.withdrawal_requested',
+    resourceType: 'withdrawal_request',
+    resourceId: withdrawal.id,
+    metadata: { amountCents, bankIban: bankIban.slice(0, 4) + '****' },
+  });
 
   return withdrawal;
 }
