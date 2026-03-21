@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Input, Button } from '@/components/ui';
+import { useState, useRef } from 'react';
+import { Input, Button, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { signUpWithEmail } from '@/lib/auth/actions';
 import { OAuthButton } from './OAuthButton';
 import { CountrySelector } from './CountrySelector';
@@ -15,6 +16,8 @@ export function SignUpForm() {
   const [country, setCountry] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,11 +40,12 @@ export function SignUpForm() {
       password,
       displayName,
       country: country as CountryCode,
-    });
+    }, turnstileToken);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+      turnstileRef.current?.reset();
     }
   }
 
@@ -100,6 +104,8 @@ export function SignUpForm() {
         {error && (
           <p className="text-sm text-semantic-error">{error}</p>
         )}
+
+        <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
         <Button type="submit" size="lg" loading={loading} className="w-full">
           {loading ? 'Creating account...' : 'Create account'}

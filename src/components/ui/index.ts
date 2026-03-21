@@ -22,3 +22,6 @@ export type { SkeletonProps } from './skeleton';
 export { Alert } from './alert';
 
 export { Avatar } from './avatar';
+
+export { TurnstileWidget } from './TurnstileWidget';
+export type { TurnstileWidgetRef } from './TurnstileWidget';

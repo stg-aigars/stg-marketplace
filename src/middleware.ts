@@ -2,6 +2,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
 import { routing } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/middleware';
+import { buildCspHeader } from '@/lib/csp';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -33,7 +34,18 @@ function copySupabaseCookies(
   return to;
 }
 
+function setCspHeader(response: NextResponse, csp: string): void {
+  response.headers.set('Content-Security-Policy', csp);
+}
+
 export default async function middleware(request: NextRequest) {
+  // 0. Generate per-request nonce for CSP
+  const nonce = crypto.randomUUID();
+  const csp = buildCspHeader(nonce);
+
+  // Pass nonce to Next.js via request header so Server Components can read it
+  request.headers.set('x-nonce', nonce);
+
   // 1. Refresh Supabase session (reads/writes cookies on request)
   const { supabase, response: supabaseResponse } = createClient(request);
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,7 +58,9 @@ export default async function middleware(request: NextRequest) {
     if (!user && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
       const signinUrl = new URL('/auth/signin', request.url);
       signinUrl.searchParams.set('returnUrl', request.nextUrl.pathname);
-      return copySupabaseCookies(supabaseResponse, NextResponse.redirect(signinUrl));
+      const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(signinUrl));
+      setCspHeader(redirect, csp);
+      return redirect;
     }
 
     // 4. Redirect OAuth users who haven't confirmed their country
@@ -66,7 +80,9 @@ export default async function middleware(request: NextRequest) {
 
         if (profile && !profile.country_confirmed) {
           const completeProfileUrl = new URL('/auth/complete-profile', request.url);
-          return copySupabaseCookies(supabaseResponse, NextResponse.redirect(completeProfileUrl));
+          const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(completeProfileUrl));
+          setCspHeader(redirect, csp);
+          return redirect;
         }
       }
     }
@@ -77,6 +93,9 @@ export default async function middleware(request: NextRequest) {
 
   // 6. Copy Supabase auth cookies onto the intl response
   copySupabaseCookies(supabaseResponse, intlResponse);
+
+  // 7. Set CSP header with per-request nonce
+  setCspHeader(intlResponse, csp);
 
   return intlResponse;
 }

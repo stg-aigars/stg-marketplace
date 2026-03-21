@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import type { CreateListingData } from './types';
 import {
   LISTING_CONDITIONS,
@@ -13,8 +14,12 @@ import {
 } from './types';
 
 export async function createListing(
-  data: CreateListingData
+  data: CreateListingData,
+  turnstileToken?: string
 ): Promise<{ listingId: string } | { error: string }> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const supabase = await createClient();
 
   const {

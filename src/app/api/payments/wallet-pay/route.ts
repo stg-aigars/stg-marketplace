@@ -23,6 +23,7 @@ import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email'
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { validateTerminalInput } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
+import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 
 export async function POST(request: Request) {
   const rateLimitError = applyRateLimit(paymentLimiter, request);
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
   let terminalName: string;
   let terminalCountry: string;
   let buyerPhone: string;
+  let turnstileToken: string | undefined;
   try {
     const body = await request.json();
     listingId = body.listingId;
@@ -47,6 +49,7 @@ export async function POST(request: Request) {
     terminalName = body.terminalName;
     terminalCountry = body.terminalCountry;
     buyerPhone = body.buyerPhone;
+    turnstileToken = body.turnstileToken;
 
     if (!listingId) {
       return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
@@ -62,6 +65,12 @@ export async function POST(request: Request) {
     }
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  // Verify Turnstile token
+  const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
+  if (!turnstile.success) {
+    return NextResponse.json({ error: turnstile.error }, { status: 403 });
   }
 
   // Fetch listing

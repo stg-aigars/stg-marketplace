@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import type { AuthActionResult, SignInFormData, SignUpFormData } from './types';
 import type { CountryCode } from '@/lib/country-utils';
+import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 
 /** Prevent open redirects — only allow relative paths. */
 function safeReturnUrl(url?: string): string {
@@ -15,8 +16,12 @@ function safeReturnUrl(url?: string): string {
 
 export async function signInWithEmail(
   formData: SignInFormData,
-  returnUrl?: string
+  returnUrl?: string,
+  turnstileToken?: string
 ): Promise<AuthActionResult> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -32,8 +37,12 @@ export async function signInWithEmail(
 }
 
 export async function signUpWithEmail(
-  formData: SignUpFormData
+  formData: SignUpFormData,
+  turnstileToken?: string
 ): Promise<AuthActionResult> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signUp({
@@ -66,7 +75,13 @@ export async function signOut(): Promise<void> {
   redirect('/');
 }
 
-export async function resetPassword(email: string): Promise<AuthActionResult> {
+export async function resetPassword(
+  email: string,
+  turnstileToken?: string
+): Promise<AuthActionResult> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const supabase = await createClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 

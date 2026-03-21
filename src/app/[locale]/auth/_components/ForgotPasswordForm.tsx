@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Input, Button } from '@/components/ui';
+import { useState, useRef } from 'react';
+import { Input, Button, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { resetPassword } from '@/lib/auth/actions';
 import { Link } from '@/i18n/navigation';
 
@@ -10,17 +11,20 @@ export function ForgotPasswordForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const result = await resetPassword(email);
+    const result = await resetPassword(email, turnstileToken);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+      turnstileRef.current?.reset();
     } else {
       setSent(true);
       setLoading(false);
@@ -59,6 +63,8 @@ export function ForgotPasswordForm() {
         {error && (
           <p className="text-sm text-semantic-error">{error}</p>
         )}
+
+        <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
         <Button type="submit" size="lg" loading={loading} className="w-full">
           {loading ? 'Sending...' : 'Send reset link'}

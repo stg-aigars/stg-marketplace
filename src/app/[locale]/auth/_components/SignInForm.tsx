@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Input, Button } from '@/components/ui';
+import { useState, useRef } from 'react';
+import { Input, Button, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { signInWithEmail } from '@/lib/auth/actions';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
@@ -16,16 +17,19 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(errorMessage || '');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const result = await signInWithEmail({ email, password }, returnUrl);
+    const result = await signInWithEmail({ email, password }, returnUrl, turnstileToken);
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+      turnstileRef.current?.reset();
     }
   }
 
@@ -78,6 +82,8 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
         {error && (
           <p className="text-sm text-semantic-error">{error}</p>
         )}
+
+        <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
         <Button type="submit" size="lg" loading={loading} className="w-full">
           {loading ? 'Signing in...' : 'Sign in'}
