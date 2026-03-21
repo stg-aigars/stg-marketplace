@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: false,
   output: 'standalone',
   images: {
     minimumCacheTTL: 2592000, // 30 days — reduce CPU pressure on VPS
