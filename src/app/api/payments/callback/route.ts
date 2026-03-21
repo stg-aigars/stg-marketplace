@@ -45,6 +45,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const paymentReference = searchParams.get('payment_reference');
   const orderReference = searchParams.get('order_reference');
+  const callbackToken = searchParams.get('token');
 
   if (!paymentReference || !orderReference) {
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
@@ -89,6 +90,12 @@ export async function GET(request: Request) {
 
   if (!session) {
     console.error('[Payments] Checkout session not found:', orderReference);
+    return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
+  }
+
+  // Validate callback token (null check handles legacy sessions before migration)
+  if (session.callback_token && session.callback_token !== callbackToken) {
+    console.error('[Payments] Invalid callback token for session:', session.id);
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
 

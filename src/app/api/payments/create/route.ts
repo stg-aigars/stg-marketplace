@@ -121,11 +121,13 @@ export async function POST(request: Request) {
 
   // 7. Create checkout session
   const orderNumber = generateOrderNumber();
+  const callbackToken = crypto.randomUUID();
 
   const { data: session, error: sessionError } = await serviceClient
     .from('checkout_sessions')
     .insert({
       order_number: orderNumber,
+      callback_token: callbackToken,
       listing_id: listingId,
       buyer_id: user.id,
       terminal_id: terminalId,
@@ -136,7 +138,7 @@ export async function POST(request: Request) {
       wallet_debit_cents: walletDebitCents,
       status: 'pending',
     })
-    .select('id, order_number')
+    .select('id, order_number, callback_token')
     .single();
 
   if (sessionError || !session) {
@@ -167,8 +169,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
   }
 
-  // 9. Build callback URL
-  const callbackUrl = `${env.app.url}/api/payments/callback`;
+  // 9. Build callback URL with callback token for security
+  const callbackUrl = `${env.app.url}/api/payments/callback?token=${session.callback_token}`;
 
   // 10. Create EveryPay payment with order number as order reference
   try {
