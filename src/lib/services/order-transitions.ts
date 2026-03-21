@@ -319,6 +319,14 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     return null;
   }
 
+  void logAuditEvent({
+    actorType: 'cron',
+    action: 'order.status_changed',
+    resourceType: 'order',
+    resourceId: orderId,
+    metadata: { from: 'delivered', to: 'completed', role: 'cron' },
+  });
+
   // Credit seller wallet (idempotent)
   await creditSellerWallet(orderId, order);
 

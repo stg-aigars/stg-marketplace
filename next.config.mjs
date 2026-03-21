@@ -26,7 +26,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://cf.geekdo-images.com data: blob:",
               "font-src 'self'",
-              "connect-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://*.everypay.co https://*.unisend.com",
+              "connect-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://*.everypay.co https://*.unisend.com https://*.ingest.sentry.io",
               "frame-src 'self' https://*.everypay.co",
               "frame-ancestors 'none'",
               "base-uri 'self'",

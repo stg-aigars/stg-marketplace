@@ -95,6 +95,6 @@ export function rateLimitResponse(resetTime: number): NextResponse {
 
 // Pre-configured limiters (singletons — persist across requests in same process)
 export const paymentLimiter = rateLimit({ interval: 60_000, maxRequests: 10 });
-export const photoUploadLimiter = rateLimit({ interval: 60_000, maxRequests: 5 });
+export const photoUploadLimiter = rateLimit({ interval: 60_000, maxRequests: 10 });
 export const withdrawalLimiter = rateLimit({ interval: 60_000, maxRequests: 3 });
 export const profileUpdateLimiter = rateLimit({ interval: 60_000, maxRequests: 5 });
