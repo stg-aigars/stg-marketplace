@@ -7,6 +7,42 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig = {
   productionBrowserSourceMaps: false,
   output: 'standalone',
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://cf.geekdo-images.com data: blob:",
+              "font-src 'self'",
+              "connect-src 'self' https://tfxqbtcdkzdwfgsivvet.supabase.co https://*.everypay.co https://*.unisend.com",
+              "frame-src 'self' https://*.everypay.co",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
+        ],
+      },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+    ];
+  },
   images: {
     minimumCacheTTL: 2592000, // 30 days — reduce CPU pressure on VPS
     remotePatterns: [
