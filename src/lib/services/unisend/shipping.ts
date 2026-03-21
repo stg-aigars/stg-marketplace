@@ -84,9 +84,9 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
 
   // 1. Normalize phones
   const sellerPhoneParsed = detectPhoneCountry(seller.phone);
-  const normalizedSellerPhone = composePhoneNumber(sellerPhoneParsed.country, sellerPhoneParsed.localNumber);
+  const normalizedSellerPhone = composePhoneNumber(sellerPhoneParsed.country, sellerPhoneParsed.localNumber, sellerPhoneParsed.prefix);
   const receiverPhoneParsed = detectPhoneCountry(receiver.phone);
-  const normalizedReceiverPhone = composePhoneNumber(receiverPhoneParsed.country, receiverPhoneParsed.localNumber);
+  const normalizedReceiverPhone = composePhoneNumber(receiverPhoneParsed.country, receiverPhoneParsed.localNumber, receiverPhoneParsed.prefix);
 
   // 2. Validate receiver phone against destination country mobile format
   const destCountry = destination.country as TerminalCountry;

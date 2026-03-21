@@ -43,7 +43,8 @@ export default async function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID();
   const csp = buildCspHeader(nonce);
 
-  // Pass nonce to Next.js via request header so Server Components can read it
+  // Propagate nonce via request header — available to Server Components via headers()
+  // if inline <Script nonce={...}> components are added in the future
   request.headers.set('x-nonce', nonce);
 
   // 1. Refresh Supabase session (reads/writes cookies on request)

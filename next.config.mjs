@@ -19,7 +19,17 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
-          // CSP is now set dynamically in middleware.ts with per-request nonce
+          // CSP for pages is set dynamically in middleware.ts with per-request nonce
+        ],
+      },
+      {
+        // Minimal CSP for API routes (middleware matcher excludes /api/*)
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'none'; frame-ancestors 'none'",
+          },
         ],
       },
       {
