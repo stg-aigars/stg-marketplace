@@ -3,8 +3,13 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { createServiceClient } from '@/lib/supabase';
+import { profileUpdateLimiter, getClientIP, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function PATCH(request: Request) {
+  const ip = getClientIP(request);
+  const limit = profileUpdateLimiter.check(ip);
+  if (!limit.success) return rateLimitResponse(limit.resetTime);
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

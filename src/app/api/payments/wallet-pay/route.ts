@@ -20,8 +20,13 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { createServiceClient } from '@/lib/supabase';
 import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
+import { paymentLimiter, getClientIP, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
+  const ip = getClientIP(request);
+  const limit = paymentLimiter.check(ip);
+  if (!limit.success) return rateLimitResponse(limit.resetTime);
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 
