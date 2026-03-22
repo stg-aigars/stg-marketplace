@@ -19,7 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DotsSixVertical, X, CircleNotch, CloudArrowUp } from '@phosphor-icons/react';
+import { DotsSixVertical, X, CircleNotch, CloudArrowUp } from '@phosphor-icons/react/ssr';
 import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 
 interface PhotoUploadStepProps {

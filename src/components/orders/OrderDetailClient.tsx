@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Warning } from '@phosphor-icons/react';
+import { Warning } from '@phosphor-icons/react/ssr';
 import { Badge, Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';

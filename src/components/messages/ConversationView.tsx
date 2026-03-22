@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package } from '@phosphor-icons/react';
+import { Package } from '@phosphor-icons/react/ssr';
 import { sendMessage, getMessages, markConversationRead } from '@/lib/messages/actions';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { MessageBubble } from './MessageBubble';

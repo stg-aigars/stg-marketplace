@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Modal, Button } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';

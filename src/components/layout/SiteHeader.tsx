@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CaretDown, X, List } from '@phosphor-icons/react';
+import { CaretDown, X, List } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/contexts/AuthContext';
 
 function SiteHeader() {

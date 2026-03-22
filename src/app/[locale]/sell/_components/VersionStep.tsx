@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CircleNotch, CheckCircle } from '@phosphor-icons/react';
+import { CircleNotch, CheckCircle } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import type { BGGVersion } from '@/lib/bgg/types';

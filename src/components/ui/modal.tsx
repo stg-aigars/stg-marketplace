@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react/ssr';
 
 interface ModalProps {
   open: boolean;

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ImageSquare } from '@phosphor-icons/react';
+import { ImageSquare } from '@phosphor-icons/react/ssr';
 
 interface PhotoGalleryProps {
   photos: string[];

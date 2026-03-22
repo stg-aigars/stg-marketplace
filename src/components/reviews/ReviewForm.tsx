@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
+import { ThumbsUp, ThumbsDown } from '@phosphor-icons/react/ssr';
 import { Alert, Button } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { REVIEW_MAX_COMMENT_LENGTH } from '@/lib/reviews/constants';

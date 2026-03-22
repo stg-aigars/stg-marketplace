@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { CircleNotch, PaperPlaneRight } from '@phosphor-icons/react';
+import { CircleNotch, PaperPlaneRight } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 import { MAX_MESSAGE_LENGTH } from '@/lib/messages/types';
 

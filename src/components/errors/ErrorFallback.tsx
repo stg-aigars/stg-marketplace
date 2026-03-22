@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
-import { Warning } from '@phosphor-icons/react';
+import { Warning } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 
 interface ErrorFallbackProps {

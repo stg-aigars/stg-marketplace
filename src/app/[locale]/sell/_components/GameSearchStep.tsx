@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Input, Card, CardBody, Button } from '@/components/ui';
-import { CircleNotch, ImageSquare } from '@phosphor-icons/react';
+import { CircleNotch, ImageSquare } from '@phosphor-icons/react/ssr';
 import { apiFetch } from '@/lib/api-fetch';
 
 interface GameResult {

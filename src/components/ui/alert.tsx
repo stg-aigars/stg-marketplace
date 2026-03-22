@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react/ssr';
 
 interface AlertProps {
   variant: 'error' | 'success' | 'warning' | 'info';

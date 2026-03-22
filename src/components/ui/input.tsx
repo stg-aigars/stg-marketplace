@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useState, type InputHTMLAttributes } from 'react';
-import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { Eye, EyeSlash } from '@phosphor-icons/react/ssr';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;

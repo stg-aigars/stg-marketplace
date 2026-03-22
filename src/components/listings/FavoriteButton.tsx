@@ -2,7 +2,7 @@
 
 import { useTransition, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart } from '@phosphor-icons/react';
+import { Heart } from '@phosphor-icons/react/ssr';
 import { toggleFavorite } from '@/lib/favorites/actions';
 
 interface FavoriteButtonProps {
