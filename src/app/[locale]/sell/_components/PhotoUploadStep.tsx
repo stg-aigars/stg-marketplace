@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { apiFetch } from '@/lib/api-fetch';
 import {
   DndContext,
   closestCenter,
@@ -162,9 +163,8 @@ export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps
           const formData = new FormData();
           formData.append('file', file);
 
-          const res = await fetch('/api/listings/photos', {
+          const res = await apiFetch('/api/listings/photos', {
             method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData,
           });
 

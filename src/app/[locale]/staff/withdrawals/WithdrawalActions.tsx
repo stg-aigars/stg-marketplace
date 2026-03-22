@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Alert, Button } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import type { WithdrawalStatus } from '@/lib/wallet/types';
 
@@ -19,9 +20,9 @@ export function WithdrawalActions({ withdrawalId, currentStatus }: WithdrawalAct
     setError(null);
 
     try {
-      const res = await fetch(`/api/staff/withdrawals/${withdrawalId}`, {
+      const res = await apiFetch(`/api/staff/withdrawals/${withdrawalId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       });
 
@@ -29,13 +30,13 @@ export function WithdrawalActions({ withdrawalId, currentStatus }: WithdrawalAct
 
       if (!res.ok) {
         setError(sanitizeApiError(data.error));
-        setLoading(null);
         return;
       }
 
       window.location.reload();
     } catch {
       setError('Connection error');
+    } finally {
       setLoading(null);
     }
   }

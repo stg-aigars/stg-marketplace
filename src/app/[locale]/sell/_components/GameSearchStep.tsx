@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Input, Card, CardBody, Button } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 
 interface GameResult {
   id: number;
@@ -52,7 +53,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
       setSearching(true);
       setError(null);
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `/api/games/search?q=${encodeURIComponent(query.trim())}`,
           { signal: controller.signal }
         );
@@ -82,7 +83,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
     setEnriching(game.id);
     setError(null);
     try {
-      const res = await fetch(`/api/games/${game.id}/enrich`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const res = await apiFetch(`/api/games/${game.id}/enrich`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         const enriched: EnrichedGame = {

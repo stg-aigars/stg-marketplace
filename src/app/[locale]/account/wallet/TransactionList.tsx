@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Badge, Card, CardBody } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import type { WalletTransactionRow } from '@/lib/wallet/types';
@@ -35,7 +36,7 @@ export function TransactionList({ initialTransactions, initialTotal }: Transacti
     setLoading(true);
     try {
       const nextPage = page + 1;
-      const res = await fetch(`/api/wallet/transactions?page=${nextPage}&limit=${limit}`);
+      const res = await apiFetch(`/api/wallet/transactions?page=${nextPage}&limit=${limit}`);
       if (res.ok) {
         const data = await res.json();
         setTransactions((prev) => [...prev, ...data.transactions]);

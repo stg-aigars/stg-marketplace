@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { Button, Input, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { PHONE_FORMATS, type TerminalCountry } from '@/lib/services/unisend/types';
 
@@ -85,9 +86,9 @@ export function CheckoutForm({
     try {
       if (walletCoversTotal) {
         // Full wallet payment — no EveryPay needed
-        const response = await fetch('/api/payments/wallet-pay', {
+        const response = await apiFetch('/api/payments/wallet-pay', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(commonBody),
         });
 
@@ -95,7 +96,6 @@ export function CheckoutForm({
 
         if (!response.ok) {
           setError(sanitizeApiError(data.error));
-          setLoading(false);
           turnstileRef.current?.reset();
           return;
         }
@@ -103,9 +103,9 @@ export function CheckoutForm({
         window.location.href = `/orders/${data.orderId}`;
       } else {
         // Card payment (with optional wallet partial debit)
-        const response = await fetch('/api/payments/create', {
+        const response = await apiFetch('/api/payments/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...commonBody, useWallet }),
         });
 
@@ -113,7 +113,6 @@ export function CheckoutForm({
 
         if (!response.ok) {
           setError(sanitizeApiError(data.error));
-          setLoading(false);
           turnstileRef.current?.reset();
           return;
         }
@@ -122,8 +121,9 @@ export function CheckoutForm({
       }
     } catch {
       setError('Connection error. Please check your internet and try again.');
-      setLoading(false);
       turnstileRef.current?.reset();
+    } finally {
+      setLoading(false);
     }
   }
 

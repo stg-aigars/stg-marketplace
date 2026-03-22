@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardBody, Button, Input } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import type { BGGVersion } from '@/lib/bgg/types';
 import type { VersionSource } from '@/lib/listings/types';
 
@@ -45,7 +46,7 @@ export function VersionStep({
       setLoading(true);
       setFetchError(null);
       try {
-        const res = await fetch(`/api/games/${gameId}/versions`);
+        const res = await apiFetch(`/api/games/${gameId}/versions`);
         const data = await res.json();
         if (!cancelled) {
           setVersions(data.versions ?? []);
