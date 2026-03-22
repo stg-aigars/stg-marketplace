@@ -131,6 +131,23 @@ export default async function AccountPage() {
             </CardBody>
           </Card>
         </Link>
+        <Link href="/account/settings">
+          <Card hoverable>
+            <CardBody>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-semantic-text-heading">Settings</p>
+                  <p className="text-sm text-semantic-text-muted mt-0.5">
+                    Email, password, and data management
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
       </div>
     </div>
   );

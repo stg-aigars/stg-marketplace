@@ -159,6 +159,14 @@ function SiteHeader() {
                     >
                       Messages
                     </Link>
+                    <Link
+                      href="/account/settings"
+                      role="menuitem"
+                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Settings
+                    </Link>
                     <button
                       role="menuitem"
                       onClick={handleSignOut}
@@ -250,6 +258,13 @@ function SiteHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   Messages
+                </Link>
+                <Link
+                  href="/account/settings"
+                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Settings
                 </Link>
                 <button
                   onClick={handleSignOut}
