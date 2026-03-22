@@ -108,6 +108,8 @@ Always use these — do not write inline equivalents:
 | Empty / no-results states | `EmptyState` (icon, title, description, action) | `@/components/ui` |
 | Breadcrumb navigation | `Breadcrumb` (items: { label, href? }[]) | `@/components/ui` |
 | Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
+| State-based tabs | `Tabs` (tabs, activeTab, onTabChange; underline style with counts) | `@/components/ui` |
+| Link-based tabs | `NavTabs` (tabs with href, variant: underline/pill; auto-detects active from pathname) | `@/components/ui` |
 | Price formatting | `formatPrice()` / `formatCentsToCurrency()` | `@/lib/services/pricing` |
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |

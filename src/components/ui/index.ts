@@ -37,3 +37,9 @@ export type { BreadcrumbProps } from './breadcrumb';
 
 export { Pagination } from './pagination';
 export type { PaginationProps } from './pagination';
+
+export { Tabs } from './tabs';
+export type { TabsProps, TabItem } from './tabs';
+
+export { NavTabs } from './nav-tabs';
+export type { NavTabsProps, NavTabItem } from './nav-tabs';

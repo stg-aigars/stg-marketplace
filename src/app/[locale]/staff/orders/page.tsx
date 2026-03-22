@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, NavTabs } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
@@ -54,32 +54,19 @@ export default async function StaffOrdersPage({
         All orders
       </h1>
 
-      {/* Status filter */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Link
-          href="/staff/orders"
-          className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-            !searchParams.status
-              ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
-              : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
-          }`}
-        >
-          All
-        </Link>
-        {['pending_seller', 'accepted', 'shipped', 'delivered', 'completed', 'cancelled', 'disputed'].map((s) => (
-          <Link
-            key={s}
-            href={`/staff/orders?status=${s}`}
-            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-              searchParams.status === s
-                ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
-                : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
-            }`}
-          >
-            {ORDER_STATUS_CONFIG[s as OrderStatus]?.label ?? s}
-          </Link>
-        ))}
-      </div>
+      <NavTabs
+        tabs={[
+          { key: 'all', label: 'All', href: '/staff/orders' },
+          ...(['pending_seller', 'accepted', 'shipped', 'delivered', 'completed', 'cancelled', 'disputed'] as OrderStatus[]).map((s) => ({
+            key: s,
+            label: ORDER_STATUS_CONFIG[s]?.label ?? s,
+            href: `/staff/orders?status=${s}`,
+          })),
+        ]}
+        activeTab={searchParams.status ?? 'all'}
+        variant="pill"
+        className="mb-6"
+      />
 
       {typedOrders.length === 0 ? (
         <Card>
