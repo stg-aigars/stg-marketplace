@@ -34,3 +34,6 @@ export type { EmptyStateProps } from './empty-state';
 
 export { Breadcrumb } from './breadcrumb';
 export type { BreadcrumbProps } from './breadcrumb';
+
+export { Pagination } from './pagination';
+export type { PaginationProps } from './pagination';

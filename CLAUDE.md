@@ -107,6 +107,7 @@ Always use these — do not write inline equivalents:
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
 | Empty / no-results states | `EmptyState` (icon, title, description, action) | `@/components/ui` |
 | Breadcrumb navigation | `Breadcrumb` (items: { label, href? }[]) | `@/components/ui` |
+| Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
 | Price formatting | `formatPrice()` / `formatCentsToCurrency()` | `@/lib/services/pricing` |
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { MagnifyingGlass, Cube } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import { Button, EmptyState } from '@/components/ui';
+import { EmptyState, Pagination } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
@@ -114,8 +113,6 @@ export default async function BrowsePage({
   const filteredListings = listings ?? [];
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const showingFrom = totalCount === 0 ? 0 : offset + 1;
-  const showingTo = Math.min(offset + PAGE_SIZE, totalCount);
   const filtersActive = hasActiveFilters(filters);
 
   // Build pagination URL helper
@@ -168,29 +165,13 @@ export default async function BrowsePage({
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-8">
-              <p className="text-sm text-semantic-text-secondary">
-                Showing {showingFrom}–{showingTo} of {totalCount} listings
-              </p>
-              <div className="flex gap-2">
-                {filters.page > 1 ? (
-                  <Link href={paginationUrl(filters.page - 1)}>
-                    <Button variant="secondary" size="sm">Previous</Button>
-                  </Link>
-                ) : (
-                  <Button variant="secondary" size="sm" disabled>Previous</Button>
-                )}
-                {filters.page < totalPages ? (
-                  <Link href={paginationUrl(filters.page + 1)}>
-                    <Button variant="secondary" size="sm">Next</Button>
-                  </Link>
-                ) : (
-                  <Button variant="secondary" size="sm" disabled>Next</Button>
-                )}
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={filters.page}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            buildUrl={paginationUrl}
+          />
         </>
       )}
     </div>
