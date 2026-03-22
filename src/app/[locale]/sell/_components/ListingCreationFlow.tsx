@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, TurnstileWidget } from '@/components/ui';
+import { Button, Stepper, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, VersionSource } from '@/lib/listings/types';
@@ -15,13 +15,13 @@ import { PriceStep } from './PriceStep';
 import { ReviewStep } from './ReviewStep';
 
 const STEPS = [
-  { number: 1, label: 'Game' },
-  { number: 2, label: 'Edition' },
-  { number: 3, label: 'Photos' },
-  { number: 4, label: 'Condition' },
-  { number: 5, label: 'Price' },
-  { number: 6, label: 'Review' },
-] as const;
+  { id: 'game', label: 'Game' },
+  { id: 'edition', label: 'Edition' },
+  { id: 'photos', label: 'Photos' },
+  { id: 'condition', label: 'Condition' },
+  { id: 'price', label: 'Price' },
+  { id: 'review', label: 'Review' },
+];
 
 export interface FormData {
   // Step 1: Game
@@ -147,36 +147,7 @@ export function ListingCreationFlow() {
 
   return (
     <div className="space-y-6">
-      {/* Progress bar */}
-      <nav aria-label="Listing creation progress">
-        <ol className="flex items-center gap-1 sm:gap-2">
-          {STEPS.map(({ number, label }) => (
-            <li key={number} className="flex-1">
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className={`h-1.5 w-full rounded-full transition-colors ${
-                    number <= step
-                      ? 'bg-semantic-primary'
-                      : 'bg-semantic-border-subtle'
-                  }`}
-                />
-                <span
-                  className={`text-xs hidden sm:block ${
-                    number === step
-                      ? 'font-medium text-semantic-text-primary'
-                      : 'text-semantic-text-muted'
-                  }`}
-                >
-                  {label}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ol>
-        <p className="text-sm text-semantic-text-muted mt-2 sm:hidden">
-          Step {step} of 6: {STEPS[step - 1].label}
-        </p>
-      </nav>
+      <Stepper steps={STEPS} currentStep={STEPS[step - 1].id} />
 
       {/* Step content */}
       <div className="min-h-[300px]">

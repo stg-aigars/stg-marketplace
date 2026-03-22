@@ -110,6 +110,7 @@ Always use these — do not write inline equivalents:
 | Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
 | State-based tabs | `Tabs` (tabs, activeTab, onTabChange; underline style with counts) | `@/components/ui` |
 | Link-based tabs | `NavTabs` (tabs with href, variant: underline/pill; auto-detects active from pathname) | `@/components/ui` |
+| Step progress | `Stepper` (steps with id/label, currentStep; progress bar + labels, mobile compact) | `@/components/ui` |
 | Price formatting | `formatPrice()` / `formatCentsToCurrency()` | `@/lib/services/pricing` |
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |

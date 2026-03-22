@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Alert, Badge, Breadcrumb, Card, CardBody } from '@/components/ui';
+import { Alert, Badge, Breadcrumb, Card, CardBody, Stepper } from '@/components/ui';
 import { calculateBuyerPricing, calculateCheckoutPricing, formatCentsToCurrency } from '@/lib/services/pricing';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -181,6 +181,17 @@ export default async function CheckoutPage({
         { label: listing.game_name, href: `/listings/${listing.id}` },
         { label: 'Checkout' },
       ]} />
+
+      <Stepper
+        steps={[
+          { id: 'browse', label: 'Browse' },
+          { id: 'listing', label: 'Select' },
+          { id: 'checkout', label: 'Checkout' },
+          { id: 'confirmation', label: 'Confirmation' },
+        ]}
+        currentStep="checkout"
+        className="mb-6"
+      />
 
       <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
         Checkout
