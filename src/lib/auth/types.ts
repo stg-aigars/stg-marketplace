@@ -15,6 +15,7 @@ export interface UserProfile {
 
 export interface AuthActionResult {
   error?: string;
+  success?: string;
 }
 
 export interface SignInFormData {

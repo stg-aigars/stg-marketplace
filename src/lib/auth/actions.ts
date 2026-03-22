@@ -144,3 +144,123 @@ export async function updateProfile(data: {
 
   redirect(safeReturnUrl(data.returnUrl));
 }
+
+// ---------------------------------------------------------------------------
+// Account settings actions
+// ---------------------------------------------------------------------------
+
+export async function updateDisplayName(
+  name: string
+): Promise<AuthActionResult> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { error: 'Display name cannot be empty' };
+  }
+  if (trimmed.length > 100) {
+    return { error: 'Display name must be 100 characters or fewer' };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ full_name: trimmed })
+    .eq('id', user.id);
+
+  if (error) {
+    return { error: 'Something went wrong. Please try again' };
+  }
+
+  return { success: 'Display name updated' };
+}
+
+export async function updateEmail(
+  newEmail: string
+): Promise<AuthActionResult> {
+  const trimmed = newEmail.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(trimmed)) {
+    return { error: 'Please enter a valid email address' };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.updateUser({ email: trimmed });
+
+  if (error) {
+    if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+      return { error: 'An account with this email already exists' };
+    }
+    return { error: 'Something went wrong. Please try again' };
+  }
+
+  return {
+    success:
+      'Confirmation links sent to both your current and new email addresses. You must confirm on both to complete the change.',
+  };
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<AuthActionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !user.email) {
+    return { error: 'Not authenticated' };
+  }
+
+  // Verify current password
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (signInError) {
+    return { error: 'Current password is incorrect' };
+  }
+
+  // Validate new password
+  if (newPassword.length < 8) {
+    return { error: 'New password must be at least 8 characters' };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+  if (error) {
+    return { error: 'Something went wrong. Please try again' };
+  }
+
+  return { success: 'Password updated' };
+}
+
+export async function setPassword(
+  newPassword: string
+): Promise<AuthActionResult> {
+  if (newPassword.length < 8) {
+    return { error: 'Password must be at least 8 characters' };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+  if (error) {
+    return { error: 'Something went wrong. Please try again' };
+  }
+
+  return { success: 'Password set. You can now sign in with email.' };
+}
