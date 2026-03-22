@@ -96,6 +96,7 @@ export function CheckoutForm({
 
         if (!response.ok) {
           setError(sanitizeApiError(data.error));
+          setLoading(false);
           turnstileRef.current?.reset();
           return;
         }
@@ -113,6 +114,7 @@ export function CheckoutForm({
 
         if (!response.ok) {
           setError(sanitizeApiError(data.error));
+          setLoading(false);
           turnstileRef.current?.reset();
           return;
         }
@@ -121,9 +123,8 @@ export function CheckoutForm({
       }
     } catch {
       setError('Connection error. Please check your internet and try again.');
-      turnstileRef.current?.reset();
-    } finally {
       setLoading(false);
+      turnstileRef.current?.reset();
     }
   }
 

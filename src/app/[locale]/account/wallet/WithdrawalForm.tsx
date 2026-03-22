@@ -43,6 +43,7 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
 
       if (!res.ok) {
         setError(sanitizeApiError(data.error));
+        setLoading(false);
         return;
       }
 
@@ -50,7 +51,6 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
       setTimeout(() => window.location.reload(), 1500);
     } catch {
       setError('Connection error. Please try again.');
-    } finally {
       setLoading(false);
     }
   }

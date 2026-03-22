@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
@@ -89,8 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
       }
 
-      // Re-render Server Components with fresh cookies
-      router.refresh();
+      // Re-render Server Components with fresh cookies on actual auth changes.
+      // Skip INITIAL_SESSION — it fires on every mount and the initial state
+      // is already loaded via getSession() above.
+      if (event !== 'INITIAL_SESSION') {
+        router.refresh();
+      }
     });
 
     return () => {
