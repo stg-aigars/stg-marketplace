@@ -57,11 +57,20 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
 
     // Save phone to profile if it was newly entered
     if (!sellerPhone) {
-      await apiFetch('/api/profile/phone', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
+      try {
+        const res = await apiFetch('/api/profile/phone', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+        if (!res.ok) {
+          setError('Failed to save phone number. Please try again.');
+          return;
+        }
+      } catch {
+        setError('Connection error. Please try again.');
+        return;
+      }
     }
 
     await callAction('accept', { sellerPhone: phone });

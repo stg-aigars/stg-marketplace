@@ -47,12 +47,16 @@ export function VersionStep({
       setFetchError(null);
       try {
         const res = await apiFetch(`/api/games/${gameId}/versions`);
+        if (!res.ok) {
+          if (!cancelled) {
+            const data = await res.json().catch(() => null);
+            setFetchError(data?.error || 'Could not load editions. You can enter version details manually.');
+          }
+          return;
+        }
         const data = await res.json();
         if (!cancelled) {
           setVersions(data.versions ?? []);
-          if (!res.ok && data.error) {
-            setFetchError(data.error);
-          }
         }
       } catch {
         if (!cancelled) {

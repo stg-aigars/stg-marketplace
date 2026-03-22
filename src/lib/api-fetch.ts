@@ -3,8 +3,8 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   return fetch(url, {
     ...options,
     headers: {
-      'X-Requested-With': 'XMLHttpRequest',
       ...options.headers,
+      'X-Requested-With': 'XMLHttpRequest',
     },
   });
 }

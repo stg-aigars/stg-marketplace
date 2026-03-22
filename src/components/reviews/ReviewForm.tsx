@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui';
-import { Alert } from '@/components/ui';
+import { Alert, Button } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { REVIEW_MAX_COMMENT_LENGTH } from '@/lib/reviews/constants';
 import type { ReviewRow } from '@/lib/reviews/types';

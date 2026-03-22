@@ -37,12 +37,11 @@ export function TransactionList({ initialTransactions, initialTotal }: Transacti
     try {
       const nextPage = page + 1;
       const res = await apiFetch(`/api/wallet/transactions?page=${nextPage}&limit=${limit}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTransactions((prev) => [...prev, ...data.transactions]);
-        setTotal(data.total);
-        setPage(nextPage);
-      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setTransactions((prev) => [...prev, ...data.transactions]);
+      setTotal(data.total);
+      setPage(nextPage);
     } finally {
       setLoading(false);
     }
