@@ -101,7 +101,7 @@ Always use these — do not write inline equivalents:
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
 | Condition & status badges | `Badge` (variants: default, success, warning, error, trust; condition keys) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
-| Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible) | `@/components/ui` |
+| Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible; optional icon + title) | `@/components/ui` |
 | User avatars / initials | `Avatar` (sizes: sm, md) | `@/components/ui` |
 | Loading placeholders | `Skeleton` | `@/components/ui` |
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
