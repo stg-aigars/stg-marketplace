@@ -185,7 +185,7 @@ export default async function CheckoutPage({
       <Stepper
         steps={[
           { id: 'browse', label: 'Browse' },
-          { id: 'listing', label: 'Select' },
+          { id: 'listing', label: 'Listing' },
           { id: 'checkout', label: 'Checkout' },
           { id: 'confirmation', label: 'Confirmation' },
         ]}

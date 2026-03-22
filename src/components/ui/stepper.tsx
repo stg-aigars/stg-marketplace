@@ -14,6 +14,8 @@ interface StepperProps {
 function Stepper({ steps, currentStep, className = '' }: StepperProps) {
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
+  if (currentIndex === -1) return null;
+
   return (
     <nav aria-label="Progress" className={className}>
       <ol className="flex items-center gap-1 sm:gap-2">
@@ -40,7 +42,7 @@ function Stepper({ steps, currentStep, className = '' }: StepperProps) {
                         : 'text-semantic-text-muted'
                   }`}
                 >
-                  {isCompleted && <CheckCircle size={14} weight="fill" className="text-semantic-primary" />}
+                  {isCompleted && <CheckCircle size={14} weight="fill" className="text-semantic-primary" aria-hidden="true" />}
                   {step.label}
                 </span>
               </div>
@@ -49,7 +51,7 @@ function Stepper({ steps, currentStep, className = '' }: StepperProps) {
         })}
       </ol>
       <p className="text-sm text-semantic-text-muted mt-2 sm:hidden">
-        Step {currentIndex + 1} of {steps.length}: {steps[currentIndex]?.label}
+        Step {currentIndex + 1} of {steps.length}: {steps[currentIndex].label}
       </p>
     </nav>
   );
