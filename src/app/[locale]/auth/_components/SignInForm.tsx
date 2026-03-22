@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input, Button, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { signInWithEmail } from '@/lib/auth/actions';
+import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
 
@@ -13,12 +15,21 @@ interface SignInFormProps {
 }
 
 export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
+  const { user } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(errorMessage || '');
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
+
+  // Redirect away if user becomes authenticated (e.g. after OAuth callback)
+  useEffect(() => {
+    if (user) {
+      router.replace(returnUrl || '/');
+    }
+  }, [user, router, returnUrl]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +46,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
 
   return (
     <div className="space-y-6">
-      <OAuthButton />
+      <OAuthButton returnUrl={returnUrl} />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

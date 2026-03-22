@@ -113,6 +113,7 @@ export async function updatePassword(
 export async function updateProfile(data: {
   country: CountryCode;
   displayName?: string;
+  returnUrl?: string;
 }): Promise<AuthActionResult> {
   const supabase = await createClient();
 
@@ -141,5 +142,5 @@ export async function updateProfile(data: {
     return { error: 'Something went wrong. Please try again' };
   }
 
-  redirect('/');
+  redirect(safeReturnUrl(data.returnUrl));
 }

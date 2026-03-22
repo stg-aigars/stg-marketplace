@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/browser';
-import { signOut as signOutAction } from '@/lib/auth/actions';
+
 import type { UserProfile } from '@/lib/auth/types';
 
 interface AuthContextValue {
@@ -123,8 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, profile]);
 
   const handleSignOut = useCallback(async () => {
-    await signOutAction();
-  }, []);
+    await supabase.auth.signOut();
+    router.push('/');
+  }, [supabase, router]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui';
 import { createClient } from '@/lib/supabase/browser';
 
-export function OAuthButton() {
+interface OAuthButtonProps {
+  returnUrl?: string;
+}
+
+export function OAuthButton({ returnUrl }: OAuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleGoogleSignIn() {
@@ -12,13 +16,12 @@ export function OAuthButton() {
     const supabase = createClient();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
-    // Preserve the current page so the user returns here after OAuth
-    const returnUrl = window.location.pathname;
+    const destination = returnUrl || '/';
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${appUrl}/auth/callback?returnUrl=${encodeURIComponent(returnUrl)}`,
+        redirectTo: `${appUrl}/auth/callback?returnUrl=${encodeURIComponent(destination)}`,
       },
     });
   }

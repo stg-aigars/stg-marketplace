@@ -5,7 +5,11 @@ export const metadata = {
   title: 'Complete your profile',
 };
 
-export default function CompleteProfilePage() {
+export default function CompleteProfilePage({
+  searchParams,
+}: {
+  searchParams: { returnUrl?: string };
+}) {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="max-w-md mx-auto">
@@ -20,7 +24,7 @@ export default function CompleteProfilePage() {
 
         <Card>
           <CardBody>
-            <CompleteProfileForm />
+            <CompleteProfileForm returnUrl={searchParams.returnUrl} />
           </CardBody>
         </Card>
       </div>

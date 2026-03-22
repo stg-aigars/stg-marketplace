@@ -53,7 +53,15 @@ export default async function middleware(request: NextRequest) {
 
   const pathname = stripLocalePrefix(request.nextUrl.pathname);
 
-  // 2. Skip all protection for auth routes
+  // 2. Redirect authenticated users away from signin/signup
+  if (user && (pathname === '/auth/signin' || pathname === '/auth/signup')) {
+    const homeUrl = new URL('/', request.url);
+    const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(homeUrl));
+    setCspHeader(redirect, csp);
+    return redirect;
+  }
+
+  // 3. Skip remaining protection for auth routes
   if (!pathname.startsWith(AUTH_PREFIX)) {
     // 3. Redirect unauthenticated users from protected routes
     if (!user && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
@@ -81,6 +89,7 @@ export default async function middleware(request: NextRequest) {
 
         if (profile && !profile.country_confirmed) {
           const completeProfileUrl = new URL('/auth/complete-profile', request.url);
+          completeProfileUrl.searchParams.set('returnUrl', request.nextUrl.pathname);
           const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(completeProfileUrl));
           setCspHeader(redirect, csp);
           return redirect;

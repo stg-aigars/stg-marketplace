@@ -6,7 +6,11 @@ import { updateProfile } from '@/lib/auth/actions';
 import { CountrySelector } from './CountrySelector';
 import type { CountryCode } from '@/lib/country-utils';
 
-export function CompleteProfileForm() {
+interface CompleteProfileFormProps {
+  returnUrl?: string;
+}
+
+export function CompleteProfileForm({ returnUrl }: CompleteProfileFormProps) {
   const [country, setCountry] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
@@ -26,6 +30,7 @@ export function CompleteProfileForm() {
     const result = await updateProfile({
       country: country as CountryCode,
       displayName: displayName || undefined,
+      returnUrl,
     });
 
     if (result?.error) {
