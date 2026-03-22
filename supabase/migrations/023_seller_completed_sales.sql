@@ -16,3 +16,6 @@ $$;
 -- Allow anonymous and authenticated users to call this function
 GRANT EXECUTE ON FUNCTION get_seller_completed_sales(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION get_seller_completed_sales(uuid) TO authenticated;
+
+-- Composite index for efficient seller + status filtering
+CREATE INDEX IF NOT EXISTS idx_orders_seller_status ON orders(seller_id, status);

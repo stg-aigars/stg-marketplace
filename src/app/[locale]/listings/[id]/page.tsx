@@ -357,7 +357,7 @@ export default async function ListingDetailPage({
                     {sellerCompletedSales > 0 && (
                       <>
                         <span className="mx-1">&middot;</span>
-                        <span>{sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'}</span>
+                        <span>{sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'} completed</span>
                       </>
                     )}
                   </div>
