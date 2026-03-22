@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
@@ -44,7 +45,8 @@ export default async function StaffDisputeDetailPage({
 }: {
   params: { id: string };
 }) {
-  const { serviceClient } = await requireServerAuth();
+  const { isStaff, serviceClient } = await requireServerAuth();
+  if (!isStaff) { redirect('/'); }
 
   const { data: dispute } = await serviceClient
     .from('disputes')

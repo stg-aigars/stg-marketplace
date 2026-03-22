@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
@@ -41,7 +42,8 @@ export default async function StaffDisputesPage({
 }: {
   searchParams: { filter?: string };
 }) {
-  const { serviceClient } = await requireServerAuth();
+  const { isStaff, serviceClient } = await requireServerAuth();
+  if (!isStaff) { redirect('/'); }
 
   const activeFilter = (searchParams.filter as FilterTab) || 'all';
 

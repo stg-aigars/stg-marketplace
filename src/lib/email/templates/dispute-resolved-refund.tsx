@@ -6,6 +6,7 @@
 import { Button, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, theme, templateStyles as s } from './layout';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 
 interface DisputeResolvedRefundProps {
   recipientName: string;
@@ -29,7 +30,7 @@ export function DisputeResolvedRefund({
   appUrl,
 }: DisputeResolvedRefundProps) {
   const orderUrl = `${appUrl}/orders/${orderId}`;
-  const formattedAmount = `€${(refundAmountCents / 100).toFixed(2)}`;
+  const formattedAmount = formatCentsToCurrency(refundAmountCents);
 
   return (
     <EmailLayout preview={`Dispute resolved: ${gameName} — ${orderNumber}`}>

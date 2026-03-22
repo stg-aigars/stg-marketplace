@@ -62,7 +62,7 @@ export async function getDispute(orderId: string): Promise<DisputeRow | null> {
     .from('disputes')
     .select('*')
     .eq('order_id', orderId)
-    .single<DisputeRow>();
+    .maybeSingle<DisputeRow>();
   return data ?? null;
 }
 
@@ -72,7 +72,7 @@ export async function getDispute(orderId: string): Promise<DisputeRow | null> {
 
 /**
  * Buyer opens a dispute on a delivered order.
- * Uses SELECT FOR UPDATE on the order row to prevent race with auto-complete cron.
+ * Uses optimistic locking on order status to prevent race with auto-complete cron.
  */
 export async function openDispute(
   orderId: string,
@@ -260,6 +260,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   if (order.status !== 'disputed') throw new Error('Order is not in disputed status');
   if (order.seller_id !== userId) throw new Error('Only the seller can accept a refund');
   if (dispute.resolved_at) throw new Error('Dispute is already resolved');
+  if (dispute.escalated_at) throw new Error('Cannot accept refund after escalation — staff will resolve this dispute');
 
   const refundAmountCents = calculateRefundAmount(order);
 

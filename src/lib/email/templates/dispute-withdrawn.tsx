@@ -6,6 +6,7 @@
 import { Button, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, templateStyles as s } from './layout';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 
 interface DisputeWithdrawnProps {
   sellerName: string;
@@ -27,7 +28,7 @@ export function DisputeWithdrawn({
   appUrl,
 }: DisputeWithdrawnProps) {
   const orderUrl = `${appUrl}/orders/${orderId}`;
-  const formattedEarnings = `€${(earningsCents / 100).toFixed(2)}`;
+  const formattedEarnings = formatCentsToCurrency(earningsCents);
 
   return (
     <EmailLayout preview={`Dispute withdrawn: ${gameName} — ${orderNumber}`}>

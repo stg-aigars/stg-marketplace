@@ -151,7 +151,7 @@ export async function syncAllActiveOrders(): Promise<{
     .select('id, order_number, barcode, status')
     .eq('shipping_method', 't2t')
     .not('barcode', 'is', null)
-    .in('status', ['accepted', 'shipped', 'delivered']);
+    .in('status', ['accepted', 'shipped']);
 
   if (error || !orders) {
     console.error('[Tracking] Error fetching orders:', error);
