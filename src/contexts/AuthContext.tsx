@@ -89,10 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
       }
 
-      // Re-render Server Components with fresh cookies on actual auth changes.
-      // Skip INITIAL_SESSION — it fires on every mount and the initial state
-      // is already loaded via getSession() above.
-      if (event !== 'INITIAL_SESSION') {
+      // Re-render Server Components when user signs in or out.
+      // Skip INITIAL_SESSION (fires on mount) and TOKEN_REFRESHED (fires
+      // every ~60min) — neither changes server-visible state.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         router.refresh();
       }
     });
