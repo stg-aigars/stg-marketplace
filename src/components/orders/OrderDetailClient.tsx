@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
-import { Badge, Card, CardBody } from '@/components/ui';
+import { Badge, Breadcrumb, Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -66,13 +66,10 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-semantic-text-muted">
-        <Link href="/account/orders" className="sm:hover:text-semantic-text-secondary transition-colors">
-          Your orders
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-semantic-text-secondary">{order.order_number}</span>
-      </nav>
+      <Breadcrumb items={[
+        { label: 'Your orders', href: '/account/orders' },
+        { label: order.order_number },
+      ]} />
 
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">

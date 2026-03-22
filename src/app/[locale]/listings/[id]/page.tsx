@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
-import { Alert, Avatar, Badge, Button, Card, CardBody } from '@/components/ui';
+import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
@@ -166,13 +166,10 @@ export default async function ListingDetailPage({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-semantic-text-muted flex items-center min-w-0">
-        <Link href="/browse" className="shrink-0 sm:hover:text-semantic-text-secondary transition-colors">
-          Browse
-        </Link>
-        <span className="mx-2 shrink-0">/</span>
-        <span className="text-semantic-text-secondary truncate">{listing.game_name}</span>
-      </nav>
+      <Breadcrumb items={[
+        { label: 'Browse', href: '/browse' },
+        { label: listing.game_name },
+      ]} />
 
       {/* Owner status banner for non-active listings */}
       {isOwner && listing.status !== 'active' && (
