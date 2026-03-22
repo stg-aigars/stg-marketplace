@@ -27,6 +27,7 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 - Use ES modules (import/export)
 - Prefer Server Components; use 'use client' only when needed (interactivity, hooks, browser APIs)
 - Path alias: `@/*` maps to `src/`
+- Phosphor Icons: always import from `@phosphor-icons/react/ssr` (even in client components). The base path has a double-barrel import that defeats tree-shaking.
 - Follow existing patterns in codebase
 - All monetary values as INTEGER CENTS (never floats). 1299 not 12.99
 
