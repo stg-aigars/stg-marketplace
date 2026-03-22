@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { routing } from '@/i18n/routing';
 
 interface NavTabItem {
   key: string;
@@ -18,28 +19,33 @@ interface NavTabsProps {
   className?: string;
 }
 
+function stripLocalePrefix(pathname: string): string {
+  const segments = pathname.split('/');
+  if (segments.length > 1 && routing.locales.includes(segments[1] as (typeof routing.locales)[number])) {
+    return '/' + segments.slice(2).join('/') || '/';
+  }
+  return pathname;
+}
+
 function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: NavTabsProps) {
   const pathname = usePathname();
 
   const isActive = (tab: NavTabItem) => {
     if (activeTab !== undefined) return tab.key === activeTab;
-    // Auto-detect: exact match or starts with href (for nested routes)
-    // Strip locale prefix for matching
-    const cleanPath = pathname.replace(/^\/[a-z]{2}(?=\/)/, '');
+    const cleanPath = stripLocalePrefix(pathname);
     return cleanPath === tab.href || (tab.href !== '/' && cleanPath.startsWith(tab.href + '/'));
   };
 
   if (variant === 'pill') {
     return (
-      <div className={`flex flex-wrap gap-2 ${className}`} role="tablist">
+      <div className={`flex flex-wrap gap-2 ${className}`}>
         {tabs.map((tab) => {
           const active = isActive(tab);
           return (
             <Link
               key={tab.key}
               href={tab.href}
-              role="tab"
-              aria-selected={active}
+              aria-current={active ? 'page' : undefined}
               className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                 active
                   ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
@@ -55,22 +61,24 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
   }
 
   return (
-    <nav className={`flex gap-1 border-b border-semantic-border-subtle ${className}`} role="tablist">
+    <nav aria-label="Navigation" className={`flex gap-1 border-b border-semantic-border-subtle ${className}`}>
       {tabs.map((tab) => {
         const active = isActive(tab);
         return (
           <Link
             key={tab.key}
             href={tab.href}
-            role="tab"
-            aria-selected={active}
-            className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg sm:hover:bg-semantic-bg-subtle ${
+            aria-current={active ? 'page' : undefined}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative sm:hover:text-semantic-text-secondary ${
               active
                 ? 'text-semantic-primary'
-                : 'text-semantic-text-secondary'
+                : 'text-semantic-text-muted'
             }`}
           >
             {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
+            {active && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-primary" />
+            )}
           </Link>
         );
       })}
