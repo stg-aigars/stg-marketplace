@@ -135,7 +135,14 @@ export default function PrivacyPage() {
             </li>
           </ul>
           <p>
-            To exercise any of these rights, please contact us via our{' '}
+            To access, export, or delete your data, visit your{' '}
+            <Link
+              href="/account/settings"
+              className="text-frost-arctic sm:hover:text-frost-ice transition-colors underline"
+            >
+              account settings
+            </Link>
+            . For other requests, please contact us via our{' '}
             <Link
               href="/contact"
               className="text-frost-arctic sm:hover:text-frost-ice transition-colors underline"

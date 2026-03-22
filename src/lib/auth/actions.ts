@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import type { AuthActionResult, SignInFormData, SignUpFormData } from './types';
 import type { CountryCode } from '@/lib/country-utils';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
@@ -179,6 +180,7 @@ export async function updateDisplayName(
     return { error: 'Something went wrong. Please try again' };
   }
 
+  revalidatePath('/account');
   return { success: 'Display name updated' };
 }
 
@@ -213,6 +215,10 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<AuthActionResult> {
+  if (newPassword.length < 8) {
+    return { error: 'New password must be at least 8 characters' };
+  }
+
   const supabase = await createClient();
 
   const {
@@ -223,7 +229,6 @@ export async function changePassword(
     return { error: 'Not authenticated' };
   }
 
-  // Verify current password
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: currentPassword,
@@ -231,11 +236,6 @@ export async function changePassword(
 
   if (signInError) {
     return { error: 'Current password is incorrect' };
-  }
-
-  // Validate new password
-  if (newPassword.length < 8) {
-    return { error: 'New password must be at least 8 characters' };
   }
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -255,6 +255,16 @@ export async function setPassword(
   }
 
   const supabase = await createClient();
+
+  // Guard: only users without a password (OAuth-only) can use this action
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+  const providers = user.app_metadata?.providers as string[] | undefined;
+  if (providers?.includes('email')) {
+    return { error: 'Use Change Password instead' };
+  }
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
 
