@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Alert, Badge, Card, CardBody } from '@/components/ui';
+import { Alert, Badge, Breadcrumb, Card, CardBody } from '@/components/ui';
 import { calculateBuyerPricing, calculateCheckoutPricing, formatCentsToCurrency } from '@/lib/services/pricing';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -176,17 +176,11 @@ export default async function CheckoutPage({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-semantic-text-muted flex items-center min-w-0">
-        <Link href="/browse" className="shrink-0 sm:hover:text-semantic-text-secondary transition-colors">
-          Browse
-        </Link>
-        <span className="mx-2 shrink-0">/</span>
-        <Link href={`/listings/${listing.id}`} className="truncate sm:hover:text-semantic-text-secondary transition-colors">
-          {listing.game_name}
-        </Link>
-        <span className="mx-2 shrink-0">/</span>
-        <span className="shrink-0 text-semantic-text-secondary">Checkout</span>
-      </nav>
+      <Breadcrumb items={[
+        { label: 'Browse', href: '/browse' },
+        { label: listing.game_name, href: `/listings/${listing.id}` },
+        { label: 'Checkout' },
+      ]} />
 
       <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
         Checkout
