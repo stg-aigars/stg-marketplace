@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Alert, Button, Input, Modal } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 
@@ -28,9 +29,9 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
     setError(null);
 
     try {
-      const res = await fetch('/api/wallet/withdraw', {
+      const res = await apiFetch('/api/wallet/withdraw', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountCents,
           bankAccountHolder: holder.trim(),

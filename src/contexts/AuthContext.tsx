@@ -9,6 +9,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/browser';
 import { signOut as signOutAction } from '@/lib/auth/actions';
@@ -46,6 +47,7 @@ async function fetchProfileWithRetry(
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
@@ -86,12 +88,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
       }
+
+      // Re-render Server Components when user signs in or out.
+      // Skip INITIAL_SESSION (fires on mount) and TOKEN_REFRESHED (fires
+      // every ~60min) — neither changes server-visible state.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        router.refresh();
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, loadProfile]);
+  }, [supabase, loadProfile, router]);
+
+  // Handle Safari bfcache restoring stale pages after OAuth redirects
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        router.refresh();
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [router]);
 
   const needsCountrySelection = useMemo(() => {
     if (!user || !profile) return false;

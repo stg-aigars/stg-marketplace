@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
-import { Alert } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import { Alert, Button } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { REVIEW_MAX_COMMENT_LENGTH } from '@/lib/reviews/constants';
 import type { ReviewRow } from '@/lib/reviews/types';
 import { ReviewItem } from './ReviewItem';
@@ -14,6 +15,7 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
+  const router = useRouter();
   const [isPositive, setIsPositive] = useState<boolean | null>(null);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +43,7 @@ export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
     setError(null);
 
     try {
-      const res = await fetch(`/api/orders/${orderId}/review`, {
+      const res = await apiFetch(`/api/orders/${orderId}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -59,6 +61,7 @@ export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
       }
 
       setSubmittedReview(data.review);
+      router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {

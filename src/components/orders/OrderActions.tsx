@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Modal } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
 
@@ -26,9 +27,9 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
     setError(null);
 
     try {
-      const res = await fetch(`/api/orders/${order.id}/${action}`, {
+      const res = await apiFetch(`/api/orders/${order.id}/${action}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body ?? {}),
       });
 
@@ -36,13 +37,13 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
 
       if (!res.ok) {
         setError(sanitizeErrorMessage(data.error));
-        setLoading(false);
         return;
       }
 
       router.refresh();
     } catch {
       setError('Connection error. Please try again.');
+    } finally {
       setLoading(false);
     }
   }
@@ -56,11 +57,20 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
 
     // Save phone to profile if it was newly entered
     if (!sellerPhone) {
-      await fetch('/api/profile/phone', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ phone }),
-      });
+      try {
+        const res = await apiFetch('/api/profile/phone', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+        if (!res.ok) {
+          setError('Failed to save phone number. Please try again.');
+          return;
+        }
+      } catch {
+        setError('Connection error. Please try again.');
+        return;
+      }
     }
 
     await callAction('accept', { sellerPhone: phone });
