@@ -71,6 +71,7 @@ export default async function HomePage() {
                 gameYear={listing.game_year}
                 gameThumbnail={listing.games?.thumbnail ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
+                photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
