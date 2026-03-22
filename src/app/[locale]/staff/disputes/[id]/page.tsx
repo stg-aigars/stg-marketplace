@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import type { DisputeRow } from '@/lib/orders/types';
 import { StaffDisputeActions } from './StaffDisputeActions';
 
@@ -24,21 +24,6 @@ interface DisputeWithRelations extends DisputeRow {
   resolver_profile: { full_name: string | null } | null;
 }
 
-function getStatusInfo(dispute: DisputeRow): {
-  label: string;
-  variant: 'default' | 'success' | 'warning' | 'error';
-} {
-  if (dispute.resolved_at) {
-    if (dispute.resolution === 'refunded') {
-      return { label: 'Refunded', variant: 'error' };
-    }
-    return { label: 'Resolved', variant: 'success' };
-  }
-  if (dispute.escalated_at) {
-    return { label: 'Escalated', variant: 'error' };
-  }
-  return { label: 'Open', variant: 'warning' };
-}
 
 export default async function StaffDisputeDetailPage({
   params,
@@ -65,7 +50,7 @@ export default async function StaffDisputeDetailPage({
   }
 
   const typedDispute = dispute as unknown as DisputeWithRelations;
-  const status = getStatusInfo(typedDispute);
+  const status = getDisputeStatusConfig(typedDispute);
   const isResolved = !!typedDispute.resolved_at;
 
   return (
@@ -82,7 +67,7 @@ export default async function StaffDisputeDetailPage({
         <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
           Dispute — {typedDispute.orders?.order_number ?? '—'}
         </h1>
-        <Badge variant={status.variant}>{status.label}</Badge>
+        <Badge variant={status.badgeVariant}>{status.label}</Badge>
       </div>
 
       <div className="space-y-6">

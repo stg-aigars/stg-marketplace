@@ -6,9 +6,9 @@
 
 import { createServiceClient } from '@/lib/supabase';
 import { refundToWallet } from '@/lib/services/wallet';
-import { creditSellerWallet } from '@/lib/services/order-transitions';
+import { loadOrder, creditSellerWallet } from '@/lib/services/order-transitions';
 import { logAuditEvent } from '@/lib/services/audit';
-import type { OrderRow, OrderWithRelations, DisputeRow, DisputeResolution } from '@/lib/orders/types';
+import type { OrderRow, DisputeRow } from '@/lib/orders/types';
 import {
   sendOrderDisputedToSeller,
   sendDisputeResolvedRefund,
@@ -31,30 +31,6 @@ import {
   canWithdrawDispute,
   calculateRefundAmount,
 } from './dispute-validation';
-
-// ---------------------------------------------------------------------------
-// Data access
-// ---------------------------------------------------------------------------
-
-/** Load an order with relations using service client (bypasses RLS). */
-async function loadOrder(orderId: string): Promise<OrderWithRelations> {
-  const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      listings(game_name, seller_id),
-      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email, phone, country),
-      seller_profile:user_profiles!orders_seller_id_fkey(full_name, email, phone, country)
-    `)
-    .eq('id', orderId)
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Order not found: ${orderId}`);
-  }
-  return data as OrderWithRelations;
-}
 
 /** Fetch the dispute for an order. Returns null if none exists. */
 export async function getDispute(orderId: string): Promise<DisputeRow | null> {
@@ -89,15 +65,6 @@ export async function openDispute(
   }
 
   const supabase = createServiceClient();
-
-  // Transaction with row lock to prevent race with auto-complete cron.
-  // 1. Lock the order row
-  // 2. Validate dispute can be opened (status + window)
-  // 3. Insert dispute row
-  // 4. Update order status to 'disputed'
-  // All in one transaction via RPC or sequential with optimistic lock.
-
-  // Load order for validation and email data
   const order = await loadOrder(orderId);
 
   const validation = canOpenDispute(order, userId);
@@ -105,8 +72,7 @@ export async function openDispute(
     throw new Error(validation.reason!);
   }
 
-  // Optimistic lock: update order status only if still 'delivered'
-  // This is the race guard — if auto-complete already changed it, this fails
+  // Optimistic lock prevents race with auto-complete cron
   const { data: updatedOrder, error: updateError } = await supabase
     .from('orders')
     .update({
@@ -114,7 +80,7 @@ export async function openDispute(
       disputed_at: new Date().toISOString(),
     })
     .eq('id', orderId)
-    .eq('status', 'delivered') // Optimistic lock
+    .eq('status', 'delivered')
     .select()
     .single<OrderRow>();
 
@@ -122,7 +88,6 @@ export async function openDispute(
     throw new Error('Order status has changed — the dispute window may have expired');
   }
 
-  // Insert dispute row
   const { data: dispute, error: disputeError } = await supabase
     .from('disputes')
     .insert({
@@ -173,8 +138,7 @@ export async function openDispute(
  */
 export async function withdrawDispute(orderId: string, userId: string): Promise<OrderRow> {
   const supabase = createServiceClient();
-  const order = await loadOrder(orderId);
-  const dispute = await getDispute(orderId);
+  const [order, dispute] = await Promise.all([loadOrder(orderId), getDispute(orderId)]);
 
   if (!dispute) throw new Error('No dispute found for this order');
   if (order.status !== 'disputed') throw new Error('Order is not in disputed status');
@@ -182,20 +146,17 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
   const validation = canWithdrawDispute(dispute, userId);
   if (!validation.allowed) throw new Error(validation.reason!);
 
-  // Resolve dispute
   const { error: resolveError } = await supabase
     .from('disputes')
     .update({
-      resolution: 'resolved_no_refund' as DisputeResolution,
+      resolution: 'resolved_no_refund',
       resolved_at: new Date().toISOString(),
       resolved_by: userId,
     })
     .eq('id', dispute.id)
-    .is('resolved_at', null); // Only resolve if not already resolved
+    .is('resolved_at', null);
 
   if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
-
-  // Transition order to completed
   const { data: updatedOrder, error: orderError } = await supabase
     .from('orders')
     .update({
@@ -242,8 +203,7 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
  */
 export async function sellerAcceptRefund(orderId: string, userId: string): Promise<OrderRow> {
   const supabase = createServiceClient();
-  const order = await loadOrder(orderId);
-  const dispute = await getDispute(orderId);
+  const [order, dispute] = await Promise.all([loadOrder(orderId), getDispute(orderId)]);
 
   if (!dispute) throw new Error('No dispute found for this order');
   if (order.status !== 'disputed') throw new Error('Order is not in disputed status');
@@ -253,11 +213,10 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
 
   const refundAmountCents = calculateRefundAmount(order);
 
-  // Resolve dispute as refunded
   const { error: resolveError } = await supabase
     .from('disputes')
     .update({
-      resolution: 'refunded' as DisputeResolution,
+      resolution: 'refunded',
       resolved_at: new Date().toISOString(),
       resolved_by: userId,
       refund_amount_cents: refundAmountCents,
@@ -266,8 +225,6 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     .is('resolved_at', null);
 
   if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
-
-  // Transition order to refunded
   const { data: updatedOrder, error: orderError } = await supabase
     .from('orders')
     .update({
@@ -322,8 +279,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
  */
 export async function escalateDispute(orderId: string, userId: string): Promise<DisputeRow> {
   const supabase = createServiceClient();
-  const order = await loadOrder(orderId);
-  const dispute = await getDispute(orderId);
+  const [order, dispute] = await Promise.all([loadOrder(orderId), getDispute(orderId)]);
 
   if (!dispute) throw new Error('No dispute found for this order');
   if (order.status !== 'disputed') throw new Error('Order is not in disputed status');
@@ -380,8 +336,7 @@ export async function staffResolveDispute(
   notes?: string
 ): Promise<OrderRow> {
   const supabase = createServiceClient();
-  const order = await loadOrder(orderId);
-  const dispute = await getDispute(orderId);
+  const [order, dispute] = await Promise.all([loadOrder(orderId), getDispute(orderId)]);
 
   if (!dispute) throw new Error('No dispute found for this order');
   if (order.status !== 'disputed') throw new Error('Order is not in disputed status');
@@ -389,12 +344,10 @@ export async function staffResolveDispute(
 
   if (decision === 'refund') {
     const refundAmountCents = calculateRefundAmount(order);
-
-    // Resolve dispute as refunded
     const { error: resolveError } = await supabase
       .from('disputes')
       .update({
-        resolution: 'refunded' as DisputeResolution,
+        resolution: 'refunded',
         resolved_at: new Date().toISOString(),
         resolved_by: staffUserId,
         resolution_notes: notes ?? null,
@@ -404,8 +357,6 @@ export async function staffResolveDispute(
       .is('resolved_at', null);
 
     if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
-
-    // Transition order to refunded
     const { data: updatedOrder, error: orderError } = await supabase
       .from('orders')
       .update({
@@ -453,11 +404,10 @@ export async function staffResolveDispute(
     return updatedOrder;
   }
 
-  // decision === 'no_refund' — resolve in seller's favor
   const { error: resolveError } = await supabase
     .from('disputes')
     .update({
-      resolution: 'resolved_no_refund' as DisputeResolution,
+      resolution: 'resolved_no_refund',
       resolved_at: new Date().toISOString(),
       resolved_by: staffUserId,
       resolution_notes: notes ?? null,

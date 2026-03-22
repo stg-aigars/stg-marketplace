@@ -138,7 +138,7 @@ export async function refundToWallet(
     .select('*')
     .eq('order_id', orderId)
     .eq('type', 'refund')
-    .single<WalletTransactionRow>();
+    .maybeSingle<WalletTransactionRow>();
 
   if (existing) return existing;
 

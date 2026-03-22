@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button, Input, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
-import { DISPUTE_WINDOW_DAYS, DISPUTE_NEGOTIATION_DAYS } from '@/lib/pricing/constants';
+import { DISPUTE_WINDOW_DAYS } from '@/lib/pricing/constants';
+import { canEscalateDispute, canWithdrawDispute } from '@/lib/services/dispute-validation';
 import { DisputeForm } from './DisputeForm';
 import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
 
@@ -43,20 +44,6 @@ function getDisputeWindowRemaining(deliveredAt: string | null): { expired: boole
   return { expired: false, text: `You have ${hoursRemaining} ${hoursRemaining === 1 ? 'hour' : 'hours'} left to report an issue` };
 }
 
-/** Check if escalation is available (7+ days since dispute opened) */
-function canEscalate(dispute: DisputeRow | null | undefined): boolean {
-  if (!dispute || dispute.escalated_at || dispute.resolved_at) return false;
-  const escalationDate = new Date(dispute.created_at);
-  escalationDate.setDate(escalationDate.getDate() + DISPUTE_NEGOTIATION_DAYS);
-  return new Date() >= escalationDate;
-}
-
-/** Check if withdrawal is available (not escalated, not resolved) */
-function canWithdraw(dispute: DisputeRow | null | undefined): boolean {
-  if (!dispute || dispute.escalated_at || dispute.resolved_at) return false;
-  return true;
-}
-
 export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderActionsProps) {
   const router = useRouter();
   const status = order.status as OrderStatus;
@@ -65,6 +52,7 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const userId = userRole === 'buyer' ? order.buyer_id : order.seller_id;
   const [phoneInput, setPhoneInput] = useState(sellerPhone ?? '');
   const [showPhoneInput, setShowPhoneInput] = useState(false);
 
@@ -243,7 +231,7 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
             >
               Accept and refund
             </Button>
-            {canEscalate(dispute) && (
+            {dispute && canEscalateDispute(dispute, userId).allowed && (
               <Button
                 variant="ghost"
                 onClick={() => callAction('dispute/escalate')}
@@ -355,17 +343,16 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
       return (
         <div className="space-y-3">
           <div className="flex gap-3">
-            {canWithdraw(dispute) && (
+            {dispute && canWithdrawDispute(dispute, userId).allowed && (
               <Button
                 variant="ghost"
                 onClick={() => callAction('dispute/withdraw')}
-                disabled={loading}
                 loading={loading}
               >
                 Withdraw dispute
               </Button>
             )}
-            {canEscalate(dispute) && (
+            {dispute && canEscalateDispute(dispute, userId).allowed && (
               <Button
                 variant="ghost"
                 onClick={() => callAction('dispute/escalate')}

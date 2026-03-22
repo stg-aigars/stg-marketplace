@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
+import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import type { DisputeRow } from '@/lib/orders/types';
 
 export const metadata: Metadata = {
@@ -17,22 +18,6 @@ interface StaffDisputeRow extends DisputeRow {
   } | null;
   buyer_profile: { full_name: string | null } | null;
   seller_profile: { full_name: string | null } | null;
-}
-
-function getDisputeStatus(dispute: StaffDisputeRow): {
-  label: string;
-  variant: 'default' | 'success' | 'warning' | 'error';
-} {
-  if (dispute.resolved_at) {
-    if (dispute.resolution === 'refunded') {
-      return { label: 'Refunded', variant: 'error' };
-    }
-    return { label: 'Resolved', variant: 'success' };
-  }
-  if (dispute.escalated_at) {
-    return { label: 'Escalated', variant: 'error' };
-  }
-  return { label: 'Open', variant: 'warning' };
 }
 
 type FilterTab = 'all' | 'escalated' | 'resolved';
@@ -105,7 +90,7 @@ export default async function StaffDisputesPage({
       ) : (
         <div className="space-y-2">
           {typedDisputes.map((dispute) => {
-            const status = getDisputeStatus(dispute);
+            const status = getDisputeStatusConfig(dispute);
             return (
               <Link key={dispute.id} href={`/staff/disputes/${dispute.id}`}>
                 <Card hoverable>
@@ -115,7 +100,7 @@ export default async function StaffDisputesPage({
                         <span className="font-mono text-sm text-semantic-text-heading">
                           {dispute.orders?.order_number ?? '—'}
                         </span>
-                        <Badge variant={status.variant}>
+                        <Badge variant={status.badgeVariant}>
                           {status.label}
                         </Badge>
                       </div>

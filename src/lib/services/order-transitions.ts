@@ -19,8 +19,9 @@ import { logAuditEvent } from '@/lib/services/audit';
 
 /**
  * Load an order by ID using the service client (bypasses RLS).
+ * Shared by order-transitions and dispute services.
  */
-async function loadOrder(orderId: string): Promise<OrderWithRelations> {
+export async function loadOrder(orderId: string): Promise<OrderWithRelations> {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -364,20 +365,4 @@ export async function creditSellerWallet(orderId: string, order: Pick<OrderWithR
     .from('orders')
     .update({ wallet_credited_at: new Date().toISOString() })
     .eq('id', orderId);
-}
-
-/**
- * Buyer disputes the order.
- * Delegates to the dispute service which handles dispute row creation,
- * race condition protection, and email notifications.
- */
-export async function disputeOrder(
-  orderId: string,
-  userId: string,
-  reason: string,
-  photos: string[] = []
-): Promise<OrderRow> {
-  const { openDispute } = await import('@/lib/services/dispute');
-  const { order } = await openDispute(orderId, userId, reason, photos);
-  return order;
 }

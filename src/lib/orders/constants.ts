@@ -2,7 +2,7 @@
  * Order constants and UI configuration
  */
 
-import type { OrderStatus } from './types';
+import type { OrderStatus, DisputeRow } from './types';
 
 /** Order number prefix */
 export const ORDER_NUMBER_PREFIX = 'STG';
@@ -54,6 +54,22 @@ export const STATUS_TIMESTAMP_COLUMN: Partial<Record<OrderStatus, string>> = {
   disputed: 'disputed_at',
   refunded: 'refunded_at',
 };
+
+/** Dispute status display configuration for UI */
+export function getDisputeStatusConfig(
+  dispute: Pick<DisputeRow, 'resolved_at' | 'resolution' | 'escalated_at'>
+): { label: string; badgeVariant: 'default' | 'success' | 'warning' | 'error' } {
+  if (dispute.resolved_at) {
+    if (dispute.resolution === 'refunded') {
+      return { label: 'Refunded', badgeVariant: 'error' };
+    }
+    return { label: 'Resolved', badgeVariant: 'success' };
+  }
+  if (dispute.escalated_at) {
+    return { label: 'Escalated', badgeVariant: 'error' };
+  }
+  return { label: 'Open', badgeVariant: 'warning' };
+}
 
 /** Timeline steps in display order */
 export const TIMELINE_STEPS: { status: OrderStatus; label: string }[] = [

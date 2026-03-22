@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Alert, Button, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
@@ -12,6 +13,7 @@ interface StaffDisputeActionsProps {
 type ConfirmAction = 'refund' | 'no_refund' | null;
 
 export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
@@ -36,7 +38,7 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
         return;
       }
 
-      window.location.reload();
+      router.refresh();
     } catch {
       setError('Connection error');
       setConfirmAction(null);

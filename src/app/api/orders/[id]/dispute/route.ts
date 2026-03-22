@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
-import { disputeOrder } from '@/lib/services/order-transitions';
+import { openDispute } from '@/lib/services/dispute';
 
 export async function POST(
   request: Request,
@@ -30,7 +30,7 @@ export async function POST(
       return NextResponse.json({ error: 'Reason is required' }, { status: 400 });
     }
 
-    const order = await disputeOrder(params.id, user.id, reason.trim(), photos);
+    const { order } = await openDispute(params.id, user.id, reason.trim(), photos);
 
     return NextResponse.json({
       success: true,

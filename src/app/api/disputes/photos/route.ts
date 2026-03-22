@@ -71,24 +71,12 @@ export async function POST(request: Request) {
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
 
-  // Verify user has a delivered order (eligible to open a dispute)
+  // Verify user has a delivered order or an open dispute (eligible to upload)
   const serviceClient = createServiceClient();
-  const { data: eligibleOrder } = await serviceClient
-    .from('orders')
-    .select('id')
-    .eq('buyer_id', user.id)
-    .eq('status', 'delivered')
-    .limit(1)
-    .maybeSingle();
-
-  // Also allow if user already has an open dispute (adding more photos)
-  const { data: existingDispute } = await serviceClient
-    .from('disputes')
-    .select('id')
-    .eq('buyer_id', user.id)
-    .is('resolved_at', null)
-    .limit(1)
-    .maybeSingle();
+  const [{ data: eligibleOrder }, { data: existingDispute }] = await Promise.all([
+    serviceClient.from('orders').select('id').eq('buyer_id', user.id).eq('status', 'delivered').limit(1).maybeSingle(),
+    serviceClient.from('disputes').select('id').eq('buyer_id', user.id).is('resolved_at', null).limit(1).maybeSingle(),
+  ]);
 
   if (!eligibleOrder && !existingDispute) {
     return NextResponse.json({ error: 'No eligible order for dispute photos' }, { status: 403 });
