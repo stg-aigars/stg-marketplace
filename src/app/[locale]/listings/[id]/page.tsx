@@ -14,6 +14,7 @@ import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
 import { getSellerRating } from '@/lib/reviews/service';
+import { getSellerCompletedSales } from '@/lib/services/sellers';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 
 interface ListingDetailRow {
@@ -132,8 +133,11 @@ export default async function ListingDetailPage({
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating
-  const sellerRating = await getSellerRating(listing.seller_id);
+  // Fetch seller rating and completed sales in parallel
+  const [sellerRating, sellerCompletedSales] = await Promise.all([
+    getSellerRating(listing.seller_id),
+    getSellerCompletedSales(listing.seller_id),
+  ]);
 
   const isReserver = listing.status === 'reserved' && listing.reserved_by === user?.id;
 
@@ -350,6 +354,12 @@ export default async function ListingDetailPage({
                         ? formatDate(listing.user_profiles.created_at)
                         : 'unknown'}
                     </span>
+                    {sellerCompletedSales > 0 && (
+                      <>
+                        <span className="mx-1">&middot;</span>
+                        <span>{sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'}</span>
+                      </>
+                    )}
                   </div>
                   <div className="mt-1">
                     <SellerRating
