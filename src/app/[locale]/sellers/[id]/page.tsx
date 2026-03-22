@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSellerRating, getSellerReviews } from '@/lib/reviews/service';
+import { getSellerCompletedSales } from '@/lib/services/sellers';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { Avatar, Card, CardBody } from '@/components/ui';
@@ -64,9 +65,10 @@ export default async function SellerProfilePage({
   }
 
   // Fetch rating, reviews, and active listings in parallel
-  const [rating, reviews, { data: listings }] = await Promise.all([
+  const [rating, reviews, completedSales, { data: listings }] = await Promise.all([
     getSellerRating(id),
     getSellerReviews(id, 10),
+    getSellerCompletedSales(id),
     supabase
       .from('listings')
       .select('id, game_name, game_year, condition, price_cents, photos, country, games(thumbnail)')
@@ -97,6 +99,9 @@ export default async function SellerProfilePage({
               </span>
             )}
             <span>Member since {formatDate(new Date(profile.created_at))}</span>
+            {completedSales > 0 && (
+              <span>{completedSales} {completedSales === 1 ? 'sale' : 'sales'} completed</span>
+            )}
           </div>
           <div className="mt-1">
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} />
