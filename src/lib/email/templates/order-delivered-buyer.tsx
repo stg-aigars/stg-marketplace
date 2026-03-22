@@ -1,7 +1,7 @@
 /**
  * Order Delivered Notification — Buyer
- * Sent when the buyer picks up the parcel (marks delivered).
- * Prompts them to confirm the game condition.
+ * Sent when the buyer picks up the parcel (via Unisend tracking or manual confirm).
+ * Prompts them to check the game and explains the 2-day dispute window.
  */
 
 import { Button, Text } from '@react-email/components';
@@ -61,7 +61,7 @@ export function OrderDeliveredBuyer({
       </Text>
 
       <Text style={s.note}>
-        Please confirm within 2 days. If you do not respond, the order will be completed automatically.
+        If there is an issue with your order, you have 2 days to report it from the order page. After that, the order will be completed automatically and the seller will be paid.
       </Text>
     </EmailLayout>
   );

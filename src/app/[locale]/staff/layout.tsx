@@ -35,6 +35,12 @@ export default async function StaffLayout({
         >
           Withdrawals
         </Link>
+        <Link
+          href="/staff/disputes"
+          className="px-4 py-2 text-sm font-medium text-semantic-text-secondary rounded-lg sm:hover:bg-semantic-bg-subtle transition-colors"
+        >
+          Disputes
+        </Link>
       </nav>
       {children}
     </div>

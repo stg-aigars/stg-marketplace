@@ -117,6 +117,78 @@ export async function creditWallet(
 }
 
 /**
+ * Refund to a buyer's wallet (e.g. dispute resolution).
+ * Uses type='refund' to avoid idempotency collision with seller type='credit'
+ * on the same order_id.
+ * Idempotent: if a refund transaction already exists for the same order, returns it.
+ */
+export async function refundToWallet(
+  userId: string,
+  amountCents: number,
+  orderId: string,
+  description: string
+): Promise<WalletTransactionRow> {
+  if (amountCents <= 0) throw new Error('Refund amount must be positive');
+
+  const supabase = createServiceClient();
+
+  // Idempotency check: prevent double-refund for the same order
+  const { data: existing } = await supabase
+    .from('wallet_transactions')
+    .select('*')
+    .eq('order_id', orderId)
+    .eq('type', 'refund')
+    .maybeSingle<WalletTransactionRow>();
+
+  if (existing) return existing;
+
+  const wallet = await getOrCreateWallet(userId);
+
+  // Atomic increment with optimistic lock
+  const { data: updated, error: updateError } = await supabase
+    .from('wallets')
+    .update({ balance_cents: wallet.balance_cents + amountCents })
+    .eq('id', wallet.id)
+    .eq('balance_cents', wallet.balance_cents)
+    .select('balance_cents')
+    .single<{ balance_cents: number }>();
+
+  if (updateError || !updated) {
+    throw new Error('Failed to refund wallet: concurrent balance change detected');
+  }
+
+  // Record transaction
+  const { data: txn, error: txnError } = await supabase
+    .from('wallet_transactions')
+    .insert({
+      wallet_id: wallet.id,
+      user_id: userId,
+      type: 'refund' as const,
+      amount_cents: amountCents,
+      balance_after_cents: updated.balance_cents,
+      order_id: orderId,
+      description,
+    })
+    .select('*')
+    .single<WalletTransactionRow>();
+
+  if (txnError || !txn) {
+    throw new Error(`Failed to record refund transaction: ${txnError?.message}`);
+  }
+
+  void logAuditEvent({
+    actorId: userId,
+    actorType: 'system',
+    action: 'wallet.refund',
+    resourceType: 'wallet_transaction',
+    resourceId: txn.id,
+    metadata: { amountCents, orderId, balanceAfterCents: updated.balance_cents },
+  });
+
+  return txn;
+}
+
+/**
  * Debit a wallet (e.g. buyer spending wallet balance at checkout).
  * Atomic: uses WHERE balance_cents >= amount to prevent overdraft.
  * Idempotent on order_id + type='debit'.

@@ -163,6 +163,7 @@ Existing cron routes:
 |-------|-----------|---------|
 | `/api/cron/expire-reservations` | Every 5 min | Release stale listing reservations |
 | `/api/cron/cleanup-sessions` | Every 10 min | Clean up expired checkout sessions |
+| `/api/cron/sync-tracking` | Every 15 min | Sync Unisend tracking events, auto-deliver on PARCEL_DELIVERED |
 | `/api/cron/auto-complete` | Every 6 hours | Auto-complete delivered orders past 2-day dispute window |
 
 ## Important Notes

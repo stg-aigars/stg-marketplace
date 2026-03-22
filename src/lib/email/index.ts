@@ -15,6 +15,10 @@ import { OrderDeliveredBuyer } from './templates/order-delivered-buyer';
 import { OrderCompletedSeller } from './templates/order-completed-seller';
 import { OrderDeclinedBuyer } from './templates/order-declined-buyer';
 import { OrderDisputedSeller } from './templates/order-disputed-seller';
+import { DisputeResolvedRefund } from './templates/dispute-resolved-refund';
+import { DisputeResolvedNoRefund } from './templates/dispute-resolved-no-refund';
+import { DisputeEscalated } from './templates/dispute-escalated';
+import { DisputeWithdrawn } from './templates/dispute-withdrawn';
 import { NewMessage } from './templates/new-message';
 import { env } from '@/lib/env';
 
@@ -285,6 +289,162 @@ export async function sendNewMessageNotification(params: {
       gameTitle: params.gameTitle,
       messagePreview: params.messagePreview,
       conversationUrl: `${env.app.url}/messages/${params.conversationId}`,
+    }),
+  });
+}
+
+/**
+ * Dispute resolved with refund → both buyer and seller
+ */
+export async function sendDisputeResolvedRefund(params: {
+  buyerName: string;
+  buyerEmail: string;
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  refundAmountCents: number;
+  staffNotes?: string;
+}): Promise<void> {
+  const shared = {
+    orderNumber: params.orderNumber,
+    orderId: params.orderId,
+    gameName: params.gameName,
+    refundAmountCents: params.refundAmountCents,
+    staffNotes: params.staffNotes,
+    appUrl: env.app.url,
+  };
+
+  await Promise.all([
+    sendEmail({
+      to: params.buyerEmail,
+      subject: `Dispute resolved: ${params.gameName} — ${params.orderNumber}`,
+      react: React.createElement(DisputeResolvedRefund, {
+        ...shared,
+        recipientName: params.buyerName,
+        recipientRole: 'buyer',
+      }),
+    }),
+    sendEmail({
+      to: params.sellerEmail,
+      subject: `Dispute resolved: ${params.gameName} — ${params.orderNumber}`,
+      react: React.createElement(DisputeResolvedRefund, {
+        ...shared,
+        recipientName: params.sellerName,
+        recipientRole: 'seller',
+      }),
+    }),
+  ]);
+}
+
+/**
+ * Dispute resolved without refund (seller's favor) → both buyer and seller
+ */
+export async function sendDisputeResolvedNoRefund(params: {
+  buyerName: string;
+  buyerEmail: string;
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  earningsCents: number;
+  staffNotes?: string;
+}): Promise<void> {
+  const shared = {
+    orderNumber: params.orderNumber,
+    orderId: params.orderId,
+    gameName: params.gameName,
+    earningsCents: params.earningsCents,
+    staffNotes: params.staffNotes,
+    appUrl: env.app.url,
+  };
+
+  await Promise.all([
+    sendEmail({
+      to: params.buyerEmail,
+      subject: `Dispute resolved: ${params.gameName} — ${params.orderNumber}`,
+      react: React.createElement(DisputeResolvedNoRefund, {
+        ...shared,
+        recipientName: params.buyerName,
+        recipientRole: 'buyer',
+      }),
+    }),
+    sendEmail({
+      to: params.sellerEmail,
+      subject: `Dispute resolved: ${params.gameName} — ${params.orderNumber}`,
+      react: React.createElement(DisputeResolvedNoRefund, {
+        ...shared,
+        recipientName: params.sellerName,
+        recipientRole: 'seller',
+      }),
+    }),
+  ]);
+}
+
+/**
+ * Dispute escalated to staff → both buyer and seller
+ */
+export async function sendDisputeEscalated(params: {
+  buyerName: string;
+  buyerEmail: string;
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+}): Promise<void> {
+  const shared = {
+    orderNumber: params.orderNumber,
+    orderId: params.orderId,
+    gameName: params.gameName,
+    appUrl: env.app.url,
+  };
+
+  await Promise.all([
+    sendEmail({
+      to: params.buyerEmail,
+      subject: `Dispute escalated: ${params.gameName} — ${params.orderNumber}`,
+      react: React.createElement(DisputeEscalated, {
+        ...shared,
+        recipientName: params.buyerName,
+      }),
+    }),
+    sendEmail({
+      to: params.sellerEmail,
+      subject: `Dispute escalated: ${params.gameName} — ${params.orderNumber}`,
+      react: React.createElement(DisputeEscalated, {
+        ...shared,
+        recipientName: params.sellerName,
+      }),
+    }),
+  ]);
+}
+
+/**
+ * Dispute withdrawn by buyer → seller only
+ */
+export async function sendDisputeWithdrawn(params: {
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  buyerName: string;
+  earningsCents: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Dispute withdrawn: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(DisputeWithdrawn, {
+      sellerName: params.sellerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      buyerName: params.buyerName,
+      earningsCents: params.earningsCents,
+      appUrl: env.app.url,
     }),
   });
 }

@@ -12,6 +12,7 @@ import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
 import { OrderTimeline } from './OrderTimeline';
 import { ShippingInfo } from './ShippingInfo';
 import { OrderActions } from './OrderActions';
+import { DisputeDetails } from './DisputeDetails';
 import { ReviewForm, ReviewItem } from '@/components/reviews';
 import type { ReviewRow } from '@/lib/reviews/types';
 import { REVIEW_WINDOW_DAYS } from '@/lib/reviews/constants';
@@ -34,7 +35,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
       delivered: 'Buyer has picked up the parcel',
       completed: 'Order complete',
       cancelled: 'You declined this order',
-      disputed: 'The buyer reported an issue with this order',
+      disputed: 'The buyer reported an issue with this order. Please review and respond.',
       refunded: 'This order has been refunded',
     },
     buyer: {
@@ -44,7 +45,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
       delivered: 'Confirm you received your game in good condition',
       completed: 'Order complete — enjoy your game',
       cancelled: 'This order was cancelled',
-      disputed: 'Your issue report is being reviewed',
+      disputed: 'You reported an issue. The seller has been notified.',
       refunded: 'This order has been refunded',
     },
   };
@@ -116,7 +117,13 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           order={order}
           userRole={userRole}
           sellerPhone={sellerPhone}
+          dispute={order.dispute}
         />
+
+        {/* Dispute details */}
+        {order.dispute && (
+          <DisputeDetails dispute={order.dispute} />
+        )}
 
         {/* Review section (buyer only) */}
         {userRole === 'buyer' && (existingReview || isReviewEligible) && (
@@ -173,6 +180,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                 completed_at: order.completed_at,
                 cancelled_at: order.cancelled_at,
                 disputed_at: order.disputed_at,
+                refunded_at: order.refunded_at,
               }}
             />
           </CardBody>

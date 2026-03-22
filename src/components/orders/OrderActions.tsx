@@ -5,20 +5,54 @@ import { useRouter } from 'next/navigation';
 import { Button, Input, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
-import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
+import { DISPUTE_WINDOW_DAYS } from '@/lib/pricing/constants';
+import { canEscalateDispute, canWithdrawDispute } from '@/lib/services/dispute-validation';
+import { DisputeForm } from './DisputeForm';
+import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
 
 interface OrderActionsProps {
   order: OrderWithDetails;
   userRole: 'buyer' | 'seller';
   sellerPhone: string | null;
+  dispute?: DisputeRow | null;
 }
 
-export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps) {
+/** Calculate hours remaining in the dispute window */
+function getDisputeWindowRemaining(deliveredAt: string | null): { expired: boolean; text: string } {
+  if (!deliveredAt) return { expired: true, text: '' };
+
+  const windowEnd = new Date(deliveredAt);
+  windowEnd.setDate(windowEnd.getDate() + DISPUTE_WINDOW_DAYS);
+  const now = new Date();
+  const msRemaining = windowEnd.getTime() - now.getTime();
+
+  if (msRemaining <= 0) {
+    return { expired: true, text: '' };
+  }
+
+  const hoursRemaining = Math.ceil(msRemaining / (1000 * 60 * 60));
+  if (hoursRemaining > 24) {
+    const daysRemaining = Math.ceil(hoursRemaining / 24);
+    return { expired: false, text: `You have ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left to report an issue` };
+  }
+
+  if (hoursRemaining < 1) {
+    const minutesRemaining = Math.ceil(msRemaining / (1000 * 60));
+    return { expired: false, text: `You have ${minutesRemaining} ${minutesRemaining === 1 ? 'minute' : 'minutes'} left to report an issue` };
+  }
+
+  return { expired: false, text: `You have ${hoursRemaining} ${hoursRemaining === 1 ? 'hour' : 'hours'} left to report an issue` };
+}
+
+export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderActionsProps) {
   const router = useRouter();
   const status = order.status as OrderStatus;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const userId = userRole === 'buyer' ? order.buyer_id : order.seller_id;
   const [phoneInput, setPhoneInput] = useState(sellerPhone ?? '');
   const [showPhoneInput, setShowPhoneInput] = useState(false);
 
@@ -184,6 +218,69 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
         </div>
       );
     }
+
+    if (status === 'disputed' && dispute && !dispute.resolved_at) {
+      return (
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <Button
+              variant="danger"
+              onClick={() => setShowRefundModal(true)}
+              disabled={loading}
+              className="flex-1"
+            >
+              Accept and refund
+            </Button>
+            {dispute && canEscalateDispute(dispute, userId).allowed && (
+              <Button
+                variant="ghost"
+                onClick={() => callAction('dispute/escalate')}
+                disabled={loading}
+              >
+                Escalate to staff
+              </Button>
+            )}
+          </div>
+
+          {dispute.escalated_at && (
+            <p className="text-xs text-semantic-text-muted">This dispute has been escalated to staff for review</p>
+          )}
+
+          {error && <p className="text-sm text-semantic-error">{error}</p>}
+
+          <Modal
+            open={showRefundModal}
+            onClose={() => setShowRefundModal(false)}
+            title="Confirm refund"
+          >
+            <p className="text-sm text-semantic-text-secondary mb-6">
+              This will refund the full order amount to the buyer&apos;s wallet. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="danger"
+                loading={loading}
+                onClick={() => {
+                  setShowRefundModal(false);
+                  callAction('dispute/accept-refund');
+                }}
+                className="flex-1"
+              >
+                Yes, refund buyer
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowRefundModal(false)}
+                disabled={loading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </Modal>
+        </div>
+      );
+    }
   }
 
   // Buyer actions
@@ -205,6 +302,8 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
     }
 
     if (status === 'delivered') {
+      const disputeWindow = getDisputeWindowRemaining(order.delivered_at);
+
       return (
         <div className="space-y-3">
           <div className="flex gap-3">
@@ -216,14 +315,56 @@ export function OrderActions({ order, userRole, sellerPhone }: OrderActionsProps
             >
               Confirm received
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => callAction('dispute')}
-              disabled={loading}
-            >
-              Report issue
-            </Button>
+            {!disputeWindow.expired && (
+              <Button
+                variant="ghost"
+                onClick={() => setShowDisputeForm(true)}
+                disabled={loading}
+              >
+                Report issue
+              </Button>
+            )}
           </div>
+          {!disputeWindow.expired && (
+            <p className="text-xs text-semantic-text-muted">{disputeWindow.text}</p>
+          )}
+          {error && <p className="text-sm text-semantic-error">{error}</p>}
+
+          <DisputeForm
+            orderId={order.id}
+            open={showDisputeForm}
+            onClose={() => setShowDisputeForm(false)}
+          />
+        </div>
+      );
+    }
+
+    if (status === 'disputed' && dispute && !dispute.resolved_at) {
+      return (
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            {dispute && canWithdrawDispute(dispute, userId).allowed && (
+              <Button
+                variant="ghost"
+                onClick={() => callAction('dispute/withdraw')}
+                loading={loading}
+              >
+                Withdraw dispute
+              </Button>
+            )}
+            {dispute && canEscalateDispute(dispute, userId).allowed && (
+              <Button
+                variant="ghost"
+                onClick={() => callAction('dispute/escalate')}
+                disabled={loading}
+              >
+                Escalate to staff
+              </Button>
+            )}
+          </div>
+          {dispute.escalated_at && (
+            <p className="text-xs text-semantic-text-muted">This dispute has been escalated to staff for review</p>
+          )}
           {error && <p className="text-sm text-semantic-error">{error}</p>}
         </div>
       );

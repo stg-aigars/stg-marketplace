@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getOrder } from '@/lib/services/orders';
+import { getDispute } from '@/lib/services/dispute';
 import { getReviewForOrder } from '@/lib/reviews/service';
 import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
@@ -33,8 +34,12 @@ export default async function OrderDetailPage({
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
-  // Fetch existing review (if any)
-  const existingReview = await getReviewForOrder(id);
+  // Fetch dispute and review data in parallel (independent queries)
+  const [dispute, existingReview] = await Promise.all([
+    getDispute(id),
+    getReviewForOrder(id),
+  ]);
+  const orderWithDispute = { ...order, dispute };
 
   // Compute review eligibility
   const isReviewEligible =
@@ -46,7 +51,7 @@ export default async function OrderDetailPage({
 
   return (
     <OrderDetailClient
-      order={order}
+      order={orderWithDispute}
       userRole={userRole}
       sellerPhone={sellerPhone}
       existingReview={existingReview}

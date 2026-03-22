@@ -11,7 +11,7 @@ export default async function StaffDashboardPage() {
   const { serviceClient } = await requireServerAuth();
 
   // Fetch metrics in parallel
-  const [ordersResult, revenueResult, pendingWithdrawalsResult] = await Promise.all([
+  const [ordersResult, revenueResult, pendingWithdrawalsResult, openDisputesResult, escalatedDisputesResult] = await Promise.all([
     serviceClient
       .from('orders')
       .select('id', { count: 'exact', head: true }),
@@ -23,6 +23,15 @@ export default async function StaffDashboardPage() {
       .from('withdrawal_requests')
       .select('amount_cents')
       .eq('status', 'pending'),
+    serviceClient
+      .from('disputes')
+      .select('id', { count: 'exact', head: true })
+      .is('resolved_at', null),
+    serviceClient
+      .from('disputes')
+      .select('id', { count: 'exact', head: true })
+      .not('escalated_at', 'is', null)
+      .is('resolved_at', null),
   ]);
 
   const totalOrders = ordersResult.count ?? 0;
@@ -32,12 +41,16 @@ export default async function StaffDashboardPage() {
   const pendingWithdrawals = pendingWithdrawalsResult.data ?? [];
   const pendingWithdrawalCount = pendingWithdrawals.length;
   const pendingWithdrawalAmountCents = pendingWithdrawals.reduce((sum, w) => sum + w.amount_cents, 0);
+  const openDisputeCount = openDisputesResult.count ?? 0;
+  const escalatedDisputeCount = escalatedDisputesResult.count ?? 0;
 
   const metrics = [
     { label: 'Total orders', value: totalOrders.toString() },
     { label: 'Total revenue', value: formatCentsToCurrency(totalRevenueCents) },
     { label: 'Total commissions', value: formatCentsToCurrency(totalCommissionCents) },
     { label: 'Pending withdrawals', value: `${pendingWithdrawalCount} (${formatCentsToCurrency(pendingWithdrawalAmountCents)})` },
+    { label: 'Open disputes', value: openDisputeCount.toString() },
+    { label: 'Escalated disputes', value: escalatedDisputeCount.toString() },
   ];
 
   return (

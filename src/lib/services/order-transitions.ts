@@ -14,14 +14,14 @@ import {
   sendOrderDeliveredToBuyer,
   sendOrderCompletedToSeller,
   sendOrderDeclinedToBuyer,
-  sendOrderDisputedToSeller,
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 
 /**
  * Load an order by ID using the service client (bypasses RLS).
+ * Shared by order-transitions and dispute services.
  */
-async function loadOrder(orderId: string): Promise<OrderWithRelations> {
+export async function loadOrder(orderId: string): Promise<OrderWithRelations> {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -346,10 +346,10 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
 
 /**
  * Credit seller wallet on order completion.
- * Shared by completeOrder (buyer-initiated) and autoCompleteOrder (cron).
+ * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
  * Idempotent via creditWallet's order_id + type='credit' check.
  */
-async function creditSellerWallet(orderId: string, order: OrderWithRelations): Promise<void> {
+export async function creditSellerWallet(orderId: string, order: Pick<OrderWithRelations, 'seller_id' | 'seller_wallet_credit_cents' | 'listings' | 'order_number'>): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
 
   await creditWallet(
@@ -365,24 +365,4 @@ async function creditSellerWallet(orderId: string, order: OrderWithRelations): P
     .from('orders')
     .update({ wallet_credited_at: new Date().toISOString() })
     .eq('id', orderId);
-}
-
-/**
- * Buyer disputes the order.
- */
-export async function disputeOrder(orderId: string, userId: string, reason?: string): Promise<OrderRow> {
-  const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'disputed', userId, 'buyer', undefined, order);
-
-  sendOrderDisputedToSeller({
-    sellerName: order.seller_profile?.full_name ?? 'Seller',
-    sellerEmail: order.seller_profile?.email ?? '',
-    orderNumber: order.order_number,
-    orderId,
-    gameName: order.listings?.game_name ?? 'Game',
-    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
-    reason,
-  }).catch((err) => console.error('[Email] Failed to send order-disputed to seller:', err));
-
-  return updatedOrder;
 }
