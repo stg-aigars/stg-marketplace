@@ -43,3 +43,6 @@ export type { TabsProps, TabItem } from './tabs';
 
 export { NavTabs } from './nav-tabs';
 export type { NavTabsProps, NavTabItem } from './nav-tabs';
+
+export { Stepper } from './stepper';
+export type { StepperProps, StepItem } from './stepper';
