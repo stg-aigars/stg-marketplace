@@ -52,6 +52,7 @@ export const STATUS_TIMESTAMP_COLUMN: Partial<Record<OrderStatus, string>> = {
   completed: 'completed_at',
   cancelled: 'cancelled_at',
   disputed: 'disputed_at',
+  refunded: 'refunded_at',
 };
 
 /** Timeline steps in display order */

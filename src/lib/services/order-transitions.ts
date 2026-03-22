@@ -345,10 +345,10 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
 
 /**
  * Credit seller wallet on order completion.
- * Shared by completeOrder (buyer-initiated) and autoCompleteOrder (cron).
+ * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
  * Idempotent via creditWallet's order_id + type='credit' check.
  */
-async function creditSellerWallet(orderId: string, order: OrderWithRelations): Promise<void> {
+export async function creditSellerWallet(orderId: string, order: Pick<OrderWithRelations, 'seller_id' | 'seller_wallet_credit_cents' | 'listings' | 'order_number'>): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
 
   await creditWallet(

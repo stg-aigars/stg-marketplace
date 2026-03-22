@@ -1,5 +1,3 @@
-'use client';
-
 import { Badge, Card, CardBody } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import type { DisputeRow } from '@/lib/orders/types';

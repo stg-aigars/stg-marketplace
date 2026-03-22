@@ -66,6 +66,13 @@ CREATE POLICY "Staff can view all disputes" ON disputes
 -- All writes go through service role (same pattern as orders, wallets)
 
 -- ============================================================================
+-- REFUNDED_AT TIMESTAMP ON ORDERS
+-- ============================================================================
+-- Every other terminal status has a timestamp column. Add one for refunded.
+
+ALTER TABLE orders ADD COLUMN refunded_at TIMESTAMPTZ;
+
+-- ============================================================================
 -- WALLET TRANSACTION TYPE UPDATE
 -- ============================================================================
 -- Add 'refund' type for buyer refund credits (separate from seller 'credit'

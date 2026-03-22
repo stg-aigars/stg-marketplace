@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
+import { createServiceClient } from '@/lib/supabase';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 
@@ -69,6 +70,29 @@ export async function POST(request: Request) {
 
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
+
+  // Verify user has a delivered order (eligible to open a dispute)
+  const serviceClient = createServiceClient();
+  const { data: eligibleOrder } = await serviceClient
+    .from('orders')
+    .select('id')
+    .eq('buyer_id', user.id)
+    .eq('status', 'delivered')
+    .limit(1)
+    .maybeSingle();
+
+  // Also allow if user already has an open dispute (adding more photos)
+  const { data: existingDispute } = await serviceClient
+    .from('disputes')
+    .select('id')
+    .eq('buyer_id', user.id)
+    .is('resolved_at', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!eligibleOrder && !existingDispute) {
+    return NextResponse.json({ error: 'No eligible order for dispute photos' }, { status: 403 });
+  }
 
   // Content-Length pre-check to reject obviously oversized requests early
   const contentLength = request.headers.get('content-length');

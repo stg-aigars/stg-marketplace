@@ -5,7 +5,8 @@
  */
 
 import { createServiceClient } from '@/lib/supabase';
-import { refundToWallet, creditWallet } from '@/lib/services/wallet';
+import { refundToWallet } from '@/lib/services/wallet';
+import { creditSellerWallet } from '@/lib/services/order-transitions';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { OrderRow, OrderWithRelations, DisputeRow, DisputeResolution } from '@/lib/orders/types';
 import {
@@ -210,20 +211,8 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
     throw new Error('Failed to complete order after dispute withdrawal');
   }
 
-  // Credit seller wallet (same as normal completion)
-  if (order.seller_wallet_credit_cents && order.seller_wallet_credit_cents > 0) {
-    await creditWallet(
-      order.seller_id,
-      order.seller_wallet_credit_cents,
-      orderId,
-      `Sale: ${order.listings?.game_name ?? 'Game'} — ${order.order_number}`
-    );
-
-    await supabase
-      .from('orders')
-      .update({ wallet_credited_at: new Date().toISOString() })
-      .eq('id', orderId);
-  }
+  // Credit seller wallet (same as normal completion — shared helper)
+  await creditSellerWallet(orderId, order);
 
   void logAuditEvent({
     actorId: userId,
@@ -283,6 +272,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     .from('orders')
     .update({
       status: 'refunded',
+      refunded_at: new Date().toISOString(),
       refund_status: 'completed',
       refund_amount_cents: refundAmountCents,
     })
@@ -420,6 +410,7 @@ export async function staffResolveDispute(
       .from('orders')
       .update({
         status: 'refunded',
+        refunded_at: new Date().toISOString(),
         refund_status: 'completed',
         refund_amount_cents: refundAmountCents,
       })
@@ -490,20 +481,8 @@ export async function staffResolveDispute(
 
   if (orderError || !updatedOrder) throw new Error('Failed to complete order');
 
-  // Credit seller wallet
-  if (order.seller_wallet_credit_cents && order.seller_wallet_credit_cents > 0) {
-    await creditWallet(
-      order.seller_id,
-      order.seller_wallet_credit_cents,
-      orderId,
-      `Sale: ${order.listings?.game_name ?? 'Game'} — ${order.order_number}`
-    );
-
-    await supabase
-      .from('orders')
-      .update({ wallet_credited_at: new Date().toISOString() })
-      .eq('id', orderId);
-  }
+  // Credit seller wallet (shared helper)
+  await creditSellerWallet(orderId, order);
 
   void logAuditEvent({
     actorId: staffUserId,

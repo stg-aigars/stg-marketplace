@@ -56,6 +56,7 @@ export interface OrderRow {
   completed_at: string | null;
   cancelled_at: string | null;
   disputed_at: string | null;
+  refunded_at: string | null;
   created_at: string;
   updated_at: string;
 }

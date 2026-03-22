@@ -14,6 +14,7 @@ interface OrderTimelineProps {
     completed_at: string | null;
     cancelled_at: string | null;
     disputed_at: string | null;
+    refunded_at: string | null;
   };
 }
 
@@ -109,6 +110,11 @@ export function OrderTimeline({ status, timestamps }: OrderTimelineProps) {
             {isDisputed && timestamps.disputed_at && (
               <p className="text-xs text-semantic-text-muted mt-0.5">
                 {formatDate(timestamps.disputed_at)}
+              </p>
+            )}
+            {isRefunded && timestamps.refunded_at && (
+              <p className="text-xs text-semantic-text-muted mt-0.5">
+                {formatDate(timestamps.refunded_at)}
               </p>
             )}
           </div>

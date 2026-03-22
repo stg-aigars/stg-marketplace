@@ -180,6 +180,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                 completed_at: order.completed_at,
                 cancelled_at: order.cancelled_at,
                 disputed_at: order.disputed_at,
+                refunded_at: order.refunded_at,
               }}
             />
           </CardBody>

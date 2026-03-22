@@ -34,12 +34,12 @@ export default async function OrderDetailPage({
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
-  // Fetch dispute and review data
-  const dispute = await getDispute(id);
+  // Fetch dispute and review data in parallel (independent queries)
+  const [dispute, existingReview] = await Promise.all([
+    getDispute(id),
+    getReviewForOrder(id),
+  ]);
   const orderWithDispute = { ...order, dispute };
-
-  // Fetch existing review (if any)
-  const existingReview = await getReviewForOrder(id);
 
   // Compute review eligibility
   const isReviewEligible =

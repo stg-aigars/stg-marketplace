@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Alert, Button, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
-import { sanitizeApiError } from '@/lib/utils/error-messages';
+import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 
 interface StaffDisputeActionsProps {
   orderId: string;
@@ -22,7 +22,7 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
     setError(null);
 
     try {
-      const res = await apiFetch(`/api/staff/disputes/${orderId}/resolve`, {
+      const res = await apiFetch(`/api/staff/orders/${orderId}/dispute/resolve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, notes: notes.trim() || undefined }),
@@ -31,7 +31,7 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(sanitizeApiError(data.error));
+        setError(sanitizeErrorMessage(data.error));
         setConfirmAction(null);
         return;
       }
