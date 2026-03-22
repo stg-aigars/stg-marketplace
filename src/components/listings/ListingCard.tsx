@@ -69,7 +69,7 @@ function ListingCard({
               </span>
             </div>
           )}
-          {photoCount !== undefined && photoCount > 1 && (
+          {!unavailable && photoCount !== undefined && photoCount > 1 && (
             <span className="absolute bottom-2 left-2 flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
               <Camera size={12} />
               {photoCount}
