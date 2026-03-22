@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CaretRight } from '@phosphor-icons/react/ssr';
 import { Card, CardBody } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getCountryName, getCountryFlag } from '@/lib/country-utils';
@@ -71,9 +72,7 @@ export default async function AccountPage() {
                     View your purchases and sales
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <CaretRight size={20} className="text-semantic-text-muted" />
               </div>
             </CardBody>
           </Card>
@@ -90,9 +89,7 @@ export default async function AccountPage() {
                       : 'View your earnings and withdrawals'}
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <CaretRight size={20} className="text-semantic-text-muted" />
               </div>
             </CardBody>
           </Card>
@@ -107,9 +104,7 @@ export default async function AccountPage() {
                     Manage your active and past listings
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <CaretRight size={20} className="text-semantic-text-muted" />
               </div>
             </CardBody>
           </Card>
@@ -124,9 +119,7 @@ export default async function AccountPage() {
                     Games you have saved for later
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <CaretRight size={20} className="text-semantic-text-muted" />
               </div>
             </CardBody>
           </Card>
@@ -141,9 +134,7 @@ export default async function AccountPage() {
                     Email, password, and data management
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <CaretRight size={20} className="text-semantic-text-muted" />
               </div>
             </CardBody>
           </Card>

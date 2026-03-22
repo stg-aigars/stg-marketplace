@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { X } from '@phosphor-icons/react/ssr';
 
 interface AlertProps {
   variant: 'error' | 'success' | 'warning' | 'info';
@@ -32,9 +33,7 @@ export function Alert({ variant, children, dismissible, onDismiss, className = '
             className="shrink-0 p-1 text-current opacity-60 sm:hover:opacity-100 transition-opacity"
             aria-label="Dismiss"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-            </svg>
+            <X size={20} />
           </button>
         </div>
       ) : (

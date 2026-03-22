@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { CircleNotch, PaperPlaneRight } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 import { MAX_MESSAGE_LENGTH } from '@/lib/messages/types';
 
@@ -66,13 +67,9 @@ function MessageInput({ onSend, disabled = false, placeholder = 'Type a message.
         className="shrink-0"
       >
         {sending ? (
-          <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 70" />
-          </svg>
+          <CircleNotch size={20} className="animate-spin" />
         ) : (
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-          </svg>
+          <PaperPlaneRight size={20} />
         )}
       </Button>
     </div>

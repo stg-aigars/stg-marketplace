@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Button, Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -141,19 +142,7 @@ export default async function ListingDetailPage({
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
-          <svg
-            className="w-16 h-16 mx-auto text-semantic-text-muted mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-            />
-          </svg>
+          <Prohibit size={64} className="mx-auto text-semantic-text-muted mb-4" />
           <h1 className="text-2xl font-bold text-semantic-text-heading mb-2">
             This listing is no longer available
           </h1>
@@ -387,25 +376,13 @@ export default async function ListingDetailPage({
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   {listing.games.player_count && (
                     <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-                        />
-                      </svg>
+                      <Users size={16} />
                       <span>{listing.games.player_count} players</span>
                     </div>
                   )}
                   {listing.games.weight != null && listing.games.weight > 0 && (
                     <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"
-                        />
-                      </svg>
+                      <Scales size={16} />
                       <span>{getWeightLabel(listing.games.weight)} ({listing.games.weight.toFixed(1)} / 5)</span>
                     </div>
                   )}

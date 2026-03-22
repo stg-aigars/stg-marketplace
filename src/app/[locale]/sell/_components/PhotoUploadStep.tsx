@@ -19,6 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { DotsSixVertical, X, CircleNotch, CloudArrowUp } from '@phosphor-icons/react/ssr';
 import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 
 interface PhotoUploadStepProps {
@@ -74,9 +75,7 @@ function SortablePhoto({
       />
       {/* Drag handle icon */}
       <div className="absolute top-1.5 left-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm pointer-events-none sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
+        <DotsSixVertical size={16} />
       </div>
       {/* Remove button */}
       <button
@@ -85,9 +84,7 @@ function SortablePhoto({
         className="absolute top-1.5 right-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:opacity-0 sm:group-hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus"
         aria-label={`Remove photo ${index + 1}`}
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <X size={16} />
       </button>
       {/* Cover badge */}
       {index === 0 && (
@@ -224,19 +221,14 @@ export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps
         >
           {uploading > 0 ? (
             <>
-              <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
+              <CircleNotch size={24} className="animate-spin" />
               <span className="text-sm">
                 Uploading {uploading} {uploading === 1 ? 'photo' : 'photos'}...
               </span>
             </>
           ) : (
             <>
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.32 3.75 3.75 0 013.57 4.845A4.5 4.5 0 0118 19.5H6.75z" />
-              </svg>
+              <CloudArrowUp size={32} />
               <span className="text-sm">Tap to upload photos</span>
             </>
           )}
