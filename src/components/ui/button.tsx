@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
-import { CircleNotch } from '@phosphor-icons/react/ssr';
+import { Spinner } from './spinner';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -38,7 +38,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading ? (
           <>
-            <CircleNotch size={16} className="mr-2 animate-spin" />
+            <Spinner size="sm" className="mr-2" />
             {children}
           </>
         ) : (

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CircleNotch, CheckCircle } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, Button, Input } from '@/components/ui';
+import { CheckCircle } from '@phosphor-icons/react/ssr';
+import { Card, CardBody, Button, Input, Spinner } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import type { BGGVersion } from '@/lib/bgg/types';
 import type { VersionSource } from '@/lib/listings/types';
@@ -131,7 +131,7 @@ export function VersionStep({
           Which edition?
         </h2>
         <div className="flex items-center justify-center py-8">
-          <CircleNotch size={20} className="animate-spin text-semantic-text-muted" />
+          <Spinner className="text-semantic-text-muted" />
           <span className="ml-2 text-sm text-semantic-text-muted">Loading editions...</span>
         </div>
       </div>

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MagnifyingGlass, Cube } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import { Button } from '@/components/ui';
+import { Button, EmptyState } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
@@ -133,35 +133,21 @@ export default async function BrowsePage({
       <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} />
 
       {filteredListings.length === 0 ? (
-        <div className="text-center py-16">
-          {filtersActive ? (
-            <>
-              <MagnifyingGlass size={64} className="mx-auto text-semantic-text-muted mb-4" />
-              <p className="text-semantic-text-secondary text-lg">
-                No games match your filters
-              </p>
-              <p className="text-semantic-text-muted mt-1">
-                Try adjusting your filters or clearing them to see all listings.
-              </p>
-              <Link href="/browse" className="inline-block mt-4">
-                <Button variant="secondary">Clear filters</Button>
-              </Link>
-            </>
-          ) : (
-            <>
-              <Cube size={64} className="mx-auto text-semantic-text-muted mb-4" />
-              <p className="text-semantic-text-secondary text-lg">
-                No games listed yet
-              </p>
-              <p className="text-semantic-text-muted mt-1">
-                Be the first to share a pre-loved game with the community.
-              </p>
-              <Link href="/sell" className="inline-block mt-4">
-                <Button>List a game</Button>
-              </Link>
-            </>
-          )}
-        </div>
+        filtersActive ? (
+          <EmptyState
+            icon={MagnifyingGlass}
+            title="No games match your filters"
+            description="Try adjusting your filters or clearing them to see all listings."
+            action={{ label: 'Clear filters', href: '/browse', variant: 'secondary' }}
+          />
+        ) : (
+          <EmptyState
+            icon={Cube}
+            title="No games listed yet"
+            description="Be the first to share a pre-loved game with the community."
+            action={{ label: 'List a game', href: '/sell', variant: 'primary' }}
+          />
+        )
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

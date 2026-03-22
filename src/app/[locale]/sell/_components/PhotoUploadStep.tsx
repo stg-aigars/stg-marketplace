@@ -19,7 +19,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DotsSixVertical, X, CircleNotch, CloudArrowUp } from '@phosphor-icons/react/ssr';
+import { DotsSixVertical, X, CloudArrowUp } from '@phosphor-icons/react/ssr';
+import { Spinner } from '@/components/ui';
 import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 
 interface PhotoUploadStepProps {
@@ -221,7 +222,7 @@ export function PhotoUploadStep({ photos, onPhotosChange }: PhotoUploadStepProps
         >
           {uploading > 0 ? (
             <>
-              <CircleNotch size={24} className="animate-spin" />
+              <Spinner size="lg" />
               <span className="text-sm">
                 Uploading {uploading} {uploading === 1 ? 'photo' : 'photos'}...
               </span>

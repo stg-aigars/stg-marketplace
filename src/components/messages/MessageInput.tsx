@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { CircleNotch, PaperPlaneRight } from '@phosphor-icons/react/ssr';
-import { Button } from '@/components/ui';
+import { PaperPlaneRight } from '@phosphor-icons/react/ssr';
+import { Button, Spinner } from '@/components/ui';
 import { MAX_MESSAGE_LENGTH } from '@/lib/messages/types';
 
 interface MessageInputProps {
@@ -67,7 +67,7 @@ function MessageInput({ onSend, disabled = false, placeholder = 'Type a message.
         className="shrink-0"
       >
         {sending ? (
-          <CircleNotch size={20} className="animate-spin" />
+          <Spinner />
         ) : (
           <PaperPlaneRight size={20} />
         )}
