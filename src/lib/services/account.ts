@@ -258,7 +258,7 @@ export async function deleteUserAccount(
 ): Promise<DeleteAccountResult> {
   const supabase = createServiceClient();
 
-  // 1. Re-check eligibility (defense in depth)
+  // Defense in depth — re-check in case state changed between route guard and here
   const eligibility = await checkDeletionEligibility(userId);
   if (!eligibility.eligible) {
     return {
@@ -267,7 +267,6 @@ export async function deleteUserAccount(
     };
   }
 
-  // 2. Get user profile for the confirmation email
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('full_name')
@@ -276,7 +275,7 @@ export async function deleteUserAccount(
 
   const userName = profile?.full_name || 'there';
 
-  // 3. Send confirmation email BEFORE auth deletion (while we still can)
+  // Send confirmation email BEFORE auth deletion (while we still have the email address)
   try {
     await sendEmail({
       to: userEmail,
@@ -288,7 +287,6 @@ export async function deleteUserAccount(
     // Continue with deletion — email failure should not block account deletion
   }
 
-  // 4. Anonymize profile
   const { error: profileError } = await supabase
     .from('user_profiles')
     .update({
@@ -303,37 +301,39 @@ export async function deleteUserAccount(
     return { success: false, error: 'Failed to anonymize profile. Please try again.' };
   }
 
-  // 5. Deactivate any remaining listings
-  await supabase
-    .from('listings')
-    .update({ status: 'sold' })
-    .eq('seller_id', userId)
-    .in('status', ['draft', 'inactive']);
+  // 5-7: Cleanup steps are independent — run in parallel
+  await Promise.all([
+    // Cancel any remaining active/reserved listings (defense-in-depth; eligibility check should block these)
+    supabase
+      .from('listings')
+      .update({ status: 'cancelled' })
+      .eq('seller_id', userId)
+      .in('status', ['active', 'reserved']),
 
-  // 6. Delete user favorites
-  await supabase
-    .from('user_favorites')
-    .delete()
-    .eq('user_id', userId);
+    // Delete user favorites
+    supabase
+      .from('user_favorites')
+      .delete()
+      .eq('user_id', userId),
 
-  // 7. Delete storage photos for user's listings
-  try {
-    const { data: files } = await supabase.storage
-      .from('listing-photos')
-      .list(userId);
+    // Delete storage photos
+    (async () => {
+      try {
+        const { data: files } = await supabase.storage
+          .from('listing-photos')
+          .list(userId);
 
-    if (files && files.length > 0) {
-      const filePaths = files.map((f) => `${userId}/${f.name}`);
-      await supabase.storage
-        .from('listing-photos')
-        .remove(filePaths);
-    }
-  } catch (err) {
-    console.error('[Account] Failed to delete storage photos:', err);
-    // Continue — photo cleanup failure should not block deletion
-  }
+        if (files && files.length > 0) {
+          const filePaths = files.map((f) => `${userId}/${f.name}`);
+          await supabase.storage.from('listing-photos').remove(filePaths);
+        }
+      } catch (err) {
+        console.error('[Account] Failed to delete storage photos:', err);
+        // Continue — photo cleanup failure should not block deletion
+      }
+    })(),
+  ]);
 
-  // 8. Delete Supabase auth user
   const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
   if (authError) {

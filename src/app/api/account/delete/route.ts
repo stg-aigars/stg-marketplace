@@ -17,9 +17,7 @@ export async function DELETE(request: Request) {
   try {
     const body = await request.json();
 
-    // Determine if this is an email auth user who needs password verification
-    const { data: { user: fullUser } } = await supabase.auth.getUser();
-    const providers = fullUser?.app_metadata?.providers as string[] | undefined;
+    const providers = user.app_metadata?.providers as string[] | undefined;
     const isEmailUser = providers?.includes('email');
 
     if (isEmailUser) {
@@ -32,7 +30,7 @@ export async function DELETE(request: Request) {
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: fullUser!.email!,
+        email: user.email!,
         password,
       });
 

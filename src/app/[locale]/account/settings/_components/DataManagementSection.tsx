@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Card, CardBody, Button, Alert, Input, Modal } from '@/components/ui';
+import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DataManagementSectionProps {
@@ -11,11 +12,9 @@ interface DataManagementSectionProps {
 export function DataManagementSection({ hasPassword }: DataManagementSectionProps) {
   const { signOut } = useAuth();
 
-  // Export state
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState('');
 
-  // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleteChecked, setDeleteChecked] = useState(false);
@@ -27,9 +26,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
     setExportLoading(true);
 
     try {
-      const res = await fetch('/api/account/export-data', {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      });
+      const res = await apiFetch('/api/account/export-data');
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -38,11 +35,12 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
         return;
       }
 
+      // Server sets Content-Disposition with filename; browser uses it automatically
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `stg-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = '';
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -69,12 +67,9 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
         body.password = deleteConfirm;
       }
 
-      const res = await fetch('/api/account/delete', {
+      const res = await apiFetch('/api/account/delete', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
@@ -91,7 +86,6 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
       }
 
       if (res.ok) {
-        // Use AuthContext signOut (browser client) so navbar state clears immediately
         await signOut();
         return;
       }
@@ -117,7 +111,6 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
             Data and privacy
           </h2>
 
-          {/* Data export */}
           <p className="text-sm text-semantic-text-muted mb-3">
             Download a copy of all your data including your profile, listings, orders, and messages.
           </p>
@@ -133,7 +126,6 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
             <Alert variant="error" className="mt-3">{exportError}</Alert>
           )}
 
-          {/* Account deletion */}
           <div className="border-t border-semantic-border-subtle pt-4 mt-4">
             <p className="text-sm text-semantic-text-muted mb-3">
               Permanently delete your account and personal data. Your order history will be retained in anonymized form for tax compliance.
@@ -145,7 +137,6 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
         </CardBody>
       </Card>
 
-      {/* Delete confirmation modal */}
       <Modal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}

@@ -11,13 +11,11 @@ interface SecuritySectionProps {
 }
 
 export function SecuritySection({ email, hasPassword, authProvider }: SecuritySectionProps) {
-  // Email form state
   const [newEmail, setNewEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [emailSuccess, setEmailSuccess] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
 
-  // Change password form state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,7 +23,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  // Set password form state (for Google-only users)
   const [setNewPw, setSetNewPw] = useState('');
   const [setConfirmPw, setSetConfirmPw] = useState('');
   const [setPwError, setSetPwError] = useState('');
@@ -118,7 +115,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
           Email and security
         </h2>
 
-        {/* Auth provider info */}
         {authProvider === 'google' && (
           <div className="mb-3">
             <Badge variant="default">Signed in with Google</Badge>
@@ -128,7 +124,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
           {email}
         </p>
 
-        {/* Email change */}
         <form onSubmit={handleEmailSubmit} className="space-y-3">
           <Input
             id="newEmail"
@@ -150,7 +145,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
           )}
         </form>
 
-        {/* Change password (email users) */}
         {hasPassword && (
           <div className="border-t border-semantic-border-subtle pt-4 mt-4">
             <h3 className="text-sm font-semibold text-semantic-text-heading mb-3">
@@ -199,7 +193,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
           </div>
         )}
 
-        {/* Set password (Google-only users) */}
         {!hasPassword && (
           <div className="border-t border-semantic-border-subtle pt-4 mt-4">
             <h3 className="text-sm font-semibold text-semantic-text-heading mb-3">

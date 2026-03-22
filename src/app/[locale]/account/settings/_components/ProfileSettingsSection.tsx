@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { updateDisplayName } from '@/lib/auth/actions';
+import { apiFetch } from '@/lib/api-fetch';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import type { UserProfile } from '@/lib/auth/types';
 
@@ -11,13 +12,11 @@ interface ProfileSettingsSectionProps {
 }
 
 export function ProfileSettingsSection({ profile }: ProfileSettingsSectionProps) {
-  // Display name form state
   const [displayName, setDisplayName] = useState(profile.full_name || '');
   const [nameError, setNameError] = useState('');
   const [nameSuccess, setNameSuccess] = useState('');
   const [nameLoading, setNameLoading] = useState(false);
 
-  // Phone form state
   const [phone, setPhone] = useState(profile.phone || '');
   const [phoneError, setPhoneError] = useState('');
   const [phoneSuccess, setPhoneSuccess] = useState('');
@@ -47,12 +46,9 @@ export function ProfileSettingsSection({ profile }: ProfileSettingsSectionProps)
     setPhoneLoading(true);
 
     try {
-      const res = await fetch('/api/profile/phone', {
+      const res = await apiFetch('/api/profile/phone', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
 
