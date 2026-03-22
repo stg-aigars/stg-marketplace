@@ -61,11 +61,22 @@ function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, c
         <div className="hidden sm:flex items-center gap-1 mx-2">
           {pages.map((page, index) =>
             page === 'ellipsis' ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-semantic-text-muted">...</span>
+              <span key={`ellipsis-${index}`} className="px-2 text-semantic-text-muted" aria-hidden="true">...</span>
+            ) : page === currentPage ? (
+              <Button
+                key={page}
+                variant="primary"
+                size="sm"
+                className="min-w-[44px]"
+                aria-current="page"
+                disabled
+              >
+                {page}
+              </Button>
             ) : (
               <Link key={page} href={buildUrl(page)}>
                 <Button
-                  variant={page === currentPage ? 'primary' : 'ghost'}
+                  variant="ghost"
                   size="sm"
                   className="min-w-[44px]"
                 >
