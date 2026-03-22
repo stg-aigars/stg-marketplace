@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { X } from '@phosphor-icons/react';
 import { Button, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
@@ -143,9 +144,7 @@ export function DisputeForm({ orderId, onClose, open }: DisputeFormProps) {
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-semantic-error text-semantic-text-inverse flex items-center justify-center text-xs leading-none"
                     aria-label={`Remove photo ${index + 1}`}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <X size={12} />
                   </button>
                 </div>
               ))}

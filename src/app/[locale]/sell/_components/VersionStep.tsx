@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CircleNotch, CheckCircle } from '@phosphor-icons/react';
 import { Card, CardBody, Button, Input } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import type { BGGVersion } from '@/lib/bgg/types';
@@ -130,10 +131,7 @@ export function VersionStep({
           Which edition?
         </h2>
         <div className="flex items-center justify-center py-8">
-          <svg className="h-5 w-5 animate-spin text-semantic-text-muted" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
+          <CircleNotch size={20} className="animate-spin text-semantic-text-muted" />
           <span className="ml-2 text-sm text-semantic-text-muted">Loading editions...</span>
         </div>
       </div>
@@ -244,9 +242,7 @@ export function VersionStep({
                     </div>
                   </div>
                   {isSelected(version.id) && (
-                    <svg className="w-5 h-5 text-semantic-primary shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                    </svg>
+                    <CheckCircle size={20} weight="fill" className="text-semantic-primary shrink-0 mt-0.5" />
                   )}
                 </div>
               </CardBody>

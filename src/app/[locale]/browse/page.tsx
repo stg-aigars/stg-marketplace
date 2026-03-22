@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { MagnifyingGlass, Cube } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
@@ -135,19 +136,7 @@ export default async function BrowsePage({
         <div className="text-center py-16">
           {filtersActive ? (
             <>
-              <svg
-                className="w-16 h-16 mx-auto text-semantic-text-muted mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
+              <MagnifyingGlass size={64} className="mx-auto text-semantic-text-muted mb-4" />
               <p className="text-semantic-text-secondary text-lg">
                 No games match your filters
               </p>
@@ -160,19 +149,7 @@ export default async function BrowsePage({
             </>
           ) : (
             <>
-              <svg
-                className="w-16 h-16 mx-auto text-semantic-text-muted mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
+              <Cube size={64} className="mx-auto text-semantic-text-muted mb-4" />
               <p className="text-semantic-text-secondary text-lg">
                 No games listed yet
               </p>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ArrowLeft } from '@phosphor-icons/react/ssr';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getConversation, getMessages, markConversationRead } from '@/lib/messages/actions';
@@ -36,9 +37,7 @@ export default async function ConversationPage({
           href="/messages"
           className="inline-flex items-center gap-1 text-sm text-semantic-text-secondary min-h-[44px]"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
+          <ArrowLeft size={16} />
           Messages
         </Link>
       </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { CaretDown, X, List } from '@phosphor-icons/react';
 import { useAuth } from '@/contexts/AuthContext';
 
 function SiteHeader() {
@@ -110,15 +111,10 @@ function SiteHeader() {
                   className="flex items-center gap-1.5 text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium min-h-[44px] px-2"
                 >
                   <span className="max-w-[140px] truncate">{displayName}</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <CaretDown
+                    size={16}
+                    className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
 
                 {dropdownOpen && (
@@ -188,13 +184,9 @@ function SiteHeader() {
             className="sm:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary"
           >
             {mobileOpen ? (
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={24} />
             ) : (
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <List size={24} />
             )}
           </button>
         </div>

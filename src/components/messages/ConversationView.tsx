@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Package } from '@phosphor-icons/react';
 import { sendMessage, getMessages, markConversationRead } from '@/lib/messages/actions';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { MessageBubble } from './MessageBubble';
@@ -98,9 +99,7 @@ function ConversationView({ conversation, initialMessages, currentUserId }: Conv
                 unoptimized={conversation.listing_thumbnail?.includes('cf.geekdo-images.com')}
               />
             ) : (
-              <svg className="w-5 h-5 text-semantic-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
+              <Package size={20} className="text-semantic-text-muted" />
             )}
           </div>
           <div className="min-w-0 flex-1">
