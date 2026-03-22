@@ -14,7 +14,6 @@ import {
   sendOrderDeliveredToBuyer,
   sendOrderCompletedToSeller,
   sendOrderDeclinedToBuyer,
-  sendOrderDisputedToSeller,
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 
@@ -369,20 +368,16 @@ async function creditSellerWallet(orderId: string, order: OrderWithRelations): P
 
 /**
  * Buyer disputes the order.
+ * Delegates to the dispute service which handles dispute row creation,
+ * race condition protection, and email notifications.
  */
-export async function disputeOrder(orderId: string, userId: string, reason?: string): Promise<OrderRow> {
-  const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'disputed', userId, 'buyer', undefined, order);
-
-  sendOrderDisputedToSeller({
-    sellerName: order.seller_profile?.full_name ?? 'Seller',
-    sellerEmail: order.seller_profile?.email ?? '',
-    orderNumber: order.order_number,
-    orderId,
-    gameName: order.listings?.game_name ?? 'Game',
-    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
-    reason,
-  }).catch((err) => console.error('[Email] Failed to send order-disputed to seller:', err));
-
-  return updatedOrder;
+export async function disputeOrder(
+  orderId: string,
+  userId: string,
+  reason: string,
+  photos: string[] = []
+): Promise<OrderRow> {
+  const { openDispute } = await import('@/lib/services/dispute');
+  const { order } = await openDispute(orderId, userId, reason, photos);
+  return order;
 }

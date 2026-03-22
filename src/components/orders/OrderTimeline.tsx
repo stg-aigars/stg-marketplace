@@ -28,7 +28,8 @@ const STEP_TIMESTAMP_MAP: Record<string, keyof OrderTimelineProps['timestamps']>
 export function OrderTimeline({ status, timestamps }: OrderTimelineProps) {
   const isCancelled = status === 'cancelled';
   const isDisputed = status === 'disputed';
-  const isTerminal = isCancelled || isDisputed;
+  const isRefunded = status === 'refunded';
+  const isTerminal = isCancelled || isDisputed || isRefunded;
 
   // Find current step index in the happy path
   const currentIndex = TIMELINE_STEPS.findIndex((s) => s.status === status);
@@ -98,7 +99,7 @@ export function OrderTimeline({ status, timestamps }: OrderTimelineProps) {
           </div>
           <div>
             <p className="text-sm font-medium text-semantic-error">
-              {isCancelled ? 'Cancelled' : 'Disputed'}
+              {isCancelled ? 'Cancelled' : isRefunded ? 'Refunded' : 'Disputed'}
             </p>
             {isCancelled && timestamps.cancelled_at && (
               <p className="text-xs text-semantic-text-muted mt-0.5">

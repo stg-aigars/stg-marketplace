@@ -4,7 +4,7 @@
  * in supabase/migrations/018_wallet_system.sql
  */
 
-export type WalletTransactionType = 'credit' | 'debit' | 'withdrawal';
+export type WalletTransactionType = 'credit' | 'debit' | 'withdrawal' | 'refund';
 
 export interface WalletRow {
   id: string;
