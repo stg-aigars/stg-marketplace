@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ListingCard } from '@/components/listings/ListingCard';
-import { Badge } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { Badge, Button, Tabs } from '@/components/ui';
 import type { ListingCondition } from '@/lib/listings/types';
 
 interface ListingRow {
@@ -37,35 +36,15 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
 
   return (
     <div>
-      {/* Tab buttons */}
-      <div className="flex gap-1 mb-6 border-b border-semantic-border-subtle">
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === 'active'
-              ? 'text-semantic-primary'
-              : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'
-          }`}
-        >
-          Active ({active.length})
-          {activeTab === 'active' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-primary" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('inactive')}
-          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === 'inactive'
-              ? 'text-semantic-primary'
-              : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'
-          }`}
-        >
-          Past ({inactive.length})
-          {activeTab === 'inactive' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-primary" />
-          )}
-        </button>
-      </div>
+      <Tabs
+        tabs={[
+          { key: 'active', label: 'Active', count: active.length },
+          { key: 'inactive', label: 'Past', count: inactive.length },
+        ]}
+        activeTab={activeTab}
+        onTabChange={(key) => setActiveTab(key as 'active' | 'inactive')}
+        className="mb-6"
+      />
 
       {/* Listings grid */}
       {listings.length === 0 ? (
