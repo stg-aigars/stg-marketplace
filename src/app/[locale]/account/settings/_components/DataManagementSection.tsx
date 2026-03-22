@@ -1,16 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardBody, Button, Alert, Input, Modal } from '@/components/ui';
-import { signOut } from '@/lib/auth/actions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DataManagementSectionProps {
   hasPassword: boolean;
 }
 
 export function DataManagementSection({ hasPassword }: DataManagementSectionProps) {
-  const router = useRouter();
+  const { signOut } = useAuth();
 
   // Export state
   const [exportLoading, setExportLoading] = useState(false);
@@ -92,8 +91,8 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
       }
 
       if (res.ok) {
+        // Use AuthContext signOut (browser client) so navbar state clears immediately
         await signOut();
-        router.push('/');
         return;
       }
 
