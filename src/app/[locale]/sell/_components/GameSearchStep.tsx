@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Input, Card, CardBody, Button } from '@/components/ui';
-import { CircleNotch, ImageSquare } from '@phosphor-icons/react/ssr';
+import { Input, Card, CardBody, Button, Spinner } from '@/components/ui';
+import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { apiFetch } from '@/lib/api-fetch';
 
 interface GameResult {
@@ -178,7 +178,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
       {/* Loading state */}
       {searching && (
         <div className="flex items-center justify-center py-8">
-          <CircleNotch size={20} className="animate-spin text-semantic-text-muted" />
+          <Spinner className="text-semantic-text-muted" />
           <span className="ml-2 text-sm text-semantic-text-muted">Searching...</span>
         </div>
       )}
@@ -230,7 +230,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                     </div>
                   </div>
                   {enriching === game.id && (
-                    <CircleNotch size={20} className="animate-spin text-semantic-text-muted shrink-0" />
+                    <Spinner className="text-semantic-text-muted shrink-0" />
                   )}
                 </div>
               </CardBody>

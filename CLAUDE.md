@@ -104,6 +104,8 @@ Always use these — do not write inline equivalents:
 | Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible) | `@/components/ui` |
 | User avatars / initials | `Avatar` (sizes: sm, md) | `@/components/ui` |
 | Loading placeholders | `Skeleton` | `@/components/ui` |
+| Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
+| Empty / no-results states | `EmptyState` (icon, title, description, action) | `@/components/ui` |
 | Price formatting | `formatPrice()` / `formatCentsToCurrency()` | `@/lib/services/pricing` |
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |

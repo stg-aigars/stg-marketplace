@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Heart } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Button } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingCondition } from '@/lib/listings/types';
 
@@ -49,18 +48,12 @@ export default async function FavoritesPage() {
       </h1>
 
       {items.length === 0 ? (
-        <div className="text-center py-16">
-          <Heart size={64} className="mx-auto text-semantic-text-muted mb-4" />
-          <p className="text-semantic-text-secondary text-lg">
-            No favorites yet
-          </p>
-          <p className="text-semantic-text-muted mt-1">
-            Tap the heart on any listing to save it here.
-          </p>
-          <Link href="/browse" className="inline-block mt-4">
-            <Button>Browse games</Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={Heart}
+          title="No favorites yet"
+          description="Tap the heart on any listing to save it here."
+          action={{ label: 'Browse games', href: '/browse', variant: 'primary' }}
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {items.map((fav) => {

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChatCircle, Package } from '@phosphor-icons/react/ssr';
+import { EmptyState } from '@/components/ui';
 import { formatMessageTime } from '@/lib/date-utils';
 import type { Conversation } from '@/lib/messages/types';
 
@@ -12,15 +13,12 @@ interface ConversationListProps {
 function ConversationList({ conversations, activeConversationId }: ConversationListProps) {
   if (conversations.length === 0) {
     return (
-      <div className="text-center py-16 px-4">
-        <ChatCircle size={64} className="mx-auto text-semantic-text-muted mb-4" />
-        <p className="text-semantic-text-secondary text-lg">
-          No messages yet
-        </p>
-        <p className="text-semantic-text-muted mt-1">
-          When you message a seller about a listing, your conversations will appear here.
-        </p>
-      </div>
+      <EmptyState
+        icon={ChatCircle}
+        title="No messages yet"
+        description="When you message a seller about a listing, your conversations will appear here."
+        className="px-4"
+      />
     );
   }
 
