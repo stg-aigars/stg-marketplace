@@ -25,11 +25,18 @@ interface VersionStepProps {
   onSelect: (version: VersionData) => void;
 }
 
-// Languages prioritized for the Baltic market, in display order
 const PRIORITY_LANGUAGES = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'Russian', 'German'];
 
 function getVersionLanguages(version: BGGVersion): string[] {
   return version.languages ?? (version.language ? [version.language] : []);
+}
+
+function filterChipClass(active: boolean): string {
+  return `whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+    active
+      ? 'bg-frost-ice/10 text-frost-arctic border border-frost-ice'
+      : 'bg-semantic-bg-surface text-semantic-text-secondary border border-semantic-border-subtle hover:border-semantic-border-default'
+  }`;
 }
 
 export function VersionStep({
@@ -265,11 +272,7 @@ export function VersionStep({
             <button
               type="button"
               onClick={() => setLanguageFilter(null)}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                languageFilter === null
-                  ? 'bg-frost-ice/10 text-frost-arctic border border-frost-ice'
-                  : 'bg-semantic-bg-surface text-semantic-text-secondary border border-semantic-border-subtle hover:border-semantic-border-default'
-              }`}
+              className={filterChipClass(languageFilter === null)}
             >
               All ({versions.length})
             </button>
@@ -278,11 +281,7 @@ export function VersionStep({
                 key={lang}
                 type="button"
                 onClick={() => setLanguageFilter(lang === languageFilter ? null : lang)}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  languageFilter === lang
-                    ? 'bg-frost-ice/10 text-frost-arctic border border-frost-ice'
-                    : 'bg-semantic-bg-surface text-semantic-text-secondary border border-semantic-border-subtle hover:border-semantic-border-default'
-                }`}
+                className={filterChipClass(languageFilter === lang)}
               >
                 {getLanguageFlag(lang)} {lang} ({uniqueLanguages.counts.get(lang)})
               </button>
@@ -382,6 +381,8 @@ function VersionCard({
             <img
               src={thumbnail}
               alt={version.name}
+              width={48}
+              height={48}
               loading="lazy"
               className="w-12 h-12 rounded object-cover shrink-0"
             />
