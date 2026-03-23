@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, ImageSquare } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, Button, Input, Spinner } from '@/components/ui';
+import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { getLanguageFlag } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
@@ -260,9 +260,7 @@ export function VersionStep({
       </p>
 
       {fetchError && (
-        <p className="text-sm text-semantic-warning text-center py-2">
-          {fetchError}
-        </p>
+        <Alert variant="warning">{fetchError}</Alert>
       )}
 
       {/* Language filter chips */}
