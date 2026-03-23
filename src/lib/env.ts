@@ -120,6 +120,7 @@ export const env = {
   resend: {
     apiKey: process.env.RESEND_API_KEY!,
     fromEmail: process.env.RESEND_FROM_EMAIL!,
+    audienceId: process.env.RESEND_AUDIENCE_ID ?? '',
   },
   unisend: {
     apiUrl: process.env.UNISEND_API_URL!,

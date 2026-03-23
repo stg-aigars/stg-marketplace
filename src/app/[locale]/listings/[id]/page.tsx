@@ -14,7 +14,8 @@ import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
 import { getSellerRating } from '@/lib/reviews/service';
-import { getSellerCompletedSales } from '@/lib/services/sellers';
+import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
+import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 
 interface ListingDetailRow {
@@ -361,12 +362,13 @@ export default async function ListingDetailPage({
                       </>
                     )}
                   </div>
-                  <div className="mt-1">
+                  <div className="flex items-center gap-2 mt-1">
                     <SellerRating
                       positivePct={sellerRating.positivePct}
                       ratingCount={sellerRating.ratingCount}
                       size="sm"
                     />
+                    <TrustBadge tier={calculateTrustTier(sellerCompletedSales, sellerRating.positivePct, sellerRating.ratingCount)} />
                   </div>
                 </div>
               </div>

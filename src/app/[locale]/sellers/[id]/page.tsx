@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSellerRating, getSellerReviews } from '@/lib/reviews/service';
-import { getSellerCompletedSales } from '@/lib/services/sellers';
+import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
+import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { Avatar, Card, CardBody } from '@/components/ui';
@@ -103,8 +104,9 @@ export default async function SellerProfilePage({
               <span>{completedSales} {completedSales === 1 ? 'sale' : 'sales'} completed</span>
             )}
           </div>
-          <div className="mt-1">
+          <div className="flex items-center gap-2 mt-1">
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} />
+            <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
           </div>
         </div>
       </div>
