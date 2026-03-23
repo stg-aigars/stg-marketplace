@@ -1,5 +1,5 @@
 // BGG integration barrel export
-export { searchGames, getGameDetails, getGameVersions, fetchGameMetadata, ensureGameMetadata, ensureGameVersions } from './api';
+export { searchGames, getGameDetails, getGameVersions, fetchGameMetadata, fetchGameThumbnails, ensureGameMetadata, ensureGameVersions } from './api';
 export type { BGGGame, BGGVersion, BGGGameMetadata, BGGInboundLink, ManualVersion, VersionSelection } from './types';
 export { isManualVersion } from './types';
 export { classifyGame, isExpansion } from './classifier';

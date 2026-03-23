@@ -38,6 +38,8 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const thumbAbortRef = useRef<AbortController | null>(null);
+
   // Debounced search
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -48,6 +50,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
 
     const timeout = setTimeout(async () => {
       abortRef.current?.abort();
+      thumbAbortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -60,7 +63,38 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
         );
         if (res.ok) {
           const data = await res.json();
-          setResults(data.games ?? []);
+          const games: GameResult[] = data.games ?? [];
+          setResults(games);
+
+          // Progressive thumbnail loading for results missing thumbnails
+          const missingIds = games
+            .filter((g) => !g.thumbnail)
+            .map((g) => g.id);
+
+          if (missingIds.length > 0) {
+            const thumbController = new AbortController();
+            thumbAbortRef.current = thumbController;
+
+            apiFetch('/api/games/thumbnails', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ids: missingIds }),
+              signal: thumbController.signal,
+            })
+              .then((thumbRes) => (thumbRes.ok ? thumbRes.json() : null))
+              .then((thumbData) => {
+                if (!thumbData?.thumbnails || thumbController.signal.aborted) return;
+                const thumbs = thumbData.thumbnails as Record<string, string>;
+                setResults((prev) =>
+                  prev.map((g) =>
+                    thumbs[g.id] ? { ...g, thumbnail: thumbs[g.id] } : g
+                  )
+                );
+              })
+              .catch(() => {
+                // Silent failure — placeholders remain
+              });
+          }
         } else {
           setError('Game search is temporarily unavailable. Please try again.');
         }

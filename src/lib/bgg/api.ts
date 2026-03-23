@@ -612,6 +612,53 @@ export async function ensureGameVersions(
 }
 
 // ============================================================================
+// Batch thumbnail fetch
+// ============================================================================
+
+/**
+ * Fetch thumbnails for multiple games in a single BGG API call.
+ * Uses thing?id=X,Y,Z without stats or versions for minimal payload.
+ * Returns only games that BGG actually has data for — missing/deleted IDs are omitted.
+ */
+export async function fetchGameThumbnails(
+  ids: number[]
+): Promise<Map<number, { thumbnail?: string; image?: string }>> {
+  const result = new Map<number, { thumbnail?: string; image?: string }>();
+  if (ids.length === 0) return result;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  const response = await rateLimitedFetch(
+    `https://boardgamegeek.com/xmlapi2/thing?id=${ids.join(',')}`,
+    { signal: controller.signal, headers: createBGGHeaders() }
+  );
+  clearTimeout(timeoutId);
+
+  if (!response.ok) return result;
+
+  const xml = await response.text();
+  const parsed = parser.parse(xml) as BGGXMLResponse;
+  if (!parsed.items?.item) return result;
+
+  const items = Array.isArray(parsed.items.item)
+    ? (parsed.items.item as BGGXMLItem[])
+    : [parsed.items.item as BGGXMLItem];
+
+  for (const item of items) {
+    const id = parseInt(item['@_id']);
+    if (!isNaN(id) && (item.thumbnail || item.image)) {
+      result.set(id, {
+        thumbnail: item.thumbnail || undefined,
+        image: item.image || undefined,
+      });
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
 // Internal helpers
 // ============================================================================
 
