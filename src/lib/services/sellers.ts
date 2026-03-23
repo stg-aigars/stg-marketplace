@@ -18,3 +18,19 @@ export async function getSellerCompletedSales(sellerId: string): Promise<number>
 
   return data ?? 0;
 }
+
+export type TrustTier = 'new' | 'bronze' | 'gold' | 'trusted';
+
+export function calculateTrustTier(completedSales: number, positivePct: number): TrustTier {
+  if (completedSales >= 20 && positivePct >= 90) return 'trusted';
+  if (completedSales >= 5 && positivePct >= 80) return 'gold';
+  if (completedSales >= 1) return 'bronze';
+  return 'new';
+}
+
+export const TRUST_TIER_CONFIG: Record<TrustTier, { label: string; show: boolean }> = {
+  new: { label: 'New seller', show: false },
+  bronze: { label: 'Bronze seller', show: true },
+  gold: { label: 'Gold seller', show: true },
+  trusted: { label: 'Trusted seller', show: true },
+};
