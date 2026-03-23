@@ -106,7 +106,7 @@ export default async function SellerProfilePage({
           </div>
           <div className="flex items-center gap-2 mt-1">
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} />
-            <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct)} />
+            <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
           </div>
         </div>
       </div>

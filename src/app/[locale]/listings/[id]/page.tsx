@@ -368,7 +368,7 @@ export default async function ListingDetailPage({
                       ratingCount={sellerRating.ratingCount}
                       size="sm"
                     />
-                    <TrustBadge tier={calculateTrustTier(sellerCompletedSales, sellerRating.positivePct)} />
+                    <TrustBadge tier={calculateTrustTier(sellerCompletedSales, sellerRating.positivePct, sellerRating.ratingCount)} />
                   </div>
                 </div>
               </div>

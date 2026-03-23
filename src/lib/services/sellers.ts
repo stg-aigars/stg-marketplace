@@ -21,10 +21,10 @@ export async function getSellerCompletedSales(sellerId: string): Promise<number>
 
 export type TrustTier = 'new' | 'bronze' | 'gold' | 'trusted';
 
-export function calculateTrustTier(completedSales: number, positivePct: number): TrustTier {
+export function calculateTrustTier(completedSales: number, positivePct: number, ratingCount: number): TrustTier {
   if (completedSales >= 20 && positivePct >= 90) return 'trusted';
   if (completedSales >= 5 && positivePct >= 80) return 'gold';
-  if (completedSales >= 1) return 'bronze';
+  if (completedSales >= 1 && ratingCount >= 1) return 'bronze';
   return 'new';
 }
 
