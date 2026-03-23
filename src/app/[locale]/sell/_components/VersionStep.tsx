@@ -387,7 +387,7 @@ function VersionCard({
             />
           ) : (
             <div className="w-12 h-12 rounded bg-semantic-bg-surface shrink-0 flex items-center justify-center">
-              <ImageSquare size={24} className="text-semantic-text-muted" />
+              <ImageSquare size={24} className="text-semantic-text-muted" aria-hidden="true" />
             </div>
           )}
           <div className="flex-1 min-w-0">
