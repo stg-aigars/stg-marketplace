@@ -85,6 +85,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
               .then((thumbData) => {
                 if (!thumbData?.thumbnails || thumbController.signal.aborted) return;
                 const thumbs = thumbData.thumbnails as Record<string, string>;
+                if (Object.keys(thumbs).length === 0) return;
                 setResults((prev) =>
                   prev.map((g) =>
                     thumbs[g.id] ? { ...g, thumbnail: thumbs[g.id] } : g
@@ -111,6 +112,14 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
 
     return () => clearTimeout(timeout);
   }, [query]);
+
+  // Abort in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      thumbAbortRef.current?.abort();
+    };
+  }, []);
 
   const handleSelectGame = async (game: GameResult) => {
     if (enriching !== null) return;

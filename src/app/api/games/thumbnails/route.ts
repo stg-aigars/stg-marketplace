@@ -3,8 +3,9 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createServiceClient } from '@/lib/supabase';
 import { fetchGameThumbnails } from '@/lib/bgg';
-import { BGGError } from '@/lib/bgg/errors';
 import { applyRateLimit, thumbnailLimiter } from '@/lib/rate-limit';
+
+const MAX_IDS = 20;
 
 export async function POST(request: NextRequest) {
   const csrfError = requireBrowserOrigin(request);
@@ -27,10 +28,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'ids must be an array' }, { status: 400 });
   }
 
-  // Validate and truncate to 20
   const ids = body.ids
     .filter((id: unknown): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0)
-    .slice(0, 20);
+    .slice(0, MAX_IDS);
 
   if (ids.length === 0) {
     return NextResponse.json({ thumbnails: {} });
@@ -39,14 +39,12 @@ export async function POST(request: NextRequest) {
   const serviceClient = createServiceClient();
   const thumbnails: Record<number, string> = {};
 
-  // Check DB for cached thumbnails
   const { data: cached } = await serviceClient
     .from('games')
     .select('id, thumbnail')
     .in('id', ids)
     .not('thumbnail', 'is', null);
 
-  const missingIds: number[] = [];
   const cachedIds = new Set<number>();
 
   if (cached) {
@@ -58,42 +56,38 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  for (const id of ids) {
-    if (!cachedIds.has(id)) {
-      missingIds.push(id);
-    }
-  }
+  const missingIds = ids.filter((id) => !cachedIds.has(id));
 
-  // Fetch missing thumbnails from BGG in a single batch request
   if (missingIds.length > 0) {
     try {
       const fetched = await fetchGameThumbnails(missingIds);
 
-      // Persist to DB and include in response
+      const upsertRows: { id: number; thumbnail: string | null; image: string | null; updated_at: string }[] = [];
+      const now = new Date().toISOString();
+
       fetched.forEach((data, id) => {
         const thumb = data.thumbnail ?? data.image;
         if (thumb) {
           thumbnails[id] = thumb;
-
-          // Fire-and-forget — don't block response on DB write
-          serviceClient
-            .from('games')
-            .update({
-              thumbnail: data.thumbnail ?? null,
-              image: data.image ?? null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', id)
-            .then(({ error }) => {
-              if (error) console.error(`Failed to persist thumbnail for game ${id}:`, error);
-            });
+          upsertRows.push({
+            id,
+            thumbnail: data.thumbnail ?? null,
+            image: data.image ?? null,
+            updated_at: now,
+          });
         }
       });
-    } catch (err) {
-      // BGG failures are silent — return whatever cached thumbnails we have
-      if (!(err instanceof BGGError)) {
-        console.error('Unexpected error fetching BGG thumbnails:', err);
+
+      if (upsertRows.length > 0) {
+        void serviceClient
+          .from('games')
+          .upsert(upsertRows, { onConflict: 'id' })
+          .then(({ error }) => {
+            if (error) console.error('Failed to persist thumbnails:', error);
+          });
       }
+    } catch (err) {
+      console.error('Unexpected error fetching BGG thumbnails:', err);
     }
   }
 
