@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createServiceClient } from '@/lib/supabase';
 import { fetchGameThumbnails } from '@/lib/bgg';
 import { BGGError } from '@/lib/bgg/errors';
-import { rateLimit, applyRateLimit } from '@/lib/rate-limit';
-
-const thumbnailLimiter = rateLimit({ interval: 10_000, maxRequests: 5 });
+import { applyRateLimit, thumbnailLimiter } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
-  const { user, response } = await requireAuth();
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
+  const { response } = await requireAuth();
   if (response) return response;
 
   const rateLimitError = applyRateLimit(thumbnailLimiter, request);
@@ -94,9 +96,6 @@ export async function POST(request: NextRequest) {
       }
     }
   }
-
-  // Suppress unused variable warning — user is validated but only needed for auth gate
-  void user;
 
   return NextResponse.json({ thumbnails });
 }
