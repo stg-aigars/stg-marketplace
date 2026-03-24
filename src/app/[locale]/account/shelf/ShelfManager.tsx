@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Plus, DownloadSimple } from '@phosphor-icons/react/ssr';
-import { Button } from '@/components/ui';
+import { Button, EmptyState } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { ShelfItemCard } from './ShelfItemCard';
 import { AddToShelfModal } from './AddToShelfModal';
@@ -67,16 +67,12 @@ export function ShelfManager({ initialItems, bggUsername }: ShelfManagerProps) {
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-16">
-          <BookOpen size={64} className="mx-auto text-semantic-text-muted mb-4" />
-          <p className="text-semantic-text-secondary text-lg">Your shelf is empty</p>
-          <p className="text-semantic-text-muted mt-1">
-            Add games from your collection to showcase what you have
-          </p>
-          <Button className="mt-4" onClick={() => setShowAddModal(true)}>
-            Add your first game
-          </Button>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="Your shelf is empty"
+          description="Add games from your collection to showcase what you have"
+          action={{ label: 'Add your first game', onClick: () => setShowAddModal(true) }}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((item) => (

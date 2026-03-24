@@ -23,6 +23,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const imageUrl = item.image || item.thumbnail;
@@ -41,12 +42,15 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
 
   async function handleRemove() {
     setRemoving(true);
+    setRemoveError(null);
     const result = await removeFromShelf(item.id);
     if ('success' in result) {
+      setShowConfirm(false);
       onRemoved();
+    } else {
+      setRemoveError(result.error);
     }
     setRemoving(false);
-    setShowConfirm(false);
   }
 
   return (
@@ -131,10 +135,13 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
       </Card>
 
       {/* Remove confirmation modal */}
-      <Modal open={showConfirm} onClose={() => setShowConfirm(false)} title="Remove from shelf">
-        <p className="text-sm text-semantic-text-secondary mb-6">
+      <Modal open={showConfirm} onClose={() => { setShowConfirm(false); setRemoveError(null); }} title="Remove from shelf">
+        <p className="text-sm text-semantic-text-secondary mb-4">
           Remove <span className="font-medium text-semantic-text-primary">{item.game_name}</span> from your shelf? This cannot be undone.
         </p>
+        {removeError && (
+          <p className="text-sm text-semantic-error mb-4">{removeError}</p>
+        )}
         <div className="flex justify-end gap-3 pb-4">
           <Button variant="secondary" size="sm" onClick={() => setShowConfirm(false)}>
             Cancel
