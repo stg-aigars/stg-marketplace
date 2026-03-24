@@ -69,7 +69,7 @@ function Modal({ open, onClose, title, children }: ModalProps) {
           </div>
         )}
 
-        <div className="px-4 sm:px-6 py-4 overflow-y-auto pb-safe">
+        <div className="px-4 sm:px-6 pt-4 overflow-y-auto pb-safe">
           {children}
         </div>
       </div>
