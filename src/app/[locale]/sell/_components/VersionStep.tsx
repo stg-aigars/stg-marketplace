@@ -6,16 +6,7 @@ import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { getLanguageFlag } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
-import type { VersionSource } from '@/lib/listings/types';
-
-interface VersionData {
-  version_source: VersionSource;
-  bgg_version_id: number | null;
-  version_name: string | null;
-  publisher: string | null;
-  language: string | null;
-  edition_year: number | null;
-}
+import type { VersionData, VersionSource } from '@/lib/listings/types';
 
 interface VersionStepProps {
   gameId: number;
@@ -23,6 +14,7 @@ interface VersionStepProps {
   selectedVersionId: number | null;
   selectedVersionSource: VersionSource | null;
   onSelect: (version: VersionData) => void;
+  compact?: boolean;
 }
 
 const PRIORITY_LANGUAGES = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'Russian', 'German'];
@@ -45,6 +37,7 @@ export function VersionStep({
   selectedVersionId,
   selectedVersionSource,
   onSelect,
+  compact,
 }: VersionStepProps) {
   const [versions, setVersions] = useState<BGGVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,12 +245,18 @@ export function VersionStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
-        Which edition?
-      </h2>
-      <p className="text-sm text-semantic-text-secondary">
-        Select the edition that matches your copy of {gameName}. This helps buyers know exactly what they are getting.
-      </p>
+      {compact ? (
+        <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
+      ) : (
+        <>
+          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+            Which edition?
+          </h2>
+          <p className="text-sm text-semantic-text-secondary">
+            Select the edition that matches your copy of {gameName}. This helps buyers know exactly what they are getting.
+          </p>
+        </>
+      )}
 
       {fetchError && (
         <Alert variant="warning">{fetchError}</Alert>

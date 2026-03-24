@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { Badge, Button, Tabs } from '@/components/ui';
 import type { ListingCondition } from '@/lib/listings/types';
+import { ListingOverflowMenu } from './ListingOverflowMenu';
 
 interface ListingRow {
   id: string;
@@ -73,6 +74,9 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
               />
+              {listing.status === 'active' && (
+                <ListingOverflowMenu listingId={listing.id} />
+              )}
               {listing.status !== 'active' && (
                 <div className="absolute top-2 right-2">
                   <Badge variant={listing.status === 'sold' ? 'success' : 'default'}>

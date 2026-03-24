@@ -10,6 +10,7 @@ import type { ListingCondition } from '@/lib/listings/types';
 interface ConditionStepProps {
   selectedCondition: ListingCondition | null;
   onSelect: (condition: ListingCondition) => void;
+  compact?: boolean;
 }
 
 const conditionExamples: Record<string, string> = {
@@ -20,17 +21,23 @@ const conditionExamples: Record<string, string> = {
   forParts: 'Missing pieces or damaged beyond normal play. Useful for replacing lost components or crafts.',
 };
 
-export function ConditionStep({ selectedCondition, onSelect }: ConditionStepProps) {
+export function ConditionStep({ selectedCondition, onSelect, compact }: ConditionStepProps) {
   const [showGuide, setShowGuide] = useState(false);
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
-        What condition is it in?
-      </h2>
-      <p className="text-sm text-semantic-text-secondary">
-        Be honest — it builds trust with buyers and avoids disputes.
-      </p>
+      {compact ? (
+        <h2 className="text-base font-semibold text-semantic-text-heading">Condition</h2>
+      ) : (
+        <>
+          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+            What condition is it in?
+          </h2>
+          <p className="text-sm text-semantic-text-secondary">
+            Be honest — it builds trust with buyers and avoids disputes.
+          </p>
+        </>
+      )}
 
       <div className="space-y-2">
         {LISTING_CONDITIONS.map((condition) => {
