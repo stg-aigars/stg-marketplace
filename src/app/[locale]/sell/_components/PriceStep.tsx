@@ -68,7 +68,6 @@ export function PriceStep({
         </div>
       )}
 
-      {/* Price input */}
       <div>
         <label className="block text-sm font-medium text-semantic-text-primary mb-1.5">
           Price
@@ -96,7 +95,6 @@ export function PriceStep({
         )}
       </div>
 
-      {/* Earnings preview */}
       {earnings && priceCents >= MIN_PRICE_CENTS && (
         <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
           <p className="text-sm text-semantic-text-secondary">
@@ -109,7 +107,6 @@ export function PriceStep({
         </div>
       )}
 
-      {/* Description */}
       <div>
         <label
           htmlFor="listing-description"
