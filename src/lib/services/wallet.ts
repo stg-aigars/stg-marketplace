@@ -31,14 +31,30 @@ export class InsufficientBalanceError extends Error {
 export async function getOrCreateWallet(userId: string): Promise<WalletRow> {
   const supabase = createServiceClient();
 
-  // Upsert: insert if new, no-op update if exists — returns the row in both cases
+  // Select-first: avoids the ignoreDuplicates + RETURNING bug where
+  // ON CONFLICT DO NOTHING returns zero rows for existing wallets
+  const { data: existing } = await supabase
+    .from('wallets')
+    .select('*')
+    .eq('user_id', userId)
+    .single<WalletRow>();
+
+  if (existing) return existing;
+
   const { data: wallet, error } = await supabase
     .from('wallets')
-    .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true })
+    .insert({ user_id: userId })
     .select('*')
     .single<WalletRow>();
 
   if (error || !wallet) {
+    // Race condition: another request created it between our select and insert
+    const { data: retry } = await supabase
+      .from('wallets')
+      .select('*')
+      .eq('user_id', userId)
+      .single<WalletRow>();
+    if (retry) return retry;
     throw new Error(`Failed to get or create wallet for user ${userId}: ${error?.message}`);
   }
 
