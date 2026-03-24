@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { BookOpen, Plus, DownloadSimple } from '@phosphor-icons/react/ssr';
 import { Button, EmptyState } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
@@ -17,7 +16,6 @@ interface ShelfManagerProps {
 }
 
 export function ShelfManager({ initialItems, bggUsername }: ShelfManagerProps) {
-  const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -28,18 +26,15 @@ export function ShelfManager({ initialItems, bggUsername }: ShelfManagerProps) {
   function handleAdded(item: ShelfItemWithGame) {
     setItems((prev) => [item, ...prev]);
     setShowAddModal(false);
-    router.refresh();
   }
 
   function handleUpdated(updated: ShelfItemWithGame) {
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
     setEditingItem(null);
-    router.refresh();
   }
 
   function handleRemoved(id: string) {
     setItems((prev) => prev.filter((i) => i.id !== id));
-    router.refresh();
   }
 
   return (
@@ -102,13 +97,10 @@ export function ShelfManager({ initialItems, bggUsername }: ShelfManagerProps) {
       )}
 
       <ImportFromBGG
-        isOpen={showImportModal}
+        open={showImportModal}
         onClose={() => setShowImportModal(false)}
         savedUsername={bggUsername}
-        onImported={() => {
-          setShowImportModal(false);
-          router.refresh();
-        }}
+        onImported={() => setShowImportModal(false)}
       />
     </>
   );

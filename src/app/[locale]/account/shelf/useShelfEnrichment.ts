@@ -8,22 +8,23 @@ const MAX_BATCH_SIZE = 20;
 
 /**
  * Progressively enriches shelf items that are missing thumbnails.
- * Calls POST /api/games/enrich-batch in batches of 20.
- * Only runs once per mount.
+ * Tracks enriched IDs so newly added items get enriched too.
  */
 export function useShelfEnrichment(
   items: ShelfItemWithGame[],
   setItems: React.Dispatch<React.SetStateAction<ShelfItemWithGame[]>>
 ): void {
-  const hasRunRef = useRef(false);
+  const enrichedIdsRef = useRef<Set<number>>(new Set());
+  const runningRef = useRef(false);
 
   useEffect(() => {
-    if (hasRunRef.current) return;
+    const missingItems = items.filter(
+      (item) => !item.thumbnail && !enrichedIdsRef.current.has(item.bgg_game_id)
+    );
+    if (missingItems.length === 0 || runningRef.current) return;
 
-    const missingItems = items.filter((item) => !item.thumbnail);
-    if (missingItems.length === 0) return;
-
-    hasRunRef.current = true;
+    runningRef.current = true;
+    let cancelled = false;
 
     async function enrichBatch(ids: number[]) {
       try {
@@ -33,44 +34,47 @@ export function useShelfEnrichment(
           body: JSON.stringify({ ids }),
         });
 
-        if (!res.ok) return;
+        if (!res.ok || cancelled) return;
 
         const data = await res.json();
         const games: Record<number, { thumbnail: string | null; image: string | null }> =
           data.games ?? {};
 
+        // Mark all requested IDs as enriched (even if BGG had no data)
+        for (const id of ids) {
+          enrichedIdsRef.current.add(id);
+        }
+
+        if (cancelled) return;
+
         setItems((prev) =>
           prev.map((item) => {
             const enriched = games[item.bgg_game_id];
             if (enriched && !item.thumbnail) {
-              return {
-                ...item,
-                thumbnail: enriched.thumbnail,
-                image: enriched.image,
-              };
+              return { ...item, thumbnail: enriched.thumbnail, image: enriched.image };
             }
             return item;
           })
         );
       } catch {
-        // Non-fatal — items just won't have thumbnails
+        // Non-fatal
       }
     }
 
-    // Batch into groups of MAX_BATCH_SIZE
-    const allIds = missingItems.map((item) => item.bgg_game_id);
-    const batches: number[][] = [];
-    for (let i = 0; i < allIds.length; i += MAX_BATCH_SIZE) {
-      batches.push(allIds.slice(i, i + MAX_BATCH_SIZE));
-    }
-
-    // Process batches sequentially to avoid overwhelming the API
     async function processBatches() {
-      for (const batch of batches) {
-        await enrichBatch(batch);
+      const allIds = missingItems.map((item) => item.bgg_game_id);
+      for (let i = 0; i < allIds.length; i += MAX_BATCH_SIZE) {
+        if (cancelled) break;
+        await enrichBatch(allIds.slice(i, i + MAX_BATCH_SIZE));
       }
+      runningRef.current = false;
     }
 
     processBatches();
+
+    return () => {
+      cancelled = true;
+      runningRef.current = false;
+    };
   }, [items, setItems]);
 }

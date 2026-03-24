@@ -10,6 +10,24 @@ export const SHELF_VISIBILITIES: ShelfVisibility[] = [
   'listed',
 ];
 
+export const SHELF_VISIBILITY_LABELS: Record<ShelfVisibility, string> = {
+  not_for_sale: 'Not for sale',
+  open_to_offers: 'Open to offers',
+  listed: 'Listed',
+};
+
+export const SHELF_VISIBILITY_BADGE_VARIANT: Record<ShelfVisibility, 'default' | 'success' | 'trust'> = {
+  not_for_sale: 'default',
+  open_to_offers: 'success',
+  listed: 'trust',
+};
+
+/** Visibility options for Select dropdowns (excludes 'listed' — set automatically) */
+export const SHELF_VISIBILITY_OPTIONS = [
+  { value: 'not_for_sale' as const, label: 'Not for sale' },
+  { value: 'open_to_offers' as const, label: 'Open to offers' },
+];
+
 export interface ShelfItemRow {
   id: string;
   seller_id: string;

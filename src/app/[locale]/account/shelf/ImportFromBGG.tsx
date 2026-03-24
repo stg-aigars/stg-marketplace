@@ -19,7 +19,7 @@ interface CollectionItem {
 }
 
 interface ImportFromBGGProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
   savedUsername: string | null;
   onImported: () => void;
@@ -29,7 +29,7 @@ const MAX_RETRIES = 5;
 const POLL_INTERVAL = 3000;
 
 export function ImportFromBGG({
-  isOpen,
+  open,
   onClose,
   savedUsername,
   onImported,
@@ -42,10 +42,11 @@ export function ImportFromBGG({
   const [addedCount, setAddedCount] = useState(0);
   const retryCountRef = useRef(0);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const doneTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+    if (!open) {
       setStep('username');
       setUsername(savedUsername ?? '');
       setItems([]);
@@ -57,15 +58,18 @@ export function ImportFromBGG({
         clearTimeout(pollTimeoutRef.current);
         pollTimeoutRef.current = null;
       }
+      if (doneTimeoutRef.current) {
+        clearTimeout(doneTimeoutRef.current);
+        doneTimeoutRef.current = null;
+      }
     }
-  }, [isOpen, savedUsername]);
+  }, [open, savedUsername]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (pollTimeoutRef.current) {
-        clearTimeout(pollTimeoutRef.current);
-      }
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+      if (doneTimeoutRef.current) clearTimeout(doneTimeoutRef.current);
     };
   }, []);
 
@@ -170,14 +174,14 @@ export function ImportFromBGG({
     setAddedCount(result.added);
     setStep('done');
 
-    setTimeout(() => {
+    doneTimeoutRef.current = setTimeout(() => {
       onImported();
       onClose();
     }, 1500);
   }
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="Import from BGG">
+    <Modal open={open} onClose={onClose} title="Import from BGG">
       <div className="space-y-4 pb-4">
         {/* Step 1: Enter username */}
         {step === 'username' && (

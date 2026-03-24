@@ -4,14 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { DotsThreeVertical, PencilSimple, Trash, ImageSquare } from '@phosphor-icons/react/ssr';
 import { Card, Badge, Button, Modal } from '@/components/ui';
-import type { ShelfItemWithGame, ShelfVisibility } from '@/lib/shelves/types';
+import type { ShelfItemWithGame } from '@/lib/shelves/types';
+import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
 import { removeFromShelf } from '@/lib/shelves/actions';
-
-const visibilityBadge: Record<ShelfVisibility, { variant: 'default' | 'success' | 'trust'; label: string }> = {
-  not_for_sale: { variant: 'default', label: 'Not for sale' },
-  open_to_offers: { variant: 'success', label: 'Open to offers' },
-  listed: { variant: 'trust', label: 'Listed' },
-};
 
 interface ShelfItemCardProps {
   item: ShelfItemWithGame;
@@ -27,7 +22,8 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const imageUrl = item.image || item.thumbnail;
-  const badge = visibilityBadge[item.visibility];
+  const badgeVariant = SHELF_VISIBILITY_BADGE_VARIANT[item.visibility];
+  const badgeLabel = SHELF_VISIBILITY_LABELS[item.visibility];
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -124,7 +120,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
             )}
           </div>
 
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          <Badge variant={badgeVariant}>{badgeLabel}</Badge>
 
           {item.notes && (
             <p className="text-xs text-semantic-text-muted line-clamp-2">

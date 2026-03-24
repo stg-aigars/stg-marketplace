@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Button, Select } from '@/components/ui';
 import { updateShelfItem } from '@/lib/shelves/actions';
 import type { ShelfItemWithGame, ShelfVisibility } from '@/lib/shelves/types';
-import { MAX_NOTE_LENGTH } from '@/lib/shelves/types';
+import { MAX_NOTE_LENGTH, SHELF_VISIBILITY_OPTIONS } from '@/lib/shelves/types';
 
 interface EditShelfItemModalProps {
   item: ShelfItemWithGame;
@@ -12,11 +12,6 @@ interface EditShelfItemModalProps {
   onClose: () => void;
   onUpdated: (item: ShelfItemWithGame) => void;
 }
-
-const visibilityOptions = [
-  { value: 'not_for_sale', label: 'Not for sale' },
-  { value: 'open_to_offers', label: 'Open to offers' },
-];
 
 export function EditShelfItemModal({ item, open, onClose, onUpdated }: EditShelfItemModalProps) {
   const [visibility, setVisibility] = useState<ShelfVisibility>(item.visibility);
@@ -65,7 +60,7 @@ export function EditShelfItemModal({ item, open, onClose, onUpdated }: EditShelf
 
         <Select
           label="Visibility"
-          options={visibilityOptions}
+          options={SHELF_VISIBILITY_OPTIONS}
           value={visibility}
           onChange={(e) => setVisibility(e.target.value as ShelfVisibility)}
         />

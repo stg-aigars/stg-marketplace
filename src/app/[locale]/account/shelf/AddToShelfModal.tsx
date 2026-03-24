@@ -7,7 +7,7 @@ import { Modal, Button, Input, Select, Spinner } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { addToShelf } from '@/lib/shelves/actions';
 import type { ShelfItemWithGame, ShelfVisibility } from '@/lib/shelves/types';
-import { MAX_NOTE_LENGTH } from '@/lib/shelves/types';
+import { MAX_NOTE_LENGTH, SHELF_VISIBILITY_OPTIONS } from '@/lib/shelves/types';
 
 interface GameResult {
   id: number;
@@ -21,11 +21,6 @@ interface AddToShelfModalProps {
   onClose: () => void;
   onAdded: (item: ShelfItemWithGame) => void;
 }
-
-const visibilityOptions = [
-  { value: 'not_for_sale', label: 'Not for sale' },
-  { value: 'open_to_offers', label: 'Open to offers' },
-];
 
 export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps) {
   const [query, setQuery] = useState('');
@@ -73,9 +68,10 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
     };
   }, [query]);
 
-  // Reset state when modal opens/closes
+  // Reset state and abort in-flight requests when modal closes
   useEffect(() => {
     if (!open) {
+      abortRef.current?.abort();
       setQuery('');
       setResults([]);
       setSelected(null);
@@ -236,7 +232,7 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
 
             <Select
               label="Visibility"
-              options={visibilityOptions}
+              options={SHELF_VISIBILITY_OPTIONS}
               value={visibility}
               onChange={(e) => setVisibility(e.target.value as ShelfVisibility)}
             />
