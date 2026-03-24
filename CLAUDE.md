@@ -97,7 +97,7 @@ Always use these — do not write inline equivalents:
 |---------|-----------|----------|
 | All buttons | `Button` (variants: primary, secondary, ghost, danger; sizes: sm, md, lg) | `@/components/ui` |
 | Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
-| Form inputs | `Input`, `Select` | `@/components/ui` |
+| Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
 | Condition & status badges | `Badge` (variants: default, success, warning, error, trust; condition keys) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
