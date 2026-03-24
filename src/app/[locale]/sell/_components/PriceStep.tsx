@@ -9,6 +9,7 @@ interface PriceStepProps {
   description: string;
   onPriceChange: (cents: number) => void;
   onDescriptionChange: (desc: string) => void;
+  compact?: boolean;
 }
 
 const MAX_DESCRIPTION_LENGTH = 1000;
@@ -18,6 +19,7 @@ export function PriceStep({
   description,
   onPriceChange,
   onDescriptionChange,
+  compact,
 }: PriceStepProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -64,14 +66,18 @@ export function PriceStep({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
-          Set your price
-        </h2>
-        <p className="text-sm text-semantic-text-secondary mt-1">
-          Choose a fair price for your pre-loved game. Buyers pay this plus shipping.
-        </p>
-      </div>
+      {compact ? (
+        <h2 className="text-base font-semibold text-semantic-text-heading">Price and description</h2>
+      ) : (
+        <div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+            Set your price
+          </h2>
+          <p className="text-sm text-semantic-text-secondary mt-1">
+            Choose a fair price for your pre-loved game. Buyers pay this plus shipping.
+          </p>
+        </div>
+      )}
 
       {/* Price input */}
       <div>

@@ -1,25 +1,19 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
-import { Alert, Button, Modal } from '@/components/ui';
-import { TurnstileWidget } from '@/components/ui/TurnstileWidget';
-import { cancelListing } from '@/lib/listings/actions';
+import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
 
 interface ListingOverflowMenuProps {
   listingId: string;
 }
 
 export function ListingOverflowMenu({ listingId }: ListingOverflowMenuProps) {
-  const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [removing, setRemoving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -36,22 +30,6 @@ export function ListingOverflowMenu({ listingId }: ListingOverflowMenuProps) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const handleRemove = async () => {
-    setRemoving(true);
-    setError(null);
-
-    const result = await cancelListing(listingId, turnstileToken ?? undefined);
-
-    if ('error' in result) {
-      setError(result.error);
-      setRemoving(false);
-      return;
-    }
-
-    setShowConfirm(false);
-    router.refresh();
-  };
-
   return (
     <>
       <div ref={menuRef} className="absolute top-2 right-2 z-10">
@@ -62,7 +40,7 @@ export function ListingOverflowMenu({ listingId }: ListingOverflowMenuProps) {
             e.stopPropagation();
             setOpen(!open);
           }}
-          className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:hover:bg-semantic-bg-overlay transition-colors"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:hover:bg-semantic-bg-overlay transition-colors"
           aria-label="Listing actions"
         >
           <DotsThreeVertical size={18} weight="bold" />
@@ -95,40 +73,11 @@ export function ListingOverflowMenu({ listingId }: ListingOverflowMenuProps) {
         )}
       </div>
 
-      <Modal
+      <RemoveListingModal
+        listingId={listingId}
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
-        title="Remove listing"
-      >
-        <div className="space-y-4">
-          <p className="text-semantic-text-secondary">
-            This will remove your listing from the marketplace. This action cannot be undone.
-          </p>
-
-          {error && (
-            <Alert variant="error">{error}</Alert>
-          )}
-
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="ghost"
-              onClick={() => setShowConfirm(false)}
-              disabled={removing}
-            >
-              Keep listing
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleRemove}
-              disabled={removing}
-            >
-              {removing ? 'Removing...' : 'Remove'}
-            </Button>
-          </div>
-
-          <TurnstileWidget onVerify={setTurnstileToken} />
-        </div>
-      </Modal>
+      />
     </>
   );
 }

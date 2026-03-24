@@ -65,6 +65,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     publisher: listing.publisher,
     language: listing.language,
     edition_year: listing.edition_year,
+    version_name: listing.version_name,
   });
 
   // Editable state
@@ -74,6 +75,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
   const [photos, setPhotos] = useState<string[]>(listing.photos);
   const [versionSource, setVersionSource] = useState<VersionSource>(listing.version_source);
   const [bggVersionId, setBggVersionId] = useState<number | null>(listing.bgg_version_id);
+  const [versionName, setVersionName] = useState<string | null>(listing.version_name);
   const [publisher, setPublisher] = useState<string | null>(listing.publisher);
   const [language, setLanguage] = useState<string | null>(listing.language);
   const [editionYear, setEditionYear] = useState<number | null>(listing.edition_year);
@@ -86,6 +88,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
   const handleVersionSelect = (v: VersionData) => {
     setVersionSource(v.version_source);
     setBggVersionId(v.bgg_version_id);
+    setVersionName(v.version_name);
     setPublisher(v.publisher);
     setLanguage(v.language);
     setEditionYear(v.edition_year);
@@ -101,7 +104,8 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     bggVersionId !== initial.current.bgg_version_id ||
     publisher !== initial.current.publisher ||
     language !== initial.current.language ||
-    editionYear !== initial.current.edition_year;
+    editionYear !== initial.current.edition_year ||
+    versionName !== initial.current.version_name;
 
   // Validation
   const isValid = condition !== null && priceCents >= MIN_PRICE_CENTS && photos.length >= 1;
@@ -119,7 +123,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
         id: listing.id,
         version_source: versionSource,
         bgg_version_id: bggVersionId,
-        version_name: null,
+        version_name: versionName,
         publisher,
         language,
         edition_year: editionYear,
@@ -197,13 +201,14 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
         selectedVersionId={bggVersionId}
         selectedVersionSource={versionSource}
         onSelect={handleVersionSelect}
+        compact
       />
 
       {/* Photos */}
-      <PhotoUploadStep photos={photos} onPhotosChange={setPhotos} />
+      <PhotoUploadStep photos={photos} onPhotosChange={setPhotos} compact />
 
       {/* Condition */}
-      <ConditionStep selectedCondition={condition} onSelect={setCondition} />
+      <ConditionStep selectedCondition={condition} onSelect={setCondition} compact />
 
       {/* Price & Description */}
       <PriceStep
@@ -211,6 +216,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
         description={description}
         onPriceChange={setPriceCents}
         onDescriptionChange={setDescription}
+        compact
       />
 
       {/* Error alert */}
