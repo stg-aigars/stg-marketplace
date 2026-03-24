@@ -12,13 +12,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-semantic-primary text-semantic-text-inverse active:bg-semantic-primary-active sm:hover:bg-semantic-primary-hover disabled:opacity-50',
+    'bg-semantic-primary text-semantic-text-inverse active:bg-semantic-primary-active sm:hover:bg-semantic-primary-hover disabled:opacity-40 disabled:saturate-50',
   secondary:
-    'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-snow-storm-light sm:hover:shadow-md disabled:opacity-50',
+    'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-snow-storm-light sm:hover:shadow-md disabled:opacity-40 disabled:saturate-50',
   ghost:
-    'text-semantic-text-secondary active:bg-snow-storm-light sm:hover:bg-snow-storm-light disabled:opacity-50',
+    'text-semantic-text-secondary active:bg-snow-storm-light sm:hover:bg-snow-storm-light disabled:opacity-40 disabled:saturate-50',
   danger:
-    'bg-semantic-error text-semantic-text-inverse active:bg-semantic-error-hover sm:hover:bg-semantic-error-hover disabled:opacity-50',
+    'bg-semantic-error text-semantic-text-inverse active:bg-semantic-error-hover sm:hover:bg-semantic-error-hover disabled:opacity-40 disabled:saturate-50',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
