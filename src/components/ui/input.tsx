@@ -1,18 +1,23 @@
 'use client';
 
-import { forwardRef, useState, type InputHTMLAttributes } from 'react';
+import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Eye, EyeSlash } from '@phosphor-icons/react/ssr';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
   label?: string;
   error?: string;
+  prefix?: ReactNode;
+  suffix?: ReactNode;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, id, className = '', type, ...props }, ref) => {
+  ({ label, error, id, className = '', type, prefix, suffix, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === 'password';
     const inputType = isPassword && showPassword ? 'text' : type;
+
+    const hasLeft = !!prefix;
+    const hasRight = isPassword || !!suffix;
 
     return (
       <div>
@@ -22,11 +27,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <div className="relative">
+          {prefix && (
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-semantic-text-muted text-base sm:text-sm pointer-events-none">
+              {prefix}
+            </span>
+          )}
           <input
             ref={ref}
             id={id}
             type={inputType}
-            className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent ${isPassword ? 'pr-11' : ''} ${error ? 'border-semantic-error' : 'border-semantic-border-default'} ${className}`}
+            className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent ${hasLeft ? 'pl-8' : ''} ${hasRight ? 'pr-11' : ''} ${error ? 'border-semantic-error' : 'border-semantic-border-default'} ${className}`}
             {...props}
           />
           {isPassword && (
@@ -43,6 +53,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 <Eye size={20} />
               )}
             </button>
+          )}
+          {suffix && !isPassword && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-semantic-text-muted text-base sm:text-sm pointer-events-none">
+              {suffix}
+            </span>
           )}
         </div>
         {error && <p className="mt-1 text-sm text-semantic-error">{error}</p>}

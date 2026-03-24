@@ -16,6 +16,6 @@
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
   }
   .mb-safe {
-    margin-bottom: env(safe-area-inset-bottom, 0px);
+    margin-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
   }
 }

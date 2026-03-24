@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sliders } from '@phosphor-icons/react/ssr';
 import { Modal, Button, Input, Select } from '@/components/ui';
+import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
@@ -262,12 +263,13 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             <div className="flex items-center gap-2">
               <div className="w-24">
                 <Input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   placeholder="Min €"
                   value={draft.priceMinCents !== null ? (draft.priceMinCents / 100).toString() : ''}
                   onChange={(e) => {
-                    const cents = e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null;
+                    const normalized = normalizeDecimalInput(e.target.value);
+                    const cents = normalized ? Math.round(parseFloat(normalized) * 100) : null;
                     setDraft((prev) => ({ ...prev, priceMinCents: cents && cents > 0 ? cents : null }));
                   }}
                 />
@@ -275,12 +277,13 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
               <span className="text-semantic-text-muted text-sm">–</span>
               <div className="w-24">
                 <Input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   placeholder="Max €"
                   value={draft.priceMaxCents !== null ? (draft.priceMaxCents / 100).toString() : ''}
                   onChange={(e) => {
-                    const cents = e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null;
+                    const normalized = normalizeDecimalInput(e.target.value);
+                    const cents = normalized ? Math.round(parseFloat(normalized) * 100) : null;
                     setDraft((prev) => ({ ...prev, priceMaxCents: cents && cents > 0 ? cents : null }));
                   }}
                 />
@@ -344,11 +347,11 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
           <div className="flex items-center gap-2">
             <div className="w-20">
               <Input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 placeholder="Min €"
                 value={desktopPriceMin}
-                onChange={(e) => setDesktopPriceMin(e.target.value)}
+                onChange={(e) => setDesktopPriceMin(normalizeDecimalInput(e.target.value))}
                 onBlur={applyDesktopPriceAndPlayers}
                 onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
               />
@@ -356,11 +359,11 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             <span className="text-semantic-text-muted text-sm">–</span>
             <div className="w-20">
               <Input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 placeholder="Max €"
                 value={desktopPriceMax}
-                onChange={(e) => setDesktopPriceMax(e.target.value)}
+                onChange={(e) => setDesktopPriceMax(normalizeDecimalInput(e.target.value))}
                 onBlur={applyDesktopPriceAndPlayers}
                 onKeyDown={(e) => { if (e.key === 'Enter') applyDesktopPriceAndPlayers(); }}
               />

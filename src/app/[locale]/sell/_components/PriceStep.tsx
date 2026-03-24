@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Input } from '@/components/ui';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
@@ -68,32 +69,16 @@ export function PriceStep({
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-semantic-text-primary mb-1.5">
-          Price
-        </label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-semantic-text-muted text-base sm:text-sm pointer-events-none">
-            &euro;
-          </span>
-          {/* Custom input needed for currency prefix — Input component doesn't support prefix/suffix slots */}
-          <input
-            type="text"
-            inputMode="decimal"
-            value={displayPrice}
-            onChange={(e) => handlePriceChange(e.target.value)}
-            placeholder="0.00"
-            className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 pl-8 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent ${
-              showMinError ? 'border-semantic-error' : 'border-semantic-border-default'
-            }`}
-          />
-        </div>
-        {showMinError && (
-          <p className="mt-1 text-sm text-semantic-error">
-            Minimum price is {formatCentsToCurrency(MIN_PRICE_CENTS)}
-          </p>
-        )}
-      </div>
+      <Input
+        label="Price"
+        type="text"
+        inputMode="decimal"
+        prefix="€"
+        value={displayPrice}
+        onChange={(e) => handlePriceChange(e.target.value)}
+        placeholder="0.00"
+        error={showMinError ? `Minimum price is ${formatCentsToCurrency(MIN_PRICE_CENTS)}` : undefined}
+      />
 
       {earnings && priceCents >= MIN_PRICE_CENTS && (
         <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">

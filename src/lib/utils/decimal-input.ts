@@ -6,5 +6,6 @@ export function normalizeDecimalInput(value: string): string {
   if (rest.length === 0) return cleaned;
 
   const decimals = rest.join('').slice(0, 2);
-  return `${integer}.${decimals}`;
+  const intPart = integer || '0';
+  return `${intPart}.${decimals}`;
 }

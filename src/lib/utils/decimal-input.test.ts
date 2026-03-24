@@ -23,9 +23,14 @@ describe('normalizeDecimalInput', () => {
     expect(normalizeDecimalInput('12.999')).toBe('12.99');
   });
 
-  it('handles empty and dot-only input', () => {
+  it('handles empty input', () => {
     expect(normalizeDecimalInput('')).toBe('');
-    expect(normalizeDecimalInput('.')).toBe('.');
+  });
+
+  it('prepends zero for leading dot', () => {
+    expect(normalizeDecimalInput('.')).toBe('0.');
+    expect(normalizeDecimalInput('.50')).toBe('0.50');
+    expect(normalizeDecimalInput(',5')).toBe('0.5');
   });
 
   it('handles integer input', () => {
