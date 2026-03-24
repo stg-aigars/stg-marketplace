@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
-import { Modal, Button, Input, TurnstileWidget } from '@/components/ui';
-import type { TurnstileWidgetRef } from '@/components/ui/TurnstileWidget';
+import { Modal, Button, Input } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { MAX_NOTE_LENGTH, MIN_OFFER_CENTS, MAX_OFFER_CENTS } from '@/lib/shelves/types';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
@@ -21,7 +20,13 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const turnstileRef = useRef<TurnstileWidgetRef>(null);
+
+  // Reset state when item changes (modal reopened for a different game)
+  useEffect(() => {
+    setPriceStr('');
+    setNote('');
+    setError(null);
+  }, [item.id]);
 
   function handlePriceChange(e: React.ChangeEvent<HTMLInputElement>) {
     setPriceStr(normalizeDecimalInput(e.target.value));
@@ -51,19 +56,21 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
     }
 
     startTransition(async () => {
-      const result = await makeOffer(item.id, amountCents, note.trim() || undefined);
+      try {
+        const result = await makeOffer(item.id, amountCents, note.trim() || undefined);
 
-      if ('error' in result) {
-        setError(result.error);
-        turnstileRef.current?.reset();
-        return;
+        if ('error' in result) {
+          setError(result.error);
+          return;
+        }
+
+        setPriceStr('');
+        setNote('');
+        setError(null);
+        onClose();
+      } catch {
+        setError('Something went wrong. Please try again.');
       }
-
-      // Success — reset and close
-      setPriceStr('');
-      setNote('');
-      setError(null);
-      onClose();
     });
   }
 
@@ -128,19 +135,11 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
           </p>
         </div>
 
-        {/* Bot protection */}
-        <TurnstileWidget
-          ref={turnstileRef}
-          onVerify={() => {}}
-        />
-
-        {/* Error */}
         {error && (
           <p className="text-sm text-semantic-error">{error}</p>
         )}
       </div>
 
-      {/* Footer */}
       <div className="flex justify-end gap-3 mt-6">
         <Button variant="secondary" onClick={onClose} disabled={isPending}>
           Cancel

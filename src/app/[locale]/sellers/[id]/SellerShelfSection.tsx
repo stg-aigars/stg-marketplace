@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
-import { Button, Badge } from '@/components/ui';
+import { Button, Badge, Card } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
 import { MakeOfferModal } from '@/components/offers/MakeOfferModal';
@@ -39,19 +39,15 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
           const isListed = item.visibility === 'listed' && item.listing_id;
 
           return (
-            <div
-              key={item.id}
-              className="rounded-lg border border-semantic-border-default bg-semantic-bg-elevated overflow-hidden shadow-sm"
-            >
-              {/* Thumbnail */}
-              <div className="h-32 sm:h-36 bg-semantic-bg-subtle flex items-center justify-center overflow-hidden">
+            <Card key={item.id} className="overflow-hidden">
+              <div className="h-40 sm:h-44 lg:h-48 bg-semantic-bg-subtle flex items-center justify-center overflow-hidden relative">
                 {thumbnail ? (
                   <Image
                     src={thumbnail}
                     alt={item.game_name}
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     unoptimized={!!isGeekdo}
                   />
                 ) : (
@@ -96,7 +92,7 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
                   </Link>
                 )}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
