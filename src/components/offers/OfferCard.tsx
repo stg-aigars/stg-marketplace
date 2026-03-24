@@ -5,8 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button, Modal, Input } from '@/components/ui';
-import type { OfferWithDetails, OfferStatus } from '@/lib/shelves/types';
-import { MIN_OFFER_CENTS, MAX_OFFER_CENTS } from '@/lib/shelves/types';
+import type { OfferWithDetails } from '@/lib/shelves/types';
+import {
+  MIN_OFFER_CENTS, MAX_OFFER_CENTS, ACTIVE_OFFER_STATUSES,
+  OFFER_STATUS_LABELS, OFFER_STATUS_BADGE_VARIANT,
+} from '@/lib/shelves/types';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
@@ -16,22 +19,6 @@ import {
   cancelOffer,
   counterOffer,
 } from '@/lib/offers/actions';
-
-// ---------------------------------------------------------------------------
-// Status → Badge mapping
-// ---------------------------------------------------------------------------
-
-const STATUS_BADGE: Record<OfferStatus, { variant: 'default' | 'success' | 'warning' | 'error'; label: string }> = {
-  pending: { variant: 'warning', label: 'Pending' },
-  countered: { variant: 'warning', label: 'Countered' },
-  accepted: { variant: 'success', label: 'Accepted' },
-  declined: { variant: 'error', label: 'Declined' },
-  expired: { variant: 'default', label: 'Expired' },
-  cancelled: { variant: 'default', label: 'Cancelled' },
-  completed: { variant: 'success', label: 'Completed' },
-};
-
-const ACTIVE_STATUSES: OfferStatus[] = ['pending', 'countered'];
 
 // ---------------------------------------------------------------------------
 // Component
@@ -51,8 +38,7 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
   const [counterPriceStr, setCounterPriceStr] = useState('');
   const [counterError, setCounterError] = useState<string | null>(null);
 
-  const badge = STATUS_BADGE[offer.status];
-  const isActive = ACTIVE_STATUSES.includes(offer.status);
+  const isActive = ACTIVE_OFFER_STATUSES.includes(offer.status);
   const isGeekdo = offer.thumbnail?.includes('cf.geekdo-images.com');
 
   // ---- Actions ----
@@ -163,14 +149,9 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
     if (role === 'seller' && offer.status === 'pending') {
       return (
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setConfirmModal('decline')}
-            disabled={isPending}
-            className="text-sm text-semantic-error sm:hover:underline disabled:opacity-50"
-          >
-            Decline
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setConfirmModal('decline')} disabled={isPending}>
+            <span className="text-semantic-error">Decline</span>
+          </Button>
           <Button
             variant="secondary"
             size="sm"
@@ -183,53 +164,34 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
           >
             Counter
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleAccept}
-            disabled={isPending}
-            loading={isPending}
-          >
+          <Button variant="primary" size="sm" onClick={handleAccept} disabled={isPending} loading={isPending}>
             Accept
           </Button>
         </div>
       );
     }
 
-    // Buyer on countered → Accept, Decline
+    // Buyer on countered → Accept, Decline, Cancel
     if (role === 'buyer' && offer.status === 'countered') {
       return (
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setConfirmModal('decline')}
-            disabled={isPending}
-            className="text-sm text-semantic-error sm:hover:underline disabled:opacity-50"
-          >
-            Decline
-          </button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleAccept}
-            disabled={isPending}
-            loading={isPending}
-          >
+          <Button variant="ghost" size="sm" onClick={() => setConfirmModal('cancel')} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setConfirmModal('decline')} disabled={isPending}>
+            <span className="text-semantic-error">Decline</span>
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleAccept} disabled={isPending} loading={isPending}>
             Accept
           </Button>
         </div>
       );
     }
 
-    // Buyer on pending or countered → Cancel
-    if (role === 'buyer' && (offer.status === 'pending' || offer.status === 'countered')) {
+    // Buyer on pending → Cancel
+    if (role === 'buyer' && offer.status === 'pending') {
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setConfirmModal('cancel')}
-          disabled={isPending}
-        >
+        <Button variant="ghost" size="sm" onClick={() => setConfirmModal('cancel')} disabled={isPending}>
           Cancel
         </Button>
       );
@@ -237,6 +199,8 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
 
     return null;
   }
+
+  const actions = renderActions();
 
   return (
     <>
@@ -294,7 +258,7 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
 
               {/* Badge + dates row */}
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant={badge.variant}>{badge.label}</Badge>
+                <Badge variant={OFFER_STATUS_BADGE_VARIANT[offer.status]}>{OFFER_STATUS_LABELS[offer.status]}</Badge>
                 <span className="text-xs text-semantic-text-muted">
                   Offered {formatDate(offer.created_at)}
                 </span>
@@ -311,14 +275,9 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
               )}
 
               {/* Actions */}
-              {(() => {
-                const actions = renderActions();
-                return actions ? (
-                  <div className="mt-3 flex justify-end">
-                    {actions}
-                  </div>
-                ) : null;
-              })()}
+              {actions && (
+                <div className="mt-3 flex justify-end">{actions}</div>
+              )}
             </div>
           </div>
         </CardBody>

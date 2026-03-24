@@ -29,6 +29,10 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
   }, [item.id]);
 
   function handlePriceChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setPriceStr(e.target.value);
+  }
+
+  function handlePriceBlur(e: React.FocusEvent<HTMLInputElement>) {
     setPriceStr(normalizeDecimalInput(e.target.value));
   }
 
@@ -115,6 +119,7 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
           placeholder="0.00"
           value={priceStr}
           onChange={handlePriceChange}
+          onBlur={handlePriceBlur}
         />
 
         {/* Note textarea */}

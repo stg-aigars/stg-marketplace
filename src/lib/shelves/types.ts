@@ -89,3 +89,23 @@ export const OFFER_TTL_DAYS = 7;
 export const LISTING_DEADLINE_DAYS = 3;
 export const MIN_OFFER_CENTS = 50;       // €0.50
 export const MAX_OFFER_CENTS = 9999999;  // €99,999.99
+
+export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {
+  pending: 'Pending',
+  countered: 'Countered',
+  accepted: 'Accepted',
+  declined: 'Declined',
+  expired: 'Expired',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+};
+
+export const OFFER_STATUS_BADGE_VARIANT: Record<OfferStatus, 'default' | 'success' | 'warning' | 'error'> = {
+  pending: 'warning',
+  countered: 'warning',
+  accepted: 'success',
+  declined: 'error',
+  expired: 'default',
+  cancelled: 'default',
+  completed: 'success',
+};
