@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
+import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 
 interface PriceStepProps {
   priceCents: number;
@@ -37,19 +38,7 @@ export function PriceStep({
   }, [priceCents]);
 
   const handlePriceChange = (value: string) => {
-    // Strip non-numeric except decimal point
-    let cleaned = value.replace(/[^0-9.]/g, '');
-
-    // Allow only one decimal point
-    const parts = cleaned.split('.');
-    if (parts.length > 2) {
-      cleaned = parts[0] + '.' + parts.slice(1).join('');
-    }
-
-    // Max 2 decimal places
-    if (parts.length === 2 && parts[1].length > 2) {
-      cleaned = parts[0] + '.' + parts[1].slice(0, 2);
-    }
+    const cleaned = normalizeDecimalInput(value);
 
     setDisplayPrice(cleaned);
 
@@ -79,7 +68,6 @@ export function PriceStep({
         </div>
       )}
 
-      {/* Price input */}
       <div>
         <label className="block text-sm font-medium text-semantic-text-primary mb-1.5">
           Price
@@ -107,7 +95,6 @@ export function PriceStep({
         )}
       </div>
 
-      {/* Earnings preview */}
       {earnings && priceCents >= MIN_PRICE_CENTS && (
         <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
           <p className="text-sm text-semantic-text-secondary">
@@ -120,7 +107,6 @@ export function PriceStep({
         </div>
       )}
 
-      {/* Description */}
       <div>
         <label
           htmlFor="listing-description"

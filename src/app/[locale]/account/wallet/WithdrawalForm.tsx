@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, Button, Input, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 
 interface WithdrawalFormProps {
@@ -78,13 +79,12 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
 
               <Input
                 label="Amount (EUR)"
-                type="number"
-                min="0.01"
-                step="0.01"
-                max={(balanceCents / 100).toFixed(2)}
+                type="text"
+                inputMode="decimal"
                 value={amountEuros}
-                onChange={(e) => setAmountEuros(e.target.value)}
+                onChange={(e) => setAmountEuros(normalizeDecimalInput(e.target.value))}
                 placeholder="0.00"
+                error={amountCents > balanceCents ? 'Amount exceeds your available balance' : undefined}
               />
 
               <Input
