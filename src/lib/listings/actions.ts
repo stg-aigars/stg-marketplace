@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
-import type { CreateListingData, UpdateListingData } from './types';
+import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
 import {
   LISTING_CONDITIONS,
   MIN_PRICE_CENTS,
@@ -15,7 +15,7 @@ import {
 } from './types';
 
 interface ListingFieldsToValidate {
-  condition: string;
+  condition: ListingCondition;
   price_cents: number;
   photos: string[];
   description: string | null;
@@ -30,7 +30,7 @@ function validateListingFields(
   data: ListingFieldsToValidate,
   photoUrlPrefix: string
 ): string | null {
-  if (!LISTING_CONDITIONS.includes(data.condition as (typeof LISTING_CONDITIONS)[number])) {
+  if (!LISTING_CONDITIONS.includes(data.condition)) {
     return 'Invalid condition selected';
   }
 
@@ -190,28 +190,11 @@ export async function updateListing(
   const fieldError = validateListingFields(data, photoUrlPrefix);
   if (fieldError) return { error: fieldError };
 
-  // Clean up removed photos from storage
+  // Identify removed photos before updating (need old list for cleanup)
   const oldPhotos: string[] = (listing.photos as string[]) ?? [];
   const removedPhotos = oldPhotos.filter((p) => !data.photos.includes(p));
 
-  if (removedPhotos.length > 0) {
-    const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`;
-    const pathsToRemove = removedPhotos
-      .map((url) => url.replace(storagePrefix, ''))
-      .filter((path) => path.length > 0);
-
-    if (pathsToRemove.length > 0) {
-      const { error: storageError } = await supabase.storage
-        .from('listing-photos')
-        .remove(pathsToRemove);
-
-      if (storageError) {
-        console.error('Failed to clean up removed photos:', storageError);
-      }
-    }
-  }
-
-  // Update listing
+  // Update listing first — only clean up storage after DB succeeds
   const { error: updateError } = await supabase
     .from('listings')
     .update({
@@ -231,6 +214,24 @@ export async function updateListing(
 
   if (updateError) {
     return { error: 'Something went wrong. Please try again' };
+  }
+
+  // Clean up removed photos from storage (after DB update succeeded)
+  if (removedPhotos.length > 0) {
+    const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`;
+    const pathsToRemove = removedPhotos
+      .map((url) => url.replace(storagePrefix, ''))
+      .filter((path) => path.length > 0);
+
+    if (pathsToRemove.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from('listing-photos')
+        .remove(pathsToRemove);
+
+      if (storageError) {
+        console.error('Failed to clean up removed photos:', storageError);
+      }
+    }
   }
 
   revalidatePath(`/listings/${data.id}`);

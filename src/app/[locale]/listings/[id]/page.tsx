@@ -27,7 +27,7 @@ interface ListingDetailRow {
   condition: ListingCondition;
   price_cents: number;
   description: string | null;
-  status: string;
+  status: ListingStatus;
   photos: string[];
   country: string;
   version_source: string;
@@ -243,7 +243,7 @@ export default async function ListingDetailPage({
               )}
             </div>
             {isOwner ? (
-              <OwnerActions listingId={listing.id} status={listing.status as ListingStatus} locale={locale} />
+              <OwnerActions listingId={listing.id} status={listing.status} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               /* Another buyer has reserved this listing */
               <ReservationCountdown reservedAt={listing.reserved_at!} />

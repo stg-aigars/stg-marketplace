@@ -12,7 +12,7 @@ import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { updateListing } from '@/lib/listings/actions';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
-import type { ListingCondition, VersionSource } from '@/lib/listings/types';
+import type { ListingCondition, VersionData } from '@/lib/listings/types';
 
 interface EditListingFormProps {
   listing: {
@@ -24,31 +24,31 @@ interface EditListingFormProps {
     price_cents: number;
     description: string | null;
     photos: string[];
-    version_source: VersionSource;
-    bgg_version_id: number | null;
-    version_name: string | null;
-    publisher: string | null;
-    language: string | null;
-    edition_year: number | null;
+    version_source: VersionData['version_source'];
+    bgg_version_id: VersionData['bgg_version_id'];
+    version_name: VersionData['version_name'];
+    publisher: VersionData['publisher'];
+    language: VersionData['language'];
+    edition_year: VersionData['edition_year'];
     games: {
       name: string | null;
       thumbnail: string | null;
       image: string | null;
-      year_published: number | null;
-      min_players: number | null;
-      max_players: number | null;
+      player_count: string | null;
     };
   };
   locale: string;
 }
 
-interface VersionData {
-  version_source: VersionSource;
-  bgg_version_id: number | null;
-  version_name: string | null;
-  publisher: string | null;
-  language: string | null;
-  edition_year: number | null;
+function initialVersion(listing: EditListingFormProps['listing']): VersionData {
+  return {
+    version_source: listing.version_source,
+    bgg_version_id: listing.bgg_version_id,
+    version_name: listing.version_name,
+    publisher: listing.publisher,
+    language: listing.language,
+    edition_year: listing.edition_year,
+  };
 }
 
 export function EditListingForm({ listing, locale }: EditListingFormProps) {
@@ -60,12 +60,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     price_cents: listing.price_cents,
     description: listing.description ?? '',
     photos: JSON.stringify(listing.photos),
-    version_source: listing.version_source,
-    bgg_version_id: listing.bgg_version_id,
-    publisher: listing.publisher,
-    language: listing.language,
-    edition_year: listing.edition_year,
-    version_name: listing.version_name,
+    version: JSON.stringify(initialVersion(listing)),
   });
 
   // Editable state
@@ -73,26 +68,12 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
   const [priceCents, setPriceCents] = useState(listing.price_cents);
   const [description, setDescription] = useState(listing.description ?? '');
   const [photos, setPhotos] = useState<string[]>(listing.photos);
-  const [versionSource, setVersionSource] = useState<VersionSource>(listing.version_source);
-  const [bggVersionId, setBggVersionId] = useState<number | null>(listing.bgg_version_id);
-  const [versionName, setVersionName] = useState<string | null>(listing.version_name);
-  const [publisher, setPublisher] = useState<string | null>(listing.publisher);
-  const [language, setLanguage] = useState<string | null>(listing.language);
-  const [editionYear, setEditionYear] = useState<number | null>(listing.edition_year);
+  const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
   // Form state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-
-  const handleVersionSelect = (v: VersionData) => {
-    setVersionSource(v.version_source);
-    setBggVersionId(v.bgg_version_id);
-    setVersionName(v.version_name);
-    setPublisher(v.publisher);
-    setLanguage(v.language);
-    setEditionYear(v.edition_year);
-  };
 
   // Dirty detection
   const isDirty =
@@ -100,12 +81,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     priceCents !== initial.current.price_cents ||
     description !== initial.current.description ||
     JSON.stringify(photos) !== initial.current.photos ||
-    versionSource !== initial.current.version_source ||
-    bggVersionId !== initial.current.bgg_version_id ||
-    publisher !== initial.current.publisher ||
-    language !== initial.current.language ||
-    editionYear !== initial.current.edition_year ||
-    versionName !== initial.current.version_name;
+    JSON.stringify(version) !== initial.current.version;
 
   // Validation
   const isValid = condition !== null && priceCents >= MIN_PRICE_CENTS && photos.length >= 1;
@@ -121,12 +97,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     const result = await updateListing(
       {
         id: listing.id,
-        version_source: versionSource,
-        bgg_version_id: bggVersionId,
-        version_name: versionName,
-        publisher,
-        language,
-        edition_year: editionYear,
+        ...version,
         condition,
         price_cents: priceCents,
         description: description || null,
@@ -145,12 +116,6 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
   };
 
   const thumbnail = listing.games?.thumbnail ?? listing.photos[0] ?? null;
-  const playerCount =
-    listing.games?.min_players && listing.games?.max_players
-      ? listing.games.min_players === listing.games.max_players
-        ? `${listing.games.min_players} players`
-        : `${listing.games.min_players}–${listing.games.max_players} players`
-      : null;
 
   return (
     <div className="space-y-8">
@@ -184,7 +149,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
                 {listing.game_name}
               </p>
               <p className="text-sm text-semantic-text-muted">
-                {[listing.game_year, playerCount].filter(Boolean).join(' · ')}
+                {[listing.game_year, listing.games?.player_count && `${listing.games.player_count} players`].filter(Boolean).join(' · ')}
               </p>
               <p className="text-xs text-semantic-text-muted mt-1">
                 Game cannot be changed after listing
@@ -198,9 +163,9 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
       <VersionStep
         gameId={listing.bgg_game_id}
         gameName={listing.game_name}
-        selectedVersionId={bggVersionId}
-        selectedVersionSource={versionSource}
-        onSelect={handleVersionSelect}
+        selectedVersionId={version.bgg_version_id}
+        selectedVersionSource={version.version_source}
+        onSelect={setVersion}
         compact
       />
 

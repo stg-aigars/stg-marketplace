@@ -6,16 +6,7 @@ import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { getLanguageFlag } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
-import type { VersionSource } from '@/lib/listings/types';
-
-interface VersionData {
-  version_source: VersionSource;
-  bgg_version_id: number | null;
-  version_name: string | null;
-  publisher: string | null;
-  language: string | null;
-  edition_year: number | null;
-}
+import type { VersionData, VersionSource } from '@/lib/listings/types';
 
 interface VersionStepProps {
   gameId: number;

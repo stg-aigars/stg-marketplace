@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Modal } from '@/components/ui';
 import { TurnstileWidget } from '@/components/ui/TurnstileWidget';
@@ -17,6 +17,14 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  // Reset stale state when modal opens
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      setRemoving(false);
+    }
+  }, [open]);
 
   const handleRemove = async () => {
     setRemoving(true);

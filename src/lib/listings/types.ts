@@ -4,6 +4,15 @@ export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved';
 
 export type VersionSource = 'bgg' | 'manual';
 
+export interface VersionData {
+  version_source: VersionSource;
+  bgg_version_id: number | null;
+  version_name: string | null;
+  publisher: string | null;
+  language: string | null;
+  edition_year: number | null;
+}
+
 export interface CreateListingData {
   bgg_game_id: number;
   game_name: string;
