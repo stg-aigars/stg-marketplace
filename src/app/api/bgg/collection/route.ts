@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fetchBGGCollection } from '@/lib/bgg/collection';
 
+// In-memory rate limit: 1 collection fetch per user per 5 minutes
+const RATE_LIMIT_MS = 5 * 60 * 1000;
+const lastFetchByUser = new Map<string, number>();
+
 /**
- * GET /api/bgg/collection?username=xxx
+ * GET /api/bgg/collection?username=xxx&poll=1
  * Fetches a BGG user's collection, matches against local games table,
  * and flags items already on the seller's shelf.
  *
  * Returns { status: 'generating' } when BGG needs time to prepare
- * the collection — client should poll every 3s, up to 5 retries.
+ * the collection — client should poll every 3s, up to 5 retries (with poll=1).
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -23,6 +27,19 @@ export async function GET(request: NextRequest) {
   const username = request.nextUrl.searchParams.get('username')?.trim();
   if (!username || username.length > 50) {
     return NextResponse.json({ error: 'Invalid BGG username' }, { status: 400 });
+  }
+
+  // Rate limit initial fetches (poll=1 bypasses for 202 retry)
+  const isPolling = request.nextUrl.searchParams.get('poll') === '1';
+  if (!isPolling) {
+    const lastFetch = lastFetchByUser.get(user.id);
+    if (lastFetch && Date.now() - lastFetch < RATE_LIMIT_MS) {
+      return NextResponse.json(
+        { error: 'Please wait a few minutes before fetching again' },
+        { status: 429 }
+      );
+    }
+    lastFetchByUser.set(user.id, Date.now());
   }
 
   // Fetch from BGG

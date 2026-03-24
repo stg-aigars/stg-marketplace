@@ -5,6 +5,13 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import type { OfferStatus, OfferWithDetails } from '@/lib/shelves/types';
 import { MAX_NOTE_LENGTH, MIN_OFFER_CENTS, MAX_OFFER_CENTS, OFFER_TTL_DAYS } from '@/lib/shelves/types';
+import {
+  sendOfferReceivedToSeller,
+  sendOfferCounteredToBuyer,
+  sendOfferAccepted,
+  sendOfferDeclinedToBuyer,
+  sendOfferSupersededToBuyer,
+} from '@/lib/email';
 
 // ============================================================================
 // Make an offer (buyer)
@@ -67,7 +74,25 @@ export async function makeOffer(
     return { error: 'Failed to make offer' };
   }
 
-  // TODO: Task 5 — sendOfferReceivedToSeller()
+  // Email seller (non-blocking)
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, full_name, email')
+    .in('id', [user.id, shelfItem.seller_id]);
+
+  const buyer = profiles?.find((p) => p.id === user.id);
+  const seller = profiles?.find((p) => p.id === shelfItem.seller_id);
+
+  if (seller?.email && buyer?.full_name) {
+    sendOfferReceivedToSeller({
+      sellerName: seller.full_name,
+      sellerEmail: seller.email,
+      buyerName: buyer.full_name,
+      gameName: shelfItem.game_name,
+      amountCents: amountCents,
+      note: note?.trim() || null,
+    }).catch(() => {});
+  }
 
   revalidatePath('/account/offers');
   return { id: data.id };
@@ -123,7 +148,34 @@ export async function counterOffer(
 
   if (error) return { error: 'Failed to counter offer' };
 
-  // TODO: Task 5 — sendOfferCounteredToBuyer()
+  // Email buyer (non-blocking)
+  const { data: counterProfiles } = await supabase
+    .from('user_profiles')
+    .select('id, full_name, email')
+    .in('id', [offer.buyer_id, user.id]);
+
+  const counterBuyer = counterProfiles?.find((p) => p.id === offer.buyer_id);
+  const counterSeller = counterProfiles?.find((p) => p.id === user.id);
+
+  if (counterBuyer?.email && counterSeller?.full_name) {
+    // Need original amount — re-fetch from the offer we just updated
+    const { data: updatedOffer } = await service
+      .from('offers')
+      .select('amount_cents, shelf_items:shelf_item_id (game_name)')
+      .eq('id', offerId)
+      .single();
+
+    const gameName = (updatedOffer?.shelf_items as unknown as { game_name: string })?.game_name ?? '';
+
+    sendOfferCounteredToBuyer({
+      buyerName: counterBuyer.full_name,
+      buyerEmail: counterBuyer.email,
+      sellerName: counterSeller.full_name,
+      gameName,
+      originalAmountCents: updatedOffer?.amount_cents ?? 0,
+      counterAmountCents,
+    }).catch(() => {});
+  }
 
   revalidatePath('/account/offers');
   return { success: true };
@@ -174,7 +226,36 @@ export async function acceptOffer(
 
   if (error) return { error: 'Failed to accept offer' };
 
-  // TODO: Task 5 — sendOfferAccepted()
+  // Email both parties (non-blocking)
+  const { data: acceptProfiles } = await supabase
+    .from('user_profiles')
+    .select('id, full_name, email')
+    .in('id', [offer.buyer_id, offer.seller_id]);
+
+  const acceptBuyer = acceptProfiles?.find((p) => p.id === offer.buyer_id);
+  const acceptSeller = acceptProfiles?.find((p) => p.id === offer.seller_id);
+
+  // Fetch agreed amount + game name
+  const { data: acceptedOffer } = await service
+    .from('offers')
+    .select('amount_cents, counter_amount_cents, shelf_items:shelf_item_id (game_name)')
+    .eq('id', offerId)
+    .single();
+
+  const acceptGameName = (acceptedOffer?.shelf_items as unknown as { game_name: string })?.game_name ?? '';
+  const agreedAmount = acceptedOffer?.counter_amount_cents ?? acceptedOffer?.amount_cents ?? 0;
+
+  if (acceptBuyer?.email && acceptSeller?.email) {
+    sendOfferAccepted({
+      sellerName: acceptSeller.full_name,
+      sellerEmail: acceptSeller.email,
+      buyerName: acceptBuyer.full_name,
+      buyerEmail: acceptBuyer.email,
+      gameName: acceptGameName,
+      agreedAmountCents: agreedAmount,
+      offerId,
+    }).catch(() => {});
+  }
 
   revalidatePath('/account/offers');
   return { success: true };
@@ -225,7 +306,33 @@ export async function declineOffer(
 
   if (error) return { error: 'Failed to decline offer' };
 
-  // TODO: Task 5 — sendOfferDeclinedToBuyer()
+  // Email buyer (non-blocking) — only when seller declines
+  if (isSeller) {
+    const { data: declineProfiles } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, email')
+      .in('id', [offer.buyer_id, user.id]);
+
+    const declineBuyer = declineProfiles?.find((p) => p.id === offer.buyer_id);
+    const declineSeller = declineProfiles?.find((p) => p.id === user.id);
+
+    const { data: declinedOffer } = await service
+      .from('offers')
+      .select('shelf_items:shelf_item_id (game_name)')
+      .eq('id', offerId)
+      .single();
+
+    const declineGameName = (declinedOffer?.shelf_items as unknown as { game_name: string })?.game_name ?? '';
+
+    if (declineBuyer?.email && declineSeller?.full_name) {
+      sendOfferDeclinedToBuyer({
+        buyerName: declineBuyer.full_name,
+        buyerEmail: declineBuyer.email,
+        sellerName: declineSeller.full_name,
+        gameName: declineGameName,
+      }).catch(() => {});
+    }
+  }
 
   revalidatePath('/account/offers');
   return { success: true };
@@ -261,7 +368,8 @@ export async function cancelOffer(
   const { error } = await service
     .from('offers')
     .update({ status: 'cancelled' })
-    .eq('id', offerId);
+    .eq('id', offerId)
+    .in('status', ['pending', 'countered']); // Optimistic lock
 
   if (error) return { error: 'Failed to cancel offer' };
 
@@ -287,6 +395,7 @@ export async function getMyOffers(): Promise<OfferWithDetails[]> {
     .select(`
       *,
       shelf_items:shelf_item_id (game_name, game_year, games:bgg_game_id (thumbnail)),
+      buyer:buyer_id (full_name),
       seller:seller_id (full_name)
     `)
     .eq('buyer_id', user.id)
@@ -311,7 +420,8 @@ export async function getSellerOffers(): Promise<OfferWithDetails[]> {
     .select(`
       *,
       shelf_items:shelf_item_id (game_name, game_year, games:bgg_game_id (thumbnail)),
-      buyer:buyer_id (full_name)
+      buyer:buyer_id (full_name),
+      seller:seller_id (full_name)
     `)
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false });
@@ -326,7 +436,10 @@ export async function getSellerOffers(): Promise<OfferWithDetails[]> {
 // ============================================================================
 
 export async function declineActiveOffersOnShelfItem(
-  shelfItemId: string
+  shelfItemId: string,
+  gameName: string,
+  sellerName: string,
+  listingId: string
 ): Promise<void> {
   const service = createServiceClient();
 
@@ -345,7 +458,24 @@ export async function declineActiveOffersOnShelfItem(
     .eq('shelf_item_id', shelfItemId)
     .in('status', ['pending', 'countered']);
 
-  // TODO: Task 5 — email each affected buyer (offer-superseded template)
+  // Email affected buyers (non-blocking)
+  const buyerIds = Array.from(new Set(activeOffers.map((o) => o.buyer_id)));
+  const { data: buyers } = await service
+    .from('user_profiles')
+    .select('id, full_name, email')
+    .in('id', buyerIds);
+
+  for (const buyer of buyers ?? []) {
+    if (buyer.email) {
+      sendOfferSupersededToBuyer({
+        buyerName: buyer.full_name,
+        buyerEmail: buyer.email,
+        sellerName,
+        gameName,
+        listingId,
+      }).catch(() => {});
+    }
+  }
 }
 
 // ============================================================================
@@ -372,7 +502,7 @@ function mapOfferRow(row: any): OfferWithDetails {
     game_name: shelfItem.game_name ?? '',
     game_year: shelfItem.game_year ?? null,
     thumbnail: game.thumbnail ?? null,
-    buyer_name: row.buyer?.full_name ?? row.seller?.full_name ?? '',
-    seller_name: row.seller?.full_name ?? row.buyer?.full_name ?? '',
+    buyer_name: row.buyer?.full_name ?? '',
+    seller_name: row.seller?.full_name ?? '',
   };
 }

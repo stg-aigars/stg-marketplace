@@ -125,6 +125,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     expired: expiredCount,
     deadlineExpired: deadlineCount,
+    hasMore: expiredCount === BATCH_LIMIT || deadlineCount === BATCH_LIMIT,
     errors,
   });
 }

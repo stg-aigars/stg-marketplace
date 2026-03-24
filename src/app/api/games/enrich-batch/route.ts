@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase';
 import { fetchGameThumbnails } from '@/lib/bgg/api';
 
 const MAX_BATCH_SIZE = 20;
@@ -55,10 +56,11 @@ export async function POST(request: NextRequest) {
     try {
       const thumbnails = await fetchGameThumbnails(missingIds);
 
-      // Write back to games table (following ensureGameMetadata pattern)
+      // Write back to games table using service client (games table is read-only via RLS)
+      const service = createServiceClient();
       const entries = Array.from(thumbnails.entries());
       for (const [gameId, data] of entries) {
-        await supabase
+        await service
           .from('games')
           .update({
             thumbnail: data.thumbnail ?? null,

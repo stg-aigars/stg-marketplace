@@ -74,6 +74,12 @@ export async function addBulkToShelf(
       .eq('id', user.id);
   }
 
+  // Count existing shelf items before insert to compute accurate added count
+  const { count: beforeCount } = await supabase
+    .from('shelf_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', user.id);
+
   const rows = items.map((item) => ({
     seller_id: user.id,
     bgg_game_id: item.bggGameId,
@@ -83,17 +89,21 @@ export async function addBulkToShelf(
   }));
 
   // ON CONFLICT skip — only add games not already on shelf
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('shelf_items')
-    .upsert(rows, { onConflict: 'seller_id,bgg_game_id', ignoreDuplicates: true })
-    .select('id');
+    .upsert(rows, { onConflict: 'seller_id,bgg_game_id', ignoreDuplicates: true });
 
   if (error) {
     return { error: 'Failed to import games' };
   }
 
+  const { count: afterCount } = await supabase
+    .from('shelf_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', user.id);
+
   revalidatePath('/account/shelf');
-  return { added: data?.length ?? 0 };
+  return { added: (afterCount ?? 0) - (beforeCount ?? 0) };
 }
 
 export async function updateShelfItem(
