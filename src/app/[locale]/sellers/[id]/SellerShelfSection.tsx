@@ -18,16 +18,18 @@ interface SellerShelfSectionProps {
 export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShelfSectionProps) {
   const [offerItem, setOfferItem] = useState<ShelfItemWithGame | null>(null);
 
-  if (items.length === 0) return null;
+  // Hide not_for_sale items from public view
+  const visibleItems = items.filter((i) => i.visibility !== 'not_for_sale');
+  if (visibleItems.length === 0) return null;
 
   return (
     <section className="mb-8">
       <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading mb-4">
-        Game shelf ({items.length})
+        Game shelf ({visibleItems.length})
       </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const thumbnail = item.thumbnail;
           const isGeekdo = thumbnail?.includes('cf.geekdo-images.com');
           const canOffer =
@@ -86,10 +88,11 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
                   </Button>
                 )}
                 {isListed && (
-                  <Link href={`/listings/${item.listing_id}`}>
-                    <Button size="sm" variant="ghost" className="w-full">
-                      View listing
-                    </Button>
+                  <Link
+                    href={`/listings/${item.listing_id}`}
+                    className="block w-full text-center text-sm font-medium py-1.5 rounded-lg text-semantic-text-secondary hover:bg-semantic-bg-subtle transition-colors"
+                  >
+                    View listing
                   </Link>
                 )}
               </div>
