@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fetchBGGCollection } from '@/lib/bgg/collection';
+import { rateLimit } from '@/lib/rate-limit';
 
-// In-memory rate limit: 1 collection fetch per user per 5 minutes
-const RATE_LIMIT_MS = 5 * 60 * 1000;
-const lastFetchByUser = new Map<string, number>();
+// 1 collection fetch per user per 5 minutes (with automatic cleanup)
+const collectionLimiter = rateLimit({ interval: 5 * 60 * 1000, maxRequests: 1 });
 
 /**
  * GET /api/bgg/collection?username=xxx&poll=1
@@ -32,49 +32,41 @@ export async function GET(request: NextRequest) {
   // Rate limit initial fetches (poll=1 bypasses for 202 retry)
   const isPolling = request.nextUrl.searchParams.get('poll') === '1';
   if (!isPolling) {
-    const lastFetch = lastFetchByUser.get(user.id);
-    if (lastFetch && Date.now() - lastFetch < RATE_LIMIT_MS) {
+    const result = collectionLimiter.check(user.id);
+    if (!result.success) {
       return NextResponse.json(
         { error: 'Please wait a few minutes before fetching again' },
         { status: 429 }
       );
     }
-    lastFetchByUser.set(user.id, Date.now());
   }
 
   // Fetch from BGG
-  const result = await fetchBGGCollection(username);
+  const bggResult = await fetchBGGCollection(username);
 
-  if (result.status === 'generating') {
+  if (bggResult.status === 'generating') {
     return NextResponse.json({ status: 'generating' });
   }
 
-  if (result.status === 'error') {
-    return NextResponse.json({ error: result.message }, { status: 502 });
+  if (bggResult.status === 'error') {
+    return NextResponse.json({ error: bggResult.message }, { status: 502 });
   }
 
   // Filter out expansions
-  const baseGames = result.items.filter((item) => !item.isExpansion);
+  const baseGames = bggResult.items.filter((item) => !item.isExpansion);
   if (!baseGames.length) {
     return NextResponse.json({ status: 'success', items: [] });
   }
 
-  // Match against local games table
+  // Match against local games table + check shelf (parallel)
   const bggIds = baseGames.map((g) => g.bggGameId);
 
-  const { data: localGames } = await supabase
-    .from('games')
-    .select('id')
-    .in('id', bggIds);
+  const [{ data: localGames }, { data: existingShelf }] = await Promise.all([
+    supabase.from('games').select('id').in('id', bggIds),
+    supabase.from('shelf_items').select('bgg_game_id').eq('seller_id', user.id),
+  ]);
 
   const localGameIds = new Set(localGames?.map((g) => g.id) ?? []);
-
-  // Check which are already on the seller's shelf
-  const { data: existingShelf } = await supabase
-    .from('shelf_items')
-    .select('bgg_game_id')
-    .eq('seller_id', user.id);
-
   const onShelfIds = new Set(existingShelf?.map((s) => s.bgg_game_id) ?? []);
 
   const items = baseGames.map((game) => ({

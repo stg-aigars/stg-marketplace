@@ -74,12 +74,6 @@ export async function addBulkToShelf(
       .eq('id', user.id);
   }
 
-  // Count existing shelf items before insert to compute accurate added count
-  const { count: beforeCount } = await supabase
-    .from('shelf_items')
-    .select('id', { count: 'exact', head: true })
-    .eq('seller_id', user.id);
-
   const rows = items.map((item) => ({
     seller_id: user.id,
     bgg_game_id: item.bggGameId,
@@ -88,22 +82,18 @@ export async function addBulkToShelf(
     visibility: 'not_for_sale' as const,
   }));
 
-  // ON CONFLICT skip — only add games not already on shelf
-  const { error } = await supabase
+  // ON CONFLICT skip — ignoreDuplicates returns only newly inserted rows
+  const { data, error } = await supabase
     .from('shelf_items')
-    .upsert(rows, { onConflict: 'seller_id,bgg_game_id', ignoreDuplicates: true });
+    .upsert(rows, { onConflict: 'seller_id,bgg_game_id', ignoreDuplicates: true })
+    .select('id');
 
   if (error) {
     return { error: 'Failed to import games' };
   }
 
-  const { count: afterCount } = await supabase
-    .from('shelf_items')
-    .select('id', { count: 'exact', head: true })
-    .eq('seller_id', user.id);
-
   revalidatePath('/account/shelf');
-  return { added: (afterCount ?? 0) - (beforeCount ?? 0) };
+  return { added: data?.length ?? 0 };
 }
 
 export async function updateShelfItem(
@@ -172,6 +162,29 @@ export async function removeFromShelf(
 // Shelf queries
 // ============================================================================
 
+const SHELF_SELECT = `*, games:bgg_game_id (thumbnail, image)`;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapShelfRow(item: any): ShelfItemWithGame {
+  const games = item.games as { thumbnail: string | null; image: string | null } | null;
+  return {
+    ...item,
+    thumbnail: games?.thumbnail ?? null,
+    image: games?.image ?? null,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchShelfItems(supabase: { from: (table: string) => any }, sellerId: string): Promise<ShelfItemWithGame[]> {
+  const { data } = await supabase
+    .from('shelf_items')
+    .select(SHELF_SELECT)
+    .eq('seller_id', sellerId)
+    .order('created_at', { ascending: false });
+
+  return (data ?? []).map(mapShelfRow);
+}
+
 export async function getMyShelf(): Promise<ShelfItemWithGame[]> {
   const supabase = await createClient();
   const {
@@ -179,44 +192,12 @@ export async function getMyShelf(): Promise<ShelfItemWithGame[]> {
   } = await supabase.auth.getUser();
 
   if (!user) return [];
-
-  const { data } = await supabase
-    .from('shelf_items')
-    .select(`
-      *,
-      games:bgg_game_id (thumbnail, image)
-    `)
-    .eq('seller_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (!data) return [];
-
-  return data.map((item) => ({
-    ...item,
-    thumbnail: (item.games as unknown as { thumbnail: string | null })?.thumbnail ?? null,
-    image: (item.games as unknown as { image: string | null })?.image ?? null,
-  }));
+  return fetchShelfItems(supabase, user.id);
 }
 
 export async function getSellerShelf(sellerId: string): Promise<ShelfItemWithGame[]> {
   const supabase = await createClient();
-
-  const { data } = await supabase
-    .from('shelf_items')
-    .select(`
-      *,
-      games:bgg_game_id (thumbnail, image)
-    `)
-    .eq('seller_id', sellerId)
-    .order('created_at', { ascending: false });
-
-  if (!data) return [];
-
-  return data.map((item) => ({
-    ...item,
-    thumbnail: (item.games as unknown as { thumbnail: string | null })?.thumbnail ?? null,
-    image: (item.games as unknown as { image: string | null })?.image ?? null,
-  }));
+  return fetchShelfItems(supabase, sellerId);
 }
 
 // ============================================================================

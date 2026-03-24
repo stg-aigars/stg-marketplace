@@ -56,18 +56,20 @@ export async function POST(request: NextRequest) {
     try {
       const thumbnails = await fetchGameThumbnails(missingIds);
 
-      // Write back to games table using service client (games table is read-only via RLS)
+      // Write back to games table in parallel (games table is read-only via RLS)
       const service = createServiceClient();
       const entries = Array.from(thumbnails.entries());
-      for (const [gameId, data] of entries) {
-        await service
-          .from('games')
-          .update({
-            thumbnail: data.thumbnail ?? null,
-            image: data.image ?? null,
-          })
-          .eq('id', gameId);
-      }
+      await Promise.all(
+        entries.map(([gameId, data]) =>
+          service
+            .from('games')
+            .update({
+              thumbnail: data.thumbnail ?? null,
+              image: data.image ?? null,
+            })
+            .eq('id', gameId)
+        )
+      );
 
       // Merge fetched data into response
       for (const game of games) {

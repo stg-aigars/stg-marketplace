@@ -48,12 +48,16 @@ export async function POST(request: Request) {
       console.error('[Cron] Expire offers query failed:', queryError);
       errors.push('TTL query failed');
     } else if (expiredOffers?.length) {
-      // Batch update status
       const ids = expiredOffers.map((o) => o.id);
-      await supabase
+      const { error: updateError } = await supabase
         .from('offers')
         .update({ status: 'expired' })
         .in('id', ids);
+
+      if (updateError) {
+        console.error('[Cron] TTL update failed:', updateError);
+        errors.push('TTL update failed');
+      }
 
       expiredCount = ids.length;
       console.log(`[Cron] Expired ${expiredCount} offers (${OFFER_TTL_DAYS}-day TTL)`);
@@ -96,10 +100,15 @@ export async function POST(request: Request) {
       errors.push('Deadline query failed');
     } else if (deadlineOffers?.length) {
       const ids = deadlineOffers.map((o) => o.id);
-      await supabase
+      const { error: updateError } = await supabase
         .from('offers')
         .update({ status: 'expired' })
         .in('id', ids);
+
+      if (updateError) {
+        console.error('[Cron] Deadline update failed:', updateError);
+        errors.push('Deadline update failed');
+      }
 
       deadlineCount = ids.length;
       console.log(`[Cron] Expired ${deadlineCount} offers (${LISTING_DEADLINE_DAYS}-day listing deadline)`);
