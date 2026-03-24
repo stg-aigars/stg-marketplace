@@ -20,6 +20,20 @@ export interface CreateListingData {
   photos: string[];
 }
 
+export interface UpdateListingData {
+  id: string;
+  version_source: VersionSource;
+  bgg_version_id: number | null;
+  version_name: string | null;
+  publisher: string | null;
+  language: string | null;
+  edition_year: number | null;
+  condition: ListingCondition;
+  price_cents: number;
+  description: string | null;
+  photos: string[];
+}
+
 /** Maps condition DB values to Badge component condition keys */
 export const conditionToBadgeKey: Record<ListingCondition, 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts'> = {
   like_new: 'likeNew',

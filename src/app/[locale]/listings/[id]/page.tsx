@@ -7,7 +7,7 @@ import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody } from '@/comp
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { conditionToBadgeKey, type ListingCondition, type ListingStatus } from '@/lib/listings/types';
 import { formatDate } from '@/lib/date-utils';
 import { getWeightLabel } from '@/lib/bgg/utils';
 import { PhotoGallery } from './PhotoGallery';
@@ -17,6 +17,7 @@ import { getSellerRating } from '@/lib/reviews/service';
 import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
+import { OwnerActions } from './OwnerActions';
 
 interface ListingDetailRow {
   id: string;
@@ -87,7 +88,7 @@ export async function generateMetadata({
 }
 
 export default async function ListingDetailPage({
-  params: { id },
+  params: { id, locale },
 }: {
   params: { id: string; locale: string };
 }) {
@@ -242,14 +243,7 @@ export default async function ListingDetailPage({
               )}
             </div>
             {isOwner ? (
-              <div className="flex gap-3">
-                <Button variant="secondary" disabled>
-                  Edit listing
-                </Button>
-                <Button variant="danger" disabled>
-                  Remove listing
-                </Button>
-              </div>
+              <OwnerActions listingId={listing.id} status={listing.status as ListingStatus} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               /* Another buyer has reserved this listing */
               <ReservationCountdown reservedAt={listing.reserved_at!} />

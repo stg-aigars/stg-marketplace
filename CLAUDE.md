@@ -174,6 +174,11 @@ Existing cron routes:
 | `/api/cron/sync-tracking` | Every 15 min | Sync Unisend tracking events, auto-deliver on PARCEL_DELIVERED |
 | `/api/cron/auto-complete` | Every 6 hours | Auto-complete delivered orders past 2-day dispute window |
 
+## Branching Workflow
+- Multi-file features: always use `feature/<name>` branch + PR to main
+- Trivial single-file fixes: direct commits to main are acceptable
+- Always delete feature branches (local + remote) after merging
+
 ## Important Notes
 - `pnpm build` is the real deploy gate, not `pnpm type-check` alone
 - Supabase RLS policies control data access — never skip them
