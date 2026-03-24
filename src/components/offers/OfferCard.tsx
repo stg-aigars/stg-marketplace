@@ -262,7 +262,7 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
             {/* Content */}
             <div className="min-w-0 flex-1">
               <p className="font-medium text-semantic-text-primary line-clamp-1">
-                {offer.game_name}
+                {offer.game_name}{offer.game_year ? ` (${offer.game_year})` : ''}
               </p>
               <p className="text-sm text-semantic-text-muted">{otherParty}</p>
 
@@ -311,11 +311,14 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
               )}
 
               {/* Actions */}
-              {renderActions() && (
-                <div className="mt-3 flex justify-end">
-                  {renderActions()}
-                </div>
-              )}
+              {(() => {
+                const actions = renderActions();
+                return actions ? (
+                  <div className="mt-3 flex justify-end">
+                    {actions}
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </CardBody>
@@ -338,7 +341,8 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
             inputMode="decimal"
             placeholder="0.00"
             value={counterPriceStr}
-            onChange={(e) => setCounterPriceStr(normalizeDecimalInput(e.target.value))}
+            onChange={(e) => setCounterPriceStr(e.target.value)}
+            onBlur={(e) => setCounterPriceStr(normalizeDecimalInput(e.target.value))}
           />
           {counterError && (
             <p className="text-sm text-semantic-error">{counterError}</p>
