@@ -16,7 +16,7 @@ describe('normalizeDecimalInput', () => {
   });
 
   it('allows only one decimal point', () => {
-    expect(normalizeDecimalInput('12.50.30')).toBe('12.5030');
+    expect(normalizeDecimalInput('12.50.30')).toBe('12.50');
   });
 
   it('limits to 2 decimal places', () => {
@@ -34,5 +34,13 @@ describe('normalizeDecimalInput', () => {
 
   it('handles comma with single decimal digit', () => {
     expect(normalizeDecimalInput('12,5')).toBe('12.5');
+  });
+
+  it('handles multiple dots with long fractions', () => {
+    expect(normalizeDecimalInput('1.23456.7')).toBe('1.23');
+  });
+
+  it('handles pasted European thousand-separator format', () => {
+    expect(normalizeDecimalInput('1,234,56')).toBe('1.23');
   });
 });

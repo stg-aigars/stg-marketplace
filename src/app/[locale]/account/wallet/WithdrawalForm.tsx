@@ -84,6 +84,7 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
                 value={amountEuros}
                 onChange={(e) => setAmountEuros(normalizeDecimalInput(e.target.value))}
                 placeholder="0.00"
+                error={amountCents > balanceCents ? 'Amount exceeds your available balance' : undefined}
               />
 
               <Input
