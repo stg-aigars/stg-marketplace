@@ -178,12 +178,12 @@ async function linkOfferToListing(
   try {
     const service = createServiceClient();
 
-    // Fetch offer + shelf item to verify game ID and price match
+    // Fetch offer + shelf item to verify game ID, price, and get game_name
     const { data: offer } = await service
       .from('offers')
       .select(`
         id, shelf_item_id, buyer_id, amount_cents, counter_amount_cents,
-        shelf_items:shelf_item_id (bgg_game_id)
+        shelf_items:shelf_item_id (bgg_game_id, game_name)
       `)
       .eq('id', offerId)
       .eq('seller_id', sellerId)
@@ -192,8 +192,9 @@ async function linkOfferToListing(
 
     if (!offer) return;
 
+    const shelfItem = offer.shelf_items as unknown as { bgg_game_id: number; game_name: string } | null;
+
     // Verify game ID matches
-    const shelfItem = offer.shelf_items as unknown as { bgg_game_id: number } | null;
     if (shelfItem?.bgg_game_id !== bggGameId) {
       console.warn('[Offer] Game ID mismatch, skipping offer link');
       return;
@@ -206,37 +207,24 @@ async function linkOfferToListing(
       return;
     }
 
-    // 1. Complete the offer
-    await service
-      .from('offers')
-      .update({ status: 'completed' })
-      .eq('id', offer.id);
-
-    // 2. Update shelf item → listed with listing_id
-    await service
-      .from('shelf_items')
-      .update({ visibility: 'listed', listing_id: listingId })
-      .eq('id', offer.shelf_item_id)
-      .eq('seller_id', sellerId);
-
-    // 3. Email buyer
-    const { data: buyer } = await service
-      .from('user_profiles')
-      .select('full_name, email')
-      .eq('id', offer.buyer_id)
-      .single();
-
-    const { data: game } = await service
-      .from('games')
-      .select('name')
-      .eq('id', bggGameId)
-      .single();
+    // Complete offer, update shelf item, and fetch buyer profile in parallel
+    const [, , { data: buyer }] = await Promise.all([
+      service.from('offers').update({ status: 'completed' }).eq('id', offer.id),
+      service.from('shelf_items')
+        .update({ visibility: 'listed', listing_id: listingId })
+        .eq('id', offer.shelf_item_id)
+        .eq('seller_id', sellerId),
+      service.from('user_profiles')
+        .select('full_name, email')
+        .eq('id', offer.buyer_id)
+        .single(),
+    ]);
 
     if (buyer?.email) {
       sendOfferListingCreatedToBuyer({
         buyerName: buyer.full_name,
         buyerEmail: buyer.email,
-        gameName: game?.name ?? '',
+        gameName: shelfItem?.game_name ?? '',
         listingId,
       }).catch((err) => console.error('[Offer] Failed to email buyer:', err));
     }
