@@ -66,13 +66,30 @@ const initialFormData: FormData = {
   description: '',
 };
 
-export function ListingCreationFlow() {
+interface ListingCreationFlowProps {
+  initialData?: Partial<FormData>;
+  initialGame?: EnrichedGame | null;
+  lockedFields?: ('game' | 'price')[];
+  offerId?: string;
+}
+
+export function ListingCreationFlow({
+  initialData,
+  initialGame,
+  lockedFields = [],
+  offerId,
+}: ListingCreationFlowProps = {}) {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [selectedGame, setSelectedGame] = useState<EnrichedGame | null>(null);
+  const gameLocked = lockedFields.includes('game');
+  const priceLocked = lockedFields.includes('price');
+  // When game is locked, skip to step 2 (edition)
+  const [step, setStep] = useState(gameLocked ? 2 : 1);
+  const [formData, setFormData] = useState<FormData>(() =>
+    initialData ? { ...initialFormData, ...initialData } : initialFormData
+  );
+  const [selectedGame, setSelectedGame] = useState<EnrichedGame | null>(initialGame ?? null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -107,8 +124,10 @@ export function ListingCreationFlow() {
     }
   };
 
+  const minStep = gameLocked ? 2 : 1;
+
   const handleBack = () => {
-    if (step > 1) {
+    if (step > minStep) {
       setStep(step - 1);
     }
   };
@@ -134,6 +153,7 @@ export function ListingCreationFlow() {
       price_cents: formData.price_cents,
       description: formData.description || null,
       photos: formData.photos,
+      offer_id: offerId,
     }, turnstileToken);
 
     if ('error' in result) {
@@ -147,7 +167,10 @@ export function ListingCreationFlow() {
 
   return (
     <div className="space-y-6">
-      <Stepper steps={STEPS} currentStep={STEPS[step - 1].id} />
+      <Stepper
+        steps={gameLocked ? STEPS.filter((s) => s.id !== 'game') : STEPS}
+        currentStep={STEPS[step - 1].id}
+      />
 
       {/* Step content */}
       <div className="min-h-[300px]">
@@ -155,6 +178,7 @@ export function ListingCreationFlow() {
           <GameSearchStep
             selectedGameId={formData.bgg_game_id}
             selectedGame={selectedGame}
+            locked={gameLocked}
             onSelect={(game) => {
               // If selecting a different game, reset version/condition/etc fields
               if (formData.bgg_game_id !== null && formData.bgg_game_id !== game.id) {
@@ -229,6 +253,7 @@ export function ListingCreationFlow() {
             description={formData.description}
             onPriceChange={(price_cents) => updateFormData({ price_cents })}
             onDescriptionChange={(description) => updateFormData({ description })}
+            lockedPrice={priceLocked ? formData.price_cents : undefined}
           />
         )}
 
@@ -249,7 +274,7 @@ export function ListingCreationFlow() {
       {step < 6 && (
         <div className="flex items-center justify-between pt-4 border-t border-semantic-border-subtle">
           <div>
-            {step > 1 && (
+            {step > minStep && (
               <Button variant="ghost" onClick={handleBack}>
                 Back
               </Button>

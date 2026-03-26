@@ -27,6 +27,7 @@ export interface CreateListingData {
   price_cents: number;
   description: string | null;
   photos: string[];
+  offer_id?: string;
 }
 
 export interface UpdateListingData {

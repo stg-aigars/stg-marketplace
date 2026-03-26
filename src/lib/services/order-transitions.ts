@@ -16,6 +16,7 @@ import {
   sendOrderDeclinedToBuyer,
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { syncShelfOnListingSold } from '@/lib/listings/actions';
 
 /**
  * Load an order by ID using the service client (bypasses RLS).
@@ -282,6 +283,9 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send order-completed to seller:', err));
 
+  // Shelf sync: mark game as sold (not_for_sale)
+  await syncShelfOnListingSold(order.seller_id, order.listing_id);
+
   return updatedOrder;
 }
 
@@ -340,6 +344,9 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send auto-complete email to seller:', err));
+
+  // Shelf sync: mark game as sold (not_for_sale)
+  await syncShelfOnListingSold(order.seller_id, order.listing_id);
 
   return data;
 }

@@ -6,10 +6,12 @@ import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sell
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
+import { getSellerShelf } from '@/lib/shelves/actions';
 import { Avatar, Card, CardBody } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
+import { SellerShelfSection } from './SellerShelfSection';
 import type { ListingCondition } from '@/lib/listings/types';
 
 interface SellerProfile {
@@ -65,8 +67,11 @@ export default async function SellerProfilePage({
     notFound();
   }
 
-  // Fetch rating, reviews, and active listings in parallel
-  const [rating, reviews, completedSales, { data: listings }] = await Promise.all([
+  // Get current user (null for anonymous visitors)
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Fetch rating, reviews, active listings, and shelf in parallel
+  const [rating, reviews, completedSales, { data: listings }, shelfItems] = await Promise.all([
     getSellerRating(id),
     getSellerReviews(id, 10),
     getSellerCompletedSales(id),
@@ -78,6 +83,7 @@ export default async function SellerProfilePage({
       .order('created_at', { ascending: false })
       .limit(12)
       .returns<SellerListing[]>(),
+    getSellerShelf(id),
   ]);
 
   const activeListings = listings ?? [];
@@ -110,6 +116,13 @@ export default async function SellerProfilePage({
           </div>
         </div>
       </div>
+
+      {/* Game shelf section */}
+      <SellerShelfSection
+        items={shelfItems}
+        sellerId={id}
+        currentUserId={user?.id ?? null}
+      />
 
       {/* Reviews section */}
       <section className="mb-8">

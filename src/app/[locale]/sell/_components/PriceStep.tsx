@@ -12,6 +12,7 @@ interface PriceStepProps {
   onPriceChange: (cents: number) => void;
   onDescriptionChange: (desc: string) => void;
   compact?: boolean;
+  lockedPrice?: number;
 }
 
 const MAX_DESCRIPTION_LENGTH = 1000;
@@ -22,6 +23,7 @@ export function PriceStep({
   onPriceChange,
   onDescriptionChange,
   compact,
+  lockedPrice,
 }: PriceStepProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -69,27 +71,47 @@ export function PriceStep({
         </div>
       )}
 
-      <Input
-        label="Price"
-        type="text"
-        inputMode="decimal"
-        prefix="€"
-        value={displayPrice}
-        onChange={(e) => handlePriceChange(e.target.value)}
-        placeholder="0.00"
-        error={showMinError ? `Minimum price is ${formatCentsToCurrency(MIN_PRICE_CENTS)}` : undefined}
-      />
-
-      {earnings && priceCents >= MIN_PRICE_CENTS && (
-        <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
-          <p className="text-sm text-semantic-text-secondary">
-            You&apos;ll receive{' '}
-            <span className="font-medium text-semantic-text-primary">
-              {formatCentsToCurrency(earnings.walletCreditCents)}
-            </span>{' '}
-            after 10% platform fee
+      {lockedPrice !== undefined ? (
+        <div className="bg-semantic-bg-surface rounded-lg px-4 py-3 space-y-1">
+          <p className="text-sm text-semantic-text-muted">Agreed price</p>
+          <p className="text-lg font-semibold text-semantic-text-primary">
+            {formatCentsToCurrency(lockedPrice)}
           </p>
+          {earnings && (
+            <p className="text-sm text-semantic-text-secondary">
+              You&apos;ll receive{' '}
+              <span className="font-medium text-semantic-text-primary">
+                {formatCentsToCurrency(earnings.walletCreditCents)}
+              </span>{' '}
+              after 10% platform fee
+            </p>
+          )}
         </div>
+      ) : (
+        <>
+          <Input
+            label="Price"
+            type="text"
+            inputMode="decimal"
+            prefix="€"
+            value={displayPrice}
+            onChange={(e) => handlePriceChange(e.target.value)}
+            placeholder="0.00"
+            error={showMinError ? `Minimum price is ${formatCentsToCurrency(MIN_PRICE_CENTS)}` : undefined}
+          />
+
+          {earnings && priceCents >= MIN_PRICE_CENTS && (
+            <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
+              <p className="text-sm text-semantic-text-secondary">
+                You&apos;ll receive{' '}
+                <span className="font-medium text-semantic-text-primary">
+                  {formatCentsToCurrency(earnings.walletCreditCents)}
+                </span>{' '}
+                after 10% platform fee
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       <div>

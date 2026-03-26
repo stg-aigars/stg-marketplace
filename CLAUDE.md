@@ -148,6 +148,31 @@ Always use these — do not write inline equivalents:
 - `language` field is critical — determines which edition the buyer receives (essential for Baltic market)
 - Types: `ManualVersion` (id: 0 sentinel, isManual: true), `VersionSelection` union, `isManualVersion()` guard
 
+## Seller Shelves
+Sellers showcase their board game collection publicly. Each shelf item can be:
+- **not_for_sale** — display only
+- **open_to_offers** — buyers propose prices via structured offers
+- **listed** — linked to an active listing
+
+### Offer Flow
+Buyer makes offer → seller accepts/counters/declines → if accepted, seller creates listing (game + price locked) → standard checkout. Single-round counters (no ping-pong). 7-day offer expiry, 3-day listing deadline after acceptance.
+
+### Key Files
+- `src/lib/shelves/` — types, constants (visibility, offer status badges, TTLs)
+- `src/lib/shelves/actions.ts` — shelf CRUD (add/remove/update items, BGG import)
+- `src/lib/offers/actions.ts` — offer lifecycle (make, counter, accept, decline, cancel)
+- `src/app/[locale]/account/shelf/` — seller shelf management (grid + BGG import)
+- `src/app/[locale]/account/offers/` — offer management (Received/Sent tabs)
+- `src/app/[locale]/sellers/[id]/` — public seller profile with shelf section
+- `src/app/[locale]/sell/from-offer/[offerId]/` — pre-filled listing from accepted offer
+- `src/components/offers/` — OfferCard, MakeOfferModal
+
+### Shelf ↔ Listing Sync
+- Regular listing created → auto-links to shelf item, declines stale offers, emails buyers
+- Listing from offer → completes offer, links shelf item, emails buyer
+- Listing cancelled → shelf item reverts to open_to_offers
+- Order completed → shelf item set to not_for_sale
+
 ## Key Files
 - `src/middleware.ts` - Auth and i18n routing
 - `src/lib/supabase/` - Database clients
@@ -173,6 +198,7 @@ Existing cron routes:
 | `/api/cron/cleanup-sessions` | Every 10 min | Clean up expired checkout sessions |
 | `/api/cron/sync-tracking` | Every 15 min | Sync Unisend tracking events, auto-deliver on PARCEL_DELIVERED |
 | `/api/cron/auto-complete` | Every 6 hours | Auto-complete delivered orders past 2-day dispute window |
+| `/api/cron/expire-offers` | Every 6 hours | Expire unanswered offers (7-day TTL) + revert accepted offers past 3-day listing deadline |
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main

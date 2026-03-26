@@ -2,8 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer } from '@/lib/email';
+import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
 import {
   LISTING_CONDITIONS,
@@ -146,7 +149,93 @@ export async function createListing(
     return { error: 'Something went wrong. Please try again' };
   }
 
+  // If created from an accepted offer, link shelf item and complete the offer
+  if (data.offer_id) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (UUID_RE.test(data.offer_id)) {
+      await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id, data.price_cents);
+    }
+  } else {
+    // Regular listing (not from offer): auto-link to shelf + decline stale offers
+    await autoLinkListingToShelf(user.id, data.bgg_game_id, listing.id);
+  }
+
+  revalidatePath('/account/shelf');
   return { listingId: listing.id };
+}
+
+/**
+ * After creating a listing from an accepted offer:
+ * 1. Mark offer as completed
+ * 2. Update shelf item: visibility → listed, listing_id → new listing
+ * 3. Email buyer with link to the new listing
+ *
+ * Uses service role for cross-table writes not covered by RLS.
+ * Non-blocking: errors are logged but don't fail listing creation.
+ */
+async function linkOfferToListing(
+  offerId: string,
+  listingId: string,
+  sellerId: string,
+  bggGameId: number,
+  listingPriceCents: number,
+) {
+  try {
+    const service = createServiceClient();
+
+    // Fetch offer + shelf item to verify game ID, price, and get game_name
+    const { data: offer } = await service
+      .from('offers')
+      .select(`
+        id, shelf_item_id, buyer_id, amount_cents, counter_amount_cents,
+        shelf_items:shelf_item_id (bgg_game_id, game_name)
+      `)
+      .eq('id', offerId)
+      .eq('seller_id', sellerId)
+      .eq('status', 'accepted')
+      .single();
+
+    if (!offer) return;
+
+    const shelfItem = offer.shelf_items as unknown as { bgg_game_id: number; game_name: string } | null;
+
+    // Verify game ID matches
+    if (shelfItem?.bgg_game_id !== bggGameId) {
+      console.warn('[Offer] Game ID mismatch, skipping offer link');
+      return;
+    }
+
+    // Verify price matches agreed amount
+    const agreedPrice = offer.counter_amount_cents ?? offer.amount_cents;
+    if (listingPriceCents !== agreedPrice) {
+      console.warn('[Offer] Price mismatch, skipping offer link');
+      return;
+    }
+
+    // Complete offer, update shelf item, and fetch buyer profile in parallel
+    const [, , { data: buyer }] = await Promise.all([
+      service.from('offers').update({ status: 'completed' }).eq('id', offer.id),
+      service.from('shelf_items')
+        .update({ visibility: 'listed', listing_id: listingId })
+        .eq('id', offer.shelf_item_id)
+        .eq('seller_id', sellerId),
+      service.from('user_profiles')
+        .select('full_name, email')
+        .eq('id', offer.buyer_id)
+        .single(),
+    ]);
+
+    if (buyer?.email) {
+      sendOfferListingCreatedToBuyer({
+        buyerName: buyer.full_name,
+        buyerEmail: buyer.email,
+        gameName: shelfItem?.game_name ?? '',
+        listingId,
+      }).catch((err) => console.error('[Offer] Failed to email buyer:', err));
+    }
+  } catch (err) {
+    console.error('[Offer] linkOfferToListing failed:', err);
+  }
 }
 
 export async function updateListing(
@@ -288,8 +377,120 @@ export async function cancelListing(
     return { error: 'Something went wrong. Please try again' };
   }
 
+  // Reset shelf item back to open_to_offers
+  await syncShelfOnListingRemoved(user.id, listingId);
+
   revalidatePath(`/listings/${listingId}`);
   revalidatePath('/account/listings');
+  revalidatePath('/account/shelf');
 
   return { success: true };
+}
+
+// ============================================================================
+// Shelf sync helpers
+// ============================================================================
+
+/**
+ * When a seller creates a regular listing (not from offer), check if they have
+ * a shelf item for the same game. If so:
+ * 1. Link the shelf item to this listing (visibility → listed)
+ * 2. Auto-decline any active offers on that shelf item
+ * 3. Email affected buyers with link to the new listing
+ */
+async function autoLinkListingToShelf(
+  sellerId: string,
+  bggGameId: number,
+  listingId: string,
+) {
+  try {
+    const service = createServiceClient();
+
+    // Find shelf item for this game
+    const { data: shelfItem } = await service
+      .from('shelf_items')
+      .select('id, game_name')
+      .eq('seller_id', sellerId)
+      .eq('bgg_game_id', bggGameId)
+      .single();
+
+    if (!shelfItem) return;
+
+    // Link shelf item to listing
+    await service
+      .from('shelf_items')
+      .update({ visibility: 'listed', listing_id: listingId })
+      .eq('id', shelfItem.id);
+
+    // Find and decline active offers
+    const { data: activeOffers } = await service
+      .from('offers')
+      .select('id, buyer_id')
+      .eq('shelf_item_id', shelfItem.id)
+      .in('status', ACTIVE_OFFER_STATUSES);
+
+    if (!activeOffers?.length) return;
+
+    // Decline all active offers
+    await service
+      .from('offers')
+      .update({ status: 'declined' })
+      .in('id', activeOffers.map((o) => o.id));
+
+    // Fetch seller name + buyer profiles for email
+    const buyerIds = Array.from(new Set(activeOffers.map((o) => o.buyer_id)));
+    const [{ data: seller }, { data: buyers }] = await Promise.all([
+      service.from('user_profiles').select('full_name').eq('id', sellerId).single(),
+      service.from('user_profiles').select('id, full_name, email').in('id', buyerIds),
+    ]);
+
+    const buyerMap = new Map((buyers ?? []).map((b) => [b.id, b]));
+    for (const offer of activeOffers) {
+      const buyer = buyerMap.get(offer.buyer_id);
+      if (buyer?.email) {
+        sendOfferSupersededToBuyer({
+          buyerName: buyer.full_name,
+          buyerEmail: buyer.email,
+          sellerName: seller?.full_name ?? 'Seller',
+          gameName: shelfItem.game_name,
+          listingId,
+        }).catch((err) => console.error('[Shelf] Failed to email superseded offer:', err));
+      }
+    }
+  } catch (err) {
+    console.error('[Shelf] autoLinkListingToShelf failed:', err);
+  }
+}
+
+/**
+ * When a listing is cancelled, reset the linked shelf item back to open_to_offers.
+ */
+async function syncShelfOnListingRemoved(sellerId: string, listingId: string) {
+  try {
+    const service = createServiceClient();
+    await service
+      .from('shelf_items')
+      .update({ visibility: 'open_to_offers', listing_id: null })
+      .eq('listing_id', listingId)
+      .eq('seller_id', sellerId);
+  } catch (err) {
+    console.error('[Shelf] syncShelfOnListingRemoved failed:', err);
+  }
+}
+
+/**
+ * When an order is completed (game sold), set the shelf item to not_for_sale.
+ * Called from order-transitions after order completion.
+ */
+export async function syncShelfOnListingSold(sellerId: string, listingId: string) {
+  try {
+    const service = createServiceClient();
+    await service
+      .from('shelf_items')
+      .update({ visibility: 'not_for_sale' })
+      .eq('listing_id', listingId)
+      .eq('seller_id', sellerId);
+  } catch (err) {
+    console.error('[Shelf] syncShelfOnListingSold failed:', err);
+  }
 }
