@@ -167,7 +167,10 @@ export function ListingCreationFlow({
 
   return (
     <div className="space-y-6">
-      <Stepper steps={STEPS} currentStep={STEPS[step - 1].id} />
+      <Stepper
+        steps={gameLocked ? STEPS.filter((s) => s.id !== 'game') : STEPS}
+        currentStep={STEPS[step - 1].id}
+      />
 
       {/* Step content */}
       <div className="min-h-[300px]">

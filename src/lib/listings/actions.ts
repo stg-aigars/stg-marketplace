@@ -150,7 +150,10 @@ export async function createListing(
 
   // If created from an accepted offer, link shelf item and complete the offer
   if (data.offer_id) {
-    await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id);
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (UUID_RE.test(data.offer_id)) {
+      await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id, data.price_cents);
+    }
   }
 
   return { listingId: listing.id };
@@ -170,20 +173,38 @@ async function linkOfferToListing(
   listingId: string,
   sellerId: string,
   bggGameId: number,
+  listingPriceCents: number,
 ) {
   try {
     const service = createServiceClient();
 
-    // Fetch offer to get shelf_item_id and buyer info
+    // Fetch offer + shelf item to verify game ID and price match
     const { data: offer } = await service
       .from('offers')
-      .select('id, shelf_item_id, buyer_id, status')
+      .select(`
+        id, shelf_item_id, buyer_id, amount_cents, counter_amount_cents,
+        shelf_items:shelf_item_id (bgg_game_id)
+      `)
       .eq('id', offerId)
       .eq('seller_id', sellerId)
       .eq('status', 'accepted')
       .single();
 
     if (!offer) return;
+
+    // Verify game ID matches
+    const shelfItem = offer.shelf_items as unknown as { bgg_game_id: number } | null;
+    if (shelfItem?.bgg_game_id !== bggGameId) {
+      console.warn('[Offer] Game ID mismatch, skipping offer link');
+      return;
+    }
+
+    // Verify price matches agreed amount
+    const agreedPrice = offer.counter_amount_cents ?? offer.amount_cents;
+    if (listingPriceCents !== agreedPrice) {
+      console.warn('[Offer] Price mismatch, skipping offer link');
+      return;
+    }
 
     // 1. Complete the offer
     await service
