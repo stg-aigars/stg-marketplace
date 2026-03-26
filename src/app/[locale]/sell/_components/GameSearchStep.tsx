@@ -26,9 +26,10 @@ interface GameSearchStepProps {
   selectedGameId: number | null;
   selectedGame?: EnrichedGame | null;
   onSelect: (game: EnrichedGame) => void;
+  locked?: boolean;
 }
 
-export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect }: GameSearchStepProps) {
+export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked }: GameSearchStepProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GameResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -188,9 +189,11 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleChange}>
-                Change
-              </Button>
+              {!locked && (
+                <Button variant="ghost" size="sm" onClick={handleChange}>
+                  Change
+                </Button>
+              )}
             </div>
           </CardBody>
         </Card>

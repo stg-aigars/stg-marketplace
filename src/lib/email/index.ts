@@ -27,6 +27,7 @@ import { OfferDeclined } from './templates/offer-declined';
 import { OfferExpired } from './templates/offer-expired';
 import { OfferDeadlineExpired } from './templates/offer-deadline-expired';
 import { OfferSuperseded } from './templates/offer-superseded';
+import { OfferListingCreated } from './templates/offer-listing-created';
 import { env } from '@/lib/env';
 
 /**
@@ -629,6 +630,27 @@ export async function sendOfferSupersededToBuyer(params: {
     react: React.createElement(OfferSuperseded, {
       buyerName: params.buyerName,
       sellerName: params.sellerName,
+      gameName: params.gameName,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+/**
+ * Listing created from accepted offer → buyer
+ * Buyer gets a link to the listing so they can purchase at the agreed price.
+ */
+export async function sendOfferListingCreatedToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  gameName: string;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `${params.gameName} is now listed and ready to buy`,
+    react: React.createElement(OfferListingCreated, {
+      buyerName: params.buyerName,
       gameName: params.gameName,
       listingUrl: `${env.app.url}/listings/${params.listingId}`,
     }),

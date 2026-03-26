@@ -2,8 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { sendOfferListingCreatedToBuyer } from '@/lib/email';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
 import {
   LISTING_CONDITIONS,
@@ -146,7 +148,80 @@ export async function createListing(
     return { error: 'Something went wrong. Please try again' };
   }
 
+  // If created from an accepted offer, link shelf item and complete the offer
+  if (data.offer_id) {
+    await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id);
+  }
+
   return { listingId: listing.id };
+}
+
+/**
+ * After creating a listing from an accepted offer:
+ * 1. Mark offer as completed
+ * 2. Update shelf item: visibility → listed, listing_id → new listing
+ * 3. Email buyer with link to the new listing
+ *
+ * Uses service role for cross-table writes not covered by RLS.
+ * Non-blocking: errors are logged but don't fail listing creation.
+ */
+async function linkOfferToListing(
+  offerId: string,
+  listingId: string,
+  sellerId: string,
+  bggGameId: number,
+) {
+  try {
+    const service = createServiceClient();
+
+    // Fetch offer to get shelf_item_id and buyer info
+    const { data: offer } = await service
+      .from('offers')
+      .select('id, shelf_item_id, buyer_id, status')
+      .eq('id', offerId)
+      .eq('seller_id', sellerId)
+      .eq('status', 'accepted')
+      .single();
+
+    if (!offer) return;
+
+    // 1. Complete the offer
+    await service
+      .from('offers')
+      .update({ status: 'completed' })
+      .eq('id', offer.id);
+
+    // 2. Update shelf item → listed with listing_id
+    await service
+      .from('shelf_items')
+      .update({ visibility: 'listed', listing_id: listingId })
+      .eq('id', offer.shelf_item_id)
+      .eq('seller_id', sellerId);
+
+    // 3. Email buyer
+    const { data: buyer } = await service
+      .from('user_profiles')
+      .select('full_name, email')
+      .eq('id', offer.buyer_id)
+      .single();
+
+    const { data: game } = await service
+      .from('games')
+      .select('name')
+      .eq('id', bggGameId)
+      .single();
+
+    if (buyer?.email) {
+      sendOfferListingCreatedToBuyer({
+        buyerName: buyer.full_name,
+        buyerEmail: buyer.email,
+        gameName: game?.name ?? '',
+        listingId,
+      }).catch((err) => console.error('[Offer] Failed to email buyer:', err));
+    }
+  } catch (err) {
+    console.error('[Offer] linkOfferToListing failed:', err);
+  }
 }
 
 export async function updateListing(
