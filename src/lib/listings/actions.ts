@@ -160,6 +160,7 @@ export async function createListing(
     await autoLinkListingToShelf(user.id, data.bgg_game_id, listing.id);
   }
 
+  revalidatePath('/account/shelf');
   return { listingId: listing.id };
 }
 
@@ -381,6 +382,7 @@ export async function cancelListing(
 
   revalidatePath(`/listings/${listingId}`);
   revalidatePath('/account/listings');
+  revalidatePath('/account/shelf');
 
   return { success: true };
 }
@@ -485,7 +487,7 @@ export async function syncShelfOnListingSold(sellerId: string, listingId: string
     const service = createServiceClient();
     await service
       .from('shelf_items')
-      .update({ visibility: 'not_for_sale', listing_id: null })
+      .update({ visibility: 'not_for_sale' })
       .eq('listing_id', listingId)
       .eq('seller_id', sellerId);
   } catch (err) {
