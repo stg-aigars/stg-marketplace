@@ -13,15 +13,11 @@ export interface OnboardingItem {
 export interface OnboardingState {
   dismissed: boolean;
   items: OnboardingItem[];
-  completedCount: number;
-  totalCount: number;
 }
 
 const DISMISSED_STATE: OnboardingState = {
   dismissed: true,
   items: [],
-  completedCount: 0,
-  totalCount: 0,
 };
 
 export async function getOnboardingState(
@@ -37,11 +33,11 @@ export async function getOnboardingState(
   const [listingsResult, shelfResult] = await Promise.all([
     supabase
       .from('listings')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('seller_id', user.id),
     supabase
       .from('shelf_items')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('seller_id', user.id),
   ]);
 
@@ -76,12 +72,8 @@ export async function getOnboardingState(
     },
   ];
 
-  const completedCount = items.filter((item) => item.complete).length;
-
   return {
     dismissed: false,
     items,
-    completedCount,
-    totalCount: items.length,
   };
 }

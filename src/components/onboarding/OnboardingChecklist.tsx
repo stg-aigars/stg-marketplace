@@ -11,8 +11,10 @@ interface OnboardingChecklistProps {
 export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
   if (state.dismissed) return null;
 
-  const allComplete = state.completedCount === state.totalCount;
-  const progressPercent = (state.completedCount / state.totalCount) * 100;
+  const completedCount = state.items.filter((item) => item.complete).length;
+  const totalCount = state.items.length;
+  const allComplete = completedCount === totalCount;
+  const progressPercent = (completedCount / totalCount) * 100;
 
   if (allComplete) {
     return (
@@ -43,7 +45,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
             Getting started
           </h2>
           <span className="text-sm text-semantic-text-muted">
-            {state.completedCount} of {state.totalCount} complete
+            {completedCount} of {totalCount} complete
           </span>
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-semantic-border-subtle overflow-hidden">

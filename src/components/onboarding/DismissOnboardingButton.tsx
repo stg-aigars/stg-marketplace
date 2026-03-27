@@ -15,8 +15,10 @@ export function DismissOnboardingButton({ label = 'Dismiss' }: DismissOnboarding
 
   function handleDismiss() {
     startTransition(async () => {
-      await dismissOnboarding();
-      router.refresh();
+      const result = await dismissOnboarding();
+      if (!('error' in result)) {
+        router.refresh();
+      }
     });
   }
 
