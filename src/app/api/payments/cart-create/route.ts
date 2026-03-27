@@ -6,13 +6,11 @@ import { getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
 import { generateOrderNumber } from '@/lib/services/orders';
-import { isValidPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
-import { validateTerminalInput } from '@/lib/api/checkout-validation';
+import { parseCartCheckoutBody } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
-import { MAX_CART_ITEMS } from '@/lib/checkout/cart-types';
 
 /**
  * POST /api/payments/cart-create
@@ -29,45 +27,11 @@ export async function POST(request: Request) {
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
 
-  // Parse body
-  let listingIds: string[];
-  let terminalId: string;
-  let terminalName: string;
-  let terminalCountry: string;
-  let buyerPhone: string;
-  let useWallet = false;
-  let turnstileToken: string | undefined;
-  try {
-    const body = await request.json();
-    listingIds = body.listingIds;
-    terminalId = body.terminalId;
-    terminalName = body.terminalName;
-    terminalCountry = body.terminalCountry;
-    buyerPhone = body.buyerPhone;
-    useWallet = body.useWallet === true;
-    turnstileToken = body.turnstileToken;
+  // Parse and validate body
+  const parsed = await parseCartCheckoutBody(request);
+  if (parsed instanceof NextResponse) return parsed;
 
-    if (!Array.isArray(listingIds) || listingIds.length === 0) {
-      return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
-    }
-    if (listingIds.length > MAX_CART_ITEMS) {
-      return NextResponse.json({ error: `Maximum ${MAX_CART_ITEMS} items per cart` }, { status: 400 });
-    }
-    if (new Set(listingIds).size !== listingIds.length) {
-      return NextResponse.json({ error: 'Duplicate items in cart' }, { status: 400 });
-    }
-    if (!terminalId || !terminalName || !terminalCountry) {
-      return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
-    }
-    const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
-    if (terminalCheck instanceof NextResponse) return terminalCheck;
-    terminalName = terminalCheck.sanitizedName;
-    if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
-      return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
-    }
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
+  const { listingIds, terminalId, terminalName, terminalCountry, buyerPhone, useWallet, turnstileToken } = parsed;
 
   const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
   if (!turnstile.success) {

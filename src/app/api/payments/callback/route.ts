@@ -23,6 +23,7 @@ import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email'
 import { env } from '@/lib/env';
 import type { CheckoutSession } from '@/lib/checkout/types';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
+import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -560,48 +561,18 @@ async function handleCartGroupCallback(
     .eq('id', group.id);
 
   // Send emails (non-blocking)
-  void (async () => {
-    const userIds = Array.from(new Set([group.buyer_id, ...createdOrders.map((o) => o.listing.seller_id)]));
-    const { data: profiles } = await serviceClient
-      .from('user_profiles')
-      .select('id, full_name, email')
-      .in('id', userIds);
-
-    if (!profiles) return;
-
-    const profileMap = new Map(profiles.map((p) => [p.id, p]));
-    const buyerProfile = profileMap.get(group.buyer_id);
-
-    for (const { id: orderId, order_number, listing, shippingCents } of createdOrders) {
-      const sellerProfile = profileMap.get(listing.seller_id);
-      const emailData = {
-        orderNumber: order_number,
-        orderId,
-        gameName: listing.game_name ?? 'Game',
-        priceCents: listing.price_cents,
-        shippingCents,
-        terminalName: group.terminal_name,
-      };
-
-      if (sellerProfile?.email) {
-        sendNewOrderToSeller({
-          ...emailData,
-          sellerName: sellerProfile.full_name ?? 'Seller',
-          sellerEmail: sellerProfile.email,
-          buyerName: buyerProfile?.full_name ?? 'Buyer',
-        }).catch((err) => console.error('[Email] Cart order seller notification failed:', err));
-      }
-
-      if (buyerProfile?.email) {
-        sendOrderConfirmationToBuyer({
-          ...emailData,
-          buyerName: buyerProfile.full_name ?? 'Buyer',
-          buyerEmail: buyerProfile.email,
-          sellerName: sellerProfile?.full_name ?? 'Seller',
-        }).catch((err) => console.error('[Email] Cart order buyer confirmation failed:', err));
-      }
-    }
-  })().catch((err) => console.error('[Email] Cart emails failed:', err));
+  void sendCartOrderEmails(
+    createdOrders.map(({ id, order_number, listing, shippingCents }) => ({
+      orderId: id,
+      orderNumber: order_number,
+      sellerId: listing.seller_id,
+      gameName: listing.game_name ?? 'Game',
+      priceCents: listing.price_cents,
+      shippingCents,
+      terminalName: group.terminal_name,
+    })),
+    group.buyer_id
+  );
 
   void logAuditEvent({
     actorId: group.buyer_id,

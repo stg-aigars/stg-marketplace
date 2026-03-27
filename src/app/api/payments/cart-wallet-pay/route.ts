@@ -11,13 +11,11 @@ import { createOrder } from '@/lib/services/orders';
 import { debitWallet, getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
-import { isValidPhoneNumber } from '@/lib/phone-utils';
-import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
+import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
-import { validateTerminalInput } from '@/lib/api/checkout-validation';
+import { parseCartCheckoutBody } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
-import { MAX_CART_ITEMS } from '@/lib/checkout/cart-types';
 
 export async function POST(request: Request) {
   const rateLimitError = applyRateLimit(paymentLimiter, request);
@@ -29,43 +27,11 @@ export async function POST(request: Request) {
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
 
-  // Parse body
-  let listingIds: string[];
-  let terminalId: string;
-  let terminalName: string;
-  let terminalCountry: string;
-  let buyerPhone: string;
-  let turnstileToken: string | undefined;
-  try {
-    const body = await request.json();
-    listingIds = body.listingIds;
-    terminalId = body.terminalId;
-    terminalName = body.terminalName;
-    terminalCountry = body.terminalCountry;
-    buyerPhone = body.buyerPhone;
-    turnstileToken = body.turnstileToken;
+  // Parse and validate body
+  const parsed = await parseCartCheckoutBody(request);
+  if (parsed instanceof NextResponse) return parsed;
 
-    if (!Array.isArray(listingIds) || listingIds.length === 0) {
-      return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
-    }
-    if (listingIds.length > MAX_CART_ITEMS) {
-      return NextResponse.json({ error: `Maximum ${MAX_CART_ITEMS} items per cart` }, { status: 400 });
-    }
-    if (new Set(listingIds).size !== listingIds.length) {
-      return NextResponse.json({ error: 'Duplicate items in cart' }, { status: 400 });
-    }
-    if (!terminalId || !terminalName || !terminalCountry) {
-      return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
-    }
-    const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
-    if (terminalCheck instanceof NextResponse) return terminalCheck;
-    terminalName = terminalCheck.sanitizedName;
-    if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
-      return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
-    }
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
+  const { listingIds, terminalId, terminalName, terminalCountry, buyerPhone, turnstileToken } = parsed;
 
   const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
   if (!turnstile.success) {
@@ -174,10 +140,11 @@ export async function POST(request: Request) {
   }
 
   // Create orders and debit wallet
-  const createdOrderIds: string[] = [];
+  const createdOrders: { id: string; orderNumber: string; index: number }[] = [];
 
   try {
-    for (const { listing, shippingCents, walletDebit: walletForOrder } of orderAllocations) {
+    for (let i = 0; i < orderAllocations.length; i++) {
+      const { listing, shippingCents, walletDebit: walletForOrder } = orderAllocations[i];
       const order = await createOrder({
         buyerId: user.id,
         sellerId: listing.seller_id,
@@ -194,7 +161,7 @@ export async function POST(request: Request) {
         cartGroupId,
       });
 
-      createdOrderIds.push(order.id);
+      createdOrders.push({ id: order.id, orderNumber: order.order_number, index: i });
 
       // Debit wallet for this order
       if (walletForOrder > 0) {
@@ -223,84 +190,25 @@ export async function POST(request: Request) {
     resourceType: 'cart_group',
     resourceId: cartGroupId,
     metadata: {
-      orderCount: createdOrderIds.length,
+      orderCount: createdOrders.length,
       totalAmountCents: grandTotalCents,
       paymentMethod: 'wallet',
     },
   });
 
   // Send emails (non-blocking)
-  void sendCartOrderEmails(serviceClient, createdOrderIds, user.id);
+  void sendCartOrderEmails(
+    createdOrders.map(({ id, orderNumber, index }) => ({
+      orderId: id,
+      orderNumber,
+      sellerId: orderAllocations[index].listing.seller_id,
+      gameName: orderAllocations[index].listing.game_name ?? 'Game',
+      priceCents: orderAllocations[index].listing.price_cents,
+      shippingCents: orderAllocations[index].shippingCents,
+      terminalName,
+    })),
+    user.id
+  );
 
-  return NextResponse.json({ groupId: cartGroupId, orderIds: createdOrderIds });
-}
-
-interface ProfileInfo {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-}
-
-async function sendCartOrderEmails(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: any,
-  orderIds: string[],
-  buyerId: string
-) {
-  try {
-    const { data: orders } = await serviceClient
-      .from('orders')
-      .select('id, order_number, listing_id, seller_id, items_total_cents, shipping_cost_cents, terminal_name, listings(game_name)')
-      .in('id', orderIds);
-
-    if (!orders) return;
-
-    const userIds = Array.from(new Set([buyerId, ...orders.map((o: { seller_id: string }) => o.seller_id)]));
-    const { data: profiles } = await serviceClient
-      .from('user_profiles')
-      .select('id, full_name, email')
-      .in('id', userIds);
-
-    if (!profiles) return;
-
-    const profileMap = new Map<string, ProfileInfo>(
-      (profiles as ProfileInfo[]).map((p) => [p.id, p])
-    );
-    const buyerProfile = profileMap.get(buyerId);
-
-    for (const order of orders) {
-      const sellerProfile = profileMap.get(order.seller_id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const gameName = (order.listings as any)?.game_name ?? 'Game';
-
-      const emailData = {
-        orderNumber: order.order_number,
-        orderId: order.id,
-        gameName,
-        priceCents: order.items_total_cents,
-        shippingCents: order.shipping_cost_cents,
-        terminalName: order.terminal_name,
-      };
-
-      if (sellerProfile?.email) {
-        sendNewOrderToSeller({
-          ...emailData,
-          sellerName: sellerProfile.full_name ?? 'Seller',
-          sellerEmail: sellerProfile.email,
-          buyerName: buyerProfile?.full_name ?? 'Buyer',
-        }).catch((err: unknown) => console.error('[Email] Cart order seller notification failed:', err));
-      }
-
-      if (buyerProfile?.email) {
-        sendOrderConfirmationToBuyer({
-          ...emailData,
-          buyerName: buyerProfile.full_name ?? 'Buyer',
-          buyerEmail: buyerProfile.email,
-          sellerName: sellerProfile?.full_name ?? 'Seller',
-        }).catch((err: unknown) => console.error('[Email] Cart order buyer confirmation failed:', err));
-      }
-    }
-  } catch (err) {
-    console.error('[Email] Cart order emails failed:', err);
-  }
+  return NextResponse.json({ groupId: cartGroupId, orderIds: createdOrders.map((o) => o.id) });
 }

@@ -37,6 +37,9 @@ export interface Terminal {
   comment?: string;
 }
 
+/** Display subset of Terminal used in checkout UIs */
+export type TerminalOption = Pick<Terminal, 'id' | 'name' | 'city' | 'address' | 'countryCode'>;
+
 export type TerminalCountry = 'LT' | 'LV' | 'EE';
 
 export const TERMINAL_COUNTRIES: readonly TerminalCountry[] = ['LT', 'LV', 'EE'];

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getTerminals } from '@/lib/services/unisend/client';
-import type { TerminalCountry } from '@/lib/services/unisend/types';
+import type { TerminalCountry, TerminalOption } from '@/lib/services/unisend/types';
 import { Breadcrumb } from '@/components/ui';
 import { CartCheckoutForm } from './CartCheckoutForm';
 
@@ -26,7 +26,7 @@ export default async function CartCheckoutPage() {
   const buyerCountry = profile.country as TerminalCountry;
 
   // Fetch terminals and wallet balance in parallel
-  let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
+  let terminals: TerminalOption[] = [];
   let terminalsFetchFailed = false;
   let walletBalanceCents = 0;
 

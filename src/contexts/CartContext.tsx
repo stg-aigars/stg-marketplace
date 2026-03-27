@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { type CartItem, MAX_CART_ITEMS, CART_STORAGE_KEY } from '@/lib/checkout/cart-types';
 
 interface CartContextValue {
@@ -87,18 +87,21 @@ function CartProvider({ children }: { children: React.ReactNode }) {
     [items]
   );
 
+  const value = useMemo(
+    () => ({
+      items,
+      addItem,
+      removeItem,
+      clearCart,
+      isInCart,
+      isFull: items.length >= MAX_CART_ITEMS,
+      count: items.length,
+    }),
+    [items, addItem, removeItem, clearCart, isInCart]
+  );
+
   return (
-    <CartContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        clearCart,
-        isInCart,
-        isFull: items.length >= MAX_CART_ITEMS,
-        count: items.length,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

@@ -8,6 +8,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 
+function CountBadge({ count, className }: { count: number; className?: string }) {
+  if (count <= 0) return null;
+  return (
+    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-aurora-red text-white ${className ?? ''}`}>
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 function SiteHeader() {
   const { user, profile, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -102,11 +111,7 @@ function SiteHeader() {
               aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
             >
               <ShoppingCart size={22} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-aurora-red text-white">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
+              <CountBadge count={cartCount} className="absolute -top-1.5 -right-2" />
             </Link>
 
             {/* Auth */}
@@ -172,11 +177,7 @@ function SiteHeader() {
                       onClick={() => setDropdownOpen(false)}
                     >
                       Messages
-                      {unreadCount > 0 && (
-                        <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-aurora-red text-white">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
+                      <CountBadge count={unreadCount} className="ml-2" />
                     </Link>
                     <Link
                       href="/account/settings"
@@ -207,11 +208,7 @@ function SiteHeader() {
               aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
             >
               <ShoppingCart size={22} />
-              {cartCount > 0 && (
-                <span className="absolute top-1 right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-aurora-red text-white">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
+              <CountBadge count={cartCount} className="absolute top-1 right-0.5" />
             </Link>
           <button
             onClick={() => setMobileOpen((prev) => !prev)}
@@ -287,11 +284,7 @@ function SiteHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   Messages
-                  {unreadCount > 0 && (
-                    <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-aurora-red text-white">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
+                  <CountBadge count={unreadCount} className="ml-2" />
                 </Link>
                 <Link
                   href="/account/settings"

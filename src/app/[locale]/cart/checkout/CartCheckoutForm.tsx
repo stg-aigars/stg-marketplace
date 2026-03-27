@@ -6,22 +6,15 @@ import { useRouter } from 'next/navigation';
 import { ShoppingCart } from '@phosphor-icons/react/ssr';
 import { Alert, Badge, Button, Card, CardBody, Input, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
+import { TerminalPicker } from '@/components/checkout/TerminalPicker';
 import { useCart } from '@/contexts/CartContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryName } from '@/lib/country-utils';
 import { conditionToBadgeKey } from '@/lib/listings/types';
-import { getShippingPriceCents, PHONE_FORMATS, type TerminalCountry } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, PHONE_FORMATS, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import type { CartValidationResult } from '@/lib/checkout/cart-types';
-
-interface TerminalOption {
-  id: string;
-  name: string;
-  city: string;
-  address: string;
-  countryCode: string;
-}
 
 interface CartCheckoutFormProps {
   buyerCountry: string;
@@ -42,7 +35,8 @@ export function CartCheckoutForm({
   const { items, clearCart } = useCart();
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminalId, setSelectedTerminalId] = useState('');
-  const [terminalSearch, setTerminalSearch] = useState('');
+  const [selectedTerminalName, setSelectedTerminalName] = useState('');
+  const [selectedTerminalCountry, setSelectedTerminalCountry] = useState('');
   const [useWallet, setUseWallet] = useState(walletBalanceCents > 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,27 +91,6 @@ export function CartCheckoutForm({
   const cardChargeCents = grandTotalCents - walletDebitCents;
   const walletCoversTotal = walletDebitCents >= grandTotalCents;
 
-  // Terminal filtering
-  const filteredTerminals = useMemo(() => {
-    const query = terminalSearch.toLowerCase();
-    const filtered = query
-      ? terminals.filter(
-          (t) =>
-            t.name.toLowerCase().includes(query) ||
-            t.city.toLowerCase().includes(query) ||
-            t.address.toLowerCase().includes(query)
-        )
-      : terminals;
-
-    const grouped: Record<string, TerminalOption[]> = {};
-    for (const t of filtered) {
-      if (!grouped[t.city]) grouped[t.city] = [];
-      grouped[t.city].push(t);
-    }
-    return grouped;
-  }, [terminals, terminalSearch]);
-
-  const selectedTerminal = terminals.find((t) => t.id === selectedTerminalId);
   const canSubmit = phone.trim() && selectedTerminalId && availableItems.length > 0 && unavailableIds.size === 0;
 
   async function handleCheckout() {
@@ -129,8 +102,8 @@ export function CartCheckoutForm({
     const commonBody = {
       listingIds: availableItems.map((i) => i.listingId),
       terminalId: selectedTerminalId,
-      terminalName: selectedTerminal?.name ?? '',
-      terminalCountry: selectedTerminal?.countryCode ?? buyerCountry,
+      terminalName: selectedTerminalName,
+      terminalCountry: selectedTerminalCountry || buyerCountry,
       buyerPhone: phone.trim(),
       turnstileToken,
     };
@@ -251,55 +224,16 @@ export function CartCheckoutForm({
         </div>
 
         {/* Terminal selection */}
-        <div>
-          <label className="block text-sm font-medium text-semantic-text-secondary mb-1.5">
-            Pickup terminal
-          </label>
-          {terminalsFetchFailed && (
-            <Alert variant="warning" className="mb-2">
-              Pickup terminals could not be loaded. Please try refreshing the page.
-            </Alert>
-          )}
-          <Input
-            type="text"
-            value={terminalSearch}
-            onChange={(e) => setTerminalSearch(e.target.value)}
-            placeholder="Search by city or terminal name..."
-          />
-          <div className="mt-2 max-h-64 sm:max-h-48 overflow-y-auto rounded-lg border border-semantic-border-subtle">
-            {Object.keys(filteredTerminals).length === 0 ? (
-              <p className="p-3 text-sm text-semantic-text-muted">No terminals found</p>
-            ) : (
-              Object.entries(filteredTerminals).map(([city, cityTerminals]) => (
-                <div key={city}>
-                  <div className="px-3 py-1.5 bg-semantic-bg-subtle text-xs font-medium text-semantic-text-muted uppercase tracking-wide sticky top-0">
-                    {city}
-                  </div>
-                  {cityTerminals.map((terminal) => (
-                    <button
-                      key={terminal.id}
-                      type="button"
-                      onClick={() => setSelectedTerminalId(terminal.id)}
-                      className={`w-full text-left px-3 py-2.5 text-sm transition-colors min-h-[44px] ${
-                        selectedTerminalId === terminal.id
-                          ? 'bg-frost-ice/10 text-frost-arctic font-medium'
-                          : 'text-semantic-text-secondary sm:hover:bg-snow-storm-light'
-                      }`}
-                    >
-                      <span className="block">{terminal.name}</span>
-                      <span className="block text-xs text-semantic-text-muted">{terminal.address}</span>
-                    </button>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
-          {selectedTerminal && (
-            <p className="mt-2 text-sm text-frost-arctic">
-              Selected: {selectedTerminal.name}
-            </p>
-          )}
-        </div>
+        <TerminalPicker
+          terminals={terminals}
+          selectedId={selectedTerminalId}
+          onSelect={(t) => {
+            setSelectedTerminalId(t.id);
+            setSelectedTerminalName(t.name);
+            setSelectedTerminalCountry(t.countryCode);
+          }}
+          fetchFailed={terminalsFetchFailed}
+        />
 
         <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
       </div>
