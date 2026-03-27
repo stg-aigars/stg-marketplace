@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
@@ -137,12 +138,14 @@ export default async function StaffDisputeDetailPage({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block aspect-square rounded-lg overflow-hidden border border-semantic-border-subtle"
+                    className="relative block aspect-square rounded-lg overflow-hidden border border-semantic-border-subtle"
                   >
-                    <img
+                    <Image
                       src={url}
                       alt={`Dispute photo ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(min-width: 640px) 25vw, 50vw"
+                      className="object-cover"
                     />
                   </a>
                 ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { apiFetch } from '@/lib/api-fetch';
 import {
   DndContext,
@@ -62,10 +63,12 @@ function SortablePhoto({
       style={style}
       className={`relative group aspect-square ${isDragging ? 'z-10 opacity-75' : ''}`}
     >
-      <img
+      <Image
         src={url}
         alt={`Photo ${index + 1}`}
-        className="w-full h-full object-cover rounded-lg border border-semantic-border-subtle"
+        fill
+        sizes="(min-width: 640px) 25vw, 50vw"
+        className="object-cover rounded-lg border border-semantic-border-subtle"
       />
       {/* Drag handle overlay */}
       <div

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
@@ -212,12 +213,14 @@ export default async function CheckoutPage({
 
               <div className="flex gap-4">
                 {/* Game image */}
-                <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
                   {gameImage ? (
-                    <img
+                    <Image
                       src={gameImage}
                       alt={listing.game_name}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(min-width: 640px) 96px, 80px"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">

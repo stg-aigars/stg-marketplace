@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -33,12 +34,14 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
         <CardBody>
           <div className="flex gap-3">
             {/* Thumbnail */}
-            <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
               {gameImage ? (
-                <img
+                <Image
                   src={gameImage}
                   alt={order.listings?.game_name ?? 'Game'}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(min-width: 640px) 64px, 56px"
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">

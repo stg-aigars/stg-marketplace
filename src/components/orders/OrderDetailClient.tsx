@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
 import { Badge, Breadcrumb, Card, CardBody } from '@/components/ui';
@@ -196,12 +197,14 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         <Card>
           <CardBody>
             <div className="flex gap-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
                 {gameImage ? (
-                  <img
+                  <Image
                     src={gameImage}
                     alt={order.listings?.game_name ?? 'Game'}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(min-width: 640px) 80px, 64px"
+                    className="object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">

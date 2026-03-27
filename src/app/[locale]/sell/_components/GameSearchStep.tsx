@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Input, Card, CardBody, Button, Spinner } from '@/components/ui';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { apiFetch } from '@/lib/api-fetch';
@@ -170,9 +171,11 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
           <CardBody>
             <div className="flex items-center gap-4">
               {selectedGame.thumbnail && (
-                <img
+                <Image
                   src={selectedGame.thumbnail}
                   alt={selectedGame.name}
+                  width={64}
+                  height={64}
                   className="w-16 h-16 rounded-lg object-cover shrink-0"
                 />
               )}
@@ -256,9 +259,11 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
               <CardBody className="py-3">
                 <div className="flex items-center gap-3">
                   {game.thumbnail ? (
-                    <img
+                    <Image
                       src={game.thumbnail}
                       alt={game.name}
+                      width={48}
+                      height={48}
                       className="w-12 h-12 rounded object-cover shrink-0"
                     />
                   ) : (

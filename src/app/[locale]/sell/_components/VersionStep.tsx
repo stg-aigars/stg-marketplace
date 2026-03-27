@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { CheckCircle, ImageSquare } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
@@ -375,12 +376,11 @@ function VersionCard({
       <CardBody className="py-3">
         <div className="flex items-start gap-3">
           {thumbnail ? (
-            <img
+            <Image
               src={thumbnail}
               alt={version.name}
               width={48}
               height={48}
-              loading="lazy"
               className="w-12 h-12 rounded object-cover shrink-0"
             />
           ) : (

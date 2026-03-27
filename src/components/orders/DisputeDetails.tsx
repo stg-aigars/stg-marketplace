@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Badge, Card, CardBody } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import type { DisputeRow } from '@/lib/orders/types';
@@ -48,12 +49,14 @@ export function DisputeDetails({ dispute }: DisputeDetailsProps) {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block aspect-square rounded-lg overflow-hidden"
+                  className="relative block aspect-square rounded-lg overflow-hidden"
                 >
-                  <img
+                  <Image
                     src={url}
                     alt={`Dispute photo ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(min-width: 640px) 25vw, 50vw"
+                    className="object-cover"
                   />
                 </a>
               ))}

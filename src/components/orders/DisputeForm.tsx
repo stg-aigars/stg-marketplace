@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { X } from '@phosphor-icons/react/ssr';
 import { Button, Modal } from '@/components/ui';
@@ -133,10 +134,12 @@ export function DisputeForm({ orderId, onClose, open }: DisputeFormProps) {
             <div className="grid grid-cols-4 gap-2 mb-2">
               {photos.map((url, index) => (
                 <div key={url} className="relative aspect-square">
-                  <img
+                  <Image
                     src={url}
                     alt={`Dispute photo ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
+                    fill
+                    sizes="25vw"
+                    className="object-cover rounded-lg"
                   />
                   <button
                     type="button"
