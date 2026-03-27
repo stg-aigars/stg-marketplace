@@ -22,7 +22,7 @@ export async function notify(
     const template = NOTIFICATION_TEMPLATES[type];
     const serviceClient = createServiceClient();
 
-    await serviceClient.from('notifications').insert({
+    const { error } = await serviceClient.from('notifications').insert({
       user_id: userId,
       type,
       title: template.title(context),
@@ -30,6 +30,9 @@ export async function notify(
       link: template.link(context),
       metadata: context,
     });
+    if (error) {
+      console.error(`[Notifications] Failed to create ${type} for ${userId}:`, error.message);
+    }
   } catch (err) {
     console.error(`[Notifications] Failed to create ${type} for ${userId}:`, err);
   }
@@ -58,7 +61,10 @@ export async function notifyMany(
       };
     });
 
-    await serviceClient.from('notifications').insert(rows);
+    const { error } = await serviceClient.from('notifications').insert(rows);
+    if (error) {
+      console.error(`[Notifications] Failed batch insert (${notifications.length} items):`, error.message);
+    }
   } catch (err) {
     console.error(`[Notifications] Failed batch insert (${notifications.length} items):`, err);
   }

@@ -16,6 +16,7 @@ import {
   type PhoneCountryCode,
 } from '@/lib/phone-utils';
 import { sendShippingInstructionsToSeller } from '@/lib/email';
+import { notify } from '@/lib/notifications';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -195,6 +196,20 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
     }).catch((err) => {
       console.error(`${logPrefix} Failed to send shipping email:`, err);
     });
+
+    // In-app notification — fetch seller_id from order (not in ShippingContext)
+    void (async () => {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('seller_id, listings(game_name)')
+        .eq('id', orderId)
+        .single();
+      if (order?.seller_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const gameName = (order.listings as any)?.game_name ?? 'Game';
+        void notify(order.seller_id, 'shipping.instructions', { gameName, orderNumber, orderId });
+      }
+    })();
 
     return { success: true, parcelId, barcode, trackingUrl };
   } catch (error) {

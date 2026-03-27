@@ -23,8 +23,10 @@ function offerLink() {
 export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTemplate> = {
   // --- Order lifecycle ---
   'order.created': {
-    title: () => 'New order',
-    body: (ctx) => `You have a new order for ${ctx.gameName ?? 'a game'}`,
+    title: (ctx) => ctx.role === 'buyer' ? 'Order confirmed' : 'New order',
+    body: (ctx) => ctx.role === 'buyer'
+      ? `Your order for ${ctx.gameName ?? 'a game'} has been confirmed`
+      : `You have a new order for ${ctx.gameName ?? 'a game'}`,
     link: orderLink,
   },
   'order.accepted': {

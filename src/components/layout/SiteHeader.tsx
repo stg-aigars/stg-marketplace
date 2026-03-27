@@ -27,7 +27,7 @@ function SiteHeader() {
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const unreadCount = useUnreadCount();
-  const notificationCount = useUnreadNotificationCount();
+  const [notificationCount, refreshNotificationCount] = useUnreadNotificationCount();
   const { count: cartCount } = useCart();
 
   // Close menus on route change
@@ -119,7 +119,7 @@ function SiteHeader() {
 
             {/* Notifications (desktop dropdown) */}
             {user && (
-              <NotificationDropdown unreadCount={notificationCount} />
+              <NotificationDropdown unreadCount={notificationCount} onCountChange={refreshNotificationCount} />
             )}
 
             {/* Auth */}

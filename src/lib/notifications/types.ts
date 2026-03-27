@@ -56,6 +56,7 @@ export interface NotificationContext {
   buyerName?: string;
   sellerName?: string;
   reason?: string;
+  role?: 'buyer' | 'seller';
   hoursRemaining?: number;
   daysRemaining?: number;
 }

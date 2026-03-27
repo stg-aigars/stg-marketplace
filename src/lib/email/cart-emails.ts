@@ -75,12 +75,14 @@ export async function sendCartOrderEmails(
         orderNumber: order.orderNumber,
         orderId: order.orderId,
         buyerName: buyerProfile?.full_name ?? 'Buyer',
+        role: 'seller',
       });
       void notify(buyerId, 'order.created', {
         gameName: order.gameName,
         orderNumber: order.orderNumber,
         orderId: order.orderId,
         sellerName: sellerProfile?.full_name ?? 'Seller',
+        role: 'buyer',
       });
     }
   } catch (err) {

@@ -326,6 +326,7 @@ export async function GET(request: Request) {
         orderNumber: emailData.orderNumber,
         orderId: emailData.orderId,
         buyerName: buyerProfile.full_name ?? 'Buyer',
+        role: 'seller',
       });
 
       sendOrderConfirmationToBuyer({
@@ -340,6 +341,7 @@ export async function GET(request: Request) {
         orderNumber: emailData.orderNumber,
         orderId: emailData.orderId,
         sellerName: sellerProfile.full_name ?? 'Seller',
+        role: 'buyer',
       });
     })().catch((err) => console.error('[Email] Background email failed:', err));
 
@@ -589,19 +591,7 @@ async function handleCartGroupCallback(
     group.buyer_id
   );
 
-  // In-app notifications for cart orders
-  for (const { id, order_number, listing } of createdOrders) {
-    void notify(listing.seller_id, 'order.created', {
-      gameName: listing.game_name ?? 'Game',
-      orderNumber: order_number,
-      orderId: id,
-    });
-    void notify(group.buyer_id, 'order.created', {
-      gameName: listing.game_name ?? 'Game',
-      orderNumber: order_number,
-      orderId: id,
-    });
-  }
+  // Cart notifications are sent inside sendCartOrderEmails — no duplicates here
 
   void logAuditEvent({
     actorId: group.buyer_id,

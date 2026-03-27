@@ -1,36 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUnreadNotificationCount } from '@/lib/notifications/actions';
 
 /**
- * Hook that returns the current user's unread notification count.
+ * Hook that returns the current user's unread notification count + a refresh function.
  * Refreshes on mount and on each pathname change (page navigation).
- * Same pattern as useUnreadCount for messages.
+ * The refresh function allows the dropdown to trigger a re-fetch after marking all read.
  */
-export function useUnreadNotificationCount(): number {
+export function useUnreadNotificationCount(): [number, () => void] {
   const [count, setCount] = useState(0);
   const { user } = useAuth();
   const pathname = usePathname();
 
-  useEffect(() => {
+  const fetchCount = useCallback(() => {
     if (!user) {
       setCount(0);
       return;
     }
+    getUnreadNotificationCount().then(setCount);
+  }, [user]);
 
-    let cancelled = false;
+  useEffect(() => {
+    fetchCount();
+  }, [fetchCount, pathname]);
 
-    getUnreadNotificationCount().then((n) => {
-      if (!cancelled) setCount(n);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, pathname]);
-
-  return count;
+  return [count, fetchCount];
 }

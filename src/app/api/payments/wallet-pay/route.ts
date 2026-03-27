@@ -229,6 +229,7 @@ export async function POST(request: Request) {
       orderNumber: emailData.orderNumber,
       orderId: emailData.orderId,
       buyerName: buyerProfile.full_name ?? 'Buyer',
+      role: 'seller',
     });
 
     sendOrderConfirmationToBuyer({
@@ -243,6 +244,7 @@ export async function POST(request: Request) {
       orderNumber: emailData.orderNumber,
       orderId: emailData.orderId,
       sellerName: sellerProfile.full_name ?? 'Seller',
+      role: 'buyer',
     });
   })().catch((err) => console.error('[Email] Background email failed:', err));
 
