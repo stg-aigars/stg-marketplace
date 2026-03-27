@@ -131,6 +131,21 @@ export default async function AccountPage() {
             </CardBody>
           </Card>
         </Link>
+        <Link href="/account/wanted">
+          <Card hoverable>
+            <CardBody>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-semantic-text-heading">Wanted games</p>
+                  <p className="text-sm text-semantic-text-muted mt-0.5">
+                    Games you are looking for
+                  </p>
+                </div>
+                <CaretRight size={20} className="text-semantic-text-muted" />
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
         <Link href="/account/offers">
           <Card hoverable>
             <CardBody>
