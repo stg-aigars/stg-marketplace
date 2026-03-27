@@ -6,6 +6,7 @@
 import { createServiceClient } from '@/lib/supabase';
 import { createOrderShipping } from '@/lib/services/unisend/shipping';
 import { creditWallet } from '@/lib/services/wallet';
+import { refundOrder } from '@/lib/services/order-refund';
 import { VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_TIMESTAMP_COLUMN } from '@/lib/orders/constants';
 import type { OrderStatus, OrderRow, OrderWithRelations } from '@/lib/orders/types';
 import {
@@ -140,8 +141,10 @@ export async function acceptOrder(
   }
 
   // 1. Transition to accepted FIRST — seller intent shouldn't be blocked by Unisend
+  // Reset deadline_reminder_sent_at so the shipping phase reminder can fire
   const updatedOrder = await transitionOrder(orderId, 'accepted', userId, 'seller', {
     seller_phone: sellerPhone,
+    deadline_reminder_sent_at: null,
   }, order);
 
   // 2. Attempt shipping — failure won't roll back the accept
@@ -213,7 +216,10 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
     .eq('id', order.listing_id)
     .eq('status', 'reserved');
 
-  // Email stub (non-blocking)
+  // Refund buyer (card, wallet, or both)
+  await refundOrder(orderId, order);
+
+  // Email (non-blocking)
   sendOrderDeclinedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
@@ -230,7 +236,10 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
  */
 export async function markShipped(orderId: string, userId: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
-  const updatedOrder = await transitionOrder(orderId, 'shipped', userId, 'seller', undefined, order);
+  // Reset deadline_reminder_sent_at so the delivery phase reminder can fire
+  const updatedOrder = await transitionOrder(orderId, 'shipped', userId, 'seller', {
+    deadline_reminder_sent_at: null,
+  }, order);
 
   sendOrderShippedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',

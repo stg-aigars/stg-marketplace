@@ -7,6 +7,26 @@ import type { OrderStatus, DisputeRow } from './types';
 /** Order number prefix */
 export const ORDER_NUMBER_PREFIX = 'STG';
 
+// --- Deadline enforcement ---
+
+/** Hours before pending_seller order is auto-declined */
+export const SELLER_RESPONSE_DEADLINE_HOURS = 48;
+
+/** Hours before sending seller response reminder */
+export const SELLER_RESPONSE_REMINDER_HOURS = 24;
+
+/** Days before accepted order is auto-cancelled for not shipping */
+export const SHIPPING_DEADLINE_DAYS = 5;
+
+/** Days before sending shipping reminder */
+export const SHIPPING_REMINDER_DAYS = 3;
+
+/** Days in shipped status before sending delivery reminder to buyer */
+export const DELIVERY_REMINDER_DAYS = 14;
+
+/** Days in shipped status before auto-escalation (creates dispute) */
+export const DELIVERY_ESCALATION_DAYS = 21;
+
 /** Status display configuration for UI */
 export const ORDER_STATUS_CONFIG: Record<
   OrderStatus,
@@ -26,7 +46,7 @@ export const ORDER_STATUS_CONFIG: Record<
 export const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending_seller: ['accepted', 'cancelled'],
   accepted: ['shipped', 'cancelled'],
-  shipped: ['delivered'],
+  shipped: ['delivered', 'disputed'],
   delivered: ['completed', 'disputed'],
   completed: [],
   cancelled: [],
