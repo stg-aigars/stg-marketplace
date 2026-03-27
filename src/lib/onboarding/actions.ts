@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
-export async function dismissOnboarding(): Promise<{ error?: string }> {
+export async function dismissOnboarding(): Promise<{ success?: boolean; error?: string }> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -22,5 +22,5 @@ export async function dismissOnboarding(): Promise<{ error?: string }> {
   }
 
   revalidatePath('/account');
-  return {};
+  return { success: true };
 }

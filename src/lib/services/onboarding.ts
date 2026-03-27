@@ -40,7 +40,7 @@ export async function getOnboardingState(
       .select('*', { count: 'exact', head: true })
       .eq('seller_id', user.id),
     supabase
-      .from('seller_shelves')
+      .from('shelf_items')
       .select('*', { count: 'exact', head: true })
       .eq('seller_id', user.id),
   ]);
@@ -57,7 +57,7 @@ export async function getOnboardingState(
       id: 'name',
       label: 'Set your display name',
       description: 'Let other players know who you are',
-      complete: profile.full_name != null,
+      complete: profile.full_name != null && profile.full_name.trim() !== '',
       href: '/account/settings',
     },
     {
