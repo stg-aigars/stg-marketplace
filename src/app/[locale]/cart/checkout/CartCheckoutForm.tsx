@@ -11,7 +11,7 @@ import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryName } from '@/lib/country-utils';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { conditionToBadgeKey } from '@/lib/listings/types';
 import { getShippingPriceCents, PHONE_FORMATS, type TerminalCountry } from '@/lib/services/unisend/types';
 import type { CartValidationResult } from '@/lib/checkout/cart-types';
 
@@ -50,9 +50,12 @@ export function CartCheckoutForm({
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
 
-  // Validate items on mount
+  // Validate items on mount only
+  const validatedRef = useRef(false);
   useEffect(() => {
-    if (items.length === 0) return;
+    if (validatedRef.current || items.length === 0) return;
+    validatedRef.current = true;
+
     fetch('/api/cart/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -220,7 +223,7 @@ export function CartCheckoutForm({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-semantic-text-primary truncate">{item.gameTitle}</p>
-                        <Badge condition={conditionToBadgeKey[item.condition as ListingCondition]} />
+                        <Badge condition={conditionToBadgeKey[item.condition]} />
                       </div>
                       <span className="text-sm font-medium text-semantic-text-primary">
                         {formatCentsToCurrency(item.priceCents)}

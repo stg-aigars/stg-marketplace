@@ -46,13 +46,15 @@ export async function POST(request: Request) {
     cartCount = cartData.length;
     console.log(`[Cron] Expired ${cartCount} orphan cart checkout groups`);
 
-    // Unreserve listings from expired cart groups
-    for (const group of cartData) {
-      await serviceClient.rpc('unreserve_listings', {
-        p_listing_ids: group.listing_ids,
-        p_buyer_id: group.buyer_id,
-      });
-    }
+    // Unreserve listings from expired cart groups (parallel — independent operations)
+    await Promise.all(
+      cartData.map((group) =>
+        serviceClient.rpc('unreserve_listings', {
+          p_listing_ids: group.listing_ids,
+          p_buyer_id: group.buyer_id,
+        })
+      )
+    );
   }
 
   return NextResponse.json({ expired: count, cartExpired: cartCount });

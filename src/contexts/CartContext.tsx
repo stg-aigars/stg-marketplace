@@ -5,7 +5,7 @@ import { type CartItem, MAX_CART_ITEMS, CART_STORAGE_KEY } from '@/lib/checkout/
 
 interface CartContextValue {
   items: CartItem[];
-  addItem: (item: CartItem) => boolean;
+  addItem: (item: CartItem) => void;
   removeItem: (listingId: string) => void;
   clearCart: () => void;
   isInCart: (listingId: string) => boolean;
@@ -64,15 +64,12 @@ function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addItem = useCallback(
-    (item: CartItem): boolean => {
-      let added = false;
+    (item: CartItem): void => {
       setItems((prev) => {
         if (prev.length >= MAX_CART_ITEMS) return prev;
         if (prev.some((i) => i.listingId === item.listingId)) return prev;
-        added = true;
         return [...prev, item];
       });
-      return added;
     },
     []
   );

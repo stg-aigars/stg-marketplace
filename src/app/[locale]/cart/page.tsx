@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Trash } from '@phosphor-icons/react/ssr';
@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Alert, Badge, Button, Card, CardBody, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { conditionToBadgeKey } from '@/lib/listings/types';
 import {
   getShippingPriceCents,
   type TerminalCountry,
@@ -30,9 +30,11 @@ export default function CartPage() {
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const [validating, setValidating] = useState(false);
 
-  // Validate cart items on mount
+  // Validate cart items on mount only
+  const validatedRef = useRef(false);
   useEffect(() => {
-    if (items.length === 0) return;
+    if (validatedRef.current || items.length === 0) return;
+    validatedRef.current = true;
 
     const listingIds = items.map((i) => i.listingId);
 
@@ -46,9 +48,7 @@ export default function CartPage() {
       .then((data: CartValidationResult) => {
         setUnavailableIds(new Set(data.unavailable));
       })
-      .catch(() => {
-        // Silently fail — items will be validated again at checkout
-      })
+      .catch(() => {})
       .finally(() => setValidating(false));
   }, [items]);
 
@@ -204,7 +204,7 @@ export default function CartPage() {
                             <Badge
                               condition={
                                 conditionToBadgeKey[
-                                  item.condition as ListingCondition
+                                  item.condition
                                 ]
                               }
                             />

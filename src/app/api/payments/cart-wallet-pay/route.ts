@@ -88,7 +88,9 @@ export async function POST(request: Request) {
     if (listing.seller_id === user.id) {
       return NextResponse.json({ error: 'You cannot buy your own listing' }, { status: 400 });
     }
-    if (listing.status !== 'active') {
+    const canCheckout = listing.status === 'active' ||
+      (listing.status === 'reserved' && listing.reserved_by === user.id);
+    if (!canCheckout) {
       return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
     }
   }

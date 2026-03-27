@@ -26,7 +26,7 @@ export default async function MyOrdersPage({
   // Count orders in the cart group for the success banner
   let cartOrderCount = 0;
   if (fromCart && cartGroupId) {
-    cartOrderCount = purchases.filter((o) => (o as { cart_group_id?: string }).cart_group_id === cartGroupId).length;
+    cartOrderCount = purchases.filter((o) => o.cart_group_id === cartGroupId).length;
   }
 
   return (

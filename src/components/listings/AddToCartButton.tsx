@@ -4,6 +4,7 @@ import { ShoppingCart, Check } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 import { useCart } from '@/contexts/CartContext';
 import type { CartItem } from '@/lib/checkout/cart-types';
+import type { ListingCondition } from '@/lib/listings/types';
 
 interface AddToCartButtonProps {
   listing: {
@@ -13,7 +14,7 @@ interface AddToCartButtonProps {
     priceCents: number;
     sellerCountry: string;
     sellerId: string;
-    condition: string;
+    condition: ListingCondition;
   };
 }
 

@@ -1,3 +1,5 @@
+import type { ListingCondition } from '@/lib/listings/types';
+
 /** Data stored in localStorage per cart item */
 export interface CartItem {
   listingId: string;
@@ -6,7 +8,7 @@ export interface CartItem {
   priceCents: number;
   sellerCountry: string;
   sellerId: string;
-  condition: string;
+  condition: ListingCondition;
   addedAt: string;
 }
 
