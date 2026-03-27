@@ -89,11 +89,15 @@ describe('parseFiltersFromParams', () => {
       page: '2',
     });
     expect(result).toEqual({
+      search: '',
       conditions: ['like_new', 'very_good'],
       priceMinCents: 1000,
       priceMaxCents: 5000,
       playerCount: 2,
       countries: ['LV', 'LT'],
+      categories: [],
+      mechanics: [],
+      weightLevels: [],
       sort: 'price_asc',
       page: 2,
     });
@@ -119,11 +123,15 @@ describe('filtersToSearchParams', () => {
 
   it('round-trips through parse', () => {
     const original = {
+      search: 'catan',
       conditions: ['like_new' as const, 'very_good' as const],
       priceMinCents: 500,
       priceMaxCents: 5000,
       playerCount: 3,
       countries: ['LV' as const, 'EE' as const],
+      categories: ['Economic'],
+      mechanics: ['Trading'],
+      weightLevels: ['medium' as const],
       sort: 'price_asc' as const,
       page: 2,
     };
