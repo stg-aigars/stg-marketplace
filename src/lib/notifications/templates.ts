@@ -159,4 +159,41 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Drop off ${ctx.gameName ?? 'your parcel'} at the terminal — check your order for details`,
     link: orderLink,
   },
+
+  // --- Wanted listings ---
+  'wanted.offer_received': {
+    title: () => 'New offer on your wanted game',
+    body: (ctx) => `${ctx.sellerName ?? 'A seller'} made an offer on your wanted listing for ${ctx.gameName ?? 'a game'}`,
+    link: () => '/account/wanted',
+  },
+  'wanted.offer_countered': {
+    title: () => 'Wanted offer countered',
+    body: (ctx) => `${ctx.buyerName ?? 'The buyer'} countered your offer for ${ctx.gameName ?? 'a game'}`,
+    link: () => '/account/offers',
+  },
+  'wanted.offer_accepted': {
+    title: () => 'Wanted offer accepted',
+    body: (ctx) => `The offer for ${ctx.gameName ?? 'a game'} has been accepted`,
+    link: () => '/account/offers',
+  },
+  'wanted.offer_declined': {
+    title: () => 'Wanted offer declined',
+    body: (ctx) => `The offer for ${ctx.gameName ?? 'a game'} was declined`,
+    link: () => '/account/offers',
+  },
+  'wanted.offer_expired': {
+    title: () => 'Wanted offer expired',
+    body: (ctx) => `Your offer for ${ctx.gameName ?? 'a game'} has expired`,
+    link: () => '/account/offers',
+  },
+  'wanted.listing_created': {
+    title: () => 'Game listed from wanted offer',
+    body: (ctx) => `${ctx.gameName ?? 'The game'} you wanted is now listed and ready to buy`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : '/account/wanted',
+  },
+  'wanted.filled': {
+    title: () => 'Wanted listing filled',
+    body: (ctx) => `Your wanted listing for ${ctx.gameName ?? 'a game'} has been filled`,
+    link: () => '/account/wanted',
+  },
 };

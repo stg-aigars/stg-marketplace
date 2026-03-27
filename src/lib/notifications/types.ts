@@ -29,7 +29,15 @@ export type NotificationType =
   | 'dispute.resolved'
   | 'dispute.escalated'
   // Shipping
-  | 'shipping.instructions';
+  | 'shipping.instructions'
+  // Wanted listings
+  | 'wanted.offer_received'
+  | 'wanted.offer_countered'
+  | 'wanted.offer_accepted'
+  | 'wanted.offer_declined'
+  | 'wanted.offer_expired'
+  | 'wanted.listing_created'
+  | 'wanted.filled';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {
