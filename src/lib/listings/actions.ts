@@ -162,6 +162,7 @@ export async function createListing(
   }
 
   revalidatePath('/account/shelf');
+  revalidatePath('/account');
   return { listingId: listing.id };
 }
 
