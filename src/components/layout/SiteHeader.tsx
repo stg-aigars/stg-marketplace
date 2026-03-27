@@ -83,6 +83,12 @@ function SiteHeader() {
         Browse
       </Link>
       <Link
+        href="/wanted"
+        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium"
+      >
+        Wanted
+      </Link>
+      <Link
         href="/sell"
         className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium"
       >
