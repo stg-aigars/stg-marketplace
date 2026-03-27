@@ -51,6 +51,7 @@ export async function addToShelf(
   }
 
   revalidatePath('/account/shelf');
+  revalidatePath('/account');
   return { id: data.id };
 }
 
@@ -93,6 +94,7 @@ export async function addBulkToShelf(
   }
 
   revalidatePath('/account/shelf');
+  revalidatePath('/account');
   return { added: data?.length ?? 0 };
 }
 

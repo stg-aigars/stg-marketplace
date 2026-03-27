@@ -5,6 +5,8 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getCountryName, getCountryFlag } from '@/lib/country-utils';
 import { formatDate } from '@/lib/date-utils';
 import { getWalletBalance } from '@/lib/services/wallet';
+import { getOnboardingState } from '@/lib/services/onboarding';
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 
 export const metadata = {
@@ -13,13 +15,18 @@ export const metadata = {
 
 export default async function AccountPage() {
   const { user, profile } = await requireServerAuth();
-  const walletBalanceCents = await getWalletBalance(user.id);
+  const [walletBalanceCents, onboardingState] = await Promise.all([
+    getWalletBalance(user.id),
+    getOnboardingState(user, profile),
+  ]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
         Your profile
       </h1>
+
+      <OnboardingChecklist state={onboardingState} />
 
       <Card>
         <CardBody className="space-y-4">

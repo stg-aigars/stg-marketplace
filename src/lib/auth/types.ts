@@ -9,6 +9,7 @@ export interface UserProfile {
   preferred_locale: string;
   country_confirmed: boolean;
   is_staff: boolean;
+  onboarding_dismissed_at: string | null;
   created_at: string;
   updated_at: string;
 }
