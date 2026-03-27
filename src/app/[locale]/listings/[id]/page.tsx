@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
-import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody } from '@/components/ui';
+import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
@@ -227,6 +227,10 @@ export default async function ListingDetailPage({
                 {conditionInfo.description}
               </span>
             </div>
+            <ShareButtons
+              url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/listings/${listing.id}`}
+              title={listing.game_name}
+            />
           </div>
 
           {/* Price & action */}

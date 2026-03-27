@@ -46,3 +46,5 @@ export type { NavTabsProps, NavTabItem } from './nav-tabs';
 
 export { Stepper } from './stepper';
 export type { StepperProps, StepItem } from './stepper';
+
+export { ShareButtons } from './share-buttons';

@@ -7,7 +7,7 @@ import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getSellerShelf } from '@/lib/shelves/actions';
-import { Avatar, Card, CardBody } from '@/components/ui';
+import { Avatar, Card, CardBody, ShareButtons } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
@@ -44,8 +44,17 @@ export async function generateMetadata({
     .eq('id', id)
     .single();
 
+  const name = profile?.full_name ?? 'Seller';
+  const description = `${name} on Second Turn Games — pre-loved board games in the Baltic region.`;
+
   return {
-    title: profile?.full_name ?? 'Seller profile',
+    title: name,
+    description,
+    openGraph: {
+      title: `${name} | Second Turn Games`,
+      description,
+      type: 'profile',
+    },
   };
 }
 
@@ -114,6 +123,10 @@ export default async function SellerProfilePage({
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} />
             <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
           </div>
+          <ShareButtons
+            url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/sellers/${id}`}
+            title={sellerName}
+          />
         </div>
       </div>
 

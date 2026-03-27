@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ImageSquare, ArrowLeft } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, ShareButtons } from '@/components/ui';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import { conditionConfig } from '@/lib/condition-config';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -115,6 +115,11 @@ export default async function WantedDetailPage({ params }: Props) {
                 {getCountryName(listing.country)}
               </p>
             </div>
+
+            <ShareButtons
+              url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/wanted/${listing.id}`}
+              title={`Wanted: ${listing.game_name}`}
+            />
 
             {listing.offer_count > 0 && (
               <p className="text-xs text-semantic-text-muted">

@@ -156,6 +156,12 @@ export async function createListing(
     if (UUID_RE.test(data.offer_id)) {
       await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id, data.price_cents);
     }
+  } else if (data.wanted_offer_id) {
+    // Created from an accepted wanted offer: complete the offer + fill the wanted listing
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (UUID_RE.test(data.wanted_offer_id)) {
+      await linkWantedOfferToListing(data.wanted_offer_id, listing.id);
+    }
   } else {
     // Regular listing (not from offer): auto-link to shelf + decline stale offers
     await autoLinkListingToShelf(user.id, data.bgg_game_id, listing.id);
@@ -472,6 +478,69 @@ async function autoLinkListingToShelf(
     }
   } catch (err) {
     console.error('[Shelf] autoLinkListingToShelf failed:', err);
+  }
+}
+
+/**
+ * When a listing is created from an accepted wanted offer:
+ * 1. Link the listing to the wanted offer (set wanted_offer_id)
+ * 2. Complete the wanted offer (status → completed)
+ * 3. Fill the wanted listing (status → filled)
+ * 4. Decline other active offers on the wanted listing
+ * 5. Notify the buyer
+ */
+async function linkWantedOfferToListing(wantedOfferId: string, listingId: string) {
+  try {
+    const service = createServiceClient();
+
+    // Fetch the wanted offer + wanted listing details
+    const { data: offer } = await service
+      .from('wanted_offers')
+      .select('id, wanted_listing_id, buyer_id, wanted_listings:wanted_listing_id (game_name)')
+      .eq('id', wantedOfferId)
+      .eq('status', 'accepted')
+      .single();
+
+    if (!offer) return;
+
+    // Link listing to wanted offer
+    await service
+      .from('listings')
+      .update({ wanted_offer_id: wantedOfferId })
+      .eq('id', listingId);
+
+    // Complete the offer
+    await service
+      .from('wanted_offers')
+      .update({ status: 'completed' })
+      .eq('id', wantedOfferId);
+
+    // Fill the wanted listing
+    await service
+      .from('wanted_listings')
+      .update({ status: 'filled' })
+      .eq('id', offer.wanted_listing_id);
+
+    // Decline other active offers on the same wanted listing
+    await service
+      .from('wanted_offers')
+      .update({ status: 'declined' })
+      .eq('wanted_listing_id', offer.wanted_listing_id)
+      .neq('id', wantedOfferId)
+      .in('status', ['pending', 'countered']);
+
+    // Notify buyer
+    const gameName = (offer.wanted_listings as unknown as { game_name: string } | null)?.game_name ?? 'a game';
+
+    void notify(offer.buyer_id, 'wanted.listing_created', {
+      gameName,
+      listingId,
+    });
+    void notify(offer.buyer_id, 'wanted.filled', {
+      gameName,
+    });
+  } catch (err) {
+    console.error('[Wanted] linkWantedOfferToListing failed:', err);
   }
 }
 
