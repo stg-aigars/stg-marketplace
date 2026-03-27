@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from './index';
+import { notify } from '@/lib/notifications';
 
 interface CartOrderEmailData {
   orderId: string;
@@ -67,6 +68,22 @@ export async function sendCartOrderEmails(
           sellerName: sellerProfile?.full_name ?? 'Seller',
         }).catch((err) => console.error('[Email] Cart order buyer confirmation failed:', err));
       }
+
+      // In-app notifications
+      void notify(order.sellerId, 'order.created', {
+        gameName: order.gameName,
+        orderNumber: order.orderNumber,
+        orderId: order.orderId,
+        buyerName: buyerProfile?.full_name ?? 'Buyer',
+        role: 'seller',
+      });
+      void notify(buyerId, 'order.created', {
+        gameName: order.gameName,
+        orderNumber: order.orderNumber,
+        orderId: order.orderId,
+        sellerName: sellerProfile?.full_name ?? 'Seller',
+        role: 'buyer',
+      });
     }
   } catch (err) {
     console.error('[Email] Cart order emails failed:', err);

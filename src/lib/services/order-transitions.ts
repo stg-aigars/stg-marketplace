@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { createOrderShipping } from '@/lib/services/unisend/shipping';
 import { creditWallet } from '@/lib/services/wallet';
 import { refundOrder } from '@/lib/services/order-refund';
+import { notify } from '@/lib/notifications';
 import { VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_TIMESTAMP_COLUMN } from '@/lib/orders/constants';
 import type { OrderStatus, OrderRow, OrderWithRelations } from '@/lib/orders/types';
 import {
@@ -183,6 +184,7 @@ export async function acceptOrder(
     gameName: order.listings?.game_name ?? 'Game',
     sellerName: order.seller_profile?.full_name ?? 'Seller',
   }).catch((err) => console.error('[Email] Failed to send order-accepted to buyer:', err));
+  void notify(order.buyer_id, 'order.accepted', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
 
   if (shippingResult.success) {
     return {
@@ -227,6 +229,7 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
   }).catch((err) => console.error('[Email] Failed to send order-declined to buyer:', err));
+  void notify(order.buyer_id, 'order.declined', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
 
   return updatedOrder;
 }
@@ -250,6 +253,7 @@ export async function markShipped(orderId: string, userId: string): Promise<Orde
     barcode: order.barcode ?? undefined,
     trackingUrl: order.tracking_url ?? undefined,
   }).catch((err) => console.error('[Email] Failed to send order-shipped to buyer:', err));
+  void notify(order.buyer_id, 'order.shipped', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
 
   return updatedOrder;
 }
@@ -268,6 +272,7 @@ export async function markDelivered(orderId: string, userId: string): Promise<Or
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
   }).catch((err) => console.error('[Email] Failed to send order-delivered to buyer:', err));
+  void notify(order.buyer_id, 'order.delivered', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
 
   return updatedOrder;
 }
@@ -291,6 +296,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send order-completed to seller:', err));
+  void notify(order.seller_id, 'order.completed', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
 
   // Shelf sync: mark game as sold (not_for_sale)
   await syncShelfOnListingSold(order.seller_id, order.listing_id);
@@ -353,6 +359,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send auto-complete email to seller:', err));
+  void notify(order.seller_id, 'order.completed', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
 
   // Shelf sync: mark game as sold (not_for_sale)
   await syncShelfOnListingSold(order.seller_id, order.listing_id);

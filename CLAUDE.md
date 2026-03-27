@@ -69,9 +69,14 @@ Never use 12-hour time format (AM/PM).
 ### Order Status State Machine
 ```
 pending_seller → accepted → shipped → delivered → completed
-                    ↓           ↓          ↓
+                    ↓           ↓         ↓
                 cancelled   cancelled   disputed → resolved
 ```
+
+### Order Deadlines
+- `pending_seller`: 24h reminder, 48h auto-decline + refund
+- `accepted`: day 3 reminder, day 5 auto-cancel + refund
+- `shipped`: day 14 delivery reminder, day 21 auto-escalate (creates dispute)
 
 ## Invoicing Model
 - Shipping = logistics service provided TO the seller (funded by buyer at checkout)
@@ -161,10 +166,6 @@ Buyer makes offer → seller accepts/counters/declines → if accepted, seller c
 - `src/lib/shelves/` — types, constants (visibility, offer status badges, TTLs)
 - `src/lib/shelves/actions.ts` — shelf CRUD (add/remove/update items, BGG import)
 - `src/lib/offers/actions.ts` — offer lifecycle (make, counter, accept, decline, cancel)
-- `src/app/[locale]/account/shelf/` — seller shelf management (grid + BGG import)
-- `src/app/[locale]/account/offers/` — offer management (Received/Sent tabs)
-- `src/app/[locale]/sellers/[id]/` — public seller profile with shelf section
-- `src/app/[locale]/sell/from-offer/[offerId]/` — pre-filled listing from accepted offer
 - `src/components/offers/` — OfferCard, MakeOfferModal
 
 ### Shelf ↔ Listing Sync
@@ -191,20 +192,27 @@ All `/api/cron/*` routes follow the same pattern:
 - **Coolify command**: `curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/<name>`
 - **Auth check**: `request.headers.get('authorization') !== \`Bearer ${env.cron.secret}\`` → 401
 
-Existing cron routes:
-| Route | Frequency | Purpose |
-|-------|-----------|---------|
-| `/api/cron/expire-reservations` | Every 5 min | Release stale listing reservations |
-| `/api/cron/cleanup-sessions` | Every 10 min | Clean up expired checkout sessions |
-| `/api/cron/sync-tracking` | Every 15 min | Sync Unisend tracking events, auto-deliver on PARCEL_DELIVERED |
-| `/api/cron/auto-complete` | Every 6 hours | Auto-complete delivered orders past 2-day dispute window |
-| `/api/cron/expire-offers` | Every 6 hours | Expire unanswered offers (7-day TTL) + revert accepted offers past 3-day listing deadline |
-| `/api/cron/enforce-deadlines` | Every 2 hours | Auto-decline/cancel orders past deadlines (48h response, 5d shipping), send reminders, escalate stale shipments (21d) |
+Existing cron routes: `expire-reservations` (5min), `cleanup-sessions` (10min), `sync-tracking` (15min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h), `cleanup-notifications` (weekly). See `src/app/api/cron/` for implementations.
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main
 - Trivial single-file fixes: direct commits to main are acceptable
 - Always delete feature branches (local + remote) after merging
+
+## In-App Notifications
+- Every email event also creates an in-app notification via `notify(userId, type, context)` from `@/lib/notifications`
+- Fire-and-forget pattern (same as `logAuditEvent`) — never blocks the main operation
+- 27 notification types with prefixes: `order.`, `message.`, `offer.`, `dispute.`, `shipping.`
+- Copy centralized in `src/lib/notifications/templates.ts` — integration sites pass type + context, not strings
+- Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
+- Polling on pathname change for unread count (consistent with message unread badge)
+
+## Server Action Error Handling
+- Server actions return `{ success: true }` or `{ error: string }` — never throw to the client
+- API routes return `NextResponse.json({ error: string }, { status: 4xx/5xx })`
+- Validation errors return early with descriptive messages
+- Internal errors: `console.error` + generic user-facing message
+- Non-blocking side effects (emails, notifications, audit): use `void fn().catch(...)` pattern
 
 ## Important Notes
 - `pnpm build` is the real deploy gate, not `pnpm type-check` alone

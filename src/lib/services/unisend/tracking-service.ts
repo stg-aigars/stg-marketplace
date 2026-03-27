@@ -9,6 +9,7 @@ import { createServiceClient } from '@/lib/supabase';
 import type { TrackingStateType } from './types';
 import { sendOrderDeliveredToBuyer } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { notify } from '@/lib/notifications';
 
 interface SyncResult {
   success: boolean;
@@ -111,6 +112,12 @@ export async function syncTrackingForOrder(
             gameName: listing?.game_name ?? 'Game',
           }).catch((err) => console.error('[Email] Failed to send auto-delivery email:', err));
         }
+
+        void notify(delivered.buyer_id, 'order.delivered', {
+          gameName: listing?.game_name ?? 'Game',
+          orderNumber: delivered.order_number,
+          orderId,
+        });
 
         console.log(`[Tracking] Auto-delivered order ${orderId} via PARCEL_DELIVERED`);
       }

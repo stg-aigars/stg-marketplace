@@ -23,6 +23,7 @@ import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email'
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { validateTerminalInput } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
+import { notify } from '@/lib/notifications';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 
 export async function POST(request: Request) {
@@ -223,12 +224,28 @@ export async function POST(request: Request) {
       buyerName: buyerProfile.full_name ?? 'Buyer',
     }).catch((err) => console.error('[Email] Failed to notify seller:', err));
 
+    void notify(listing.seller_id, 'order.created', {
+      gameName: emailData.gameName,
+      orderNumber: emailData.orderNumber,
+      orderId: emailData.orderId,
+      buyerName: buyerProfile.full_name ?? 'Buyer',
+      role: 'seller',
+    });
+
     sendOrderConfirmationToBuyer({
       ...emailData,
       buyerName: buyerProfile.full_name ?? 'Buyer',
       buyerEmail: buyerProfile.email,
       sellerName: sellerProfile.full_name ?? 'Seller',
     }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
+
+    void notify(user.id, 'order.created', {
+      gameName: emailData.gameName,
+      orderNumber: emailData.orderNumber,
+      orderId: emailData.orderId,
+      sellerName: sellerProfile.full_name ?? 'Seller',
+      role: 'buyer',
+    });
   })().catch((err) => console.error('[Email] Background email failed:', err));
 
   void logAuditEvent({

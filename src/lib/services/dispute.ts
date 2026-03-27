@@ -16,6 +16,7 @@ import {
   sendDisputeEscalated,
   sendDisputeWithdrawn,
 } from '@/lib/email';
+import { notify, notifyMany } from '@/lib/notifications';
 
 // Re-export pure validation functions for external use
 export {
@@ -130,6 +131,13 @@ export async function openDispute(
     reason,
   }).catch((err) => console.error('[Email] Failed to send dispute notification:', err));
 
+  void notify(order.seller_id, 'dispute.opened', {
+    gameName: order.listings?.game_name ?? 'Game',
+    orderNumber: order.order_number,
+    orderId,
+    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
+  });
+
   return { order: updatedOrder, dispute };
 }
 
@@ -194,6 +202,13 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send dispute withdrawn email:', err));
+
+  void notify(order.seller_id, 'dispute.withdrawn', {
+    gameName: order.listings?.game_name ?? 'Game',
+    orderNumber: order.order_number,
+    orderId,
+    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
+  });
 
   return updatedOrder;
 }
@@ -271,6 +286,11 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     refundAmountCents,
   }).catch((err) => console.error('[Email] Failed to send refund emails:', err));
 
+  void notifyMany([
+    { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+  ]);
+
   return updatedOrder;
 }
 
@@ -321,6 +341,11 @@ export async function escalateDispute(orderId: string, userId: string): Promise<
     orderId,
     gameName: order.listings?.game_name ?? 'Game',
   }).catch((err) => console.error('[Email] Failed to send escalation emails:', err));
+
+  void notifyMany([
+    { userId: order.buyer_id, type: 'dispute.escalated', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    { userId: order.seller_id, type: 'dispute.escalated', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+  ]);
 
   return updatedDispute;
 }
@@ -401,6 +426,11 @@ export async function staffResolveDispute(
       staffNotes: notes,
     }).catch((err) => console.error('[Email] Failed to send staff refund emails:', err));
 
+    void notifyMany([
+      { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+      { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    ]);
+
     return updatedOrder;
   }
 
@@ -454,6 +484,11 @@ export async function staffResolveDispute(
     earningsCents: order.seller_wallet_credit_cents ?? 0,
     staffNotes: notes,
   }).catch((err) => console.error('[Email] Failed to send staff resolution emails:', err));
+
+  void notifyMany([
+    { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+  ]);
 
   return updatedOrder;
 }

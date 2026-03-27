@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CaretDown, X, List, ShoppingCart } from '@phosphor-icons/react/ssr';
+import { CaretDown, X, List, ShoppingCart, Bell } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 function CountBadge({ count, className }: { count: number; className?: string }) {
   if (count <= 0) return null;
@@ -25,6 +27,7 @@ function SiteHeader() {
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const unreadCount = useUnreadCount();
+  const [notificationCount, refreshNotificationCount] = useUnreadNotificationCount();
   const { count: cartCount } = useCart();
 
   // Close menus on route change
@@ -114,6 +117,11 @@ function SiteHeader() {
               <CountBadge count={cartCount} className="absolute -top-1.5 -right-2" />
             </Link>
 
+            {/* Notifications (desktop dropdown) */}
+            {user && (
+              <NotificationDropdown unreadCount={notificationCount} onCountChange={refreshNotificationCount} />
+            )}
+
             {/* Auth */}
             {loading ? (
               <div className="w-20 h-8 rounded-md bg-snow-storm-light animate-pulse" />
@@ -200,8 +208,18 @@ function SiteHeader() {
             )}
           </nav>
 
-          {/* Mobile: cart + hamburger */}
+          {/* Mobile: notifications + cart + hamburger */}
           <div className="sm:hidden flex items-center gap-1">
+            {user && (
+              <Link
+                href="/account/notifications"
+                className="relative min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary"
+                aria-label={`Notifications${notificationCount > 0 ? ` (${notificationCount} unread)` : ''}`}
+              >
+                <Bell size={22} weight={notificationCount > 0 ? 'fill' : 'regular'} />
+                <CountBadge count={notificationCount} className="absolute top-1 right-0.5" />
+              </Link>
+            )}
             <Link
               href="/cart"
               className="relative min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary"
