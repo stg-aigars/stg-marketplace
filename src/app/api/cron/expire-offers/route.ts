@@ -15,6 +15,7 @@ import { OFFER_TTL_DAYS, LISTING_DEADLINE_DAYS } from '@/lib/shelves/types';
 import {
   sendOfferExpiredToBuyer,
   sendOfferDeadlineExpiredToBuyer,
+  sendWantedOfferExpiredToSeller,
 } from '@/lib/email';
 import { notify } from '@/lib/notifications';
 
@@ -179,6 +180,16 @@ export async function POST(request: Request) {
 
       for (const offer of expiredWantedOffers) {
         const wantedListing = offer.wanted_listings as unknown as { game_name: string } | null;
+        const seller = offer.seller as unknown as { full_name: string; email: string } | null;
+
+        if (seller?.email && wantedListing?.game_name) {
+          sendWantedOfferExpiredToSeller({
+            sellerName: seller.full_name,
+            sellerEmail: seller.email,
+            gameName: wantedListing.game_name,
+          }).catch((err) => console.error('[Cron] Failed to email wanted offer expired:', err));
+        }
+
         if (wantedListing?.game_name) {
           void notify(offer.seller_id, 'wanted.offer_expired', {
             gameName: wantedListing.game_name,

@@ -32,6 +32,12 @@ import { SellerResponseReminder } from './templates/seller-response-reminder';
 import { OrderAutoCancelled } from './templates/order-auto-cancelled';
 import { ShippingReminderSeller } from './templates/shipping-reminder-seller';
 import { DeliveryReminderBuyer } from './templates/delivery-reminder-buyer';
+import { WantedOfferReceived } from './templates/wanted-offer-received';
+import { WantedOfferCountered } from './templates/wanted-offer-countered';
+import { WantedOfferAccepted } from './templates/wanted-offer-accepted';
+import { WantedOfferDeclined } from './templates/wanted-offer-declined';
+import { WantedOfferExpired } from './templates/wanted-offer-expired';
+import { WantedListingCreated } from './templates/wanted-listing-created';
 import { env } from '@/lib/env';
 
 /**
@@ -744,5 +750,132 @@ export async function sendDeliveryReminderToBuyer(params: {
     to: params.buyerEmail,
     subject: `Have you picked up your parcel? — ${params.orderNumber}`,
     react: React.createElement(DeliveryReminderBuyer, { ...params, appUrl: env.app.url }),
+  });
+}
+
+// ============================================================================
+// Wanted offer emails
+// ============================================================================
+
+export async function sendWantedOfferReceivedToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  sellerName: string;
+  gameName: string;
+  condition: string;
+  priceCents: number;
+  note: string | null;
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `New offer on your wanted game ${params.gameName}`,
+    react: React.createElement(WantedOfferReceived, {
+      ...params,
+      wantedUrl: `${env.app.url}/account/wanted`,
+    }),
+  });
+}
+
+export async function sendWantedOfferCounteredToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  buyerName: string;
+  gameName: string;
+  originalPriceCents: number;
+  counterPriceCents: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Counter on your offer for ${params.gameName}`,
+    react: React.createElement(WantedOfferCountered, {
+      ...params,
+      offersUrl: `${env.app.url}/account/offers`,
+    }),
+  });
+}
+
+export async function sendWantedOfferAccepted(params: {
+  sellerName: string;
+  sellerEmail: string;
+  buyerName: string;
+  buyerEmail: string;
+  gameName: string;
+  agreedPriceCents: number;
+  offerId: string;
+}): Promise<void> {
+  // Email seller
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Offer accepted — create a listing for ${params.gameName}`,
+    react: React.createElement(WantedOfferAccepted, {
+      recipientName: params.sellerName,
+      otherPartyName: params.buyerName,
+      gameName: params.gameName,
+      agreedPriceCents: params.agreedPriceCents,
+      isSeller: true,
+      actionUrl: `${env.app.url}/sell/from-wanted-offer/${params.offerId}`,
+    }),
+  });
+
+  // Email buyer
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Your wanted offer for ${params.gameName} was accepted`,
+    react: React.createElement(WantedOfferAccepted, {
+      recipientName: params.buyerName,
+      otherPartyName: params.sellerName,
+      gameName: params.gameName,
+      agreedPriceCents: params.agreedPriceCents,
+      isSeller: false,
+      actionUrl: `${env.app.url}/account/wanted`,
+    }),
+  });
+}
+
+export async function sendWantedOfferDeclined(params: {
+  recipientName: string;
+  recipientEmail: string;
+  otherPartyName: string;
+  gameName: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.recipientEmail,
+    subject: `Offer for ${params.gameName} was declined`,
+    react: React.createElement(WantedOfferDeclined, {
+      ...params,
+      wantedUrl: `${env.app.url}/wanted`,
+    }),
+  });
+}
+
+export async function sendWantedOfferExpiredToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  gameName: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Your offer for ${params.gameName} has expired`,
+    react: React.createElement(WantedOfferExpired, {
+      ...params,
+      wantedUrl: `${env.app.url}/wanted`,
+    }),
+  });
+}
+
+export async function sendWantedListingCreatedToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  sellerName: string;
+  gameName: string;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `${params.gameName} is now listed and ready to buy`,
+    react: React.createElement(WantedListingCreated, {
+      ...params,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
   });
 }

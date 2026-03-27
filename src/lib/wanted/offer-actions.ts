@@ -6,6 +6,12 @@ import { createServiceClient } from '@/lib/supabase';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { notify } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
+import {
+  sendWantedOfferReceivedToBuyer,
+  sendWantedOfferCounteredToSeller,
+  sendWantedOfferAccepted,
+  sendWantedOfferDeclined,
+} from '@/lib/email';
 import type { WantedOfferStatus, WantedOfferWithDetails } from './types';
 import {
   MIN_OFFER_CENTS,
@@ -75,9 +81,23 @@ export async function makeWantedOffer(
     return { error: 'Failed to make offer' };
   }
 
-  // Notify buyer (non-blocking)
-  const profiles = await fetchProfiles(supabase, [user.id]);
+  // Notify + email buyer (non-blocking)
+  const profiles = await fetchProfiles(supabase, [user.id, wanted.buyer_id]);
   const seller = profiles.get(user.id);
+  const buyer = profiles.get(wanted.buyer_id);
+
+  if (buyer?.email && seller?.full_name) {
+    const conditionLabel = condition.replace('_', ' ');
+    sendWantedOfferReceivedToBuyer({
+      buyerName: buyer.full_name,
+      buyerEmail: buyer.email,
+      sellerName: seller.full_name,
+      gameName: wanted.game_name,
+      condition: conditionLabel,
+      priceCents,
+      note: trimmedNote,
+    }).catch(() => {});
+  }
 
   void notify(wanted.buyer_id, 'wanted.offer_received', {
     gameName: wanted.game_name,
@@ -132,11 +152,23 @@ export async function counterWantedOffer(
 
   if (error) return { error: 'Failed to counter offer' };
 
-  // Notify seller (non-blocking)
+  // Notify + email seller (non-blocking)
   const gameName = extractGameName(offer.wanted_listings);
 
-  const profiles = await fetchProfiles(supabase, [user.id]);
+  const profiles = await fetchProfiles(supabase, [user.id, offer.seller_id]);
   const buyer = profiles.get(user.id);
+  const seller = profiles.get(offer.seller_id);
+
+  if (seller?.email && buyer?.full_name) {
+    sendWantedOfferCounteredToSeller({
+      sellerName: seller.full_name,
+      sellerEmail: seller.email,
+      buyerName: buyer.full_name,
+      gameName,
+      originalPriceCents: offer.price_cents,
+      counterPriceCents,
+    }).catch(() => {});
+  }
 
   void notify(offer.seller_id, 'wanted.offer_countered', {
     gameName,
@@ -195,6 +227,24 @@ export async function acceptWantedOffer(
   if (error) return { error: 'Failed to accept offer' };
 
   const gameName = extractGameName(offer.wanted_listings);
+  const agreedPrice = offer.counter_price_cents ?? offer.price_cents;
+
+  // Email both parties (non-blocking)
+  const profiles = await fetchProfiles(supabase, [offer.buyer_id, offer.seller_id]);
+  const buyer = profiles.get(offer.buyer_id);
+  const seller = profiles.get(offer.seller_id);
+
+  if (buyer?.email && seller?.email) {
+    sendWantedOfferAccepted({
+      sellerName: seller.full_name,
+      sellerEmail: seller.email,
+      buyerName: buyer.full_name,
+      buyerEmail: buyer.email,
+      gameName,
+      agreedPriceCents: agreedPrice,
+      offerId,
+    }).catch(() => {});
+  }
 
   // Notify both parties (non-blocking)
   void notify(offer.buyer_id, 'wanted.offer_accepted', {
@@ -256,9 +306,20 @@ export async function declineWantedOffer(
 
   const gameName = extractGameName(offer.wanted_listings);
 
-  // Notify the other party with real names
-  const profiles = await fetchProfiles(supabase, [user.id]);
+  // Notify + email the other party
+  const otherPartyId = isBuyer ? offer.seller_id : offer.buyer_id;
+  const profiles = await fetchProfiles(supabase, [user.id, otherPartyId]);
   const currentUser = profiles.get(user.id);
+  const otherParty = profiles.get(otherPartyId);
+
+  if (otherParty?.email && currentUser?.full_name) {
+    sendWantedOfferDeclined({
+      recipientName: otherParty.full_name,
+      recipientEmail: otherParty.email,
+      otherPartyName: currentUser.full_name,
+      gameName,
+    }).catch(() => {});
+  }
 
   if (isBuyer) {
     void notify(offer.seller_id, 'wanted.offer_declined', {

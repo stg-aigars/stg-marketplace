@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
-import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer } from '@/lib/email';
+import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer, sendWantedListingCreatedToBuyer } from '@/lib/email';
 import { notify } from '@/lib/notifications';
 import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
@@ -160,7 +160,7 @@ export async function createListing(
     // Created from an accepted wanted offer: complete the offer + fill the wanted listing
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (UUID_RE.test(data.wanted_offer_id)) {
-      await linkWantedOfferToListing(data.wanted_offer_id, listing.id);
+      await linkWantedOfferToListing(data.wanted_offer_id, listing.id, user.id);
     }
   } else {
     // Regular listing (not from offer): auto-link to shelf + decline stale offers
@@ -489,7 +489,7 @@ async function autoLinkListingToShelf(
  * 4. Decline other active offers on the wanted listing
  * 5. Notify the buyer
  */
-async function linkWantedOfferToListing(wantedOfferId: string, listingId: string) {
+async function linkWantedOfferToListing(wantedOfferId: string, listingId: string, sellerId: string) {
   try {
     const service = createServiceClient();
 
@@ -529,8 +529,31 @@ async function linkWantedOfferToListing(wantedOfferId: string, listingId: string
       .neq('id', wantedOfferId)
       .in('status', ['pending', 'countered']);
 
-    // Notify buyer
+    // Notify + email buyer
     const gameName = (offer.wanted_listings as unknown as { game_name: string } | null)?.game_name ?? 'a game';
+
+    // Fetch profiles for email
+    const { data: sellerProfile } = await service
+      .from('user_profiles')
+      .select('full_name')
+      .eq('id', sellerId)
+      .single();
+
+    const { data: buyerProfile } = await service
+      .from('user_profiles')
+      .select('full_name, email')
+      .eq('id', offer.buyer_id)
+      .single();
+
+    if (buyerProfile?.email && sellerProfile?.full_name) {
+      sendWantedListingCreatedToBuyer({
+        buyerName: buyerProfile.full_name,
+        buyerEmail: buyerProfile.email,
+        sellerName: sellerProfile.full_name,
+        gameName,
+        listingId,
+      }).catch(() => {});
+    }
 
     void notify(offer.buyer_id, 'wanted.listing_created', {
       gameName,
