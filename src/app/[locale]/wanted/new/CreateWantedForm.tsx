@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Button, Input, Select, Alert } from '@/components/ui';
+import { Card, CardBody, Button, Input, Select, Alert, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { GameSearchStep, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { LISTING_CONDITIONS, conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { conditionConfig } from '@/lib/condition-config';
@@ -20,6 +21,8 @@ export function CreateWantedForm() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
 
   function handleSubmit() {
@@ -43,11 +46,13 @@ export function CreateWantedForm() {
         game.yearpublished,
         minCondition,
         budgetCents,
-        notes.trim() || undefined
+        notes.trim() || undefined,
+        turnstileToken ?? undefined
       );
 
       if ('error' in result) {
         setError(result.error);
+        turnstileRef.current?.reset();
       } else {
         router.push('/account/wanted');
       }
@@ -113,6 +118,8 @@ export function CreateWantedForm() {
                 {notes.length}/500
               </p>
             </div>
+
+            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
             <Button
               onClick={handleSubmit}

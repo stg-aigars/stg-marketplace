@@ -228,7 +228,7 @@ export default async function ListingDetailPage({
               </span>
             </div>
             <ShareButtons
-              url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/listings/${listing.id}`}
+              url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/listings/${listing.id}`}
               title={listing.game_name}
             />
           </div>

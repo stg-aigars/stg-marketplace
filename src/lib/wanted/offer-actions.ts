@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
+import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { notify } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import {
@@ -29,8 +30,12 @@ export async function makeWantedOffer(
   wantedListingId: string,
   condition: ListingCondition,
   priceCents: number,
-  note?: string
+  note?: string,
+  turnstileToken?: string
 ): Promise<{ id: string } | { error: string }> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

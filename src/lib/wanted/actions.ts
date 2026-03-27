@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
+import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import type { WantedListingWithGame, WantedListingWithDetails } from './types';
 import { MAX_NOTE_LENGTH, CONDITION_RANK } from './types';
 import { declineActiveWantedOffers } from './offer-actions';
@@ -18,8 +19,12 @@ export async function createWantedListing(
   gameYear: number | null,
   minCondition: ListingCondition,
   maxPriceCents: number | null,
-  notes?: string
+  notes?: string,
+  turnstileToken?: string
 ): Promise<{ id: string } | { error: string }> {
+  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  if (!turnstile.success) return { error: turnstile.error };
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

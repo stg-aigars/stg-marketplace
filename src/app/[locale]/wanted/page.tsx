@@ -4,6 +4,7 @@ import { MagnifyingGlass, Cube, Plus } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
 import { EmptyState, Pagination, Button } from '@/components/ui';
 import { WantedListingCard } from '@/components/wanted/WantedListingCard';
+import { WantedBrowseFilters } from '@/components/wanted/WantedBrowseFilters';
 import type { ListingCondition } from '@/lib/listings/types';
 import {
   parseWantedFiltersFromParams,
@@ -101,6 +102,8 @@ export default async function WantedBrowsePage({
           </Button>
         </Link>
       </div>
+
+      <WantedBrowseFilters key={wantedFiltersToSearchParams(filters)} currentFilters={filters} />
 
       {filteredListings.length === 0 ? (
         filtersActive ? (

@@ -124,7 +124,7 @@ export default async function SellerProfilePage({
             <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
           </div>
           <ShareButtons
-            url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/sellers/${id}`}
+            url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/sellers/${id}`}
             title={sellerName}
           />
         </div>

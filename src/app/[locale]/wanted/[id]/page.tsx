@@ -112,7 +112,7 @@ export default async function WantedDetailPage({ params }: Props) {
             </div>
 
             <ShareButtons
-              url={`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/wanted/${listing.id}`}
+              url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/wanted/${listing.id}`}
               title={`Wanted: ${listing.game_name}`}
             />
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Modal, Button, Input, Select, Alert } from '@/components/ui';
+import { Modal, Button, Input, Select, Alert, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import { conditionConfig } from '@/lib/condition-config';
@@ -36,6 +37,8 @@ export function MakeWantedOfferModal({
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
 
   const validConditions = CONDITION_OPTIONS.filter((opt) =>
@@ -61,11 +64,13 @@ export function MakeWantedOfferModal({
         wantedListingId,
         condition,
         priceCents,
-        note.trim() || undefined
+        note.trim() || undefined,
+        turnstileToken ?? undefined
       );
 
       if ('error' in result) {
         setError(result.error);
+        turnstileRef.current?.reset();
       } else {
         router.refresh();
         onClose();
@@ -108,6 +113,8 @@ export function MakeWantedOfferModal({
             placeholder="Edition details, shipping preferences, etc."
           />
         </div>
+
+        <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">
