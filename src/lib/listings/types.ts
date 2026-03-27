@@ -28,6 +28,7 @@ export interface CreateListingData {
   description: string | null;
   photos: string[];
   offer_id?: string;
+  wanted_offer_id?: string;
 }
 
 export interface UpdateListingData {

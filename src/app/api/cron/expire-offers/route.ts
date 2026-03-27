@@ -145,10 +145,113 @@ export async function POST(request: Request) {
     }
   }
 
+  // ---- Job 3: Expire unanswered wanted offers (7-day TTL) ----
+  let wantedExpiredCount = 0;
+  {
+    const { data: expiredWantedOffers, error: queryError } = await supabase
+      .from('wanted_offers')
+      .select(`
+        id, seller_id, status,
+        wanted_listings:wanted_listing_id (game_name),
+        seller:seller_id (full_name, email)
+      `)
+      .in('status', ['pending', 'countered'])
+      .lt('expires_at', new Date().toISOString())
+      .limit(BATCH_LIMIT);
+
+    if (queryError) {
+      console.error('[Cron] Expire wanted offers query failed:', queryError);
+      errors.push('Wanted TTL query failed');
+    } else if (expiredWantedOffers?.length) {
+      const ids = expiredWantedOffers.map((o) => o.id);
+      const { error: updateError } = await supabase
+        .from('wanted_offers')
+        .update({ status: 'expired' })
+        .in('id', ids);
+
+      if (updateError) {
+        console.error('[Cron] Wanted TTL update failed:', updateError);
+        errors.push('Wanted TTL update failed');
+      }
+
+      wantedExpiredCount = ids.length;
+      console.log(`[Cron] Expired ${wantedExpiredCount} wanted offers (${OFFER_TTL_DAYS}-day TTL)`);
+
+      for (const offer of expiredWantedOffers) {
+        const wantedListing = offer.wanted_listings as unknown as { game_name: string } | null;
+        if (wantedListing?.game_name) {
+          void notify(offer.seller_id, 'wanted.offer_expired', {
+            gameName: wantedListing.game_name,
+          });
+        }
+      }
+    }
+  }
+
+  // ---- Job 4: Revert accepted wanted offers past listing deadline ----
+  let wantedDeadlineCount = 0;
+  {
+    const deadlineCutoff = new Date();
+    deadlineCutoff.setDate(deadlineCutoff.getDate() - LISTING_DEADLINE_DAYS);
+
+    const { data: deadlineWantedOffers, error: queryError } = await supabase
+      .from('wanted_offers')
+      .select(`
+        id, buyer_id, seller_id, wanted_listing_id,
+        wanted_listings:wanted_listing_id (game_name),
+        seller:seller_id (full_name)
+      `)
+      .eq('status', 'accepted')
+      .lt('updated_at', deadlineCutoff.toISOString())
+      .limit(BATCH_LIMIT);
+
+    if (queryError) {
+      console.error('[Cron] Wanted deadline query failed:', queryError);
+      errors.push('Wanted deadline query failed');
+    } else if (deadlineWantedOffers?.length) {
+      const ids = deadlineWantedOffers.map((o) => o.id);
+      const { error: updateError } = await supabase
+        .from('wanted_offers')
+        .update({ status: 'expired' })
+        .in('id', ids);
+
+      if (updateError) {
+        console.error('[Cron] Wanted deadline update failed:', updateError);
+        errors.push('Wanted deadline update failed');
+      }
+
+      // Re-activate the wanted listings (seller didn't follow through)
+      const wantedListingIds = Array.from(new Set(deadlineWantedOffers.map((o) => o.wanted_listing_id)));
+      await supabase
+        .from('wanted_listings')
+        .update({ status: 'active' })
+        .in('id', wantedListingIds)
+        .eq('status', 'filled'); // Only revert if currently filled (not manually cancelled)
+
+      wantedDeadlineCount = ids.length;
+      console.log(`[Cron] Expired ${wantedDeadlineCount} wanted offers (${LISTING_DEADLINE_DAYS}-day listing deadline)`);
+
+      for (const offer of deadlineWantedOffers) {
+        const wantedListing = offer.wanted_listings as unknown as { game_name: string } | null;
+        const seller = offer.seller as unknown as { full_name: string } | null;
+
+        if (wantedListing?.game_name) {
+          void notify(offer.buyer_id, 'wanted.offer_declined', {
+            gameName: wantedListing.game_name,
+            sellerName: seller?.full_name ?? 'Seller',
+          });
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     expired: expiredCount,
     deadlineExpired: deadlineCount,
-    hasMore: expiredCount === BATCH_LIMIT || deadlineCount === BATCH_LIMIT,
+    wantedExpired: wantedExpiredCount,
+    wantedDeadlineExpired: wantedDeadlineCount,
+    hasMore: expiredCount === BATCH_LIMIT || deadlineCount === BATCH_LIMIT
+      || wantedExpiredCount === BATCH_LIMIT || wantedDeadlineCount === BATCH_LIMIT,
     errors,
   });
 }

@@ -71,6 +71,7 @@ interface ListingCreationFlowProps {
   initialGame?: EnrichedGame | null;
   lockedFields?: ('game' | 'price')[];
   offerId?: string;
+  wantedOfferId?: string;
 }
 
 export function ListingCreationFlow({
@@ -78,6 +79,7 @@ export function ListingCreationFlow({
   initialGame,
   lockedFields = [],
   offerId,
+  wantedOfferId,
 }: ListingCreationFlowProps = {}) {
   const router = useRouter();
   const params = useParams();
@@ -154,6 +156,7 @@ export function ListingCreationFlow({
       description: formData.description || null,
       photos: formData.photos,
       offer_id: offerId,
+      wanted_offer_id: wantedOfferId,
     }, turnstileToken);
 
     if ('error' in result) {
