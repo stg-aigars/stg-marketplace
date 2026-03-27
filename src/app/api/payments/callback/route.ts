@@ -447,18 +447,21 @@ async function handleCartGroupCallback(
   }
 
   // Calculate refund for unavailable items (partial fulfillment)
+  // Only refund shipping when ALL items from a seller are unavailable
   const walletAllocation = (group.wallet_allocation ?? {}) as Record<string, number>;
   let refundCardCents = 0;
   let refundWalletCents = 0;
 
+  const availableSellerIds = new Set(available.map((l) => l.seller_id));
+
   for (const listing of unavailable) {
     const walletForItem = walletAllocation[listing.id] ?? 0;
-    // Figure out what this item's total was (item price + shipping if first from seller)
-    const sellerCountry = listing.country as TerminalCountry;
-    const buyerCountry = group.terminal_country as TerminalCountry;
-    const shippingCents = getShippingPriceCents(sellerCountry, buyerCountry) ?? 0;
-    // Approximate: refund item price + its wallet share via wallet, rest via card
-    const itemTotalForRefund = listing.price_cents + shippingCents;
+    // Only include shipping if no available items remain from this seller
+    const sellerFullyUnavailable = !availableSellerIds.has(listing.seller_id);
+    const shippingRefund = sellerFullyUnavailable
+      ? (getShippingPriceCents(listing.country as TerminalCountry, group.terminal_country as TerminalCountry) ?? 0)
+      : 0;
+    const itemTotalForRefund = listing.price_cents + shippingRefund;
     refundWalletCents += walletForItem;
     refundCardCents += itemTotalForRefund - walletForItem;
   }

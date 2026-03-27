@@ -52,7 +52,11 @@ function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     function handleStorage(e: StorageEvent) {
       if (e.key === CART_STORAGE_KEY) {
-        setItems(e.newValue ? JSON.parse(e.newValue) : []);
+        try {
+          setItems(e.newValue ? JSON.parse(e.newValue) : []);
+        } catch {
+          setItems([]);
+        }
       }
     }
     window.addEventListener('storage', handleStorage);

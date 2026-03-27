@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Trash, WarningCircle } from '@phosphor-icons/react/ssr';
+import { ShoppingCart, Trash } from '@phosphor-icons/react/ssr';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Badge, Button, Card, CardBody, EmptyState } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardBody, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -135,13 +135,9 @@ export default function CartPage() {
       </div>
 
       {hasUnavailable && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-semantic-warning-bg p-3 text-sm text-semantic-warning-text">
-          <WarningCircle size={20} weight="fill" className="mt-0.5 shrink-0" />
-          <p>
-            Some items in your cart are no longer available. Please remove them
-            before checking out.
-          </p>
-        </div>
+        <Alert variant="warning" className="mb-4">
+          Some items in your cart are no longer available. Please remove them before checking out.
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

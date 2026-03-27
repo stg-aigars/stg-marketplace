@@ -13,6 +13,9 @@ export async function POST(request: Request) {
     if (!Array.isArray(listingIds) || listingIds.length === 0) {
       return NextResponse.json({ available: [], unavailable: [] });
     }
+    if (listingIds.length > 20) {
+      return NextResponse.json({ error: 'Too many items' }, { status: 400 });
+    }
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }

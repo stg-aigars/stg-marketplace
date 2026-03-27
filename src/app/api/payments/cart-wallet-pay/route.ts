@@ -51,6 +51,9 @@ export async function POST(request: Request) {
     if (listingIds.length > MAX_CART_ITEMS) {
       return NextResponse.json({ error: `Maximum ${MAX_CART_ITEMS} items per cart` }, { status: 400 });
     }
+    if (new Set(listingIds).size !== listingIds.length) {
+      return NextResponse.json({ error: 'Duplicate items in cart' }, { status: 400 });
+    }
     if (!terminalId || !terminalName || !terminalCountry) {
       return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
     }
@@ -147,20 +150,32 @@ export async function POST(request: Request) {
   // Create a cart checkout group for record-keeping
   const cartGroupId = crypto.randomUUID();
 
+  // Pre-compute per-order wallet allocation (each order gets its listingTotal since wallet covers all)
+  const firstForSellerPrecompute = new Set<string>();
+  const orderAllocations: { listing: typeof listings[0]; shippingCents: number; walletDebit: number }[] = [];
+  let allocatedTotal = 0;
+
+  for (let i = 0; i < listings.length; i++) {
+    const listing = listings[i];
+    const isFirst = !firstForSellerPrecompute.has(listing.seller_id);
+    firstForSellerPrecompute.add(listing.seller_id);
+    const shippingCents = isFirst ? (sellerShipping.get(listing.seller_id) ?? 0) : 0;
+    const listingTotal = listing.price_cents + shippingCents;
+
+    if (i < listings.length - 1) {
+      orderAllocations.push({ listing, shippingCents, walletDebit: listingTotal });
+      allocatedTotal += listingTotal;
+    } else {
+      // Last order gets remainder to avoid rounding drift
+      orderAllocations.push({ listing, shippingCents, walletDebit: grandTotalCents - allocatedTotal });
+    }
+  }
+
   // Create orders and debit wallet
   const createdOrderIds: string[] = [];
-  const firstForSeller = new Set<string>();
 
   try {
-    for (const listing of listings) {
-      const isFirstForSeller = !firstForSeller.has(listing.seller_id);
-      firstForSeller.add(listing.seller_id);
-      const shippingCents = isFirstForSeller ? (sellerShipping.get(listing.seller_id) ?? 0) : 0;
-
-      // Pro-rata wallet debit for this listing
-      const listingTotal = listing.price_cents + shippingCents;
-      const walletForOrder = Math.floor(grandTotalCents > 0 ? grandTotalCents * listingTotal / grandTotalCents : 0);
-
+    for (const { listing, shippingCents, walletDebit: walletForOrder } of orderAllocations) {
       const order = await createOrder({
         buyerId: user.id,
         sellerId: listing.seller_id,
