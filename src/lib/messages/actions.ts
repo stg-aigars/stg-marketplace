@@ -370,6 +370,35 @@ export async function findConversation(listingId: string): Promise<string | null
   return data?.id ?? null;
 }
 
+/**
+ * Get total unread message count across all conversations for the current user.
+ * Lightweight query for header badge — no conversation details loaded.
+ */
+export async function getUnreadMessageCount(): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return 0;
+
+  const { data: convIds } = await supabase
+    .from('conversations')
+    .select('id')
+    .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+
+  if (!convIds || convIds.length === 0) return 0;
+
+  const { count } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .in('conversation_id', convIds.map((c) => c.id))
+    .neq('sender_id', user.id)
+    .is('read_at', null);
+
+  return count ?? 0;
+}
+
 // --- Internal helpers ---
 
 /**

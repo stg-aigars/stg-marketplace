@@ -10,6 +10,7 @@ import {
   parseFiltersFromParams,
   filtersToSearchParams,
   hasActiveFilters,
+  WEIGHT_LEVEL_RANGES,
 } from '@/lib/listings/filters';
 import { getUserFavoriteIds } from '@/lib/favorites/actions';
 
@@ -47,17 +48,41 @@ export default async function BrowsePage({
 
   const supabase = await createClient();
 
-  // When player count filter is active, pre-fetch matching game IDs server-side
-  // so the main query returns correct counts and pagination works properly.
-  let playerCountGameIds: number[] | null = null;
-  if (filters.playerCount !== null) {
-    const pc = filters.playerCount;
-    const { data: matchingGames } = await supabase
-      .from('games')
-      .select('id')
-      .lte('min_players', pc)
-      .gte('max_players', pc);
-    playerCountGameIds = matchingGames?.map((g) => g.id) ?? [];
+  // When game-level filters are active (player count, categories, mechanics, weight),
+  // pre-fetch matching game IDs in a single query so the main listings query returns
+  // correct counts and pagination works properly.
+  const hasGameFilters =
+    filters.playerCount !== null ||
+    filters.categories.length > 0 ||
+    filters.mechanics.length > 0 ||
+    filters.weightLevels.length > 0;
+
+  let gameFilterIds: number[] | null = null;
+  if (hasGameFilters) {
+    let gamesQuery = supabase.from('games').select('id').eq('is_expansion', false);
+
+    if (filters.playerCount !== null) {
+      gamesQuery = gamesQuery
+        .lte('min_players', filters.playerCount)
+        .gte('max_players', filters.playerCount);
+    }
+    if (filters.categories.length > 0) {
+      gamesQuery = gamesQuery.overlaps('categories', filters.categories);
+    }
+    if (filters.mechanics.length > 0) {
+      gamesQuery = gamesQuery.overlaps('mechanics', filters.mechanics);
+    }
+    if (filters.weightLevels.length > 0) {
+      // Build OR condition for weight ranges
+      const weightClauses = filters.weightLevels.map((level) => {
+        const range = WEIGHT_LEVEL_RANGES[level];
+        return `and(weight.gte.${range.min},weight.lt.${range.max})`;
+      });
+      gamesQuery = gamesQuery.or(weightClauses.join(','));
+    }
+
+    const { data: matchingGames } = await gamesQuery;
+    gameFilterIds = matchingGames?.map((g) => g.id) ?? [];
   }
 
   // Build filtered query
@@ -69,7 +94,10 @@ export default async function BrowsePage({
     )
     .eq('status', 'active');
 
-  // Apply filters
+  // Apply listing-level filters
+  if (filters.search) {
+    query = query.ilike('game_name', `%${filters.search}%`);
+  }
   if (filters.conditions.length > 0) {
     query = query.in('condition', filters.conditions);
   }
@@ -82,12 +110,13 @@ export default async function BrowsePage({
   if (filters.countries.length > 0) {
     query = query.in('country', filters.countries);
   }
-  if (playerCountGameIds !== null) {
-    if (playerCountGameIds.length === 0) {
-      // No games match this player count — short-circuit to empty results
-      query = query.in('bgg_game_id', [-1]);
+
+  // Apply game-level filter (pre-fetched IDs)
+  if (gameFilterIds !== null) {
+    if (gameFilterIds.length === 0) {
+      query = query.in('bgg_game_id', [-1]); // Short-circuit to empty results
     } else {
-      query = query.in('bgg_game_id', playerCountGameIds);
+      query = query.in('bgg_game_id', gameFilterIds);
     }
   }
 

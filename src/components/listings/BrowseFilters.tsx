@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sliders } from '@phosphor-icons/react/ssr';
+import { MagnifyingGlass, Sliders } from '@phosphor-icons/react/ssr';
 import { Modal, Button, Input, Select } from '@/components/ui';
+import { FilterMultiSelect } from './FilterMultiSelect';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
@@ -11,9 +12,12 @@ import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
 import {
   type BrowseFilters as BrowseFiltersType,
   type SortOption,
+  type WeightLevel,
   filtersToSearchParams,
   countActiveFilters,
   DEFAULT_FILTERS,
+  WEIGHT_LEVELS,
+  WEIGHT_LEVEL_LABELS,
 } from '@/lib/listings/filters';
 
 interface BrowseFiltersProps {
@@ -55,10 +59,29 @@ const COUNTRY_FLAGS: Record<string, string> = {
   EE: '🇪🇪',
 };
 
+const INACTIVE_CHIP = 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default';
+const ACTIVE_WEIGHT_CHIP = 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice';
+
 function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [draft, setDraft] = useState<BrowseFiltersType>(currentFilters);
+
+  // Filter options from API (categories/mechanics)
+  const [filterOptions, setFilterOptions] = useState<{ categories: string[]; mechanics: string[] }>({
+    categories: [],
+    mechanics: [],
+  });
+  const filterOptionsFetched = useRef(false);
+
+  useEffect(() => {
+    if (filterOptionsFetched.current) return;
+    filterOptionsFetched.current = true;
+    fetch('/api/filters/options')
+      .then((r) => r.json())
+      .then((data) => setFilterOptions(data))
+      .catch(() => {});
+  }, []);
 
   const activeCount = countActiveFilters(currentFilters);
 
@@ -73,6 +96,16 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   const handleClearAll = useCallback(() => {
     router.push('/browse');
   }, [router]);
+
+  // --- Desktop search state ---
+  const [desktopSearch, setDesktopSearch] = useState(currentFilters.search);
+
+  const applyDesktopSearch = useCallback(() => {
+    const trimmed = desktopSearch.trim();
+    if (trimmed !== currentFilters.search) {
+      applyFilters({ ...currentFilters, search: trimmed });
+    }
+  }, [desktopSearch, currentFilters, applyFilters]);
 
   // --- Desktop inline handlers (apply immediately) ---
   const toggleCondition = useCallback(
@@ -91,6 +124,30 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
         ? currentFilters.countries.filter((c) => c !== country)
         : [...currentFilters.countries, country];
       applyFilters({ ...currentFilters, countries: next });
+    },
+    [currentFilters, applyFilters]
+  );
+
+  const toggleWeight = useCallback(
+    (level: WeightLevel) => {
+      const next = currentFilters.weightLevels.includes(level)
+        ? currentFilters.weightLevels.filter((w) => w !== level)
+        : [...currentFilters.weightLevels, level];
+      applyFilters({ ...currentFilters, weightLevels: next });
+    },
+    [currentFilters, applyFilters]
+  );
+
+  const handleCategoriesChange = useCallback(
+    (categories: string[]) => {
+      applyFilters({ ...currentFilters, categories });
+    },
+    [currentFilters, applyFilters]
+  );
+
+  const handleMechanicsChange = useCallback(
+    (mechanics: string[]) => {
+      applyFilters({ ...currentFilters, mechanics });
     },
     [currentFilters, applyFilters]
   );
@@ -118,6 +175,15 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
       countries: prev.countries.includes(country)
         ? prev.countries.filter((c) => c !== country)
         : [...prev.countries, country],
+    }));
+  };
+
+  const toggleDraftWeight = (level: WeightLevel) => {
+    setDraft((prev) => ({
+      ...prev,
+      weightLevels: prev.weightLevels.includes(level)
+        ? prev.weightLevels.filter((w) => w !== level)
+        : [...prev.weightLevels, level],
     }));
   };
 
@@ -164,7 +230,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
     }
   }, [desktopPriceMin, desktopPriceMax, desktopPlayers, currentFilters, applyFilters]);
 
-  // --- Shared chip renderer (condition and country chips are custom toggle UI, not action buttons) ---
+  // --- Shared chip renderers ---
   const renderConditionChips = (
     conditions: ListingCondition[],
     onToggle: (c: ListingCondition) => void
@@ -205,7 +271,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
               isActive
                 ? 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice'
-                : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
+                : INACTIVE_CHIP
             }`}
           >
             <span>{COUNTRY_FLAGS[country.code]}</span>
@@ -216,8 +282,53 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
     </div>
   );
 
+  const renderWeightChips = (
+    weightLevels: WeightLevel[],
+    onToggle: (w: WeightLevel) => void
+  ) => (
+    <div className="flex flex-wrap gap-1.5">
+      {WEIGHT_LEVELS.map((level) => {
+        const isActive = weightLevels.includes(level);
+        return (
+          <button
+            key={level}
+            type="button"
+            onClick={() => onToggle(level)}
+            className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
+              isActive ? ACTIVE_WEIGHT_CHIP : INACTIVE_CHIP
+            }`}
+          >
+            {WEIGHT_LEVEL_LABELS[level]}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
+      {/* Search bar (always visible on both mobile and desktop) */}
+      <div className="mb-4">
+        <div className="relative">
+          <MagnifyingGlass
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-semantic-text-muted pointer-events-none"
+          />
+          {/* Mobile: update draft search and apply on Enter */}
+          <input
+            type="text"
+            placeholder="Search by game name..."
+            defaultValue={currentFilters.search}
+            onChange={(e) => setDesktopSearch(e.target.value)}
+            onBlur={applyDesktopSearch}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') applyDesktopSearch();
+            }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-semantic-border-default bg-semantic-bg-elevated text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:border-semantic-border-focus text-sm"
+          />
+        </div>
+      </div>
+
       {/* Mobile: filter button + sort */}
       <div className="sm:hidden flex items-center gap-2 mb-4">
         <Button variant="secondary" onClick={openMobileFilters}>
@@ -255,6 +366,12 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
           <div>
             <p className="text-sm font-medium text-semantic-text-primary mb-2">Condition</p>
             {renderConditionChips(draft.conditions, toggleDraftCondition)}
+          </div>
+
+          {/* Weight */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Complexity</p>
+            {renderWeightChips(draft.weightLevels, toggleDraftWeight)}
           </div>
 
           {/* Price range */}
@@ -317,6 +434,38 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             {renderCountryChips(draft.countries, toggleDraftCountry)}
           </div>
 
+          {/* Categories */}
+          {filterOptions.categories.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-semantic-text-primary mb-2">
+                Categories{draft.categories.length > 0 && ` (${draft.categories.length})`}
+              </p>
+              <FilterMultiSelect
+                label="Categories"
+                options={filterOptions.categories}
+                selected={draft.categories}
+                onChange={(categories) => setDraft((prev) => ({ ...prev, categories }))}
+                inline
+              />
+            </div>
+          )}
+
+          {/* Mechanics */}
+          {filterOptions.mechanics.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-semantic-text-primary mb-2">
+                Mechanics{draft.mechanics.length > 0 && ` (${draft.mechanics.length})`}
+              </p>
+              <FilterMultiSelect
+                label="Mechanics"
+                options={filterOptions.mechanics}
+                selected={draft.mechanics}
+                onChange={(mechanics) => setDraft((prev) => ({ ...prev, mechanics }))}
+                inline
+              />
+            </div>
+          )}
+
           {/* Sort */}
           <div>
             <p className="text-sm font-medium text-semantic-text-primary mb-2">Sort by</p>
@@ -339,9 +488,12 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
 
       {/* Desktop: inline filter bar */}
       <div className="hidden sm:block mb-6">
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
           {/* Condition chips */}
           {renderConditionChips(currentFilters.conditions, toggleCondition)}
+
+          {/* Weight chips */}
+          {renderWeightChips(currentFilters.weightLevels, toggleWeight)}
 
           {/* Price range */}
           <div className="flex items-center gap-2">
@@ -391,6 +543,26 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
 
           {/* Country chips */}
           {renderCountryChips(currentFilters.countries, toggleCountry)}
+
+          {/* Categories dropdown */}
+          {filterOptions.categories.length > 0 && (
+            <FilterMultiSelect
+              label="Categories"
+              options={filterOptions.categories}
+              selected={currentFilters.categories}
+              onChange={handleCategoriesChange}
+            />
+          )}
+
+          {/* Mechanics dropdown */}
+          {filterOptions.mechanics.length > 0 && (
+            <FilterMultiSelect
+              label="Mechanics"
+              options={filterOptions.mechanics}
+              selected={currentFilters.mechanics}
+              onChange={handleMechanicsChange}
+            />
+          )}
 
           {/* Sort + clear */}
           <div className="flex items-center gap-2 ml-auto">

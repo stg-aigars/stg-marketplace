@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CaretDown, X, List } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 
 function SiteHeader() {
   const { user, profile, loading, signOut } = useAuth();
@@ -13,6 +14,7 @@ function SiteHeader() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+  const unreadCount = useUnreadCount();
 
   // Close menus on route change
   useEffect(() => {
@@ -150,10 +152,15 @@ function SiteHeader() {
                     <Link
                       href="/messages"
                       role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="flex items-center justify-between px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
                       onClick={() => setDropdownOpen(false)}
                     >
                       Messages
+                      {unreadCount > 0 && (
+                        <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-aurora-red text-white">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
                     </Link>
                     <Link
                       href="/account/settings"
@@ -246,10 +253,15 @@ function SiteHeader() {
                 </Link>
                 <Link
                   href="/messages"
-                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
+                  className="flex items-center py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
                   onClick={() => setMobileOpen(false)}
                 >
                   Messages
+                  {unreadCount > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-aurora-red text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   href="/account/settings"
