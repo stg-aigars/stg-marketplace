@@ -1,0 +1,66 @@
+import type { Metadata } from 'next';
+import { requireServerAuth } from '@/lib/auth/helpers';
+import { getWalletBalance } from '@/lib/services/wallet';
+import { getTerminals } from '@/lib/services/unisend/client';
+import type { TerminalCountry } from '@/lib/services/unisend/types';
+import { Breadcrumb } from '@/components/ui';
+import { CartCheckoutForm } from './CartCheckoutForm';
+
+export const metadata: Metadata = {
+  title: 'Cart Checkout',
+};
+
+export default async function CartCheckoutPage() {
+  const { user, profile } = await requireServerAuth();
+
+  if (!profile?.country) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <p className="text-semantic-text-secondary">
+          Please set your country in your <a href="/account/settings" className="underline">account settings</a> before checking out.
+        </p>
+      </div>
+    );
+  }
+
+  const buyerCountry = profile.country as TerminalCountry;
+
+  // Fetch terminals and wallet balance in parallel
+  let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
+  let terminalsFetchFailed = false;
+  let walletBalanceCents = 0;
+
+  const [terminalsResult, walletBalance] = await Promise.all([
+    getTerminals(buyerCountry).catch(() => {
+      terminalsFetchFailed = true;
+      return [];
+    }),
+    getWalletBalance(user.id),
+  ]);
+
+  terminals = terminalsResult;
+  walletBalanceCents = walletBalance;
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <Breadcrumb
+        items={[
+          { label: 'Cart', href: '/cart' },
+          { label: 'Checkout' },
+        ]}
+      />
+
+      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mt-4 mb-6">
+        Checkout
+      </h1>
+
+      <CartCheckoutForm
+        buyerCountry={buyerCountry}
+        buyerPhone={profile.phone ?? ''}
+        terminals={terminals}
+        terminalsFetchFailed={terminalsFetchFailed}
+        walletBalanceCents={walletBalanceCents}
+      />
+    </div>
+  );
+}

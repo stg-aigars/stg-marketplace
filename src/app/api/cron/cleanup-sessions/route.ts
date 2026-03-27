@@ -31,5 +31,29 @@ export async function POST(request: Request) {
     console.log(`[Cron] Expired ${count} orphan checkout sessions`);
   }
 
-  return NextResponse.json({ expired: count });
+  // Also expire old cart checkout groups
+  const { data: cartData, error: cartError } = await serviceClient
+    .from('cart_checkout_groups')
+    .update({ status: 'expired' })
+    .eq('status', 'pending')
+    .lt('created_at', cutoff)
+    .select('id, listing_ids, buyer_id');
+
+  let cartCount = 0;
+  if (cartError) {
+    console.error('[Cron] Failed to clean up cart groups:', cartError);
+  } else if (cartData && cartData.length > 0) {
+    cartCount = cartData.length;
+    console.log(`[Cron] Expired ${cartCount} orphan cart checkout groups`);
+
+    // Unreserve listings from expired cart groups
+    for (const group of cartData) {
+      await serviceClient.rpc('unreserve_listings', {
+        p_listing_ids: group.listing_ids,
+        p_buyer_id: group.buyer_id,
+      });
+    }
+  }
+
+  return NextResponse.json({ expired: count, cartExpired: cartCount });
 }

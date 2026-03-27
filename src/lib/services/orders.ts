@@ -77,6 +77,7 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
         terminal_name: params.terminalName,
         terminal_country: params.terminalCountry,
         buyer_phone: params.buyerPhone,
+        ...(params.cartGroupId ? { cart_group_id: params.cartGroupId } : {}),
       })
       .select()
       .single<OrderRow>();

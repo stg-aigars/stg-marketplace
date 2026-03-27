@@ -121,4 +121,5 @@ export interface CreateOrderParams {
   terminalCountry: string;
   buyerPhone: string;
   orderNumber?: string;
+  cartGroupId?: string;
 }

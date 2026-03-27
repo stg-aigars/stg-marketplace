@@ -17,6 +17,7 @@ import { getSellerRating } from '@/lib/reviews/service';
 import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
+import { AddToCartButton } from '@/components/listings/AddToCartButton';
 import { OwnerActions } from './OwnerActions';
 
 interface ListingDetailRow {
@@ -262,10 +263,21 @@ export default async function ListingDetailPage({
                 </Link>
               </div>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Link href={`/checkout/${listing.id}`}>
                   <Button>Buy now</Button>
                 </Link>
+                <AddToCartButton
+                  listing={{
+                    id: listing.id,
+                    gameTitle: listing.game_name,
+                    gameThumbnail: listing.games?.thumbnail ?? null,
+                    priceCents: listing.price_cents,
+                    sellerCountry: listing.country,
+                    sellerId: listing.seller_id,
+                    condition: listing.condition,
+                  }}
+                />
                 {user ? (
                   <Link href={`/messages?listing=${listing.id}`}>
                     <Button variant="secondary">Message seller</Button>
