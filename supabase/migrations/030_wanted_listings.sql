@@ -158,3 +158,7 @@ CREATE POLICY "Sellers can create wanted offers" ON wanted_offers
 
 ALTER TABLE listings
   ADD COLUMN wanted_offer_id UUID REFERENCES wanted_offers(id);
+
+CREATE INDEX idx_listings_wanted_offer
+  ON listings(wanted_offer_id)
+  WHERE wanted_offer_id IS NOT NULL;

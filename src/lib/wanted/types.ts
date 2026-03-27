@@ -29,7 +29,7 @@ export interface WantedListingWithGame extends WantedListingRow {
 }
 
 export interface WantedListingWithDetails extends WantedListingWithGame {
-  buyer_name: string | null;
+  buyer_name: string;
   offer_count: number;
 }
 
@@ -72,13 +72,20 @@ export interface WantedOfferWithDetails extends WantedOfferRow {
   game_name: string;
   game_year: number | null;
   thumbnail: string | null;
-  buyer_name: string | null;
-  seller_name: string | null;
+  buyer_name: string;
+  seller_name: string;
 }
 
 // Reuse shelf offer constants — same TTL and deadline rules
-export { OFFER_TTL_DAYS, LISTING_DEADLINE_DAYS, MIN_OFFER_CENTS, MAX_OFFER_CENTS } from '@/lib/shelves/types';
-export { OFFER_STATUS_LABELS, OFFER_STATUS_BADGE_VARIANT } from '@/lib/shelves/types';
+export {
+  OFFER_TTL_DAYS,
+  LISTING_DEADLINE_DAYS,
+  MIN_OFFER_CENTS,
+  MAX_OFFER_CENTS,
+  MAX_NOTE_LENGTH,
+  OFFER_STATUS_LABELS,
+  OFFER_STATUS_BADGE_VARIANT,
+} from '@/lib/shelves/types';
 
 /**
  * Condition ranking for threshold comparisons.
@@ -100,5 +107,3 @@ export function meetsConditionThreshold(
 ): boolean {
   return CONDITION_RANK[offered] >= CONDITION_RANK[minimum];
 }
-
-export const MAX_NOTE_LENGTH = 500;

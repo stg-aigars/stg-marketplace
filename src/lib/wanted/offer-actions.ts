@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { notify } from '@/lib/notifications';
+import { fetchProfiles } from '@/lib/supabase/helpers';
 import type { WantedOfferStatus, WantedOfferWithDetails } from './types';
 import {
   MIN_OFFER_CENTS,
@@ -13,24 +14,6 @@ import {
   OFFER_TTL_DAYS,
   meetsConditionThreshold,
 } from './types';
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-interface Profile { id: string; full_name: string; email: string }
-
-async function fetchProfiles(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: { from: (table: string) => any },
-  ids: string[]
-): Promise<Map<string, Profile>> {
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('id, full_name, email')
-    .in('id', ids);
-  return new Map((data as Profile[] ?? []).map((p: Profile) => [p.id, p]));
-}
 
 // ============================================================================
 // Make offer on wanted listing (seller)
@@ -273,18 +256,21 @@ export async function declineWantedOffer(
 
   const gameName = extractGameName(offer.wanted_listings);
 
-  // Notify the other party
+  // Notify the other party with real names
+  const profiles = await fetchProfiles(supabase, [user.id]);
+  const currentUser = profiles.get(user.id);
+
   if (isBuyer) {
     void notify(offer.seller_id, 'wanted.offer_declined', {
       gameName,
       offerId,
-      buyerName: 'Buyer',
+      buyerName: currentUser?.full_name ?? 'Buyer',
     });
   } else {
     void notify(offer.buyer_id, 'wanted.offer_declined', {
       gameName,
       offerId,
-      sellerName: 'Seller',
+      sellerName: currentUser?.full_name ?? 'Seller',
     });
   }
 
@@ -363,8 +349,8 @@ function mapWantedOfferRow(row: any): WantedOfferWithDetails {
     game_name: wanted.game_name ?? '',
     game_year: wanted.game_year ?? null,
     thumbnail: game.thumbnail ?? null,
-    buyer_name: row.buyer?.full_name ?? null,
-    seller_name: row.seller?.full_name ?? null,
+    buyer_name: row.buyer?.full_name ?? '',
+    seller_name: row.seller?.full_name ?? '',
   };
 }
 

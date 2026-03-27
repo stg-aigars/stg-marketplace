@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import type { WantedListingWithGame, WantedListingWithDetails } from './types';
-import { MAX_NOTE_LENGTH } from './types';
+import { MAX_NOTE_LENGTH, CONDITION_RANK } from './types';
+import { declineActiveWantedOffers } from './offer-actions';
 
 // ============================================================================
 // Create wanted listing
@@ -90,6 +91,30 @@ export async function updateWantedListing(
     return { error: `Notes must be ${MAX_NOTE_LENGTH} characters or fewer` };
   }
 
+  // If tightening condition, check for active offers that would no longer qualify
+  const { data: current } = await supabase
+    .from('wanted_listings')
+    .select('min_condition')
+    .eq('id', id)
+    .eq('buyer_id', user.id)
+    .eq('status', 'active')
+    .single();
+
+  if (!current) return { error: 'Wanted listing not found' };
+
+  if (CONDITION_RANK[minCondition] > CONDITION_RANK[current.min_condition as ListingCondition]) {
+    // Tightening — check if any active offers would be invalidated
+    const { count } = await supabase
+      .from('wanted_offers')
+      .select('id', { count: 'exact', head: true })
+      .eq('wanted_listing_id', id)
+      .in('status', ['pending', 'countered', 'accepted']);
+
+    if ((count ?? 0) > 0) {
+      return { error: 'Cannot tighten condition while active offers exist. Decline or wait for offers to expire first.' };
+    }
+  }
+
   const { error } = await supabase
     .from('wanted_listings')
     .update({
@@ -131,14 +156,10 @@ export async function cancelWantedListing(
   if (listing.buyer_id !== user.id) return { error: 'You can only cancel your own wanted listings' };
   if (listing.status !== 'active') return { error: 'Can only cancel active wanted listings' };
 
-  const service = createServiceClient();
-
   // Decline all active offers on this wanted listing
-  await service
-    .from('wanted_offers')
-    .update({ status: 'declined' })
-    .eq('wanted_listing_id', id)
-    .in('status', ['pending', 'countered']);
+  await declineActiveWantedOffers(id);
+
+  const service = createServiceClient();
 
   // Cancel the wanted listing
   const { error } = await service
@@ -218,7 +239,7 @@ export async function getWantedListingById(
     ...listing,
     thumbnail: games?.thumbnail ?? null,
     image: games?.image ?? null,
-    buyer_name: buyer?.full_name ?? null,
+    buyer_name: buyer?.full_name ?? '',
     offer_count: count ?? 0,
   } as WantedListingWithDetails;
 }
