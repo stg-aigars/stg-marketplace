@@ -12,6 +12,7 @@ import {
   sendOfferDeclinedToBuyer,
   sendOfferSupersededToBuyer,
 } from '@/lib/email';
+import { notify } from '@/lib/notifications';
 
 // ============================================================================
 // Helpers
@@ -114,6 +115,12 @@ export async function makeOffer(
     }).catch(() => {});
   }
 
+  void notify(shelfItem.seller_id, 'offer.received', {
+    gameName: shelfItem.game_name,
+    offerId: data.id,
+    buyerName: buyer?.full_name ?? 'Buyer',
+  });
+
   revalidatePath('/account/offers');
   return { id: data.id };
 }
@@ -183,6 +190,12 @@ export async function counterOffer(
     }).catch(() => {});
   }
 
+  void notify(offer.buyer_id, 'offer.countered', {
+    gameName: extractGameName(offer.shelf_items),
+    offerId,
+    sellerName: seller?.full_name ?? 'Seller',
+  });
+
   revalidatePath('/account/offers');
   return { success: true };
 }
@@ -249,6 +262,15 @@ export async function acceptOffer(
     }).catch(() => {});
   }
 
+  void notify(offer.buyer_id, 'offer.accepted', {
+    gameName: extractGameName(offer.shelf_items),
+    offerId,
+  });
+  void notify(offer.seller_id, 'offer.accepted', {
+    gameName: extractGameName(offer.shelf_items),
+    offerId,
+  });
+
   revalidatePath('/account/offers');
   return { success: true };
 }
@@ -311,6 +333,12 @@ export async function declineOffer(
         gameName: extractGameName(offer.shelf_items),
       }).catch(() => {});
     }
+
+    void notify(offer.buyer_id, 'offer.declined', {
+      gameName: extractGameName(offer.shelf_items),
+      offerId,
+      sellerName: seller?.full_name ?? 'Seller',
+    });
   }
 
   revalidatePath('/account/offers');
@@ -443,6 +471,11 @@ export async function declineActiveOffersOnShelfItem(
         listingId,
       }).catch(() => {});
     }
+    void notify(buyer.id, 'offer.superseded', {
+      gameName,
+      listingId,
+      sellerName,
+    });
   });
 }
 

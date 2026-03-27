@@ -16,6 +16,7 @@ import {
   sendOfferExpiredToBuyer,
   sendOfferDeadlineExpiredToBuyer,
 } from '@/lib/email';
+import { notify } from '@/lib/notifications';
 
 const BATCH_LIMIT = 100;
 
@@ -74,6 +75,12 @@ export async function POST(request: Request) {
             gameName: shelfItem.game_name,
           }).catch((err) => console.error('[Cron] Failed to email expired offer:', err));
         }
+
+        if (shelfItem?.game_name) {
+          void notify(offer.buyer_id, 'offer.expired', {
+            gameName: shelfItem.game_name,
+          });
+        }
       }
     }
   }
@@ -126,6 +133,13 @@ export async function POST(request: Request) {
             sellerName: seller.full_name,
             gameName: shelfItem.game_name,
           }).catch((err) => console.error('[Cron] Failed to email deadline offer:', err));
+        }
+
+        if (shelfItem?.game_name) {
+          void notify(offer.buyer_id, 'offer.deadline_expired', {
+            gameName: shelfItem.game_name,
+            sellerName: (offer.seller as unknown as { full_name: string } | null)?.full_name ?? 'Seller',
+          });
         }
       }
     }

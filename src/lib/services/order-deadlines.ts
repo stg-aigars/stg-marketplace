@@ -25,6 +25,7 @@ import {
   sendDeliveryReminderToBuyer,
   sendDisputeEscalated,
 } from '@/lib/email';
+import { notify, notifyMany } from '@/lib/notifications';
 import type { PaymentMethod } from '@/lib/orders/types';
 
 const BATCH_LIMIT = 50;
@@ -271,6 +272,11 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         });
       }
 
+      void notifyMany([
+        { userId: order.buyer_id, type: 'order.auto_cancelled', context: { gameName: order.game_name, orderNumber: order.order_number, orderId: order.id, reason } },
+        { userId: order.seller_id, type: 'order.auto_cancelled', context: { gameName: order.game_name, orderNumber: order.order_number, orderId: order.id, reason } },
+      ]);
+
       result[counterKey]++;
     } catch (err) {
       const msg = `Failed to auto-cancel order ${order.id}: ${err instanceof Error ? err.message : 'unknown'}`;
@@ -329,6 +335,22 @@ async function sendReminders(params: SendReminderParams): Promise<void> {
         buyer: order.buyer_profile,
         seller: order.seller_profile,
       });
+
+      // In-app notification for reminders
+      const reminderTypeMap: Record<string, 'order.reminder.response' | 'order.reminder.shipping' | 'order.reminder.delivery'> = {
+        pendingSellerReminders: 'order.reminder.response',
+        shippingReminders: 'order.reminder.shipping',
+        deliveryReminders: 'order.reminder.delivery',
+      };
+      const reminderType = reminderTypeMap[counterKey];
+      if (reminderType) {
+        const targetUserId = counterKey === 'deliveryReminders' ? order.buyer_id : order.seller_id;
+        void notify(targetUserId, reminderType, {
+          gameName: order.game_name,
+          orderNumber: order.order_number,
+          orderId: order.id,
+        });
+      }
 
       result[counterKey]++;
     } catch (err) {
@@ -411,6 +433,11 @@ async function escalateStaleShippedOrders(
         orderId: order.id,
         gameName: order.game_name,
       }).catch((err) => console.error('[Deadlines] Failed to send escalation email:', err));
+
+      void notifyMany([
+        { userId: order.buyer_id, type: 'order.escalated', context: { gameName: order.game_name, orderNumber: order.order_number, orderId: order.id } },
+        { userId: order.seller_id, type: 'order.escalated', context: { gameName: order.game_name, orderNumber: order.order_number, orderId: order.id } },
+      ]);
 
       result.deliveryEscalations++;
     } catch (err) {

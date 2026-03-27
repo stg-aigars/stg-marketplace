@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer } from '@/lib/email';
+import { notify } from '@/lib/notifications';
 import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
 import {
@@ -233,6 +234,11 @@ async function linkOfferToListing(
         listingId,
       }).catch((err) => console.error('[Offer] Failed to email buyer:', err));
     }
+
+    void notify(offer.buyer_id, 'offer.listing_created', {
+      gameName: shelfItem?.game_name ?? '',
+      listingId,
+    });
   } catch (err) {
     console.error('[Offer] linkOfferToListing failed:', err);
   }
@@ -456,6 +462,12 @@ async function autoLinkListingToShelf(
           listingId,
         }).catch((err) => console.error('[Shelf] Failed to email superseded offer:', err));
       }
+
+      void notify(offer.buyer_id, 'offer.superseded', {
+        gameName: shelfItem.game_name,
+        listingId,
+        sellerName: seller?.full_name ?? 'Seller',
+      });
     }
   } catch (err) {
     console.error('[Shelf] autoLinkListingToShelf failed:', err);

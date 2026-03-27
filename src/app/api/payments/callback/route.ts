@@ -25,6 +25,7 @@ import type { CheckoutSession } from '@/lib/checkout/types';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
+import { notify } from '@/lib/notifications';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function attemptAutoRefund(
@@ -320,12 +321,26 @@ export async function GET(request: Request) {
         buyerName: buyerProfile.full_name ?? 'Buyer',
       }).catch((err) => console.error('[Email] Failed to notify seller:', err));
 
+      void notify(listing.seller_id, 'order.created', {
+        gameName: emailData.gameName,
+        orderNumber: emailData.orderNumber,
+        orderId: emailData.orderId,
+        buyerName: buyerProfile.full_name ?? 'Buyer',
+      });
+
       sendOrderConfirmationToBuyer({
         ...emailData,
         buyerName: buyerProfile.full_name ?? 'Buyer',
         buyerEmail: buyerProfile.email,
         sellerName: sellerProfile.full_name ?? 'Seller',
       }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
+
+      void notify(session.buyer_id, 'order.created', {
+        gameName: emailData.gameName,
+        orderNumber: emailData.orderNumber,
+        orderId: emailData.orderId,
+        sellerName: sellerProfile.full_name ?? 'Seller',
+      });
     })().catch((err) => console.error('[Email] Background email failed:', err));
 
     void logAuditEvent({
@@ -573,6 +588,20 @@ async function handleCartGroupCallback(
     })),
     group.buyer_id
   );
+
+  // In-app notifications for cart orders
+  for (const { id, order_number, listing } of createdOrders) {
+    void notify(listing.seller_id, 'order.created', {
+      gameName: listing.game_name ?? 'Game',
+      orderNumber: order_number,
+      orderId: id,
+    });
+    void notify(group.buyer_id, 'order.created', {
+      gameName: listing.game_name ?? 'Game',
+      orderNumber: order_number,
+      orderId: id,
+    });
+  }
 
   void logAuditEvent({
     actorId: group.buyer_id,

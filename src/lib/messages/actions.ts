@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { MAX_MESSAGE_LENGTH, type Conversation, type Message } from './types';
 import { sendNewMessageNotification } from '@/lib/email';
+import { notify } from '@/lib/notifications';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 
 /**
@@ -445,6 +446,12 @@ async function notifyRecipient(
       senderName: sender?.full_name ?? 'Someone',
       gameTitle,
       messagePreview: messageContent.slice(0, 200),
+      conversationId,
+    });
+
+    void notify(recipientId, 'message.received', {
+      senderName: sender?.full_name ?? 'Someone',
+      gameName: gameTitle,
       conversationId,
     });
   } catch (err) {

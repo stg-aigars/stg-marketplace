@@ -200,6 +200,7 @@ Existing cron routes:
 | `/api/cron/auto-complete` | Every 6 hours | Auto-complete delivered orders past 2-day dispute window |
 | `/api/cron/expire-offers` | Every 6 hours | Expire unanswered offers (7-day TTL) + revert accepted offers past 3-day listing deadline |
 | `/api/cron/enforce-deadlines` | Every 2 hours | Auto-decline/cancel orders past deadlines (48h response, 5d shipping), send reminders, escalate stale shipments (21d) |
+| `/api/cron/cleanup-notifications` | Weekly | Delete in-app notifications older than 90 days |
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main
