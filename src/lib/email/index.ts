@@ -28,6 +28,10 @@ import { OfferExpired } from './templates/offer-expired';
 import { OfferDeadlineExpired } from './templates/offer-deadline-expired';
 import { OfferSuperseded } from './templates/offer-superseded';
 import { OfferListingCreated } from './templates/offer-listing-created';
+import { SellerResponseReminder } from './templates/seller-response-reminder';
+import { OrderAutoCancelled } from './templates/order-auto-cancelled';
+import { ShippingReminderSeller } from './templates/shipping-reminder-seller';
+import { DeliveryReminderBuyer } from './templates/delivery-reminder-buyer';
 import { env } from '@/lib/env';
 
 /**
@@ -654,5 +658,91 @@ export async function sendOfferListingCreatedToBuyer(params: {
       gameName: params.gameName,
       listingUrl: `${env.app.url}/listings/${params.listingId}`,
     }),
+  });
+}
+
+// --- Deadline enforcement emails ---
+
+export async function sendSellerResponseReminder(params: {
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  buyerName: string;
+  hoursRemaining: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Reminder: Respond to order for ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(SellerResponseReminder, { ...params, appUrl: env.app.url }),
+  });
+}
+
+export async function sendOrderAutoCancelledToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  reason: 'response_timeout' | 'shipping_timeout';
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Order cancelled: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderAutoCancelled, {
+      recipientName: params.buyerName, orderNumber: params.orderNumber,
+      orderId: params.orderId, gameName: params.gameName,
+      reason: params.reason, variant: 'buyer', appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendOrderAutoCancelledToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  reason: 'response_timeout' | 'shipping_timeout';
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Order cancelled: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderAutoCancelled, {
+      recipientName: params.sellerName, orderNumber: params.orderNumber,
+      orderId: params.orderId, gameName: params.gameName,
+      reason: params.reason, variant: 'seller', appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendShippingReminderToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  daysRemaining: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Reminder: Ship order for ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(ShippingReminderSeller, { ...params, appUrl: env.app.url }),
+  });
+}
+
+export async function sendDeliveryReminderToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  daysSinceShipped: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Have you picked up your parcel? — ${params.orderNumber}`,
+    react: React.createElement(DeliveryReminderBuyer, { ...params, appUrl: env.app.url }),
   });
 }

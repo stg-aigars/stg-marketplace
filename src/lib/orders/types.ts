@@ -58,6 +58,7 @@ export interface OrderRow {
   disputed_at: string | null;
   refunded_at: string | null;
   cart_group_id: string | null;
+  deadline_reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
