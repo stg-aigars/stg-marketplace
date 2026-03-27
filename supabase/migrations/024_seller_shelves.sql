@@ -1,4 +1,5 @@
--- Seller Shelves: shelf_items, offers, and bgg_username on user_profiles
+-- Seller Shelves: creates `shelf_items` and `offers` tables, adds bgg_username to user_profiles
+-- NOTE: The main table is `shelf_items` (not `seller_shelves`) — file name is misleading
 -- Sellers showcase their game collection publicly. Each game can be
 -- "not for sale," "open to offers," or "listed" (linked to an active listing).
 -- Buyers make structured price offers on unlisted games.
