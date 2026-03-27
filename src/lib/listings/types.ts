@@ -1,6 +1,8 @@
 export type ListingCondition = 'like_new' | 'very_good' | 'good' | 'acceptable' | 'for_parts';
 
-export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved';
+export type ListingType = 'fixed_price' | 'auction';
+
+export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved' | 'auction_ended';
 
 export type VersionSource = 'bgg' | 'manual';
 
