@@ -68,7 +68,7 @@ export default async function FromWantedOfferPage({ params }: Props) {
       </h1>
 
       <Alert variant="info" className="mb-6">
-        The buyer accepted your offer of{' '}
+        You have an agreed offer of{' '}
         <strong>{formatCentsToCurrency(agreedPrice)}</strong> for{' '}
         <strong>{wantedListing.game_name}</strong>. The game and price are locked.
         Add photos, select condition and edition, then publish.

@@ -803,33 +803,32 @@ export async function sendWantedOfferAccepted(params: {
   agreedPriceCents: number;
   offerId: string;
 }): Promise<void> {
-  // Email seller
-  await sendEmail({
-    to: params.sellerEmail,
-    subject: `Offer accepted — create a listing for ${params.gameName}`,
-    react: React.createElement(WantedOfferAccepted, {
-      recipientName: params.sellerName,
-      otherPartyName: params.buyerName,
-      gameName: params.gameName,
-      agreedPriceCents: params.agreedPriceCents,
-      isSeller: true,
-      actionUrl: `${env.app.url}/sell/from-wanted-offer/${params.offerId}`,
+  await Promise.all([
+    sendEmail({
+      to: params.sellerEmail,
+      subject: `Offer accepted — create a listing for ${params.gameName}`,
+      react: React.createElement(WantedOfferAccepted, {
+        recipientName: params.sellerName,
+        otherPartyName: params.buyerName,
+        gameName: params.gameName,
+        agreedPriceCents: params.agreedPriceCents,
+        isSeller: true,
+        actionUrl: `${env.app.url}/sell/from-wanted-offer/${params.offerId}`,
+      }),
     }),
-  });
-
-  // Email buyer
-  await sendEmail({
-    to: params.buyerEmail,
-    subject: `Your wanted offer for ${params.gameName} was accepted`,
-    react: React.createElement(WantedOfferAccepted, {
-      recipientName: params.buyerName,
-      otherPartyName: params.sellerName,
-      gameName: params.gameName,
-      agreedPriceCents: params.agreedPriceCents,
-      isSeller: false,
-      actionUrl: `${env.app.url}/account/wanted`,
+    sendEmail({
+      to: params.buyerEmail,
+      subject: `Your wanted offer for ${params.gameName} was accepted`,
+      react: React.createElement(WantedOfferAccepted, {
+        recipientName: params.buyerName,
+        otherPartyName: params.sellerName,
+        gameName: params.gameName,
+        agreedPriceCents: params.agreedPriceCents,
+        isSeller: false,
+        actionUrl: `${env.app.url}/account/wanted`,
+      }),
     }),
-  });
+  ]);
 }
 
 export async function sendWantedOfferDeclined(params: {

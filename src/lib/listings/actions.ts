@@ -6,9 +6,12 @@ import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer, sendWantedListingCreatedToBuyer } from '@/lib/email';
+import { fetchProfiles } from '@/lib/supabase/helpers';
 import { notify } from '@/lib/notifications';
 import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import {
   LISTING_CONDITIONS,
   MIN_PRICE_CENTS,
@@ -152,13 +155,13 @@ export async function createListing(
 
   // If created from an accepted offer, link shelf item and complete the offer
   if (data.offer_id) {
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (UUID_RE.test(data.offer_id)) {
       await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id, data.price_cents);
     }
   } else if (data.wanted_offer_id) {
     // Created from an accepted wanted offer: complete the offer + fill the wanted listing
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (UUID_RE.test(data.wanted_offer_id)) {
       await linkWantedOfferToListing(data.wanted_offer_id, listing.id, user.id);
     }
@@ -493,57 +496,33 @@ async function linkWantedOfferToListing(wantedOfferId: string, listingId: string
   try {
     const service = createServiceClient();
 
-    // Fetch the wanted offer + wanted listing details
+    // Fetch the wanted offer — verify seller ownership
     const { data: offer } = await service
       .from('wanted_offers')
       .select('id, wanted_listing_id, buyer_id, wanted_listings:wanted_listing_id (game_name)')
       .eq('id', wantedOfferId)
+      .eq('seller_id', sellerId)
       .eq('status', 'accepted')
       .single();
 
     if (!offer) return;
 
-    // Link listing to wanted offer
-    await service
-      .from('listings')
-      .update({ wanted_offer_id: wantedOfferId })
-      .eq('id', listingId);
+    // Run all updates in parallel — no data dependencies between them
+    await Promise.all([
+      service.from('listings').update({ wanted_offer_id: wantedOfferId }).eq('id', listingId),
+      service.from('wanted_offers').update({ status: 'completed' }).eq('id', wantedOfferId),
+      service.from('wanted_listings').update({ status: 'filled' }).eq('id', offer.wanted_listing_id),
+      service.from('wanted_offers').update({ status: 'declined' })
+        .eq('wanted_listing_id', offer.wanted_listing_id)
+        .neq('id', wantedOfferId)
+        .in('status', ['pending', 'countered']),
+    ]);
 
-    // Complete the offer
-    await service
-      .from('wanted_offers')
-      .update({ status: 'completed' })
-      .eq('id', wantedOfferId);
-
-    // Fill the wanted listing
-    await service
-      .from('wanted_listings')
-      .update({ status: 'filled' })
-      .eq('id', offer.wanted_listing_id);
-
-    // Decline other active offers on the same wanted listing
-    await service
-      .from('wanted_offers')
-      .update({ status: 'declined' })
-      .eq('wanted_listing_id', offer.wanted_listing_id)
-      .neq('id', wantedOfferId)
-      .in('status', ['pending', 'countered']);
-
-    // Notify + email buyer
+    // Fetch profiles for email (single batch query)
+    const profiles = await fetchProfiles(service, [sellerId, offer.buyer_id]);
+    const sellerProfile = profiles.get(sellerId);
+    const buyerProfile = profiles.get(offer.buyer_id);
     const gameName = (offer.wanted_listings as unknown as { game_name: string } | null)?.game_name ?? 'a game';
-
-    // Fetch profiles for email
-    const { data: sellerProfile } = await service
-      .from('user_profiles')
-      .select('full_name')
-      .eq('id', sellerId)
-      .single();
-
-    const { data: buyerProfile } = await service
-      .from('user_profiles')
-      .select('full_name, email')
-      .eq('id', offer.buyer_id)
-      .single();
 
     if (buyerProfile?.email && sellerProfile?.full_name) {
       sendWantedListingCreatedToBuyer({

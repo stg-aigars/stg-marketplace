@@ -247,7 +247,7 @@ export async function POST(request: Request) {
         const seller = offer.seller as unknown as { full_name: string } | null;
 
         if (wantedListing?.game_name) {
-          void notify(offer.buyer_id, 'wanted.offer_declined', {
+          void notify(offer.buyer_id, 'wanted.offer_expired', {
             gameName: wantedListing.game_name,
             sellerName: seller?.full_name ?? 'Seller',
           });

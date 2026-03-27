@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { ImageSquare, ArrowLeft } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardBody, Badge, ShareButtons } from '@/components/ui';
@@ -36,13 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function WantedDetailPage({ params }: Props) {
   const listing = await getWantedListingById(params.id);
 
-  if (!listing) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <p className="text-semantic-text-muted">Wanted listing not found.</p>
-      </div>
-    );
-  }
+  if (!listing) notFound();
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
