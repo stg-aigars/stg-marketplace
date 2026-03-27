@@ -57,6 +57,7 @@ export interface OrderRow {
   cancelled_at: string | null;
   disputed_at: string | null;
   refunded_at: string | null;
+  cart_group_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,4 +122,5 @@ export interface CreateOrderParams {
   terminalCountry: string;
   buyerPhone: string;
   orderNumber?: string;
+  cartGroupId?: string;
 }

@@ -3,9 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CaretDown, X, List } from '@phosphor-icons/react/ssr';
+import { CaretDown, X, List, ShoppingCart } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
+
+function CountBadge({ count, className }: { count: number; className?: string }) {
+  if (count <= 0) return null;
+  return (
+    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-aurora-red text-white ${className ?? ''}`}>
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 function SiteHeader() {
   const { user, profile, loading, signOut } = useAuth();
@@ -15,6 +25,7 @@ function SiteHeader() {
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const unreadCount = useUnreadCount();
+  const { count: cartCount } = useCart();
 
   // Close menus on route change
   useEffect(() => {
@@ -93,6 +104,16 @@ function SiteHeader() {
           <nav className="hidden sm:flex items-center gap-6">
             {navLinks}
 
+            {/* Cart */}
+            <Link
+              href="/cart"
+              className="relative text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors"
+              aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
+            >
+              <ShoppingCart size={22} />
+              <CountBadge count={cartCount} className="absolute -top-1.5 -right-2" />
+            </Link>
+
             {/* Auth */}
             {loading ? (
               <div className="w-20 h-8 rounded-md bg-snow-storm-light animate-pulse" />
@@ -156,11 +177,7 @@ function SiteHeader() {
                       onClick={() => setDropdownOpen(false)}
                     >
                       Messages
-                      {unreadCount > 0 && (
-                        <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-aurora-red text-white">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
+                      <CountBadge count={unreadCount} className="ml-2" />
                     </Link>
                     <Link
                       href="/account/settings"
@@ -183,12 +200,21 @@ function SiteHeader() {
             )}
           </nav>
 
-          {/* Mobile hamburger */}
+          {/* Mobile: cart + hamburger */}
+          <div className="sm:hidden flex items-center gap-1">
+            <Link
+              href="/cart"
+              className="relative min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary"
+              aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
+            >
+              <ShoppingCart size={22} />
+              <CountBadge count={cartCount} className="absolute top-1 right-0.5" />
+            </Link>
           <button
             onClick={() => setMobileOpen((prev) => !prev)}
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            className="sm:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary"
           >
             {mobileOpen ? (
               <X size={24} />
@@ -196,6 +222,7 @@ function SiteHeader() {
               <List size={24} />
             )}
           </button>
+          </div>
         </div>
       </div>
 
@@ -257,11 +284,7 @@ function SiteHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   Messages
-                  {unreadCount > 0 && (
-                    <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-aurora-red text-white">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
+                  <CountBadge count={unreadCount} className="ml-2" />
                 </Link>
                 <Link
                   href="/account/settings"

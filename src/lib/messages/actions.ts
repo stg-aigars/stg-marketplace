@@ -382,17 +382,14 @@ export async function getUnreadMessageCount(): Promise<number> {
 
   if (!user) return 0;
 
-  const { data: convIds } = await supabase
-    .from('conversations')
-    .select('id')
-    .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
-
-  if (!convIds || convIds.length === 0) return 0;
-
+  // Single query: count unread messages in conversations where user is a participant
   const { count } = await supabase
     .from('messages')
-    .select('id', { count: 'exact', head: true })
-    .in('conversation_id', convIds.map((c) => c.id))
+    .select(
+      'id, conversations!inner(id)',
+      { count: 'exact', head: true }
+    )
+    .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`, { referencedTable: 'conversations' })
     .neq('sender_id', user.id)
     .is('read_at', null);
 

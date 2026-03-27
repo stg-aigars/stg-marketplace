@@ -8,7 +8,7 @@ import { getWalletBalance } from '@/lib/services/wallet';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
-import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import { getTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
 import { CheckoutForm } from './CheckoutForm';
@@ -132,7 +132,7 @@ export default async function CheckoutPage({
 
   // Fetch wallet balance and terminals in parallel (independent operations)
   let terminalsFetchFailed = false;
-  let terminals: { id: string; name: string; city: string; address: string; countryCode: string }[] = [];
+  let terminals: TerminalOption[] = [];
   const [walletBalanceCents, terminalsResult] = await Promise.all([
     getWalletBalance(user.id),
     getTerminals(buyerCountry).catch((error) => {

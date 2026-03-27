@@ -22,7 +22,10 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { env } from '@/lib/env';
 import type { CheckoutSession } from '@/lib/checkout/types';
+import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
+import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function attemptAutoRefund(
   paymentReference: string,
@@ -97,6 +100,22 @@ export async function GET(request: Request) {
   }
 
   if (!session) {
+    // Check if this is a cart checkout group
+    const { data: cartGroup } = await serviceClient
+      .from('cart_checkout_groups')
+      .select('*')
+      .eq('order_number', orderReference)
+      .single();
+
+    if (cartGroup) {
+      return handleCartGroupCallback(
+        cartGroup,
+        paymentReference,
+        callbackToken,
+        serviceClient
+      );
+    }
+
     console.error('[Payments] Checkout session not found:', orderReference);
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
@@ -333,4 +352,241 @@ export async function GET(request: Request) {
       `${env.app.url}/checkout/${session.listing_id}?error=order_creation_failed`
     );
   }
+}
+
+/**
+ * Handle a cart checkout group callback.
+ * Creates one order per listing, with partial fulfillment if some items are unavailable.
+ */
+async function handleCartGroupCallback(
+  group: CartCheckoutGroup,
+  paymentReference: string,
+  callbackToken: string | null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  serviceClient: SupabaseClient<any, any, any>
+) {
+  // Idempotency: check if orders already exist for this group
+  const { data: existingOrders } = await serviceClient
+    .from('orders')
+    .select('id')
+    .eq('cart_group_id', group.id);
+
+  if (existingOrders && existingOrders.length > 0) {
+    return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
+  }
+
+  // Validate callback token
+  if (group.callback_token !== callbackToken) {
+    console.error('[Payments] Invalid callback token for cart group:', group.id);
+    return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
+  }
+
+  if (group.status === 'completed') {
+    return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
+  }
+
+  // Verify payment with EveryPay
+  let paymentStatus;
+  try {
+    paymentStatus = await getPaymentStatus(paymentReference);
+  } catch (error) {
+    console.error('[Payments] Cart: Failed to verify payment:', error);
+    return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
+  }
+
+  const walletDebit = group.wallet_debit_cents ?? 0;
+  const expectedEverypayAmountCents = group.total_amount_cents - walletDebit;
+
+  if (!SUCCESSFUL_STATES.has(paymentStatus.payment_state)) {
+    if (group.status === 'pending') {
+      const SESSION_TTL_MS = 30 * 60 * 1000;
+      const sessionAge = Date.now() - new Date(group.created_at).getTime();
+      if (sessionAge > SESSION_TTL_MS) {
+        await serviceClient
+          .from('cart_checkout_groups')
+          .update({ status: 'expired' })
+          .eq('id', group.id)
+          .eq('status', 'pending');
+      }
+    }
+    return NextResponse.redirect(`${env.app.url}/cart?error=payment_failed`);
+  }
+
+  // Verify amount
+  const expectedAmount = (expectedEverypayAmountCents / 100).toFixed(2);
+  if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
+    console.error(`[Payments] Cart amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'cart amount mismatch');
+    return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
+  }
+
+  // Fetch all listings in the group
+  const { data: listings } = await serviceClient
+    .from('listings')
+    .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
+    .in('id', group.listing_ids);
+
+  if (!listings) {
+    console.error('[Payments] Cart: Failed to fetch listings');
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'failed to fetch listings');
+    return NextResponse.redirect(`${env.app.url}/cart?error=order_creation_failed`);
+  }
+
+  // Split into available and unavailable
+  const available = listings.filter(
+    (l) => l.status === 'reserved' && l.reserved_by === group.buyer_id
+  );
+  const unavailable = listings.filter(
+    (l) => !(l.status === 'reserved' && l.reserved_by === group.buyer_id)
+  );
+
+  if (available.length === 0) {
+    // All items unavailable — full refund
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');
+    await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
+    return NextResponse.redirect(`${env.app.url}/cart?error=listing_unavailable`);
+  }
+
+  // Calculate refund for unavailable items (partial fulfillment)
+  // Only refund shipping when ALL items from a seller are unavailable
+  const walletAllocation = (group.wallet_allocation ?? {}) as Record<string, number>;
+  let refundCardCents = 0;
+  let refundWalletCents = 0;
+
+  const availableSellerIds = new Set(available.map((l) => l.seller_id));
+
+  for (const listing of unavailable) {
+    const walletForItem = walletAllocation[listing.id] ?? 0;
+    // Only include shipping if no available items remain from this seller
+    const sellerFullyUnavailable = !availableSellerIds.has(listing.seller_id);
+    const shippingRefund = sellerFullyUnavailable
+      ? (getShippingPriceCents(listing.country as TerminalCountry, group.terminal_country as TerminalCountry) ?? 0)
+      : 0;
+    const itemTotalForRefund = listing.price_cents + shippingRefund;
+    refundWalletCents += walletForItem;
+    refundCardCents += itemTotalForRefund - walletForItem;
+  }
+
+  // Process partial refund if needed
+  if (refundCardCents > 0) {
+    await attemptAutoRefund(paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`);
+  }
+
+  // Create orders for available items
+  const createdOrders: { id: string; order_number: string; listing: typeof available[0]; shippingCents: number; walletDebitCents: number }[] = [];
+  const firstForSeller = new Set<string>();
+
+  try {
+    for (const listing of available) {
+      const isFirstForSeller = !firstForSeller.has(listing.seller_id);
+      firstForSeller.add(listing.seller_id);
+
+      const sellerCountry = listing.country as TerminalCountry;
+      const buyerCountry = group.terminal_country as TerminalCountry;
+      const shippingCents = isFirstForSeller
+        ? (getShippingPriceCents(sellerCountry, buyerCountry) ?? 0)
+        : 0;
+
+      const orderWalletDebit = walletAllocation[listing.id] ?? 0;
+
+      const order = await createOrder({
+        buyerId: group.buyer_id,
+        sellerId: listing.seller_id,
+        listingId: listing.id,
+        itemsTotalCents: listing.price_cents,
+        shippingCostCents: shippingCents,
+        sellerCountry: listing.country,
+        paymentReference,
+        paymentState: paymentStatus.payment_state,
+        paymentMethod: 'card',
+        walletDebitCents: orderWalletDebit,
+        terminalId: group.terminal_id,
+        terminalName: group.terminal_name,
+        terminalCountry: group.terminal_country,
+        buyerPhone: group.buyer_phone,
+        cartGroupId: group.id,
+      });
+
+      // Debit wallet for this order
+      if (orderWalletDebit > 0) {
+        try {
+          await debitWallet(
+            group.buyer_id,
+            orderWalletDebit,
+            order.id,
+            `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
+          );
+        } catch (walletError) {
+          console.error(`[Payments] Cart: Wallet debit failed for order ${order.id}:`, walletError);
+          await serviceClient
+            .from('orders')
+            .update({ buyer_wallet_debit_cents: 0 })
+            .eq('id', order.id);
+        }
+      }
+
+      createdOrders.push({
+        id: order.id,
+        order_number: order.order_number,
+        listing,
+        shippingCents,
+        walletDebitCents: orderWalletDebit,
+      });
+    }
+  } catch (error) {
+    console.error('[Payments] Cart: Failed to create orders:', error);
+    // Orders already created stay — refund only for uncreated items
+    return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}&error=partial_creation`);
+  }
+
+  // Credit wallet for unavailable items' wallet portion
+  if (refundWalletCents > 0) {
+    try {
+      const { creditWallet } = await import('@/lib/services/wallet');
+      await creditWallet(
+        group.buyer_id,
+        refundWalletCents,
+        group.id,
+        `Refund: ${unavailable.length} unavailable item(s) from cart order`
+      );
+    } catch (err) {
+      console.error('[Payments] Cart: Failed to credit wallet for unavailable items:', err);
+    }
+  }
+
+  // Mark group as completed
+  await serviceClient
+    .from('cart_checkout_groups')
+    .update({ status: 'completed' })
+    .eq('id', group.id);
+
+  // Send emails (non-blocking)
+  void sendCartOrderEmails(
+    createdOrders.map(({ id, order_number, listing, shippingCents }) => ({
+      orderId: id,
+      orderNumber: order_number,
+      sellerId: listing.seller_id,
+      gameName: listing.game_name ?? 'Game',
+      priceCents: listing.price_cents,
+      shippingCents,
+      terminalName: group.terminal_name,
+    })),
+    group.buyer_id
+  );
+
+  void logAuditEvent({
+    actorId: group.buyer_id,
+    actorType: 'user',
+    action: 'payment.cart_completed',
+    resourceType: 'cart_checkout_group',
+    resourceId: group.id,
+    metadata: {
+      orderCount: createdOrders.length,
+      unavailableCount: unavailable.length,
+      paymentReference,
+      totalAmountCents: group.total_amount_cents,
+    },
+  });
+
+  return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
 }
