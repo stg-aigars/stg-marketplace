@@ -63,7 +63,7 @@ export function OrderAutoCancelled({
 
       <div style={s.ctaSection}>
         <Button
-          style={variant === 'buyer' ? s.ctaFrost : s.ctaFrost}
+          style={s.ctaFrost}
           href={variant === 'buyer' ? `${appUrl}/browse` : `${appUrl}/orders/${orderId}`}
         >
           {variant === 'buyer' ? 'Browse other games' : 'View order'}

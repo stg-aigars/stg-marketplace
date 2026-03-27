@@ -81,7 +81,15 @@ export async function refundOrder(
   // Update order refund status
   const totalRefunded = cardRefunded + walletRefunded;
   const expectedTotal = order.total_amount_cents;
-  const refundStatus = totalRefunded >= expectedTotal ? 'completed' : 'partial';
+  const refundStatus =
+    totalRefunded === 0 ? 'failed' :
+    totalRefunded >= expectedTotal ? 'completed' : 'partial';
+
+  // Don't write refund status if nothing was refunded — allows retry on next cron run
+  if (totalRefunded === 0) {
+    console.error(`[Refund] Complete failure for order ${orderId} (${order.order_number}) — no refund processed, will retry`);
+    return { cardRefunded, walletRefunded };
+  }
 
   await serviceClient
     .from('orders')

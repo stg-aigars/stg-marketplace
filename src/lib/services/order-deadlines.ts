@@ -23,8 +23,9 @@ import {
   sendOrderAutoCancelledToSeller,
   sendShippingReminderToSeller,
   sendDeliveryReminderToBuyer,
+  sendDisputeEscalated,
 } from '@/lib/email';
-import type { OrderRow } from '@/lib/orders/types';
+import type { PaymentMethod } from '@/lib/orders/types';
 
 const BATCH_LIMIT = 50;
 
@@ -234,7 +235,15 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         .in('status', ['reserved', 'sold']);
 
       // Refund
-      await refundOrder(order.id, order as unknown as OrderRow);
+      await refundOrder(order.id, {
+        buyer_id: order.buyer_id,
+        total_amount_cents: order.total_amount_cents,
+        buyer_wallet_debit_cents: order.buyer_wallet_debit_cents,
+        payment_method: order.payment_method as PaymentMethod | null,
+        everypay_payment_reference: order.everypay_payment_reference,
+        order_number: order.order_number,
+        refund_status: order.refund_status,
+      });
 
       void logAuditEvent({
         actorType: 'cron',
@@ -391,6 +400,17 @@ async function escalateStaleShippedOrders(
         resourceId: order.id,
         metadata: { orderNumber: order.order_number },
       });
+
+      // Notify both parties + staff
+      void sendDisputeEscalated({
+        buyerName: order.buyer_profile?.full_name ?? 'Buyer',
+        buyerEmail: order.buyer_profile?.email ?? '',
+        sellerName: order.seller_profile?.full_name ?? 'Seller',
+        sellerEmail: order.seller_profile?.email ?? '',
+        orderNumber: order.order_number,
+        orderId: order.id,
+        gameName: order.game_name,
+      }).catch((err) => console.error('[Deadlines] Failed to send escalation email:', err));
 
       result.deliveryEscalations++;
     } catch (err) {
