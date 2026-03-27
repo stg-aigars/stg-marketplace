@@ -38,6 +38,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedGame, setSelectedGame] = useState<EnrichedGame | null>(selectedGameProp ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [failedGame, setFailedGame] = useState<GameResult | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const thumbAbortRef = useRef<AbortController | null>(null);
@@ -128,6 +129,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
 
     setEnriching(game.id);
     setError(null);
+    setFailedGame(null);
     try {
       const res = await apiFetch(`/api/games/${game.id}/enrich`, { method: 'POST' });
       if (res.ok) {
@@ -143,10 +145,12 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
         setSelectedGame(enriched);
         onSelect(enriched);
       } else {
-        setError('Failed to load game details. Please try again.');
+        setError('Failed to load game details.');
+        setFailedGame(game);
       }
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError('Something went wrong. Please check your connection.');
+      setFailedGame(game);
     } finally {
       setEnriching(null);
     }
@@ -217,11 +221,21 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
         autoFocus
       />
 
-      {/* Error state */}
+      {/* Error state with optional retry */}
       {error && (
-        <p className="text-sm text-semantic-error text-center py-2">
-          {error}
-        </p>
+        <div className="text-sm text-semantic-error text-center py-2 space-y-2">
+          <p>{error}</p>
+          {failedGame && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleSelectGame(failedGame)}
+              disabled={enriching !== null}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Loading state */}

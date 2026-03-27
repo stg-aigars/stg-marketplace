@@ -155,35 +155,40 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
       }
     }
 
-    // Upload files sequentially
+    // Upload files sequentially — continue on failure so partial batches succeed
     setUploading(filesToUpload.length);
     const newUrls: string[] = [];
+    const failedNames: string[] = [];
 
-    try {
-      for (const file of filesToUpload) {
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
+    for (const file of filesToUpload) {
+      try {
+        const body = new FormData();
+        body.append('file', file);
 
-          const res = await apiFetch('/api/listings/photos', {
-            method: 'POST',
-            body: formData,
-          });
+        const res = await apiFetch('/api/listings/photos', {
+          method: 'POST',
+          body,
+        });
 
-          if (res.ok) {
-            const data = await res.json();
-            newUrls.push(data.url);
-          } else {
-            setError('Failed to upload photo. Please try again.');
-            break;
-          }
-        } catch {
-          setError('Failed to upload photo. Please try again.');
-          break;
+        if (res.ok) {
+          const data = await res.json();
+          newUrls.push(data.url);
+        } else {
+          failedNames.push(file.name);
         }
+      } catch {
+        failedNames.push(file.name);
       }
-    } finally {
-      setUploading(0);
+      setUploading((prev) => Math.max(0, prev - 1));
+    }
+
+    if (failedNames.length > 0) {
+      const uploaded = filesToUpload.length - failedNames.length;
+      if (uploaded > 0) {
+        setError(`${uploaded} of ${filesToUpload.length} photos uploaded. Failed: ${failedNames.join(', ')}`);
+      } else {
+        setError('Failed to upload photos. Please try again.');
+      }
     }
 
     if (newUrls.length > 0) {
@@ -234,7 +239,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
             <>
               <Spinner size="lg" />
               <span className="text-sm">
-                Uploading {uploading} {uploading === 1 ? 'photo' : 'photos'}...
+                Uploading... {uploading} remaining
               </span>
             </>
           ) : (

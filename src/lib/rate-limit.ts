@@ -99,3 +99,4 @@ export const dataExportLimiter = rateLimit({ interval: 3_600_000, maxRequests: 3
 export const accountDeleteLimiter = rateLimit({ interval: 3_600_000, maxRequests: 3 });
 export const newsletterLimiter = rateLimit({ interval: 60_000, maxRequests: 5 });
 export const thumbnailLimiter = rateLimit({ interval: 10_000, maxRequests: 5 });
+export const gameSearchLimiter = rateLimit({ interval: 60_000, maxRequests: 30 });
