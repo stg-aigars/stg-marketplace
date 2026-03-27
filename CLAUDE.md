@@ -120,6 +120,7 @@ Always use these — do not write inline equivalents:
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |
 | Bot protection | `TurnstileWidget` (invisible; auto-resets on expiry; graceful skip when unconfigured) | `@/components/ui` |
+| Social sharing | `ShareButtons` (copy link + native share; pass full URL from server component) | `@/components/ui` |
 
 ## Design System Rules
 - **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.
@@ -192,7 +193,7 @@ All `/api/cron/*` routes follow the same pattern:
 - **Coolify command**: `curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/<name>`
 - **Auth check**: `request.headers.get('authorization') !== \`Bearer ${env.cron.secret}\`` → 401
 
-Existing cron routes: `expire-reservations` (5min), `cleanup-sessions` (10min), `sync-tracking` (15min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h), `cleanup-notifications` (weekly). See `src/app/api/cron/` for implementations.
+Existing cron routes: `expire-reservations` (5min), `cleanup-sessions` (10min), `sync-tracking` (15min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h, handles both shelf + wanted offers), `cleanup-notifications` (weekly). See `src/app/api/cron/` for implementations.
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main
@@ -202,7 +203,7 @@ Existing cron routes: `expire-reservations` (5min), `cleanup-sessions` (10min), 
 ## In-App Notifications
 - Every email event also creates an in-app notification via `notify(userId, type, context)` from `@/lib/notifications`
 - Fire-and-forget pattern (same as `logAuditEvent`) — never blocks the main operation
-- 27 notification types with prefixes: `order.`, `message.`, `offer.`, `dispute.`, `shipping.`
+- 34 notification types with prefixes: `order.`, `message.`, `offer.`, `dispute.`, `shipping.`, `wanted.`
 - Copy centralized in `src/lib/notifications/templates.ts` — integration sites pass type + context, not strings
 - Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
 - Polling on pathname change for unread count (consistent with message unread badge)
