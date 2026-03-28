@@ -73,7 +73,7 @@ export default async function CheckoutPage({
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
-          <h1 className="text-2xl font-bold text-semantic-text-heading mb-2">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
             This listing is no longer available
           </h1>
           <p className="text-semantic-text-secondary mb-6">
@@ -92,7 +92,7 @@ export default async function CheckoutPage({
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
-          <h1 className="text-2xl font-bold text-semantic-text-heading mb-2">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
             This is your listing
           </h1>
           <p className="text-semantic-text-secondary mb-6">
@@ -115,7 +115,7 @@ export default async function CheckoutPage({
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
-          <h1 className="text-2xl font-bold text-semantic-text-heading mb-2">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
             Shipping not available
           </h1>
           <p className="text-semantic-text-secondary mb-6">
