@@ -62,7 +62,7 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           placeholder="Internal notes about the resolution decision..."
-          className="w-full px-3 py-2 text-sm rounded-lg border border-semantic-border-subtle bg-semantic-bg-primary text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-primary resize-none"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-semantic-border-subtle bg-semantic-bg-primary text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus resize-none"
         />
       </div>
 
