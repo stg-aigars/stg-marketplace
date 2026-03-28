@@ -13,6 +13,8 @@ import { getWeightLabel } from '@/lib/bgg/utils';
 import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
+import { BidPanel } from '@/components/auctions/BidPanel';
+import { getBidHistory, getAuctionState } from '@/lib/auctions/actions';
 import { getSellerRating } from '@/lib/reviews/service';
 import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
@@ -37,6 +39,12 @@ interface ListingDetailRow {
   edition_year: number | null;
   reserved_at: string | null;
   reserved_by: string | null;
+  listing_type: string;
+  auction_end_at: string | null;
+  starting_price_cents: number | null;
+  current_bid_cents: number | null;
+  bid_count: number;
+  highest_bidder_id: string | null;
   created_at: string;
   games: {
     thumbnail: string | null;
@@ -142,10 +150,17 @@ export default async function ListingDetailPage({
     getSellerCompletedSales(listing.seller_id),
   ]);
 
+  const isAuction = listing.listing_type === 'auction';
+
+  // Fetch auction data if applicable
+  const [auctionState, bidHistory] = isAuction
+    ? await Promise.all([getAuctionState(id), getBidHistory(id)])
+    : [null, []];
+
   const isReserver = listing.status === 'reserved' && listing.reserved_by === user?.id;
 
   // If listing is not active/reserved and viewer is not the seller, show unavailable message
-  if (listing.status !== 'active' && listing.status !== 'reserved' && !isOwner) {
+  if (listing.status !== 'active' && listing.status !== 'reserved' && listing.status !== 'auction_ended' && !isOwner) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
@@ -247,7 +262,15 @@ export default async function ListingDetailPage({
                 />
               )}
             </div>
-            {isOwner ? (
+            {isAuction && auctionState ? (
+              <BidPanel
+                listingId={listing.id}
+                initialState={auctionState}
+                bids={bidHistory}
+                currentUserId={user?.id ?? null}
+                sellerId={listing.seller_id}
+              />
+            ) : isOwner ? (
               <OwnerActions listingId={listing.id} status={listing.status} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               /* Another buyer has reserved this listing */
