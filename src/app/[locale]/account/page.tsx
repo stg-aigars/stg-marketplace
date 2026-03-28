@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CaretRight } from '@phosphor-icons/react/ssr';
+import { CaretRight, Package, Wallet, Tag, BookBookmark, Gavel, MagnifyingGlass, Handshake, Heart, GearSix } from '@phosphor-icons/react/ssr';
 import { Card, CardBody } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getCountryName, getCountryFlag } from '@/lib/country-utils';
@@ -69,143 +69,34 @@ export default async function AccountPage() {
 
       {/* Quick links */}
       <div className="mt-6 space-y-3">
-        <Link href="/account/orders">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">Your orders</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    View your purchases and sales
-                  </p>
+        {[
+          { href: '/account/orders', icon: Package, label: 'Your orders', desc: 'View your purchases and sales', tint: 'bg-[#EDF5F7] border-semantic-brand/20 text-semantic-brand' },
+          { href: '/account/wallet', icon: Wallet, label: 'Wallet', desc: walletBalanceCents > 0 ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}` : 'View your earnings and withdrawals', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
+          { href: '/account/listings', icon: Tag, label: 'My Listings', desc: 'Manage your active and past listings', tint: 'bg-[#FBF0EB] border-semantic-primary/20 text-semantic-primary' },
+          { href: '/account/shelf', icon: BookBookmark, label: 'My shelf', desc: 'Showcase your game collection', tint: 'bg-[#EEF5EB] border-semantic-success/20 text-semantic-success' },
+          { href: '/account/bids', icon: Gavel, label: 'My bids', desc: 'Auctions you have bid on', tint: 'bg-[#F3EDF5] border-aurora-purple/20 text-aurora-purple' },
+          { href: '/account/wanted', icon: MagnifyingGlass, label: 'Wanted games', desc: 'Games you are looking for', tint: 'bg-[#EDF5F7] border-semantic-brand/20 text-semantic-brand' },
+          { href: '/account/offers', icon: Handshake, label: 'Offers', desc: 'View and manage price offers', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
+          { href: '/account/favorites', icon: Heart, label: 'Favorites', desc: 'Games you have saved for later', tint: 'bg-[#FBF0EB] border-semantic-primary/20 text-semantic-primary' },
+          { href: '/account/settings', icon: GearSix, label: 'Settings', desc: 'Email, password, and data management', tint: 'bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted' },
+        ].map(({ href, icon: Icon, label, desc, tint }) => (
+          <Link key={href} href={href}>
+            <Card hoverable>
+              <CardBody>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg border-[1.5px] flex items-center justify-center shrink-0 ${tint}`}>
+                    <Icon size={20} weight="regular" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-semantic-text-heading">{label}</p>
+                    <p className="text-sm text-semantic-text-muted mt-0.5">{desc}</p>
+                  </div>
+                  <CaretRight size={20} className="text-semantic-text-muted shrink-0" />
                 </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/wallet">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">Wallet</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    {walletBalanceCents > 0
-                      ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}`
-                      : 'View your earnings and withdrawals'}
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/listings">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">My Listings</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    Manage your active and past listings
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/shelf">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">My shelf</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    Showcase your game collection
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/bids">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">My bids</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    Auctions you have bid on
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/wanted">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">Wanted games</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    Games you are looking for
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/offers">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">Offers</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    View and manage price offers
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/favorites">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">Favorites</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    Games you have saved for later
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
-        <Link href="/account/settings">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-semantic-text-heading">Settings</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    Email, password, and data management
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
+              </CardBody>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   );
