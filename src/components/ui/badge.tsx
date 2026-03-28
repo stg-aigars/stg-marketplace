@@ -1,7 +1,17 @@
 import { type HTMLAttributes } from 'react';
+import { Sparkle, Star, Check, Warning, PuzzlePiece } from '@phosphor-icons/react/ssr';
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust';
 type ConditionKey = 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const conditionIcons: Record<ConditionKey, React.FC<any>> = {
+  likeNew: Sparkle,
+  veryGood: Star,
+  good: Check,
+  acceptable: Warning,
+  forParts: PuzzlePiece,
+};
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
@@ -32,6 +42,10 @@ function Badge({ variant = 'default', condition, className = '', children, ...pr
       className={`inline-flex items-center gap-1 rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold ${classes} ${className}`}
       {...props}
     >
+      {condition && (() => {
+        const Icon = conditionIcons[condition];
+        return Icon ? <Icon size={12} weight="bold" /> : null;
+      })()}
       {children}
     </span>
   );
