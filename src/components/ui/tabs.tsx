@@ -24,7 +24,7 @@ function Tabs({ tabs, activeTab, onTabChange, className = '' }: TabsProps) {
             role="tab"
             aria-selected={isActive}
             onClick={() => onTabChange(tab.key)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors duration-250 ease-out-custom relative ${
               isActive
                 ? 'text-semantic-brand'
                 : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'

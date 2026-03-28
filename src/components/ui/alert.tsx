@@ -50,7 +50,7 @@ export function Alert({ variant, children, icon: Icon, title, dismissible, onDis
           <button
             type="button"
             onClick={onDismiss}
-            className="shrink-0 p-1 text-current opacity-60 sm:hover:opacity-100 transition-opacity"
+            className="shrink-0 p-1 text-current opacity-60 sm:hover:opacity-100 transition-opacity duration-250 ease-out-custom"
             aria-label="Dismiss"
           >
             <X size={20} />

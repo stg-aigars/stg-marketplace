@@ -146,7 +146,7 @@ export function WantedBrowseFilters({ currentFilters }: WantedBrowseFiltersProps
                     key={c}
                     type="button"
                     onClick={() => toggleCondition(c)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] ${isActive ? classes.active : classes.inactive}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-350 ease-out-custom min-h-[36px] ${isActive ? classes.active : classes.inactive}`}
                   >
                     {conditionConfig[key].label}
                   </button>
@@ -186,7 +186,7 @@ export function WantedBrowseFilters({ currentFilters }: WantedBrowseFiltersProps
                     key={c.value}
                     type="button"
                     onClick={() => toggleCountry(c.value as CountryCode)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-350 ease-out-custom min-h-[36px] ${
                       isActive
                         ? 'bg-semantic-brand text-semantic-text-inverse border-2 border-semantic-brand'
                         : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'

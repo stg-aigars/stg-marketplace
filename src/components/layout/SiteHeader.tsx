@@ -78,19 +78,19 @@ function SiteHeader() {
     <>
       <Link
         href="/browse"
-        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium"
+        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
       >
         Browse
       </Link>
       <Link
         href="/wanted"
-        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium"
+        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
       >
         Wanted
       </Link>
       <Link
         href="/sell"
-        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium"
+        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
       >
         Sell a game
       </Link>
@@ -116,7 +116,7 @@ function SiteHeader() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors"
+              className="relative text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
               aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
             >
               <ShoppingCart size={22} />
@@ -134,7 +134,7 @@ function SiteHeader() {
             ) : !user ? (
               <Link
                 href="/auth/signin"
-                className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium"
+                className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
               >
                 Sign in
               </Link>
@@ -145,12 +145,12 @@ function SiteHeader() {
                   onClick={() => setDropdownOpen((prev) => !prev)}
                   aria-expanded={dropdownOpen}
                   aria-haspopup="true"
-                  className="flex items-center gap-1.5 text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors font-medium min-h-[44px] px-2"
+                  className="flex items-center gap-1.5 text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium min-h-[44px] px-2"
                 >
                   <span className="max-w-[140px] truncate">{displayName}</span>
                   <CaretDown
                     size={16}
-                    className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                    className={`transition-transform duration-150 ease-out-custom ${dropdownOpen ? 'rotate-180' : ''}`}
                   />
                 </button>
 

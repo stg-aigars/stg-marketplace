@@ -12,16 +12,16 @@ function SiteFooter() {
               <NewsletterForm />
             </div>
             <nav className="flex flex-wrap gap-6 text-sm text-semantic-text-muted">
-              <Link href="/terms" className="sm:hover:text-semantic-text-secondary transition-colors">
+              <Link href="/terms" className="sm:hover:text-semantic-text-secondary transition-colors duration-250 ease-out-custom">
                 Terms of Service
               </Link>
-              <Link href="/privacy" className="sm:hover:text-semantic-text-secondary transition-colors">
+              <Link href="/privacy" className="sm:hover:text-semantic-text-secondary transition-colors duration-250 ease-out-custom">
                 Privacy Policy
               </Link>
-              <Link href="/help" className="sm:hover:text-semantic-text-secondary transition-colors">
+              <Link href="/help" className="sm:hover:text-semantic-text-secondary transition-colors duration-250 ease-out-custom">
                 Help
               </Link>
-              <Link href="/contact" className="sm:hover:text-semantic-text-secondary transition-colors">
+              <Link href="/contact" className="sm:hover:text-semantic-text-secondary transition-colors duration-250 ease-out-custom">
                 Contact
               </Link>
             </nav>

@@ -77,7 +77,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="relative text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+        className="relative text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell size={22} weight={unreadCount > 0 ? 'fill' : 'regular'} />

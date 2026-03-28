@@ -29,7 +29,7 @@ function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
             ) : (
               <Link
                 href={item.href}
-                className={`sm:hover:text-semantic-text-secondary transition-colors ${
+                className={`sm:hover:text-semantic-text-secondary transition-colors duration-250 ease-out-custom ${
                   index === items.length - 2 && items.length > 2 ? 'truncate' : 'shrink-0'
                 }`}
               >

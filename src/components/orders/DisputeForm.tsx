@@ -167,7 +167,7 @@ export function DisputeForm({ orderId, onClose, open }: DisputeFormProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="w-full rounded-lg border-2 border-dashed border-semantic-border-subtle py-4 text-sm text-semantic-text-muted sm:hover:border-semantic-primary sm:hover:text-semantic-primary transition-colors disabled:opacity-50"
+                className="w-full rounded-lg border-2 border-dashed border-semantic-border-subtle py-4 text-sm text-semantic-text-muted sm:hover:border-semantic-primary sm:hover:text-semantic-primary transition-colors duration-250 ease-out-custom disabled:opacity-50"
               >
                 {uploading ? 'Uploading...' : 'Click to add a photo'}
               </button>

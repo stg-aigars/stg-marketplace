@@ -55,7 +55,7 @@ function EmptyState({ icon: Icon, title, description, action, secondaryAction, c
       {secondaryAction && (
         <Link
           href={secondaryAction.href}
-          className="block mt-2 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors"
+          className="block mt-2 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
         >
           {secondaryAction.label}
         </Link>

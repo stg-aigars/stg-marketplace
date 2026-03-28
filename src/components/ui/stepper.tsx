@@ -27,7 +27,7 @@ function Stepper({ steps, currentStep, className = '' }: StepperProps) {
             <li key={step.id} className="flex-1">
               <div className="flex flex-col items-center gap-1">
                 <div
-                  className={`h-1.5 w-full rounded-full transition-colors ${
+                  className={`h-1.5 w-full rounded-full transition-colors duration-250 ease-out-custom ${
                     isCompleted || isCurrent
                       ? 'bg-semantic-brand'
                       : 'bg-semantic-border-subtle'

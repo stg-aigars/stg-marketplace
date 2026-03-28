@@ -32,7 +32,7 @@ function ConversationList({ conversations, activeConversationId }: ConversationL
           <Link
             key={conv.id}
             href={`/messages/${conv.id}`}
-            className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+            className={`flex items-center gap-3 px-4 py-3 transition-colors duration-250 ease-out-custom ${
               isActive
                 ? 'bg-semantic-brand/10'
                 : 'hover:bg-semantic-bg-subtle'

@@ -75,7 +75,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
                 key={option}
                 type="button"
                 onClick={() => toggle(option)}
-                className={`flex items-center gap-2 w-full text-left px-3 py-2 text-sm rounded-md min-h-[36px] transition-colors ${
+                className={`flex items-center gap-2 w-full text-left px-3 py-2 text-sm rounded-md min-h-[36px] transition-colors duration-250 ease-out-custom ${
                   isSelected
                     ? 'text-semantic-text-primary font-medium'
                     : 'text-semantic-text-secondary'
@@ -110,7 +110,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[32px] ${
+        className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[32px] ${
           selected.length > 0
             ? 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand'
             : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
@@ -118,7 +118,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
       >
         {label}
         {selected.length > 0 && ` (${selected.length})`}
-        <CaretDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        <CaretDown size={12} className={`transition-transform duration-150 ease-out-custom ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

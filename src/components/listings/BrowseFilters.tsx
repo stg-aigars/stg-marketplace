@@ -245,7 +245,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             key={condition}
             type="button"
             onClick={() => onToggle(condition)}
-            className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
+            className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
               isActive ? chipStyle.active : chipStyle.inactive
             }`}
           >
@@ -268,7 +268,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             key={country.code}
             type="button"
             onClick={() => onToggle(country.code)}
-            className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
+            className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
               isActive
                 ? ACTIVE_WEIGHT_CHIP
                 : INACTIVE_CHIP
@@ -294,7 +294,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             key={level}
             type="button"
             onClick={() => onToggle(level)}
-            className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
+            className={`inline-flex items-center rounded-2xl px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
               isActive ? ACTIVE_WEIGHT_CHIP : INACTIVE_CHIP
             }`}
           >

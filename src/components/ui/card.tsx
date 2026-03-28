@@ -7,7 +7,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 function Card({ hoverable, className = '', children, ...props }: CardProps) {
   return (
     <div
-      className={`bg-semantic-bg-elevated rounded-lg border border-semantic-border-subtle shadow-sm ${hoverable ? 'transition-shadow active:shadow-md sm:hover:shadow-md' : ''} ${className}`}
+      className={`bg-semantic-bg-elevated rounded-lg border border-semantic-border-subtle shadow-sm ${hoverable ? 'transition-shadow duration-250 ease-out-custom active:shadow-md sm:hover:shadow-md' : ''} ${className}`}
       {...props}
     >
       {children}

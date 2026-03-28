@@ -57,7 +57,7 @@ export function ShippingInfo({
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(barcode)}
-                  className="text-xs text-semantic-primary sm:hover:text-semantic-primary-hover transition-colors"
+                  className="text-xs text-semantic-primary sm:hover:text-semantic-primary-hover transition-colors duration-250 ease-out-custom"
                 >
                   Copy
                 </button>
@@ -71,7 +71,7 @@ export function ShippingInfo({
                 href={trackingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-semantic-primary sm:hover:text-semantic-primary-hover transition-colors"
+                className="text-sm text-semantic-primary sm:hover:text-semantic-primary-hover transition-colors duration-250 ease-out-custom"
               >
                 Track parcel
               </a>

@@ -40,7 +40,7 @@ function NotificationItem({ notification, onRead }: NotificationItemProps) {
 
   const content = (
     <div
-      className={`flex gap-3 px-4 py-3 transition-colors ${
+      className={`flex gap-3 px-4 py-3 transition-colors duration-250 ease-out-custom ${
         isUnread
           ? 'bg-semantic-brand/5'
           : ''

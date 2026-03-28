@@ -104,7 +104,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
       <CardFooter className="flex items-center justify-between">
         <Link
           href="/browse"
-          className="text-sm text-semantic-text-muted active:text-semantic-brand sm:hover:text-semantic-brand transition-colors"
+          className="text-sm text-semantic-text-muted active:text-semantic-brand sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
         >
           Or start by browsing pre-loved games
         </Link>

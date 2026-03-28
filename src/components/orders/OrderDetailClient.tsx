@@ -215,7 +215,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               <div>
                 <Link
                   href={`/listings/${order.listing_id}`}
-                  className="font-semibold text-semantic-text-heading sm:hover:text-semantic-primary transition-colors"
+                  className="font-semibold text-semantic-text-heading sm:hover:text-semantic-primary transition-colors duration-250 ease-out-custom"
                 >
                   {order.listings?.game_name ?? 'Unknown game'}
                   {order.listings?.game_year && (
@@ -297,7 +297,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                   )}
                   <Link
                     href={`/sellers/${order.seller_id}`}
-                    className="text-sm text-semantic-text-primary sm:hover:text-semantic-primary transition-colors"
+                    className="text-sm text-semantic-text-primary sm:hover:text-semantic-primary transition-colors duration-250 ease-out-custom"
                   >
                     {order.seller_profile?.full_name ?? 'Anonymous'}
                   </Link>

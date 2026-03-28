@@ -65,7 +65,7 @@ function TerminalPicker({ terminals, selectedId, onSelect, fetchFailed }: Termin
                   key={terminal.id}
                   type="button"
                   onClick={() => onSelect(terminal)}
-                  className={`w-full text-left px-3 py-2.5 text-sm transition-colors min-h-[44px] ${
+                  className={`w-full text-left px-3 py-2.5 text-sm transition-colors duration-250 ease-out-custom min-h-[44px] ${
                     selectedId === terminal.id
                       ? 'bg-semantic-brand/10 text-semantic-brand-active font-medium'
                       : 'text-semantic-text-secondary sm:hover:bg-snow-storm-light'

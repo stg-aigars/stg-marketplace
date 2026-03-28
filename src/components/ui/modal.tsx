@@ -61,7 +61,7 @@ function Modal({ open, onClose, title, children }: ModalProps) {
             <h2 className="text-lg font-semibold text-semantic-text-heading">{title}</h2>
             <button
               onClick={onClose}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-muted active:text-semantic-text-primary sm:hover:text-semantic-text-primary transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-muted active:text-semantic-text-primary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
               aria-label="Close"
             >
               <X size={20} />
