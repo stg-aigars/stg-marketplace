@@ -76,6 +76,8 @@ export const colors = {
     bgPrimary: '#FAF9F6',
     bgSecondary: '#F5F3EF',
     bgElevated: '#FFFFFF',
+    bgSurface: '#F5F3EF',        // Interactive surfaces (hover menus, overlays on cards)
+    bgSubtle: '#FAF9F6',         // Subtle background tint (section alternation)
     bgInput: '#FDFCFA',          // Slightly warm, distinguishes from card white
     bgOverlay: 'rgba(46, 52, 64, 0.6)',
 

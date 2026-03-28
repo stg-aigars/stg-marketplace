@@ -60,6 +60,8 @@ const config: Config = {
           'bg-primary': colors.semantic.bgPrimary,
           'bg-secondary': colors.semantic.bgSecondary,
           'bg-elevated': colors.semantic.bgElevated,
+          'bg-surface': colors.semantic.bgSurface,
+          'bg-subtle': colors.semantic.bgSubtle,
           'bg-input': colors.semantic.bgInput,
           'bg-overlay': colors.semantic.bgOverlay,
           'border-subtle': colors.semantic.borderSubtle,
