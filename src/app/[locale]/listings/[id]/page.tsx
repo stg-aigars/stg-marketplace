@@ -228,13 +228,13 @@ export default async function ListingDetailPage({
         <div className="space-y-6">
           {/* Title & condition */}
           <div>
+            {(listing.publisher || listing.game_year) && (
+              <p className="text-xs font-medium uppercase tracking-wider text-semantic-brand mb-1">
+                {[listing.publisher, listing.game_year].filter(Boolean).join(' \u00B7 ')}
+              </p>
+            )}
             <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
               {listing.game_name}
-              {listing.game_year && (
-                <span className="text-semantic-text-muted font-normal text-xl ml-2">
-                  ({listing.game_year})
-                </span>
-              )}
             </h1>
             <div className="mt-3 flex items-center gap-3">
               <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
@@ -249,9 +249,9 @@ export default async function ListingDetailPage({
           </div>
 
           {/* Price & action */}
-          <div className="space-y-3">
+          <div className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-input p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold text-semantic-text-heading">
+              <p className="text-3xl font-bold font-sans tracking-tight text-semantic-text-heading">
                 {formatCentsToCurrency(listing.price_cents)}
               </p>
               {!isOwner && (
@@ -372,7 +372,7 @@ export default async function ListingDetailPage({
                 <div>
                   <Link
                     href={`/sellers/${listing.seller_id}`}
-                    className="font-medium text-semantic-text-heading sm:hover:text-semantic-primary transition-colors"
+                    className="font-medium text-semantic-text-heading sm:hover:text-semantic-brand transition-colors"
                   >
                     {listing.user_profiles?.full_name ?? 'Anonymous'}
                   </Link>
