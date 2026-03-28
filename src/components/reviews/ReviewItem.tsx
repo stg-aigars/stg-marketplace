@@ -22,7 +22,7 @@ export function ReviewItem({ review, reviewerName }: ReviewItemProps) {
   return (
     <div className="flex gap-3 py-3">
       {/* Thumb icon */}
-      <div className={`shrink-0 mt-0.5 ${review.is_positive ? 'text-semantic-success' : 'text-semantic-error'}`}>
+      <div className={`shrink-0 mt-0.5 ${review.is_positive ? 'text-semantic-brand' : 'text-semantic-text-muted'}`}>
         {review.is_positive ? (
           <ThumbsUp size={20} weight="fill" />
         ) : (

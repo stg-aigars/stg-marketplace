@@ -17,8 +17,8 @@ export function SellerRating({ positivePct, ratingCount, size = 'md' }: SellerRa
 
   return (
     <span className={`inline-flex items-center gap-1 ${size === 'sm' ? 'text-xs' : 'text-sm'}`}>
-      <ThumbsUp size={size === 'sm' ? 14 : 16} weight="fill" className="text-semantic-success" />
-      <span className={positivePct >= 80 ? 'text-semantic-success font-medium' : 'text-semantic-text-secondary'}>
+      <ThumbsUp size={size === 'sm' ? 14 : 16} weight="fill" className="text-semantic-accent" />
+      <span className={positivePct >= 80 ? 'text-semantic-accent font-medium' : 'text-semantic-text-secondary'}>
         {positivePct}% positive
       </span>
       <span className="text-semantic-text-muted">({ratingCount})</span>

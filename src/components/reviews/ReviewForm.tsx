@@ -84,7 +84,7 @@ export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
           onClick={() => setIsPositive(true)}
           className={`flex items-center gap-2 ${
             isPositive === true
-              ? 'border-2 border-semantic-success bg-semantic-success/10'
+              ? 'border-2 border-semantic-brand bg-semantic-brand/10'
               : 'border border-semantic-border-default'
           }`}
         >
@@ -98,7 +98,7 @@ export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
           onClick={() => setIsPositive(false)}
           className={`flex items-center gap-2 ${
             isPositive === false
-              ? 'border-2 border-semantic-error bg-semantic-error/10'
+              ? 'border-2 border-semantic-border-strong bg-semantic-bg-secondary'
               : 'border border-semantic-border-default'
           }`}
         >
