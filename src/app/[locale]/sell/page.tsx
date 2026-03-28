@@ -1,5 +1,5 @@
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { ListingCreationFlow } from './_components/ListingCreationFlow';
+import { SellPageClient } from './_components/SellPageClient';
 
 export default async function SellPage() {
   await requireServerAuth();
@@ -9,7 +9,7 @@ export default async function SellPage() {
       <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
         Create a listing
       </h1>
-      <ListingCreationFlow />
+      <SellPageClient />
     </div>
   );
 }

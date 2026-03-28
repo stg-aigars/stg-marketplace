@@ -1,6 +1,8 @@
 export type ListingCondition = 'like_new' | 'very_good' | 'good' | 'acceptable' | 'for_parts';
 
-export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved';
+export type ListingType = 'fixed_price' | 'auction';
+
+export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved' | 'auction_ended';
 
 export type VersionSource = 'bgg' | 'manual';
 
@@ -29,6 +31,10 @@ export interface CreateListingData {
   photos: string[];
   offer_id?: string;
   wanted_offer_id?: string;
+  // Auction fields (only when listing_type = 'auction')
+  listing_type?: ListingType;
+  auction_duration_days?: number;
+  starting_price_cents?: number;
 }
 
 export interface UpdateListingData {

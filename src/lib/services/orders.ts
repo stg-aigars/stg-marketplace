@@ -97,13 +97,14 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
     }
 
     // Update listing status to 'reserved' with race condition guard
-    // Listing may already be 'reserved' (by this buyer via checkout initiation) or 'active'
-    // (if the reservation timer expired but nobody else took it)
+    // Listing may already be 'reserved' (by this buyer via checkout initiation), 'active'
+    // (if the reservation timer expired but nobody else took it), or 'auction_ended'
+    // (auction winner paying — transition directly to reserved/sold)
     const { data: updatedListing } = await serviceClient
       .from('listings')
       .update({ status: 'reserved', reserved_at: new Date().toISOString(), reserved_by: params.buyerId })
       .eq('id', params.listingId)
-      .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${params.buyerId})`)
+      .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${params.buyerId}),status.eq.auction_ended`)
       .select('id')
       .single();
 

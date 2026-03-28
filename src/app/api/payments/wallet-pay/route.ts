@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   const serviceClient = createServiceClient();
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
+    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id')
     .eq('id', listingId)
     .single();
 
@@ -86,8 +86,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
   }
 
+  const isAuctionWinner = listing.listing_type === 'auction' &&
+    listing.status === 'auction_ended' &&
+    listing.highest_bidder_id === user.id;
+
   const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id);
+    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
+    isAuctionWinner;
 
   if (!canCheckout) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });

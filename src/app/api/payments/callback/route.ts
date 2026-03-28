@@ -213,14 +213,20 @@ export async function GET(request: Request) {
   // Re-fetch listing to get current data (include game_name for emails)
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
+    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id')
     .eq('id', session.listing_id)
     .single();
 
-  // Accept 'active' (timer expired but nobody else took it) or 'reserved' by this buyer
+  // Accept 'active' (timer expired but nobody else took it), 'reserved' by this buyer,
+  // or 'auction_ended' for the auction winner
+  const isAuctionWinnerPayment = listing?.listing_type === 'auction' &&
+    listing.status === 'auction_ended' &&
+    listing.highest_bidder_id === session.buyer_id;
+
   const isAvailable = listing && (
     listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === session.buyer_id)
+    (listing.status === 'reserved' && listing.reserved_by === session.buyer_id) ||
+    isAuctionWinnerPayment
   );
 
   if (!listing || !isAvailable) {

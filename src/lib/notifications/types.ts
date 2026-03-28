@@ -30,6 +30,13 @@ export type NotificationType =
   | 'dispute.escalated'
   // Shipping
   | 'shipping.instructions'
+  // Auctions
+  | 'auction.bid_placed'
+  | 'auction.outbid'
+  | 'auction.won'
+  | 'auction.ended_no_bids'
+  | 'auction.payment_reminder'
+  | 'auction.payment_expired'
   // Wanted listings
   | 'wanted.offer_received'
   | 'wanted.offer_countered'

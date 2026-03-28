@@ -126,26 +126,46 @@ export async function createListing(
     return { error: 'Could not load your profile. Please complete your profile first' };
   }
 
+  // Build insert payload
+  const isAuction = data.listing_type === 'auction';
+  const insertPayload: Record<string, unknown> = {
+    seller_id: user.id,
+    bgg_game_id: data.bgg_game_id,
+    game_name: data.game_name,
+    game_year: data.game_year,
+    version_source: data.version_source,
+    bgg_version_id: data.bgg_version_id,
+    version_name: data.version_name,
+    publisher: data.publisher,
+    language: data.language,
+    edition_year: data.edition_year,
+    condition: data.condition,
+    price_cents: isAuction ? data.starting_price_cents : data.price_cents,
+    description: data.description,
+    photos: data.photos,
+    country: profile.country,
+    listing_type: data.listing_type ?? 'fixed_price',
+  };
+
+  // Add auction-specific fields
+  if (isAuction) {
+    if (!data.auction_duration_days || !data.starting_price_cents) {
+      return { error: 'Auction duration and starting price are required' };
+    }
+    const validDurations = [1, 3, 5, 7];
+    if (!validDurations.includes(data.auction_duration_days)) {
+      return { error: 'Invalid auction duration' };
+    }
+    const endAt = new Date(Date.now() + data.auction_duration_days * 24 * 60 * 60 * 1000).toISOString();
+    insertPayload.starting_price_cents = data.starting_price_cents;
+    insertPayload.auction_end_at = endAt;
+    insertPayload.auction_original_end_at = endAt;
+  }
+
   // Insert listing (RLS allows sellers to insert their own)
   const { data: listing, error: insertError } = await supabase
     .from('listings')
-    .insert({
-      seller_id: user.id,
-      bgg_game_id: data.bgg_game_id,
-      game_name: data.game_name,
-      game_year: data.game_year,
-      version_source: data.version_source,
-      bgg_version_id: data.bgg_version_id,
-      version_name: data.version_name,
-      publisher: data.publisher,
-      language: data.language,
-      edition_year: data.edition_year,
-      condition: data.condition,
-      price_cents: data.price_cents,
-      description: data.description,
-      photos: data.photos,
-      country: profile.country,
-    })
+    .insert(insertPayload)
     .select('id')
     .single();
 

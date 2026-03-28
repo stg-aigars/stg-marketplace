@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, ImageSquare } from '@phosphor-icons/react/ssr';
+import { Camera, ImageSquare, Gavel } from '@phosphor-icons/react/ssr';
 import { Card, Badge } from '@/components/ui';
+import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
@@ -23,6 +24,10 @@ interface ListingCardProps {
   isAuthenticated?: boolean;
   /** If true, show "Sold" or "No longer available" overlay */
   unavailable?: boolean;
+  /** Auction fields */
+  isAuction?: boolean;
+  bidCount?: number;
+  auctionEndAt?: string | null;
 }
 
 function ListingCard({
@@ -38,6 +43,9 @@ function ListingCard({
   isFavorited,
   isAuthenticated = false,
   unavailable = false,
+  isAuction = false,
+  bidCount = 0,
+  auctionEndAt,
 }: ListingCardProps) {
   const imageUrl = firstPhoto || gameThumbnail;
   const badgeKey = conditionToBadgeKey[condition];
@@ -98,12 +106,27 @@ function ListingCard({
             )}
           </div>
 
-          <Badge condition={badgeKey}>{conditionLabel}</Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge condition={badgeKey}>{conditionLabel}</Badge>
+            {isAuction && (
+              <Badge variant="default">
+                <Gavel size={10} className="mr-0.5" />
+                Auction
+              </Badge>
+            )}
+          </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-bold text-semantic-text-heading">
-              {formatCentsToCurrency(priceCents)}
-            </span>
+            <div>
+              <span className="font-bold text-semantic-text-heading">
+                {formatCentsToCurrency(priceCents)}
+              </span>
+              {isAuction && (
+                <span className="text-xs text-semantic-text-muted ml-1">
+                  {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}
+                </span>
+              )}
+            </div>
             {flagClass && (
               <span
                 className={`${flagClass} text-base`}
@@ -112,6 +135,10 @@ function ListingCard({
               />
             )}
           </div>
+
+          {isAuction && auctionEndAt && (
+            <AuctionCountdown endAt={auctionEndAt} className="text-xs" />
+          )}
         </div>
       </Card>
     </Link>

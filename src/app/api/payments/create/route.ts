@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   const serviceClient = createServiceClient();
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, reserved_by')
+    .select('id, seller_id, price_cents, status, country, reserved_by, listing_type, highest_bidder_id')
     .eq('id', listingId)
     .single();
 
@@ -78,9 +78,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
   }
 
-  // Allow 'active' or 'reserved' by the same buyer (retry/back-button case)
+  // Allow 'active', 'reserved' by same buyer, or 'auction_ended' for the winner
+  const isAuctionWinner = listing.listing_type === 'auction' &&
+    listing.status === 'auction_ended' &&
+    listing.highest_bidder_id === user.id;
+
   const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id);
+    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
+    isAuctionWinner;
 
   if (!canCheckout) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
@@ -160,26 +165,29 @@ export async function POST(request: Request) {
   }
 
   // 8. Reserve the listing (before payment, not after)
-  // Accept 'active' OR already reserved by same buyer (retry/back-button refreshes the timer)
-  const { data: reserved } = await serviceClient
-    .from('listings')
-    .update({
-      status: 'reserved',
-      reserved_at: new Date().toISOString(),
-      reserved_by: user.id,
-    })
-    .eq('id', listingId)
-    .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${user.id})`)
-    .select('id')
-    .single();
+  // Skip for auction listings — they're already locked via 'auction_ended' status
+  if (!isAuctionWinner) {
+    // Accept 'active' OR already reserved by same buyer (retry/back-button refreshes the timer)
+    const { data: reserved } = await serviceClient
+      .from('listings')
+      .update({
+        status: 'reserved',
+        reserved_at: new Date().toISOString(),
+        reserved_by: user.id,
+      })
+      .eq('id', listingId)
+      .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${user.id})`)
+      .select('id')
+      .single();
 
-  if (!reserved) {
-    // Race condition: another buyer reserved it between our check and this update
-    await serviceClient
-      .from('checkout_sessions')
-      .update({ status: 'expired' })
-      .eq('id', session.id);
-    return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
+    if (!reserved) {
+      // Race condition: another buyer reserved it between our check and this update
+      await serviceClient
+        .from('checkout_sessions')
+        .update({ status: 'expired' })
+        .eq('id', session.id);
+      return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
+    }
   }
 
   // 9. Build callback URL with callback token for security

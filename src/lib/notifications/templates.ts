@@ -160,6 +160,38 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     link: orderLink,
   },
 
+  // --- Auctions ---
+  'auction.bid_placed': {
+    title: () => 'New bid on your auction',
+    body: (ctx) => `${ctx.buyerName ?? 'Someone'} placed a bid on ${ctx.gameName ?? 'your auction'}`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : null,
+  },
+  'auction.outbid': {
+    title: () => 'You have been outbid',
+    body: (ctx) => `Someone placed a higher bid on ${ctx.gameName ?? 'an auction you bid on'}`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : null,
+  },
+  'auction.won': {
+    title: () => 'You won the auction',
+    body: (ctx) => `You won ${ctx.gameName ?? 'an auction'} — pay within 24 hours to complete the purchase`,
+    link: (ctx) => ctx.listingId ? `/checkout/auction/${ctx.listingId}` : null,
+  },
+  'auction.ended_no_bids': {
+    title: () => 'Auction ended with no bids',
+    body: (ctx) => `Your auction for ${ctx.gameName ?? 'a game'} ended with no bids`,
+    link: () => '/account/listings',
+  },
+  'auction.payment_reminder': {
+    title: () => 'Payment reminder',
+    body: (ctx) => `You have 12 hours left to pay for ${ctx.gameName ?? 'your winning auction'}`,
+    link: (ctx) => ctx.listingId ? `/checkout/auction/${ctx.listingId}` : null,
+  },
+  'auction.payment_expired': {
+    title: () => 'Auction payment expired',
+    body: (ctx) => `The payment deadline for ${ctx.gameName ?? 'an auction'} has passed`,
+    link: () => '/account/listings',
+  },
+
   // --- Wanted listings ---
   'wanted.offer_received': {
     title: () => 'New offer on your wanted game',
