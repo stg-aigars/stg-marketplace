@@ -13,7 +13,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   success: 'bg-condition-like-new-bg text-condition-like-new-text border-condition-like-new',
   warning: 'bg-condition-good-bg text-condition-good-text border-condition-good',
   error: 'bg-condition-for-parts-bg text-condition-for-parts-text border-condition-for-parts',
-  trust: 'bg-frost-ice/10 text-frost-arctic border-frost-ice',
+  trust: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
 };
 
 const conditionClasses: Record<ConditionKey, string> = {

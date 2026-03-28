@@ -60,7 +60,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 const INACTIVE_CHIP = 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default';
-const ACTIVE_WEIGHT_CHIP = 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice';
+const ACTIVE_WEIGHT_CHIP = 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand';
 
 function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   const router = useRouter();
@@ -270,7 +270,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             onClick={() => onToggle(country.code)}
             className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
               isActive
-                ? 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice'
+                ? 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand'
                 : INACTIVE_CHIP
             }`}
           >

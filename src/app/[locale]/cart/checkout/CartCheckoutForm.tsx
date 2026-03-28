@@ -272,7 +272,7 @@ export function CartCheckoutForm({
                     </label>
                   </div>
                   {useWallet && walletDebitCents > 0 && (
-                    <div className="flex justify-between text-frost-arctic">
+                    <div className="flex justify-between text-semantic-brand-active">
                       <span>Wallet</span>
                       <span>-{formatCentsToCurrency(walletDebitCents)}</span>
                     </div>

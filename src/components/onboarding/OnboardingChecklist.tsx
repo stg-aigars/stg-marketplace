@@ -23,7 +23,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
           <CheckCircle
             size={40}
             weight="fill"
-            className="text-semantic-primary mx-auto mb-3"
+            className="text-semantic-brand mx-auto mb-3"
           />
           <p className="text-lg font-semibold text-semantic-text-heading mb-1">
             You are all set
@@ -50,7 +50,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-semantic-border-subtle overflow-hidden">
           <div
-            className="h-full rounded-full bg-semantic-primary transition-all duration-300"
+            className="h-full rounded-full bg-semantic-brand transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -65,7 +65,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
                   <CheckCircle
                     size={24}
                     weight="fill"
-                    className="text-semantic-primary shrink-0"
+                    className="text-semantic-brand shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-semantic-text-muted line-through">
@@ -83,7 +83,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
                     className="text-semantic-text-muted shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-semantic-text-primary group-active:text-semantic-primary sm:group-hover:text-semantic-primary">
+                    <p className="text-sm font-medium text-semantic-text-primary group-active:text-semantic-brand sm:group-hover:text-semantic-brand">
                       {item.label}
                     </p>
                     <p className="text-xs text-semantic-text-muted mt-0.5">
@@ -104,7 +104,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
       <CardFooter className="flex items-center justify-between">
         <Link
           href="/browse"
-          className="text-sm text-semantic-text-muted active:text-semantic-primary sm:hover:text-semantic-primary transition-colors"
+          className="text-sm text-semantic-text-muted active:text-semantic-brand sm:hover:text-semantic-brand transition-colors"
         >
           Or start by browsing pre-loved games
         </Link>

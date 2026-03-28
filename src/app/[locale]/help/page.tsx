@@ -43,7 +43,7 @@ export default function HelpPage() {
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I list a game?</h3>
           <p>
             Go to{' '}
-            <Link href="/sell" className="text-frost-arctic sm:hover:text-frost-ice transition-colors">
+            <Link href="/sell" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors">
               List a game
             </Link>
             {' '}and search for your game. Select the edition, add photos, set the condition and
@@ -91,7 +91,7 @@ export default function HelpPage() {
           <p>
             After payment, the seller has time to accept the order and ship the game. You can
             track the order status on your{' '}
-            <Link href="/account/orders" className="text-frost-arctic sm:hover:text-frost-ice transition-colors">
+            <Link href="/account/orders" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors">
               orders page
             </Link>.
             Once delivered, you have 2 days to confirm everything is in order before the
@@ -112,7 +112,7 @@ export default function HelpPage() {
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I change my settings?</h3>
           <p>
             Visit your{' '}
-            <Link href="/account/settings" className="text-frost-arctic sm:hover:text-frost-ice transition-colors">
+            <Link href="/account/settings" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors">
               account settings
             </Link>
             {' '}to update your display name, email, password, and phone number.
@@ -135,7 +135,7 @@ export default function HelpPage() {
           </p>
           <p>
             Currently serving Latvia, Lithuania, and Estonia. Have a question not covered here?{' '}
-            <Link href="/contact" className="text-frost-arctic sm:hover:text-frost-ice transition-colors">
+            <Link href="/contact" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors">
               Get in touch
             </Link>.
           </p>

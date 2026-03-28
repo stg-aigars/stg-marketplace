@@ -27,7 +27,7 @@ function getVersionLanguages(version: BGGVersion): string[] {
 function filterChipClass(active: boolean): string {
   return `whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
     active
-      ? 'bg-frost-ice/10 text-frost-arctic border border-frost-ice'
+      ? 'bg-semantic-brand/10 text-semantic-brand-active border border-semantic-brand'
       : 'bg-semantic-bg-surface text-semantic-text-secondary border border-semantic-border-subtle hover:border-semantic-border-default'
   }`;
 }

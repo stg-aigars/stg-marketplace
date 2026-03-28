@@ -42,12 +42,12 @@ function NotificationItem({ notification, onRead }: NotificationItemProps) {
     <div
       className={`flex gap-3 px-4 py-3 transition-colors ${
         isUnread
-          ? 'bg-frost-ice/5'
+          ? 'bg-semantic-brand/5'
           : ''
       } sm:hover:bg-snow-storm-light`}
     >
       <div className="shrink-0 mt-0.5">
-        <Icon size={18} className={isUnread ? 'text-frost-arctic' : 'text-semantic-text-muted'} />
+        <Icon size={18} className={isUnread ? 'text-semantic-brand-active' : 'text-semantic-text-muted'} />
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm ${isUnread ? 'font-medium text-semantic-text-primary' : 'text-semantic-text-secondary'}`}>
@@ -62,7 +62,7 @@ function NotificationItem({ notification, onRead }: NotificationItemProps) {
       </div>
       {isUnread && (
         <div className="shrink-0 mt-2">
-          <div className="w-2 h-2 rounded-full bg-frost-arctic" />
+          <div className="w-2 h-2 rounded-full bg-semantic-brand-active" />
         </div>
       )}
     </div>

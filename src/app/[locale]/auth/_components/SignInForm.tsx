@@ -83,7 +83,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
           <div className="mt-1.5 text-right">
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-semantic-trust sm:hover:underline"
+              className="text-sm text-semantic-brand sm:hover:underline"
             >
               Forgot password?
             </Link>
@@ -105,7 +105,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
         New here?{' '}
         <Link
           href="/auth/signup"
-          className="font-medium text-semantic-trust sm:hover:underline"
+          className="font-medium text-semantic-brand sm:hover:underline"
         >
           Create account
         </Link>

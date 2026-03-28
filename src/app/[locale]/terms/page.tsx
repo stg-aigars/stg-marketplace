@@ -138,7 +138,7 @@ export default function TermsPage() {
             Questions about these terms? Reach us at{' '}
             <Link
               href="/contact"
-              className="text-frost-arctic sm:hover:text-frost-ice transition-colors underline"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
             >
               our contact page
             </Link>
@@ -150,7 +150,7 @@ export default function TermsPage() {
           See also our{' '}
           <Link
             href="/privacy"
-            className="text-frost-arctic sm:hover:text-frost-ice transition-colors underline"
+            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
           >
             Privacy Policy
           </Link>

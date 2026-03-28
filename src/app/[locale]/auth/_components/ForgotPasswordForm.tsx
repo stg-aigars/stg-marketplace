@@ -39,7 +39,7 @@ export function ForgotPasswordForm() {
         </p>
         <Link
           href="/auth/signin"
-          className="text-sm font-medium text-semantic-trust sm:hover:underline"
+          className="text-sm font-medium text-semantic-brand sm:hover:underline"
         >
           Back to sign in
         </Link>
@@ -74,7 +74,7 @@ export function ForgotPasswordForm() {
       <p className="text-center text-sm text-semantic-text-secondary">
         <Link
           href="/auth/signin"
-          className="font-medium text-semantic-trust sm:hover:underline"
+          className="font-medium text-semantic-brand sm:hover:underline"
         >
           Back to sign in
         </Link>

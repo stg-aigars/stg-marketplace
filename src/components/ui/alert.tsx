@@ -17,7 +17,7 @@ const variantClasses: Record<AlertProps['variant'], string> = {
   error: 'bg-semantic-error/10 border-semantic-error/30 text-semantic-error',
   success: 'bg-semantic-success/10 border-semantic-success/30 text-semantic-text-primary',
   warning: 'bg-semantic-warning/10 border-semantic-warning/30 text-semantic-text-primary',
-  info: 'bg-frost-ice/10 border-frost-ice/30 text-semantic-text-primary',
+  info: 'bg-semantic-brand/10 border-semantic-brand/30 text-semantic-text-primary',
 };
 
 export function Alert({ variant, children, icon: Icon, title, dismissible, onDismiss, className = '' }: AlertProps) {

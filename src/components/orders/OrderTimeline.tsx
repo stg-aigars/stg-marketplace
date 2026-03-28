@@ -52,16 +52,16 @@ export function OrderTimeline({ status, timestamps }: OrderTimelineProps) {
               <div
                 className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${
                   isCurrent
-                    ? 'bg-semantic-primary ring-4 ring-semantic-primary/20'
+                    ? 'bg-semantic-brand ring-4 ring-semantic-brand/20'
                     : isPast
-                    ? 'bg-semantic-primary'
+                    ? 'bg-semantic-brand'
                     : 'bg-semantic-border-subtle'
                 }`}
               />
               {!isLast && (
                 <div
                   className={`w-0.5 flex-1 min-h-[24px] ${
-                    isPast ? 'bg-semantic-primary' : 'bg-semantic-border-subtle'
+                    isPast ? 'bg-semantic-brand' : 'bg-semantic-border-subtle'
                   }`}
                 />
               )}
@@ -72,7 +72,7 @@ export function OrderTimeline({ status, timestamps }: OrderTimelineProps) {
               <p
                 className={`text-sm font-medium ${
                   isCurrent
-                    ? 'text-semantic-primary'
+                    ? 'text-semantic-brand'
                     : isPast
                     ? 'text-semantic-text-primary'
                     : isFuture

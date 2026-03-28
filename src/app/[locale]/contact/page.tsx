@@ -24,7 +24,7 @@ export default function ContactPage() {
             </h2>
             <a
               href="mailto:info@secondturn.games"
-              className="text-frost-arctic sm:hover:text-frost-ice transition-colors"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors"
             >
               info@secondturn.games
             </a>
@@ -48,7 +48,7 @@ export default function ContactPage() {
             For GDPR data requests, see our{' '}
             <Link
               href="/privacy"
-              className="text-frost-arctic sm:hover:text-frost-ice transition-colors underline"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
             >
               Privacy Policy
             </Link>{' '}

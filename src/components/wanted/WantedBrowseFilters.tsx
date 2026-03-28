@@ -188,7 +188,7 @@ export function WantedBrowseFilters({ currentFilters }: WantedBrowseFiltersProps
                     onClick={() => toggleCountry(c.value as CountryCode)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] ${
                       isActive
-                        ? 'bg-semantic-primary text-semantic-text-inverse border-2 border-semantic-primary'
+                        ? 'bg-semantic-brand text-semantic-text-inverse border-2 border-semantic-brand'
                         : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
                     }`}
                   >

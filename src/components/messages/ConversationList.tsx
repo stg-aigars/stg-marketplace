@@ -34,7 +34,7 @@ function ConversationList({ conversations, activeConversationId }: ConversationL
             href={`/messages/${conv.id}`}
             className={`flex items-center gap-3 px-4 py-3 transition-colors ${
               isActive
-                ? 'bg-semantic-trust/10'
+                ? 'bg-semantic-brand/10'
                 : 'hover:bg-semantic-bg-subtle'
             }`}
           >
@@ -76,7 +76,7 @@ function ConversationList({ conversations, activeConversationId }: ConversationL
 
             {/* Unread indicator */}
             {hasUnread && (
-              <div className="w-2.5 h-2.5 rounded-full bg-frost-arctic shrink-0" />
+              <div className="w-2.5 h-2.5 rounded-full bg-semantic-brand-active shrink-0" />
             )}
           </Link>
         );

@@ -29,7 +29,7 @@ function Stepper({ steps, currentStep, className = '' }: StepperProps) {
                 <div
                   className={`h-1.5 w-full rounded-full transition-colors ${
                     isCompleted || isCurrent
-                      ? 'bg-semantic-primary'
+                      ? 'bg-semantic-brand'
                       : 'bg-semantic-border-subtle'
                   }`}
                 />
@@ -42,7 +42,7 @@ function Stepper({ steps, currentStep, className = '' }: StepperProps) {
                         : 'text-semantic-text-muted'
                   }`}
                 >
-                  {isCompleted && <CheckCircle size={14} weight="fill" className="text-semantic-primary" aria-hidden="true" />}
+                  {isCompleted && <CheckCircle size={14} weight="fill" className="text-semantic-brand" aria-hidden="true" />}
                   {step.label}
                 </span>
               </div>

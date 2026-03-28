@@ -116,7 +116,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
           <div className="border-t border-semantic-border-subtle px-4 py-2">
             <Link
               href="/account/notifications"
-              className="block text-center text-sm text-frost-arctic sm:hover:underline"
+              className="block text-center text-sm text-semantic-brand-active sm:hover:underline"
               onClick={() => setOpen(false)}
             >
               View all notifications

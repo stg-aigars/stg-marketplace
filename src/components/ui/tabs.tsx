@@ -26,13 +26,13 @@ function Tabs({ tabs, activeTab, onTabChange, className = '' }: TabsProps) {
             onClick={() => onTabChange(tab.key)}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               isActive
-                ? 'text-semantic-primary'
+                ? 'text-semantic-brand'
                 : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'
             }`}
           >
             {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
             {isActive && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-primary" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-brand" />
             )}
           </button>
         );

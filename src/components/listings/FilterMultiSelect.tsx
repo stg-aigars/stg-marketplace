@@ -84,7 +84,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
                 <span
                   className={`flex items-center justify-center w-4 h-4 rounded border ${
                     isSelected
-                      ? 'bg-frost-arctic border-frost-arctic'
+                      ? 'bg-semantic-brand border-semantic-brand'
                       : 'border-semantic-border-default'
                   }`}
                 >
@@ -112,7 +112,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
         onClick={() => setOpen((prev) => !prev)}
         className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[32px] ${
           selected.length > 0
-            ? 'bg-frost-ice/10 text-frost-arctic border-2 border-frost-ice'
+            ? 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand'
             : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
         }`}
       >

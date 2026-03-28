@@ -48,7 +48,7 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
               aria-current={active ? 'page' : undefined}
               className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                 active
-                  ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
+                  ? 'bg-semantic-brand text-semantic-text-inverse border-semantic-brand'
                   : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
               }`}
             >
@@ -71,13 +71,13 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
             aria-current={active ? 'page' : undefined}
             className={`px-4 py-2 text-sm font-medium transition-colors relative sm:hover:text-semantic-text-secondary ${
               active
-                ? 'text-semantic-primary'
+                ? 'text-semantic-brand'
                 : 'text-semantic-text-muted'
             }`}
           >
             {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
             {active && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-primary" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-semantic-brand" />
             )}
           </Link>
         );
