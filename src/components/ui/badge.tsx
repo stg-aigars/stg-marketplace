@@ -29,7 +29,7 @@ function Badge({ variant = 'default', condition, className = '', children, ...pr
 
   return (
     <span
-      className={`inline-flex items-center rounded-2xl border px-2.5 py-1 text-xs font-medium ${classes} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold ${classes} ${className}`}
       {...props}
     >
       {children}
