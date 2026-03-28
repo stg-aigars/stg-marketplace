@@ -164,3 +164,22 @@ export const shadows = {
   xl: '0 12px 32px rgba(26, 31, 38, 0.14)',       // Modals
   focus: '0 0 0 3px rgba(107, 163, 181, 0.25)',   // Focus ring (brand teal)
 } as const;
+
+// Motion tokens - branded easing and durations
+export const motion = {
+  // Easing curves
+  easeOut: 'cubic-bezier(0.2, 0, 0, 1)',      // Primary — gentle spring for state changes
+  easeIn: 'cubic-bezier(0.4, 0, 1, 0.8)',      // For exits
+  easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',   // For movements
+
+  // Durations
+  fast: '150ms',     // Micro-feedback (button press scale)
+  normal: '250ms',   // Standard transitions (color, opacity)
+  slow: '350ms',     // State changes (hover effects, tab switches)
+  slower: '500ms',   // Layout shifts, page transitions
+
+  // Composites (for CSS transition shorthand)
+  hover: '300ms cubic-bezier(0.2, 0, 0, 1)',
+  press: '150ms cubic-bezier(0.2, 0, 0, 1)',
+  appear: '400ms cubic-bezier(0.2, 0, 0, 1)',
+} as const;

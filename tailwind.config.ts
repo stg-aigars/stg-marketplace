@@ -93,6 +93,14 @@ const config: Config = {
       boxShadow: {
         ...shadows,
       },
+      transitionTimingFunction: {
+        'ease-out-custom': 'cubic-bezier(0.2, 0, 0, 1)',
+        'ease-in-custom': 'cubic-bezier(0.4, 0, 1, 0.8)',
+      },
+      transitionDuration: {
+        '250': '250ms',
+        '350': '350ms',
+      },
     },
   },
   plugins: [],
