@@ -12,7 +12,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-semantic-primary text-semantic-text-inverse shadow-[0_2px_8px_rgba(208,135,112,0.2)] active:bg-semantic-primary-active active:shadow-sm sm:hover:bg-semantic-primary-hover',
+    'bg-semantic-primary text-semantic-text-inverse shadow-glow-primary active:bg-semantic-primary-active active:shadow-sm sm:hover:bg-semantic-primary-hover',
   secondary:
     'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-snow-storm-light active:shadow-sm sm:hover:shadow-md sm:hover:border-semantic-brand',
   ghost:

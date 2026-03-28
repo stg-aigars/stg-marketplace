@@ -5,16 +5,6 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --ease-out: cubic-bezier(0.2, 0, 0, 1);
-    --ease-in: cubic-bezier(0.4, 0, 1, 0.8);
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-    --duration-fast: 150ms;
-    --duration-normal: 250ms;
-    --duration-slow: 350ms;
-    --duration-slower: 500ms;
-  }
-
   body {
     @apply bg-semantic-bg-primary text-semantic-text-primary antialiased;
     -webkit-tap-highlight-color: transparent;

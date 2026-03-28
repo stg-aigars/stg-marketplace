@@ -37,6 +37,7 @@ const conditionClasses: Record<ConditionKey, string> = {
 
 function Badge({ variant = 'default', condition, dot, className = '', children, ...props }: BadgeProps) {
   const classes = condition ? conditionClasses[condition] : variantClasses[variant];
+  const ConditionIcon = condition ? conditionIcons[condition] : null;
 
   return (
     <span
@@ -46,10 +47,7 @@ function Badge({ variant = 'default', condition, dot, className = '', children, 
       {dot && (
         <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
       )}
-      {condition && (() => {
-        const Icon = conditionIcons[condition];
-        return Icon ? <Icon size={12} weight="bold" /> : null;
-      })()}
+      {ConditionIcon && <ConditionIcon size={12} weight="bold" />}
       {children}
     </span>
   );

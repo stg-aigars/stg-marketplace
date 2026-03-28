@@ -26,7 +26,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           id={id}
-          className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-[#FDFCFA] transition-all duration-250 ease-out-custom focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand ${error ? 'border-semantic-error shadow-[0_0_0_3px_rgba(192,96,104,0.1)]' : 'border-semantic-border-default'} ${className}`}
+          className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-input transition-all duration-250 ease-out-custom focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand ${error ? 'border-semantic-error shadow-glow-error' : 'border-semantic-border-default'} ${className}`}
           {...props}
         >
           {placeholder && (

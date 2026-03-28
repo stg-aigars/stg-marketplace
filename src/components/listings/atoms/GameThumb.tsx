@@ -14,8 +14,11 @@ const sizeClasses = {
   lg: 'w-14 h-14',
 } as const;
 
+const sizePx = { sm: 40, md: 48, lg: 56 } as const;
+
 function GameThumb({ src, alt, size = 'md', className = '' }: GameThumbProps) {
   const isBGG = src?.includes('cf.geekdo-images.com');
+  const px = sizePx[size];
 
   return (
     <div className={`${sizeClasses[size]} rounded-lg bg-semantic-bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center ${className}`}>
@@ -23,8 +26,8 @@ function GameThumb({ src, alt, size = 'md', className = '' }: GameThumbProps) {
         <Image
           src={src}
           alt={alt}
-          width={56}
-          height={56}
+          width={px}
+          height={px}
           className={isBGG ? 'object-contain' : 'object-cover w-full h-full'}
           unoptimized={isBGG}
         />

@@ -270,7 +270,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             onClick={() => onToggle(country.code)}
             className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors min-h-[44px] sm:min-h-[32px] ${
               isActive
-                ? 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand'
+                ? ACTIVE_WEIGHT_CHIP
                 : INACTIVE_CHIP
             }`}
           >
