@@ -39,7 +39,7 @@ function ConversationList({ conversations, activeConversationId }: ConversationL
             }`}
           >
             {/* Listing thumbnail */}
-            <div className="w-12 h-12 rounded-lg bg-snow-storm-light flex items-center justify-center overflow-hidden shrink-0 relative">
+            <div className="w-12 h-12 rounded-lg bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0 relative">
               {conv.listing_thumbnail ? (
                 <Image
                   src={conv.listing_thumbnail}

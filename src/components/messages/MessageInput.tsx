@@ -62,9 +62,10 @@ function MessageInput({ onSend, disabled = false, placeholder = 'Type a message.
         className="flex-1 min-h-[44px] max-h-[120px] rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus resize-none"
       />
       <Button
+        variant="ghost"
         onClick={handleSubmit}
         disabled={!content.trim() || disabled || sending}
-        className="shrink-0"
+        className="shrink-0 text-semantic-brand sm:hover:text-semantic-brand-hover"
       >
         {sending ? (
           <Spinner />
