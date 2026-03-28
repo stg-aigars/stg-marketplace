@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button, Stepper, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
-import type { ListingCondition, VersionSource } from '@/lib/listings/types';
+import type { ListingCondition, ListingType, VersionSource } from '@/lib/listings/types';
 import { GameSearchStep } from './GameSearchStep';
 import type { EnrichedGame } from './GameSearchStep';
 import { VersionStep } from './VersionStep';
@@ -45,6 +45,9 @@ export interface FormData {
   // Step 5: Price & description
   price_cents: number;
   description: string;
+  // Auction fields
+  starting_price_cents: number;
+  auction_duration_days: number;
 }
 
 const initialFormData: FormData = {
@@ -64,6 +67,8 @@ const initialFormData: FormData = {
   condition: null,
   price_cents: 0,
   description: '',
+  starting_price_cents: 0,
+  auction_duration_days: 3,
 };
 
 interface ListingCreationFlowProps {
@@ -72,6 +77,7 @@ interface ListingCreationFlowProps {
   lockedFields?: ('game' | 'price')[];
   offerId?: string;
   wantedOfferId?: string;
+  listingType?: ListingType;
 }
 
 export function ListingCreationFlow({
@@ -80,7 +86,9 @@ export function ListingCreationFlow({
   lockedFields = [],
   offerId,
   wantedOfferId,
+  listingType = 'fixed_price',
 }: ListingCreationFlowProps = {}) {
+  const isAuction = listingType === 'auction';
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
@@ -112,7 +120,7 @@ export function ListingCreationFlow({
       case 4:
         return formData.condition !== null;
       case 5:
-        return formData.price_cents >= 50;
+        return isAuction ? formData.starting_price_cents >= 50 : formData.price_cents >= 50;
       case 6:
         return true;
       default:
@@ -157,6 +165,11 @@ export function ListingCreationFlow({
       photos: formData.photos,
       offer_id: offerId,
       wanted_offer_id: wantedOfferId,
+      listing_type: listingType,
+      ...(isAuction ? {
+        starting_price_cents: formData.starting_price_cents,
+        auction_duration_days: formData.auction_duration_days,
+      } : {}),
     }, turnstileToken);
 
     if ('error' in result) {
@@ -252,11 +265,14 @@ export function ListingCreationFlow({
 
         {step === 5 && (
           <PriceStep
-            priceCents={formData.price_cents}
+            priceCents={isAuction ? formData.starting_price_cents : formData.price_cents}
             description={formData.description}
-            onPriceChange={(price_cents) => updateFormData({ price_cents })}
+            onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
             onDescriptionChange={(description) => updateFormData({ description })}
             lockedPrice={priceLocked ? formData.price_cents : undefined}
+            isAuction={isAuction}
+            auctionDurationDays={formData.auction_duration_days}
+            onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
           />
         )}
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui';
+import { Input, Select } from '@/components/ui';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
+import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
 
 interface PriceStepProps {
   priceCents: number;
@@ -13,6 +14,9 @@ interface PriceStepProps {
   onDescriptionChange: (desc: string) => void;
   compact?: boolean;
   lockedPrice?: number;
+  isAuction?: boolean;
+  auctionDurationDays?: number;
+  onDurationChange?: (days: number) => void;
 }
 
 const MAX_DESCRIPTION_LENGTH = 1000;
@@ -24,6 +28,9 @@ export function PriceStep({
   onDescriptionChange,
   compact,
   lockedPrice,
+  isAuction,
+  auctionDurationDays,
+  onDurationChange,
 }: PriceStepProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -63,10 +70,12 @@ export function PriceStep({
       ) : (
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
-            Set your price
+            {isAuction ? 'Set your auction' : 'Set your price'}
           </h2>
           <p className="text-sm text-semantic-text-secondary mt-1">
-            Choose a fair price for your pre-loved game. Buyers pay this plus shipping.
+            {isAuction
+              ? 'Set a starting price and duration. Bidders compete — the highest bid wins.'
+              : 'Choose a fair price for your pre-loved game. Buyers pay this plus shipping.'}
           </p>
         </div>
       )}
@@ -90,7 +99,7 @@ export function PriceStep({
       ) : (
         <>
           <Input
-            label="Price"
+            label={isAuction ? 'Starting price' : 'Price'}
             type="text"
             inputMode="decimal"
             prefix="€"
@@ -100,7 +109,31 @@ export function PriceStep({
             error={showMinError ? `Minimum price is ${formatCentsToCurrency(MIN_PRICE_CENTS)}` : undefined}
           />
 
-          {earnings && priceCents >= MIN_PRICE_CENTS && (
+          {isAuction && onDurationChange && (
+            <Select
+              label="Auction duration"
+              options={AUCTION_DURATION_OPTIONS}
+              value={String(auctionDurationDays ?? 3)}
+              onChange={(e) => onDurationChange(parseInt(e.target.value, 10))}
+            />
+          )}
+
+          {isAuction && priceCents >= MIN_PRICE_CENTS && (
+            <div className="bg-semantic-bg-surface rounded-lg px-4 py-3 space-y-1">
+              <p className="text-sm text-semantic-text-secondary">
+                Bids start at{' '}
+                <span className="font-medium text-semantic-text-primary">
+                  {formatCentsToCurrency(priceCents)}
+                </span>
+                . Minimum increment: €1.00
+              </p>
+              <p className="text-xs text-semantic-text-muted">
+                Bids are final and cannot be withdrawn. 10% commission applies to the winning bid.
+              </p>
+            </div>
+          )}
+
+          {!isAuction && earnings && priceCents >= MIN_PRICE_CENTS && (
             <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
               <p className="text-sm text-semantic-text-secondary">
                 You&apos;ll receive{' '}
