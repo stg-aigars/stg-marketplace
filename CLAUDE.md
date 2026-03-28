@@ -47,12 +47,14 @@ Never use 12-hour time format (AM/PM).
 - Focused/form pages: `max-w-4xl mx-auto px-4 sm:px-6`
 - Page vertical padding: `py-6`
 - Homepage sections: `py-8 sm:py-10 lg:py-12`
-- Card image heights: `h-40 sm:h-44 lg:h-48`
-- H1 page headings: `text-2xl sm:text-3xl font-bold`
-- H2 section headings: `text-xl sm:text-2xl font-semibold`
+- Card image containers: `aspect-square` (not fixed heights)
+- H1 page headings: `text-2xl sm:text-3xl font-bold font-display tracking-tight`
+- H2 section headings: `text-xl sm:text-2xl font-semibold font-display tracking-tight`
+- H2 card subsections: `text-base font-semibold` (stays Inter, no `font-display`)
 - Borders: `border` (1px default); `border-2` only for selected/active states
 - Shadows: `shadow-sm` (resting) → `shadow-md` (hover) → `shadow-lg` (dropdowns) → `shadow-xl` (modals)
 - Colors: Never hardcode hex values — use Tailwind design token classes
+- Transitions: Always use branded timing — `duration-250 ease-out-custom` or `duration-350 ease-out-custom`
 
 ## Brand Voice
 - Welcoming, straightforward, playful, trustworthy
@@ -104,13 +106,13 @@ Always use these — do not write inline equivalents:
 | Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
 | Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
-| Condition & status badges | `Badge` (variants: default, success, warning, error, trust; condition keys) | `@/components/ui` |
+| Condition & status badges | `Badge` (variants: default, success, warning, error, trust; condition keys; `dot` prop for status dots) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
 | Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible; optional icon + title) | `@/components/ui` |
 | User avatars / initials | `Avatar` (sizes: sm, md) | `@/components/ui` |
 | Loading placeholders | `Skeleton` | `@/components/ui` |
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
-| Empty / no-results states | `EmptyState` (icon, title, description, action) | `@/components/ui` |
+| Empty / no-results states | `EmptyState` (icon, title, description, action, secondaryAction) | `@/components/ui` |
 | Breadcrumb navigation | `Breadcrumb` (items: { label, href? }[]) | `@/components/ui` |
 | Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
 | State-based tabs | `Tabs` (tabs, activeTab, onTabChange; underline style with counts) | `@/components/ui` |
@@ -121,12 +123,23 @@ Always use these — do not write inline equivalents:
 | Country display | Country utilities | `@/lib/country-utils` |
 | Bot protection | `TurnstileWidget` (invisible; auto-resets on expiry; graceful skip when unconfigured) | `@/components/ui` |
 | Social sharing | `ShareButtons` (copy link + native share; pass full URL from server component) | `@/components/ui` |
+| Game thumbnail | `GameThumb` (src, alt, size: sm/md/lg; BGG-aware) | `@/components/listings/atoms` |
+| Game title | `GameTitle` (name, size, serif; display font by default) | `@/components/listings/atoms` |
+| Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
+| Price display | `Price` (cents, size; always Inter, never display font) | `@/components/listings/atoms` |
+| Compact listing row | `ListingRow` (horizontal; uses atoms) | `@/components/listings` |
+| Mobile listing card | `ListingCardMini` (compressed for 2-col mobile grid) | `@/components/listings` |
 
 ## Design System Rules
 - **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.
 - **No hardcoded colors.** Never use raw Tailwind color classes (`red-600`, `amber-500`, `blue-100`). Always use semantic tokens (`semantic-error`, `semantic-warning`, `semantic-primary`) or design palette tokens (`aurora-*`, `frost-*`, `condition-*`).
 - **No inline button/card/input styling.** If it looks like a button, use `<Button>`. If it's a bordered content area, use `<Card>`. If it's a text field, use `<Input>` or `<Select>`.
-- **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold`. Card-subsection H2 = `text-base font-semibold`.
+- **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold font-display tracking-tight`. Card-subsection H2 = `text-base font-semibold` (Inter, no `font-display`).
+- **Typography:** `font-display` (Fraunces) is for headings and game identity text only. Never for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Inter).
+- **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Sell) use `semantic-primary` (orange).
+- **Badge shape:** `rounded-md` (squared), not pills. Condition badges include a Phosphor tier icon.
+- **Image containers:** Game art uses `aspect-square`, not fixed heights.
+- **Transitions:** All transitions use branded easing — `duration-250 ease-out-custom` or `duration-350 ease-out-custom`.
 - **When adding a new UI component:** Add it to `@/components/ui/index.ts`, update the Shared Components table above, and flag in PR description that a new design system component was introduced.
 
 ## BGG Integration
