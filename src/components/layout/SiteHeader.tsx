@@ -74,39 +74,40 @@ function SiteHeader() {
 
   const displayName = profile?.full_name || 'Account';
 
+  const isActive = (href: string) => {
+    const clean = pathname.replace(/^\/[a-z]{2}(?=\/)/, '');
+    return clean === href || (href !== '/' && clean.startsWith(href + '/'));
+  };
+
+  const navLinkClass = (href: string) =>
+    isActive(href)
+      ? 'bg-[#EDF5F7] text-semantic-brand font-semibold rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom'
+      : 'text-semantic-text-secondary sm:hover:text-semantic-text-primary rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom font-medium';
+
   const navLinks = (
     <>
-      <Link
-        href="/browse"
-        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
-      >
+      <Link href="/browse" className={navLinkClass('/browse')}>
         Browse
       </Link>
-      <Link
-        href="/wanted"
-        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
-      >
+      <Link href="/wanted" className={navLinkClass('/wanted')}>
         Wanted
       </Link>
-      <Link
-        href="/sell"
-        className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
-      >
+      <Link href="/sell" className={navLinkClass('/sell')}>
         Sell a game
       </Link>
     </>
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-semantic-bg-elevated border-b border-semantic-border-subtle shadow-sm">
+    <header className="sticky top-0 z-50 bg-semantic-bg-elevated/85 backdrop-blur-xl border-b border-semantic-border-subtle shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
           <Link
             href="/"
-            className="text-semantic-text-heading font-bold text-lg whitespace-nowrap"
+            className="text-semantic-text-heading font-bold text-lg font-display tracking-tight whitespace-nowrap"
           >
-            Second Turn Games
+            Second Turn
           </Link>
 
           {/* Desktop nav */}
@@ -130,7 +131,7 @@ function SiteHeader() {
 
             {/* Auth */}
             {loading ? (
-              <div className="w-20 h-8 rounded-md bg-snow-storm-light animate-pulse" />
+              <div className="w-20 h-8 rounded-md bg-semantic-bg-secondary animate-pulse" />
             ) : !user ? (
               <Link
                 href="/auth/signin"
