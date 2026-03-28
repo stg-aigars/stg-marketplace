@@ -101,8 +101,8 @@ export default async function SellerProfilePage({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Seller header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Avatar name={sellerName} size="md" className="w-14 h-14 text-lg" />
+      <div className="flex items-center gap-4 mb-6">
+        <Avatar name={sellerName} size="md" className="w-14 h-14 text-lg bg-gradient-to-br from-semantic-brand to-semantic-brand-active text-white" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {sellerName}
@@ -115,9 +115,6 @@ export default async function SellerProfilePage({
               </span>
             )}
             <span>Member since {formatDate(new Date(profile.created_at))}</span>
-            {completedSales > 0 && (
-              <span>{completedSales} {completedSales === 1 ? 'sale' : 'sales'} completed</span>
-            )}
           </div>
           <div className="flex items-center gap-2 mt-1">
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} />
@@ -127,6 +124,31 @@ export default async function SellerProfilePage({
             url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/sellers/${id}`}
             title={sellerName}
           />
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="flex items-center gap-6 sm:gap-10 py-4 mb-8 border-y border-semantic-border-subtle text-sm text-semantic-text-muted">
+        <div>
+          <span className="block text-lg font-bold font-display text-semantic-text-heading">{completedSales}</span>
+          {completedSales === 1 ? 'Sale' : 'Sales'}
+        </div>
+        <div className="w-px h-8 bg-semantic-border-subtle" />
+        <div>
+          <span className="block text-lg font-bold font-display text-semantic-text-heading">
+            {rating.ratingCount > 0 ? `${rating.positivePct}%` : '\u2014'}
+          </span>
+          Positive
+        </div>
+        <div className="w-px h-8 bg-semantic-border-subtle" />
+        <div>
+          <span className="block text-lg font-bold font-display text-semantic-text-heading">{shelfItems.length}</span>
+          On shelf
+        </div>
+        <div className="w-px h-8 bg-semantic-border-subtle" />
+        <div>
+          <span className="block text-lg font-bold font-display text-semantic-text-heading">{activeListings.length}</span>
+          Listed
         </div>
       </div>
 
