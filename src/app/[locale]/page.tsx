@@ -73,7 +73,7 @@ export default async function HomePage() {
             </h2>
             <Link
               href="/browse"
-              className="text-sm font-medium text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors"
+              className="text-sm font-medium text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
             >
               Browse all
             </Link>

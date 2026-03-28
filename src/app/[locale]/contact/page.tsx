@@ -24,7 +24,7 @@ export default function ContactPage() {
             </h2>
             <a
               href="mailto:info@secondturn.games"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
             >
               info@secondturn.games
             </a>
@@ -48,7 +48,7 @@ export default function ContactPage() {
             For GDPR data requests, see our{' '}
             <Link
               href="/privacy"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
             >
               Privacy Policy
             </Link>{' '}

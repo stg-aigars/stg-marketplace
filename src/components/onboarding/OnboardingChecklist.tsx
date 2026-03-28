@@ -50,7 +50,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
         </div>
         <div className="mt-2 h-1.5 rounded-full bg-semantic-border-subtle overflow-hidden">
           <div
-            className="h-full rounded-full bg-semantic-brand transition-all duration-300"
+            className="h-full rounded-full bg-semantic-brand transition-all duration-350 ease-out-custom"
             style={{ width: `${progressPercent}%` }}
           />
         </div>

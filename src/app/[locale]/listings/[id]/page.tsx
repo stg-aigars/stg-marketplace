@@ -372,7 +372,7 @@ export default async function ListingDetailPage({
                 <div>
                   <Link
                     href={`/sellers/${listing.seller_id}`}
-                    className="font-medium text-semantic-text-heading sm:hover:text-semantic-brand transition-colors"
+                    className="font-medium text-semantic-text-heading sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
                   >
                     {listing.user_profiles?.full_name ?? 'Anonymous'}
                   </Link>

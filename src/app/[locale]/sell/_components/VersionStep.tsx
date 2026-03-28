@@ -25,7 +25,7 @@ function getVersionLanguages(version: BGGVersion): string[] {
 }
 
 function filterChipClass(active: boolean): string {
-  return `whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+  return `whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors duration-250 ease-out-custom ${
     active
       ? 'bg-semantic-brand/10 text-semantic-brand-active border border-semantic-brand'
       : 'bg-semantic-bg-surface text-semantic-text-secondary border border-semantic-border-subtle hover:border-semantic-border-default'
@@ -368,7 +368,7 @@ function VersionCard({
   return (
     <Card
       hoverable
-      className={`cursor-pointer transition-all ${
+      className={`cursor-pointer transition-all duration-350 ease-out-custom ${
         selected ? 'border-2 border-semantic-primary shadow-md' : ''
       }`}
       onClick={onClick}

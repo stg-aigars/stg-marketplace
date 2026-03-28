@@ -49,7 +49,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact }: Conditio
             <Card
               key={condition}
               hoverable
-              className={`cursor-pointer transition-all ${
+              className={`cursor-pointer transition-all duration-350 ease-out-custom ${
                 isSelected
                   ? 'border-2 border-semantic-primary shadow-md'
                   : ''

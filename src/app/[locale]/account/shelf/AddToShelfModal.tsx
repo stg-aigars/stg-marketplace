@@ -153,7 +153,7 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
                     <button
                       type="button"
                       onClick={() => setSelected(game)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-semantic-bg-surface transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
                     >
                       <div className="w-10 h-10 rounded bg-snow-storm-light flex items-center justify-center overflow-hidden shrink-0">
                         {game.thumbnail ? (

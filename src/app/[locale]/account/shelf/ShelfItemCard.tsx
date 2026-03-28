@@ -57,7 +57,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
           <button
             type="button"
             onClick={() => setMenuOpen(!menuOpen)}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:hover:bg-semantic-bg-overlay transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:hover:bg-semantic-bg-overlay transition-colors duration-250 ease-out-custom"
             aria-label="Shelf item actions"
           >
             <DotsThreeVertical size={18} weight="bold" />
@@ -71,7 +71,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
                   setMenuOpen(false);
                   onEdit();
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-text-primary hover:bg-semantic-bg-surface transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-text-primary hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
               >
                 <PencilSimple size={16} />
                 Edit
@@ -82,7 +82,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
                   setMenuOpen(false);
                   setShowConfirm(true);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-error hover:bg-semantic-bg-surface transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-error hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
               >
                 <Trash size={16} />
                 Remove

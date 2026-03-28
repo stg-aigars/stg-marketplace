@@ -59,7 +59,7 @@ export default async function StaffDisputeDetailPage({
       {/* Back link */}
       <Link
         href="/staff/disputes"
-        className="text-sm text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors mb-4 inline-block"
+        className="text-sm text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom mb-4 inline-block"
       >
         &larr; Back to disputes
       </Link>

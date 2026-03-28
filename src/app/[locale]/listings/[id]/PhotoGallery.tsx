@@ -50,7 +50,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             <button
               key={i}
               onClick={() => setActiveIndex(i)}
-              className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors relative ${
+              className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors duration-250 ease-out-custom relative ${
                 i === activeIndex
                   ? 'border-2 border-semantic-primary'
                   : 'border border-semantic-border-subtle sm:hover:border-semantic-border-default'

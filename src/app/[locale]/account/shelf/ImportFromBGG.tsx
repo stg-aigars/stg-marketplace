@@ -258,7 +258,7 @@ export function ImportFromBGG({
                     return (
                       <li key={item.bggGameId}>
                         <label
-                          className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
+                          className={`flex items-center gap-3 px-3 py-2.5 transition-colors duration-250 ease-out-custom ${
                             isEligible
                               ? 'cursor-pointer hover:bg-semantic-bg-surface'
                               : 'opacity-50 cursor-not-allowed'

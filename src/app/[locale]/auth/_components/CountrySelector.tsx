@@ -27,7 +27,7 @@ export function CountrySelector({ value, onChange }: CountrySelectorProps) {
               key={country.code}
               type="button"
               onClick={() => onChange(country.code)}
-              className={`flex flex-col items-center gap-1 rounded-lg py-3 px-2 text-sm font-medium transition-colors min-h-[44px] ${
+              className={`flex flex-col items-center gap-1 rounded-lg py-3 px-2 text-sm font-medium transition-colors duration-250 ease-out-custom min-h-[44px] ${
                 isSelected
                   ? 'border-2 border-semantic-primary bg-semantic-primary/5 text-semantic-text-primary'
                   : 'border border-semantic-border-subtle bg-semantic-bg-elevated text-semantic-text-secondary sm:hover:border-semantic-border-default'

@@ -86,7 +86,7 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
                 {isListed && (
                   <Link
                     href={`/listings/${item.listing_id}`}
-                    className="block w-full text-center text-sm font-medium py-1.5 rounded-lg text-semantic-text-secondary hover:bg-semantic-bg-subtle transition-colors"
+                    className="block w-full text-center text-sm font-medium py-1.5 rounded-lg text-semantic-text-secondary hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
                   >
                     View listing
                   </Link>

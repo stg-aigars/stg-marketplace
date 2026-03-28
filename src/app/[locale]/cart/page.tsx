@@ -223,7 +223,7 @@ export default function CartPage() {
                           </span>
                           <button
                             onClick={() => removeItem(item.listingId)}
-                            className="p-1.5 rounded-md text-semantic-text-tertiary hover:text-semantic-error hover:bg-semantic-error-bg transition-colors"
+                            className="p-1.5 rounded-md text-semantic-text-tertiary hover:text-semantic-error hover:bg-semantic-error-bg transition-colors duration-250 ease-out-custom"
                             aria-label={`Remove ${item.gameTitle} from cart`}
                           >
                             <Trash size={18} />

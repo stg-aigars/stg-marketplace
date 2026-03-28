@@ -138,14 +138,14 @@ export default function PrivacyPage() {
             To access, export, or delete your data, visit your{' '}
             <Link
               href="/account/settings"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
             >
               account settings
             </Link>
             . For other requests, please contact us via our{' '}
             <Link
               href="/contact"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
             >
               contact page
             </Link>
@@ -178,7 +178,7 @@ export default function PrivacyPage() {
           See also our{' '}
           <Link
             href="/terms"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors underline"
+            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
           >
             Terms of Service
           </Link>

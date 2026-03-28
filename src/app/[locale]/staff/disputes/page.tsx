@@ -70,7 +70,7 @@ export default async function StaffDisputesPage({
           <Link
             key={filter.value}
             href={filter.value === 'all' ? '/staff/disputes' : `/staff/disputes?filter=${filter.value}`}
-            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded-full border transition-colors duration-250 ease-out-custom ${
               activeFilter === filter.value
                 ? 'bg-semantic-primary text-semantic-text-inverse border-semantic-primary'
                 : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
