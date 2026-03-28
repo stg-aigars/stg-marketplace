@@ -118,6 +118,9 @@ function ListingCard({
 
           <div className="flex items-center justify-between">
             <div>
+              {isAuction && bidCount === 0 && (
+                <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
+              )}
               <span className="font-bold text-semantic-text-heading">
                 {formatCentsToCurrency(priceCents)}
               </span>

@@ -160,7 +160,7 @@ export function ListingCreationFlow({
       language: formData.language,
       edition_year: formData.edition_year,
       condition: formData.condition,
-      price_cents: formData.price_cents,
+      price_cents: isAuction ? formData.starting_price_cents : formData.price_cents,
       description: formData.description || null,
       photos: formData.photos,
       offer_id: offerId,

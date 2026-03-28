@@ -20,7 +20,9 @@ export function ReviewStep({
   publishing,
   error,
 }: ReviewStepProps) {
-  const earnings = calculateSellerEarnings(formData.price_cents);
+  const isAuction = formData.starting_price_cents > 0 && formData.auction_duration_days > 0;
+  const effectivePrice = isAuction ? formData.starting_price_cents : formData.price_cents;
+  const earnings = calculateSellerEarnings(effectivePrice);
   const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
   const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
@@ -105,14 +107,20 @@ export function ReviewStep({
             {/* Price */}
             <div>
               <p className="text-sm font-medium text-semantic-text-primary mb-1">
-                Price
+                {isAuction ? 'Starting price' : 'Price'}
               </p>
               <p className="text-lg font-semibold text-semantic-text-heading">
-                {formatCentsToCurrency(formData.price_cents)}
+                {formatCentsToCurrency(effectivePrice)}
               </p>
-              <p className="text-sm text-semantic-text-muted">
-                You&apos;ll receive {formatCentsToCurrency(earnings.walletCreditCents)} after 10% platform fee
-              </p>
+              {isAuction ? (
+                <p className="text-sm text-semantic-text-muted">
+                  {formData.auction_duration_days}-day auction. 10% commission on winning bid.
+                </p>
+              ) : (
+                <p className="text-sm text-semantic-text-muted">
+                  You&apos;ll receive {formatCentsToCurrency(earnings.walletCreditCents)} after 10% platform fee
+                </p>
+              )}
             </div>
 
             <hr className="border-semantic-border-subtle" />

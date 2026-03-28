@@ -102,7 +102,7 @@ export async function POST(request: Request) {
           listingId: auction.id,
         });
 
-        // Notify + email all other bidders that they lost (staggered to avoid burst limits)
+        // Notify + email all other bidders that they lost
         const { data: otherBids } = await supabase
           .from('bids')
           .select('bidder_id')
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
           }));
           void notifyMany(notifications);
 
-          // Email outbid bidders (staggered)
+          // Email outbid bidders (fire-and-forget)
           const bidderProfiles = await fetchProfiles(supabase, uniqueBidders);
           bidderProfiles.forEach((bidder) => {
             if (bidder.email) {
