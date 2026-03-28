@@ -69,7 +69,7 @@ export function PriceStep({
         <h2 className="text-base font-semibold text-semantic-text-heading">Price and description</h2>
       ) : (
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             {isAuction ? 'Set your auction' : 'Set your price'}
           </h2>
           <p className="text-sm text-semantic-text-secondary mt-1">

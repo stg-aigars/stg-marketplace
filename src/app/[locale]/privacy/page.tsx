@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
         Privacy Policy
       </h1>
 
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         </p>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             1. Who we are
           </h2>
           <p>
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             2. Data we collect
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             3. How we use your data
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             4. Data storage and security
           </h2>
           <p>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             5. Data sharing
           </h2>
           <p>We share your data only with:</p>
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             6. Cookies
           </h2>
           <p>
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             7. Your rights under GDPR
           </h2>
           <p>You have the right to:</p>
@@ -154,7 +154,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             8. Data retention
           </h2>
           <p>
@@ -165,7 +165,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             9. Changes to this policy
           </h2>
           <p>

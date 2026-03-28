@@ -127,7 +127,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
         ]}
       />
 
-      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
         Edit listing
       </h1>
 

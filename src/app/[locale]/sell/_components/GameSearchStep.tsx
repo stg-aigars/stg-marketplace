@@ -168,7 +168,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
   if (selectedGameId && selectedGame) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
           Selected game
         </h2>
         <Card>
@@ -210,7 +210,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+      <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
         What game are you selling?
       </h2>
 

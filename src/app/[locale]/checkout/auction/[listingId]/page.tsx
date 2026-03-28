@@ -65,7 +65,7 @@ export default async function AuctionCheckoutPage({ params }: Props) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-4">
+      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
         Pay for your winning auction
       </h1>
 

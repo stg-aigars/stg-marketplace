@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
         Terms of Service
       </h1>
 
@@ -18,7 +18,7 @@ export default function TermsPage() {
         </p>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             1. About Second Turn Games
           </h2>
           <p>
@@ -30,7 +30,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             2. Eligibility
           </h2>
           <p>
@@ -40,7 +40,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             3. Buyer obligations
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -52,7 +52,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             4. Seller obligations
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -64,7 +64,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             5. Fees and commissions
           </h2>
           <p>
@@ -78,7 +78,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             6. Payments
           </h2>
           <p>
@@ -88,7 +88,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             7. Shipping
           </h2>
           <p>
@@ -99,7 +99,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             8. Prohibited content
           </h2>
           <p>
@@ -110,7 +110,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             9. Limitation of liability
           </h2>
           <p>
@@ -121,7 +121,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             10. Changes to these terms
           </h2>
           <p>
@@ -131,7 +131,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             11. Contact
           </h2>
           <p>

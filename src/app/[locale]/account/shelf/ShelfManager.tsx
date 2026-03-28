@@ -40,7 +40,7 @@ export function ShelfManager({ initialItems, bggUsername }: ShelfManagerProps) {
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           My shelf
         </h1>
         {items.length > 0 && (

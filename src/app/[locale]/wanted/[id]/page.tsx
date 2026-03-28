@@ -74,7 +74,7 @@ export default async function WantedDetailPage({ params }: Props) {
 
         {/* Details */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {listing.game_name}
           </h1>
           {listing.game_year && (

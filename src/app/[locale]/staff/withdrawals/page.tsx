@@ -53,7 +53,7 @@ export default async function StaffWithdrawalsPage({
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading mb-4">
+      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
         Withdrawal requests
       </h1>
 

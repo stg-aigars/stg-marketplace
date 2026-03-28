@@ -24,7 +24,7 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
 
   return (
     <section className="mb-8">
-      <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading mb-4">
+      <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
         Game shelf ({visibleItems.length})
       </h2>
 

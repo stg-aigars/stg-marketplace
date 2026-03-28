@@ -176,7 +176,7 @@ export function VersionStep({
   if (loading) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
           Which edition?
         </h2>
         <div className="flex items-center justify-center py-8">
@@ -190,7 +190,7 @@ export function VersionStep({
   if (showManual) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
           Enter edition details
         </h2>
         <p className="text-sm text-semantic-text-secondary">
@@ -250,7 +250,7 @@ export function VersionStep({
         <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
       ) : (
         <>
-          <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             Which edition?
           </h2>
           <p className="text-sm text-semantic-text-secondary">

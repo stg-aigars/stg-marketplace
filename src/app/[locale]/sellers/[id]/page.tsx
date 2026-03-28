@@ -104,7 +104,7 @@ export default async function SellerProfilePage({
       <div className="flex items-center gap-4 mb-8">
         <Avatar name={sellerName} size="md" className="w-14 h-14 text-lg" />
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {sellerName}
           </h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-semantic-text-secondary">
@@ -139,7 +139,7 @@ export default async function SellerProfilePage({
 
       {/* Reviews section */}
       <section className="mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading mb-4">
+        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
           Reviews
         </h2>
         {reviews.length === 0 ? (
@@ -163,7 +163,7 @@ export default async function SellerProfilePage({
 
       {/* Active listings section */}
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading mb-4">
+        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
           Active listings
         </h2>
         {activeListings.length === 0 ? (

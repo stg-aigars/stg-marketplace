@@ -65,7 +65,7 @@ export default async function StaffDisputeDetailPage({
       </Link>
 
       <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           Dispute — {typedDispute.orders?.order_number ?? '—'}
         </h1>
         <Badge variant={status.badgeVariant}>{status.label}</Badge>

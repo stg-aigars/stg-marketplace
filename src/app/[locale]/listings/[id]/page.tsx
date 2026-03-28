@@ -228,7 +228,7 @@ export default async function ListingDetailPage({
         <div className="space-y-6">
           {/* Title & condition */}
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+            <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
               {listing.game_name}
               {listing.game_year && (
                 <span className="text-semantic-text-muted font-normal text-xl ml-2">

@@ -32,7 +32,7 @@ export default async function HomePage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Hero */}
       <section className="py-8 sm:py-10 lg:py-12 text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           {t('home.hero')}
         </h1>
         <p className="mt-3 text-base sm:text-lg text-semantic-text-secondary max-w-2xl mx-auto">
@@ -52,7 +52,7 @@ export default async function HomePage() {
       {recentListings && recentListings.length > 0 && (
         <section className="py-8 sm:py-10 lg:py-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+            <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
               Recently listed
             </h2>
             <Link

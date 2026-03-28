@@ -31,7 +31,7 @@ export function ReviewStep({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-semibold text-semantic-text-heading">
+      <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
         Review your listing
       </h2>
 
