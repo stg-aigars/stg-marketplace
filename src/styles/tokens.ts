@@ -14,12 +14,12 @@ export const colors = {
     nightDark: '#4C566A',   // Borders and dividers in dark mode
   },
 
-  // Nordic Snow Storm - Base lights
+  // Nordic Snow Storm - Warm parchment base lights
   snow: {
-    storm: '#D8DEE9',       // Subtle borders and dividers
-    stormLight: '#E5E9F0',  // Elevated surfaces in light mode
-    stormLightest: '#ECEFF4', // Primary background
-    white: '#FEFEFE',       // Card backgrounds (not pure white)
+    storm: '#E8E5DF',       // Warm subtle borders and dividers
+    stormLight: '#F5F3EF',  // Warm elevated surfaces
+    stormLightest: '#FAF9F6', // Warm parchment background
+    white: '#FFFFFF',        // True white for cards (contrast with warm bg)
   },
 
   // Nordic Frost - Primary trust colors (signature brand)
@@ -62,16 +62,16 @@ export const colors = {
     textPrimary: '#3B4252',
     textSecondary: '#434C5E',
     textMuted: '#4C566A',
-    textInverse: '#ECEFF4',
+    textInverse: '#FAF9F6',
 
-    bgPrimary: '#ECEFF4',
-    bgSecondary: '#E5E9F0',
-    bgElevated: '#FEFEFE',
+    bgPrimary: '#FAF9F6',
+    bgSecondary: '#F5F3EF',
+    bgElevated: '#FFFFFF',
     bgOverlay: 'rgba(46, 52, 64, 0.6)',
 
-    borderSubtle: '#D8DEE9',
-    borderDefault: '#C8CED9',
-    borderStrong: '#B8BEC9',
+    borderSubtle: '#E8E5DF',
+    borderDefault: '#D4CFC7',
+    borderStrong: '#C0BAB0',
     borderFocus: '#D08770',
   },
 
