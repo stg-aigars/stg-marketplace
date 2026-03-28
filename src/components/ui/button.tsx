@@ -12,13 +12,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-semantic-primary text-semantic-text-inverse active:bg-semantic-primary-active sm:hover:bg-semantic-primary-hover',
+    'bg-semantic-primary text-semantic-text-inverse shadow-[0_2px_8px_rgba(208,135,112,0.2)] active:bg-semantic-primary-active active:shadow-sm sm:hover:bg-semantic-primary-hover',
   secondary:
-    'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-snow-storm-light sm:hover:shadow-md',
+    'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-snow-storm-light active:shadow-sm sm:hover:shadow-md sm:hover:border-semantic-brand',
   ghost:
     'text-semantic-text-secondary active:bg-snow-storm-light sm:hover:bg-snow-storm-light',
   danger:
-    'bg-semantic-error text-semantic-text-inverse active:bg-semantic-error-hover sm:hover:bg-semantic-error-hover',
+    'bg-semantic-error text-semantic-text-inverse active:bg-semantic-error-hover active:shadow-sm sm:hover:bg-semantic-error-hover',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -33,7 +33,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center font-medium transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+        className={`inline-flex items-center justify-center font-medium transition-all duration-250 ease-out-custom active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
         {...props}
       >
         {loading ? (
