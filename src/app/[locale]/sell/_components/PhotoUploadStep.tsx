@@ -79,14 +79,14 @@ function SortablePhoto({
         aria-roledescription="sortable"
       />
       {/* Drag handle icon */}
-      <div className="absolute top-1.5 left-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm pointer-events-none sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-250 ease-out-custom">
+      <div className="absolute top-1.5 left-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm pointer-events-none sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-250 ease-out-custom">
         <DotsSixVertical size={16} />
       </div>
       {/* Remove button */}
       <button
         type="button"
         onClick={onRemove}
-        className="absolute top-1.5 right-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-250 ease-out-custom focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus"
+        className="absolute top-1.5 right-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg bg-semantic-bg-overlay/80 text-semantic-text-inverse backdrop-blur-sm active:bg-semantic-bg-overlay sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-250 ease-out-custom focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus"
         aria-label={`Remove photo ${index + 1}`}
       >
         <X size={16} />
