@@ -51,7 +51,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact }: Conditio
               hoverable
               className={`cursor-pointer transition-all duration-350 ease-out-custom ${
                 isSelected
-                  ? 'border-2 border-semantic-primary shadow-md'
+                  ? 'border-2 border-semantic-brand shadow-md'
                   : ''
               }`}
               onClick={() => onSelect(condition)}
@@ -67,7 +67,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact }: Conditio
                     </p>
                   </div>
                   {isSelected && (
-                    <CheckCircle size={20} weight="fill" className="text-semantic-primary shrink-0 mt-0.5" />
+                    <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
                   )}
                 </div>
               </CardBody>

@@ -233,7 +233,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading > 0}
-          className="w-full min-h-[120px] border border-dashed border-semantic-border-default rounded-lg flex flex-col items-center justify-center gap-2 text-semantic-text-muted active:border-semantic-primary sm:hover:border-semantic-primary transition-colors duration-250 ease-out-custom disabled:opacity-50"
+          className="w-full min-h-[120px] border-[1.5px] border-dashed border-semantic-border-default bg-semantic-bg-secondary rounded-xl flex flex-col items-center justify-center gap-2 text-semantic-text-muted active:border-semantic-brand sm:hover:border-semantic-brand transition-colors duration-250 ease-out-custom disabled:opacity-50"
         >
           {uploading > 0 ? (
             <>
@@ -244,7 +244,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
             </>
           ) : (
             <>
-              <CloudArrowUp size={32} />
+              <CloudArrowUp size={36} className="text-semantic-brand" />
               <span className="text-sm">Tap to upload photos</span>
             </>
           )}

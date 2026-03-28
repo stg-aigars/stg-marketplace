@@ -137,7 +137,7 @@ export function PriceStep({
             <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
               <p className="text-sm text-semantic-text-secondary">
                 You&apos;ll receive{' '}
-                <span className="font-medium text-semantic-text-primary">
+                <span className="font-bold font-display text-semantic-accent">
                   {formatCentsToCurrency(earnings.walletCreditCents)}
                 </span>{' '}
                 after 10% platform fee
