@@ -206,7 +206,7 @@ export default async function ListingDetailPage({
           {(listing.status === 'reserved' || listing.status === 'sold') && (
             <Link
               href="/account/orders"
-              className="text-sm text-semantic-primary font-medium mt-2 inline-block"
+              className="text-sm text-semantic-brand font-medium mt-2 inline-block"
             >
               View your orders
             </Link>

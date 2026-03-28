@@ -159,7 +159,7 @@ export function BidPanel({
 
         {!currentUserId && !isEnded && (
           <p className="text-sm text-semantic-text-muted">
-            <a href="/auth/signin" className="text-semantic-primary font-medium">Sign in</a> to place a bid.
+            <a href="/auth/signin" className="text-semantic-brand font-medium">Sign in</a> to place a bid.
           </p>
         )}
 

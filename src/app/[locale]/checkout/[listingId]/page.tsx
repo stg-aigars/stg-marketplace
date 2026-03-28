@@ -79,7 +79,7 @@ export default async function CheckoutPage({
           <p className="text-semantic-text-secondary mb-6">
             It may have been sold or removed by the seller.
           </p>
-          <Link href="/browse" className="text-semantic-primary font-medium">
+          <Link href="/browse" className="text-semantic-brand font-medium">
             Browse other games
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default async function CheckoutPage({
           <p className="text-semantic-text-secondary mb-6">
             You cannot purchase your own listing.
           </p>
-          <Link href={`/listings/${listing.id}`} className="text-semantic-primary font-medium">
+          <Link href={`/listings/${listing.id}`} className="text-semantic-brand font-medium">
             Back to listing
           </Link>
         </div>
@@ -121,7 +121,7 @@ export default async function CheckoutPage({
           <p className="text-semantic-text-secondary mb-6">
             Shipping is not available between these countries yet.
           </p>
-          <Link href={`/listings/${listing.id}`} className="text-semantic-primary font-medium">
+          <Link href={`/listings/${listing.id}`} className="text-semantic-brand font-medium">
             Back to listing
           </Link>
         </div>

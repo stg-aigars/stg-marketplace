@@ -50,7 +50,7 @@ export default async function WantedDetailPage({ params }: Props) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <Link
         href="/wanted"
-        className="inline-flex items-center gap-1.5 text-sm text-semantic-text-muted active:text-semantic-primary sm:hover:text-semantic-primary mb-4"
+        className="inline-flex items-center gap-1.5 text-sm text-semantic-text-muted active:text-semantic-brand sm:hover:text-semantic-brand mb-4"
       >
         <ArrowLeft size={16} />
         Back to wanted games
@@ -150,7 +150,7 @@ export default async function WantedDetailPage({ params }: Props) {
         <Card className="mt-6">
           <CardBody className="text-center">
             <p className="text-sm text-semantic-text-muted">
-              <Link href="/auth/signin" className="text-semantic-primary font-medium">
+              <Link href="/auth/signin" className="text-semantic-brand font-medium">
                 Sign in
               </Link>
               {' '}to make an offer on this wanted game.

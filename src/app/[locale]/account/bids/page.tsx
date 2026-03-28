@@ -82,7 +82,7 @@ function BidSection({ title, bids, userId }: {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <Link href={`/listings/${bid.listing_id}`} className="text-sm font-medium text-semantic-text-heading truncate block active:text-semantic-primary sm:hover:text-semantic-primary">
+                    <Link href={`/listings/${bid.listing_id}`} className="text-sm font-medium text-semantic-text-heading truncate block active:text-semantic-brand sm:hover:text-semantic-brand">
                       {bid.game_name}
                       {bid.game_year ? ` (${bid.game_year})` : ''}
                     </Link>

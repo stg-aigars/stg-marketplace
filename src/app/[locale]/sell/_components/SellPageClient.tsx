@@ -20,7 +20,7 @@ export function SellPageClient() {
           <button type="button" onClick={() => setListingType('fixed_price')}>
             <Card hoverable className="h-full text-left">
               <CardBody className="flex items-start gap-4 py-6">
-                <Tag size={32} weight="duotone" className="text-semantic-primary shrink-0 mt-0.5" />
+                <Tag size={32} weight="duotone" className="text-semantic-brand shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-semantic-text-heading">Fixed price</p>
                   <p className="text-sm text-semantic-text-muted mt-1">
@@ -34,7 +34,7 @@ export function SellPageClient() {
           <button type="button" onClick={() => setListingType('auction')}>
             <Card hoverable className="h-full text-left">
               <CardBody className="flex items-start gap-4 py-6">
-                <Gavel size={32} weight="duotone" className="text-semantic-primary shrink-0 mt-0.5" />
+                <Gavel size={32} weight="duotone" className="text-semantic-brand shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold text-semantic-text-heading">Auction</p>
                   <p className="text-sm text-semantic-text-muted mt-1">
@@ -54,7 +54,7 @@ export function SellPageClient() {
       <button
         type="button"
         onClick={() => setListingType(null)}
-        className="text-sm text-semantic-text-muted active:text-semantic-primary sm:hover:text-semantic-primary mb-4 inline-block"
+        className="text-sm text-semantic-text-muted active:text-semantic-brand sm:hover:text-semantic-brand mb-4 inline-block"
       >
         ← Change listing type
       </button>

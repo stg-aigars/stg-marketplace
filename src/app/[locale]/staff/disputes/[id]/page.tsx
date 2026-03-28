@@ -84,7 +84,7 @@ export default async function StaffDisputeDetailPage({
                 <dd className="text-semantic-text-primary font-medium">
                   <Link
                     href={`/orders/${typedDispute.order_id}`}
-                    className="text-semantic-primary sm:hover:underline"
+                    className="text-semantic-brand sm:hover:underline"
                   >
                     {typedDispute.orders?.order_number ?? '—'}
                   </Link>

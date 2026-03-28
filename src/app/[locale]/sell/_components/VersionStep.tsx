@@ -340,7 +340,7 @@ export function VersionStep({
           onClick={handleSkip}
           className={
             isManualSelected && !showManual
-              ? 'text-semantic-primary font-medium'
+              ? 'text-semantic-brand font-medium'
               : 'text-semantic-text-muted'
           }
         >
@@ -369,7 +369,7 @@ function VersionCard({
     <Card
       hoverable
       className={`cursor-pointer transition-all duration-350 ease-out-custom ${
-        selected ? 'border-2 border-semantic-primary shadow-md' : ''
+        selected ? 'border-2 border-semantic-brand shadow-md' : ''
       }`}
       onClick={onClick}
     >
@@ -405,7 +405,7 @@ function VersionCard({
             </div>
           </div>
           {selected && (
-            <CheckCircle size={20} weight="fill" className="text-semantic-primary shrink-0 mt-0.5" />
+            <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
           )}
         </div>
       </CardBody>
