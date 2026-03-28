@@ -79,7 +79,7 @@ export const colors = {
     bgSurface: '#F5F3EF',        // Interactive surfaces (hover menus, overlays on cards)
     bgSubtle: '#FAF9F6',         // Subtle background tint (section alternation)
     bgInput: '#FDFCFA',          // Slightly warm, distinguishes from card white
-    bgOverlay: 'rgba(46, 52, 64, 0.6)',
+    bgOverlay: 'rgba(26, 31, 38, 0.5)',
 
     borderSubtle: '#E8E5DF',
     borderDefault: '#D4CFC7',
