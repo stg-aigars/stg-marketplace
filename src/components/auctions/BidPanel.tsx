@@ -37,8 +37,8 @@ export function BidPanel({
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
 
-  const isOwner = currentUserId === sellerId;
-  const isHighestBidder = currentUserId === state.highestBidderId;
+  const isOwner = currentUserId != null && currentUserId === sellerId;
+  const isHighestBidder = currentUserId != null && currentUserId === state.highestBidderId;
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
