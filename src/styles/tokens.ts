@@ -49,6 +49,15 @@ export const colors = {
     trustHover: '#81A1C1',
     trustActive: '#5E81AC',
 
+    // Brand identity (teal) — links, focus, active nav, trust indicators
+    brand: '#6BA3B5',
+    brandHover: '#5A9AAD',
+    brandActive: '#4A8A9C',
+
+    // Warm gold accent — ratings, featured highlights
+    accent: '#C9A84C',
+    accentBg: '#FBF8EE',
+
     success: '#A3BE8C',
     successHover: '#95B07D',
 
@@ -72,7 +81,7 @@ export const colors = {
     borderSubtle: '#E8E5DF',
     borderDefault: '#D4CFC7',
     borderStrong: '#C0BAB0',
-    borderFocus: '#D08770',
+    borderFocus: '#6BA3B5',       // Brand teal focus ring (was aurora.orange)
   },
 
   // Condition badge colors
