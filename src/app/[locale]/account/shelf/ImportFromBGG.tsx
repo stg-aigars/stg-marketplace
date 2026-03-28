@@ -271,7 +271,7 @@ export function ImportFromBGG({
                             onChange={() => isEligible && toggleItem(item.bggGameId)}
                             className="rounded border-semantic-border-default text-semantic-primary focus:ring-semantic-border-focus h-4 w-4 shrink-0"
                           />
-                          <div className="w-12 h-12 rounded bg-snow-storm-light flex items-center justify-center overflow-hidden shrink-0">
+                          <div className="w-12 h-12 rounded bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0">
                             {item.thumbnail ? (
                               <Image
                                 src={item.thumbnail}

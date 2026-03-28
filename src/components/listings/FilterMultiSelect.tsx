@@ -79,7 +79,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
                   isSelected
                     ? 'text-semantic-text-primary font-medium'
                     : 'text-semantic-text-secondary'
-                } sm:hover:bg-snow-storm-light`}
+                } sm:hover:bg-semantic-bg-secondary`}
               >
                 <span
                   className={`flex items-center justify-center w-4 h-4 rounded border ${

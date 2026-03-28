@@ -14,7 +14,7 @@ export function Avatar({ name, size = 'md', className = '' }: AvatarProps) {
 
   return (
     <div
-      className={`bg-snow-storm-light flex items-center justify-center text-semantic-text-muted font-medium ${sizeClasses[size]} ${className}`}
+      className={`bg-semantic-bg-secondary flex items-center justify-center text-semantic-text-muted font-medium ${sizeClasses[size]} ${className}`}
       aria-hidden="true"
     >
       {initial}

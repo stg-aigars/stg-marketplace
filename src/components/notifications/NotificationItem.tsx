@@ -44,7 +44,7 @@ function NotificationItem({ notification, onRead }: NotificationItemProps) {
         isUnread
           ? 'bg-semantic-brand/5'
           : ''
-      } sm:hover:bg-snow-storm-light`}
+      } sm:hover:bg-semantic-bg-secondary`}
     >
       <div className="shrink-0 mt-0.5">
         <Icon size={18} className={isUnread ? 'text-semantic-brand-active' : 'text-semantic-text-muted'} />

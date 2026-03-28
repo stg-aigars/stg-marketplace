@@ -20,7 +20,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
 
   if (images.length === 0) {
     return (
-      <div className="aspect-square bg-snow-storm-light rounded-lg flex items-center justify-center">
+      <div className="aspect-square bg-semantic-bg-secondary rounded-lg flex items-center justify-center">
         <ImageSquare size={64} className="text-semantic-text-muted" />
       </div>
     );
@@ -31,7 +31,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
   return (
     <div className="space-y-3">
       {/* Main image */}
-      <div className="aspect-square bg-snow-storm-light rounded-lg overflow-hidden relative">
+      <div className="aspect-square bg-semantic-bg-secondary rounded-lg overflow-hidden relative">
         <Image
           src={activeUrl}
           alt={`${gameTitle} - photo ${activeIndex + 1}`}

@@ -88,7 +88,7 @@ function ConversationView({ conversation, initialMessages, currentUserId }: Conv
           href={`/listings/${conversation.listing_id}`}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-250 ease-out-custom"
         >
-          <div className="w-10 h-10 rounded-lg bg-snow-storm-light flex items-center justify-center overflow-hidden shrink-0 relative">
+          <div className="w-10 h-10 rounded-lg bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0 relative">
             {conversation.listing_thumbnail ? (
               <Image
                 src={conversation.listing_thumbnail}

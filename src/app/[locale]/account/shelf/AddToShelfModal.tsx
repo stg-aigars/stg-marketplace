@@ -155,7 +155,7 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
                       onClick={() => setSelected(game)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
                     >
-                      <div className="w-10 h-10 rounded bg-snow-storm-light flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="w-10 h-10 rounded bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0">
                         {game.thumbnail ? (
                           <Image
                             src={game.thumbnail}
@@ -195,7 +195,7 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
           <>
             {/* Selected game display */}
             <div className="flex items-center gap-3 p-3 rounded-lg bg-semantic-bg-surface border border-semantic-border-subtle">
-              <div className="w-12 h-12 rounded bg-snow-storm-light flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-12 h-12 rounded bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0">
                 {selected.thumbnail ? (
                   <Image
                     src={selected.thumbnail}

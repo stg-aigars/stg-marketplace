@@ -20,7 +20,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: 'bg-snow-storm-light text-semantic-text-secondary border-snow-storm',
+  default: 'bg-semantic-bg-secondary text-semantic-text-secondary border-semantic-border-subtle',
   success: 'bg-condition-like-new-bg text-condition-like-new-text border-condition-like-new',
   warning: 'bg-condition-good-bg text-condition-good-text border-condition-good',
   error: 'bg-condition-for-parts-bg text-condition-for-parts-text border-condition-for-parts',

@@ -68,7 +68,7 @@ function TerminalPicker({ terminals, selectedId, onSelect, fetchFailed }: Termin
                   className={`w-full text-left px-3 py-2.5 text-sm transition-colors duration-250 ease-out-custom min-h-[44px] ${
                     selectedId === terminal.id
                       ? 'bg-semantic-brand/10 text-semantic-brand-active font-medium'
-                      : 'text-semantic-text-secondary sm:hover:bg-snow-storm-light'
+                      : 'text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary'
                   }`}
                 >
                   <span className="block">{terminal.name}</span>

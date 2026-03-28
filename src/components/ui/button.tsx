@@ -14,9 +14,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-semantic-primary text-semantic-text-inverse shadow-glow-primary active:bg-semantic-primary-active active:shadow-sm sm:hover:bg-semantic-primary-hover',
   secondary:
-    'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-snow-storm-light active:shadow-sm sm:hover:shadow-md sm:hover:border-semantic-brand',
+    'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-semantic-bg-secondary active:shadow-sm sm:hover:shadow-md sm:hover:border-semantic-brand',
   ghost:
-    'text-semantic-text-secondary active:bg-snow-storm-light sm:hover:bg-snow-storm-light',
+    'text-semantic-text-secondary active:bg-semantic-bg-secondary sm:hover:bg-semantic-bg-secondary',
   danger:
     'bg-semantic-error text-semantic-text-inverse active:bg-semantic-error-hover active:shadow-sm sm:hover:bg-semantic-error-hover',
 };
