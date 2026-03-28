@@ -31,8 +31,8 @@ export default async function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Hero */}
-      <section className="py-8 sm:py-10 lg:py-12 text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+      <section className="py-8 sm:py-10 lg:py-12 text-center bg-gradient-to-br from-semantic-bg-primary via-semantic-bg-primary to-semantic-brand/[0.04] rounded-xl">
+        <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-semantic-text-heading">
           {t('home.hero')}
         </h1>
         <p className="mt-3 text-base sm:text-lg text-semantic-text-secondary max-w-2xl mx-auto">
@@ -45,6 +45,22 @@ export default async function HomePage() {
           <Link href="/sell">
             <Button size="lg" variant="secondary">{t('home.sellCta')}</Button>
           </Link>
+        </div>
+        <div className="mt-8 flex items-center justify-center gap-6 sm:gap-10 text-sm text-semantic-text-muted">
+          <div>
+            <span className="block text-lg font-bold font-display text-semantic-text-heading">3</span>
+            Countries
+          </div>
+          <div className="w-px h-8 bg-semantic-border-subtle" />
+          <div>
+            <span className="block text-lg font-bold font-display text-semantic-text-heading">170k+</span>
+            Games in catalog
+          </div>
+          <div className="w-px h-8 bg-semantic-border-subtle" />
+          <div>
+            <span className="block text-lg font-bold font-display text-semantic-text-heading">Parcel lockers</span>
+            Cross-border shipping
+          </div>
         </div>
       </section>
 
