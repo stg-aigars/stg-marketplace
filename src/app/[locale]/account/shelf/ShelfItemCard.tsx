@@ -91,8 +91,8 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
           )}
         </div>
 
-        {/* Image */}
-        <div className="h-40 sm:h-44 lg:h-48 bg-snow-storm-light flex items-center justify-center overflow-hidden relative">
+        {/* Image — square */}
+        <div className="aspect-square bg-semantic-bg-secondary flex items-center justify-center overflow-hidden relative">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -110,7 +110,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
         {/* Details */}
         <div className="px-3 py-3 space-y-2">
           <div>
-            <h3 className="font-medium text-semantic-text-heading text-sm leading-tight line-clamp-2">
+            <h3 className="font-semibold font-display tracking-tight text-semantic-text-heading text-sm leading-tight line-clamp-2">
               {item.game_name}
             </h3>
             {item.game_year && (
