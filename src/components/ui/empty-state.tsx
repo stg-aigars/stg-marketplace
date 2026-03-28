@@ -17,21 +17,25 @@ interface EmptyStateButtonAction {
 type EmptyStateAction = EmptyStateLinkAction | EmptyStateButtonAction;
 
 interface EmptyStateProps {
-  icon?: ComponentType<{ size?: number | string; className?: string }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon?: ComponentType<any>;
   title?: string;
   description?: string;
   action?: EmptyStateAction;
+  secondaryAction?: { label: string; href: string };
   className?: string;
 }
 
-function EmptyState({ icon: Icon, title, description, action, className = '' }: EmptyStateProps) {
+function EmptyState({ icon: Icon, title, description, action, secondaryAction, className = '' }: EmptyStateProps) {
   return (
     <div className={`text-center py-16 ${className}`}>
       {Icon && (
-        <Icon size={64} className="mx-auto text-semantic-text-muted mb-4" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl border-[1.5px] border-dashed border-semantic-border-default mb-4">
+          <Icon size={36} className="text-semantic-brand" weight="regular" />
+        </div>
       )}
       {title && (
-        <p className="text-semantic-text-secondary text-lg">{title}</p>
+        <p className="text-semantic-text-secondary text-lg font-display tracking-tight font-semibold">{title}</p>
       )}
       {description && (
         <p className="text-semantic-text-muted mt-1">{description}</p>
@@ -47,6 +51,14 @@ function EmptyState({ icon: Icon, title, description, action, className = '' }: 
             {action.label}
           </Button>
         </div>
+      )}
+      {secondaryAction && (
+        <Link
+          href={secondaryAction.href}
+          className="block mt-2 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors"
+        >
+          {secondaryAction.label}
+        </Link>
       )}
     </div>
   );
