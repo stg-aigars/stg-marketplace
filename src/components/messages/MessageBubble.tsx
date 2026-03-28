@@ -13,7 +13,7 @@ function MessageBubble({ content, senderName, createdAt, isOwn }: MessageBubbleP
       <div
         className={`max-w-[80%] sm:max-w-[70%] rounded-xl px-4 py-2.5 ${
           isOwn
-            ? 'bg-[#EDF5F7] text-semantic-text-primary rounded-br-sm'
+            ? 'bg-semantic-brand-bg text-semantic-text-primary rounded-br-sm'
             : 'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-subtle rounded-bl-sm'
         }`}
       >

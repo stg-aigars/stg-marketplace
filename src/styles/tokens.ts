@@ -58,6 +58,12 @@ export const colors = {
     accent: '#C9A84C',
     accentBg: '#FBF8EE',
 
+    // Light tint backgrounds for icon containers and highlights
+    brandBg: '#EDF5F7',         // Brand teal tint
+    primaryBg: '#FBF0EB',       // Primary orange tint
+    successBg: '#EEF5EB',       // Success green tint
+    purpleBg: '#F3EDF5',        // Aurora purple tint
+
     success: '#A3BE8C',
     successHover: '#95B07D',
 

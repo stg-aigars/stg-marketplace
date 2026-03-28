@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CaretDown, X, List, ShoppingCart, Bell } from '@phosphor-icons/react/ssr';
 import { useAuth } from '@/contexts/AuthContext';
+import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
@@ -75,13 +76,13 @@ function SiteHeader() {
   const displayName = profile?.full_name || 'Account';
 
   const isActive = (href: string) => {
-    const clean = pathname.replace(/^\/[a-z]{2}(?=\/)/, '');
+    const clean = stripLocalePrefix(pathname);
     return clean === href || (href !== '/' && clean.startsWith(href + '/'));
   };
 
   const navLinkClass = (href: string) =>
     isActive(href)
-      ? 'bg-[#EDF5F7] text-semantic-brand font-semibold rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom'
+      ? 'bg-semantic-brand-bg text-semantic-brand font-semibold rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom'
       : 'text-semantic-text-secondary sm:hover:text-semantic-text-primary rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom font-medium';
 
   const navLinks = (
@@ -164,7 +165,7 @@ function SiteHeader() {
                     <Link
                       href="/account"
                       role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
                       onClick={() => setDropdownOpen(false)}
                     >
                       Account
@@ -172,7 +173,7 @@ function SiteHeader() {
                     <Link
                       href="/account/listings"
                       role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
                       onClick={() => setDropdownOpen(false)}
                     >
                       My Listings
@@ -180,7 +181,7 @@ function SiteHeader() {
                     <Link
                       href="/account/favorites"
                       role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
                       onClick={() => setDropdownOpen(false)}
                     >
                       Favorites
@@ -188,7 +189,7 @@ function SiteHeader() {
                     <Link
                       href="/messages"
                       role="menuitem"
-                      className="flex items-center justify-between px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="flex items-center justify-between px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
                       onClick={() => setDropdownOpen(false)}
                     >
                       Messages
@@ -197,7 +198,7 @@ function SiteHeader() {
                     <Link
                       href="/account/settings"
                       role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
                       onClick={() => setDropdownOpen(false)}
                     >
                       Settings
@@ -205,7 +206,7 @@ function SiteHeader() {
                     <button
                       role="menuitem"
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-snow-storm-light sm:hover:text-semantic-text-primary"
+                      className="block w-full text-left px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
                     >
                       Sign out
                     </button>
@@ -271,7 +272,7 @@ function SiteHeader() {
             </Link>
             <div className="border-t border-semantic-border-subtle my-1" />
             {loading ? (
-              <div className="w-24 h-8 rounded-md bg-snow-storm-light animate-pulse my-2" />
+              <div className="w-24 h-8 rounded-md bg-semantic-bg-secondary animate-pulse my-2" />
             ) : !user ? (
               <Link
                 href="/auth/signin"

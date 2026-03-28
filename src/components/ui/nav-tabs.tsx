@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { routing } from '@/i18n/routing';
+import { stripLocalePrefix } from '@/lib/locale-utils';
 
 interface NavTabItem {
   key: string;
@@ -17,14 +17,6 @@ interface NavTabsProps {
   activeTab?: string;
   variant?: 'underline' | 'pill';
   className?: string;
-}
-
-function stripLocalePrefix(pathname: string): string {
-  const segments = pathname.split('/');
-  if (segments.length > 1 && routing.locales.includes(segments[1] as (typeof routing.locales)[number])) {
-    return '/' + segments.slice(2).join('/') || '/';
-  }
-  return pathname;
 }
 
 function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: NavTabsProps) {
