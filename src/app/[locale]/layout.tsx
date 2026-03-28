@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { Toaster } from '@/components/ui';
 import '../globals.css';
 
 const inter = Inter({
@@ -76,6 +77,7 @@ export default async function LocaleLayout({
                 {children}
               </main>
               <SiteFooter />
+              <Toaster />
             </CartProvider>
           </AuthProvider>
         </NextIntlClientProvider>
