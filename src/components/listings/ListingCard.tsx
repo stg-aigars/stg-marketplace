@@ -55,15 +55,20 @@ function ListingCard({
 
   return (
     <Link href={`/listings/${id}`} className={`group block ${unavailable ? 'opacity-60' : ''}`}>
-      <Card hoverable={!unavailable} className="overflow-hidden">
-        {/* Image */}
-        <div className="h-40 sm:h-44 lg:h-48 bg-snow-storm-light flex items-center justify-center overflow-hidden relative">
+      <Card
+        hoverable={!unavailable}
+        className={`overflow-hidden border border-semantic-border-subtle transition-all duration-350 ease-out-custom ${
+          !unavailable ? 'sm:hover:border-semantic-brand sm:hover:shadow-lg sm:hover:-translate-y-0.5' : ''
+        }`}
+      >
+        {/* Image — square aspect ratio */}
+        <div className="aspect-square bg-semantic-bg-secondary flex items-center justify-center overflow-hidden relative">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt={gameTitle}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover transition-transform duration-350 ease-out-custom group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               unoptimized={imageUrl.includes('cf.geekdo-images.com')}
             />
@@ -72,7 +77,7 @@ function ListingCard({
           )}
           {unavailable && (
             <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-              <span className="text-sm font-medium text-semantic-text-secondary bg-white/90 px-3 py-1 rounded-full">
+              <span className="text-sm font-medium text-semantic-text-secondary bg-white/90 px-3 py-1 rounded-md">
                 No longer available
               </span>
             </div>
@@ -96,7 +101,7 @@ function ListingCard({
         {/* Details */}
         <div className="px-3 py-3 space-y-2">
           <div>
-            <h3 className="font-medium text-semantic-text-heading text-sm leading-tight line-clamp-2">
+            <h3 className="font-semibold font-display tracking-tight text-semantic-text-heading text-sm leading-tight line-clamp-2">
               {gameTitle}
             </h3>
             {gameYear && (
@@ -121,7 +126,7 @@ function ListingCard({
               {isAuction && bidCount === 0 && (
                 <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
               )}
-              <span className="font-bold text-semantic-text-heading">
+              <span className="font-bold font-sans tracking-tight text-semantic-text-heading">
                 {formatCentsToCurrency(priceCents)}
               </span>
               {isAuction && (
