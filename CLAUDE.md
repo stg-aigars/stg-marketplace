@@ -203,7 +203,7 @@ Existing cron routes: `expire-reservations` (5min), `end-auctions` (1min), `clea
 ## In-App Notifications
 - Every email event also creates an in-app notification via `notify(userId, type, context)` from `@/lib/notifications`
 - Fire-and-forget pattern (same as `logAuditEvent`) — never blocks the main operation
-- 34 notification types with prefixes: `order.`, `message.`, `offer.`, `dispute.`, `shipping.`, `wanted.`
+- 36 notification types with prefixes: `order.`, `message.`, `offer.`, `dispute.`, `shipping.`, `auction.`, `wanted.`
 - Copy centralized in `src/lib/notifications/templates.ts` — integration sites pass type + context, not strings
 - Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
 - Polling on pathname change for unread count (consistent with message unread badge)
