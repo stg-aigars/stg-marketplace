@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Fraunces } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -13,6 +13,14 @@ import '../globals.css';
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-display',
+  display: 'swap',
+  axes: ['opsz'],
 });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
@@ -59,7 +67,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body className={`${inter.variable} font-sans min-h-screen antialiased`}>
+      <body className={`${inter.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <CartProvider>
