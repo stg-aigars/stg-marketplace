@@ -33,6 +33,12 @@ import { OrderAutoCancelled } from './templates/order-auto-cancelled';
 import { ShippingReminderSeller } from './templates/shipping-reminder-seller';
 import { DeliveryReminderBuyer } from './templates/delivery-reminder-buyer';
 import { WantedOfferReceived } from './templates/wanted-offer-received';
+import { AuctionBidReceived } from './templates/auction-bid-received';
+import { AuctionOutbid } from './templates/auction-outbid';
+import { AuctionWon } from './templates/auction-won';
+import { AuctionEndedNoBids } from './templates/auction-ended-no-bids';
+import { AuctionPaymentReminder } from './templates/auction-payment-reminder';
+import { AuctionPaymentExpired } from './templates/auction-payment-expired';
 import { WantedOfferCountered } from './templates/wanted-offer-countered';
 import { WantedOfferAccepted } from './templates/wanted-offer-accepted';
 import { WantedOfferDeclined } from './templates/wanted-offer-declined';
@@ -875,6 +881,110 @@ export async function sendWantedListingCreatedToBuyer(params: {
     react: React.createElement(WantedListingCreated, {
       ...params,
       listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+// ============================================================================
+// Auction emails
+// ============================================================================
+
+export async function sendAuctionBidReceivedToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  bidderName: string;
+  gameName: string;
+  bidAmountCents: number;
+  bidCount: number;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `New bid on ${params.gameName}`,
+    react: React.createElement(AuctionBidReceived, {
+      ...params,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionOutbidNotification(params: {
+  bidderName: string;
+  bidderEmail: string;
+  gameName: string;
+  currentBidCents: number;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.bidderEmail,
+    subject: `You have been outbid on ${params.gameName}`,
+    react: React.createElement(AuctionOutbid, {
+      ...params,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionWonToWinner(params: {
+  winnerName: string;
+  winnerEmail: string;
+  gameName: string;
+  winningBidCents: number;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.winnerEmail,
+    subject: `You won ${params.gameName} — pay within 24 hours`,
+    react: React.createElement(AuctionWon, {
+      ...params,
+      checkoutUrl: `${env.app.url}/checkout/auction/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionEndedNoBidsToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  gameName: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Your auction for ${params.gameName} ended with no bids`,
+    react: React.createElement(AuctionEndedNoBids, {
+      ...params,
+      listingsUrl: `${env.app.url}/account/listings`,
+    }),
+  });
+}
+
+export async function sendAuctionPaymentReminderToWinner(params: {
+  winnerName: string;
+  winnerEmail: string;
+  gameName: string;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.winnerEmail,
+    subject: `12 hours left to pay for ${params.gameName}`,
+    react: React.createElement(AuctionPaymentReminder, {
+      ...params,
+      checkoutUrl: `${env.app.url}/checkout/auction/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionPaymentExpired(params: {
+  recipientName: string;
+  recipientEmail: string;
+  gameName: string;
+  isSeller: boolean;
+}): Promise<void> {
+  await sendEmail({
+    to: params.recipientEmail,
+    subject: `Auction payment expired for ${params.gameName}`,
+    react: React.createElement(AuctionPaymentExpired, {
+      ...params,
+      listingsUrl: `${env.app.url}/${params.isSeller ? 'account/listings' : 'browse'}`,
     }),
   });
 }

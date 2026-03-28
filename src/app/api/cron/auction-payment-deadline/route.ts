@@ -12,6 +12,11 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { notify } from '@/lib/notifications';
+import { fetchProfiles } from '@/lib/supabase/helpers';
+import {
+  sendAuctionPaymentReminderToWinner,
+  sendAuctionPaymentExpired,
+} from '@/lib/email';
 
 const BATCH_LIMIT = 50;
 
@@ -56,6 +61,18 @@ export async function POST(request: Request) {
           listingId: auction.id,
         });
 
+        // Email winner
+        const profiles = await fetchProfiles(supabase, [auction.highest_bidder_id]);
+        const winner = profiles.get(auction.highest_bidder_id);
+        if (winner?.email) {
+          sendAuctionPaymentReminderToWinner({
+            winnerName: winner.full_name,
+            winnerEmail: winner.email,
+            gameName: auction.game_name,
+            listingId: auction.id,
+          }).catch((err) => console.error('[Cron] Failed to email payment reminder:', err));
+        }
+
         remindersSent++;
       }
 
@@ -92,18 +109,43 @@ export async function POST(request: Request) {
       expired = ids.length;
       console.log(`[Cron] Cancelled ${expired} auctions (payment deadline expired)`);
 
-      // Notify both parties
+      // Notify + email both parties
       for (const auction of expiredAuctions) {
+        const profileIds = [auction.seller_id];
+        if (auction.highest_bidder_id) profileIds.push(auction.highest_bidder_id);
+        const profiles = await fetchProfiles(supabase, profileIds);
+
         if (auction.highest_bidder_id) {
           void notify(auction.highest_bidder_id, 'auction.payment_expired', {
             gameName: auction.game_name,
             listingId: auction.id,
           });
+
+          const winner = profiles.get(auction.highest_bidder_id);
+          if (winner?.email) {
+            sendAuctionPaymentExpired({
+              recipientName: winner.full_name,
+              recipientEmail: winner.email,
+              gameName: auction.game_name,
+              isSeller: false,
+            }).catch(() => {});
+          }
         }
+
         void notify(auction.seller_id, 'auction.payment_expired', {
           gameName: auction.game_name,
           listingId: auction.id,
         });
+
+        const seller = profiles.get(auction.seller_id);
+        if (seller?.email) {
+          sendAuctionPaymentExpired({
+            recipientName: seller.full_name,
+            recipientEmail: seller.email,
+            gameName: auction.game_name,
+            isSeller: true,
+          }).catch(() => {});
+        }
       }
     }
   }

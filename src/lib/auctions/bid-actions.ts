@@ -5,6 +5,10 @@ import { createClient } from '@/lib/supabase/server';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { notify } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
+import {
+  sendAuctionBidReceivedToSeller,
+  sendAuctionOutbidNotification,
+} from '@/lib/email';
 import type { PlaceBidResult } from './types';
 
 // ============================================================================
@@ -54,22 +58,50 @@ export async function placeBid(
     .single();
 
   if (listing) {
-    const profiles = await fetchProfiles(supabase, [user.id]);
+    const profileIds = [user.id, listing.seller_id];
+    if (result.prev_bidder_id && result.prev_bidder_id !== user.id) {
+      profileIds.push(result.prev_bidder_id);
+    }
+    const profiles = await fetchProfiles(supabase, profileIds);
     const bidder = profiles.get(user.id);
+    const seller = profiles.get(listing.seller_id);
 
-    // Notify seller of new bid
+    // Notify + email seller of new bid
     void notify(listing.seller_id, 'auction.bid_placed', {
       gameName: listing.game_name,
       listingId,
       buyerName: bidder?.full_name ?? 'A bidder',
     });
 
-    // Notify previous highest bidder they've been outbid
+    if (seller?.email) {
+      sendAuctionBidReceivedToSeller({
+        sellerName: seller.full_name,
+        sellerEmail: seller.email,
+        bidderName: bidder?.full_name ?? 'A bidder',
+        gameName: listing.game_name,
+        bidAmountCents: amountCents,
+        bidCount: result.bid_count ?? 0,
+        listingId,
+      }).catch(() => {});
+    }
+
+    // Notify + email previous highest bidder they've been outbid
     if (result.prev_bidder_id && result.prev_bidder_id !== user.id) {
       void notify(result.prev_bidder_id, 'auction.outbid', {
         gameName: listing.game_name,
         listingId,
       });
+
+      const prevBidder = profiles.get(result.prev_bidder_id);
+      if (prevBidder?.email) {
+        sendAuctionOutbidNotification({
+          bidderName: prevBidder.full_name,
+          bidderEmail: prevBidder.email,
+          gameName: listing.game_name,
+          currentBidCents: amountCents,
+          listingId,
+        }).catch(() => {});
+      }
     }
   }
 

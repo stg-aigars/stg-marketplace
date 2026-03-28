@@ -12,6 +12,12 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { notify, notifyMany } from '@/lib/notifications';
+import { fetchProfiles } from '@/lib/supabase/helpers';
+import {
+  sendAuctionWonToWinner,
+  sendAuctionOutbidNotification,
+  sendAuctionEndedNoBidsToSeller,
+} from '@/lib/email';
 
 const BATCH_LIMIT = 50;
 
@@ -70,11 +76,25 @@ export async function POST(request: Request) {
 
         endedWithBids++;
 
-        // Notify winner
+        // Fetch profiles for emails
+        const profiles = await fetchProfiles(supabase, [auction.highest_bidder_id]);
+        const winner = profiles.get(auction.highest_bidder_id);
+
+        // Notify + email winner
         void notify(auction.highest_bidder_id, 'auction.won', {
           gameName: auction.game_name,
           listingId: auction.id,
         });
+
+        if (winner?.email) {
+          sendAuctionWonToWinner({
+            winnerName: winner.full_name,
+            winnerEmail: winner.email,
+            gameName: auction.game_name,
+            winningBidCents: auction.current_bid_cents,
+            listingId: auction.id,
+          }).catch((err) => console.error('[Cron] Failed to email auction winner:', err));
+        }
 
         // Notify seller that auction ended with a winner
         void notify(auction.seller_id, 'auction.won', {
@@ -82,7 +102,7 @@ export async function POST(request: Request) {
           listingId: auction.id,
         });
 
-        // Notify all other bidders that they lost
+        // Notify + email all other bidders that they lost (staggered to avoid burst limits)
         const { data: otherBids } = await supabase
           .from('bids')
           .select('bidder_id')
@@ -100,6 +120,20 @@ export async function POST(request: Request) {
             },
           }));
           void notifyMany(notifications);
+
+          // Email outbid bidders (staggered)
+          const bidderProfiles = await fetchProfiles(supabase, uniqueBidders);
+          bidderProfiles.forEach((bidder) => {
+            if (bidder.email) {
+              sendAuctionOutbidNotification({
+                bidderName: bidder.full_name,
+                bidderEmail: bidder.email,
+                gameName: auction.game_name,
+                currentBidCents: auction.current_bid_cents,
+                listingId: auction.id,
+              }).catch((err) => console.error('[Cron] Failed to email outbid bidder:', err));
+            }
+          });
         }
       } else {
         // No bids → cancelled
@@ -117,10 +151,20 @@ export async function POST(request: Request) {
 
         endedNoBids++;
 
-        // Notify seller
+        // Notify + email seller
         void notify(auction.seller_id, 'auction.ended_no_bids', {
           gameName: auction.game_name,
         });
+
+        const sellerProfiles = await fetchProfiles(supabase, [auction.seller_id]);
+        const seller = sellerProfiles.get(auction.seller_id);
+        if (seller?.email) {
+          sendAuctionEndedNoBidsToSeller({
+            sellerName: seller.full_name,
+            sellerEmail: seller.email,
+            gameName: auction.game_name,
+          }).catch((err) => console.error('[Cron] Failed to email no-bids seller:', err));
+        }
       }
     } catch (err) {
       console.error(`[Cron] Error processing auction ${auction.id}:`, err);

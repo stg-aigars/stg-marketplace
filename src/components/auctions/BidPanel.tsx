@@ -8,7 +8,6 @@ import type { TurnstileWidgetRef } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { placeBid } from '@/lib/auctions/bid-actions';
-import { getAuctionState } from '@/lib/auctions/actions';
 import { getMinimumBid } from '@/lib/auctions/types';
 import type { AuctionState, BidWithBidder } from '@/lib/auctions/types';
 import { AuctionCountdown } from './AuctionCountdown';
@@ -49,8 +48,13 @@ export function BidPanel({
     if (isEnded) return;
 
     const interval = setInterval(async () => {
-      const fresh = await getAuctionState(listingId);
-      if (fresh) setState(fresh);
+      try {
+        const res = await fetch(`/api/auctions/${listingId}/state`);
+        if (res.ok) {
+          const fresh = await res.json();
+          setState(fresh);
+        }
+      } catch { /* silent — will retry next interval */ }
     }, 10000);
 
     return () => clearInterval(interval);
