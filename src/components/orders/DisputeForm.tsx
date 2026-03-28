@@ -114,7 +114,7 @@ export function DisputeForm({ orderId, onClose, open }: DisputeFormProps) {
             onChange={(e) => setReason(e.target.value)}
             placeholder="Please describe what is wrong with the item you received..."
             rows={4}
-            className="w-full rounded-lg border border-semantic-border-subtle bg-semantic-bg-subtle px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus/40 focus:border-semantic-border-focus resize-none"
+            className="w-full rounded-lg border border-semantic-border-subtle bg-semantic-bg-subtle px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           {reason.length > 0 && reason.trim().length < 10 && (
             <p className="text-xs text-semantic-text-muted mt-1">

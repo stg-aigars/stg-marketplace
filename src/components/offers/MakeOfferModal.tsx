@@ -133,7 +133,7 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
             maxLength={MAX_NOTE_LENGTH}
             rows={3}
             placeholder="Interested in this game, would you consider..."
-            className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent resize-none"
+            className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           <p className="mt-1 text-xs text-semantic-text-muted text-right">
             {note.length}/{MAX_NOTE_LENGTH}

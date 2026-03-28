@@ -48,7 +48,7 @@ function StartConversationForm({ listingId }: StartConversationFormProps) {
         placeholder="Ask a question about this game..."
         maxLength={MAX_MESSAGE_LENGTH}
         rows={3}
-        className="w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus resize-none"
+        className="w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
       />
       <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
       {error && (

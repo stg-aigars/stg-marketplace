@@ -75,7 +75,7 @@ export function EditShelfItemModal({ item, open, onClose, onUpdated }: EditShelf
             maxLength={MAX_NOTE_LENGTH}
             rows={3}
             placeholder="Condition details, language, edition..."
-            className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-border-focus focus:border-transparent resize-none"
+            className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           <p className="mt-1 text-xs text-semantic-text-muted text-right">
             {notes.length}/{MAX_NOTE_LENGTH}

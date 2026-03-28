@@ -116,7 +116,7 @@ export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
             maxLength={REVIEW_MAX_COMMENT_LENGTH}
             placeholder="Share your experience with other buyers (optional)"
             rows={3}
-            className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-primary px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus resize-none"
+            className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-primary px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           <p className="mt-1 text-xs text-semantic-text-muted text-right">
             {comment.length}/{REVIEW_MAX_COMMENT_LENGTH}

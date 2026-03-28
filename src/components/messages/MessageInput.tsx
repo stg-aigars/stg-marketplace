@@ -59,7 +59,7 @@ function MessageInput({ onSend, disabled = false, placeholder = 'Type a message.
         maxLength={MAX_MESSAGE_LENGTH}
         disabled={disabled || sending}
         rows={1}
-        className="flex-1 min-h-[44px] max-h-[120px] rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus resize-none"
+        className="flex-1 min-h-[44px] max-h-[120px] rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
       />
       <Button
         variant="ghost"

@@ -109,7 +109,7 @@ export function MakeWantedOfferModal({
             onChange={(e) => setNote(e.target.value)}
             maxLength={500}
             rows={3}
-            className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-elevated px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-border-focus"
+            className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-elevated px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand"
             placeholder="Edition details, shipping preferences, etc."
           />
         </div>
