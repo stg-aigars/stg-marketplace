@@ -68,7 +68,7 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
 
               <div className="flex items-center gap-3 mt-2 flex-wrap">
                 {statusConfig && (
-                  <Badge variant={statusConfig.badgeVariant}>
+                  <Badge variant={statusConfig.badgeVariant} dot>
                     {statusConfig.label}
                   </Badge>
                 )}

@@ -77,7 +77,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           Order {order.order_number}
         </h1>
         {statusConfig && (
-          <Badge variant={statusConfig.badgeVariant}>{statusConfig.label}</Badge>
+          <Badge variant={statusConfig.badgeVariant} dot>{statusConfig.label}</Badge>
         )}
       </div>
 

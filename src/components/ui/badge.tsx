@@ -16,6 +16,7 @@ const conditionIcons: Record<ConditionKey, React.FC<any>> = {
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
   condition?: ConditionKey;
+  dot?: boolean;
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
@@ -34,7 +35,7 @@ const conditionClasses: Record<ConditionKey, string> = {
   forParts: 'bg-condition-for-parts-bg text-condition-for-parts-text border-condition-for-parts',
 };
 
-function Badge({ variant = 'default', condition, className = '', children, ...props }: BadgeProps) {
+function Badge({ variant = 'default', condition, dot, className = '', children, ...props }: BadgeProps) {
   const classes = condition ? conditionClasses[condition] : variantClasses[variant];
 
   return (
@@ -42,6 +43,9 @@ function Badge({ variant = 'default', condition, className = '', children, ...pr
       className={`inline-flex items-center gap-1 rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold ${classes} ${className}`}
       {...props}
     >
+      {dot && (
+        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+      )}
       {condition && (() => {
         const Icon = conditionIcons[condition];
         return Icon ? <Icon size={12} weight="bold" /> : null;
