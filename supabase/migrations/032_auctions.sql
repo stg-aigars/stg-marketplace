@@ -96,6 +96,11 @@ DECLARE
   v_new_end_at TIMESTAMPTZ;
   v_prev_bidder_id UUID;
 BEGIN
+  -- Verify caller identity (prevent bidder spoofing via SECURITY DEFINER)
+  IF p_bidder_id != auth.uid() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized');
+  END IF;
+
   -- Lock the listing row to prevent concurrent bid races
   SELECT id, seller_id, listing_type, status, auction_end_at,
          starting_price_cents, current_bid_cents, bid_count, highest_bidder_id

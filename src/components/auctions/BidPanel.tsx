@@ -41,6 +41,7 @@ export function BidPanel({
   const isOwner = currentUserId === sellerId;
   const isHighestBidder = currentUserId === state.highestBidderId;
   const isEnded = state.status !== 'active';
+  const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
 
   // Poll for auction state updates every 10 seconds
@@ -113,7 +114,7 @@ export function BidPanel({
         {isHighestBidder && !isEnded && (
           <Alert variant="success">You are the highest bidder</Alert>
         )}
-        {currentUserId && !isHighestBidder && !isOwner && state.bidCount > 0 && !isEnded && (
+        {hasBid && !isHighestBidder && !isEnded && (
           <Alert variant="warning">You have been outbid</Alert>
         )}
 

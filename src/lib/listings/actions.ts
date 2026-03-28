@@ -152,6 +152,10 @@ export async function createListing(
     if (!data.auction_duration_days || !data.starting_price_cents) {
       return { error: 'Auction duration and starting price are required' };
     }
+    const validDurations = [1, 3, 5, 7];
+    if (!validDurations.includes(data.auction_duration_days)) {
+      return { error: 'Invalid auction duration' };
+    }
     const endAt = new Date(Date.now() + data.auction_duration_days * 24 * 60 * 60 * 1000).toISOString();
     insertPayload.starting_price_cents = data.starting_price_cents;
     insertPayload.auction_end_at = endAt;

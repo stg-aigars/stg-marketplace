@@ -76,8 +76,8 @@ export async function POST(request: Request) {
           listingId: auction.id,
         });
 
-        // Notify seller
-        void notify(auction.seller_id, 'auction.bid_placed', {
+        // Notify seller that auction ended with a winner
+        void notify(auction.seller_id, 'auction.won', {
           gameName: auction.game_name,
           listingId: auction.id,
         });

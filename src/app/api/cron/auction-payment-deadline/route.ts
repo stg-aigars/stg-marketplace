@@ -81,7 +81,8 @@ export async function POST(request: Request) {
       const { error: updateError } = await supabase
         .from('listings')
         .update({ status: 'cancelled' })
-        .in('id', ids);
+        .in('id', ids)
+        .eq('status', 'auction_ended');
 
       if (updateError) {
         console.error('[Cron] Auction deadline update failed:', updateError);
