@@ -164,29 +164,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to start checkout. Please try again.' }, { status: 500 });
   }
 
-  // 8. Reserve the listing (before payment, not after)
-  // Skip for auction listings — they're already locked via 'auction_ended' status
+  // 8. Verify listing is still reserved by this buyer (reservation happens at checkout page load).
+  // Skip for auction listings — they're already locked via 'auction_ended' status.
   if (!isAuctionWinner) {
-    // Accept 'active' OR already reserved by same buyer (retry/back-button refreshes the timer)
-    const { data: reserved } = await serviceClient
+    const { data: current } = await serviceClient
       .from('listings')
-      .update({
-        status: 'reserved',
-        reserved_at: new Date().toISOString(),
-        reserved_by: user.id,
-      })
+      .select('status, reserved_by')
       .eq('id', listingId)
-      .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${user.id})`)
-      .select('id')
       .single();
 
-    if (!reserved) {
-      // Race condition: another buyer reserved it between our check and this update
+    const isReservedByBuyer = current?.status === 'reserved' && current.reserved_by === user.id;
+    const isActive = current?.status === 'active';
+
+    if (!isReservedByBuyer && !isActive) {
       await serviceClient
         .from('checkout_sessions')
         .update({ status: 'expired' })
         .eq('id', session.id);
       return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
+    }
+
+    // If somehow still active (e.g. cart checkout path), reserve now
+    if (isActive) {
+      await serviceClient
+        .from('listings')
+        .update({
+          status: 'reserved',
+          reserved_at: new Date().toISOString(),
+          reserved_by: user.id,
+        })
+        .eq('id', listingId)
+        .eq('status', 'active');
     }
   }
 
@@ -220,13 +228,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Payments] Failed to create payment:', error);
 
-    // Revert the reservation so the listing isn't locked for 30 min
-    await serviceClient
-      .from('listings')
-      .update({ status: 'active', reserved_at: null, reserved_by: null })
-      .eq('id', listingId)
-      .eq('status', 'reserved');
-
+    // Keep the reservation alive — buyer can retry from checkout page.
+    // The 30-min TTL (expire-reservations cron) handles expiry if they abandon.
     await serviceClient
       .from('checkout_sessions')
       .update({ status: 'expired' })

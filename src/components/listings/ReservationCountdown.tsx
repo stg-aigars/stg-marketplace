@@ -7,9 +7,13 @@ import { RESERVATION_TTL_MS } from '@/lib/listings/constants';
 
 interface ReservationCountdownProps {
   reservedAt: string;
+  /** When true, shows buyer-facing "Reserved for you" copy instead of "reserved by another buyer". */
+  isOwner?: boolean;
+  /** When true, renders inline text without Card wrapper (for embedding in other cards). */
+  compact?: boolean;
 }
 
-export function ReservationCountdown({ reservedAt }: ReservationCountdownProps) {
+export function ReservationCountdown({ reservedAt, isOwner = false, compact = false }: ReservationCountdownProps) {
   const router = useRouter();
   const [remainingMs, setRemainingMs] = useState(() => {
     const expiresAt = new Date(reservedAt).getTime() + RESERVATION_TTL_MS;
@@ -34,7 +38,7 @@ export function ReservationCountdown({ reservedAt }: ReservationCountdownProps) 
   if (remainingMs <= 0) {
     return (
       <p className="text-sm text-semantic-text-muted">
-        Checking availability...
+        {isOwner ? 'Reservation expired. Refreshing...' : 'Checking availability...'}
       </p>
     );
   }
@@ -43,15 +47,29 @@ export function ReservationCountdown({ reservedAt }: ReservationCountdownProps) 
   const seconds = Math.floor((remainingMs % 60000) / 1000);
   const timeStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
 
+  const content = isOwner ? (
+    <p className="text-sm text-semantic-text-secondary">
+      Reserved for you — <span className="font-medium text-semantic-text-primary">{timeStr}</span> remaining
+    </p>
+  ) : (
+    <>
+      <p className="text-sm text-semantic-text-secondary">
+        This game is currently reserved by another buyer.
+      </p>
+      <p className="text-sm text-semantic-text-muted mt-1">
+        Available in <span className="font-medium text-semantic-text-primary">{timeStr}</span>
+      </p>
+    </>
+  );
+
+  if (compact) {
+    return content;
+  }
+
   return (
     <Card>
       <CardBody>
-        <p className="text-sm text-semantic-text-secondary">
-          This game is currently reserved by another buyer.
-        </p>
-        <p className="text-sm text-semantic-text-muted mt-1">
-          Available in <span className="font-medium text-semantic-text-primary">{timeStr}</span>
-        </p>
+        {content}
       </CardBody>
     </Card>
   );

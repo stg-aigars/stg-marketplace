@@ -69,6 +69,7 @@ export interface CreateParcelRequest {
     type: ParcelType;
     size?: ParcelSize;
     weight?: number;
+    partCount?: number;
   };
   services?: Array<{
     code: string;
@@ -297,6 +298,7 @@ export const FIELD_NAME_MAP: Record<string, string> = {
   'parcel.size': 'Parcel size',
   'parcel.type': 'Parcel type',
   'parcel.weight': 'Parcel weight',
+  'parcel.partCount': 'Number of parcels',
   'plan.code': 'Shipping plan',
 };
 

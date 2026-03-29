@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardBody, Badge } from '@/components/ui';
+import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -33,30 +33,21 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
       <Card hoverable>
         <CardBody>
           <div className="flex gap-3">
-            {/* Thumbnail */}
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
-              {gameImage ? (
-                <Image
-                  src={gameImage}
-                  alt={order.listings?.game_name ?? 'Game'}
-                  fill
-                  sizes="(min-width: 640px) 64px, 56px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">
-                  No image
-                </div>
-              )}
-            </div>
+            <GameThumb
+              src={gameImage}
+              alt={order.listings?.game_name ?? 'Game'}
+              size="lg"
+            />
 
             {/* Details */}
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold text-semantic-text-heading truncate">
-                    {order.listings?.game_name ?? 'Unknown game'}
-                  </p>
+                  <GameTitle
+                    name={order.listings?.game_name ?? 'Unknown game'}
+                    size="md"
+                    serif
+                  />
                   <p className="text-xs text-semantic-text-muted mt-0.5">
                     {order.order_number}
                   </p>

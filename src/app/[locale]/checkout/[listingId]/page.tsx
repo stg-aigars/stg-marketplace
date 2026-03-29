@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
@@ -12,6 +11,9 @@ import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import { getTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
+import { reserveListingForCheckout } from '@/lib/listings/actions';
+import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
+import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { CheckoutForm } from './CheckoutForm';
 
 interface CheckoutListingRow {
@@ -23,6 +25,7 @@ interface CheckoutListingRow {
   price_cents: number;
   status: string;
   reserved_by: string | null;
+  reserved_at: string | null;
   photos: string[];
   country: string;
   publisher: string | null;
@@ -69,6 +72,25 @@ export default async function CheckoutPage({
   const canCheckout = listing.status === 'active' ||
     (listing.status === 'reserved' && listing.reserved_by === user.id);
 
+  // Cannot buy own listing — check BEFORE reservation to avoid locking seller's own item
+  if (listing.seller_id === user.id) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
+            This is your listing
+          </h1>
+          <p className="text-semantic-text-secondary mb-6">
+            You cannot purchase your own listing.
+          </p>
+          <Link href={`/listings/${listing.id}`} className="text-semantic-brand font-medium">
+            Back to listing
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!canCheckout) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -87,23 +109,37 @@ export default async function CheckoutPage({
     );
   }
 
-  // Cannot buy own listing
-  if (listing.seller_id === user.id) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <div className="text-center py-16">
-          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
-            This is your listing
-          </h1>
-          <p className="text-semantic-text-secondary mb-6">
-            You cannot purchase your own listing.
-          </p>
-          <Link href={`/listings/${listing.id}`} className="text-semantic-brand font-medium">
-            Back to listing
-          </Link>
+  // Reserve the listing on checkout page load (not at payment time).
+  // reserved_at is set once and NOT refreshed on revisit (hard 30-min TTL).
+  let reservedAt: string | null = null;
+  if (listing.status === 'active') {
+    const result = await reserveListingForCheckout(listingId);
+    if ('error' in result) {
+      const isReservedByOther = result.code === 'reserved_by_other';
+      return (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <div className="text-center py-16">
+            <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
+              {isReservedByOther
+                ? 'This game is currently reserved'
+                : 'This listing is no longer available'}
+            </h1>
+            <p className="text-semantic-text-secondary mb-6">
+              {isReservedByOther
+                ? 'Another buyer is completing their purchase. Check back shortly.'
+                : 'It may have been sold or removed by the seller.'}
+            </p>
+            <Link href={`/listings/${listingId}`} className="text-semantic-brand font-medium">
+              Back to listing
+            </Link>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    reservedAt = result.reservedAt;
+  } else {
+    // Already reserved by this buyer (revisit) — use existing reserved_at
+    reservedAt = listing.reserved_by === user.id ? listing.reserved_at : null;
   }
 
   // Calculate shipping
@@ -202,6 +238,12 @@ export default async function CheckoutPage({
         <Alert variant="error" className="mb-6">{errorMessage}</Alert>
       )}
 
+      {reservedAt && (
+        <div className="mb-4">
+          <ReservationCountdown reservedAt={reservedAt} isOwner compact />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Left: Order summary */}
         <div className="lg:col-span-3">
@@ -212,33 +254,19 @@ export default async function CheckoutPage({
               </h2>
 
               <div className="flex gap-4">
-                {/* Game image */}
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
-                  {gameImage ? (
-                    <Image
-                      src={gameImage}
-                      alt={listing.game_name}
-                      fill
-                      sizes="(min-width: 640px) 96px, 80px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">
-                      No image
-                    </div>
-                  )}
-                </div>
+                <GameThumb
+                  src={gameImage}
+                  alt={listing.game_name}
+                  size="xl"
+                />
 
                 {/* Game details */}
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-semantic-text-heading truncate">
-                    {listing.game_name}
-                    {listing.game_year && (
-                      <span className="text-semantic-text-muted font-normal ml-1">
-                        ({listing.game_year})
-                      </span>
-                    )}
-                  </h3>
+                  <GameTitle
+                    name={listing.game_year ? `${listing.game_name} (${listing.game_year})` : listing.game_name}
+                    size="lg"
+                    serif
+                  />
                   <div className="mt-1">
                     <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
                   </div>
