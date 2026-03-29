@@ -33,16 +33,21 @@ export function generateOrderNumber(): string {
 /**
  * Create an order after payment has been verified.
  * Uses service client to bypass RLS (no INSERT policy on orders).
- * Also updates the listing status to 'reserved'.
+ * Supports multi-item orders (same seller) via the `items` array.
+ * Also updates all listing statuses to 'reserved'.
  */
 export async function createOrder(params: CreateOrderParams): Promise<OrderRow> {
   const serviceClient = createServiceClient();
-  const pricing = calculateOrderPricing(params.itemsTotalCents, params.shippingCostCents);
+
+  const itemsTotalCents = params.items.reduce((sum, i) => sum + i.priceCents, 0);
+  const pricing = calculateOrderPricing(itemsTotalCents, params.shippingCostCents);
 
   // VAT breakdown for commission and shipping (based on seller's country)
   const vatRate = getVatRate(params.sellerCountry);
   const commissionVat = calculateVatSplit(pricing.commissionCents, vatRate);
   const shippingVat = calculateVatSplit(params.shippingCostCents, vatRate);
+
+  const listingIds = params.items.map((i) => i.listingId);
 
   const isPreAssigned = !!params.orderNumber;
   const MAX_RETRIES = 3;
@@ -57,7 +62,8 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
         order_number: orderNumber,
         buyer_id: params.buyerId,
         seller_id: params.sellerId,
-        listing_id: params.listingId,
+        listing_id: null,
+        item_count: params.items.length,
         status: 'pending_seller',
         total_amount_cents: pricing.totalChargeCents,
         items_total_cents: pricing.itemsTotalCents,
@@ -89,29 +95,53 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
     }
 
     if (insertError || !order) {
-      // Pre-assigned collision means checkout session reuse — fail with traceable message
       const message = isPreAssigned && insertError?.code === '23505'
         ? `Failed to create order: duplicate order number ${orderNumber}`
         : `Failed to create order: ${insertError?.message ?? 'Unknown error'}`;
       throw new Error(message);
     }
 
-    // Update listing status to 'reserved' with race condition guard
-    // Listing may already be 'reserved' (by this buyer via checkout initiation), 'active'
+    // Insert order_items rows
+    const { error: itemsError } = await serviceClient
+      .from('order_items')
+      .insert(
+        params.items.map((item) => ({
+          order_id: order.id,
+          listing_id: item.listingId,
+          price_cents: item.priceCents,
+        }))
+      );
+
+    if (itemsError) {
+      // Roll back the order if items insertion fails
+      await serviceClient.from('orders').delete().eq('id', order.id);
+      throw new Error(`Failed to create order items: ${itemsError.message}`);
+    }
+
+    // Update all listing statuses to 'reserved' using .in() — never a loop
+    // Listings may already be 'reserved' (by this buyer via checkout initiation), 'active'
     // (if the reservation timer expired but nobody else took it), or 'auction_ended'
     // (auction winner paying — transition directly to reserved/sold)
-    const { data: updatedListing } = await serviceClient
+    const { data: updatedListings } = await serviceClient
       .from('listings')
       .update({ status: 'reserved', reserved_at: new Date().toISOString(), reserved_by: params.buyerId })
-      .eq('id', params.listingId)
+      .in('id', listingIds)
       .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${params.buyerId}),status.eq.auction_ended`)
-      .select('id')
-      .single();
+      .select('id');
 
-    if (!updatedListing) {
-      // Listing was reserved by someone else or already sold — roll back the order
+    if (!updatedListings || updatedListings.length !== listingIds.length) {
+      // Some listings were reserved by someone else or already sold — roll back
+      await serviceClient.from('order_items').delete().eq('order_id', order.id);
       await serviceClient.from('orders').delete().eq('id', order.id);
-      throw new Error('This listing is no longer available');
+      // Unreserve any listings that were just updated
+      if (updatedListings && updatedListings.length > 0) {
+        const updatedIds = updatedListings.map((l) => l.id);
+        await serviceClient
+          .from('listings')
+          .update({ status: 'active', reserved_at: null, reserved_by: null })
+          .in('id', updatedIds);
+      }
+      throw new Error('One or more listings are no longer available');
     }
 
     return order;
@@ -131,6 +161,9 @@ export async function getOrder(orderId: string): Promise<OrderWithDetails | null
     .from('orders')
     .select(`
       *,
+      order_items(id, order_id, listing_id, price_cents, active, created_at,
+        listings(game_name, game_year, condition, photos, games(thumbnail))
+      ),
       listings(game_name, game_year, condition, photos, games(thumbnail)),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
       seller_profile:user_profiles!orders_seller_id_fkey(full_name, country, phone, email)
@@ -157,11 +190,15 @@ export async function getUserOrders(
 
   const column = role === 'buyer' ? 'buyer_id' : 'seller_id';
 
+  // List view: lighter query — only fetch what OrderCard needs (name + thumbnail)
   const { data, error } = await supabase
     .from('orders')
     .select(`
       *,
-      listings(game_name, game_year, condition, photos, games(thumbnail)),
+      order_items(id, listing_id, price_cents, active,
+        listings(game_name, games(thumbnail))
+      ),
+      listings(game_name, games(thumbnail)),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
       seller_profile:user_profiles!orders_seller_id_fkey(full_name, country, phone, email)
     `)

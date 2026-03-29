@@ -27,6 +27,7 @@ import {
 } from '@/lib/email';
 import { notify, notifyMany } from '@/lib/notifications';
 import type { PaymentMethod } from '@/lib/orders/types';
+import { getOrderGameSummary } from '@/lib/orders/utils';
 
 const BATCH_LIMIT = 50;
 
@@ -152,7 +153,7 @@ export async function enforceOrderDeadlines(): Promise<DeadlineEnforcementResult
 interface OrderWithProfiles {
   id: string;
   order_number: string;
-  listing_id: string;
+  listing_id: string | null;
   buyer_id: string;
   seller_id: string;
   status: string;
@@ -162,6 +163,7 @@ interface OrderWithProfiles {
   everypay_payment_reference: string | null;
   refund_status: string | null;
   game_name: string;
+  listing_ids: string[];
   created_at: string;
   accepted_at: string | null;
   shipped_at: string | null;
@@ -173,6 +175,7 @@ const ORDER_SELECT = `
   id, order_number, listing_id, buyer_id, seller_id, status,
   total_amount_cents, buyer_wallet_debit_cents, payment_method,
   everypay_payment_reference, refund_status, created_at, accepted_at, shipped_at,
+  order_items(listing_id, listings(game_name)),
   listings(game_name),
   buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email),
   seller_profile:user_profiles!orders_seller_id_fkey(full_name, email)
@@ -180,10 +183,21 @@ const ORDER_SELECT = `
 
 function mapOrder(row: Record<string, unknown>): OrderWithProfiles {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orderItems = (row.order_items as any[]) ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const listings = row.listings as any;
+
+  const gameName = getOrderGameSummary(orderItems, listings);
+
+  // Collect all listing IDs from order_items (or fall back to legacy listing_id)
+  const listingIds = orderItems.length > 0
+    ? orderItems.map((i: { listing_id: string }) => i.listing_id)
+    : row.listing_id ? [row.listing_id as string] : [];
+
   return {
     ...row,
-    game_name: listings?.game_name ?? 'Game',
+    game_name: gameName,
+    listing_ids: listingIds,
   } as OrderWithProfiles;
 }
 
@@ -228,12 +242,20 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
 
       if (!cancelled) continue; // Race: already transitioned
 
-      // Restore listing
-      await supabase
-        .from('listings')
-        .update({ status: 'active', reserved_at: null, reserved_by: null })
-        .eq('id', order.listing_id)
-        .in('status', ['reserved', 'sold']);
+      // Restore all listings in this order
+      if (order.listing_ids.length > 0) {
+        await supabase
+          .from('listings')
+          .update({ status: 'active', reserved_at: null, reserved_by: null })
+          .in('id', order.listing_ids)
+          .in('status', ['reserved', 'sold']);
+
+        // Mark order_items as inactive (frees partial unique index for re-listing)
+        await supabase
+          .from('order_items')
+          .update({ active: false })
+          .eq('order_id', order.id);
+      }
 
       // Refund
       await refundOrder(order.id, {

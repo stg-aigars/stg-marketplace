@@ -156,8 +156,7 @@ export async function POST(request: Request) {
     order = await createOrder({
       buyerId: user.id,
       sellerId: listing.seller_id,
-      listingId: listing.id,
-      itemsTotalCents: listing.price_cents,
+      items: [{ listingId: listing.id, priceCents: listing.price_cents }],
       shippingCostCents: shippingCents,
       sellerCountry: listing.country,
       paymentMethod: 'wallet',

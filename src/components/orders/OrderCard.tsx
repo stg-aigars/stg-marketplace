@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
+import { getOrderGameSummary } from '@/lib/orders/utils';
 
 interface OrderCardProps {
   order: OrderWithDetails;
@@ -15,7 +16,13 @@ interface OrderCardProps {
 
 export function OrderCard({ order, showAs }: OrderCardProps) {
   const statusConfig = ORDER_STATUS_CONFIG[order.status as OrderStatus];
-  const gameImage = order.listings?.games?.thumbnail ?? null;
+
+  // Derive game display from order_items (preferred) or legacy listings join
+  const items = order.order_items ?? [];
+  const firstItem = items[0];
+  const gameImage = firstItem?.listings?.games?.thumbnail ?? order.listings?.games?.thumbnail ?? null;
+  const gameName = getOrderGameSummary(items.length > 0 ? items : undefined, order.listings);
+  const extraItemCount = order.item_count > 1 ? order.item_count - 1 : 0;
 
   // Action needed: seller has pending order, or buyer has delivered order
   const actionNeeded =
@@ -33,18 +40,25 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
       <Card hoverable>
         <CardBody>
           <div className="flex gap-3">
-            <GameThumb
-              src={gameImage}
-              alt={order.listings?.game_name ?? 'Game'}
-              size="lg"
-            />
+            <div className="relative flex-shrink-0">
+              <GameThumb
+                src={gameImage}
+                alt={gameName}
+                size="lg"
+              />
+              {extraItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-semantic-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  +{extraItemCount}
+                </span>
+              )}
+            </div>
 
             {/* Details */}
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <GameTitle
-                    name={order.listings?.game_name ?? 'Unknown game'}
+                    name={gameName}
                     size="md"
                     serif
                   />

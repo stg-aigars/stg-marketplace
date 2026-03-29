@@ -15,13 +15,34 @@ export type OrderStatus =
 
 export type PaymentMethod = 'card' | 'bank_link' | 'wallet';
 
+/** 1:1 mapping to the order_items table row */
+export interface OrderItemRow {
+  id: string;
+  order_id: string;
+  listing_id: string;
+  price_cents: number;
+  active: boolean;
+  created_at: string;
+}
+
+/** Order item joined with listing data for display */
+export interface OrderItemWithDetails extends OrderItemRow {
+  listings: {
+    game_name: string;
+    game_year: number | null;
+    condition: string;
+    photos: string[];
+    games: { thumbnail: string | null } | null;
+  };
+}
+
 /** 1:1 mapping to the orders table row */
 export interface OrderRow {
   id: string;
   order_number: string;
   buyer_id: string;
   seller_id: string;
-  listing_id: string;
+  listing_id: string | null;
   status: OrderStatus;
   total_amount_cents: number;
   items_total_cents: number;
@@ -58,6 +79,7 @@ export interface OrderRow {
   disputed_at: string | null;
   refunded_at: string | null;
   cart_group_id: string | null;
+  item_count: number;
   deadline_reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
@@ -65,13 +87,15 @@ export interface OrderRow {
 
 /** Order joined with listing + buyer/seller profile data for display */
 export interface OrderWithDetails extends OrderRow {
+  order_items: OrderItemWithDetails[];
+  /** @deprecated Legacy join — use order_items instead. Null for new multi-item orders. */
   listings: {
     game_name: string;
     game_year: number | null;
     condition: string;
     photos: string[];
     games: { thumbnail: string | null } | null;
-  };
+  } | null;
   buyer_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
   seller_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
   dispute?: DisputeRow | null;
@@ -79,6 +103,8 @@ export interface OrderWithDetails extends OrderRow {
 
 /** Order loaded with joined listing + profile data for transition logic */
 export interface OrderWithRelations extends OrderRow {
+  order_items: Array<{ listing_id: string; price_cents: number; listings: { game_name: string; seller_id: string } | null }>;
+  /** @deprecated Legacy join — use order_items instead. Null for new multi-item orders. */
   listings: { game_name: string; seller_id: string } | null;
   buyer_profile: { full_name: string | null; email: string | null; phone: string | null; country: string } | null;
   seller_profile: { full_name: string | null; email: string | null; phone: string | null; country: string } | null;
@@ -110,8 +136,8 @@ export interface DisputeRow {
 export interface CreateOrderParams {
   buyerId: string;
   sellerId: string;
-  listingId: string;
-  itemsTotalCents: number;
+  /** Items in this order (one or more listings from the same seller) */
+  items: Array<{ listingId: string; priceCents: number }>;
   shippingCostCents: number;
   sellerCountry: string;
   paymentReference?: string;

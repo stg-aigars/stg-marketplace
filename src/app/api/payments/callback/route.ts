@@ -249,8 +249,7 @@ export async function GET(request: Request) {
     const order = await createOrder({
       buyerId: session.buyer_id,
       sellerId: listing.seller_id,
-      listingId: listing.id,
-      itemsTotalCents: listing.price_cents,
+      items: [{ listingId: listing.id, priceCents: listing.price_cents }],
       shippingCostCents: shippingCents,
       sellerCountry: listing.country,
       paymentReference,
@@ -379,7 +378,8 @@ export async function GET(request: Request) {
 
 /**
  * Handle a cart checkout group callback.
- * Creates one order per listing, with partial fulfillment if some items are unavailable.
+ * Groups available items by seller and creates one order per seller,
+ * with partial fulfillment if some items are unavailable.
  */
 async function handleCartGroupCallback(
   group: CartCheckoutGroup,
@@ -480,7 +480,6 @@ async function handleCartGroupCallback(
 
   for (const listing of unavailable) {
     const walletForItem = walletAllocation[listing.id] ?? 0;
-    // Only include shipping if no available items remain from this seller
     const sellerFullyUnavailable = !availableSellerIds.has(listing.seller_id);
     const shippingRefund = sellerFullyUnavailable
       ? (getShippingPriceCents(listing.country as TerminalCountry, group.terminal_country as TerminalCountry) ?? 0)
@@ -495,30 +494,34 @@ async function handleCartGroupCallback(
     await attemptAutoRefund(paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`);
   }
 
-  // Create orders for available items
-  const createdOrders: { id: string; order_number: string; listing: typeof available[0]; shippingCents: number; walletDebitCents: number }[] = [];
-  const firstForSeller = new Set<string>();
+  // Group available items by seller — one order per seller
+  const sellerGroups = new Map<string, typeof available>();
+  for (const listing of available) {
+    const groupItems = sellerGroups.get(listing.seller_id) ?? [];
+    groupItems.push(listing);
+    sellerGroups.set(listing.seller_id, groupItems);
+  }
+
+  // Create one consolidated order per seller group
+  const createdOrders: { id: string; order_number: string; items: typeof available; shippingCents: number; walletDebitCents: number }[] = [];
 
   try {
-    for (const listing of available) {
-      const isFirstForSeller = !firstForSeller.has(listing.seller_id);
-      firstForSeller.add(listing.seller_id);
-
-      const sellerCountry = listing.country as TerminalCountry;
+    for (const [sellerId, sellerItems] of Array.from(sellerGroups.entries())) {
+      const sellerCountry = sellerItems[0].country as TerminalCountry;
       const buyerCountry = group.terminal_country as TerminalCountry;
-      const shippingCents = isFirstForSeller
-        ? (getShippingPriceCents(sellerCountry, buyerCountry) ?? 0)
-        : 0;
+      const shippingCents = getShippingPriceCents(sellerCountry, buyerCountry) ?? 0;
 
-      const orderWalletDebit = walletAllocation[listing.id] ?? 0;
+      // Sum wallet allocation across all items in this seller group
+      const orderWalletDebit = sellerItems.reduce(
+        (sum, l) => sum + (walletAllocation[l.id] ?? 0), 0
+      );
 
       const order = await createOrder({
         buyerId: group.buyer_id,
-        sellerId: listing.seller_id,
-        listingId: listing.id,
-        itemsTotalCents: listing.price_cents,
+        sellerId,
+        items: sellerItems.map((l) => ({ listingId: l.id, priceCents: l.price_cents })),
         shippingCostCents: shippingCents,
-        sellerCountry: listing.country,
+        sellerCountry: sellerItems[0].country,
         paymentReference,
         paymentState: paymentStatus.payment_state,
         paymentMethod: 'card',
@@ -532,12 +535,13 @@ async function handleCartGroupCallback(
 
       // Debit wallet for this order
       if (orderWalletDebit > 0) {
+        const gameNames = sellerItems.map((l) => l.game_name ?? 'Game').join(', ');
         try {
           await debitWallet(
             group.buyer_id,
             orderWalletDebit,
             order.id,
-            `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
+            `Purchase: ${gameNames} — ${order.order_number}`
           );
         } catch (walletError) {
           console.error(`[Payments] Cart: Wallet debit failed for order ${order.id}:`, walletError);
@@ -551,14 +555,13 @@ async function handleCartGroupCallback(
       createdOrders.push({
         id: order.id,
         order_number: order.order_number,
-        listing,
+        items: sellerItems,
         shippingCents,
         walletDebitCents: orderWalletDebit,
       });
     }
   } catch (error) {
     console.error('[Payments] Cart: Failed to create orders:', error);
-    // Orders already created stay — refund only for uncreated items
     return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}&error=partial_creation`);
   }
 
@@ -583,21 +586,18 @@ async function handleCartGroupCallback(
     .update({ status: 'completed' })
     .eq('id', group.id);
 
-  // Send emails (non-blocking)
+  // Send emails (non-blocking) — pass items array per order
   void sendCartOrderEmails(
-    createdOrders.map(({ id, order_number, listing, shippingCents }) => ({
+    createdOrders.map(({ id, order_number, items, shippingCents }) => ({
       orderId: id,
       orderNumber: order_number,
-      sellerId: listing.seller_id,
-      gameName: listing.game_name ?? 'Game',
-      priceCents: listing.price_cents,
+      sellerId: items[0].seller_id,
+      items: items.map((l) => ({ gameName: l.game_name ?? 'Game', priceCents: l.price_cents })),
       shippingCents,
       terminalName: group.terminal_name,
     })),
     group.buyer_id
   );
-
-  // Cart notifications are sent inside sendCartOrderEmails — no duplicates here
 
   void logAuditEvent({
     actorId: group.buyer_id,
@@ -607,6 +607,7 @@ async function handleCartGroupCallback(
     resourceId: group.id,
     metadata: {
       orderCount: createdOrders.length,
+      totalItemCount: available.length,
       unavailableCount: unavailable.length,
       paymentReference,
       totalAmountCents: group.total_amount_cents,
