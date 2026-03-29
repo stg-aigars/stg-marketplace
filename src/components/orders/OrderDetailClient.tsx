@@ -200,7 +200,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               <GameThumb
                 src={gameImage}
                 alt={order.listings?.game_name ?? 'Game'}
-                size="lg"
+                size="xl"
               />
               <div>
                 <Link
@@ -208,15 +208,12 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                   className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
                 >
                   <GameTitle
-                    name={order.listings?.game_name ?? 'Unknown game'}
+                    name={order.listings?.game_year
+                      ? `${order.listings.game_name ?? 'Unknown game'} (${order.listings.game_year})`
+                      : order.listings?.game_name ?? 'Unknown game'}
                     size="lg"
                     serif
                   />
-                  {order.listings?.game_year && (
-                    <span className="text-sm text-semantic-text-muted font-normal ml-1">
-                      ({order.listings.game_year})
-                    </span>
-                  )}
                 </Link>
                 {badgeKey && conditionInfo && (
                   <div className="mt-1">

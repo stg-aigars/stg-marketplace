@@ -432,16 +432,18 @@ export async function cancelListing(
  * Uses a two-query approach: attempt UPDATE, then SELECT to disambiguate on failure.
  * `reserved_at` is set once and NOT refreshed on revisit (hard 30-min TTL).
  */
+export type ReservationError = 'reserved_by_other' | 'unavailable' | 'unauthenticated';
+
 export async function reserveListingForCheckout(
   listingId: string
-): Promise<{ success: true; reservedAt: string } | { error: string }> {
+): Promise<{ success: true; reservedAt: string } | { error: string; code: ReservationError }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be signed in' };
+    return { error: 'You must be signed in', code: 'unauthenticated' };
   }
 
   const service = createServiceClient();
@@ -472,7 +474,7 @@ export async function reserveListingForCheckout(
     .single();
 
   if (!current) {
-    return { error: 'This listing is no longer available' };
+    return { error: 'This listing is no longer available', code: 'unavailable' };
   }
 
   if (current.status === 'reserved' && current.reserved_by === user.id) {
@@ -481,10 +483,10 @@ export async function reserveListingForCheckout(
   }
 
   if (current.status === 'reserved') {
-    return { error: 'This listing is currently reserved by another buyer' };
+    return { error: 'This listing is currently reserved by another buyer', code: 'reserved_by_other' };
   }
 
-  return { error: 'This listing is no longer available' };
+  return { error: 'This listing is no longer available', code: 'unavailable' };
 }
 
 // ============================================================================

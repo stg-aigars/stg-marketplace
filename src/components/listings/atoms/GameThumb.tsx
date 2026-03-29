@@ -5,7 +5,7 @@ import { isBggImage } from '@/lib/bgg/utils';
 interface GameThumbProps {
   src?: string | null;
   alt: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -13,9 +13,10 @@ const sizeClasses = {
   sm: 'w-10 h-10',
   md: 'w-12 h-12',
   lg: 'w-14 h-14',
+  xl: 'w-20 h-20 sm:w-24 sm:h-24',
 } as const;
 
-const sizePx = { sm: 40, md: 48, lg: 56 } as const;
+const sizePx = { sm: 40, md: 48, lg: 56, xl: 96 } as const;
 
 function GameThumb({ src, alt, size = 'md', className = '' }: GameThumbProps) {
   const isBGG = isBggImage(src);

@@ -72,6 +72,25 @@ export default async function CheckoutPage({
   const canCheckout = listing.status === 'active' ||
     (listing.status === 'reserved' && listing.reserved_by === user.id);
 
+  // Cannot buy own listing — check BEFORE reservation to avoid locking seller's own item
+  if (listing.seller_id === user.id) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
+            This is your listing
+          </h1>
+          <p className="text-semantic-text-secondary mb-6">
+            You cannot purchase your own listing.
+          </p>
+          <Link href={`/listings/${listing.id}`} className="text-semantic-brand font-medium">
+            Back to listing
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!canCheckout) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -96,7 +115,7 @@ export default async function CheckoutPage({
   if (listing.status === 'active') {
     const result = await reserveListingForCheckout(listingId);
     if ('error' in result) {
-      const isReservedByOther = result.error.includes('reserved by another');
+      const isReservedByOther = result.code === 'reserved_by_other';
       return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
           <div className="text-center py-16">
@@ -121,25 +140,6 @@ export default async function CheckoutPage({
   } else {
     // Already reserved by this buyer (revisit) — use existing reserved_at
     reservedAt = listing.reserved_by === user.id ? listing.reserved_at : null;
-  }
-
-  // Cannot buy own listing
-  if (listing.seller_id === user.id) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <div className="text-center py-16">
-          <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
-            This is your listing
-          </h1>
-          <p className="text-semantic-text-secondary mb-6">
-            You cannot purchase your own listing.
-          </p>
-          <Link href={`/listings/${listing.id}`} className="text-semantic-brand font-medium">
-            Back to listing
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   // Calculate shipping
@@ -257,23 +257,16 @@ export default async function CheckoutPage({
                 <GameThumb
                   src={gameImage}
                   alt={listing.game_name}
-                  size="lg"
+                  size="xl"
                 />
 
                 {/* Game details */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-1">
-                    <GameTitle
-                      name={listing.game_name}
-                      size="lg"
-                      serif
-                    />
-                    {listing.game_year && (
-                      <span className="text-sm text-semantic-text-muted">
-                        ({listing.game_year})
-                      </span>
-                    )}
-                  </div>
+                  <GameTitle
+                    name={listing.game_year ? `${listing.game_name} (${listing.game_year})` : listing.game_name}
+                    size="lg"
+                    serif
+                  />
                   <div className="mt-1">
                     <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
                   </div>
