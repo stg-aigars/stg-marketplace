@@ -123,7 +123,7 @@ Always use these — do not write inline equivalents:
 | Country display | Country utilities | `@/lib/country-utils` |
 | Bot protection | `TurnstileWidget` (invisible; auto-resets on expiry; graceful skip when unconfigured) | `@/components/ui` |
 | Social sharing | `ShareButtons` (copy link + native share; pass full URL from server component) | `@/components/ui` |
-| Game thumbnail | `GameThumb` (src, alt, size: sm/md/lg; BGG-aware) | `@/components/listings/atoms` |
+| Game thumbnail | `GameThumb` (src, alt, size: sm/md/lg/xl; BGG-aware) | `@/components/listings/atoms` |
 | Game title | `GameTitle` (name, size, serif; display font by default) | `@/components/listings/atoms` |
 | Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
 | Price display | `Price` (cents, size; always Inter, never display font) | `@/components/listings/atoms` |
