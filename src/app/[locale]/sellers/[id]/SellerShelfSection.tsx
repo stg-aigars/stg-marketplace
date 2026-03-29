@@ -49,7 +49,7 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    unoptimized={!!isGeekdo}
+                    unoptimized={isGeekdo}
                   />
                 ) : (
                   <ImageSquare size={48} className="text-semantic-text-muted" />

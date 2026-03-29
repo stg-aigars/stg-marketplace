@@ -77,14 +77,12 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
     });
   }
 
-  const thumbnail = item.thumbnail;
-
   return (
     <Modal open={open} onClose={onClose} title="Make an offer">
       <div className="space-y-4">
         {/* Game info */}
         <div className="flex items-center gap-3">
-          <GameThumb src={thumbnail} alt={item.game_name} size="md" />
+          <GameThumb src={item.thumbnail} alt={item.game_name} size="md" />
           <div className="min-w-0">
             <p className="font-medium text-semantic-text-primary line-clamp-1">
               {item.game_name}

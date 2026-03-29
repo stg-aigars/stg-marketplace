@@ -43,10 +43,7 @@ export function decodeHTMLEntitiesArray(arr: (string | undefined | null)[] | und
   return arr.map(decodeHTMLEntities).filter(Boolean);
 }
 
-/**
- * Check whether a URL points to a BGG-hosted image (geekdo CDN).
- * Used to set `unoptimized` on Next/Image and choose `object-contain` for BGG thumbnails.
- */
+/** Check whether a URL points to a BGG-hosted image (geekdo CDN). */
 export function isBggImage(url: string | null | undefined): boolean {
   return !!url?.includes('geekdo-images.com');
 }
