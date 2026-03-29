@@ -170,7 +170,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
               type="checkbox"
               checked={deleteChecked}
               onChange={(e) => setDeleteChecked(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-border-focus"
+              className="mt-0.5 h-4 w-4 rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-brand/20"
             />
             <span className="text-sm text-semantic-text-primary">
               I understand that this action cannot be undone

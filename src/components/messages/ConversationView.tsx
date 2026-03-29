@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Package } from '@phosphor-icons/react/ssr';
+import { GameThumb } from '@/components/listings/atoms';
 import { sendMessage, getMessages, markConversationRead } from '@/lib/messages/actions';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { MessageBubble } from './MessageBubble';
@@ -88,20 +87,7 @@ function ConversationView({ conversation, initialMessages, currentUserId }: Conv
           href={`/listings/${conversation.listing_id}`}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-250 ease-out-custom"
         >
-          <div className="w-10 h-10 rounded-lg bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0 relative">
-            {conversation.listing_thumbnail ? (
-              <Image
-                src={conversation.listing_thumbnail}
-                alt={conversation.listing_title ?? ''}
-                fill
-                className="object-cover"
-                sizes="40px"
-                unoptimized={conversation.listing_thumbnail?.includes('cf.geekdo-images.com')}
-              />
-            ) : (
-              <Package size={20} className="text-semantic-text-muted" />
-            )}
-          </div>
+          <GameThumb src={conversation.listing_thumbnail} alt={conversation.listing_title ?? ''} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-semantic-text-heading truncate">
               {conversation.listing_title}

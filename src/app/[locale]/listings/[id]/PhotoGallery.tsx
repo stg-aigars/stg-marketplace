@@ -3,15 +3,12 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 
 interface PhotoGalleryProps {
   photos: string[];
   gameImage: string | null;
   gameTitle: string;
-}
-
-function isBGGImage(url: string): boolean {
-  return url.includes('cf.geekdo-images.com');
 }
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
@@ -39,7 +36,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
           className="object-contain"
           sizes="(max-width: 1024px) 100vw, 50vw"
           priority={activeIndex === 0}
-          unoptimized={isBGGImage(activeUrl)}
+          unoptimized={isBggImage(activeUrl)}
         />
       </div>
 
@@ -62,7 +59,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                 fill
                 className="object-cover"
                 sizes="64px"
-                unoptimized={isBGGImage(src)}
+                unoptimized={isBggImage(src)}
               />
             </button>
           ))}

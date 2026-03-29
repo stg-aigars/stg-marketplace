@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { MagnifyingGlass, ImageSquare } from '@phosphor-icons/react/ssr';
+import { MagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { GameThumb } from '@/components/listings/atoms';
 import { Modal, Button, Input, Select, Spinner } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { addToShelf } from '@/lib/shelves/actions';
@@ -155,20 +155,7 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
                       onClick={() => setSelected(game)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
                     >
-                      <div className="w-10 h-10 rounded bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0">
-                        {game.thumbnail ? (
-                          <Image
-                            src={game.thumbnail}
-                            alt={game.name}
-                            width={40}
-                            height={40}
-                            className="object-cover w-full h-full"
-                            unoptimized={game.thumbnail.includes('cf.geekdo-images.com')}
-                          />
-                        ) : (
-                          <ImageSquare size={20} className="text-semantic-text-muted" />
-                        )}
-                      </div>
+                      <GameThumb src={game.thumbnail} alt={game.name} size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-semantic-text-primary truncate">
                           {game.name}
@@ -195,20 +182,7 @@ export function AddToShelfModal({ open, onClose, onAdded }: AddToShelfModalProps
           <>
             {/* Selected game display */}
             <div className="flex items-center gap-3 p-3 rounded-lg bg-semantic-bg-surface border border-semantic-border-subtle">
-              <div className="w-12 h-12 rounded bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0">
-                {selected.thumbnail ? (
-                  <Image
-                    src={selected.thumbnail}
-                    alt={selected.name}
-                    width={48}
-                    height={48}
-                    className="object-cover w-full h-full"
-                    unoptimized={selected.thumbnail.includes('cf.geekdo-images.com')}
-                  />
-                ) : (
-                  <ImageSquare size={24} className="text-semantic-text-muted" />
-                )}
-              </div>
+              <GameThumb src={selected.thumbnail} alt={selected.name} size="md" />
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-semantic-text-heading truncate">
                   {selected.name}

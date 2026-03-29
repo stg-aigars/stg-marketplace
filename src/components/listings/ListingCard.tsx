@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, ImageSquare, Gavel } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { GameTitle, GameMeta, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -69,7 +70,7 @@ function ListingCard({
               fill
               className="object-cover transition-transform duration-350 ease-out-custom group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized={imageUrl.includes('cf.geekdo-images.com')}
+              unoptimized={isBggImage(imageUrl)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />
@@ -100,14 +101,8 @@ function ListingCard({
         {/* Details */}
         <div className="px-3 py-3 space-y-2">
           <div>
-            <h3 className="font-semibold font-display tracking-tight text-semantic-text-heading text-sm leading-tight line-clamp-2">
-              {gameTitle}
-            </h3>
-            {gameYear && (
-              <p className="text-xs text-semantic-text-muted mt-0.5">
-                {gameYear}
-              </p>
-            )}
+            <GameTitle name={gameTitle} size="md" serif clamp={2} />
+            <GameMeta year={gameYear} className="mt-0.5" />
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -125,9 +120,7 @@ function ListingCard({
               {isAuction && bidCount === 0 && (
                 <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
               )}
-              <span className="font-bold font-sans tracking-tight text-semantic-text-heading">
-                {formatCentsToCurrency(priceCents)}
-              </span>
+              <Price cents={priceCents} />
               {isAuction && (
                 <span className="text-xs text-semantic-text-muted ml-1">
                   {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}

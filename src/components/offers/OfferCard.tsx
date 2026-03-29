@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { GameThumb } from '@/components/listings/atoms';
 import { Card, CardBody, Badge, Button, Modal, Input } from '@/components/ui';
 import type { OfferWithDetails } from '@/lib/shelves/types';
 import {
@@ -39,8 +38,6 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
   const [counterError, setCounterError] = useState<string | null>(null);
 
   const isActive = ACTIVE_OFFER_STATUSES.includes(offer.status);
-  const isGeekdo = offer.thumbnail?.includes('cf.geekdo-images.com');
-
   // ---- Actions ----
 
   function handleAccept() {
@@ -208,20 +205,7 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
         <CardBody>
           <div className="flex gap-3">
             {/* Thumbnail */}
-            <div className="w-12 h-12 rounded overflow-hidden bg-semantic-bg-subtle flex-shrink-0 flex items-center justify-center">
-              {offer.thumbnail ? (
-                <Image
-                  src={offer.thumbnail}
-                  alt={offer.game_name}
-                  width={48}
-                  height={48}
-                  className="w-full h-full object-cover"
-                  unoptimized={!!isGeekdo}
-                />
-              ) : (
-                <ImageSquare size={24} className="text-semantic-text-muted" />
-              )}
-            </div>
+            <GameThumb src={offer.thumbnail} alt={offer.game_name} size="md" />
 
             {/* Content */}
             <div className="min-w-0 flex-1">

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { GameThumb } from '@/components/listings/atoms';
 import { Modal, Button, Input, Spinner } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { addBulkToShelf } from '@/lib/shelves/actions';
@@ -269,25 +268,9 @@ export function ImportFromBGG({
                             checked={isChecked}
                             disabled={!isEligible}
                             onChange={() => isEligible && toggleItem(item.bggGameId)}
-                            className="rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-border-focus h-4 w-4 shrink-0"
+                            className="rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-brand/20 h-4 w-4 shrink-0"
                           />
-                          <div className="w-12 h-12 rounded bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0">
-                            {item.thumbnail ? (
-                              <Image
-                                src={item.thumbnail}
-                                alt={item.name}
-                                width={48}
-                                height={48}
-                                className="object-cover w-full h-full"
-                                unoptimized={item.thumbnail.includes('cf.geekdo-images.com')}
-                              />
-                            ) : (
-                              <ImageSquare
-                                size={20}
-                                className="text-semantic-text-muted"
-                              />
-                            )}
-                          </div>
+                          <GameThumb src={item.thumbnail} alt={item.name} size="md" />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-semantic-text-primary truncate">
                               {item.name}

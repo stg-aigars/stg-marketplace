@@ -43,6 +43,11 @@ export function decodeHTMLEntitiesArray(arr: (string | undefined | null)[] | und
   return arr.map(decodeHTMLEntities).filter(Boolean);
 }
 
+/** Check whether a URL points to a BGG-hosted image (geekdo CDN). */
+export function isBggImage(url: string | null | undefined): boolean {
+  return !!url?.includes('geekdo-images.com');
+}
+
 /**
  * Map BGG weight (1-5 scale) to a human-readable complexity label.
  */

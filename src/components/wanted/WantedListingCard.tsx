@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -31,7 +32,7 @@ export function WantedListingCard({
     <Link href={`/wanted/${id}`}>
       <Card hoverable className="h-full flex flex-col">
         {/* Image area */}
-        <div className="relative h-40 sm:h-44 lg:h-48 bg-semantic-bg-surface flex items-center justify-center overflow-hidden rounded-t-lg">
+        <div className="relative aspect-square bg-semantic-bg-surface flex items-center justify-center overflow-hidden rounded-t-lg">
           {gameThumbnail ? (
             <Image
               src={gameThumbnail}
@@ -39,6 +40,7 @@ export function WantedListingCard({
               fill
               className="object-contain p-2"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              unoptimized={isBggImage(gameThumbnail)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />
