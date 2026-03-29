@@ -424,6 +424,70 @@ export async function cancelListing(
 }
 
 // ============================================================================
+// Checkout reservation
+// ============================================================================
+
+/**
+ * Reserve a listing when the buyer lands on the checkout page.
+ * Uses a two-query approach: attempt UPDATE, then SELECT to disambiguate on failure.
+ * `reserved_at` is set once and NOT refreshed on revisit (hard 30-min TTL).
+ */
+export async function reserveListingForCheckout(
+  listingId: string
+): Promise<{ success: true; reservedAt: string } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'You must be signed in' };
+  }
+
+  const service = createServiceClient();
+  const now = new Date().toISOString();
+
+  // Attempt atomic reservation — only succeeds if listing is currently active
+  const { data: reserved } = await service
+    .from('listings')
+    .update({
+      status: 'reserved',
+      reserved_at: now,
+      reserved_by: user.id,
+    })
+    .eq('id', listingId)
+    .eq('status', 'active')
+    .select('id, reserved_at')
+    .single();
+
+  if (reserved) {
+    return { success: true, reservedAt: now };
+  }
+
+  // UPDATE matched zero rows — fetch current state to distinguish why
+  const { data: current } = await service
+    .from('listings')
+    .select('status, reserved_by, reserved_at')
+    .eq('id', listingId)
+    .single();
+
+  if (!current) {
+    return { error: 'This listing is no longer available' };
+  }
+
+  if (current.status === 'reserved' && current.reserved_by === user.id) {
+    // Already reserved by this buyer (page refresh / back button) — idempotent success
+    return { success: true, reservedAt: current.reserved_at! };
+  }
+
+  if (current.status === 'reserved') {
+    return { error: 'This listing is currently reserved by another buyer' };
+  }
+
+  return { error: 'This listing is no longer available' };
+}
+
+// ============================================================================
 // Shelf sync helpers
 // ============================================================================
 

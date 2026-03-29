@@ -220,13 +220,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Payments] Failed to create payment:', error);
 
-    // Revert the reservation so the listing isn't locked for 30 min
-    await serviceClient
-      .from('listings')
-      .update({ status: 'active', reserved_at: null, reserved_by: null })
-      .eq('id', listingId)
-      .eq('status', 'reserved');
-
+    // Keep the reservation alive — buyer can retry from checkout page.
+    // The 30-min TTL (expire-reservations cron) handles expiry if they abandon.
     await serviceClient
       .from('checkout_sessions')
       .update({ status: 'expired' })
