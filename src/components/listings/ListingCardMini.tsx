@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { GameTitle, Price } from './atoms';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 
@@ -39,7 +40,7 @@ function ListingCardMini({
               fill
               className="object-cover"
               sizes="50vw"
-              unoptimized={imageUrl.includes('cf.geekdo-images.com')}
+              unoptimized={isBggImage(imageUrl)}
             />
           ) : (
             <ImageSquare size={32} className="text-semantic-text-muted" />
@@ -48,13 +49,9 @@ function ListingCardMini({
 
         {/* Compact details */}
         <div className="p-2 space-y-1">
-          <h3 className="font-semibold font-display tracking-tight text-semantic-text-heading text-[11px] leading-tight line-clamp-2">
-            {gameTitle}
-          </h3>
+          <GameTitle name={gameTitle} size="xs" serif clamp={2} />
           <Badge condition={badgeKey} className="text-[10px] px-1.5 py-0">{conditionLabel}</Badge>
-          <p className="font-bold font-sans tracking-tight text-semantic-text-heading text-[13px]">
-            {formatCentsToCurrency(priceCents)}
-          </p>
+          <Price cents={priceCents} size="sm" />
         </div>
       </Card>
     </Link>

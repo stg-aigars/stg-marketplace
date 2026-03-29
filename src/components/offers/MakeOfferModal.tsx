@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import Image from 'next/image';
-import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { GameThumb } from '@/components/listings/atoms';
 import { Modal, Button, Input } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { MAX_NOTE_LENGTH, MIN_OFFER_CENTS, MAX_OFFER_CENTS } from '@/lib/shelves/types';
@@ -79,27 +78,13 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
   }
 
   const thumbnail = item.thumbnail;
-  const isGeekdo = thumbnail?.includes('cf.geekdo-images.com');
 
   return (
     <Modal open={open} onClose={onClose} title="Make an offer">
       <div className="space-y-4">
         {/* Game info */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded overflow-hidden bg-semantic-bg-subtle flex-shrink-0 flex items-center justify-center">
-            {thumbnail ? (
-              <Image
-                src={thumbnail}
-                alt={item.game_name}
-                width={48}
-                height={48}
-                className="w-full h-full object-cover"
-                unoptimized={!!isGeekdo}
-              />
-            ) : (
-              <ImageSquare size={24} className="text-semantic-text-muted" />
-            )}
-          </div>
+          <GameThumb src={thumbnail} alt={item.game_name} size="md" />
           <div className="min-w-0">
             <p className="font-medium text-semantic-text-primary line-clamp-1">
               {item.game_name}

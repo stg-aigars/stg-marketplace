@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Package } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 
 interface GameThumbProps {
   src?: string | null;
@@ -17,7 +18,7 @@ const sizeClasses = {
 const sizePx = { sm: 40, md: 48, lg: 56 } as const;
 
 function GameThumb({ src, alt, size = 'md', className = '' }: GameThumbProps) {
-  const isBGG = src?.includes('cf.geekdo-images.com');
+  const isBGG = isBggImage(src);
   const px = sizePx[size];
 
   return (

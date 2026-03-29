@@ -63,7 +63,7 @@ export default async function FavoritesPage() {
               return (
                 <div
                   key={fav.listing_id}
-                  className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-subtle p-4 flex items-center justify-center h-40 sm:h-44 lg:h-48 opacity-60"
+                  className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-subtle p-4 flex items-center justify-center aspect-square opacity-60"
                 >
                   <p className="text-sm text-semantic-text-muted text-center">
                     No longer available

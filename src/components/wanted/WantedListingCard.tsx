@@ -31,7 +31,7 @@ export function WantedListingCard({
     <Link href={`/wanted/${id}`}>
       <Card hoverable className="h-full flex flex-col">
         {/* Image area */}
-        <div className="relative h-40 sm:h-44 lg:h-48 bg-semantic-bg-surface flex items-center justify-center overflow-hidden rounded-t-lg">
+        <div className="relative aspect-square bg-semantic-bg-surface flex items-center justify-center overflow-hidden rounded-t-lg">
           {gameThumbnail ? (
             <Image
               src={gameThumbnail}

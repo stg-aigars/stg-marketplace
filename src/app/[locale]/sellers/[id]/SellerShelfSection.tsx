@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 import { Button, Badge, Card } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
@@ -31,7 +32,7 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {visibleItems.map((item) => {
           const thumbnail = item.thumbnail;
-          const isGeekdo = thumbnail?.includes('cf.geekdo-images.com');
+          const isGeekdo = isBggImage(thumbnail);
           const canOffer =
             item.visibility === 'open_to_offers' &&
             currentUserId !== null &&
@@ -40,7 +41,7 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
 
           return (
             <Card key={item.id} className="overflow-hidden">
-              <div className="h-40 sm:h-44 lg:h-48 bg-semantic-bg-subtle flex items-center justify-center overflow-hidden relative">
+              <div className="aspect-square bg-semantic-bg-subtle flex items-center justify-center overflow-hidden relative">
                 {thumbnail ? (
                   <Image
                     src={thumbnail}

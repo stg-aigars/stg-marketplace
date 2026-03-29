@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { ChatCircle, Package } from '@phosphor-icons/react/ssr';
+import { ChatCircle } from '@phosphor-icons/react/ssr';
+import { GameThumb } from '@/components/listings/atoms';
 import { EmptyState } from '@/components/ui';
 import { formatMessageTime } from '@/lib/date-utils';
 import type { Conversation } from '@/lib/messages/types';
@@ -39,20 +39,7 @@ function ConversationList({ conversations, activeConversationId }: ConversationL
             }`}
           >
             {/* Listing thumbnail */}
-            <div className="w-12 h-12 rounded-lg bg-semantic-bg-secondary flex items-center justify-center overflow-hidden shrink-0 relative">
-              {conv.listing_thumbnail ? (
-                <Image
-                  src={conv.listing_thumbnail}
-                  alt={conv.listing_title ?? ''}
-                  fill
-                  className="object-cover"
-                  sizes="48px"
-                  unoptimized={conv.listing_thumbnail?.includes('cf.geekdo-images.com')}
-                />
-              ) : (
-                <Package size={24} className="text-semantic-text-muted" />
-              )}
-            </div>
+            <GameThumb src={conv.listing_thumbnail} alt={conv.listing_title ?? ''} size="md" />
 
             {/* Content */}
             <div className="flex-1 min-w-0">

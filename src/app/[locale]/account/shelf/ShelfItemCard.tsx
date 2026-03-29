@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { DotsThreeVertical, PencilSimple, Trash, ImageSquare } from '@phosphor-icons/react/ssr';
+import { isBggImage } from '@/lib/bgg/utils';
 import { Card, Badge, Button, Modal } from '@/components/ui';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
@@ -100,7 +101,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
               fill
               className="object-cover"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              unoptimized={imageUrl.includes('cf.geekdo-images.com')}
+              unoptimized={isBggImage(imageUrl)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />

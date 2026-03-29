@@ -44,6 +44,14 @@ export function decodeHTMLEntitiesArray(arr: (string | undefined | null)[] | und
 }
 
 /**
+ * Check whether a URL points to a BGG-hosted image (geekdo CDN).
+ * Used to set `unoptimized` on Next/Image and choose `object-contain` for BGG thumbnails.
+ */
+export function isBggImage(url: string | null | undefined): boolean {
+  return !!url?.includes('geekdo-images.com');
+}
+
+/**
  * Map BGG weight (1-5 scale) to a human-readable complexity label.
  */
 export function getWeightLabel(weight: number): string {
