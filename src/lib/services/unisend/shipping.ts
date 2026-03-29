@@ -145,6 +145,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
         type: 'T2T',
         size: (parcelSize as ParcelSize) || UNISEND_DEFAULT_PARCEL_SIZE,
         weight: 2,
+        partCount: 1,
       },
       sender: {
         name: seller.fullName,
