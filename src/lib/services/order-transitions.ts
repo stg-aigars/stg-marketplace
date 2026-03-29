@@ -173,6 +173,8 @@ export async function acceptOrder(
       terminalAddress: '',
     },
     parcelSize: null,
+    gameName: order.listings?.game_name ?? null,
+    priceCents: order.items_total_cents,
   });
 
   // 3. Email buyer about acceptance (non-blocking)

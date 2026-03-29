@@ -5,7 +5,7 @@
 
 import { createAndShipParcel } from './client';
 import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE, PHONE_FORMATS } from './types';
-import type { ParcelSize, TerminalCountry } from './types';
+import type { CreateParcelRequest, ParcelSize, TerminalCountry } from './types';
 import { formatShippingError } from './format-shipping-error';
 import { createServiceClient } from '@/lib/supabase';
 import {
@@ -33,6 +33,8 @@ export interface ShippingContext {
     terminalAddress: string;
   };
   parcelSize: string | null;
+  gameName: string | null;
+  priceCents: number;
 }
 
 export type ShippingResult =
@@ -80,7 +82,7 @@ export async function updateOrderShippingError(
  * On failure: stores shipping_error on the order for later retry.
  */
 export async function createOrderShipping(ctx: ShippingContext): Promise<ShippingResult> {
-  const { orderId, orderNumber, seller, buyer, receiver, destination, parcelSize } = ctx;
+  const { orderId, orderNumber, seller, buyer, receiver, destination, parcelSize, gameName, priceCents } = ctx;
   const logPrefix = `[Shipping ${orderId}]`;
 
   // 1. Normalize phones
@@ -139,17 +141,15 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
   console.log(`${logPrefix} Terminal: ${destination.terminalId || '(empty)'}, Parcel Size: ${parcelSize || UNISEND_DEFAULT_PARCEL_SIZE}`);
 
   try {
-    const { parcelId, barcode, trackingUrl: rawTrackingUrl } = await createAndShipParcel({
+    // T2T payload — no sender block (authenticated API user is the sender per Unisend docs).
+    // Sending an explicit sender routes through H2H/H2P validation where partCount is required,
+    // causing "Failed to get partCount ranges" errors.
+    const parcelRequest: CreateParcelRequest = {
       plan: { code: 'TERMINAL' },
       parcel: {
         type: 'T2T',
         size: (parcelSize as ParcelSize) || UNISEND_DEFAULT_PARCEL_SIZE,
-        weight: 2,
-      },
-      sender: {
-        name: seller.fullName,
-        address: { countryCode: seller.country as TerminalCountry },
-        contacts: { phone: normalizedSellerPhone },
+        // weight omitted — optional for TERMINAL plan, and unit is grams not kg
       },
       receiver: {
         name: receiver.name,
@@ -159,7 +159,20 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
         },
         contacts: { phone: normalizedReceiverPhone },
       },
-    });
+    };
+
+    // Content declaration required for cross-border EU shipments (Unisend docs 1.1)
+    if (seller.country !== destCountry) {
+      parcelRequest.parcel.content = {
+        items: [{
+          summary: gameName ?? 'Board game',
+          quantity: 1,
+          amount: priceCents / 100,
+        }],
+      };
+    }
+
+    const { parcelId, barcode, trackingUrl: rawTrackingUrl } = await createAndShipParcel(parcelRequest);
 
     const trackingUrl = rawTrackingUrl || getTrackingUrl(barcode);
     console.log(`${logPrefix} Parcel created: parcelId=${parcelId}, barcode=${barcode}`);
@@ -290,5 +303,7 @@ export async function retryOrderShipping(
       terminalAddress: '',
     },
     parcelSize: null,
+    gameName: order.listings?.game_name ?? null,
+    priceCents: order.items_total_cents,
   });
 }

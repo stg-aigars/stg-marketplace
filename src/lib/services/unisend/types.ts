@@ -69,13 +69,21 @@ export interface CreateParcelRequest {
     type: ParcelType;
     size?: ParcelSize;
     weight?: number;
-    partCount?: number;
+    content?: {
+      items: Array<{
+        summary: string;
+        quantity: number;
+        amount: number;
+      }>;
+    };
   };
   services?: Array<{
     code: string;
     value?: string;
   }>;
-  sender: {
+  // Sender is optional — for T2T (TERMINAL plan), the authenticated API user is the sender.
+  // Sending an explicit sender block may route through H2H/H2P validation paths.
+  sender?: {
     name: string;
     address?: {
       countryCode: TerminalCountry;
@@ -90,6 +98,7 @@ export interface CreateParcelRequest {
     address: {
       countryCode: TerminalCountry;
       terminalId: string;
+      locality?: string;
     };
     contacts: {
       phone: string;
