@@ -17,12 +17,14 @@ import {
 } from '@/lib/phone-utils';
 import { sendShippingInstructionsToSeller } from '@/lib/email';
 import { notify } from '@/lib/notifications';
+import { orderGameSummary } from '@/lib/orders/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface ShippingContext {
   orderId: string;
   orderNumber: string;
+  sellerId: string;
   seller: { fullName: string; phone: string; email: string; country: string | null };
   buyer: { fullName: string; email: string };
   receiver: { name: string; phone: string };
@@ -33,8 +35,8 @@ export interface ShippingContext {
     terminalAddress: string;
   };
   parcelSize: string | null;
-  gameName: string | null;
-  priceCents: number;
+  /** Items in this order (one or more). Used for content declaration and parcel sizing. */
+  items: Array<{ gameName: string | null; priceCents: number }>;
 }
 
 export type ShippingResult =
@@ -82,7 +84,7 @@ export async function updateOrderShippingError(
  * On failure: stores shipping_error on the order for later retry.
  */
 export async function createOrderShipping(ctx: ShippingContext): Promise<ShippingResult> {
-  const { orderId, orderNumber, seller, buyer, receiver, destination, parcelSize, gameName, priceCents } = ctx;
+  const { orderId, orderNumber, seller, buyer, receiver, destination, parcelSize, items } = ctx;
   const logPrefix = `[Shipping ${orderId}]`;
 
   // 1. Normalize phones
@@ -138,7 +140,9 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
   console.log(`${logPrefix} Creating parcel...`);
   console.log(`${logPrefix} Sender: ${seller.fullName}, Phone: ${seller.phone} -> ${normalizedSellerPhone}, Country: ${seller.country}`);
   console.log(`${logPrefix} Receiver: ${receiver.name}, Phone: ${receiver.phone} -> ${normalizedReceiverPhone}, Country: ${destination.country}`);
-  console.log(`${logPrefix} Terminal: ${destination.terminalId || '(empty)'}, Parcel Size: ${parcelSize || UNISEND_DEFAULT_PARCEL_SIZE}`);
+  // Default to 'L' for multi-item orders (conservative), 'M' for single items
+  const effectiveSize = parcelSize ?? (items.length > 1 ? 'L' : UNISEND_DEFAULT_PARCEL_SIZE);
+  console.log(`${logPrefix} Terminal: ${destination.terminalId || '(empty)'}, Parcel Size: ${effectiveSize}, Items: ${items.length}`);
 
   try {
     // T2T payload — no sender block (authenticated API user is the sender per Unisend docs).
@@ -148,7 +152,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       plan: { code: 'TERMINAL' },
       parcel: {
         type: 'T2T',
-        size: (parcelSize as ParcelSize) || UNISEND_DEFAULT_PARCEL_SIZE,
+        size: effectiveSize as ParcelSize,
         // weight omitted — optional for TERMINAL plan, and unit is grams not kg
       },
       receiver: {
@@ -164,11 +168,11 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
     // Content declaration required for cross-border EU shipments (Unisend docs 1.1)
     if (seller.country !== destCountry) {
       parcelRequest.parcel.content = {
-        items: [{
-          summary: gameName ?? 'Board game',
+        items: items.map((item) => ({
+          summary: item.gameName ?? 'Board game',
           quantity: 1,
-          amount: priceCents / 100,
-        }],
+          amount: item.priceCents / 100,
+        })),
       };
     }
 
@@ -210,19 +214,9 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       console.error(`${logPrefix} Failed to send shipping email:`, err);
     });
 
-    // In-app notification — fetch seller_id from order (not in ShippingContext)
-    void (async () => {
-      const { data: order } = await supabase
-        .from('orders')
-        .select('seller_id, listings(game_name)')
-        .eq('id', orderId)
-        .single();
-      if (order?.seller_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const gameName = (order.listings as any)?.game_name ?? 'Game';
-        void notify(order.seller_id, 'shipping.instructions', { gameName, orderNumber, orderId });
-      }
-    })();
+    // In-app notification — data already available from ShippingContext
+    const gameSummary = orderGameSummary(items.map((i) => ({ gameName: i.gameName ?? 'Game' })));
+    void notify(ctx.sellerId, 'shipping.instructions', { gameName: gameSummary, orderNumber, orderId });
 
     return { success: true, parcelId, barcode, trackingUrl };
   } catch (error) {
@@ -252,6 +246,7 @@ export async function retryOrderShipping(
     .from('orders')
     .select(`
       *,
+      order_items(listing_id, price_cents, listings(game_name, seller_id)),
       listings(game_name, seller_id),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email, phone, country),
       seller_profile:user_profiles!orders_seller_id_fkey(full_name, email, phone, country)
@@ -279,9 +274,17 @@ export async function retryOrderShipping(
     return { success: false, error: 'Parcel already created — cannot create a duplicate' };
   }
 
+  // Build items from order_items join (falls back to legacy listings for old orders)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orderItems = (order as any).order_items as Array<{ listing_id: string; price_cents: number; listings: { game_name: string } | null }> | undefined;
+  const items = orderItems && orderItems.length > 0
+    ? orderItems.map((i) => ({ gameName: i.listings?.game_name ?? null, priceCents: i.price_cents }))
+    : [{ gameName: order.listings?.game_name ?? null, priceCents: order.items_total_cents }];
+
   return createOrderShipping({
     orderId,
     orderNumber: order.order_number,
+    sellerId: order.seller_id,
     seller: {
       fullName: order.seller_profile?.full_name ?? 'Seller',
       phone: order.seller_phone ?? order.seller_profile?.phone ?? '',
@@ -303,7 +306,6 @@ export async function retryOrderShipping(
       terminalAddress: '',
     },
     parcelSize: null,
-    gameName: order.listings?.game_name ?? null,
-    priceCents: order.items_total_cents,
+    items,
   });
 }

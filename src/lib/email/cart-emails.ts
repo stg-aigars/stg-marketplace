@@ -1,19 +1,20 @@
 import { createServiceClient } from '@/lib/supabase';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from './index';
 import { notify } from '@/lib/notifications';
+import { orderGameSummary } from '@/lib/orders/utils';
 
 interface CartOrderEmailData {
   orderId: string;
   orderNumber: string;
   sellerId: string;
-  gameName: string;
-  priceCents: number;
+  items: Array<{ gameName: string; priceCents: number }>;
   shippingCents: number;
   terminalName: string;
 }
 
 /**
  * Send order emails for all orders in a cart group.
+ * Each order may contain multiple items (same seller).
  * Batch-fetches profiles and sends emails for each order.
  * Non-blocking — intended to be called with `void`.
  */
@@ -41,12 +42,14 @@ export async function sendCartOrderEmails(
 
     for (const order of orders) {
       const sellerProfile = profileMap.get(order.sellerId);
+      const gameName = orderGameSummary(order.items);
+      const totalItemsCents = order.items.reduce((sum, i) => sum + i.priceCents, 0);
 
       const emailData = {
         orderNumber: order.orderNumber,
         orderId: order.orderId,
-        gameName: order.gameName,
-        priceCents: order.priceCents,
+        gameName,
+        priceCents: totalItemsCents,
         shippingCents: order.shippingCents,
         terminalName: order.terminalName,
       };
@@ -71,14 +74,14 @@ export async function sendCartOrderEmails(
 
       // In-app notifications
       void notify(order.sellerId, 'order.created', {
-        gameName: order.gameName,
+        gameName,
         orderNumber: order.orderNumber,
         orderId: order.orderId,
         buyerName: buyerProfile?.full_name ?? 'Buyer',
         role: 'seller',
       });
       void notify(buyerId, 'order.created', {
-        gameName: order.gameName,
+        gameName,
         orderNumber: order.orderNumber,
         orderId: order.orderId,
         sellerName: sellerProfile?.full_name ?? 'Seller',

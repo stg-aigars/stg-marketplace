@@ -118,40 +118,42 @@ export async function POST(request: Request) {
   // Create a cart checkout group for record-keeping
   const cartGroupId = crypto.randomUUID();
 
-  // Pre-compute per-order wallet allocation (each order gets its listingTotal since wallet covers all)
-  const firstForSellerPrecompute = new Set<string>();
-  const orderAllocations: { listing: typeof listings[0]; shippingCents: number; walletDebit: number }[] = [];
+  // Build per-seller-group order allocations (one order per seller)
+  const sellerGroupAllocations: Array<{
+    sellerId: string;
+    items: typeof listings;
+    shippingCents: number;
+    walletDebit: number;
+  }> = [];
   let allocatedTotal = 0;
+  const sellerEntries = Array.from(sellerMap.entries());
 
-  for (let i = 0; i < listings.length; i++) {
-    const listing = listings[i];
-    const isFirst = !firstForSellerPrecompute.has(listing.seller_id);
-    firstForSellerPrecompute.add(listing.seller_id);
-    const shippingCents = isFirst ? (sellerShipping.get(listing.seller_id) ?? 0) : 0;
-    const listingTotal = listing.price_cents + shippingCents;
+  for (let i = 0; i < sellerEntries.length; i++) {
+    const [sellerId, sellerListings] = sellerEntries[i];
+    const shippingCents = sellerShipping.get(sellerId) ?? 0;
+    const sellerItemsTotal = sellerListings.reduce((sum, l) => sum + l.price_cents, 0);
+    const sellerTotal = sellerItemsTotal + shippingCents;
 
-    if (i < listings.length - 1) {
-      orderAllocations.push({ listing, shippingCents, walletDebit: listingTotal });
-      allocatedTotal += listingTotal;
+    if (i < sellerEntries.length - 1) {
+      sellerGroupAllocations.push({ sellerId, items: sellerListings, shippingCents, walletDebit: sellerTotal });
+      allocatedTotal += sellerTotal;
     } else {
-      // Last order gets remainder to avoid rounding drift
-      orderAllocations.push({ listing, shippingCents, walletDebit: grandTotalCents - allocatedTotal });
+      // Last seller group gets remainder to avoid rounding drift
+      sellerGroupAllocations.push({ sellerId, items: sellerListings, shippingCents, walletDebit: grandTotalCents - allocatedTotal });
     }
   }
 
-  // Create orders and debit wallet
-  const createdOrders: { id: string; orderNumber: string; index: number }[] = [];
+  // Create one consolidated order per seller group and debit wallet
+  const createdOrders: Array<{ id: string; orderNumber: string; sellerId: string; items: typeof listings; shippingCents: number }> = [];
 
   try {
-    for (let i = 0; i < orderAllocations.length; i++) {
-      const { listing, shippingCents, walletDebit: walletForOrder } = orderAllocations[i];
+    for (const { sellerId, items, shippingCents, walletDebit: walletForOrder } of sellerGroupAllocations) {
       const order = await createOrder({
         buyerId: user.id,
-        sellerId: listing.seller_id,
-        listingId: listing.id,
-        itemsTotalCents: listing.price_cents,
+        sellerId,
+        items: items.map((l) => ({ listingId: l.id, priceCents: l.price_cents })),
         shippingCostCents: shippingCents,
-        sellerCountry: listing.country,
+        sellerCountry: items[0].country,
         paymentMethod: 'wallet',
         walletDebitCents: walletForOrder,
         terminalId,
@@ -161,15 +163,16 @@ export async function POST(request: Request) {
         cartGroupId,
       });
 
-      createdOrders.push({ id: order.id, orderNumber: order.order_number, index: i });
+      createdOrders.push({ id: order.id, orderNumber: order.order_number, sellerId, items, shippingCents });
 
       // Debit wallet for this order
       if (walletForOrder > 0) {
+        const gameNames = items.map((l) => l.game_name ?? 'Game').join(', ');
         await debitWallet(
           user.id,
           walletForOrder,
           order.id,
-          `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
+          `Purchase: ${gameNames} — ${order.order_number}`
         );
       }
     }
@@ -191,6 +194,7 @@ export async function POST(request: Request) {
     resourceId: cartGroupId,
     metadata: {
       orderCount: createdOrders.length,
+      totalItemCount: listings.length,
       totalAmountCents: grandTotalCents,
       paymentMethod: 'wallet',
     },
@@ -198,13 +202,12 @@ export async function POST(request: Request) {
 
   // Send emails (non-blocking)
   void sendCartOrderEmails(
-    createdOrders.map(({ id, orderNumber, index }) => ({
+    createdOrders.map(({ id, orderNumber, sellerId: sid, items, shippingCents }) => ({
       orderId: id,
       orderNumber,
-      sellerId: orderAllocations[index].listing.seller_id,
-      gameName: orderAllocations[index].listing.game_name ?? 'Game',
-      priceCents: orderAllocations[index].listing.price_cents,
-      shippingCents: orderAllocations[index].shippingCents,
+      sellerId: sid,
+      items: items.map((l) => ({ gameName: l.game_name ?? 'Game', priceCents: l.price_cents })),
+      shippingCents,
       terminalName,
     })),
     user.id

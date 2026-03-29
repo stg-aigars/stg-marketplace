@@ -17,6 +17,7 @@ import {
   sendDisputeWithdrawn,
 } from '@/lib/email';
 import { notify, notifyMany } from '@/lib/notifications';
+import { getOrderGameSummary } from '@/lib/orders/utils';
 
 // Re-export pure validation functions for external use
 export {
@@ -126,13 +127,13 @@ export async function openDispute(
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     reason,
   }).catch((err) => console.error('[Email] Failed to send dispute notification:', err));
 
   void notify(order.seller_id, 'dispute.opened', {
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
     orderNumber: order.order_number,
     orderId,
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
@@ -198,13 +199,13 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send dispute withdrawn email:', err));
 
   void notify(order.seller_id, 'dispute.withdrawn', {
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
     orderNumber: order.order_number,
     orderId,
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
@@ -262,8 +263,14 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     order.buyer_id,
     refundAmountCents,
     orderId,
-    `Refund: ${order.listings?.game_name ?? 'Game'} — ${order.order_number}`
+    `Refund: ${getOrderGameSummary(order.order_items, order.listings)} — ${order.order_number}`
   );
+
+  // Mark order_items as inactive (frees partial unique index for re-listing)
+  await supabase
+    .from('order_items')
+    .update({ active: false })
+    .eq('order_id', orderId);
 
   void logAuditEvent({
     actorId: userId,
@@ -282,13 +289,13 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
     refundAmountCents,
   }).catch((err) => console.error('[Email] Failed to send refund emails:', err));
 
   void notifyMany([
-    { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
-    { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
+    { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
   ]);
 
   return updatedOrder;
@@ -339,12 +346,12 @@ export async function escalateDispute(orderId: string, userId: string): Promise<
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
   }).catch((err) => console.error('[Email] Failed to send escalation emails:', err));
 
   void notifyMany([
-    { userId: order.buyer_id, type: 'dispute.escalated', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
-    { userId: order.seller_id, type: 'dispute.escalated', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    { userId: order.buyer_id, type: 'dispute.escalated', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
+    { userId: order.seller_id, type: 'dispute.escalated', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
   ]);
 
   return updatedDispute;
@@ -402,8 +409,14 @@ export async function staffResolveDispute(
       order.buyer_id,
       refundAmountCents,
       orderId,
-      `Refund: ${order.listings?.game_name ?? 'Game'} — ${order.order_number}`
+      `Refund: ${getOrderGameSummary(order.order_items, order.listings)} — ${order.order_number}`
     );
+
+    // Mark order_items as inactive (frees partial unique index for re-listing)
+    await supabase
+      .from('order_items')
+      .update({ active: false })
+      .eq('order_id', orderId);
 
     void logAuditEvent({
       actorId: staffUserId,
@@ -421,14 +434,14 @@ export async function staffResolveDispute(
       sellerEmail: order.seller_profile?.email ?? '',
       orderNumber: order.order_number,
       orderId,
-      gameName: order.listings?.game_name ?? 'Game',
+      gameName: getOrderGameSummary(order.order_items, order.listings),
       refundAmountCents,
       staffNotes: notes,
     }).catch((err) => console.error('[Email] Failed to send staff refund emails:', err));
 
     void notifyMany([
-      { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
-      { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+      { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
+      { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
     ]);
 
     return updatedOrder;
@@ -480,14 +493,14 @@ export async function staffResolveDispute(
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: getOrderGameSummary(order.order_items, order.listings),
     earningsCents: order.seller_wallet_credit_cents ?? 0,
     staffNotes: notes,
   }).catch((err) => console.error('[Email] Failed to send staff resolution emails:', err));
 
   void notifyMany([
-    { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
-    { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: order.listings?.game_name ?? 'Game', orderNumber: order.order_number, orderId } },
+    { userId: order.buyer_id, type: 'dispute.resolved', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
+    { userId: order.seller_id, type: 'dispute.resolved', context: { gameName: getOrderGameSummary(order.order_items, order.listings), orderNumber: order.order_number, orderId } },
   ]);
 
   return updatedOrder;

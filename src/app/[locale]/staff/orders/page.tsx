@@ -6,6 +6,7 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus } from '@/lib/orders/types';
+import { getOrderGameSummary } from '@/lib/orders/utils';
 
 export const metadata: Metadata = {
   title: 'All Orders — Staff',
@@ -16,8 +17,10 @@ interface StaffOrderRow {
   order_number: string;
   status: OrderStatus;
   total_amount_cents: number;
+  item_count: number;
   payment_method: string | null;
   created_at: string;
+  order_items: Array<{ listing_id: string; listings: { game_name: string } | null }>;
   listings: { game_name: string } | null;
   buyer_profile: { full_name: string | null } | null;
   seller_profile: { full_name: string | null } | null;
@@ -33,7 +36,8 @@ export default async function StaffOrdersPage({
   let query = serviceClient
     .from('orders')
     .select(`
-      id, order_number, status, total_amount_cents, payment_method, created_at,
+      id, order_number, status, total_amount_cents, item_count, payment_method, created_at,
+      order_items(listing_id, listings(game_name)),
       listings(game_name),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name),
       seller_profile:user_profiles!orders_seller_id_fkey(full_name)
@@ -93,7 +97,7 @@ export default async function StaffOrdersPage({
                       )}
                     </div>
                     <p className="text-sm text-semantic-text-secondary mt-0.5 truncate">
-                      {order.listings?.game_name ?? '—'} · {order.buyer_profile?.full_name ?? 'Unknown'} → {order.seller_profile?.full_name ?? 'Unknown'}
+                      {getOrderGameSummary(order.order_items, order.listings)} · {order.buyer_profile?.full_name ?? 'Unknown'} → {order.seller_profile?.full_name ?? 'Unknown'}
                     </p>
                   </div>
                   <div className="text-right ml-4 shrink-0">

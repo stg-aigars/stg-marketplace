@@ -58,11 +58,11 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
-  const condition = order.listings?.condition as ListingCondition | undefined;
-  const badgeKey = condition ? conditionToBadgeKey[condition] : undefined;
-  const conditionInfo = badgeKey ? conditionConfig[badgeKey] : undefined;
-  const gameImage = order.listings?.games?.thumbnail ?? null;
   const statusMessage = getStatusMessage(status, userRole);
+
+  // Derive items from order_items (preferred) or legacy listings join
+  const items = order.order_items ?? [];
+  const hasMultipleItems = items.length > 1;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -193,34 +193,50 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           userRole={userRole}
         />
 
-        {/* Game details */}
+        {/* Items */}
         <Card>
           <CardBody>
-            <div className="flex gap-4">
-              <GameThumb
-                src={gameImage}
-                alt={order.listings?.game_name ?? 'Game'}
-                size="xl"
-              />
-              <div>
-                <Link
-                  href={`/listings/${order.listing_id}`}
-                  className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
-                >
-                  <GameTitle
-                    name={order.listings?.game_year
-                      ? `${order.listings.game_name ?? 'Unknown game'} (${order.listings.game_year})`
-                      : order.listings?.game_name ?? 'Unknown game'}
-                    size="lg"
-                    serif
-                  />
-                </Link>
-                {badgeKey && conditionInfo && (
-                  <div className="mt-1">
-                    <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
+            {hasMultipleItems && (
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                Items ({items.length})
+              </h2>
+            )}
+            <div className={hasMultipleItems ? 'space-y-3' : ''}>
+              {items.map((item) => {
+                const itemCondition = item.listings?.condition as ListingCondition | undefined;
+                const itemBadgeKey = itemCondition ? conditionToBadgeKey[itemCondition] : undefined;
+                const itemConditionInfo = itemBadgeKey ? conditionConfig[itemBadgeKey] : undefined;
+                const itemImage = item.listings?.games?.thumbnail ?? null;
+                const itemGameName = item.listings?.game_year
+                  ? `${item.listings.game_name ?? 'Unknown game'} (${item.listings.game_year})`
+                  : item.listings?.game_name ?? 'Unknown game';
+
+                return (
+                  <div key={item.id} className={`flex gap-4 ${hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}`}>
+                    <GameThumb src={itemImage} alt={itemGameName} size={hasMultipleItems ? 'lg' : 'xl'} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/listings/${item.listing_id}`}
+                          className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+                        >
+                          <GameTitle name={itemGameName} size={hasMultipleItems ? 'md' : 'lg'} serif />
+                        </Link>
+                        {hasMultipleItems && (
+                          <span className="text-sm font-semibold text-semantic-text-heading flex-shrink-0">
+                            {formatCentsToCurrency(item.price_cents)}
+                          </span>
+                        )}
+                      </div>
+                      {itemBadgeKey && itemConditionInfo && (
+                        <div className="mt-1">
+                          <Badge condition={itemBadgeKey}>{itemConditionInfo.label}</Badge>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
           </CardBody>
         </Card>
@@ -233,7 +249,9 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             </h2>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-semantic-text-secondary">Item price</span>
+                <span className="text-semantic-text-secondary">
+                  {hasMultipleItems ? `Items (${items.length})` : 'Item price'}
+                </span>
                 <span className="text-semantic-text-primary">
                   {formatCentsToCurrency(order.items_total_cents)}
                 </span>

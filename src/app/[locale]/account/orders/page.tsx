@@ -23,17 +23,21 @@ export default async function MyOrdersPage({
   const fromCart = searchParams.from === 'cart';
   const cartGroupId = typeof searchParams.group === 'string' ? searchParams.group : undefined;
 
-  // Count orders in the cart group for the success banner
-  let cartOrderCount = 0;
+  // Count total items across orders in the cart group for the success banner
+  let cartItemCount = 0;
+  let cartSellerCount = 0;
   if (fromCart && cartGroupId) {
-    cartOrderCount = purchases.filter((o) => o.cart_group_id === cartGroupId).length;
+    const cartOrders = purchases.filter((o) => o.cart_group_id === cartGroupId);
+    cartItemCount = cartOrders.reduce((sum, o) => sum + (o.item_count ?? 1), 0);
+    cartSellerCount = cartOrders.length;
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      {fromCart && cartOrderCount > 0 && (
+      {fromCart && cartItemCount > 0 && (
         <Alert variant="success" dismissible className="mb-6">
-          Your order for {cartOrderCount} {cartOrderCount === 1 ? 'game' : 'games'} has been placed. Each seller will be notified.
+          Your order for {cartItemCount} {cartItemCount === 1 ? 'game' : 'games'} has been placed.{' '}
+          {cartSellerCount > 1 ? `${cartSellerCount} sellers will` : 'The seller will'} be notified.
         </Alert>
       )}
 

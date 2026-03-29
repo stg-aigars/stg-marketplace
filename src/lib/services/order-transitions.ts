@@ -19,6 +19,7 @@ import {
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { syncShelfOnListingSold } from '@/lib/listings/actions';
+import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
 
 /**
  * Load an order by ID using the service client (bypasses RLS).
@@ -31,6 +32,7 @@ export async function loadOrder(orderId: string): Promise<OrderWithRelations> {
     .from('orders')
     .select(`
       *,
+      order_items(listing_id, price_cents, listings(game_name, seller_id)),
       listings(game_name, seller_id),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email, phone, country),
       seller_profile:user_profiles!orders_seller_id_fkey(full_name, email, phone, country)
@@ -149,9 +151,14 @@ export async function acceptOrder(
   }, order);
 
   // 2. Attempt shipping — failure won't roll back the accept
+  const items = order.order_items && order.order_items.length > 0
+    ? order.order_items.map((i) => ({ gameName: i.listings?.game_name ?? null, priceCents: i.price_cents }))
+    : [{ gameName: order.listings?.game_name ?? null, priceCents: order.items_total_cents }];
+
   const shippingResult = await createOrderShipping({
     orderId,
     orderNumber: order.order_number,
+    sellerId: order.seller_id,
     seller: {
       fullName: order.seller_profile?.full_name ?? 'Seller',
       phone: sellerPhone,
@@ -173,20 +180,20 @@ export async function acceptOrder(
       terminalAddress: '',
     },
     parcelSize: null,
-    gameName: order.listings?.game_name ?? null,
-    priceCents: order.items_total_cents,
+    items,
   });
 
   // 3. Email buyer about acceptance (non-blocking)
+  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderAcceptedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: gameSummary,
     sellerName: order.seller_profile?.full_name ?? 'Seller',
   }).catch((err) => console.error('[Email] Failed to send order-accepted to buyer:', err));
-  void notify(order.buyer_id, 'order.accepted', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
+  void notify(order.buyer_id, 'order.accepted', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
   if (shippingResult.success) {
     return {
@@ -212,26 +219,36 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
 
   const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller', undefined, order);
 
-  // Restore listing to active and clear reservation fields
+  // Restore all listings to active and clear reservation fields
   const supabase = createServiceClient();
-  await supabase
-    .from('listings')
-    .update({ status: 'active', reserved_at: null, reserved_by: null })
-    .eq('id', order.listing_id)
-    .eq('status', 'reserved');
+  const listingIds = getOrderListingIds(order.order_items, order.listing_id);
+  if (listingIds.length > 0) {
+    await supabase
+      .from('listings')
+      .update({ status: 'active', reserved_at: null, reserved_by: null })
+      .in('id', listingIds)
+      .eq('status', 'reserved');
+
+    // Mark order_items as inactive (frees partial unique index for re-listing)
+    await supabase
+      .from('order_items')
+      .update({ active: false })
+      .eq('order_id', orderId);
+  }
 
   // Refund buyer (card, wallet, or both)
   await refundOrder(orderId, order);
 
   // Email (non-blocking)
+  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderDeclinedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: gameSummary,
   }).catch((err) => console.error('[Email] Failed to send order-declined to buyer:', err));
-  void notify(order.buyer_id, 'order.declined', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
+  void notify(order.buyer_id, 'order.declined', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
   return updatedOrder;
 }
@@ -246,16 +263,17 @@ export async function markShipped(orderId: string, userId: string): Promise<Orde
     deadline_reminder_sent_at: null,
   }, order);
 
+  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderShippedToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: gameSummary,
     barcode: order.barcode ?? undefined,
     trackingUrl: order.tracking_url ?? undefined,
   }).catch((err) => console.error('[Email] Failed to send order-shipped to buyer:', err));
-  void notify(order.buyer_id, 'order.shipped', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
+  void notify(order.buyer_id, 'order.shipped', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
   return updatedOrder;
 }
@@ -267,14 +285,15 @@ export async function markDelivered(orderId: string, userId: string): Promise<Or
   const order = await loadOrder(orderId);
   const updatedOrder = await transitionOrder(orderId, 'delivered', userId, 'buyer', undefined, order);
 
+  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderDeliveredToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: gameSummary,
   }).catch((err) => console.error('[Email] Failed to send order-delivered to buyer:', err));
-  void notify(order.buyer_id, 'order.delivered', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
+  void notify(order.buyer_id, 'order.delivered', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
   return updatedOrder;
 }
@@ -289,19 +308,22 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   // Credit seller wallet with earnings (idempotent — safe to retry)
   await creditSellerWallet(orderId, order);
 
+  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderCompletedToSeller({
     sellerName: order.seller_profile?.full_name ?? 'Seller',
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: gameSummary,
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send order-completed to seller:', err));
-  void notify(order.seller_id, 'order.completed', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
+  void notify(order.seller_id, 'order.completed', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
-  // Shelf sync: mark game as sold (not_for_sale)
-  await syncShelfOnListingSold(order.seller_id, order.listing_id);
+  // Shelf sync: mark all items' games as sold (not_for_sale)
+  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
+    await syncShelfOnListingSold(order.seller_id, listingId);
+  }
 
   return updatedOrder;
 }
@@ -352,19 +374,22 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   await creditSellerWallet(orderId, order);
 
   // Email seller about completion (non-blocking)
+  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderCompletedToSeller({
     sellerName: order.seller_profile?.full_name ?? 'Seller',
     sellerEmail: order.seller_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
-    gameName: order.listings?.game_name ?? 'Game',
+    gameName: gameSummary,
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send auto-complete email to seller:', err));
-  void notify(order.seller_id, 'order.completed', { gameName: order.listings?.game_name, orderNumber: order.order_number, orderId });
+  void notify(order.seller_id, 'order.completed', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
-  // Shelf sync: mark game as sold (not_for_sale)
-  await syncShelfOnListingSold(order.seller_id, order.listing_id);
+  // Shelf sync: mark all items' games as sold (not_for_sale)
+  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
+    await syncShelfOnListingSold(order.seller_id, listingId);
+  }
 
   return data;
 }
@@ -377,11 +402,16 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
 export async function creditSellerWallet(orderId: string, order: Pick<OrderWithRelations, 'seller_id' | 'seller_wallet_credit_cents' | 'listings' | 'order_number'>): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
 
+  const gameSummary = getOrderGameSummary(
+    'order_items' in order ? (order as OrderWithRelations).order_items : undefined,
+    order.listings
+  );
+
   await creditWallet(
     order.seller_id,
     order.seller_wallet_credit_cents,
     orderId,
-    `Sale: ${order.listings?.game_name ?? 'Game'} — ${order.order_number}`
+    `Sale: ${gameSummary} — ${order.order_number}`
   );
 
   // Mark wallet_credited_at on the order
