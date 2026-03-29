@@ -1,9 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
 import { Badge, Breadcrumb, Card, CardBody } from '@/components/ui';
+import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -197,29 +197,23 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         <Card>
           <CardBody>
             <div className="flex gap-4">
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-semantic-bg-subtle">
-                {gameImage ? (
-                  <Image
-                    src={gameImage}
-                    alt={order.listings?.game_name ?? 'Game'}
-                    fill
-                    sizes="(min-width: 640px) 80px, 64px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-semantic-text-muted text-xs">
-                    No image
-                  </div>
-                )}
-              </div>
+              <GameThumb
+                src={gameImage}
+                alt={order.listings?.game_name ?? 'Game'}
+                size="lg"
+              />
               <div>
                 <Link
                   href={`/listings/${order.listing_id}`}
-                  className="font-semibold text-semantic-text-heading sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+                  className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
                 >
-                  {order.listings?.game_name ?? 'Unknown game'}
+                  <GameTitle
+                    name={order.listings?.game_name ?? 'Unknown game'}
+                    size="lg"
+                    serif
+                  />
                   {order.listings?.game_year && (
-                    <span className="text-semantic-text-muted font-normal ml-1">
+                    <span className="text-sm text-semantic-text-muted font-normal ml-1">
                       ({order.listings.game_year})
                     </span>
                   )}
