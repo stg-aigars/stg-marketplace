@@ -14,7 +14,7 @@ export function OAuthButton({ returnUrl }: OAuthButtonProps) {
   async function handleGoogleSignIn() {
     setLoading(true);
     const supabase = createClient();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const appUrl = window.location.origin;
 
     const destination = returnUrl || '/';
 
