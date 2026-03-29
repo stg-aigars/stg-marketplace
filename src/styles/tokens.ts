@@ -120,10 +120,10 @@ export const spacing = {
   24: '6rem',      // 96px
 } as const;
 
-// Typography using Inter
+// Typography using Plus Jakarta Sans
 export const typography = {
   fontFamily: {
-    primary: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    primary: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   fontSize: {
     xs: '0.75rem',      // 12px

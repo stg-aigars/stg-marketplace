@@ -32,7 +32,7 @@ const theme = {
   frost: '#88C0D0',
   frostDark: '#5E81AC',
   orange: '#D08770',
-  fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
 };
 
 const EMAIL_WIDTH = 600;

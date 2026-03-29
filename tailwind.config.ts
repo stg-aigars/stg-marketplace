@@ -92,7 +92,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: typography.fontFamily.primary.split(', ').map((f) => f.replace(/^"|"$/g, '')),
+        sans: ['var(--font-sans)', ...typography.fontFamily.primary.split(', ').map((f) => f.replace(/^"|"$/g, ''))],
         display: ['var(--font-display)', 'Georgia', 'serif'],
       },
       borderRadius: {

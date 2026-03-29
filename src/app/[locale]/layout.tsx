@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Fraunces } from 'next/font/google';
+import { Plus_Jakarta_Sans, Fraunces } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -13,9 +13,9 @@ import '../globals.css';
 
 const Toaster = dynamic(() => import('@/components/ui/toaster').then(m => ({ default: m.Toaster })), { ssr: false });
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin', 'latin-ext'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
 });
 
@@ -70,7 +70,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body className={`${inter.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
+      <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <CartProvider>
