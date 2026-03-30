@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Gavel } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Alert, TurnstileWidget } from '@/components/ui';
@@ -159,7 +160,7 @@ export function BidPanel({
 
         {!currentUserId && !isEnded && (
           <p className="text-sm text-semantic-text-muted">
-            <a href="/auth/signin" className="text-semantic-brand font-medium">Sign in</a> to place a bid.
+            <Link href="/auth/signin" className="text-semantic-brand font-medium">Sign in</Link> to place a bid.
           </p>
         )}
 

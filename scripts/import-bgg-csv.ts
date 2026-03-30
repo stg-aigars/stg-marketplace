@@ -18,9 +18,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-
-// csv-parser is CommonJS
-const csv = require('csv-parser');
+import csv from 'csv-parser';
 
 interface CSVRow {
   id: string;

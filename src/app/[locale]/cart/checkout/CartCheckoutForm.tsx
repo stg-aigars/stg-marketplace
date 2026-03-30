@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart } from '@phosphor-icons/react/ssr';
 import { Alert, Badge, Button, Card, CardBody, Input, TurnstileWidget } from '@/components/ui';
@@ -156,7 +157,7 @@ export function CartCheckoutForm({
   if (items.length === 0) {
     return (
       <Alert variant="info">
-        Your cart is empty. <a href="/browse" className="underline">Browse games</a> to add items.
+        Your cart is empty. <Link href="/browse" className="underline">Browse games</Link> to add items.
       </Alert>
     );
   }
