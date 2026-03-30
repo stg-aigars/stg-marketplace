@@ -102,3 +102,6 @@ export const thumbnailLimiter = rateLimit({ interval: 10_000, maxRequests: 5 });
 export const gameSearchLimiter = rateLimit({ interval: 60_000, maxRequests: 30 });
 export const messageLimiter = rateLimit({ interval: 60_000, maxRequests: 20 });
 export const paymentCallbackLimiter = rateLimit({ interval: 60_000, maxRequests: 20 });
+export const loginLimiter = rateLimit({ interval: 60_000, maxRequests: 10 });
+export const signupLimiter = rateLimit({ interval: 60_000, maxRequests: 5 });
+export const passwordResetLimiter = rateLimit({ interval: 60_000, maxRequests: 3 });

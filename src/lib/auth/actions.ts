@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import type { AuthActionResult, SignInFormData, SignUpFormData } from './types';
 import type { CountryCode } from '@/lib/country-utils';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { loginLimiter, signupLimiter, passwordResetLimiter } from '@/lib/rate-limit';
 
 /** Prevent open redirects — only allow relative paths. */
 function safeReturnUrl(url?: string): string {
@@ -20,7 +21,11 @@ export async function signInWithEmail(
   returnUrl?: string,
   turnstileToken?: string
 ): Promise<AuthActionResult> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const ip = await getServerActionIp();
+  const limitResult = loginLimiter.check(ip ?? 'unknown');
+  if (!limitResult.success) return { error: 'Too many login attempts. Please try again later.' };
+
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
@@ -41,7 +46,11 @@ export async function signUpWithEmail(
   formData: SignUpFormData,
   turnstileToken?: string
 ): Promise<AuthActionResult> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const ip = await getServerActionIp();
+  const limitResult = signupLimiter.check(ip ?? 'unknown');
+  if (!limitResult.success) return { error: 'Too many signup attempts. Please try again later.' };
+
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
@@ -80,7 +89,11 @@ export async function resetPassword(
   email: string,
   turnstileToken?: string
 ): Promise<AuthActionResult> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const ip = await getServerActionIp();
+  const limitResult = passwordResetLimiter.check(ip ?? 'unknown');
+  if (!limitResult.success) return { error: 'Too many reset attempts. Please try again later.' };
+
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
