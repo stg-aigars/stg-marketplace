@@ -60,6 +60,7 @@ export function getClientIp(request: { headers: { get(name: string): string | nu
 }
 
 /** Extract client IP inside a server action (uses next/headers). */
-export function getServerActionIp(): string | undefined {
-  return headers().get('x-forwarded-for')?.split(',')[0].trim() || undefined;
+export async function getServerActionIp(): Promise<string | undefined> {
+  const h = await headers();
+  return h.get('x-forwarded-for')?.split(',')[0].trim() || undefined;
 }

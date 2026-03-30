@@ -20,7 +20,7 @@ export async function placeBid(
   amountCents: number,
   turnstileToken?: string
 ): Promise<{ success: true; newEndAt: string; bidCount: number } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
   if (!turnstile.success) return { error: turnstile.error };
 
   if (!Number.isInteger(amountCents) || amountCents < 50) {
