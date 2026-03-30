@@ -171,7 +171,7 @@ export async function GET(request: Request) {
   const expectedAmount = (expectedEverypayAmountCents / 100).toFixed(2);
   if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
     console.error(
-      `[Payments] Amount mismatch: EveryPay charged €${paymentStatus.amount} but expected €${expectedAmount}`
+      `[Payments] Amount mismatch: EveryPay charged €${paymentStatus.amount} but expected €${expectedAmount} (total: ${session.amount_cents}, wallet: ${walletDebit})`
     );
     await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, `amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
     return NextResponse.redirect(

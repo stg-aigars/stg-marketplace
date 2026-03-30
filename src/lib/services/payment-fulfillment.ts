@@ -150,7 +150,7 @@ export async function fulfillSingleItemPayment(
           `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
         );
       } catch (walletError) {
-        console.error(`[Payments] RECONCILIATION NEEDED: Wallet debit failed for order ${order.id}, expected ${walletDebitCents} cents:`, walletError);
+        console.error(`[Payments] Wallet debit failed for order ${order.id}, expected ${walletDebitCents} cents — reconciliation cron will retry:`, walletError);
         await serviceClient
           .from('orders')
           .update({ buyer_wallet_debit_cents: 0 })
@@ -326,7 +326,7 @@ export async function fulfillCartPayment(
             `Purchase: ${gameNames} — ${order.order_number}`
           );
         } catch (walletError) {
-          console.error(`[Payments] Cart: Wallet debit failed for order ${order.id}:`, walletError);
+          console.error(`[Payments] Cart: Wallet debit failed for order ${order.id} — reconciliation cron will retry:`, walletError);
           await serviceClient
             .from('orders')
             .update({ buyer_wallet_debit_cents: 0 })
