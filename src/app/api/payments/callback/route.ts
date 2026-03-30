@@ -26,10 +26,8 @@ import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify } from '@/lib/notifications';
-import { rateLimit, getClientIP } from '@/lib/rate-limit';
+import { paymentCallbackLimiter, getClientIP } from '@/lib/rate-limit';
 import type { SupabaseClient } from '@supabase/supabase-js';
-
-const callbackLimiter = rateLimit({ interval: 60_000, maxRequests: 20 });
 
 async function attemptAutoRefund(
   paymentReference: string,
@@ -59,7 +57,7 @@ async function attemptAutoRefund(
 export async function GET(request: Request) {
   // Rate limit to prevent enumeration and EveryPay API quota abuse (F13)
   const ip = getClientIP(request);
-  const rateLimitResult = callbackLimiter.check(ip);
+  const rateLimitResult = paymentCallbackLimiter.check(ip);
   if (!rateLimitResult.success) {
     return NextResponse.redirect(`${env.app.url}/browse?error=rate_limited`);
   }
