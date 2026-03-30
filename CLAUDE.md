@@ -206,7 +206,7 @@ All `/api/cron/*` routes follow the same pattern:
 - **Coolify command**: `curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/<name>`
 - **Auth check**: `request.headers.get('authorization') !== \`Bearer ${env.cron.secret}\`` → 401
 
-Existing cron routes: `expire-reservations` (5min), `end-auctions` (1min), `cleanup-sessions` (10min), `sync-tracking` (15min), `auction-payment-deadline` (30min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h, handles both shelf + wanted offers), `cleanup-notifications` (weekly). See `src/app/api/cron/` for implementations.
+Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, reconciles orphaned checkout sessions + retries failed wallet debits), `end-auctions` (1min), `cleanup-sessions` (10min, skips sessions with payment references), `sync-tracking` (15min), `auction-payment-deadline` (30min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h, handles both shelf + wanted offers), `cleanup-notifications` (weekly). See `src/app/api/cron/` for implementations.
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main

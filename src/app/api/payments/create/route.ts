@@ -213,6 +213,17 @@ export async function POST(request: Request) {
       }
     );
 
+    // Store payment reference for reconciliation cron.
+    // Narrow crash window: if the app dies between createPayment() and this update,
+    // the payment is initiated but invisible to reconciliation. Acceptable at current scale.
+    void serviceClient
+      .from('checkout_sessions')
+      .update({ everypay_payment_reference: paymentResponse.payment_reference })
+      .eq('id', session.id)
+      .then(({ error }) => {
+        if (error) console.error('[Payments] CRITICAL: Failed to store payment reference:', error);
+      });
+
     void logAuditEvent({
       actorId: user.id,
       actorType: 'user',

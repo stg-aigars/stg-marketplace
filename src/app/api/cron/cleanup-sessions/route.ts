@@ -14,11 +14,13 @@ export async function POST(request: Request) {
   const serviceClient = createServiceClient();
   const cutoff = new Date(Date.now() - SESSION_TTL_MS).toISOString();
 
+  // Skip sessions with a payment reference — those are handled by reconcile-payments cron
   const { data, error } = await serviceClient
     .from('checkout_sessions')
     .update({ status: 'expired' })
     .eq('status', 'pending')
     .lt('created_at', cutoff)
+    .is('everypay_payment_reference', null)
     .select('id');
 
   if (error) {
@@ -31,12 +33,13 @@ export async function POST(request: Request) {
     console.log(`[Cron] Expired ${count} orphan checkout sessions`);
   }
 
-  // Also expire old cart checkout groups
+  // Also expire old cart checkout groups (skip those with payment references)
   const { data: cartData, error: cartError } = await serviceClient
     .from('cart_checkout_groups')
     .update({ status: 'expired' })
     .eq('status', 'pending')
     .lt('created_at', cutoff)
+    .is('everypay_payment_reference', null)
     .select('id, listing_ids, buyer_id');
 
   let cartCount = 0;

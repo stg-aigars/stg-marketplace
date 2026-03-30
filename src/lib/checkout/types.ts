@@ -14,6 +14,7 @@ export interface CheckoutSession {
   buyer_phone: string;
   amount_cents: number;
   wallet_debit_cents: number;
+  everypay_payment_reference: string | null;
   status: 'pending' | 'completed' | 'expired';
   created_at: string;
 }
