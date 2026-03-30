@@ -16,7 +16,13 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-# Stage 3: Production runner
+# Stage 3: Install platform-specific sharp in isolation (avoids npm resolution
+# issues with standalone's complex node_modules tree)
+FROM node:20-alpine AS sharp
+WORKDIR /sharp
+RUN npm init -y && npm install --os=linux --libc=musl sharp@0.34.5
+
+# Stage 4: Production runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -31,8 +37,8 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Install platform-specific sharp for Next.js image optimization (after standalone copy)
-RUN npm install --os=linux --cpu=x64 sharp
+# Overlay sharp with correct musl native bindings (sharp, @img, @emnapi, detect-libc, semver)
+COPY --from=sharp --chown=nextjs:nodejs /sharp/node_modules ./node_modules
 
 USER nextjs
 EXPOSE 3000
