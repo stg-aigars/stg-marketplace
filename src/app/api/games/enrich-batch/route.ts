@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
+import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { fetchGameThumbnails } from '@/lib/bgg/api';
+import { thumbnailLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 const MAX_BATCH_SIZE = 20;
 
@@ -12,6 +14,12 @@ const MAX_BATCH_SIZE = 20;
  * Returns thumbnails for all requested IDs.
  */
 export async function POST(request: NextRequest) {
+  const rateLimitError = applyRateLimit(thumbnailLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
+  const csrfError = requireBrowserOrigin(request);
+  if (csrfError) return csrfError;
+
   const supabase = await createClient();
   const {
     data: { user },

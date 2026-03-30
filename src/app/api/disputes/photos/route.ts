@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createServiceClient } from '@/lib/supabase';
@@ -118,12 +119,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // Strip EXIF metadata (GPS location, device info) — GDPR data minimization
+  const strippedBuffer = detectedType === 'image/jpeg'
+    ? await sharp(buffer).rotate().jpeg({ quality: 90 }).toBuffer()
+    : await sharp(buffer).rotate().toBuffer();
+
   const extension = EXTENSION_MAP[detectedType] ?? 'jpg';
   const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
 
   const { error: uploadError } = await supabase.storage
     .from('dispute-photos')
-    .upload(path, buffer, { contentType: detectedType });
+    .upload(path, strippedBuffer, { contentType: detectedType });
 
   if (uploadError) {
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });

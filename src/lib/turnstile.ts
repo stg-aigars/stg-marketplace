@@ -10,14 +10,17 @@ const secretKey = process.env.TURNSTILE_SECRET_KEY;
 
 /**
  * Verify a Turnstile token server-side.
- * Gracefully skips if TURNSTILE_SECRET_KEY is not set.
- * Gracefully allows on network error (logs but doesn't block the user).
+ * Skips verification if TURNSTILE_SECRET_KEY is not set (dev/CI only).
+ * Fails closed on network errors — returns failure, not silent pass.
  */
 export async function verifyTurnstileToken(
   token: string | null | undefined,
   ip?: string | null
 ): Promise<TurnstileVerifyResult> {
   if (!secretKey) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[Turnstile] TURNSTILE_SECRET_KEY not set in production — bot protection disabled');
+    }
     return { success: true };
   }
 
@@ -48,9 +51,9 @@ export async function verifyTurnstileToken(
     }
 
     return { success: true };
-  } catch {
-    console.error('Turnstile verification request failed');
-    return { success: true };
+  } catch (error) {
+    console.error('[Turnstile] Verification request failed:', error);
+    return { success: false, error: 'Verification service unavailable. Please try again.' };
   }
 }
 
