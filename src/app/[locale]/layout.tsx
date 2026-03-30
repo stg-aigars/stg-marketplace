@@ -11,6 +11,10 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Toaster } from '@/components/ui/toaster';
 import '../globals.css';
 
+// Cookie consent: not required. Only browser cookies are Supabase auth session
+// cookies (strictly necessary, exempt under GDPR/ePrivacy). Sentry is server-side
+// only. Revisit if client-side analytics or tracking is added.
+
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-sans',

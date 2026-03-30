@@ -294,12 +294,12 @@ Covered in Section 5 findings. Summary: 22/24 non-cron mutation routes protected
 
 ### 11. GDPR & Data Privacy
 
-#### [MEDIUM] F33: No cookie consent banner
-- **Location:** Project-wide (confirmed absent)
-- **Description:** No cookie consent component exists. The app uses Supabase auth cookies and Sentry tracking. Under GDPR/ePrivacy Directive, cookie consent is required for non-essential cookies in EU/EEA. All three target markets (LV, LT, EE) are EU member states.
-- **Risk:** Regulatory non-compliance. Auth session cookies are exempt (strictly necessary), but Sentry tracking cookies require consent.
-- **Recommendation:** Add cookie consent banner. Make Sentry conditional on consent.
-- **Effort:** M
+#### [INFO] F33: No cookie consent banner — not required
+- **Location:** Project-wide
+- **Description:** No cookie consent component exists. However, on review: Sentry is configured server-side only (sentry.server.config.ts, sentry.edge.config.ts, src/instrumentation.ts) — no client-side SDK, no browser cookies set by Sentry. The only browser cookies are Supabase auth session cookies, which are strictly necessary and exempt from consent under GDPR/ePrivacy.
+- **Risk:** None at present. If client-side analytics or tracking is added in the future, a consent banner will be needed.
+- **Recommendation:** No action needed. Revisit when adding client-side analytics.
+- **Effort:** N/A
 
 #### [LOW] F34: GDPR data export missing shelf items, offers, notifications
 - **Location:** `src/lib/services/account.ts:116-194`
@@ -367,7 +367,7 @@ Covered in Section 5 findings. Summary: 22/24 non-cron mutation routes protected
 | F20 | MEDIUM | enrich-batch missing CSRF + rate limit | `enrich-batch/route.ts:14` | S |
 | F26 | MEDIUM | Login/registration no rate limiting | `auth/actions.ts:18` | M |
 | F27 | MEDIUM | Message sending no rate limiting | `messages/actions.ts:95` | S |
-| F33 | MEDIUM | No cookie consent banner (GDPR) | Project-wide | M |
+| F33 | INFO | No cookie consent banner (server-side Sentry only) | Project-wide | N/A |
 | F36 | MEDIUM | Game search defeats indexes (170k rows) | `games/search/route.ts:20` | S |
 | F3 | LOW | X-DNS-Prefetch-Control on | `next.config.mjs:21` | S |
 | F4 | LOW | Permissions-Policy missing extras | `next.config.mjs:19` | S |
@@ -416,7 +416,6 @@ Prioritized by severity x effort. Fix the S-effort CRITICALs and HIGHs first —
 ### Medium-term (next month)
 17. **F12** — Implement payment reconciliation cron (HIGH, M)
 18. **F26** — Add auth rate limiting (MEDIUM, M)
-19. **F33** — Add cookie consent banner (MEDIUM, M)
-20. **F17** — Cart wallet partial failure handling (MEDIUM, M)
+19. **F17** — Cart wallet partial failure handling (MEDIUM, M)
 21. **F36** — Add pg_trgm index for game search (MEDIUM, S)
 22. **F34, F35** — Complete GDPR export and deletion coverage (LOW, S)
