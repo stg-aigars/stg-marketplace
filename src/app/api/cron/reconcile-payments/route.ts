@@ -12,8 +12,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
-import { getPaymentStatus } from '@/lib/services/everypay';
-import { SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay/types';
+import { getPaymentStatus, SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay';
 import { debitWallet } from '@/lib/services/wallet';
 import {
   fulfillSingleItemPayment,
@@ -200,47 +199,47 @@ export async function POST(request: Request) {
   let walletRetries = 0;
   let walletRetryErrors = 0;
 
-  const orderCutoff = new Date(Date.now() - MAX_AGE_MS).toISOString();
-
-  // Single-item: join orders to checkout_sessions via order_number
+  // Single-item: bulk-fetch sessions to avoid N+1 per-order lookups
   const { data: singleMismatches } = await serviceClient
     .from('orders')
     .select('id, buyer_id, order_number')
     .eq('buyer_wallet_debit_cents', 0)
     .eq('payment_method', 'card')
     .is('cart_group_id', null)
-    .gt('created_at', orderCutoff)
+    .gt('created_at', maxCutoff)
     .limit(BATCH_LIMIT);
 
   if (singleMismatches && singleMismatches.length > 0) {
+    const orderNumbers = singleMismatches.map((o) => o.order_number).filter(Boolean);
+    const { data: sessions } = await serviceClient
+      .from('checkout_sessions')
+      .select('order_number, wallet_debit_cents')
+      .in('order_number', orderNumbers)
+      .gt('wallet_debit_cents', 0);
+
+    const sessionMap = new Map(sessions?.map((s) => [s.order_number, s.wallet_debit_cents]) ?? []);
+
     for (const order of singleMismatches) {
+      const intendedDebit = sessionMap.get(order.order_number);
+      if (!intendedDebit) continue; // No mismatch — session had 0 wallet debit
+
       try {
-        // Find the checkout session to get intended wallet debit
-        const { data: session } = await serviceClient
-          .from('checkout_sessions')
-          .select('wallet_debit_cents')
-          .eq('order_number', order.order_number)
-          .gt('wallet_debit_cents', 0)
-          .single();
-
-        if (!session) continue; // No mismatch — session had 0 wallet debit
-
         // Same order_id as original callback — debitWallet idempotency prevents double-debit
         await debitWallet(
           order.buyer_id,
-          session.wallet_debit_cents,
+          intendedDebit,
           order.id,
           `Purchase (retry): ${order.order_number}`
         );
 
         await serviceClient
           .from('orders')
-          .update({ buyer_wallet_debit_cents: session.wallet_debit_cents })
+          .update({ buyer_wallet_debit_cents: intendedDebit })
           .eq('id', order.id)
           .eq('buyer_wallet_debit_cents', 0); // Optimistic lock
 
         walletRetries++;
-        console.log(`[Reconcile] Wallet debit retry succeeded for order ${order.id}: ${session.wallet_debit_cents} cents`);
+        console.log(`[Reconcile] Wallet debit retry succeeded for order ${order.id}: ${intendedDebit} cents`);
       } catch (error) {
         walletRetryErrors++;
         console.error(`[Reconcile] MANUAL ATTENTION: Wallet debit retry failed for order ${order.id}:`, error);
@@ -248,42 +247,45 @@ export async function POST(request: Request) {
     }
   }
 
-  // Cart: join orders to cart_checkout_groups via cart_group_id
+  // Cart: bulk-fetch groups and items to avoid N+1
   const { data: cartMismatches } = await serviceClient
     .from('orders')
     .select('id, buyer_id, order_number, cart_group_id')
     .eq('buyer_wallet_debit_cents', 0)
     .eq('payment_method', 'card')
     .not('cart_group_id', 'is', null)
-    .gt('created_at', orderCutoff)
+    .gt('created_at', maxCutoff)
     .limit(BATCH_LIMIT);
 
   if (cartMismatches && cartMismatches.length > 0) {
+    const groupIds = [...new Set(cartMismatches.map((o) => o.cart_group_id).filter(Boolean))];
+    const orderIds = cartMismatches.map((o) => o.id);
+
+    const [{ data: groups }, { data: allItems }] = await Promise.all([
+      serviceClient.from('cart_checkout_groups').select('id, wallet_allocation').in('id', groupIds),
+      serviceClient.from('order_items').select('order_id, listing_id').in('order_id', orderIds),
+    ]);
+
+    const groupMap = new Map(groups?.map((g) => [g.id, g.wallet_allocation as Record<string, number>]) ?? []);
+    const itemsByOrder = new Map<string, string[]>();
+    for (const item of allItems ?? []) {
+      const list = itemsByOrder.get(item.order_id) ?? [];
+      list.push(item.listing_id);
+      itemsByOrder.set(item.order_id, list);
+    }
+
     for (const order of cartMismatches) {
+      const allocation = groupMap.get(order.cart_group_id!);
+      if (!allocation) continue;
+
+      const listingIds = itemsByOrder.get(order.id) ?? [];
+      const intendedDebit = listingIds.reduce(
+        (sum, lid) => sum + (allocation[lid] ?? 0), 0
+      );
+
+      if (intendedDebit <= 0) continue;
+
       try {
-        const { data: group } = await serviceClient
-          .from('cart_checkout_groups')
-          .select('wallet_allocation')
-          .eq('id', order.cart_group_id)
-          .single();
-
-        if (!group?.wallet_allocation) continue;
-
-        // Sum wallet allocation for items in this order
-        const { data: orderItems } = await serviceClient
-          .from('order_items')
-          .select('listing_id')
-          .eq('order_id', order.id);
-
-        if (!orderItems) continue;
-
-        const allocation = group.wallet_allocation as Record<string, number>;
-        const intendedDebit = orderItems.reduce(
-          (sum, item) => sum + (allocation[item.listing_id] ?? 0), 0
-        );
-
-        if (intendedDebit <= 0) continue;
-
         await debitWallet(
           order.buyer_id,
           intendedDebit,
