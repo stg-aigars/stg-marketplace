@@ -10,11 +10,17 @@ export const metadata: Metadata = {
   title: 'Conversation',
 };
 
-export default async function ConversationPage({
-  params: { conversationId },
-}: {
-  params: { conversationId: string };
-}) {
+export default async function ConversationPage(
+  props: {
+    params: Promise<{ conversationId: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    conversationId
+  } = params;
+
   const { user } = await requireServerAuth();
 
   const [conversation, messages] = await Promise.all([

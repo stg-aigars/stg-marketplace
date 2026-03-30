@@ -13,10 +13,11 @@ import { getWantedListingById } from '@/lib/wanted/actions';
 import { WantedDetailActions } from './WantedDetailActions';
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const listing = await getWantedListingById(params.id);
   if (!listing) return { title: 'Not found' };
 
@@ -34,7 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function WantedDetailPage({ params }: Props) {
+export default async function WantedDetailPage(props: Props) {
+  const params = await props.params;
   const listing = await getWantedListingById(params.id);
 
   if (!listing) notFound();

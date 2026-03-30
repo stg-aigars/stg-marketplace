@@ -5,11 +5,12 @@ export const metadata = {
   title: 'Sign in',
 };
 
-export default function SignInPage({
-  searchParams,
-}: {
-  searchParams: { returnUrl?: string; error?: string };
-}) {
+export default async function SignInPage(
+  props: {
+    searchParams: Promise<{ returnUrl?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const errorMessage =
     searchParams.error === 'auth_error'
       ? 'Something went wrong. Please try again'

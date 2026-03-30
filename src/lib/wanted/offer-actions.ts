@@ -33,7 +33,7 @@ export async function makeWantedOffer(
   note?: string,
   turnstileToken?: string
 ): Promise<{ id: string } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();

@@ -7,21 +7,33 @@ import { getReviewForOrder } from '@/lib/reviews/service';
 import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
 
-export async function generateMetadata({
-  params: { id },
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+): Promise<Metadata> {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   return {
     title: `Order ${id.slice(0, 8)}`,
   };
 }
 
-export default async function OrderDetailPage({
-  params: { id },
-}: {
-  params: { id: string; locale: string };
-}) {
+export default async function OrderDetailPage(
+  props: {
+    params: Promise<{ id: string; locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const { user } = await requireServerAuth();
 
   const order = await getOrder(id);

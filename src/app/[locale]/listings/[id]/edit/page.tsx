@@ -34,11 +34,18 @@ interface EditListingRow {
   };
 }
 
-export default async function EditListingPage({
-  params: { id, locale },
-}: {
-  params: { id: string; locale: string };
-}) {
+export default async function EditListingPage(
+  props: {
+    params: Promise<{ id: string; locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    id,
+    locale
+  } = params;
+
   const { user } = await requireServerAuth();
 
   const supabase = await createClient();

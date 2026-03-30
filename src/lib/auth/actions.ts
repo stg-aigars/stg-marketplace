@@ -20,7 +20,7 @@ export async function signInWithEmail(
   returnUrl?: string,
   turnstileToken?: string
 ): Promise<AuthActionResult> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
@@ -41,7 +41,7 @@ export async function signUpWithEmail(
   formData: SignUpFormData,
   turnstileToken?: string
 ): Promise<AuthActionResult> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
@@ -80,7 +80,7 @@ export async function resetPassword(
   email: string,
   turnstileToken?: string
 ): Promise<AuthActionResult> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();

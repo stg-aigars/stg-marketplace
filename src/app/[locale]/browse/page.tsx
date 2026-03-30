@@ -40,11 +40,12 @@ interface ListingRow {
   games: { thumbnail: string | null };
 }
 
-export default async function BrowsePage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function BrowsePage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const filters = parseFiltersFromParams(searchParams);
   const showWelcome = searchParams.welcome === 'true';
   const offset = (filters.page - 1) * PAGE_SIZE;

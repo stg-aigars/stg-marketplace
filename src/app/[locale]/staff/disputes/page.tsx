@@ -22,11 +22,12 @@ interface StaffDisputeRow extends DisputeRow {
 
 type FilterTab = 'all' | 'escalated' | 'resolved';
 
-export default async function StaffDisputesPage({
-  searchParams,
-}: {
-  searchParams: { filter?: string };
-}) {
+export default async function StaffDisputesPage(
+  props: {
+    searchParams: Promise<{ filter?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { isStaff, serviceClient } = await requireServerAuth();
   if (!isStaff) { redirect('/'); }
 

@@ -26,11 +26,12 @@ interface DisputeWithRelations extends DisputeRow {
 }
 
 
-export default async function StaffDisputeDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function StaffDisputeDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { isStaff, serviceClient } = await requireServerAuth();
   if (!isStaff) { redirect('/'); }
 

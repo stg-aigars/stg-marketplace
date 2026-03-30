@@ -3,10 +3,8 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { retryOrderShipping } from '@/lib/services/unisend/shipping';
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

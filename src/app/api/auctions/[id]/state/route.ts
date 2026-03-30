@@ -5,10 +5,8 @@ import { createClient } from '@/lib/supabase/server';
  * Lightweight GET endpoint for polling auction state.
  * Used by BidPanel every 10 seconds — avoids server action overhead.
  */
-export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const supabase = await createClient();
 
   const { data } = await supabase

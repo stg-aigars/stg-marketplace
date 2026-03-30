@@ -32,11 +32,17 @@ interface SellerListing {
   games: { thumbnail: string | null } | null;
 }
 
-export async function generateMetadata({
-  params: { id },
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+): Promise<Metadata> {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from('user_profiles')
@@ -58,11 +64,17 @@ export async function generateMetadata({
   };
 }
 
-export default async function SellerProfilePage({
-  params: { id },
-}: {
-  params: { id: string; locale: string };
-}) {
+export default async function SellerProfilePage(
+  props: {
+    params: Promise<{ id: string; locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const supabase = await createClient();
 
   // Fetch seller profile (public_profiles view — safe for anonymous access)

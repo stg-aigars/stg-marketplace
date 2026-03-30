@@ -4,10 +4,8 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { creditBackRejectedWithdrawal } from '@/lib/services/wallet';
 import { createServiceClient } from '@/lib/supabase';
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 
