@@ -3,6 +3,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getTerminals } from '@/lib/services/unisend/client';
 import type { TerminalCountry, TerminalOption } from '@/lib/services/unisend/types';
+import Link from 'next/link';
 import { Breadcrumb } from '@/components/ui';
 import { CartCheckoutForm } from './CartCheckoutForm';
 
@@ -17,7 +18,7 @@ export default async function CartCheckoutPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <p className="text-semantic-text-secondary">
-          Please set your country in your <a href="/account/settings" className="underline">account settings</a> before checking out.
+          Please set your country in your <Link href="/account/settings" className="underline">account settings</Link> before checking out.
         </p>
       </div>
     );
