@@ -7,6 +7,7 @@ const STAFF_TABS = [
   { key: 'orders', label: 'Orders', href: '/staff/orders' },
   { key: 'withdrawals', label: 'Withdrawals', href: '/staff/withdrawals' },
   { key: 'disputes', label: 'Disputes', href: '/staff/disputes' },
+  { key: 'showcase', label: 'Components', href: '/staff/showcase' },
 ];
 
 export default async function StaffLayout({

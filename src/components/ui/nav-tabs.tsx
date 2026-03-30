@@ -38,7 +38,7 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
               key={tab.key}
               href={tab.href}
               aria-current={active ? 'page' : undefined}
-              className={`px-3 py-1.5 text-sm rounded-full border transition-colors duration-250 ease-out-custom ${
+              className={`px-3 py-1.5 text-sm rounded-lg border transition-colors duration-250 ease-out-custom ${
                 active
                   ? 'bg-semantic-brand text-semantic-text-inverse border-semantic-brand'
                   : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
