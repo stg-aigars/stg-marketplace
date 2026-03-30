@@ -320,7 +320,9 @@ export async function updateListing(
   const removedPhotos = oldPhotos.filter((p) => !data.photos.includes(p));
 
   // Update listing first — only clean up storage after DB succeeds
-  const { error: updateError } = await supabase
+  // Uses service client because user-facing UPDATE policy was removed
+  const service = createServiceClient();
+  const { error: updateError } = await service
     .from('listings')
     .update({
       version_source: data.version_source,
@@ -403,7 +405,9 @@ export async function cancelListing(
     return { error: 'This listing has already been removed' };
   }
 
-  const { error: updateError } = await supabase
+  // Uses service client because user-facing UPDATE policy was removed
+  const service = createServiceClient();
+  const { error: updateError } = await service
     .from('listings')
     .update({ status: 'cancelled' })
     .eq('id', listingId)

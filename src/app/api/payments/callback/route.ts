@@ -26,6 +26,7 @@ import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify } from '@/lib/notifications';
+import { paymentCallbackLimiter, getClientIP } from '@/lib/rate-limit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function attemptAutoRefund(
@@ -54,6 +55,13 @@ async function attemptAutoRefund(
 }
 
 export async function GET(request: Request) {
+  // Rate limit to prevent enumeration and EveryPay API quota abuse
+  const ip = getClientIP(request);
+  const rateLimitResult = paymentCallbackLimiter.check(ip);
+  if (!rateLimitResult.success) {
+    return NextResponse.redirect(`${env.app.url}/browse?error=rate_limited`);
+  }
+
   const { searchParams } = new URL(request.url);
   const paymentReference = searchParams.get('payment_reference');
   const orderReference = searchParams.get('order_reference');
@@ -121,8 +129,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
 
-  // Validate callback token (null check handles legacy sessions before migration)
-  if (session.callback_token && session.callback_token !== callbackToken) {
+  // Validate callback token — reject if missing or mismatched
+  if (!callbackToken || session.callback_token !== callbackToken) {
     console.error('[Payments] Invalid callback token for session:', session.id);
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
@@ -419,6 +427,15 @@ async function handleCartGroupCallback(
 
   const walletDebit = group.wallet_debit_cents ?? 0;
   const expectedEverypayAmountCents = group.total_amount_cents - walletDebit;
+
+  // Verify order_reference matches cart group
+  if (paymentStatus.order_reference !== group.order_number) {
+    console.error(
+      `[Payments] Cart order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but group has "${group.order_number}"`
+    );
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'cart order_reference mismatch');
+    return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
+  }
 
   if (!SUCCESSFUL_STATES.has(paymentStatus.payment_state)) {
     if (group.status === 'pending') {

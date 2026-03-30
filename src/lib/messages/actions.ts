@@ -5,6 +5,7 @@ import { MAX_MESSAGE_LENGTH, type Conversation, type Message } from './types';
 import { sendNewMessageNotification } from '@/lib/email';
 import { notify } from '@/lib/notifications';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { messageLimiter } from '@/lib/rate-limit';
 
 /**
  * Start a new conversation about a listing, or get the existing one.
@@ -107,6 +108,12 @@ export async function sendMessage(
   } = await supabase.auth.getUser();
 
   if (!user) return { error: 'Not authenticated' };
+
+  // Per-user rate limit to prevent message flooding (F27)
+  const limitResult = messageLimiter.check(user.id);
+  if (!limitResult.success) {
+    return { error: 'Too many messages. Please wait before sending more.' };
+  }
 
   // Verify user is a participant (RLS also enforces this)
   const { data: conv } = await supabase
