@@ -36,15 +36,7 @@ export const MIN_SALES_FOR_MEDIAN = 3;
 export interface PriceSuggestionResponse {
   retailPriceCents: number | null;
   shopName: string | null;
-  suggestedPriceCents: number | null;
-  conditionMultiplier: number;
-  marketplace: {
-    lowestActiveCents: number | null;
-    lowestIsAuction: boolean;
-    medianSoldCents: number | null;
-    activeListingCount: number;
-    completedSaleCount: number;
-  };
+  marketplace: MarketplaceStats;
   attributionUrl: string | null;
   cached: boolean;
 }

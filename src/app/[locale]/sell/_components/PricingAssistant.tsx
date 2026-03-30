@@ -22,20 +22,13 @@ interface PricingAssistantProps {
   onFillPrice: (cents: number) => void;
 }
 
-interface PricingData {
-  retailPriceCents: number | null;
-  shopName: string | null;
-  marketplace: PriceSuggestionResponse['marketplace'];
-  attributionUrl: string | null;
-}
-
 export function PricingAssistant({
   bggGameId,
   condition,
   isAuction,
   onFillPrice,
 }: PricingAssistantProps) {
-  const [data, setData] = useState<PricingData | null>(null);
+  const [data, setData] = useState<PriceSuggestionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [filledButton, setFilledButton] = useState<string | null>(null);
@@ -55,12 +48,7 @@ export function PricingAssistant({
       })
       .then((result: PriceSuggestionResponse) => {
         if (controller.signal.aborted) return;
-        setData({
-          retailPriceCents: result.retailPriceCents,
-          shopName: result.shopName,
-          marketplace: result.marketplace,
-          attributionUrl: result.attributionUrl,
-        });
+        setData(result);
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -140,7 +128,7 @@ export function PricingAssistant({
                 {isAuction ? 'Suggested starting bid' : 'Suggested price'}
               </span>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-lg font-bold tabular-nums text-semantic-brand">
+                <span className="text-lg font-bold tabular-nums text-semantic-text-primary">
                   {formatCentsToCurrency(suggestedPriceCents)}
                 </span>
                 <FillButton
@@ -250,7 +238,6 @@ function FillButton({
       variant={variant}
       size="sm"
       onClick={onClick}
-      className="h-7 px-3 text-xs"
     >
       {filled ? <Check size={14} weight="bold" /> : label}
     </Button>
