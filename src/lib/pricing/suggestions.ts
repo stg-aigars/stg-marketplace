@@ -68,23 +68,22 @@ export async function fetchRetailPrice(
   bggGameId: number,
   supabase: SupabaseClient,
 ): Promise<RetailPriceResult> {
-  // Check cache first
+  // Check cache — TTL enforced in SQL so expired rows are never returned
+  const cacheCutoff = new Date(Date.now() - PRICING_CACHE_TTL_MS).toISOString();
   const { data: cached } = await supabase
     .from('external_pricing_cache')
-    .select('cheapest_price_cents, shop_name, source_url, fetched_at')
+    .select('cheapest_price_cents, shop_name, source_url')
     .eq('bgg_game_id', bggGameId)
+    .gt('fetched_at', cacheCutoff)
     .single();
 
   if (cached) {
-    const age = Date.now() - new Date(cached.fetched_at).getTime();
-    if (age < PRICING_CACHE_TTL_MS) {
-      return {
-        priceCents: cached.cheapest_price_cents,
-        shopName: cached.shop_name,
-        attributionUrl: cached.source_url,
-        cached: true,
-      };
-    }
+    return {
+      priceCents: cached.cheapest_price_cents,
+      shopName: cached.shop_name,
+      attributionUrl: cached.source_url,
+      cached: true,
+    };
   }
 
   // Cache miss or expired — fetch from BGP API
@@ -128,7 +127,7 @@ export async function fetchRetailPrice(
         shop_name: shopName,
         source_url: attributionUrl,
         offer_count: item?.prices?.length ?? 0,
-        response_json: data,
+        response_json: data ?? {},
         fetched_at: new Date().toISOString(),
       },
       { onConflict: 'bgg_game_id' },
@@ -149,24 +148,24 @@ export async function fetchMarketplaceStats(
   bggGameId: number,
   supabase: SupabaseClient,
 ): Promise<MarketplaceStats> {
-  const empty: MarketplaceStats = {
-    lowestActiveCents: null,
-    lowestIsAuction: false,
-    medianSoldCents: null,
-    activeListingCount: 0,
-    completedSaleCount: 0,
-  };
-
   try {
-    // Run both queries in parallel
-    const [activeResult, salesResult] = await Promise.all([
-      // Active listings stats
+    const [lowestResult, countResult, salesResult] = await Promise.all([
+      // Cheapest active listing (single row)
       supabase
         .from('listings')
         .select('price_cents, listing_type')
         .eq('bgg_game_id', bggGameId)
         .eq('status', 'active')
-        .order('price_cents', { ascending: true }),
+        .order('price_cents', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+
+      // Active listing count
+      supabase
+        .from('listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('bgg_game_id', bggGameId)
+        .eq('status', 'active'),
 
       // Completed sales prices
       supabase
@@ -177,25 +176,29 @@ export async function fetchMarketplaceStats(
         .eq('active', true),
     ]);
 
-    const activeListings = activeResult.data ?? [];
+    const lowest = lowestResult.data;
     const salesData = salesResult.data ?? [];
-
-    const lowestListing = activeListings[0] ?? null;
     const salePrices = salesData.map((s: { price_cents: number }) => s.price_cents);
 
     return {
-      lowestActiveCents: lowestListing?.price_cents ?? null,
-      lowestIsAuction: lowestListing?.listing_type === 'auction',
+      lowestActiveCents: lowest?.price_cents ?? null,
+      lowestIsAuction: lowest?.listing_type === 'auction',
       medianSoldCents:
         salePrices.length >= MIN_SALES_FOR_MEDIAN
           ? computeMedian(salePrices)
           : null,
-      activeListingCount: activeListings.length,
+      activeListingCount: countResult.count ?? 0,
       completedSaleCount: salePrices.length,
     };
   } catch (err) {
     console.error(`[pricing] Marketplace stats error for game ${bggGameId}:`, err);
-    return empty;
+    return {
+      lowestActiveCents: null,
+      lowestIsAuction: false,
+      medianSoldCents: null,
+      activeListingCount: 0,
+      completedSaleCount: 0,
+    };
   }
 }
 

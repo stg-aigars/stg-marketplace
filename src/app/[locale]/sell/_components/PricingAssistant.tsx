@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Lightbulb, ArrowSquareOut, Check } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Skeleton } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { apiFetch } from '@/lib/api-fetch';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import { conditionConfig } from '@/lib/condition-config';
 import {
+  calculateSuggestedPrice,
   CONDITION_MULTIPLIERS,
-  AUCTION_BID_MULTIPLIER,
-  MIN_SUGGESTED_PRICE_CENTS,
   MIN_SALES_FOR_MEDIAN,
   type PriceSuggestionResponse,
 } from '@/lib/pricing/suggestions';
@@ -32,8 +32,11 @@ export function PricingAssistant({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [filledButton, setFilledButton] = useState<string | null>(null);
+  const fillTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Fetch pricing data keyed on bggGameId only — condition doesn't affect server data
+  // Clear fill feedback timer on unmount
+  useEffect(() => () => clearTimeout(fillTimerRef.current), []);
+
   useEffect(() => {
     if (!bggGameId) return;
 
@@ -41,7 +44,7 @@ export function PricingAssistant({
     setLoading(true);
     setError(false);
 
-    fetch(`/api/games/${bggGameId}/pricing`, { signal: controller.signal })
+    apiFetch(`/api/games/${bggGameId}/pricing`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -62,21 +65,19 @@ export function PricingAssistant({
     return () => controller.abort();
   }, [bggGameId]);
 
-  // Calculate suggested price client-side when condition or data changes
-  const suggestedPriceCents = useMemo(() => {
-    if (!data?.retailPriceCents || !condition) return null;
-    const multiplier = CONDITION_MULTIPLIERS[condition];
-    let suggested = Math.round(data.retailPriceCents * multiplier);
-    if (isAuction) {
-      suggested = Math.round(suggested * AUCTION_BID_MULTIPLIER);
-    }
-    return Math.max(suggested, MIN_SUGGESTED_PRICE_CENTS);
-  }, [data?.retailPriceCents, condition, isAuction]);
+  const suggestedPriceCents = useMemo(
+    () =>
+      data?.retailPriceCents && condition
+        ? calculateSuggestedPrice(data.retailPriceCents, condition, isAuction)
+        : null,
+    [data?.retailPriceCents, condition, isAuction],
+  );
 
   const handleFill = (cents: number, buttonId: string) => {
     onFillPrice(cents);
     setFilledButton(buttonId);
-    setTimeout(() => setFilledButton(null), 1500);
+    clearTimeout(fillTimerRef.current);
+    fillTimerRef.current = setTimeout(() => setFilledButton(null), 1500);
   };
 
   if (!bggGameId || !condition) return null;
@@ -105,7 +106,6 @@ export function PricingAssistant({
     marketplace.completedSaleCount >= MIN_SALES_FOR_MEDIAN;
   const hasLowest = marketplace.lowestActiveCents != null;
 
-  // Nothing useful to show
   if (!hasRetail && !hasMedian && !hasLowest) return null;
 
   const conditionLabel = conditionConfig[conditionToBadgeKey[condition]].label;
@@ -114,13 +114,11 @@ export function PricingAssistant({
   return (
     <Card className="mb-4">
       <CardBody className="space-y-3">
-        {/* Header */}
         <div className="flex items-center gap-2">
           <Lightbulb size={16} weight="fill" className="text-semantic-brand shrink-0" />
           <h4 className="text-sm font-semibold text-semantic-text-heading">Price guide</h4>
         </div>
 
-        {/* Suggested price */}
         {suggestedPriceCents && (
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-3">
@@ -131,12 +129,9 @@ export function PricingAssistant({
                 <span className="text-lg font-bold tabular-nums text-semantic-text-primary">
                   {formatCentsToCurrency(suggestedPriceCents)}
                 </span>
-                <FillButton
-                  filled={filledButton === 'suggested'}
-                  onClick={() => handleFill(suggestedPriceCents, 'suggested')}
-                  variant="primary"
-                  label="Use price"
-                />
+                <Button variant="primary" size="sm" onClick={() => handleFill(suggestedPriceCents, 'suggested')}>
+                  {filledButton === 'suggested' ? <Check size={14} weight="bold" /> : 'Use price'}
+                </Button>
               </div>
             </div>
             <p className="text-xs text-semantic-text-muted">
@@ -146,7 +141,6 @@ export function PricingAssistant({
           </div>
         )}
 
-        {/* Market context */}
         {(hasRetail || hasLowest || hasMedian) && (
           <div className="space-y-2 rounded-lg bg-semantic-bg-surface px-3 py-2.5">
             <p className="text-xs font-medium text-semantic-text-muted uppercase tracking-wide">
@@ -160,12 +154,9 @@ export function PricingAssistant({
                   <span className="font-semibold tabular-nums text-semantic-text-primary">
                     {formatCentsToCurrency(retailPriceCents!)}
                   </span>
-                  <FillButton
-                    filled={filledButton === 'retail'}
-                    onClick={() => handleFill(retailPriceCents!, 'retail')}
-                    variant="secondary"
-                    label="Fill"
-                  />
+                  <Button variant="secondary" size="sm" onClick={() => handleFill(retailPriceCents!, 'retail')}>
+                    {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
+                  </Button>
                 </div>
               </div>
             )}
@@ -197,7 +188,7 @@ export function PricingAssistant({
               </div>
             )}
 
-            {/* Attribution — inside market context box */}
+            {/* BGP ToS requires attribution to boardgameprices.co.uk, not the individual shop */}
             {attributionUrl && (
               <div className="pt-1 border-t border-semantic-border-subtle">
                 <a
@@ -215,31 +206,5 @@ export function PricingAssistant({
         )}
       </CardBody>
     </Card>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Fill button with checkmark feedback
-// ---------------------------------------------------------------------------
-
-function FillButton({
-  filled,
-  onClick,
-  variant,
-  label,
-}: {
-  filled: boolean;
-  onClick: () => void;
-  variant: 'primary' | 'secondary';
-  label: string;
-}) {
-  return (
-    <Button
-      variant={variant}
-      size="sm"
-      onClick={onClick}
-    >
-      {filled ? <Check size={14} weight="bold" /> : label}
-    </Button>
   );
 }
