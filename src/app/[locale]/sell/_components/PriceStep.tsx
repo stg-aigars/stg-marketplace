@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Input, Select } from '@/components/ui';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
+import type { ListingCondition } from '@/lib/listings/types';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
+import { PricingAssistant } from './PricingAssistant';
 
 interface PriceStepProps {
   priceCents: number;
@@ -17,6 +19,8 @@ interface PriceStepProps {
   isAuction?: boolean;
   auctionDurationDays?: number;
   onDurationChange?: (days: number) => void;
+  bggGameId?: number | null;
+  condition?: ListingCondition | null;
 }
 
 const MAX_DESCRIPTION_LENGTH = 1000;
@@ -31,6 +35,8 @@ export function PriceStep({
   isAuction,
   auctionDurationDays,
   onDurationChange,
+  bggGameId,
+  condition,
 }: PriceStepProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -78,6 +84,15 @@ export function PriceStep({
               : 'Choose a fair price for your pre-loved game. Buyers pay this plus shipping.'}
           </p>
         </div>
+      )}
+
+      {lockedPrice === undefined && (
+        <PricingAssistant
+          bggGameId={bggGameId ?? null}
+          condition={condition ?? null}
+          isAuction={!!isAuction}
+          onFillPrice={onPriceChange}
+        />
       )}
 
       {lockedPrice !== undefined ? (
@@ -137,7 +152,7 @@ export function PriceStep({
             <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
               <p className="text-sm text-semantic-text-secondary">
                 You&apos;ll receive{' '}
-                <span className="font-bold font-display text-semantic-accent">
+                <span className="font-bold text-semantic-text-primary">
                   {formatCentsToCurrency(earnings.walletCreditCents)}
                 </span>{' '}
                 after 10% platform fee

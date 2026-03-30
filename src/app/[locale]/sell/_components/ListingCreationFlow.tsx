@@ -273,6 +273,8 @@ export function ListingCreationFlow({
             isAuction={isAuction}
             auctionDurationDays={formData.auction_duration_days}
             onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
+            bggGameId={formData.bgg_game_id}
+            condition={formData.condition}
           />
         )}
 
