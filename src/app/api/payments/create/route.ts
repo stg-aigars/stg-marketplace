@@ -219,7 +219,10 @@ export async function POST(request: Request) {
     void serviceClient
       .from('checkout_sessions')
       .update({ everypay_payment_reference: paymentResponse.payment_reference })
-      .eq('id', session.id);
+      .eq('id', session.id)
+      .then(({ error }) => {
+        if (error) console.error('[Payments] CRITICAL: Failed to store payment reference:', error);
+      });
 
     void logAuditEvent({
       actorId: user.id,

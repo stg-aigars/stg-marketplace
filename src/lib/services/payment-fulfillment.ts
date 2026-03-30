@@ -237,6 +237,19 @@ export async function fulfillCartPayment(
 
   if (available.length === 0) {
     await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');
+    // Credit back wallet portion if buyer used wallet balance
+    if (walletDebit > 0) {
+      try {
+        await creditWallet(
+          group.buyer_id,
+          walletDebit,
+          group.id,
+          `Refund: all items unavailable in cart order`
+        );
+      } catch (err) {
+        console.error('[Payments] Cart: Failed to credit wallet for all-unavailable refund:', err);
+      }
+    }
     await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
     return { outcome: 'unavailable' };
   }

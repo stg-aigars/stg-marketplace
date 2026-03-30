@@ -217,7 +217,10 @@ export async function POST(request: Request) {
     void serviceClient
       .from('cart_checkout_groups')
       .update({ everypay_payment_reference: paymentResponse.payment_reference })
-      .eq('id', group.id);
+      .eq('id', group.id)
+      .then(({ error }) => {
+        if (error) console.error('[Payments] CRITICAL: Failed to store cart payment reference:', error);
+      });
 
     void logAuditEvent({
       actorId: user.id,

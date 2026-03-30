@@ -88,6 +88,11 @@ export async function POST(request: Request) {
             summary.sessions.cleaned++;
             console.log(`[Reconcile] Session ${session.id}: listing unavailable, refunded`);
           } else {
+            // Fulfillment failed — mark expired to prevent re-processing every run
+            await serviceClient
+              .from('checkout_sessions')
+              .update({ status: 'expired' })
+              .eq('id', session.id);
             summary.sessions.errors++;
             console.error(`[Reconcile] Session ${session.id}: fulfillment failed — ${result.error}`);
           }
@@ -151,6 +156,11 @@ export async function POST(request: Request) {
             summary.carts.cleaned++;
             console.log(`[Reconcile] Cart group ${group.id}: all items unavailable, refunded`);
           } else {
+            // Fulfillment failed — mark expired to prevent re-processing every run
+            await serviceClient
+              .from('cart_checkout_groups')
+              .update({ status: 'expired' })
+              .eq('id', group.id);
             summary.carts.errors++;
             console.error(`[Reconcile] Cart group ${group.id}: fulfillment failed — ${result.error}`);
           }
@@ -198,7 +208,9 @@ export async function POST(request: Request) {
     .select('id, buyer_id, order_number')
     .eq('buyer_wallet_debit_cents', 0)
     .eq('payment_method', 'card')
-    .gt('created_at', orderCutoff);
+    .is('cart_group_id', null)
+    .gt('created_at', orderCutoff)
+    .limit(BATCH_LIMIT);
 
   if (singleMismatches && singleMismatches.length > 0) {
     for (const order of singleMismatches) {
@@ -243,7 +255,8 @@ export async function POST(request: Request) {
     .eq('buyer_wallet_debit_cents', 0)
     .eq('payment_method', 'card')
     .not('cart_group_id', 'is', null)
-    .gt('created_at', orderCutoff);
+    .gt('created_at', orderCutoff)
+    .limit(BATCH_LIMIT);
 
   if (cartMismatches && cartMismatches.length > 0) {
     for (const order of cartMismatches) {
