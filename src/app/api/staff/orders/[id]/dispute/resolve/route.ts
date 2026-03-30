@@ -3,10 +3,8 @@ import { requireStaffAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { staffResolveDispute } from '@/lib/services/dispute';
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

@@ -9,11 +9,12 @@ export const metadata: Metadata = {
   description: 'Your conversations about board game listings.',
 };
 
-export default async function MessagesPage({
-  searchParams,
-}: {
-  searchParams: { listing?: string };
-}) {
+export default async function MessagesPage(
+  props: {
+    searchParams: Promise<{ listing?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireServerAuth();
 
   // If opened via "Message seller" with ?listing=<id>, find or redirect to start conversation

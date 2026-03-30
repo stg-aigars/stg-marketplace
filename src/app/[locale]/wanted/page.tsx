@@ -35,11 +35,12 @@ interface WantedRow {
   games: { thumbnail: string | null };
 }
 
-export default async function WantedBrowsePage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function WantedBrowsePage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const filters = parseWantedFiltersFromParams(searchParams);
   const offset = (filters.page - 1) * PAGE_SIZE;
 

@@ -3,10 +3,8 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { openDispute } from '@/lib/services/dispute';
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

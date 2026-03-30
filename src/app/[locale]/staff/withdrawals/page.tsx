@@ -31,11 +31,12 @@ const STATUS_BADGE: Record<WithdrawalStatus, 'default' | 'success' | 'warning' |
   rejected: 'error',
 };
 
-export default async function StaffWithdrawalsPage({
-  searchParams,
-}: {
-  searchParams: { status?: string };
-}) {
+export default async function StaffWithdrawalsPage(
+  props: {
+    searchParams: Promise<{ status?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { serviceClient } = await requireServerAuth();
 
   let query = serviceClient

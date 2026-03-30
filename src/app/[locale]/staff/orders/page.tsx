@@ -26,11 +26,12 @@ interface StaffOrderRow {
   seller_profile: { full_name: string | null } | null;
 }
 
-export default async function StaffOrdersPage({
-  searchParams,
-}: {
-  searchParams: { status?: string };
-}) {
+export default async function StaffOrdersPage(
+  props: {
+    searchParams: Promise<{ status?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { serviceClient } = await requireServerAuth();
 
   let query = serviceClient

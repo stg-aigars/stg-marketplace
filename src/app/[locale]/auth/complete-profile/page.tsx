@@ -5,11 +5,12 @@ export const metadata = {
   title: 'Complete your profile',
 };
 
-export default function CompleteProfilePage({
-  searchParams,
-}: {
-  searchParams: { returnUrl?: string };
-}) {
+export default async function CompleteProfilePage(
+  props: {
+    searchParams: Promise<{ returnUrl?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="max-w-md mx-auto">

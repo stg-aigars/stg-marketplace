@@ -62,11 +62,17 @@ interface ListingDetailRow {
   } | null;
 }
 
-export async function generateMetadata({
-  params: { id },
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+): Promise<Metadata> {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const supabase = await createClient();
   const { data } = await supabase
     .from('listings')
@@ -96,11 +102,18 @@ export async function generateMetadata({
   };
 }
 
-export default async function ListingDetailPage({
-  params: { id, locale },
-}: {
-  params: { id: string; locale: string };
-}) {
+export default async function ListingDetailPage(
+  props: {
+    params: Promise<{ id: string; locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    id,
+    locale
+  } = params;
+
   const supabase = await createClient();
 
   // Get current user (optional — don't redirect if not authenticated)
@@ -192,7 +205,6 @@ export default async function ListingDetailPage({
         { label: 'Browse', href: '/browse' },
         { label: listing.game_name },
       ]} />
-
       {/* Owner status banner for non-active listings */}
       {isOwner && listing.status !== 'active' && (
         <Alert variant="info" className="mb-6">
@@ -213,7 +225,6 @@ export default async function ListingDetailPage({
           )}
         </Alert>
       )}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left: Photos */}
         <div>
@@ -274,10 +285,10 @@ export default async function ListingDetailPage({
               <OwnerActions listingId={listing.id} status={listing.status} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               /* Another buyer has reserved this listing */
-              <ReservationCountdown reservedAt={listing.reserved_at!} />
+              (<ReservationCountdown reservedAt={listing.reserved_at!} />)
             ) : listing.status === 'reserved' && isReserver ? (
               /* This buyer reserved it — prompt them to complete payment */
-              <div className="space-y-3">
+              (<div className="space-y-3">
                 <Card>
                   <CardBody>
                     <p className="text-sm text-semantic-text-secondary">
@@ -288,7 +299,7 @@ export default async function ListingDetailPage({
                 <Link href={`/checkout/${listing.id}`}>
                   <Button>Complete payment</Button>
                 </Link>
-              </div>
+              </div>)
             ) : (
               <div className="flex flex-wrap gap-3">
                 <Link href={`/checkout/${listing.id}`}>

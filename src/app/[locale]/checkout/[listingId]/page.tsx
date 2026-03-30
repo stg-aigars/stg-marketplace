@@ -45,13 +45,19 @@ export const metadata: Metadata = {
   title: 'Checkout',
 };
 
-export default async function CheckoutPage({
-  params: { listingId },
-  searchParams,
-}: {
-  params: { listingId: string; locale: string };
-  searchParams: { error?: string };
-}) {
+export default async function CheckoutPage(
+  props: {
+    params: Promise<{ listingId: string; locale: string }>;
+    searchParams: Promise<{ error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    listingId
+  } = params;
+
   const { user, profile } = await requireServerAuth();
 
   const client = await createClient();

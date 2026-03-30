@@ -8,11 +8,12 @@ export const metadata: Metadata = {
   title: 'Your orders',
 };
 
-export default async function MyOrdersPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function MyOrdersPage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { user } = await requireServerAuth();
 
   const [purchases, sales] = await Promise.all([

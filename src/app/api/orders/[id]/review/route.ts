@@ -4,10 +4,8 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { submitReview } from '@/lib/reviews/service';
 import { REVIEW_MAX_COMMENT_LENGTH } from '@/lib/reviews/constants';
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 
