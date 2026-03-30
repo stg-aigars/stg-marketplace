@@ -213,6 +213,12 @@ export async function POST(request: Request) {
       }
     );
 
+    // Store payment reference for reconciliation cron
+    void serviceClient
+      .from('cart_checkout_groups')
+      .update({ everypay_payment_reference: paymentResponse.payment_reference })
+      .eq('id', group.id);
+
     void logAuditEvent({
       actorId: user.id,
       actorType: 'user',

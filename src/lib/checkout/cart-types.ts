@@ -29,6 +29,7 @@ export interface CartCheckoutGroup {
   wallet_debit_cents: number;
   wallet_allocation: Record<string, number>; // listingId → debitCents
   listing_ids: string[];
+  everypay_payment_reference: string | null;
   status: 'pending' | 'completed' | 'expired';
   created_at: string;
 }
