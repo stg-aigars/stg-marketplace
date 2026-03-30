@@ -28,11 +28,11 @@ RUN apk add --no-cache curl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install sharp for Next.js image optimization
-RUN npm install --os=linux --cpu=x64 sharp
-
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Install platform-specific sharp for Next.js image optimization (after standalone copy)
+RUN npm install --os=linux --cpu=x64 sharp
 
 USER nextjs
 EXPOSE 3000
