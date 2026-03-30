@@ -110,7 +110,7 @@ function FilterMultiSelect({ label, options, selected, onChange, inline }: Filte
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[32px] ${
+        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[32px] ${
           selected.length > 0
             ? 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand'
             : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
