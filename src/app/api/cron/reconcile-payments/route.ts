@@ -14,6 +14,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { getPaymentStatus } from '@/lib/services/everypay';
 import { SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay/types';
+import { debitWallet } from '@/lib/services/wallet';
 import {
   fulfillSingleItemPayment,
   fulfillCartPayment,
@@ -182,5 +183,119 @@ export async function POST(request: Request) {
     console.log(`[Reconcile] Created ${totalCreated} order(s) from orphaned sessions`);
   }
 
-  return NextResponse.json(summary);
+  // ---- Wallet debit failure retry (F16) ----
+  // Detect orders where the checkout intended a wallet debit but it failed
+  // (buyer_wallet_debit_cents = 0 but session.wallet_debit_cents > 0)
+
+  let walletRetries = 0;
+  let walletRetryErrors = 0;
+
+  const orderCutoff = new Date(Date.now() - MAX_AGE_MS).toISOString();
+
+  // Single-item: join orders to checkout_sessions via order_number
+  const { data: singleMismatches } = await serviceClient
+    .from('orders')
+    .select('id, buyer_id, order_number')
+    .eq('buyer_wallet_debit_cents', 0)
+    .eq('payment_method', 'card')
+    .gt('created_at', orderCutoff);
+
+  if (singleMismatches && singleMismatches.length > 0) {
+    for (const order of singleMismatches) {
+      try {
+        // Find the checkout session to get intended wallet debit
+        const { data: session } = await serviceClient
+          .from('checkout_sessions')
+          .select('wallet_debit_cents')
+          .eq('order_number', order.order_number)
+          .gt('wallet_debit_cents', 0)
+          .single();
+
+        if (!session) continue; // No mismatch — session had 0 wallet debit
+
+        // Same order_id as original callback — debitWallet idempotency prevents double-debit
+        await debitWallet(
+          order.buyer_id,
+          session.wallet_debit_cents,
+          order.id,
+          `Purchase (retry): ${order.order_number}`
+        );
+
+        await serviceClient
+          .from('orders')
+          .update({ buyer_wallet_debit_cents: session.wallet_debit_cents })
+          .eq('id', order.id)
+          .eq('buyer_wallet_debit_cents', 0); // Optimistic lock
+
+        walletRetries++;
+        console.log(`[Reconcile] Wallet debit retry succeeded for order ${order.id}: ${session.wallet_debit_cents} cents`);
+      } catch (error) {
+        walletRetryErrors++;
+        console.error(`[Reconcile] MANUAL ATTENTION: Wallet debit retry failed for order ${order.id}:`, error);
+      }
+    }
+  }
+
+  // Cart: join orders to cart_checkout_groups via cart_group_id
+  const { data: cartMismatches } = await serviceClient
+    .from('orders')
+    .select('id, buyer_id, order_number, cart_group_id')
+    .eq('buyer_wallet_debit_cents', 0)
+    .eq('payment_method', 'card')
+    .not('cart_group_id', 'is', null)
+    .gt('created_at', orderCutoff);
+
+  if (cartMismatches && cartMismatches.length > 0) {
+    for (const order of cartMismatches) {
+      try {
+        const { data: group } = await serviceClient
+          .from('cart_checkout_groups')
+          .select('wallet_allocation')
+          .eq('id', order.cart_group_id)
+          .single();
+
+        if (!group?.wallet_allocation) continue;
+
+        // Sum wallet allocation for items in this order
+        const { data: orderItems } = await serviceClient
+          .from('order_items')
+          .select('listing_id')
+          .eq('order_id', order.id);
+
+        if (!orderItems) continue;
+
+        const allocation = group.wallet_allocation as Record<string, number>;
+        const intendedDebit = orderItems.reduce(
+          (sum, item) => sum + (allocation[item.listing_id] ?? 0), 0
+        );
+
+        if (intendedDebit <= 0) continue;
+
+        await debitWallet(
+          order.buyer_id,
+          intendedDebit,
+          order.id,
+          `Purchase (retry): ${order.order_number}`
+        );
+
+        await serviceClient
+          .from('orders')
+          .update({ buyer_wallet_debit_cents: intendedDebit })
+          .eq('id', order.id)
+          .eq('buyer_wallet_debit_cents', 0);
+
+        walletRetries++;
+        console.log(`[Reconcile] Cart wallet debit retry succeeded for order ${order.id}: ${intendedDebit} cents`);
+      } catch (error) {
+        walletRetryErrors++;
+        console.error(`[Reconcile] MANUAL ATTENTION: Cart wallet debit retry failed for order ${order.id}:`, error);
+      }
+    }
+  }
+
+  return NextResponse.json({
+    ...summary,
+    walletRetries,
+    walletRetryErrors,
+  });
 }
