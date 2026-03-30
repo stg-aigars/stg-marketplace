@@ -320,7 +320,7 @@ export async function updateListing(
   const removedPhotos = oldPhotos.filter((p) => !data.photos.includes(p));
 
   // Update listing first — only clean up storage after DB succeeds
-  // Uses service client because user-facing UPDATE policy was removed (F9 security audit)
+  // Uses service client because user-facing UPDATE policy was removed
   const service = createServiceClient();
   const { error: updateError } = await service
     .from('listings')
@@ -405,7 +405,7 @@ export async function cancelListing(
     return { error: 'This listing has already been removed' };
   }
 
-  // Uses service client because user-facing UPDATE policy was removed (F9 security audit)
+  // Uses service client because user-facing UPDATE policy was removed
   const service = createServiceClient();
   const { error: updateError } = await service
     .from('listings')

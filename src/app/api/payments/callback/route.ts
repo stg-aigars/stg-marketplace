@@ -55,7 +55,7 @@ async function attemptAutoRefund(
 }
 
 export async function GET(request: Request) {
-  // Rate limit to prevent enumeration and EveryPay API quota abuse (F13)
+  // Rate limit to prevent enumeration and EveryPay API quota abuse
   const ip = getClientIP(request);
   const rateLimitResult = paymentCallbackLimiter.check(ip);
   if (!rateLimitResult.success) {
@@ -129,7 +129,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
   }
 
-  // Validate callback token — reject if missing or mismatched (F15)
+  // Validate callback token — reject if missing or mismatched
   if (!callbackToken || session.callback_token !== callbackToken) {
     console.error('[Payments] Invalid callback token for session:', session.id);
     return NextResponse.redirect(`${env.app.url}/browse?error=invalid_callback`);
@@ -428,7 +428,7 @@ async function handleCartGroupCallback(
   const walletDebit = group.wallet_debit_cents ?? 0;
   const expectedEverypayAmountCents = group.total_amount_cents - walletDebit;
 
-  // Verify order_reference matches cart group — matches single-item pattern (F14)
+  // Verify order_reference matches cart group
   if (paymentStatus.order_reference !== group.order_number) {
     console.error(
       `[Payments] Cart order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but group has "${group.order_number}"`
