@@ -11,7 +11,7 @@
  */
 
 import { createOrder } from '@/lib/services/orders';
-import { debitWallet, creditWallet } from '@/lib/services/wallet';
+import { debitWallet, creditWallet, refundToWallet } from '@/lib/services/wallet';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
@@ -343,7 +343,33 @@ export async function fulfillCartPayment(
       });
     }
   } catch (error) {
-    console.error('[Payments] Cart: Failed to create orders:', error);
+    console.error('[Payments] Cart: Failed mid-loop, rolling back created orders:', error);
+
+    // Rollback: cancel created orders and refund their wallet debits
+    for (const created of createdOrders) {
+      try {
+        if (created.walletDebitCents > 0) {
+          await refundToWallet(
+            group.buyer_id,
+            created.walletDebitCents,
+            created.id,
+            `Rollback: cart order creation failed`
+          );
+        }
+        await serviceClient
+          .from('orders')
+          .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+          .eq('id', created.id);
+      } catch (rollbackError) {
+        console.error(`[Payments] Cart: Rollback failed for order ${created.id}:`, rollbackError);
+      }
+    }
+
+    // Full card refund — the EveryPay charge covers all sellers as one payment,
+    // so we refund the entire card amount regardless of how many orders were created
+    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'cart order creation failed mid-loop');
+
+    await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
     return { outcome: 'failed', error: error instanceof Error ? error.message : 'unknown' };
   }
 
