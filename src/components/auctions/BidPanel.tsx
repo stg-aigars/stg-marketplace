@@ -46,6 +46,8 @@ export function BidPanel({
   const [quickBidLoading, setQuickBidLoading] = useState<number | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
+  const bidEurRef = useRef(bidEur);
+  bidEurRef.current = bidEur;
   const router = useRouter();
 
   const isOwner = currentUserId != null && currentUserId === sellerId;
@@ -86,19 +88,24 @@ export function BidPanel({
     return () => clearInterval(interval);
   }, [listingId, isEnded]);
 
-  // Proactively warn when custom input value becomes stale
+  // Proactively warn when custom input value becomes stale.
+  // Uses ref for bidEur to avoid re-running on every keystroke, and only
+  // sets/clears the stale-bid-specific error — never clears server errors.
+  const staleBidMsg = `New bid received — minimum is now ${formatCentsToCurrency(minBid)}`;
   useEffect(() => {
-    if (bidEur) {
-      const amountCents = Math.round(parseFloat(bidEur) * 100);
+    const currentInput = bidEurRef.current;
+    if (currentInput) {
+      const amountCents = Math.round(parseFloat(currentInput) * 100);
       if (!isNaN(amountCents) && amountCents < minBid) {
-        setError(`New bid received — minimum is now ${formatCentsToCurrency(minBid)}`);
+        setError(staleBidMsg);
       } else {
-        setError(null);
+        setError((prev) => prev === staleBidMsg ? null : prev);
       }
     } else {
-      setError(null);
+      // Input empty — only clear if the current error is ours
+      setError((prev) => prev === staleBidMsg ? null : prev);
     }
-  }, [minBid]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [minBid, staleBidMsg]);
 
   function handleQuickBid(amountCents: number, index: number) {
     setError(null);
@@ -221,8 +228,8 @@ export function BidPanel({
 
           {/* Custom bid input */}
           <div className="space-y-2">
-            <p className="text-xs text-semantic-text-muted">Or enter a custom amount</p>
             <Input
+              label={`Custom bid (min ${formatCentsToCurrency(minBid)})`}
               type="text"
               inputMode="decimal"
               prefix="€"

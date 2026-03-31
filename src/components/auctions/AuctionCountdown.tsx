@@ -9,6 +9,7 @@ interface AuctionCountdownProps {
   className?: string;
 }
 
+const ONE_HOUR = 3600;
 const TWELVE_HOURS = 43200;
 const FIVE_MINUTES = 300;
 
@@ -16,9 +17,11 @@ export function AuctionCountdown({ endAt, size = 'sm', className = '' }: Auction
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(endAt));
 
   useEffect(() => {
+    // Tick every second only in the final hour (when seconds are visible).
+    // Display urgency tiers (<12h warning, <5m critical) are independent of tick rate.
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(endAt));
-    }, timeLeft.totalSeconds <= TWELVE_HOURS ? 1000 : 60000);
+    }, timeLeft.totalSeconds <= ONE_HOUR ? 1000 : 60000);
 
     return () => clearInterval(interval);
   }, [endAt, timeLeft.totalSeconds]);
@@ -55,7 +58,8 @@ function tierClass(tier: UrgencyTier): string {
 }
 
 function sizeClass(size: 'sm' | 'lg'): string {
-  return size === 'lg' ? 'text-lg font-semibold' : 'text-sm';
+  // Only controls text size — font weight is owned by tierClass
+  return size === 'lg' ? 'text-lg' : 'text-sm';
 }
 
 interface TimeLeft {
