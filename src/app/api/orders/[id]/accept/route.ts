@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { acceptOrder } from '@/lib/services/order-transitions';
+import { isBalticPhoneNumber } from '@/lib/phone-utils';
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -15,9 +16,9 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     const body = await request.json();
     const sellerPhone = body.sellerPhone as string;
 
-    if (!sellerPhone) {
+    if (!sellerPhone || !isBalticPhoneNumber(sellerPhone)) {
       return NextResponse.json(
-        { error: 'Phone number is required to accept an order. Please add your phone number.' },
+        { error: 'Please enter a valid Baltic phone number' },
         { status: 400 }
       );
     }
