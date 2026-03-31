@@ -308,9 +308,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   // Credit seller wallet with earnings (idempotent — safe to retry)
   await creditSellerWallet(orderId, order);
 
-  // Mark listings as sold (non-blocking — cosmetic, don't block financial flow)
-  void markListingsAsSold(order.order_items, order.listing_id)
-    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+  markSoldAndSyncShelf(order);
 
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderCompletedToSeller({
@@ -323,11 +321,6 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
     earningsCents: order.seller_wallet_credit_cents ?? 0,
   }).catch((err) => console.error('[Email] Failed to send order-completed to seller:', err));
   void notify(order.seller_id, 'order.completed', { gameName: gameSummary, orderNumber: order.order_number, orderId });
-
-  // Shelf sync: mark all items' games as sold (not_for_sale)
-  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
-    await syncShelfOnListingSold(order.seller_id, listingId);
-  }
 
   return updatedOrder;
 }
@@ -377,9 +370,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   // Credit seller wallet (idempotent)
   await creditSellerWallet(orderId, order);
 
-  // Mark listings as sold (non-blocking — cosmetic, don't block financial flow)
-  void markListingsAsSold(order.order_items, order.listing_id)
-    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+  markSoldAndSyncShelf(order);
 
   // Email seller about completion (non-blocking)
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
@@ -394,21 +385,14 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   }).catch((err) => console.error('[Email] Failed to send auto-complete email to seller:', err));
   void notify(order.seller_id, 'order.completed', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 
-  // Shelf sync: mark all items' games as sold (not_for_sale)
-  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
-    await syncShelfOnListingSold(order.seller_id, listingId);
-  }
-
   return data;
 }
 
 /**
- * Mark all listings in an order as 'sold' and clear reservation fields.
- * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
- * Guards with status IN ('reserved', 'active') to avoid touching cancelled listings
- * ('active' catches edge case where expire cron already wrongly reverted).
+ * Guards with status IN ('reserved', 'active') to avoid touching cancelled listings;
+ * 'active' catches the edge case where the expire cron already wrongly reverted the reservation.
  */
-export async function markListingsAsSold(
+async function markListingsAsSold(
   orderItems: { listing_id: string }[] | undefined,
   legacyListingId: string | null | undefined
 ): Promise<void> {
@@ -421,6 +405,20 @@ export async function markListingsAsSold(
     .update({ status: 'sold' as const, reserved_at: null, reserved_by: null })
     .in('id', listingIds)
     .in('status', ['reserved', 'active']);
+}
+
+/**
+ * Mark listings as sold + sync shelf items to not_for_sale. Fire-and-forget:
+ * listing status is cosmetic and must not delay wallet credit or block completion.
+ * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
+ */
+export function markSoldAndSyncShelf(order: Pick<OrderWithRelations, 'order_items' | 'listing_id' | 'seller_id'>): void {
+  void markListingsAsSold(order.order_items, order.listing_id)
+    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
+    void syncShelfOnListingSold(order.seller_id, listingId)
+      .catch((err) => console.error('[Shelf] Failed to sync on sold:', err));
+  }
 }
 
 /**
