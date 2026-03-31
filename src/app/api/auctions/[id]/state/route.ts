@@ -34,22 +34,37 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   if (url.searchParams.get('bids') === '1') {
     const { data: bids } = await supabase
       .from('bids')
-      .select(`
-        id, listing_id, bidder_id, amount_cents, created_at,
-        bidder:bidder_id (full_name)
-      `)
+      .select('id, listing_id, bidder_id, amount_cents, created_at')
       .eq('listing_id', params.id)
       .order('created_at', { ascending: false })
       .limit(10);
 
-    result.bids = (bids ?? []).map((row) => ({
-      id: row.id,
-      listing_id: row.listing_id,
-      bidder_id: row.bidder_id,
-      amount_cents: row.amount_cents,
-      created_at: row.created_at,
-      bidder_name: (row.bidder as unknown as { full_name: string } | null)?.full_name ?? 'Anonymous',
-    }));
+    if (bids?.length) {
+      const bidderIds = [...new Set(bids.map((b) => b.bidder_id))];
+      const { data: profiles } = await supabase
+        .from('public_profiles')
+        .select('id, full_name, country')
+        .in('id', bidderIds);
+
+      const profileMap = new Map(
+        (profiles ?? []).map((p) => [p.id, p])
+      );
+
+      result.bids = bids.map((row) => {
+        const profile = profileMap.get(row.bidder_id);
+        return {
+          id: row.id,
+          listing_id: row.listing_id,
+          bidder_id: row.bidder_id,
+          amount_cents: row.amount_cents,
+          created_at: row.created_at,
+          bidder_name: profile?.full_name ?? 'Anonymous',
+          bidder_country: profile?.country ?? null,
+        };
+      });
+    } else {
+      result.bids = [];
+    }
   }
 
   return NextResponse.json(result);

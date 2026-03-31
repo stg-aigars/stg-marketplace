@@ -7,6 +7,8 @@ import { Gavel, Lightning } from '@phosphor-icons/react/ssr';
 import { Button, Input, Alert, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { formatRelativeTime } from '@/lib/date-utils';
+import { getCountryFlag } from '@/lib/country-utils';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { placeBid } from '@/lib/auctions/bid-actions';
 import { getMinimumBid } from '@/lib/auctions/types';
@@ -176,6 +178,11 @@ export function BidPanel({
         </p>
         <p className="text-xs text-semantic-text-muted mt-0.5">
           {state.bidCount} {state.bidCount === 1 ? 'bid' : 'bids'}
+          {state.currentBidCents && (
+            <span className="ml-2">
+              &middot; started at {formatCentsToCurrency(state.startingPriceCents)}
+            </span>
+          )}
         </p>
       </div>
 
@@ -256,15 +263,26 @@ export function BidPanel({
       {bids.length > 0 && (
         <div className="pt-3 border-t border-semantic-border-subtle">
           <p className="text-sm font-medium text-semantic-text-heading mb-2">Bid history</p>
-          <ul className="space-y-1.5">
-            {bids.slice(0, 10).map((bid) => (
-              <li key={bid.id} className="flex items-center justify-between text-xs">
-                <span className="text-semantic-text-muted">
-                  {bid.bidder_name}
-                  {bid.bidder_id === currentUserId && ' (you)'}
+          <ul className="space-y-2">
+            {bids.slice(0, 5).map((bid) => (
+              <li key={bid.id} className="flex items-center justify-between text-xs gap-2">
+                <span className="text-semantic-text-muted flex items-center gap-1.5 min-w-0">
+                  {bid.bidder_country && (
+                    <span
+                      className={`${getCountryFlag(bid.bidder_country)} shrink-0`}
+                      title={bid.bidder_country}
+                    />
+                  )}
+                  <span className="truncate">
+                    {bid.bidder_name}
+                    {bid.bidder_id === currentUserId && ' (you)'}
+                  </span>
                 </span>
-                <span className="font-medium text-semantic-text-primary">
-                  {formatCentsToCurrency(bid.amount_cents)}
+                <span className="flex items-center gap-2 shrink-0">
+                  <span className="text-semantic-text-muted">{formatRelativeTime(bid.created_at)}</span>
+                  <span className="font-medium text-semantic-text-primary">
+                    {formatCentsToCurrency(bid.amount_cents)}
+                  </span>
                 </span>
               </li>
             ))}

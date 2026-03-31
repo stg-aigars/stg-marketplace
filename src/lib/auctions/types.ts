@@ -35,6 +35,7 @@ export interface BidRow {
 
 export interface BidWithBidder extends BidRow {
   bidder_name: string;
+  bidder_country: string | null;
 }
 
 // ============================================================================

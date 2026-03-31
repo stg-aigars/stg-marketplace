@@ -48,31 +48,46 @@ export async function cancelAuctionListing(
 // Queries
 // ============================================================================
 
-/** Get bid history for a listing (newest first, with bidder names) */
+/** Get bid history for a listing (newest first, with bidder names + country).
+ *  Uses public_profiles view so anonymous visitors see real names. */
 export async function getBidHistory(
   listingId: string,
   limit = 50
 ): Promise<BidWithBidder[]> {
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data: bids } = await supabase
     .from('bids')
-    .select(`
-      id, listing_id, bidder_id, amount_cents, created_at,
-      bidder:bidder_id (full_name)
-    `)
+    .select('id, listing_id, bidder_id, amount_cents, created_at')
     .eq('listing_id', listingId)
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    listing_id: row.listing_id,
-    bidder_id: row.bidder_id,
-    amount_cents: row.amount_cents,
-    created_at: row.created_at,
-    bidder_name: (row.bidder as unknown as { full_name: string } | null)?.full_name ?? 'Anonymous',
-  }));
+  if (!bids?.length) return [];
+
+  // Fetch profiles via public_profiles view (works for anonymous visitors)
+  const bidderIds = [...new Set(bids.map((b) => b.bidder_id))];
+  const { data: profiles } = await supabase
+    .from('public_profiles')
+    .select('id, full_name, country')
+    .in('id', bidderIds);
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p) => [p.id, p])
+  );
+
+  return bids.map((row) => {
+    const profile = profileMap.get(row.bidder_id);
+    return {
+      id: row.id,
+      listing_id: row.listing_id,
+      bidder_id: row.bidder_id,
+      amount_cents: row.amount_cents,
+      created_at: row.created_at,
+      bidder_name: profile?.full_name ?? 'Anonymous',
+      bidder_country: profile?.country ?? null,
+    };
+  });
 }
 
 /** Get current auction state (for polling) */
