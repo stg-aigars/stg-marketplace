@@ -1,16 +1,11 @@
 import Link from 'next/link';
-import { NewsletterForm } from './NewsletterForm';
 
 function SiteFooter() {
   return (
     <footer className="bg-semantic-bg-secondary border-t border-semantic-border-subtle">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-semantic-text-secondary mb-2">Stay in the loop</p>
-              <NewsletterForm />
-            </div>
+          <div>
             <nav className="flex flex-wrap gap-6 text-sm text-semantic-text-muted">
               <Link href="/terms" className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
                 Terms of Service
@@ -26,6 +21,7 @@ function SiteFooter() {
               </Link>
             </nav>
           </div>
+
           <div>
             <p className="text-sm font-display tracking-tight font-semibold text-semantic-text-secondary">
               Second Turn Games
