@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
-import { isValidPhoneNumber } from '@/lib/phone-utils';
+import { isBalticPhoneNumber } from '@/lib/phone-utils';
 import { createServiceClient } from '@/lib/supabase';
 import { profileUpdateLimiter, applyRateLimit } from '@/lib/rate-limit';
 
@@ -19,9 +19,9 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const phone = body.phone as string;
 
-    if (!phone || !isValidPhoneNumber(phone)) {
+    if (!phone || !isBalticPhoneNumber(phone)) {
       return NextResponse.json(
-        { error: 'Please enter a valid phone number (e.g. +37061234567)' },
+        { error: 'Please enter a valid Baltic phone number' },
         { status: 400 }
       );
     }

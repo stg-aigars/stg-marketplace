@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart } from '@phosphor-icons/react/ssr';
-import { Alert, Badge, Button, Card, CardBody, Input, TurnstileWidget } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardBody, PhoneInput, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { TerminalPicker } from '@/components/checkout/TerminalPicker';
 import { useCart } from '@/contexts/CartContext';
@@ -14,7 +14,8 @@ import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryName } from '@/lib/country-utils';
 import { conditionToBadgeKey } from '@/lib/listings/types';
-import { getShippingPriceCents, PHONE_FORMATS, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
+import type { CountryCode } from '@/lib/country-utils';
 import type { CartValidationResult } from '@/lib/checkout/cart-types';
 
 interface CartCheckoutFormProps {
@@ -212,12 +213,11 @@ export function CartCheckoutForm({
 
         {/* Phone */}
         <div>
-          <Input
+          <PhoneInput
             label="Phone number"
-            type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={PHONE_FORMATS[buyerCountry as TerminalCountry]?.placeholder ?? '+3706XXXXXXX'}
+            onChange={setPhone}
+            defaultCountry={buyerCountry as CountryCode}
           />
           <p className="mt-1 text-xs text-semantic-text-muted">
             Required for parcel pickup notifications

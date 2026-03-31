@@ -82,6 +82,15 @@ export function composePhoneNumber(
 }
 
 /**
+ * Validate that a phone number matches one of the three Baltic formats.
+ * Use this for buyer/seller phones that reach Unisend (SMS pickup codes).
+ */
+export function isBalticPhoneNumber(phone: string): boolean {
+  if (!phone || !phone.startsWith('+')) return false;
+  return Object.values(PHONE_FORMATS).some(format => format.regex.test(phone));
+}
+
+/**
  * Validate any international phone number.
  * Baltic numbers use strict regex from PHONE_FORMATS.
  * Other numbers: must start with + and have 7-15 total digits.

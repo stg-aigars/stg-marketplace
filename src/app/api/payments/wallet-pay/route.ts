@@ -18,7 +18,7 @@ import { createOrder } from '@/lib/services/orders';
 import { debitWallet, getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
-import { isValidPhoneNumber } from '@/lib/phone-utils';
+import { isBalticPhoneNumber } from '@/lib/phone-utils';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { validateTerminalInput } from '@/lib/api/checkout-validation';
@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
     if (terminalCheck instanceof NextResponse) return terminalCheck;
     terminalName = terminalCheck.sanitizedName;
-    if (!buyerPhone || !isValidPhoneNumber(buyerPhone)) {
-      return NextResponse.json({ error: 'Please enter a valid phone number' }, { status: 400 });
+    if (!buyerPhone || !isBalticPhoneNumber(buyerPhone)) {
+      return NextResponse.json({ error: 'Please enter a valid Baltic phone number' }, { status: 400 });
     }
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });

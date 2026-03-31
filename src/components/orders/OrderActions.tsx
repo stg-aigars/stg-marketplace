@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Modal } from '@/components/ui';
+import { Button, PhoneInput, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 import { DISPUTE_WINDOW_DAYS } from '@/lib/pricing/constants';
 import { canEscalateDispute, canWithdrawDispute } from '@/lib/services/dispute-validation';
 import { DisputeForm } from './DisputeForm';
 import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
+import type { CountryCode } from '@/lib/country-utils';
 
 interface OrderActionsProps {
   order: OrderWithDetails;
@@ -122,12 +123,11 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
         <div className="space-y-3">
           {showPhoneInput && (
             <div>
-              <Input
+              <PhoneInput
                 label="Your phone number"
-                type="tel"
                 value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
-                placeholder="+3706XXXXXXX"
+                onChange={setPhoneInput}
+                defaultCountry={(order.seller_profile?.country as CountryCode) ?? 'LV'}
                 error={!phoneInput.trim() ? 'Phone is required to create a shipping parcel' : undefined}
               />
             </div>

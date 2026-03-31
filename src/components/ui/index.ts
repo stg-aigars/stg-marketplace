@@ -10,6 +10,9 @@ export type { BadgeProps, ConditionKey } from './badge';
 export { Input } from './input';
 export type { InputProps } from './input';
 
+export { PhoneInput } from './PhoneInput';
+export type { PhoneInputProps } from './PhoneInput';
+
 export { Select } from './select';
 export type { SelectProps, SelectOption } from './select';
 

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Button, Input, Alert, Card, CardBody, TurnstileWidget } from '@/components/ui';
+import { Button, PhoneInput, Alert, Card, CardBody, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { TerminalPicker } from '@/components/checkout/TerminalPicker';
-import { PHONE_FORMATS, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
+import type { TerminalCountry, TerminalOption } from '@/lib/services/unisend/types';
 import { apiFetch } from '@/lib/api-fetch';
 
 interface AuctionCheckoutFormProps {
@@ -33,8 +33,6 @@ export function AuctionCheckoutForm({
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
-
-  const phoneFormat = PHONE_FORMATS[buyerCountry];
 
   async function handleSubmit() {
     if (!selectedTerminal || !phone.trim()) {
@@ -99,12 +97,11 @@ export function AuctionCheckoutForm({
             />
           )}
 
-          <Input
+          <PhoneInput
             label="Phone number (for delivery notifications)"
-            type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={phoneFormat?.placeholder ?? '+371 20000000'}
+            onChange={setPhone}
+            defaultCountry={buyerCountry}
           />
         </CardBody>
       </Card>

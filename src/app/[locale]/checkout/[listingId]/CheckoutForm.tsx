@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Button, Input, TurnstileWidget } from '@/components/ui';
+import { Button, PhoneInput, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { TerminalPicker } from '@/components/checkout/TerminalPicker';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
-import { PHONE_FORMATS, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
+import type { TerminalOption } from '@/lib/services/unisend/types';
+import type { CountryCode } from '@/lib/country-utils';
 
 interface CheckoutFormProps {
   listingId: string;
@@ -104,12 +105,11 @@ export function CheckoutForm({
     <div className="space-y-4">
       {/* Phone number */}
       <div>
-        <Input
+        <PhoneInput
           label="Phone number"
-          type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder={PHONE_FORMATS[buyerCountry as TerminalCountry]?.placeholder ?? '+3706XXXXXXX'}
+          onChange={setPhone}
+          defaultCountry={buyerCountry as CountryCode}
         />
         <p className="mt-1 text-xs text-semantic-text-muted">
           Required for parcel pickup notifications

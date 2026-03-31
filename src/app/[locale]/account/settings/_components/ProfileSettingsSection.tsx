@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
+import { Card, CardBody, Input, PhoneInput, Button, Alert } from '@/components/ui';
 import { updateDisplayName } from '@/lib/auth/actions';
 import { apiFetch } from '@/lib/api-fetch';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import type { UserProfile } from '@/lib/auth/types';
+import type { CountryCode } from '@/lib/country-utils';
 
 interface ProfileSettingsSectionProps {
   profile: UserProfile;
@@ -99,16 +100,13 @@ export function ProfileSettingsSection({ profile }: ProfileSettingsSectionProps)
         {/* Phone number */}
         <div className="border-t border-semantic-border-subtle pt-4 mt-4">
           <form onSubmit={handlePhoneSubmit} className="space-y-3">
-            <Input
+            <PhoneInput
               id="phone"
               label="Phone number"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              type="tel"
+              onChange={setPhone}
+              defaultCountry={profile.country as CountryCode}
             />
-            <p className="text-sm text-semantic-text-muted">
-              Include country code, e.g. +37061234567
-            </p>
             <Button type="submit" size="sm" loading={phoneLoading}>
               {phoneLoading ? 'Saving...' : 'Save'}
             </Button>
