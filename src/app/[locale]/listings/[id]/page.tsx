@@ -262,9 +262,13 @@ export default async function ListingDetailPage(
           {/* Price & action */}
           <div className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-input p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold font-sans tracking-tight text-semantic-text-heading">
-                {formatCentsToCurrency(listing.price_cents)}
-              </p>
+              {isAuction ? (
+                <Badge variant="auction">Auction</Badge>
+              ) : (
+                <p className="text-3xl font-bold font-sans tracking-tight text-semantic-text-heading">
+                  {formatCentsToCurrency(listing.price_cents)}
+                </p>
+              )}
               {!isOwner && (
                 <FavoriteButton
                   listingId={listing.id}

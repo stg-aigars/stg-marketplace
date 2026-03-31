@@ -35,6 +35,7 @@ export interface BidRow {
 
 export interface BidWithBidder extends BidRow {
   bidder_name: string;
+  bidder_country: string | null;
 }
 
 // ============================================================================
@@ -89,6 +90,13 @@ export function getMinimumBid(
 ): number {
   if (currentBidCents === null) return startingPriceCents;
   return currentBidCents + MIN_BID_INCREMENT_CENTS;
+}
+
+// TODO: revisit thresholds after launch — may need more granular tiers
+// (e.g., +€10/+€25 above €100)
+export function getQuickBidIncrements(minBidCents: number): [number, number] {
+  if (minBidCents < 5000) return [200, 400];   // +€2, +€4 under €50
+  return [500, 1000];                            // +€5, +€10 above €50
 }
 
 /** Check if auction is in the snipe protection window. */
