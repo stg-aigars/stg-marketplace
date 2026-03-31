@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getOrigin } from '@/lib/utils/request';
 
 /** Prevent open redirects — only allow relative paths. */
 function safeReturnUrl(url: string | null): string {
@@ -10,7 +11,8 @@ function safeReturnUrl(url: string | null): string {
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = getOrigin(request);
   const code = searchParams.get('code');
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type');

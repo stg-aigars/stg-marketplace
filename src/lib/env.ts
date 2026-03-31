@@ -21,6 +21,7 @@ const serverEnvSchema = {
   UNISEND_PASSWORD: process.env.UNISEND_PASSWORD,
 
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  APP_ORIGIN: process.env.APP_ORIGIN,
 
   CRON_SECRET: process.env.CRON_SECRET,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
@@ -62,6 +63,7 @@ export function validateEnv(): ValidationResult {
 
   const requiredInProduction: EnvKey[] = ['CRON_SECRET'];
   const optional: EnvKey[] = [
+    'APP_ORIGIN',
     'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
     'TURNSTILE_SECRET_KEY',
     'NEXT_PUBLIC_SENTRY_DSN',
@@ -129,6 +131,7 @@ export const env = {
   },
   app: {
     url: process.env.NEXT_PUBLIC_APP_URL!,
+    origin: process.env.APP_ORIGIN,
   },
   cron: {
     secret: process.env.CRON_SECRET,

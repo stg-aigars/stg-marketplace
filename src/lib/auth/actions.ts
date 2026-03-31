@@ -97,7 +97,7 @@ export async function resetPassword(
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${appUrl}/auth/callback?type=recovery`,
