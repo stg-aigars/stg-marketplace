@@ -1,35 +1,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Timer } from '@phosphor-icons/react/ssr';
 
 interface AuctionCountdownProps {
   endAt: string;
+  size?: 'sm' | 'lg';
   className?: string;
 }
 
-export function AuctionCountdown({ endAt, className = '' }: AuctionCountdownProps) {
+const TWELVE_HOURS = 43200;
+const FIVE_MINUTES = 300;
+
+export function AuctionCountdown({ endAt, size = 'sm', className = '' }: AuctionCountdownProps) {
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(endAt));
 
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(endAt));
-    }, timeLeft.totalSeconds <= 3600 ? 1000 : 60000);
+    }, timeLeft.totalSeconds <= TWELVE_HOURS ? 1000 : 60000);
 
     return () => clearInterval(interval);
   }, [endAt, timeLeft.totalSeconds]);
 
   if (timeLeft.totalSeconds <= 0) {
-    return <span className={`text-semantic-text-muted ${className}`}>Ended</span>;
+    return <span className={`text-semantic-text-muted ${sizeClass(size)} ${className}`}>Ended</span>;
   }
 
-  const isEndingSoon = timeLeft.totalSeconds <= 300; // 5 minutes
+  const tier = getUrgencyTier(timeLeft.totalSeconds);
 
   return (
-    <span className={`${isEndingSoon ? 'text-aurora-red font-medium' : 'text-semantic-text-muted'} ${className}`}>
-      {isEndingSoon && 'Ending soon — '}
+    <span className={`inline-flex items-center gap-1.5 ${tierClass(tier)} ${sizeClass(size)} tabular-nums ${className}`}>
+      <Timer size={size === 'lg' ? 20 : 14} weight={tier === 'normal' ? 'regular' : 'bold'} />
+      {tier === 'critical' && 'Ending soon — '}
       {formatTimeLeft(timeLeft)}
     </span>
   );
+}
+
+type UrgencyTier = 'normal' | 'warning' | 'critical';
+
+function getUrgencyTier(totalSeconds: number): UrgencyTier {
+  if (totalSeconds <= FIVE_MINUTES) return 'critical';
+  if (totalSeconds <= TWELVE_HOURS) return 'warning';
+  return 'normal';
+}
+
+function tierClass(tier: UrgencyTier): string {
+  switch (tier) {
+    case 'critical': return 'text-aurora-red font-bold animate-pulse';
+    case 'warning': return 'text-aurora-orange font-semibold';
+    case 'normal': return 'text-semantic-text-secondary';
+  }
+}
+
+function sizeClass(size: 'sm' | 'lg'): string {
+  return size === 'lg' ? 'text-lg font-semibold' : 'text-sm';
 }
 
 interface TimeLeft {

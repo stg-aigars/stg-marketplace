@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
+import { Gavel, Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -262,9 +262,16 @@ export default async function ListingDetailPage(
           {/* Price & action */}
           <div className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-input p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold font-sans tracking-tight text-semantic-text-heading">
-                {formatCentsToCurrency(listing.price_cents)}
-              </p>
+              {isAuction ? (
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-aurora-purple/15 px-3 py-1.5 text-sm font-semibold text-aurora-purple">
+                  <Gavel size={16} weight="bold" />
+                  Auction
+                </span>
+              ) : (
+                <p className="text-3xl font-bold font-sans tracking-tight text-semantic-text-heading">
+                  {formatCentsToCurrency(listing.price_cents)}
+                </p>
+              )}
               {!isOwner && (
                 <FavoriteButton
                   listingId={listing.id}
