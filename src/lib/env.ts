@@ -31,6 +31,9 @@ const serverEnvSchema = {
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
   SENTRY_ORG: process.env.SENTRY_ORG,
   SENTRY_PROJECT: process.env.SENTRY_PROJECT,
+
+  CLOUDFLARE_ZONE_ID: process.env.CLOUDFLARE_ZONE_ID,
+  CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
 } as const;
 
 type EnvKey = keyof typeof serverEnvSchema;
@@ -70,6 +73,8 @@ export function validateEnv(): ValidationResult {
     'SENTRY_AUTH_TOKEN',
     'SENTRY_ORG',
     'SENTRY_PROJECT',
+    'CLOUDFLARE_ZONE_ID',
+    'CLOUDFLARE_API_TOKEN',
   ];
 
   const isProduction = process.env.NODE_ENV === 'production';
@@ -145,5 +150,9 @@ export const env = {
     authToken: process.env.SENTRY_AUTH_TOKEN,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
+  },
+  cloudflare: {
+    zoneId: process.env.CLOUDFLARE_ZONE_ID,
+    apiToken: process.env.CLOUDFLARE_API_TOKEN,
   },
 } as const;

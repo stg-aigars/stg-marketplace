@@ -19,6 +19,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), interest-cohort=(), usb=(), bluetooth=()' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
           { key: 'X-DNS-Prefetch-Control', value: 'off' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
           // CSP for pages is set dynamically in middleware.ts with per-request nonce
         ],
       },
