@@ -639,7 +639,7 @@ async function linkWantedOfferToListing(wantedOfferId: string, listingId: string
 /**
  * When a listing is cancelled, reset the linked shelf item back to open_to_offers.
  */
-async function syncShelfOnListingRemoved(sellerId: string, listingId: string) {
+export async function syncShelfOnListingRemoved(sellerId: string, listingId: string) {
   try {
     const service = createServiceClient();
     await service

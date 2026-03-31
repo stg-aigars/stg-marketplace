@@ -308,6 +308,10 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   // Credit seller wallet with earnings (idempotent — safe to retry)
   await creditSellerWallet(orderId, order);
 
+  // Mark listings as sold (non-blocking — cosmetic, don't block financial flow)
+  void markListingsAsSold(order.order_items, order.listing_id)
+    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderCompletedToSeller({
     sellerName: order.seller_profile?.full_name ?? 'Seller',
@@ -373,6 +377,10 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   // Credit seller wallet (idempotent)
   await creditSellerWallet(orderId, order);
 
+  // Mark listings as sold (non-blocking — cosmetic, don't block financial flow)
+  void markListingsAsSold(order.order_items, order.listing_id)
+    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+
   // Email seller about completion (non-blocking)
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderCompletedToSeller({
@@ -392,6 +400,27 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   }
 
   return data;
+}
+
+/**
+ * Mark all listings in an order as 'sold' and clear reservation fields.
+ * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
+ * Guards with status IN ('reserved', 'active') to avoid touching cancelled listings
+ * ('active' catches edge case where expire cron already wrongly reverted).
+ */
+export async function markListingsAsSold(
+  orderItems: { listing_id: string }[] | undefined,
+  legacyListingId: string | null | undefined
+): Promise<void> {
+  const listingIds = getOrderListingIds(orderItems, legacyListingId);
+  if (listingIds.length === 0) return;
+
+  const supabase = createServiceClient();
+  await supabase
+    .from('listings')
+    .update({ status: 'sold' as const, reserved_at: null, reserved_by: null })
+    .in('id', listingIds)
+    .in('status', ['reserved', 'active']);
 }
 
 /**

@@ -6,7 +6,7 @@
 
 import { createServiceClient } from '@/lib/supabase';
 import { refundToWallet } from '@/lib/services/wallet';
-import { loadOrder, creditSellerWallet } from '@/lib/services/order-transitions';
+import { loadOrder, creditSellerWallet, markListingsAsSold } from '@/lib/services/order-transitions';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { OrderRow, DisputeRow } from '@/lib/orders/types';
 import {
@@ -17,7 +17,8 @@ import {
   sendDisputeWithdrawn,
 } from '@/lib/email';
 import { notify, notifyMany } from '@/lib/notifications';
-import { getOrderGameSummary } from '@/lib/orders/utils';
+import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
+import { syncShelfOnListingSold, syncShelfOnListingRemoved } from '@/lib/listings/actions';
 
 // Re-export pure validation functions for external use
 export {
@@ -183,6 +184,14 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
 
   // Credit seller wallet (same as normal completion — shared helper)
   await creditSellerWallet(orderId, order);
+
+  // Mark listings as sold + shelf sync (non-blocking)
+  void markListingsAsSold(order.order_items, order.listing_id)
+    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
+    void syncShelfOnListingSold(order.seller_id, listingId)
+      .catch((err) => console.error('[Shelf] Failed to sync on sold:', err));
+  }
 
   void logAuditEvent({
     actorId: userId,
@@ -418,6 +427,22 @@ export async function staffResolveDispute(
       .update({ active: false })
       .eq('order_id', orderId);
 
+    // Restore listings to active so seller can re-list after refund
+    const listingIds = getOrderListingIds(order.order_items, order.listing_id);
+    if (listingIds.length > 0) {
+      await supabase
+        .from('listings')
+        .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
+        .in('id', listingIds)
+        .eq('status', 'reserved');
+
+      // Shelf sync: revert items to open_to_offers (inverse of syncShelfOnListingSold)
+      for (const listingId of listingIds) {
+        void syncShelfOnListingRemoved(order.seller_id, listingId)
+          .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
+      }
+    }
+
     void logAuditEvent({
       actorId: staffUserId,
       actorType: 'user',
@@ -476,6 +501,14 @@ export async function staffResolveDispute(
 
   // Credit seller wallet (shared helper)
   await creditSellerWallet(orderId, order);
+
+  // Mark listings as sold + shelf sync (non-blocking)
+  void markListingsAsSold(order.order_items, order.listing_id)
+    .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
+  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
+    void syncShelfOnListingSold(order.seller_id, listingId)
+      .catch((err) => console.error('[Shelf] Failed to sync on sold:', err));
+  }
 
   void logAuditEvent({
     actorId: staffUserId,
