@@ -92,6 +92,13 @@ export function getMinimumBid(
   return currentBidCents + MIN_BID_INCREMENT_CENTS;
 }
 
+// TODO: revisit thresholds after launch — may need more granular tiers
+// (e.g., +€10/+€25 above €100)
+export function getQuickBidIncrements(minBidCents: number): [number, number] {
+  if (minBidCents < 5000) return [200, 400];   // +€2, +€4 under €50
+  return [500, 1000];                            // +€5, +€10 above €50
+}
+
 /** Check if auction is in the snipe protection window. */
 export function isInSnipeWindow(auctionEndAt: string): boolean {
   const endTime = new Date(auctionEndAt).getTime();

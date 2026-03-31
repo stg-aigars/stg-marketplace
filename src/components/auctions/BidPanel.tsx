@@ -7,20 +7,13 @@ import { Gavel, Lightning } from '@phosphor-icons/react/ssr';
 import { Button, Input, Alert, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { formatRelativeTime } from '@/lib/date-utils';
-import { getCountryFlag } from '@/lib/country-utils';
+import { formatMessageTime } from '@/lib/date-utils';
+import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { placeBid } from '@/lib/auctions/bid-actions';
-import { getMinimumBid } from '@/lib/auctions/types';
+import { getMinimumBid, getQuickBidIncrements } from '@/lib/auctions/types';
 import type { AuctionState, BidWithBidder } from '@/lib/auctions/types';
 import { AuctionCountdown } from './AuctionCountdown';
-
-// TODO: revisit thresholds after launch — may need more granular tiers
-// (e.g., +€10/+€25 above €100)
-function getQuickBidIncrements(minBidCents: number): [number, number] {
-  if (minBidCents < 5000) return [200, 400];   // +€2, +€4 under €50
-  return [500, 1000];                            // +€5, +€10 above €50
-}
 
 interface BidPanelProps {
   listingId: string;
@@ -255,7 +248,7 @@ export function BidPanel({
                   {bid.bidder_country && (
                     <span
                       className={`${getCountryFlag(bid.bidder_country)} shrink-0`}
-                      title={bid.bidder_country}
+                      title={getCountryName(bid.bidder_country)}
                     />
                   )}
                   <span className="truncate">
@@ -264,7 +257,7 @@ export function BidPanel({
                   </span>
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
-                  <span className="text-semantic-text-muted">{formatRelativeTime(bid.created_at)}</span>
+                  <span className="text-semantic-text-muted">{formatMessageTime(bid.created_at)}</span>
                   <span className="font-medium text-semantic-text-primary">
                     {formatCentsToCurrency(bid.amount_cents)}
                   </span>
