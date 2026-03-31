@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
+import { fetchPublicProfiles } from '@/lib/supabase/helpers';
 import type { BidWithBidder, AuctionState } from './types';
 
 // ============================================================================
@@ -48,6 +49,21 @@ export async function cancelAuctionListing(
 // Queries
 // ============================================================================
 
+/** Enrich raw bid rows with bidder names + country from public_profiles. */
+export async function enrichBidsWithProfiles(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: { from: (table: string) => any },
+  bids: Array<{ id: string; listing_id: string; bidder_id: string; amount_cents: number; created_at: string }>
+): Promise<BidWithBidder[]> {
+  if (!bids.length) return [];
+  const bidderIds = [...new Set(bids.map((b) => b.bidder_id))];
+  const profileMap = await fetchPublicProfiles(supabase, bidderIds);
+  return bids.map((row) => {
+    const p = profileMap.get(row.bidder_id);
+    return { ...row, bidder_name: p?.full_name ?? 'Anonymous', bidder_country: p?.country ?? null };
+  });
+}
+
 /** Get bid history for a listing (newest first, with bidder names + country).
  *  Uses public_profiles view so anonymous visitors see real names. */
 export async function getBidHistory(
@@ -55,39 +71,13 @@ export async function getBidHistory(
   limit = 50
 ): Promise<BidWithBidder[]> {
   const supabase = await createClient();
-
   const { data: bids } = await supabase
     .from('bids')
     .select('id, listing_id, bidder_id, amount_cents, created_at')
     .eq('listing_id', listingId)
     .order('created_at', { ascending: false })
     .limit(limit);
-
-  if (!bids?.length) return [];
-
-  // Fetch profiles via public_profiles view (works for anonymous visitors)
-  const bidderIds = [...new Set(bids.map((b) => b.bidder_id))];
-  const { data: profiles } = await supabase
-    .from('public_profiles')
-    .select('id, full_name, country')
-    .in('id', bidderIds);
-
-  const profileMap = new Map(
-    (profiles ?? []).map((p) => [p.id, p])
-  );
-
-  return bids.map((row) => {
-    const profile = profileMap.get(row.bidder_id);
-    return {
-      id: row.id,
-      listing_id: row.listing_id,
-      bidder_id: row.bidder_id,
-      amount_cents: row.amount_cents,
-      created_at: row.created_at,
-      bidder_name: profile?.full_name ?? 'Anonymous',
-      bidder_country: profile?.country ?? null,
-    };
-  });
+  return enrichBidsWithProfiles(supabase, bids ?? []);
 }
 
 /** Get current auction state (for polling) */

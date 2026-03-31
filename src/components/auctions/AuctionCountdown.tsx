@@ -16,15 +16,17 @@ const FIVE_MINUTES = 300;
 export function AuctionCountdown({ endAt, size = 'sm', className = '' }: AuctionCountdownProps) {
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(endAt));
 
+  // Only flips once (when crossing the 1-hour mark), so the interval
+  // is created at most twice: once at mount, once at the threshold.
+  const isShortInterval = timeLeft.totalSeconds <= ONE_HOUR && timeLeft.totalSeconds > 0;
+
   useEffect(() => {
-    // Tick every second only in the final hour (when seconds are visible).
-    // Display urgency tiers (<12h warning, <5m critical) are independent of tick rate.
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(endAt));
-    }, timeLeft.totalSeconds <= ONE_HOUR ? 1000 : 60000);
+    }, isShortInterval ? 1000 : 60000);
 
     return () => clearInterval(interval);
-  }, [endAt, timeLeft.totalSeconds]);
+  }, [endAt, isShortInterval]);
 
   if (timeLeft.totalSeconds <= 0) {
     return <span className={`text-semantic-text-muted ${sizeClass(size)} ${className}`}>Ended</span>;

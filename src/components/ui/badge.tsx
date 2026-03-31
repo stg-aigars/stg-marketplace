@@ -13,6 +13,11 @@ const conditionIcons: Record<ConditionKey, React.FC<any>> = {
   forParts: PuzzlePiece,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const variantIcons: Partial<Record<BadgeVariant, React.FC<any>>> = {
+  auction: Gavel,
+};
+
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
   condition?: ConditionKey;
@@ -38,7 +43,7 @@ const conditionClasses: Record<ConditionKey, string> = {
 
 function Badge({ variant = 'default', condition, dot, className = '', children, ...props }: BadgeProps) {
   const classes = condition ? conditionClasses[condition] : variantClasses[variant];
-  const ConditionIcon = condition ? conditionIcons[condition] : variant === 'auction' ? Gavel : null;
+  const ConditionIcon = condition ? conditionIcons[condition] : (variantIcons[variant] ?? null);
 
   return (
     <span

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { enrichBidsWithProfiles } from '@/lib/auctions/actions';
 
 /**
  * Lightweight GET endpoint for polling auction state.
@@ -39,32 +40,7 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (bids?.length) {
-      const bidderIds = [...new Set(bids.map((b) => b.bidder_id))];
-      const { data: profiles } = await supabase
-        .from('public_profiles')
-        .select('id, full_name, country')
-        .in('id', bidderIds);
-
-      const profileMap = new Map(
-        (profiles ?? []).map((p) => [p.id, p])
-      );
-
-      result.bids = bids.map((row) => {
-        const profile = profileMap.get(row.bidder_id);
-        return {
-          id: row.id,
-          listing_id: row.listing_id,
-          bidder_id: row.bidder_id,
-          amount_cents: row.amount_cents,
-          created_at: row.created_at,
-          bidder_name: profile?.full_name ?? 'Anonymous',
-          bidder_country: profile?.country ?? null,
-        };
-      });
-    } else {
-      result.bids = [];
-    }
+    result.bids = await enrichBidsWithProfiles(supabase, bids ?? []);
   }
 
   return NextResponse.json(result);

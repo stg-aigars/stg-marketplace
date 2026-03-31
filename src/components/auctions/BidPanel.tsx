@@ -48,6 +48,8 @@ export function BidPanel({
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const bidEurRef = useRef(bidEur);
   bidEurRef.current = bidEur;
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const router = useRouter();
 
   const isOwner = currentUserId != null && currentUserId === sellerId;
@@ -63,7 +65,6 @@ export function BidPanel({
     { cents: minBid + inc2 },
   ];
 
-  // Poll for auction state + bid history every 10 seconds
   useEffect(() => {
     if (isEnded) return;
 
@@ -72,15 +73,19 @@ export function BidPanel({
         const res = await fetch(`/api/auctions/${listingId}/state?bids=1`);
         if (res.ok) {
           const fresh = await res.json();
-          setState({
-            currentBidCents: fresh.currentBidCents,
-            startingPriceCents: fresh.startingPriceCents,
-            bidCount: fresh.bidCount,
-            highestBidderId: fresh.highestBidderId,
-            auctionEndAt: fresh.auctionEndAt,
-            status: fresh.status,
-          });
-          if (fresh.bids) setBids(fresh.bids);
+          const cur = stateRef.current;
+          // Skip no-op updates to avoid unnecessary re-renders
+          if (fresh.bidCount !== cur.bidCount || fresh.status !== cur.status || fresh.auctionEndAt !== cur.auctionEndAt) {
+            setState({
+              currentBidCents: fresh.currentBidCents,
+              startingPriceCents: fresh.startingPriceCents,
+              bidCount: fresh.bidCount,
+              highestBidderId: fresh.highestBidderId,
+              auctionEndAt: fresh.auctionEndAt,
+              status: fresh.status,
+            });
+            if (fresh.bids) setBids(fresh.bids);
+          }
         }
       } catch { /* silent — will retry next interval */ }
     }, 10000);
@@ -91,46 +96,47 @@ export function BidPanel({
   // Proactively warn when custom input value becomes stale.
   // Uses ref for bidEur to avoid re-running on every keystroke, and only
   // sets/clears the stale-bid-specific error — never clears server errors.
-  const staleBidMsg = `New bid received — minimum is now ${formatCentsToCurrency(minBid)}`;
   useEffect(() => {
+    const msg = `New bid received — minimum is now ${formatCentsToCurrency(minBid)}`;
     const currentInput = bidEurRef.current;
     if (currentInput) {
       const amountCents = Math.round(parseFloat(currentInput) * 100);
       if (!isNaN(amountCents) && amountCents < minBid) {
-        setError(staleBidMsg);
+        setError(msg);
       } else {
-        setError((prev) => prev === staleBidMsg ? null : prev);
+        setError((prev) => prev?.startsWith('New bid received') ? null : prev);
       }
     } else {
-      // Input empty — only clear if the current error is ours
-      setError((prev) => prev === staleBidMsg ? null : prev);
+      setError((prev) => prev?.startsWith('New bid received') ? null : prev);
     }
-  }, [minBid, staleBidMsg]);
+  }, [minBid]);
+
+  async function submitBid(amountCents: number) {
+    const result = await placeBid(listingId, amountCents, turnstileToken ?? undefined);
+    if ('error' in result) {
+      setError(result.error);
+      turnstileRef.current?.reset();
+    } else {
+      setSuccess(`Bid of ${formatCentsToCurrency(amountCents)} placed`);
+      setBidEur('');
+      setState((prev) => ({
+        ...prev,
+        currentBidCents: amountCents,
+        bidCount: result.bidCount,
+        highestBidderId: currentUserId,
+        auctionEndAt: result.newEndAt,
+      }));
+      turnstileRef.current?.reset();
+      router.refresh();
+    }
+  }
 
   function handleQuickBid(amountCents: number, index: number) {
     setError(null);
     setSuccess(null);
     setQuickBidLoading(index);
-
     startTransition(async () => {
-      const result = await placeBid(listingId, amountCents, turnstileToken ?? undefined);
-
-      if ('error' in result) {
-        setError(result.error);
-        turnstileRef.current?.reset();
-      } else {
-        setSuccess(`Bid of ${formatCentsToCurrency(amountCents)} placed`);
-        setBidEur('');
-        setState((prev) => ({
-          ...prev,
-          currentBidCents: amountCents,
-          bidCount: result.bidCount,
-          highestBidderId: currentUserId,
-          auctionEndAt: result.newEndAt,
-        }));
-        turnstileRef.current?.reset();
-        router.refresh();
-      }
+      await submitBid(amountCents);
       setQuickBidLoading(null);
     });
   }
@@ -138,44 +144,21 @@ export function BidPanel({
   function handleCustomSubmit() {
     setError(null);
     setSuccess(null);
-
     const amountCents = Math.round(parseFloat(bidEur) * 100);
     if (isNaN(amountCents) || amountCents < minBid) {
       setError(`Minimum bid is ${formatCentsToCurrency(minBid)}`);
       return;
     }
-
-    startTransition(async () => {
-      const result = await placeBid(listingId, amountCents, turnstileToken ?? undefined);
-
-      if ('error' in result) {
-        setError(result.error);
-        turnstileRef.current?.reset();
-      } else {
-        setSuccess(`Bid of ${formatCentsToCurrency(amountCents)} placed`);
-        setBidEur('');
-        setState((prev) => ({
-          ...prev,
-          currentBidCents: amountCents,
-          bidCount: result.bidCount,
-          highestBidderId: currentUserId,
-          auctionEndAt: result.newEndAt,
-        }));
-        turnstileRef.current?.reset();
-        router.refresh();
-      }
-    });
+    startTransition(() => submitBid(amountCents));
   }
 
   return (
     <div className="space-y-4">
-      {/* Time remaining — urgency first */}
       <div>
         <p className="text-sm text-semantic-text-muted mb-0.5">Time remaining</p>
         <AuctionCountdown endAt={state.auctionEndAt} size="lg" />
       </div>
 
-      {/* Current bid / starting price */}
       <div>
         <p className="text-sm text-semantic-text-muted">
           {state.currentBidCents ? 'Current bid' : 'Starting price'}
@@ -193,7 +176,6 @@ export function BidPanel({
         </p>
       </div>
 
-      {/* Status banners */}
       {isHighestBidder && !isEnded && (
         <Alert variant="success">You are the highest bidder</Alert>
       )}
@@ -201,7 +183,6 @@ export function BidPanel({
         <Alert variant="warning">You have been outbid</Alert>
       )}
 
-      {/* Bid form (quick-bid + custom) */}
       {!isOwner && !isEnded && currentUserId && !isHighestBidder && (
         <div className="space-y-3 pt-2 border-t border-semantic-border-subtle">
           {error && <Alert variant="error">{error}</Alert>}
@@ -209,7 +190,6 @@ export function BidPanel({
 
           <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
-          {/* Quick-bid buttons — stacked on mobile, 3-col on sm+ */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {quickBids.map((qb, i) => (
               <Button
@@ -226,7 +206,6 @@ export function BidPanel({
             ))}
           </div>
 
-          {/* Custom bid input */}
           <div className="space-y-2">
             <Input
               label={`Custom bid (min ${formatCentsToCurrency(minBid)})`}
@@ -266,7 +245,6 @@ export function BidPanel({
         </p>
       )}
 
-      {/* Bid history */}
       {bids.length > 0 && (
         <div className="pt-3 border-t border-semantic-border-subtle">
           <p className="text-sm font-medium text-semantic-text-heading mb-2">Bid history</p>
