@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CaretDown } from '@phosphor-icons/react/ssr';
 import {
   detectPhoneCountry,
   composePhoneNumber,
   PHONE_COUNTRY_CONFIGS,
-  type PhoneCountryCode,
 } from '@/lib/phone-utils';
 import { getCountryFlag, COUNTRIES, type CountryCode } from '@/lib/country-utils';
 
@@ -32,23 +31,18 @@ function resolveInitialState(value: string, defaultCountry: CountryCode) {
 }
 
 function PhoneInput({ label, value, onChange, defaultCountry, error, id }: PhoneInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(
-    () => resolveInitialState(value, defaultCountry).country
-  );
-  const [localNumber, setLocalNumber] = useState(
-    () => resolveInitialState(value, defaultCountry).localNumber
+  const [{ country: selectedCountry, localNumber }, setPhoneState] = useState(
+    () => resolveInitialState(value, defaultCountry)
   );
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const config = PHONE_COUNTRY_CONFIGS.find(c => c.code === selectedCountry);
   const flagClass = getCountryFlag(selectedCountry);
 
-  // Dismiss dropdown on click outside, Escape, or tab away
   useEffect(() => {
     if (!open) return;
 
@@ -65,16 +59,15 @@ function PhoneInput({ label, value, onChange, defaultCountry, error, id }: Phone
     }
 
     function handleFocusOut(e: FocusEvent) {
-      // Close if focus moves outside wrapper entirely
       if (wrapperRef.current && !wrapperRef.current.contains(e.relatedTarget as Node)) {
         setOpen(false);
       }
     }
 
+    const wrapper = wrapperRef.current;
     document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('keydown', handleKeyDown);
-    wrapperRef.current?.addEventListener('focusout', handleFocusOut);
-    const wrapper = wrapperRef.current;
+    wrapper?.addEventListener('focusout', handleFocusOut);
 
     return () => {
       document.removeEventListener('mousedown', handleMouseDown);
@@ -83,22 +76,21 @@ function PhoneInput({ label, value, onChange, defaultCountry, error, id }: Phone
     };
   }, [open]);
 
-  const handleCountryChange = useCallback((country: CountryCode) => {
-    setSelectedCountry(country);
+  function handleCountryChange(country: CountryCode) {
+    if (country === selectedCountry) return;
     setOpen(false);
-    // Keep local number if it looks compatible, otherwise clear
     const newConfig = PHONE_COUNTRY_CONFIGS.find(c => c.code === country);
     const expectedLength = newConfig?.localPlaceholder.length ?? 0;
     const keepLocal = localNumber.length > 0 && localNumber.length <= expectedLength;
     const newLocal = keepLocal ? localNumber : '';
-    setLocalNumber(newLocal);
+    setPhoneState({ country, localNumber: newLocal });
     onChange(composePhoneNumber(country, newLocal));
     inputRef.current?.focus();
-  }, [localNumber, onChange]);
+  }
 
   function handleLocalChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '');
-    setLocalNumber(digits);
+    setPhoneState({ country: selectedCountry, localNumber: digits });
     onChange(composePhoneNumber(selectedCountry, digits));
   }
 
@@ -117,7 +109,6 @@ function PhoneInput({ label, value, onChange, defaultCountry, error, id }: Phone
       )}
       <div ref={wrapperRef} className="relative">
         <div className={`flex rounded-lg border ${borderClass} transition-all duration-250 ease-out-custom bg-semantic-bg-input overflow-visible`}>
-          {/* Country selector button */}
           <button
             type="button"
             onClick={() => setOpen(prev => !prev)}
@@ -126,12 +117,11 @@ function PhoneInput({ label, value, onChange, defaultCountry, error, id }: Phone
             aria-label="Select country code"
             aria-expanded={open}
           >
-            {flagClass && <span className={`${flagClass}`} />}
+            {flagClass && <span className={flagClass} />}
             <span className="font-medium">{config?.prefix}</span>
             <CaretDown size={14} weight="bold" className="text-semantic-text-muted" />
           </button>
 
-          {/* Local number input */}
           <input
             ref={inputRef}
             id={id}
@@ -146,10 +136,8 @@ function PhoneInput({ label, value, onChange, defaultCountry, error, id }: Phone
           />
         </div>
 
-        {/* Country dropdown */}
         {open && (
           <div
-            ref={dropdownRef}
             className="absolute left-0 top-full mt-1 z-10 w-56 bg-semantic-bg-primary border border-semantic-border-default rounded-lg shadow-lg py-1"
             role="listbox"
             aria-label="Country code"
