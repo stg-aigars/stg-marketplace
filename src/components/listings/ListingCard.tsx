@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, ImageSquare, Gavel } from '@phosphor-icons/react/ssr';
-import { isBggImage } from '@/lib/bgg/utils';
+import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, GameMeta, Price } from './atoms';
@@ -48,7 +48,7 @@ function ListingCard({
   bidCount = 0,
   auctionEndAt,
 }: ListingCardProps) {
-  const imageUrl = gameThumbnail ?? firstPhoto ?? null;
+  const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
   const conditionLabel = getConditionLabel(condition);
   const flagClass = getCountryFlag(sellerCountry);
   const countryName = getCountryName(sellerCountry);

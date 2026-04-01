@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { CalendarBlank, Buildings, Translate } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey } from '@/lib/listings/types';
@@ -38,15 +39,15 @@ export function ReviewStep({
       <Card>
         <CardBody>
           <div className="space-y-5">
-            {/* Game info */}
+            {/* Game + Edition */}
             <div className="flex items-start gap-4">
-              {(formData.game_image || formData.game_thumbnail) && (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative">
+              {(formData.version_thumbnail || formData.game_image || formData.game_thumbnail) && (
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
                   <Image
-                    src={formData.game_image ?? formData.game_thumbnail ?? ''}
+                    src={formData.version_thumbnail ?? formData.game_image ?? formData.game_thumbnail ?? ''}
                     alt={formData.game_name}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     sizes="96px"
                     unoptimized
                   />
@@ -56,38 +57,34 @@ export function ReviewStep({
                 <h3 className="font-semibold text-semantic-text-heading text-lg">
                   {formData.game_name}
                 </h3>
-                {formData.game_year && (
-                  <p className="text-sm text-semantic-text-muted">
-                    {formData.game_year}
-                  </p>
-                )}
-                {formData.game_player_count && (
-                  <p className="text-sm text-semantic-text-muted">
-                    {formData.game_player_count} players
+                {hasEdition ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
+                    {formData.version_name && <span>{formData.version_name}</span>}
+                    {formData.publisher && (
+                      <span className="flex items-center gap-1">
+                        <Buildings size={14} className="shrink-0" />
+                        {formData.publisher}
+                      </span>
+                    )}
+                    {formData.language && (
+                      <span className="flex items-center gap-1">
+                        <Translate size={14} className="shrink-0" />
+                        {formData.language}
+                      </span>
+                    )}
+                    {formData.edition_year && (
+                      <span className="flex items-center gap-1">
+                        <CalendarBlank size={14} className="shrink-0" />
+                        {formData.edition_year}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-semantic-text-muted mt-0.5">
+                    No edition specified
                   </p>
                 )}
               </div>
-            </div>
-
-            <hr className="border-semantic-border-subtle" />
-
-            {/* Edition */}
-            <div>
-              <p className="text-sm font-medium text-semantic-text-primary mb-1">
-                Edition
-              </p>
-              {hasEdition ? (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-semantic-text-secondary">
-                  {formData.version_name && <span>{formData.version_name}</span>}
-                  {formData.publisher && <span>{formData.publisher}</span>}
-                  {formData.language && <span>{formData.language}</span>}
-                  {formData.edition_year && <span>{formData.edition_year}</span>}
-                </div>
-              ) : (
-                <p className="text-sm text-semantic-text-muted">
-                  No edition specified
-                </p>
-              )}
             </div>
 
             <hr className="border-semantic-border-subtle" />

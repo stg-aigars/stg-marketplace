@@ -9,7 +9,7 @@ import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition, type ListingStatus } from '@/lib/listings/types';
 import { formatDate } from '@/lib/date-utils';
-import { getWeightLabel } from '@/lib/bgg/utils';
+import { getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
 import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
@@ -39,6 +39,7 @@ interface ListingDetailRow {
   edition_year: number | null;
   reserved_at: string | null;
   reserved_by: string | null;
+  version_thumbnail: string | null;
   listing_type: string;
   auction_end_at: string | null;
   starting_price_cents: number | null;
@@ -196,7 +197,7 @@ export default async function ListingDetailPage(
   const conditionInfo = conditionConfig[badgeKey];
   const sellerFlagClass = getCountryFlag(listing.user_profiles?.country);
   const sellerCountryName = getCountryName(listing.user_profiles?.country);
-  const gameImage = listing.games?.image ?? listing.games?.thumbnail ?? null;
+  const gameImage = toBggFullSize(listing.version_thumbnail) ?? toBggFullSize(listing.games?.image) ?? toBggFullSize(listing.games?.thumbnail) ?? null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">

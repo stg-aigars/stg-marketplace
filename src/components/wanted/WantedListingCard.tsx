@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
-import { isBggImage } from '@/lib/bgg/utils';
+import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -35,7 +35,7 @@ export function WantedListingCard({
         <div className="relative aspect-square bg-semantic-bg-surface flex items-center justify-center overflow-hidden rounded-t-lg">
           {gameThumbnail ? (
             <Image
-              src={gameThumbnail}
+              src={toBggFullSize(gameThumbnail) ?? gameThumbnail}
               alt={gameTitle}
               fill
               className="object-contain p-2"

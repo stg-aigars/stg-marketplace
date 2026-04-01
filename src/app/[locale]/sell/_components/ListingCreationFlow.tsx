@@ -38,6 +38,7 @@ export interface FormData {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  version_thumbnail: string | null;
   // Step 3: Photos
   photos: string[];
   // Step 4: Condition
@@ -63,6 +64,7 @@ const initialFormData: FormData = {
   publisher: null,
   language: null,
   edition_year: null,
+  version_thumbnail: null,
   photos: [],
   condition: null,
   price_cents: 0,
@@ -116,7 +118,7 @@ export function ListingCreationFlow({
       case 2:
         return true; // Version is optional
       case 3:
-        return formData.photos.length >= 1;
+        return true; // Photos are optional — BGG image used as fallback
       case 4:
         return formData.condition !== null;
       case 5:
@@ -159,6 +161,7 @@ export function ListingCreationFlow({
       publisher: formData.publisher,
       language: formData.language,
       edition_year: formData.edition_year,
+      version_thumbnail: formData.version_thumbnail,
       condition: formData.condition,
       price_cents: isAuction ? formData.starting_price_cents : formData.price_cents,
       description: formData.description || null,
@@ -212,6 +215,7 @@ export function ListingCreationFlow({
                   publisher: null,
                   language: null,
                   edition_year: null,
+                  version_thumbnail: null,
                   // Reset condition
                   condition: null,
                 });
@@ -249,6 +253,7 @@ export function ListingCreationFlow({
                 publisher: version.publisher,
                 language: version.language,
                 edition_year: version.edition_year,
+                version_thumbnail: version.version_thumbnail,
               });
             }}
           />
@@ -297,7 +302,7 @@ export function ListingCreationFlow({
       </div>
 
       {/* Navigation */}
-      {step < 6 && (
+      {step <= 6 && (
         <div className="flex items-center justify-between pt-4 border-t border-semantic-border-subtle">
           <div>
             {step > minStep && (
@@ -306,13 +311,15 @@ export function ListingCreationFlow({
               </Button>
             )}
           </div>
-          <Button
-            variant="primary"
-            onClick={handleNext}
-            disabled={!canProceed()}
-          >
-            Continue
-          </Button>
+          {step < 6 && (
+            <Button
+              variant="primary"
+              onClick={handleNext}
+              disabled={!canProceed()}
+            >
+              Continue
+            </Button>
+          )}
         </div>
       )}
     </div>
