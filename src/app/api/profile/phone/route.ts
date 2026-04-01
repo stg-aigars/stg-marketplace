@@ -36,7 +36,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Failed to update phone number' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, phone });
+    return NextResponse.json({ success: 'Phone number updated', phone });
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
