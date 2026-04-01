@@ -217,7 +217,7 @@ export async function acceptOrder(
 export async function declineOrder(orderId: string, userId: string): Promise<OrderRow> {
   const order = await loadOrder(orderId);
 
-  const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller', undefined, order);
+  const updatedOrder = await transitionOrder(orderId, 'cancelled', userId, 'seller', { cancellation_reason: 'declined' }, order);
 
   // Restore all listings to active and clear reservation fields
   const supabase = createServiceClient();

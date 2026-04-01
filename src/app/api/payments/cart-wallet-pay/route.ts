@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const parsed = await parseCartCheckoutBody(request);
   if (parsed instanceof NextResponse) return parsed;
 
-  const { listingIds, terminalId, terminalName, terminalCountry, buyerPhone, turnstileToken } = parsed;
+  const { listingIds, terminalId, terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry, buyerPhone, turnstileToken } = parsed;
 
   const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
   if (!turnstile.success) {
@@ -158,6 +158,9 @@ export async function POST(request: Request) {
         walletDebitCents: walletForOrder,
         terminalId,
         terminalName,
+        terminalAddress,
+        terminalCity,
+        terminalPostalCode,
         terminalCountry,
         buyerPhone,
         cartGroupId,

@@ -13,10 +13,18 @@ export interface CartCheckoutBody {
   listingIds: string[];
   terminalId: string;
   terminalName: string;
+  terminalAddress?: string;
+  terminalCity?: string;
+  terminalPostalCode?: string;
   terminalCountry: string;
   buyerPhone: string;
   useWallet?: boolean;
   turnstileToken?: string;
+}
+
+/** Sanitize a user-provided string: strip control characters, truncate to 200 chars */
+export function sanitizeInput(s?: string): string | undefined {
+  return s ? s.slice(0, 200).replace(/[\x00-\x1f\x7f]/g, '') : undefined;
 }
 
 /**
@@ -46,7 +54,7 @@ export async function parseCartCheckoutBody(
 ): Promise<NextResponse | CartCheckoutBody> {
   try {
     const body = await request.json();
-    const { listingIds, terminalId, terminalName, terminalCountry, buyerPhone, useWallet, turnstileToken } = body;
+    const { listingIds, terminalId, terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry, buyerPhone, useWallet, turnstileToken } = body;
 
     if (!Array.isArray(listingIds) || listingIds.length === 0) {
       return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
@@ -70,6 +78,9 @@ export async function parseCartCheckoutBody(
       listingIds,
       terminalId,
       terminalName: terminalCheck.sanitizedName,
+      terminalAddress: sanitizeInput(terminalAddress),
+      terminalCity: sanitizeInput(terminalCity),
+      terminalPostalCode: sanitizeInput(terminalPostalCode),
       terminalCountry,
       buyerPhone,
       useWallet: useWallet === true,

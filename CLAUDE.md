@@ -75,6 +75,9 @@ pending_seller → accepted → shipped → delivered → completed
                 cancelled   cancelled   disputed → resolved
 ```
 
+### Cancellation Reasons
+Orders store `cancellation_reason` (nullable): `'declined'` (seller), `'response_timeout'` (48h auto), `'shipping_timeout'` (5d auto), `'system'` (cart rollback). Type: `CancellationReason` in `src/lib/orders/types.ts`.
+
 ### Order Deadlines
 - `pending_seller`: 24h reminder, 48h auto-decline + refund
 - `accepted`: day 3 reminder, day 5 auto-cancel + refund
@@ -113,6 +116,7 @@ Always use these — do not write inline equivalents:
 | Loading placeholders | `Skeleton` | `@/components/ui` |
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
 | Empty / no-results states | `EmptyState` (icon, title, description, action, secondaryAction) | `@/components/ui` |
+| Back navigation | `BackLink` (href, label; arrow + text, muted with brand hover) | `@/components/ui` |
 | Breadcrumb navigation | `Breadcrumb` (items: { label, href? }[]) | `@/components/ui` |
 | Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
 | State-based tabs | `Tabs` (tabs, activeTab, onTabChange; underline style with counts) | `@/components/ui` |

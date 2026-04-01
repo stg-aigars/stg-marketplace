@@ -31,6 +31,9 @@ export function CheckoutForm({
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminalId, setSelectedTerminalId] = useState('');
   const [selectedTerminalName, setSelectedTerminalName] = useState('');
+  const [selectedTerminalAddress, setSelectedTerminalAddress] = useState('');
+  const [selectedTerminalCity, setSelectedTerminalCity] = useState('');
+  const [selectedTerminalPostalCode, setSelectedTerminalPostalCode] = useState('');
   const [selectedTerminalCountry, setSelectedTerminalCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +54,9 @@ export function CheckoutForm({
       listingId,
       terminalId: selectedTerminalId,
       terminalName: selectedTerminalName,
+      terminalAddress: selectedTerminalAddress,
+      terminalCity: selectedTerminalCity,
+      terminalPostalCode: selectedTerminalPostalCode,
       terminalCountry: selectedTerminalCountry || buyerCountry,
       buyerPhone: phone.trim(),
       turnstileToken,
@@ -122,6 +128,9 @@ export function CheckoutForm({
         onSelect={(t) => {
           setSelectedTerminalId(t.id);
           setSelectedTerminalName(t.name);
+          setSelectedTerminalAddress(t.address);
+          setSelectedTerminalCity(t.city);
+          setSelectedTerminalPostalCode(t.postalCode ?? '');
           setSelectedTerminalCountry(t.countryCode);
         }}
         fetchFailed={terminalsFetchFailed}

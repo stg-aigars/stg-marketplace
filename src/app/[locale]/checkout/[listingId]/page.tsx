@@ -188,7 +188,7 @@ export default async function CheckoutPage(
   if (!terminalsFetchFailed) {
     terminals = terminalsResult
       .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
-      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, countryCode: t.countryCode }));
+      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, postalCode: t.postalCode, countryCode: t.countryCode }));
   }
 
   const walletPricing = walletBalanceCents > 0

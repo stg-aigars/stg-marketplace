@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, PhoneInput, Modal } from '@/components/ui';
+import Link from 'next/link';
+import { Button, Modal, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 import { DISPUTE_WINDOW_DAYS } from '@/lib/pricing/constants';
 import { canEscalateDispute, canWithdrawDispute } from '@/lib/services/dispute-validation';
 import { DisputeForm } from './DisputeForm';
 import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
-import type { CountryCode } from '@/lib/country-utils';
 
 interface OrderActionsProps {
   order: OrderWithDetails;
@@ -28,21 +28,21 @@ function getDisputeWindowRemaining(deliveredAt: string | null): { expired: boole
   const msRemaining = windowEnd.getTime() - now.getTime();
 
   if (msRemaining <= 0) {
-    return { expired: true, text: '' };
+    return { expired: true, text: 'This order is being finalized' };
   }
 
   const hoursRemaining = Math.ceil(msRemaining / (1000 * 60 * 60));
   if (hoursRemaining > 24) {
     const daysRemaining = Math.ceil(hoursRemaining / 24);
-    return { expired: false, text: `You have ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left to report an issue` };
+    return { expired: false, text: `This order will auto-complete in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} — report any issues before then` };
   }
 
   if (hoursRemaining < 1) {
     const minutesRemaining = Math.ceil(msRemaining / (1000 * 60));
-    return { expired: false, text: `You have ${minutesRemaining} ${minutesRemaining === 1 ? 'minute' : 'minutes'} left to report an issue` };
+    return { expired: false, text: `This order will auto-complete in ${minutesRemaining} ${minutesRemaining === 1 ? 'minute' : 'minutes'} — report any issues before then` };
   }
 
-  return { expired: false, text: `You have ${hoursRemaining} ${hoursRemaining === 1 ? 'hour' : 'hours'} left to report an issue` };
+  return { expired: false, text: `This order will auto-complete in ${hoursRemaining} ${hoursRemaining === 1 ? 'hour' : 'hours'} — report any issues before then` };
 }
 
 export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderActionsProps) {
@@ -54,8 +54,6 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const userId = userRole === 'buyer' ? order.buyer_id : order.seller_id;
-  const [phoneInput, setPhoneInput] = useState(sellerPhone ?? '');
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
 
   async function callAction(action: string, body?: Record<string, unknown>) {
     setLoading(true);
@@ -84,31 +82,7 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
   }
 
   async function handleAccept() {
-    const phone = phoneInput.trim();
-    if (!phone) {
-      setShowPhoneInput(true);
-      return;
-    }
-
-    // Save phone to profile if it was newly entered
-    if (!sellerPhone) {
-      try {
-        const res = await apiFetch('/api/profile/phone', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone }),
-        });
-        if (!res.ok) {
-          setError('Failed to save phone number. Please try again.');
-          return;
-        }
-      } catch {
-        setError('Connection error. Please try again.');
-        return;
-      }
-    }
-
-    await callAction('accept', { sellerPhone: phone });
+    await callAction('accept', { sellerPhone: sellerPhone });
   }
 
   async function handleDecline() {
@@ -119,20 +93,24 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
   // Seller actions
   if (userRole === 'seller') {
     if (status === 'pending_seller') {
+      if (!sellerPhone) {
+        return (
+          <Alert variant="info">
+            <p className="text-sm">
+              Add your phone number to accept orders.{' '}
+              <Link
+                href={`/account/settings?returnUrl=/orders/${order.id}`}
+                className="font-medium text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+              >
+                Go to settings
+              </Link>
+            </p>
+          </Alert>
+        );
+      }
+
       return (
         <div className="space-y-3">
-          {showPhoneInput && (
-            <div>
-              <PhoneInput
-                label="Your phone number"
-                value={phoneInput}
-                onChange={setPhoneInput}
-                defaultCountry={(order.seller_profile?.country as CountryCode) ?? 'LV'}
-                error={!phoneInput.trim() ? 'Phone is required to create a shipping parcel' : undefined}
-              />
-            </div>
-          )}
-
           <div className="flex gap-3">
             <Button
               variant="primary"
@@ -325,7 +303,7 @@ export function OrderActions({ order, userRole, sellerPhone, dispute }: OrderAct
               </Button>
             )}
           </div>
-          {!disputeWindow.expired && (
+          {disputeWindow.text && (
             <p className="text-xs text-semantic-text-muted">{disputeWindow.text}</p>
           )}
           {error && <p className="text-sm text-semantic-error">{error}</p>}

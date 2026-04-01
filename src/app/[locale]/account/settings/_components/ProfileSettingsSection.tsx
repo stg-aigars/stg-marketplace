@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardBody, Input, PhoneInput, Button, Alert } from '@/components/ui';
 import { updateDisplayName } from '@/lib/auth/actions';
 import { apiFetch } from '@/lib/api-fetch';
@@ -10,9 +11,11 @@ import type { CountryCode } from '@/lib/country-utils';
 
 interface ProfileSettingsSectionProps {
   profile: UserProfile;
+  returnUrl?: string;
 }
 
-export function ProfileSettingsSection({ profile }: ProfileSettingsSectionProps) {
+export function ProfileSettingsSection({ profile, returnUrl }: ProfileSettingsSectionProps) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(profile.full_name || '');
   const [nameError, setNameError] = useState('');
   const [nameSuccess, setNameSuccess] = useState('');
@@ -57,6 +60,8 @@ export function ProfileSettingsSection({ profile }: ProfileSettingsSectionProps)
 
       if (!res.ok) {
         setPhoneError(data.error || 'Something went wrong. Please try again');
+      } else if (returnUrl) {
+        router.push(returnUrl);
       } else {
         setPhoneSuccess(data.success || 'Phone number updated');
       }

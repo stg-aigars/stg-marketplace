@@ -2,10 +2,12 @@ import { Card, CardBody } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
 import type { TrackingStateType } from '@/lib/services/unisend/types';
 import type { TrackingEventRow } from '@/lib/services/tracking';
+import type { OrderStatus } from '@/lib/orders/types';
 
 interface TrackingTimelineProps {
   events: TrackingEventRow[];
   trackingUrl: string | null;
+  status: OrderStatus;
 }
 
 const STATE_LABELS: Partial<Record<TrackingStateType, string>> = {
@@ -19,13 +21,41 @@ const STATE_LABELS: Partial<Record<TrackingStateType, string>> = {
 /** States that indicate an error/terminal condition */
 const ERROR_STATES: TrackingStateType[] = ['PARCEL_CANCELED', 'RETURNING'];
 
-export function TrackingTimeline({ events, trackingUrl }: TrackingTimelineProps) {
+export function TrackingTimeline({ events, trackingUrl, status }: TrackingTimelineProps) {
   // Filter out LABEL_CREATED (system noise) and unknown states
   // Events arrive pre-sorted chronologically from the DB query
   const displayEvents = events
     .filter((e) => STATE_LABELS[e.state_type as TrackingStateType]);
 
-  if (displayEvents.length === 0) return null;
+  // Empty state: show placeholder for shipped/delivered, hide for completed
+  if (displayEvents.length === 0) {
+    if (status !== 'shipped' && status !== 'delivered') return null;
+
+    return (
+      <Card>
+        <CardBody>
+          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            Parcel tracking
+          </h2>
+          <p className="text-sm text-semantic-text-muted">
+            Waiting for tracking updates
+          </p>
+          {trackingUrl && (
+            <div className="mt-3 pt-3 border-t border-semantic-border-subtle">
+              <a
+                href={trackingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+              >
+                View full tracking details
+              </a>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <Card>

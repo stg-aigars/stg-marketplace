@@ -10,6 +10,9 @@ export interface CheckoutSession {
   buyer_id: string;
   terminal_id: string;
   terminal_name: string;
+  terminal_address: string | null;
+  terminal_city: string | null;
+  terminal_postal_code: string | null;
   terminal_country: string;
   buyer_phone: string;
   amount_cents: number;

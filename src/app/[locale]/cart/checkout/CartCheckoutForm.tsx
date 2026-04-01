@@ -38,6 +38,9 @@ export function CartCheckoutForm({
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminalId, setSelectedTerminalId] = useState('');
   const [selectedTerminalName, setSelectedTerminalName] = useState('');
+  const [selectedTerminalAddress, setSelectedTerminalAddress] = useState('');
+  const [selectedTerminalCity, setSelectedTerminalCity] = useState('');
+  const [selectedTerminalPostalCode, setSelectedTerminalPostalCode] = useState('');
   const [selectedTerminalCountry, setSelectedTerminalCountry] = useState('');
   const [useWallet, setUseWallet] = useState(walletBalanceCents > 0);
   const [loading, setLoading] = useState(false);
@@ -105,6 +108,9 @@ export function CartCheckoutForm({
       listingIds: availableItems.map((i) => i.listingId),
       terminalId: selectedTerminalId,
       terminalName: selectedTerminalName,
+      terminalAddress: selectedTerminalAddress,
+      terminalCity: selectedTerminalCity,
+      terminalPostalCode: selectedTerminalPostalCode,
       terminalCountry: selectedTerminalCountry || buyerCountry,
       buyerPhone: phone.trim(),
       turnstileToken,
@@ -231,6 +237,9 @@ export function CartCheckoutForm({
           onSelect={(t) => {
             setSelectedTerminalId(t.id);
             setSelectedTerminalName(t.name);
+            setSelectedTerminalAddress(t.address);
+            setSelectedTerminalCity(t.city);
+            setSelectedTerminalPostalCode(t.postalCode ?? '');
             setSelectedTerminalCountry(t.countryCode);
           }}
           fetchFailed={terminalsFetchFailed}
