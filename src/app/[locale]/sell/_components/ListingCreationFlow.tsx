@@ -142,8 +142,6 @@ export function ListingCreationFlow({
 
   const handleEditStep = (targetStep: number) => setStep(targetStep);
 
-  const gameImageUrl = formData.version_thumbnail ?? formData.game_image ?? formData.game_thumbnail ?? null;
-
   const handlePublish = async () => {
     if (publishing) return;
     if (!formData.bgg_game_id || !formData.condition) return;
@@ -275,7 +273,6 @@ export function ListingCreationFlow({
             <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
             <ReviewPriceStep
               formData={formData}
-              gameImageUrl={gameImageUrl}
               onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
               onPublish={handlePublish}
               publishing={publishing}

@@ -15,7 +15,6 @@ import type { FormData } from './ListingCreationFlow';
 
 interface ReviewPriceStepProps {
   formData: FormData;
-  gameImageUrl: string | null;
   onPriceChange: (cents: number) => void;
   onPublish: () => void;
   publishing: boolean;
@@ -162,7 +161,6 @@ function PriceInputSection({
 
 export function ReviewPriceStep({
   formData,
-  gameImageUrl,
   onPriceChange,
   onPublish,
   publishing,
@@ -181,7 +179,6 @@ export function ReviewPriceStep({
   const hasEdition =
     formData.version_name || formData.publisher || formData.language || formData.edition_year;
 
-  const fullSizeImageUrl = toBggFullSize(gameImageUrl);
   const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? '';
 
   return (
@@ -191,16 +188,20 @@ export function ReviewPriceStep({
       </h2>
 
       {/* Price input */}
-      <PriceInputSection
-        priceCents={effectivePrice}
-        onPriceChange={onPriceChange}
-        lockedPrice={lockedPrice}
-        isAuction={isAuction}
-        auctionDurationDays={auctionDurationDays}
-        onDurationChange={onDurationChange}
-        bggGameId={formData.bgg_game_id}
-        condition={formData.condition}
-      />
+      <Card>
+        <CardBody>
+          <PriceInputSection
+            priceCents={effectivePrice}
+            onPriceChange={onPriceChange}
+            lockedPrice={lockedPrice}
+            isAuction={isAuction}
+            auctionDurationDays={auctionDurationDays}
+            onDurationChange={onDurationChange}
+            bggGameId={formData.bgg_game_id}
+            condition={formData.condition}
+          />
+        </CardBody>
+      </Card>
 
       {/* Listing summary */}
       <Card>
@@ -318,44 +319,30 @@ export function ReviewPriceStep({
             <hr className="border-semantic-border-subtle" />
 
             {/* Photos */}
-            <div>
-              <p className="text-sm font-medium text-semantic-text-primary mb-2">
-                Photos {formData.photos.length > 0 && `(${formData.photos.length})`}
-              </p>
-              {formData.photos.length > 0 ? (
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {formData.photos.map((url, index) => (
-                    <div key={url} className="aspect-square relative rounded-lg overflow-hidden border border-semantic-border-subtle">
-                      <Image
-                        src={url}
-                        alt={`Photo ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 25vw, 16vw"
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : fullSizeImageUrl ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
-                    <Image
-                      src={fullSizeImageUrl}
-                      alt="Game cover"
-                      fill
-                      className="object-contain"
-                      sizes="64px"
-                      unoptimized={isBggImage(fullSizeImageUrl)}
-                    />
-                  </div>
-                  <p className="text-sm text-semantic-text-muted">
-                    Using game cover image
+            {formData.photos.length > 0 && (
+              <>
+                <div>
+                  <p className="text-sm font-medium text-semantic-text-primary mb-2">
+                    Photos ({formData.photos.length})
                   </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {formData.photos.map((url, index) => (
+                      <div key={url} className="aspect-square relative rounded-lg overflow-hidden border border-semantic-border-subtle">
+                        <Image
+                          src={url}
+                          alt={`Photo ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 25vw, 16vw"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ) : null}
-            </div>
 
-            <hr className="border-semantic-border-subtle" />
+                <hr className="border-semantic-border-subtle" />
+              </>
+            )}
 
             {/* Price summary */}
             <div>
