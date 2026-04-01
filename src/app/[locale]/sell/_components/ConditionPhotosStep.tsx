@@ -43,9 +43,11 @@ export function ConditionPhotosStep({
 
   const photosRequired = condition ? conditionRequiresPhotos(condition) : false;
   const descriptionRequired = condition ? conditionRequiresDescription(condition) : false;
-  const photoHeading = photosRequired ? 'Photos (required)' : 'Photos (optional)';
   const fullSizeImageUrl = toBggFullSize(gameImageUrl);
   const showBggFallback = condition && !photosRequired && photos.length === 0 && fullSizeImageUrl;
+
+  const photoLabel = photosRequired ? 'Photos (required)' : 'Photos (optional)';
+  const notesLabel = descriptionRequired ? 'Notes for buyer' : 'Notes for buyer (optional)';
 
   return (
     <div className="space-y-6">
@@ -58,19 +60,24 @@ export function ConditionPhotosStep({
         </p>
       </div>
 
-      {/* Condition selector */}
-      <ConditionStep
-        compact
-        selectedCondition={condition}
-        onSelect={onConditionChange}
-      />
+      {/* 1. Condition selector */}
+      <div>
+        <p className="text-sm font-semibold text-semantic-text-secondary mb-3">1. Condition</p>
+        <ConditionStep
+          compact
+          hideHeading
+          selectedCondition={condition}
+          onSelect={onConditionChange}
+        />
+      </div>
 
-      {/* Photo upload — visible after condition is selected */}
+      {/* 2. Photo upload — visible after condition is selected */}
       {condition && (
-        <div ref={photoSectionRef} className="space-y-3">
+        <div ref={photoSectionRef} className="border-t border-semantic-border-subtle pt-4 mt-4 space-y-3">
+          <p className="text-sm font-semibold text-semantic-text-secondary mb-3">2. {photoLabel}</p>
           <PhotoUploadStep
             compact
-            heading={photoHeading}
+            heading={null}
             photos={photos}
             onPhotosChange={onPhotosChange}
           />
@@ -108,20 +115,12 @@ export function ConditionPhotosStep({
         </div>
       )}
 
-      {/* Seller notes textarea */}
+      {/* 3. Seller notes textarea */}
       {condition && (
-        <div>
-          <label
-            htmlFor="listing-description"
-            className="block text-sm font-medium text-semantic-text-primary mb-1.5"
-          >
-            Notes for buyer{' '}
-            {descriptionRequired ? (
-              <span className="text-semantic-error">*</span>
-            ) : (
-              <span className="font-normal text-semantic-text-muted">(optional)</span>
-            )}
-          </label>
+        <div className="border-t border-semantic-border-subtle pt-4 mt-4">
+          <p className="text-sm font-semibold text-semantic-text-secondary mb-3">
+            3. {notesLabel}{descriptionRequired && <span className="text-semantic-error"> *</span>}
+          </p>
           <textarea
             id="listing-description"
             value={description}

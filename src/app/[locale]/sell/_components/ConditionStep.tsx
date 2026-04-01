@@ -11,7 +11,16 @@ interface ConditionStepProps {
   selectedCondition: ListingCondition | null;
   onSelect: (condition: ListingCondition) => void;
   compact?: boolean;
+  hideHeading?: boolean;
 }
+
+const conditionBg: Record<string, string> = {
+  likeNew: 'bg-condition-like-new-bg',
+  veryGood: 'bg-condition-very-good-bg',
+  good: 'bg-condition-good-bg',
+  acceptable: 'bg-condition-acceptable-bg',
+  forParts: 'bg-condition-for-parts-bg',
+};
 
 const conditionExamples: Record<string, string> = {
   likeNew: 'Shrink wrap removed but all components still in original packaging. No signs of play.',
@@ -21,13 +30,13 @@ const conditionExamples: Record<string, string> = {
   forParts: 'Missing pieces or damaged beyond normal play. Useful for replacing lost components or crafts.',
 };
 
-export function ConditionStep({ selectedCondition, onSelect, compact }: ConditionStepProps) {
+export function ConditionStep({ selectedCondition, onSelect, compact, hideHeading }: ConditionStepProps) {
   const [showGuide, setShowGuide] = useState(false);
 
   return (
     <div className="space-y-4">
       {compact ? (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Condition</h2>
+        !hideHeading && <h2 className="text-base font-semibold text-semantic-text-heading">Condition</h2>
       ) : (
         <>
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
@@ -52,10 +61,10 @@ export function ConditionStep({ selectedCondition, onSelect, compact }: Conditio
                   key={condition}
                   type="button"
                   onClick={() => onSelect(condition)}
-                  className={`rounded-md transition-all duration-250 ease-out-custom ${
+                  className={`p-1.5 rounded-lg transition-colors duration-250 ease-out-custom ${
                     isSelected
-                      ? 'ring-2 ring-semantic-brand ring-offset-1'
-                      : 'hover:ring-1 hover:ring-semantic-border-default'
+                      ? conditionBg[badgeKey]
+                      : 'bg-transparent hover:bg-semantic-bg-secondary'
                   }`}
                 >
                   <Badge condition={badgeKey}>{config.label}</Badge>
