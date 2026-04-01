@@ -6,8 +6,8 @@ import { Card, Badge } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, GameMeta, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { getConditionLabel } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 import { FavoriteButton } from './FavoriteButton';
 
 interface ListingCardProps {
@@ -19,7 +19,7 @@ interface ListingCardProps {
   condition: ListingCondition;
   priceCents: number;
   sellerCountry: string;
-  /** Number of photos (shows count badge when > 1) */
+  /** Number of photos (shows count badge when > 0) */
   photoCount?: number;
   isFavorited?: boolean;
   isAuthenticated?: boolean;
@@ -48,9 +48,8 @@ function ListingCard({
   bidCount = 0,
   auctionEndAt,
 }: ListingCardProps) {
-  const imageUrl = firstPhoto || gameThumbnail;
-  const badgeKey = conditionToBadgeKey[condition];
-  const conditionLabel = conditionConfig[badgeKey].label;
+  const imageUrl = gameThumbnail ?? firstPhoto ?? null;
+  const conditionLabel = getConditionLabel(condition);
   const flagClass = getCountryFlag(sellerCountry);
   const countryName = getCountryName(sellerCountry);
 
@@ -68,7 +67,7 @@ function ListingCard({
               src={imageUrl}
               alt={gameTitle}
               fill
-              className="object-cover transition-transform duration-350 ease-out-custom group-hover:scale-105"
+              className="object-contain transition-transform duration-350 ease-out-custom group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               unoptimized={isBggImage(imageUrl)}
             />
@@ -82,8 +81,11 @@ function ListingCard({
               </span>
             </div>
           )}
-          {!unavailable && photoCount !== undefined && photoCount > 1 && (
-            <span className="absolute bottom-2 left-2 flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
+          <span className="absolute bottom-2 left-2 bg-polar-night/70 backdrop-blur-sm text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
+            {conditionLabel}
+          </span>
+          {!unavailable && photoCount !== undefined && photoCount > 0 && (
+            <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
               <Camera size={12} />
               {photoCount}
             </span>
@@ -105,16 +107,6 @@ function ListingCard({
             <GameMeta year={gameYear} className="mt-0.5" />
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <Badge condition={badgeKey}>{conditionLabel}</Badge>
-            {isAuction && (
-              <Badge variant="default">
-                <Gavel size={10} className="mr-0.5" />
-                Auction
-              </Badge>
-            )}
-          </div>
-
           <div className="flex items-center justify-between">
             <div>
               {isAuction && bidCount === 0 && (
@@ -122,7 +114,7 @@ function ListingCard({
               )}
               <Price cents={priceCents} />
               {isAuction && (
-                <span className="text-xs text-semantic-text-muted ml-1">
+                <span className="text-xs text-semantic-text-muted ml-3">
                   {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}
                 </span>
               )}
@@ -136,8 +128,16 @@ function ListingCard({
             )}
           </div>
 
-          {isAuction && auctionEndAt && (
-            <AuctionCountdown endAt={auctionEndAt} className="text-xs" />
+          {isAuction && (
+            <div className="flex items-center gap-1.5">
+              <Badge variant="default">
+                <Gavel size={10} className="mr-0.5" />
+                Auction
+              </Badge>
+              {auctionEndAt && (
+                <AuctionCountdown endAt={auctionEndAt} className="text-xs" />
+              )}
+            </div>
           )}
         </div>
       </Card>

@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { Badge } from '@/components/ui';
 import { GameThumb } from './atoms/GameThumb';
 import { GameTitle } from './atoms/GameTitle';
 import { Price } from './atoms/Price';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { getConditionLabel } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 
 interface ListingRowProps {
   listing: {
@@ -20,9 +19,8 @@ interface ListingRowProps {
 }
 
 function ListingRow({ listing, className = '' }: ListingRowProps) {
-  const imageUrl = listing.photos?.[0] || listing.bgg_thumbnail;
-  const badgeKey = conditionToBadgeKey[listing.condition];
-  const conditionLabel = conditionConfig[badgeKey].label;
+  const imageUrl = listing.bgg_thumbnail ?? listing.photos?.[0];
+  const conditionLabel = getConditionLabel(listing.condition);
 
   return (
     <Link
@@ -34,7 +32,7 @@ function ListingRow({ listing, className = '' }: ListingRowProps) {
         <GameTitle name={listing.game_name} size="sm" serif />
         <div className="flex items-center gap-2 mt-1">
           <Price cents={listing.price_cents} size="sm" />
-          <Badge condition={badgeKey}>{conditionLabel}</Badge>
+          <span className="text-xs text-semantic-text-muted">{conditionLabel}</span>
         </div>
       </div>
     </Link>

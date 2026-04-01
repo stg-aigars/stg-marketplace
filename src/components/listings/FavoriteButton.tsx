@@ -59,7 +59,7 @@ function FavoriteButton({
       aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
       className={`${
         overlay
-          ? 'absolute top-2 right-2 z-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm'
+          ? 'absolute top-2 right-2 z-10 rounded-lg bg-white/80 backdrop-blur-sm shadow-sm'
           : ''
       } min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors duration-250 ease-out-custom ${
         isPending ? 'opacity-50' : ''

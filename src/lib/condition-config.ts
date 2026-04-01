@@ -1,3 +1,5 @@
+import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+
 export const conditionConfig = {
   likeNew: {
     label: 'Like New',
@@ -25,3 +27,8 @@ export const conditionConfig = {
     description: 'Incomplete or damaged. Sold as-is for parts/crafts.',
   },
 };
+
+/** Get the display label for a listing condition (e.g., "Like New", "Very Good"). */
+export function getConditionLabel(condition: ListingCondition): string {
+  return conditionConfig[conditionToBadgeKey[condition]].label;
+}

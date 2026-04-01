@@ -16,7 +16,7 @@ interface ListingRow {
   photos: string[];
   country: string;
   status: string;
-  games: { thumbnail: string | null };
+  games: { image: string | null };
 }
 
 interface MyListingsTabsProps {
@@ -67,7 +67,7 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.thumbnail ?? null}
+                gameThumbnail={listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}

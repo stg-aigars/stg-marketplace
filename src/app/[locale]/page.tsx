@@ -13,7 +13,10 @@ interface RecentListingRow {
   price_cents: number;
   photos: string[];
   country: string;
-  games: { thumbnail: string | null };
+  listing_type: string;
+  bid_count: number;
+  auction_end_at: string | null;
+  games: { image: string | null };
 }
 
 export default async function HomePage() {
@@ -22,10 +25,10 @@ export default async function HomePage() {
   const supabase = await createClient();
   const { data: recentListings } = await supabase
     .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, games(thumbnail)')
+    .select('id, game_name, game_year, condition, price_cents, photos, country, listing_type, bid_count, auction_end_at, games(image)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
-    .limit(6)
+    .limit(8)
     .returns<RecentListingRow[]>();
 
   return (
@@ -78,19 +81,22 @@ export default async function HomePage() {
               Browse all
             </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {recentListings.map((listing) => (
               <ListingCard
                 key={listing.id}
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.thumbnail ?? null}
+                gameThumbnail={listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                isAuction={listing.listing_type === 'auction'}
+                bidCount={listing.bid_count}
+                auctionEndAt={listing.auction_end_at}
               />
             ))}
           </div>

@@ -29,7 +29,7 @@ interface SellerListing {
   price_cents: number;
   photos: string[];
   country: string;
-  games: { thumbnail: string | null } | null;
+  games: { image: string | null } | null;
 }
 
 export async function generateMetadata(
@@ -98,7 +98,7 @@ export default async function SellerProfilePage(
     getSellerCompletedSales(id),
     supabase
       .from('listings')
-      .select('id, game_name, game_year, condition, price_cents, photos, country, games(thumbnail)')
+      .select('id, game_name, game_year, condition, price_cents, photos, country, games(image)')
       .eq('seller_id', id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -216,7 +216,7 @@ export default async function SellerProfilePage(
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.thumbnail ?? null}
+                gameThumbnail={listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}
