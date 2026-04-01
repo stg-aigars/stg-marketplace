@@ -119,6 +119,7 @@ export async function sendOrderShippedToBuyer(params: {
   gameName: string;
   barcode?: string;
   trackingUrl?: string;
+  terminalName?: string;
 }): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
@@ -130,6 +131,7 @@ export async function sendOrderShippedToBuyer(params: {
       gameName: params.gameName,
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
+      terminalName: params.terminalName,
       appUrl: env.app.url,
     }),
   });

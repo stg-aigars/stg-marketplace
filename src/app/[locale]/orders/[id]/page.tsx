@@ -4,6 +4,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getOrder } from '@/lib/services/orders';
 import { getDispute } from '@/lib/services/dispute';
 import { getReviewForOrder } from '@/lib/reviews/service';
+import { getTrackingEvents } from '@/lib/services/tracking';
 import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
 
@@ -46,10 +47,12 @@ export default async function OrderDetailPage(
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
-  // Fetch dispute and review data in parallel (independent queries)
-  const [dispute, existingReview] = await Promise.all([
+  // Fetch dispute, review, and tracking data in parallel (independent queries)
+  const hasTracking = !!order.barcode;
+  const [dispute, existingReview, trackingEvents] = await Promise.all([
     getDispute(id),
     getReviewForOrder(id),
+    hasTracking ? getTrackingEvents(id) : Promise.resolve([]),
   ]);
   const orderWithDispute = { ...order, dispute };
 
@@ -68,6 +71,7 @@ export default async function OrderDetailPage(
       sellerPhone={sellerPhone}
       existingReview={existingReview}
       isReviewEligible={isReviewEligible}
+      trackingEvents={trackingEvents}
     />
   );
 }

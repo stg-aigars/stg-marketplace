@@ -14,6 +14,7 @@ interface OrderShippedBuyerProps {
   gameName: string;
   barcode?: string;
   trackingUrl?: string;
+  terminalName?: string;
   appUrl: string;
 }
 
@@ -24,6 +25,7 @@ export function OrderShippedBuyer({
   gameName,
   barcode,
   trackingUrl,
+  terminalName,
   appUrl,
 }: OrderShippedBuyerProps) {
   const orderUrl = `${appUrl}/orders/${orderId}`;
@@ -33,7 +35,9 @@ export function OrderShippedBuyer({
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        Your game is on its way. The seller has dropped it off at the parcel terminal.
+        {terminalName
+          ? `Your game is on its way. Your parcel was scanned at ${terminalName}.`
+          : 'Your game is on its way. The seller has dropped it off at the parcel terminal.'}
       </Text>
 
       <div style={s.orderCard}>

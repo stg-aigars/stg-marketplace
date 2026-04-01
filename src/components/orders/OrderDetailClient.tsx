@@ -13,6 +13,8 @@ import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
 import { OrderTimeline } from './OrderTimeline';
 import { ShippingInfo } from './ShippingInfo';
+import { TrackingTimeline } from './TrackingTimeline';
+import type { TrackingEventRow } from '@/lib/services/tracking';
 import { OrderActions } from './OrderActions';
 import { DisputeDetails } from './DisputeDetails';
 import { ReviewForm, ReviewItem } from '@/components/reviews';
@@ -25,6 +27,7 @@ interface OrderDetailClientProps {
   sellerPhone: string | null;
   existingReview: ReviewRow | null;
   isReviewEligible: boolean;
+  trackingEvents: TrackingEventRow[];
 }
 
 /** Contextual status message for the current user */
@@ -55,7 +58,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
   return messages[role]?.[status] ?? null;
 }
 
-export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible }: OrderDetailClientProps) {
+export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
   const statusMessage = getStatusMessage(status, userRole);
@@ -182,6 +185,14 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             />
           </CardBody>
         </Card>
+
+        {/* Parcel tracking events (shown when shipping is active) */}
+        {order.barcode && ['shipped', 'delivered', 'completed'].includes(status) && (
+          <TrackingTimeline
+            events={trackingEvents}
+            trackingUrl={order.tracking_url}
+          />
+        )}
 
         {/* Shipping info (shown after accept) */}
         <ShippingInfo
