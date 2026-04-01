@@ -21,6 +21,7 @@ export interface EnrichedGame {
   thumbnail: string | null;
   image: string | null;
   player_count: string | null;
+  alternateNames: string[];
 }
 
 interface GameSearchStepProps {
@@ -141,6 +142,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
           thumbnail: data.game?.thumbnail ?? game.thumbnail,
           image: data.game?.image ?? null,
           player_count: data.game?.player_count ?? game.player_count,
+          alternateNames: data.game?.alternate_names ?? [],
         };
         setSelectedGame(enriched);
         onSelect(enriched);
@@ -180,7 +182,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                   alt={selectedGame.name}
                   width={64}
                   height={64}
-                  className="w-16 h-16 rounded-lg object-cover shrink-0"
+                  className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
                 />
               )}
               <div className="flex-1 min-w-0">
@@ -276,13 +278,13 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                     <Image
                       src={game.thumbnail}
                       alt={game.name}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 rounded object-cover shrink-0"
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded bg-semantic-bg-surface shrink-0 flex items-center justify-center">
-                      <ImageSquare size={24} className="text-semantic-text-muted" />
+                    <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                      <ImageSquare size={28} className="text-semantic-text-muted" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">

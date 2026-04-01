@@ -26,7 +26,7 @@ export default async function FromWantedOfferPage({ params }: Props) {
       id, price_cents, counter_price_cents, condition, status, buyer_id, seller_id,
       wanted_listings:wanted_listing_id (
         bgg_game_id, game_name, game_year,
-        games:bgg_game_id (thumbnail, image, player_count)
+        games:bgg_game_id (thumbnail, image, player_count, alternate_names)
       )
     `)
     .eq('id', offerId)
@@ -44,7 +44,7 @@ export default async function FromWantedOfferPage({ params }: Props) {
     bgg_game_id: number;
     game_name: string;
     game_year: number | null;
-    games: { thumbnail: string | null; image: string | null; player_count: string | null } | null;
+    games: { thumbnail: string | null; image: string | null; player_count: string | null; alternate_names: string[] | null } | null;
   };
 
   if (!wantedListing) notFound();
@@ -59,6 +59,7 @@ export default async function FromWantedOfferPage({ params }: Props) {
     thumbnail: wantedListing.games?.thumbnail ?? null,
     image: wantedListing.games?.image ?? null,
     player_count: wantedListing.games?.player_count ?? null,
+    alternateNames: wantedListing.games?.alternate_names ?? [],
   };
 
   return (
