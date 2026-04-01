@@ -9,6 +9,7 @@ import { CartProvider } from '@/contexts/CartContext';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Toaster } from '@/components/ui/toaster';
+import { StaleDeploymentDetector } from '@/components/StaleDeploymentDetector';
 import '../globals.css';
 
 // Cookie consent: not required. Only browser cookies are Supabase auth session
@@ -91,6 +92,7 @@ export default async function LocaleLayout(
               </main>
               <SiteFooter />
               <Toaster />
+              <StaleDeploymentDetector />
             </CartProvider>
           </AuthProvider>
         </NextIntlClientProvider>
