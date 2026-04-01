@@ -139,7 +139,6 @@ export function VersionStep({
     return versions.filter((v) => getVersionLanguages(v).includes(languageFilter));
   }, [versions, languageFilter]);
 
-  // Find the selected version
   const selectedVersion = useMemo(() => {
     if (selectedVersionSource !== 'bgg' || selectedVersionId === null) return null;
     return versions.find((v) => v.id === selectedVersionId) ?? null;
@@ -576,11 +575,11 @@ function AlternateNameSelector({
 }) {
   const [showAll, setShowAll] = useState(false);
 
-  if (alternateNames.length === 0) return null;
-
-  const allNames = [primaryName, ...alternateNames];
-  const latinNames = allNames.filter(isLatinScript);
+  const allNames = useMemo(() => [primaryName, ...alternateNames], [primaryName, alternateNames]);
+  const latinNames = useMemo(() => allNames.filter(isLatinScript), [allNames]);
   const nonLatinCount = allNames.length - latinNames.length;
+
+  if (alternateNames.length === 0) return null;
 
   // If selected name is non-Latin, always show all
   const effectiveShowAll = showAll || (selectedName !== primaryName && !isLatinScript(selectedName));
@@ -616,13 +615,9 @@ function AlternateNameSelector({
         ))}
       </div>
       {nonLatinCount > 0 && !effectiveShowAll && (
-        <button
-          type="button"
-          onClick={() => setShowAll(true)}
-          className="text-xs text-semantic-text-muted hover:text-semantic-text-secondary transition-colors duration-250 ease-out-custom"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setShowAll(true)}>
           Show all names ({allNames.length})
-        </button>
+        </Button>
       )}
     </div>
   );
