@@ -29,6 +29,7 @@ interface PhotoUploadStepProps {
   onPhotosChange: (photos: string[]) => void;
   compact?: boolean;
   heading?: string | null;
+  requiredMin?: number;
 }
 
 function SortablePhoto({
@@ -102,7 +103,7 @@ function SortablePhoto({
   );
 }
 
-export function PhotoUploadStep({ photos, onPhotosChange, compact, heading }: PhotoUploadStepProps) {
+export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requiredMin }: PhotoUploadStepProps) {
   const [uploading, setUploading] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,6 +228,12 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading }: Ph
         {photos.length > 1 && ' — drag to reorder'}
       </p>
 
+      {requiredMin != null && photos.length < requiredMin && (
+        <p className="text-sm text-semantic-text-secondary">
+          At least {requiredMin} photo needed
+        </p>
+      )}
+
       {/* Upload area — custom styled button needed for dropzone layout; Button component doesn't support this */}
       {photos.length < MAX_PHOTOS && (
         // eslint-disable-next-line jsx-a11y/prefer-tag-over-role
@@ -246,7 +253,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading }: Ph
           ) : (
             <>
               <CloudArrowUp size={36} className="text-semantic-brand" />
-              <span className="text-sm">Tap to upload photos</span>
+              <span className="text-sm">Upload photos</span>
             </>
           )}
         </button>

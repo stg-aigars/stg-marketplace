@@ -1,19 +1,16 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { Card, CardBody } from '@/components/ui';
 import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
-import { toBggFullSize, isBggImage } from '@/lib/bgg/utils';
 
 interface ConditionPhotosStepProps {
   condition: ListingCondition | null;
   photos: string[];
   description: string;
-  gameImageUrl: string | null;
   onConditionChange: (condition: ListingCondition) => void;
   onPhotosChange: (photos: string[]) => void;
   onDescriptionChange: (desc: string) => void;
@@ -23,7 +20,6 @@ export function ConditionPhotosStep({
   condition,
   photos,
   description,
-  gameImageUrl,
   onConditionChange,
   onPhotosChange,
   onDescriptionChange,
@@ -44,8 +40,6 @@ export function ConditionPhotosStep({
 
   const photosRequired = condition ? conditionRequiresPhotos(condition) : false;
   const descriptionRequired = condition ? conditionRequiresDescription(condition) : false;
-  const fullSizeImageUrl = toBggFullSize(gameImageUrl);
-  const showBggFallback = condition && !photosRequired && photos.length === 0 && fullSizeImageUrl;
 
   const photoLabel = photosRequired ? 'Photos (required)' : 'Photos (optional)';
   const notesLabel = descriptionRequired ? 'Notes for buyer' : 'Notes for buyer (optional)';
@@ -85,6 +79,7 @@ export function ConditionPhotosStep({
               heading={null}
               photos={photos}
               onPhotosChange={onPhotosChange}
+              requiredMin={photosRequired ? 1 : undefined}
             />
 
             {photosRequired ? (
@@ -95,25 +90,6 @@ export function ConditionPhotosStep({
               <p className="text-sm text-semantic-text-muted">
                 Listings with photos get more interest
               </p>
-            )}
-
-            {/* BGG cover fallback preview when no photos and optional */}
-            {showBggFallback && (
-              <div className="flex items-center gap-3 bg-semantic-bg-surface rounded-lg px-3 py-2.5">
-                <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
-                  <Image
-                    src={fullSizeImageUrl}
-                    alt="Game cover"
-                    fill
-                    className="object-contain"
-                    sizes="48px"
-                    unoptimized={isBggImage(fullSizeImageUrl)}
-                  />
-                </div>
-                <p className="text-sm text-semantic-text-muted">
-                  Buyers will see the game cover image
-                </p>
-              </div>
             )}
           </CardBody>
         </Card>

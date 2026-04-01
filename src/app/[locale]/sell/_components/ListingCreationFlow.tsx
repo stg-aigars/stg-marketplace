@@ -264,7 +264,6 @@ export function ListingCreationFlow({
             condition={formData.condition}
             photos={formData.photos}
             description={formData.description}
-            gameImageUrl={gameImageUrl}
             onConditionChange={(condition) => updateFormData({ condition })}
             onPhotosChange={(photos) => updateFormData({ photos })}
             onDescriptionChange={(description) => updateFormData({ description })}
