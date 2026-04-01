@@ -77,9 +77,10 @@ export async function POST(request: Request) {
 
         endedWithBids++;
 
-        // Fetch profiles for emails
-        const profiles = await fetchProfiles(supabase, [auction.highest_bidder_id]);
+        // Fetch winner + seller profiles in one call
+        const profiles = await fetchProfiles(supabase, [auction.highest_bidder_id, auction.seller_id]);
         const winner = profiles.get(auction.highest_bidder_id);
+        const seller = profiles.get(auction.seller_id);
 
         // Notify + email winner
         void notify(auction.highest_bidder_id, 'auction.won', {
@@ -102,9 +103,6 @@ export async function POST(request: Request) {
           gameName: auction.game_name,
           listingId: auction.id,
         });
-
-        const sellerProfiles = await fetchProfiles(supabase, [auction.seller_id]);
-        const seller = sellerProfiles.get(auction.seller_id);
         if (seller?.email) {
           sendAuctionWonToSeller({
             sellerName: seller.full_name,
