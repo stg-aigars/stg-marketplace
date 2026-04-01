@@ -36,6 +36,8 @@ import { WantedOfferReceived } from './templates/wanted-offer-received';
 import { AuctionBidReceived } from './templates/auction-bid-received';
 import { AuctionOutbid } from './templates/auction-outbid';
 import { AuctionWon } from './templates/auction-won';
+import { AuctionWonSeller } from './templates/auction-won-seller';
+import { AuctionLost } from './templates/auction-lost';
 import { AuctionEndedNoBids } from './templates/auction-ended-no-bids';
 import { AuctionPaymentReminder } from './templates/auction-payment-reminder';
 import { AuctionPaymentExpired } from './templates/auction-payment-expired';
@@ -940,6 +942,38 @@ export async function sendAuctionWonToWinner(params: {
     react: React.createElement(AuctionWon, {
       ...params,
       checkoutUrl: `${env.app.url}/checkout/auction/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionWonToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  gameName: string;
+  winningBidCents: number;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Your auction for ${params.gameName} has ended with a winning bid`,
+    react: React.createElement(AuctionWonSeller, {
+      ...params,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionLostNotification(params: {
+  bidderName: string;
+  bidderEmail: string;
+  gameName: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.bidderEmail,
+    subject: `The auction for ${params.gameName} has ended`,
+    react: React.createElement(AuctionLost, {
+      ...params,
+      browseUrl: `${env.app.url}/browse`,
     }),
   });
 }

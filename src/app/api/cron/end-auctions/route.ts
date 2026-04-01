@@ -15,7 +15,8 @@ import { notify, notifyMany } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import {
   sendAuctionWonToWinner,
-  sendAuctionOutbidNotification,
+  sendAuctionWonToSeller,
+  sendAuctionLostNotification,
   sendAuctionEndedNoBidsToSeller,
 } from '@/lib/email';
 
@@ -96,11 +97,23 @@ export async function POST(request: Request) {
           }).catch((err) => console.error('[Cron] Failed to email auction winner:', err));
         }
 
-        // Notify seller that auction ended with a winner
+        // Notify + email seller that auction ended with a winner
         void notify(auction.seller_id, 'auction.won', {
           gameName: auction.game_name,
           listingId: auction.id,
         });
+
+        const sellerProfiles = await fetchProfiles(supabase, [auction.seller_id]);
+        const seller = sellerProfiles.get(auction.seller_id);
+        if (seller?.email) {
+          sendAuctionWonToSeller({
+            sellerName: seller.full_name,
+            sellerEmail: seller.email,
+            gameName: auction.game_name,
+            winningBidCents: auction.current_bid_cents,
+            listingId: auction.id,
+          }).catch((err) => console.error('[Cron] Failed to email auction-won seller:', err));
+        }
 
         // Notify + email all other bidders that they lost
         const { data: otherBids } = await supabase
@@ -113,7 +126,7 @@ export async function POST(request: Request) {
           const uniqueBidders = Array.from(new Set(otherBids.map((b) => b.bidder_id)));
           const notifications = uniqueBidders.map((bidderId) => ({
             userId: bidderId,
-            type: 'auction.outbid' as const,
+            type: 'auction.lost' as const,
             context: {
               gameName: auction.game_name,
               listingId: auction.id,
@@ -121,17 +134,15 @@ export async function POST(request: Request) {
           }));
           void notifyMany(notifications);
 
-          // Email outbid bidders (fire-and-forget)
+          // Email losing bidders (fire-and-forget)
           const bidderProfiles = await fetchProfiles(supabase, uniqueBidders);
           bidderProfiles.forEach((bidder) => {
             if (bidder.email) {
-              sendAuctionOutbidNotification({
+              sendAuctionLostNotification({
                 bidderName: bidder.full_name,
                 bidderEmail: bidder.email,
                 gameName: auction.game_name,
-                currentBidCents: auction.current_bid_cents,
-                listingId: auction.id,
-              }).catch((err) => console.error('[Cron] Failed to email outbid bidder:', err));
+              }).catch((err) => console.error('[Cron] Failed to email losing bidder:', err));
             }
           });
         }
