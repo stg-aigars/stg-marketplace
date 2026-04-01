@@ -51,8 +51,8 @@ function validateListingFields(
     return `Price must be between ${formatCentsToCurrency(MIN_PRICE_CENTS)} and ${formatCentsToCurrency(MAX_PRICE_CENTS)}`;
   }
 
-  if (!data.photos || data.photos.length < 1) {
-    return 'At least one photo is required';
+  if (!data.photos) {
+    data.photos = [];
   }
 
   for (const photo of data.photos) {
@@ -139,6 +139,7 @@ export async function createListing(
     publisher: data.publisher,
     language: data.language,
     edition_year: data.edition_year,
+    version_thumbnail: data.version_thumbnail ?? null,
     condition: data.condition,
     price_cents: isAuction ? data.starting_price_cents : data.price_cents,
     description: data.description,

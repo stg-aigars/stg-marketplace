@@ -48,6 +48,15 @@ export function isBggImage(url: string | null | undefined): boolean {
   return !!url?.includes('geekdo-images.com');
 }
 
+/** Upgrade a BGG image URL to full resolution. Handles __small and __thumb variants. */
+export function toBggFullSize(url: string | null | undefined): string | null {
+  if (!url || !isBggImage(url)) return url ?? null;
+  if (url.includes('__original/')) return url; // Already full-size
+  return url
+    .replace(/__(thumb|small)\//, '__original/')
+    .replace(/\/fit-in\/\d+x\d+\//, '/0x0/');
+}
+
 /**
  * Map BGG weight (1-5 scale) to a human-readable complexity label.
  */

@@ -289,10 +289,10 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
         </DndContext>
       )}
 
-      {/* Minimum photo reminder */}
+      {/* Nudge when no photos */}
       {photos.length === 0 && (
         <p className="text-sm text-semantic-text-muted text-center">
-          At least 1 photo is required to continue
+          Listings with photos get more attention from buyers
         </p>
       )}
     </div>

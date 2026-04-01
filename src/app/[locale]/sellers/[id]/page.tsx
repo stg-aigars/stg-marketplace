@@ -29,6 +29,7 @@ interface SellerListing {
   price_cents: number;
   photos: string[];
   country: string;
+  version_thumbnail: string | null;
   games: { image: string | null } | null;
 }
 
@@ -98,7 +99,7 @@ export default async function SellerProfilePage(
     getSellerCompletedSales(id),
     supabase
       .from('listings')
-      .select('id, game_name, game_year, condition, price_cents, photos, country, games(image)')
+      .select('id, game_name, game_year, condition, price_cents, photos, country, version_thumbnail, games(image)')
       .eq('seller_id', id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -216,7 +217,7 @@ export default async function SellerProfilePage(
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.image ?? null}
+                gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}

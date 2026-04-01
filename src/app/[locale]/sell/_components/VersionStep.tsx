@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
+import { toBggFullSize } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
 import type { VersionData, VersionSource } from '@/lib/listings/types';
 import type { EnrichedGame } from './GameSearchStep';
@@ -155,6 +156,7 @@ export function VersionStep({
       publisher: version.publisher ?? version.publishers?.[0] ?? null,
       language: version.language ?? version.languages?.[0] ?? null,
       edition_year: version.yearPublished ?? null,
+      version_thumbnail: toBggFullSize(version.image) ?? toBggFullSize(version.thumbnail) ?? null,
     });
     collapseWithValidation();
   };
@@ -178,6 +180,7 @@ export function VersionStep({
       publisher: manualPublisher || null,
       language: manualLanguage || null,
       edition_year: manualYear ? parseInt(manualYear, 10) : null,
+      version_thumbnail: null,
     });
     collapseWithValidation();
   };
@@ -190,6 +193,7 @@ export function VersionStep({
       publisher: null,
       language: null,
       edition_year: null,
+      version_thumbnail: null,
     });
     collapseWithValidation();
   };
@@ -223,9 +227,9 @@ export function VersionStep({
             <div className="flex items-center gap-4">
               {selectedVersionSource === 'bgg' && selectedVersion ? (
                 <>
-                  {(selectedVersion.thumbnail ?? selectedVersion.image) ? (
+                  {(selectedVersion.image ?? selectedVersion.thumbnail) ? (
                     <Image
-                      src={(selectedVersion.thumbnail ?? selectedVersion.image)!}
+                      src={(selectedVersion.image ?? selectedVersion.thumbnail)!}
                       alt={selectedVersion.name}
                       width={64}
                       height={64}
@@ -513,7 +517,7 @@ function VersionCard({
   selected: boolean;
   onClick: () => void;
 }) {
-  const thumbnail = version.thumbnail ?? version.image;
+  const thumbnail = version.image ?? version.thumbnail;
 
   return (
     <Card

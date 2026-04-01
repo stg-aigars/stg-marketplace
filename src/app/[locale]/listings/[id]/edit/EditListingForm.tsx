@@ -48,6 +48,7 @@ function initialVersion(listing: EditListingFormProps['listing']): VersionData {
     publisher: listing.publisher,
     language: listing.language,
     edition_year: listing.edition_year,
+    version_thumbnail: null,
   };
 }
 
