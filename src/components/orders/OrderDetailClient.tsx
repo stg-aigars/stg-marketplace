@@ -13,7 +13,8 @@ import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
 import { OrderTimeline } from './OrderTimeline';
 import { ShippingInfo } from './ShippingInfo';
-import { TrackingTimeline, type TrackingEvent } from './TrackingTimeline';
+import { TrackingTimeline } from './TrackingTimeline';
+import type { TrackingEventRow } from '@/lib/services/tracking';
 import { OrderActions } from './OrderActions';
 import { DisputeDetails } from './DisputeDetails';
 import { ReviewForm, ReviewItem } from '@/components/reviews';
@@ -26,7 +27,7 @@ interface OrderDetailClientProps {
   sellerPhone: string | null;
   existingReview: ReviewRow | null;
   isReviewEligible: boolean;
-  trackingEvents: TrackingEvent[];
+  trackingEvents: TrackingEventRow[];
 }
 
 /** Contextual status message for the current user */

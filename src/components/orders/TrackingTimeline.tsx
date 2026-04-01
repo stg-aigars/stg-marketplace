@@ -1,18 +1,10 @@
-'use client';
-
 import { Card, CardBody } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
 import type { TrackingStateType } from '@/lib/services/unisend/types';
-
-export interface TrackingEvent {
-  state_type: string;
-  state_text: string | null;
-  location: string | null;
-  event_timestamp: string;
-}
+import type { TrackingEventRow } from '@/lib/services/tracking';
 
 interface TrackingTimelineProps {
-  events: TrackingEvent[];
+  events: TrackingEventRow[];
   trackingUrl: string | null;
 }
 
@@ -29,9 +21,9 @@ const ERROR_STATES: TrackingStateType[] = ['PARCEL_CANCELED', 'RETURNING'];
 
 export function TrackingTimeline({ events, trackingUrl }: TrackingTimelineProps) {
   // Filter out LABEL_CREATED (system noise) and unknown states
+  // Events arrive pre-sorted chronologically from the DB query
   const displayEvents = events
-    .filter((e) => STATE_LABELS[e.state_type as TrackingStateType])
-    .sort((a, b) => new Date(a.event_timestamp).getTime() - new Date(b.event_timestamp).getTime());
+    .filter((e) => STATE_LABELS[e.state_type as TrackingStateType]);
 
   if (displayEvents.length === 0) return null;
 
@@ -42,7 +34,7 @@ export function TrackingTimeline({ events, trackingUrl }: TrackingTimelineProps)
           Parcel tracking
         </h2>
 
-        <div className="flex flex-col gap-0">
+        <div className="flex flex-col">
           {displayEvents.map((event, index) => {
             const stateType = event.state_type as TrackingStateType;
             const isError = ERROR_STATES.includes(stateType);
@@ -60,7 +52,7 @@ export function TrackingTimeline({ events, trackingUrl }: TrackingTimelineProps)
                     }`}
                   />
                   {!isLast && (
-                    <div className="w-0.5 flex-1 min-h-[24px] bg-semantic-brand" />
+                    <div className={`w-0.5 flex-1 min-h-[24px] ${isError ? 'bg-semantic-error' : 'bg-semantic-brand'}`} />
                   )}
                 </div>
 

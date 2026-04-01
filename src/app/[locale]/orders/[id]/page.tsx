@@ -48,10 +48,11 @@ export default async function OrderDetailPage(
   const sellerPhone = order.seller_profile?.phone ?? null;
 
   // Fetch dispute, review, and tracking data in parallel (independent queries)
+  const hasTracking = !!order.barcode;
   const [dispute, existingReview, trackingEvents] = await Promise.all([
     getDispute(id),
     getReviewForOrder(id),
-    getTrackingEvents(id),
+    hasTracking ? getTrackingEvents(id) : Promise.resolve([]),
   ]);
   const orderWithDispute = { ...order, dispute };
 

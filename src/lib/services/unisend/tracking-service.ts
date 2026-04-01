@@ -166,7 +166,7 @@ export async function syncTrackingForOrder(
         const terminalName = receivedEvent.location || undefined;
 
         if (buyerProfile?.email) {
-          sendOrderShippedToBuyer({
+          void sendOrderShippedToBuyer({
             buyerName: buyerProfile.full_name ?? 'Buyer',
             buyerEmail: buyerProfile.email,
             orderNumber: shipped.order_number,
@@ -182,7 +182,7 @@ export async function syncTrackingForOrder(
           gameName: listing?.game_name ?? 'Game',
           orderNumber: shipped.order_number,
           orderId,
-          terminalName: terminalName,
+          terminalName,
         });
 
         console.log(`[Tracking] Auto-shipped order ${orderId} via PARCEL_RECEIVED at ${terminalName ?? 'unknown terminal'}`);

@@ -1,8 +1,15 @@
 import { createServiceClient } from '@/lib/supabase';
-import type { TrackingEvent } from '@/components/orders/TrackingTimeline';
+
+/** DB row shape for tracking events displayed in the order timeline */
+export interface TrackingEventRow {
+  state_type: string;
+  state_text: string | null;
+  location: string | null;
+  event_timestamp: string;
+}
 
 /** Fetch tracking events for an order, sorted chronologically */
-export async function getTrackingEvents(orderId: string): Promise<TrackingEvent[]> {
+export async function getTrackingEvents(orderId: string): Promise<TrackingEventRow[]> {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
