@@ -39,42 +39,76 @@ export function ConditionStep({ selectedCondition, onSelect, compact }: Conditio
         </>
       )}
 
-      <div className="space-y-2">
-        {LISTING_CONDITIONS.map((condition) => {
-          const badgeKey = conditionToBadgeKey[condition];
-          const config = conditionConfig[badgeKey];
-          const isSelected = selectedCondition === condition;
+      {compact ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {LISTING_CONDITIONS.map((condition) => {
+              const badgeKey = conditionToBadgeKey[condition];
+              const config = conditionConfig[badgeKey];
+              const isSelected = selectedCondition === condition;
 
-          return (
-            <Card
-              key={condition}
-              hoverable
-              className={`cursor-pointer transition-all duration-350 ease-out-custom ${
-                isSelected
-                  ? 'border-2 border-semantic-brand shadow-md'
-                  : ''
-              }`}
-              onClick={() => onSelect(condition)}
-            >
-              <CardBody className="py-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge condition={badgeKey}>{config.label}</Badge>
+              return (
+                <button
+                  key={condition}
+                  type="button"
+                  onClick={() => onSelect(condition)}
+                  className={`rounded-md transition-all duration-250 ease-out-custom ${
+                    isSelected
+                      ? 'ring-2 ring-semantic-brand ring-offset-1'
+                      : 'hover:ring-1 hover:ring-semantic-border-default'
+                  }`}
+                >
+                  <Badge condition={badgeKey}>{config.label}</Badge>
+                </button>
+              );
+            })}
+          </div>
+          <div className="min-h-[20px]">
+            {selectedCondition && (
+              <p className="text-sm text-semantic-text-secondary">
+                {conditionConfig[conditionToBadgeKey[selectedCondition]].description}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {LISTING_CONDITIONS.map((condition) => {
+            const badgeKey = conditionToBadgeKey[condition];
+            const config = conditionConfig[badgeKey];
+            const isSelected = selectedCondition === condition;
+
+            return (
+              <Card
+                key={condition}
+                hoverable
+                className={`cursor-pointer transition-all duration-350 ease-out-custom ${
+                  isSelected
+                    ? 'border-2 border-semantic-brand shadow-md'
+                    : ''
+                }`}
+                onClick={() => onSelect(condition)}
+              >
+                <CardBody className="py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge condition={badgeKey}>{config.label}</Badge>
+                      </div>
+                      <p className="text-sm text-semantic-text-secondary">
+                        {config.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-semantic-text-secondary">
-                      {config.description}
-                    </p>
+                    {isSelected && (
+                      <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
+                    )}
                   </div>
-                  {isSelected && (
-                    <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
-                  )}
-                </div>
-              </CardBody>
-            </Card>
-          );
-        })}
-      </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <Button variant="ghost" size="sm" onClick={() => setShowGuide(true)}>
         What do these mean?
