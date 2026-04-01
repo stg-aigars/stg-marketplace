@@ -177,7 +177,7 @@ export async function acceptOrder(
       country: order.terminal_country,
       terminalId: order.terminal_id ?? '',
       terminalName: order.terminal_name ?? '',
-      terminalAddress: '',
+      terminalAddress: order.terminal_address ?? '',
     },
     parcelSize: null,
     items,

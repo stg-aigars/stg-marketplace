@@ -109,7 +109,7 @@ export async function syncTrackingForOrder(
         const buyerProfile = delivered.buyer_profile as { full_name?: string; email?: string } | null;
         const listing = delivered.listings as { game_name?: string } | null;
         if (buyerProfile?.email) {
-          sendOrderDeliveredToBuyer({
+          void sendOrderDeliveredToBuyer({
             buyerName: buyerProfile.full_name ?? 'Buyer',
             buyerEmail: buyerProfile.email,
             orderNumber: delivered.order_number,

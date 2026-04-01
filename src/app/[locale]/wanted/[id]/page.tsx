@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ImageSquare, ArrowLeft } from '@phosphor-icons/react/ssr';
+import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import { Card, CardBody, Badge, ShareButtons } from '@/components/ui';
+import { Card, CardBody, Badge, ShareButtons, BackLink } from '@/components/ui';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import { conditionConfig } from '@/lib/condition-config';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -50,13 +50,7 @@ export default async function WantedDetailPage(props: Props) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <Link
-        href="/wanted"
-        className="inline-flex items-center gap-1.5 text-sm text-semantic-text-muted active:text-semantic-brand sm:hover:text-semantic-brand mb-4"
-      >
-        <ArrowLeft size={16} />
-        Back to wanted games
-      </Link>
+      <BackLink href="/wanted" label="Back to wanted games" />
 
       <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-6">
         {/* Game image */}

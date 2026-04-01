@@ -56,13 +56,15 @@ export default async function OrderDetailPage(
   ]);
   const orderWithDispute = { ...order, dispute };
 
-  // Compute review eligibility
+  // Compute review eligibility — window counts from completion (not delivery)
+  // since reviews are gated to completed status only
+  const reviewWindowStart = order.completed_at ?? order.delivered_at;
   const isReviewEligible =
     userRole === 'buyer' &&
     !existingReview &&
     REVIEW_ELIGIBLE_STATUSES.includes(order.status as typeof REVIEW_ELIGIBLE_STATUSES[number]) &&
-    order.delivered_at != null &&
-    (Date.now() - new Date(order.delivered_at).getTime()) < REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    reviewWindowStart != null &&
+    (Date.now() - new Date(reviewWindowStart).getTime()) < REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
   return (
     <OrderDetailClient
