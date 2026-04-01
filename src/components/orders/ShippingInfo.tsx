@@ -85,13 +85,6 @@ export function ShippingInfo({
             </div>
           )}
 
-          {userRole === 'seller' && parcelId && (
-            <div className="mt-2 p-3 rounded-lg bg-semantic-bg-subtle">
-              <p className="text-sm text-semantic-text-secondary">
-                Drop your parcel at any Unisend terminal. Use parcel ID: <span className="font-semibold">{parcelId}</span>
-              </p>
-            </div>
-          )}
         </div>
       </CardBody>
     </Card>

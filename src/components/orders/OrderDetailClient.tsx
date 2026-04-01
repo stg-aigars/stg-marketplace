@@ -47,7 +47,7 @@ function getCancelledMessage(role: 'buyer' | 'seller', reason: CancellationReaso
 }
 
 /** Contextual status message for the current user */
-function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: CancellationReason | null): string | null {
+function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: CancellationReason | null, parcelId?: number | null): string | null {
   if (status === 'cancelled') {
     return getCancelledMessage(role, cancellationReason ?? null);
   }
@@ -55,7 +55,9 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancell
   const messages: Record<string, Partial<Record<OrderStatus, string>>> = {
     seller: {
       pending_seller: 'Waiting for you to accept this order',
-      accepted: 'Drop your parcel at any Unisend terminal',
+      accepted: parcelId
+        ? `Drop your parcel at any Unisend terminal. Use parcel ID: ${parcelId}`
+        : 'Drop your parcel at any Unisend terminal',
       shipped: 'Waiting for the buyer to pick up the parcel',
       delivered: 'Buyer has picked up the parcel',
       completed: 'Order complete',
@@ -79,7 +81,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancell
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
-  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason);
+  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason, order.unisend_parcel_id);
 
   // Derive items from order_items (preferred) or legacy listings join
   const items = order.order_items ?? [];
