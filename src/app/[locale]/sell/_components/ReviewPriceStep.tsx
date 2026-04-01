@@ -101,14 +101,12 @@ function PriceInputSection({
 
   return (
     <div className="space-y-4">
-      {lockedPrice === undefined && (
-        <PricingAssistant
-          bggGameId={bggGameId}
-          condition={condition ?? null}
-          isAuction={isAuction}
-          onFillPrice={onPriceChange}
-        />
-      )}
+      <PricingAssistant
+        bggGameId={bggGameId}
+        condition={condition ?? null}
+        isAuction={isAuction}
+        onFillPrice={onPriceChange}
+      />
 
       <Input
         label={isAuction ? 'Starting price' : 'Price'}
@@ -184,7 +182,7 @@ export function ReviewPriceStep({
     formData.version_name || formData.publisher || formData.language || formData.edition_year;
 
   const fullSizeImageUrl = toBggFullSize(gameImageUrl);
-  const summaryImageUrl = formData.version_thumbnail ?? formData.game_image ?? formData.game_thumbnail ?? '';
+  const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? '';
 
   return (
     <div className="space-y-6">
@@ -227,31 +225,9 @@ export function ReviewPriceStep({
                   <h3 className="font-semibold text-semantic-text-heading text-lg">
                     {formData.game_name}
                   </h3>
-                  {hasEdition ? (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {formData.version_name && <span>{formData.version_name}</span>}
-                      {formData.publisher && (
-                        <span className="flex items-center gap-1">
-                          <Buildings size={14} className="shrink-0" />
-                          {formData.publisher}
-                        </span>
-                      )}
-                      {formData.language && (
-                        <span className="flex items-center gap-1">
-                          <Translate size={14} className="shrink-0" />
-                          {formData.language}
-                        </span>
-                      )}
-                      {formData.edition_year && (
-                        <span className="flex items-center gap-1">
-                          <CalendarBlank size={14} className="shrink-0" />
-                          {formData.edition_year}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
+                  {formData.game_year && (
                     <p className="text-sm text-semantic-text-muted mt-0.5">
-                      No edition specified
+                      {formData.game_year}
                     </p>
                   )}
                 </div>
@@ -261,6 +237,52 @@ export function ReviewPriceStep({
                 onClick={() => onEditStep(1)}
                 className="text-semantic-brand shrink-0 p-1"
                 aria-label="Edit game"
+              >
+                <PencilSimple size={16} />
+              </button>
+            </div>
+
+            <hr className="border-semantic-border-subtle" />
+
+            {/* Edition */}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-semantic-text-primary mb-1">
+                  Edition
+                </p>
+                {hasEdition ? (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted">
+                    {formData.version_name && <span>{formData.version_name}</span>}
+                    {formData.publisher && (
+                      <span className="flex items-center gap-1">
+                        <Buildings size={14} className="shrink-0" />
+                        {formData.publisher}
+                      </span>
+                    )}
+                    {formData.language && (
+                      <span className="flex items-center gap-1">
+                        <Translate size={14} className="shrink-0" />
+                        {formData.language}
+                      </span>
+                    )}
+                    {formData.edition_year && (
+                      <span className="flex items-center gap-1">
+                        <CalendarBlank size={14} className="shrink-0" />
+                        {formData.edition_year}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-semantic-text-muted">
+                    No edition specified
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => onEditStep(2)}
+                className="text-semantic-brand shrink-0 p-1"
+                aria-label="Edit edition"
               >
                 <PencilSimple size={16} />
               </button>

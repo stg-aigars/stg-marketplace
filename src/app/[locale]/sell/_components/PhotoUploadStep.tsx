@@ -290,8 +290,8 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading }: Ph
         </DndContext>
       )}
 
-      {/* Nudge when no photos */}
-      {photos.length === 0 && (
+      {/* Nudge when no photos — hidden in compact mode where parent provides messaging */}
+      {photos.length === 0 && !compact && (
         <p className="text-sm text-semantic-text-muted text-center">
           Listings with photos get more attention from buyers
         </p>
