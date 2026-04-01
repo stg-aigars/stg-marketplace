@@ -176,6 +176,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Someone placed a higher bid on ${ctx.gameName ?? 'an auction you bid on'}`,
     link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : null,
   },
+  'auction.lost': {
+    title: () => 'Auction ended',
+    body: (ctx) => `The auction for ${ctx.gameName ?? 'a game'} has ended — your bid was not the winning bid`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : null,
+  },
   'auction.won': {
     title: () => 'You won the auction',
     body: (ctx) => `You won ${ctx.gameName ?? 'an auction'} — pay within 24 hours to complete the purchase`,
