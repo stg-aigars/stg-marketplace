@@ -16,6 +16,10 @@ interface VersionStepProps {
   onGameNameChange?: (name: string) => void;
   selectedVersionId: number | null;
   selectedVersionSource: VersionSource | null;
+  /** Persisted version details for collapsed view (survives unmount/remount) */
+  selectedPublisher?: string | null;
+  selectedLanguage?: string | null;
+  selectedEditionYear?: number | null;
   onSelect: (version: VersionData) => void;
   compact?: boolean;
 }
@@ -41,6 +45,9 @@ export function VersionStep({
   onGameNameChange,
   selectedVersionId,
   selectedVersionSource,
+  selectedPublisher,
+  selectedLanguage,
+  selectedEditionYear,
   onSelect,
   compact,
 }: VersionStepProps) {
@@ -203,9 +210,13 @@ export function VersionStep({
   if (canShowCollapsed) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          Edition
-        </h2>
+        {compact ? (
+          <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
+        ) : (
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+            Edition
+          </h2>
+        )}
 
         {/* Selected edition card */}
         <Card>
@@ -236,28 +247,28 @@ export function VersionStep({
               ) : (
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-semantic-text-primary">
-                    {manualPublisher || manualLanguage || manualYear
+                    {selectedPublisher || selectedLanguage || selectedEditionYear
                       ? 'Custom edition'
                       : 'No specific edition'}
                   </p>
-                  {(manualPublisher || manualLanguage || manualYear) && (
+                  {(selectedPublisher || selectedLanguage || selectedEditionYear) && (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {manualPublisher && (
+                      {selectedPublisher && (
                         <span className="flex items-center gap-1">
                           <Buildings size={14} className="shrink-0" />
-                          {manualPublisher}
+                          {selectedPublisher}
                         </span>
                       )}
-                      {manualLanguage && (
+                      {selectedLanguage && (
                         <span className="flex items-center gap-1">
                           <Translate size={14} className="shrink-0" />
-                          {manualLanguage}
+                          {selectedLanguage}
                         </span>
                       )}
-                      {manualYear && (
+                      {selectedEditionYear && (
                         <span className="flex items-center gap-1">
                           <CalendarBlank size={14} className="shrink-0" />
-                          {manualYear}
+                          {selectedEditionYear}
                         </span>
                       )}
                     </div>
@@ -586,7 +597,7 @@ function AlternateNameSelector({
             key={name}
             type="button"
             onClick={() => onSelect(name)}
-            className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors duration-250 ease-out-custom ${
+            className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors duration-250 ease-out-custom ${
               selectedName === name
                 ? 'border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium'
                 : 'border-semantic-border-subtle bg-semantic-bg-surface text-semantic-text-secondary hover:border-semantic-border-default'
