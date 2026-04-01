@@ -1,3 +1,5 @@
+// TODO: This component is no longer used by ListingCreationFlow (replaced by ReviewPriceStep).
+// Keep for now — verify no other consumers before removing.
 'use client';
 
 import Image from 'next/image';
