@@ -23,7 +23,7 @@ interface ListingCardProps {
   condition: ListingCondition;
   priceCents: number;
   sellerCountry: string;
-  /** Number of photos (shows count badge when > 1) */
+  /** Number of photos (shows count badge when > 0) */
   photoCount?: number;
   isFavorited?: boolean;
   isAuthenticated?: boolean;
@@ -85,11 +85,9 @@ function ListingCard({
               </span>
             </div>
           )}
-          {!unavailable && (
-            <span className="absolute bottom-2 left-2 bg-polar-night/70 backdrop-blur-sm text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
-              {conditionLabel}
-            </span>
-          )}
+          <span className="absolute bottom-2 left-2 bg-polar-night/70 backdrop-blur-sm text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
+            {conditionLabel}
+          </span>
           {!unavailable && photoCount !== undefined && photoCount > 0 && (
             <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
               <Camera size={12} />
