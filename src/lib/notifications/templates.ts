@@ -159,6 +159,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Drop off ${ctx.gameName ?? 'your parcel'} at the terminal — check your order for details`,
     link: orderLink,
   },
+  'shipping.scanned': {
+    title: () => 'Parcel scanned at terminal',
+    body: (ctx) => `Your parcel for ${ctx.gameName ?? 'a game'} was scanned at ${ctx.terminalName ?? 'the terminal'} — it's on its way`,
+    link: orderLink,
+  },
 
   // --- Auctions ---
   'auction.bid_placed': {

@@ -30,6 +30,7 @@ export type NotificationType =
   | 'dispute.escalated'
   // Shipping
   | 'shipping.instructions'
+  | 'shipping.scanned'
   // Auctions
   | 'auction.bid_placed'
   | 'auction.outbid'
@@ -72,6 +73,7 @@ export interface NotificationContext {
   sellerName?: string;
   reason?: string;
   role?: 'buyer' | 'seller';
+  terminalName?: string;
   hoursRemaining?: number;
   daysRemaining?: number;
 }
