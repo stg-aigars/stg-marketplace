@@ -134,6 +134,9 @@ export async function fulfillSingleItemPayment(
       paymentMethod: 'card',
       terminalId: session.terminal_id,
       terminalName: session.terminal_name,
+      terminalAddress: session.terminal_address ?? undefined,
+      terminalCity: session.terminal_city ?? undefined,
+      terminalPostalCode: session.terminal_postal_code ?? undefined,
       terminalCountry: session.terminal_country,
       buyerPhone: session.buyer_phone,
       orderNumber: session.order_number ?? undefined,
@@ -310,6 +313,9 @@ export async function fulfillCartPayment(
         walletDebitCents: orderWalletDebit,
         terminalId: group.terminal_id,
         terminalName: group.terminal_name,
+        terminalAddress: group.terminal_address ?? undefined,
+        terminalCity: group.terminal_city ?? undefined,
+        terminalPostalCode: group.terminal_postal_code ?? undefined,
         terminalCountry: group.terminal_country,
         buyerPhone: group.buyer_phone,
         cartGroupId: group.id,
@@ -358,7 +364,7 @@ export async function fulfillCartPayment(
         }
         await serviceClient
           .from('orders')
-          .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+          .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'system' })
           .eq('id', created.id);
       } catch (rollbackError) {
         console.error(`[Payments] Cart: Rollback failed for order ${created.id}:`, rollbackError);

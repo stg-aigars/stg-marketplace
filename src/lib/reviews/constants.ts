@@ -8,5 +8,5 @@ export const REVIEW_WINDOW_DAYS = 30;
 /** Maximum length for review comment text */
 export const REVIEW_MAX_COMMENT_LENGTH = 500;
 
-/** Order statuses that allow review submission */
-export const REVIEW_ELIGIBLE_STATUSES = ['delivered', 'completed'] as const;
+/** Order statuses that allow review submission (only after buyer confirms receipt) */
+export const REVIEW_ELIGIBLE_STATUSES = ['completed'] as const;

@@ -4,21 +4,44 @@ import { Card, CardBody } from '@/components/ui';
 
 interface ShippingInfoProps {
   terminalName: string | null;
+  terminalAddress: string | null;
+  terminalCity: string | null;
+  terminalPostalCode: string | null;
   terminalCountry: string | null;
   parcelId: number | null;
-  barcode: string | null;
   trackingUrl: string | null;
   userRole: 'buyer' | 'seller';
 }
 
+function formatTerminalAddress(
+  name: string | null,
+  address: string | null,
+  city: string | null,
+  postalCode: string | null,
+  country: string | null
+): string {
+  if (!name) return '';
+  const parts = [name];
+  if (address) parts.push(address);
+  const cityPostal = [city, postalCode].filter(Boolean).join(', ');
+  if (cityPostal) parts.push(cityPostal);
+  if (country) parts.push(country);
+  return parts.join(' / ');
+}
+
 export function ShippingInfo({
   terminalName,
+  terminalAddress,
+  terminalCity,
+  terminalPostalCode,
+  terminalCountry,
   parcelId,
-  barcode,
   trackingUrl,
   userRole,
 }: ShippingInfoProps) {
   if (!parcelId && !terminalName) return null;
+
+  const hasAddress = terminalAddress || terminalCity;
 
   return (
     <Card>
@@ -33,7 +56,9 @@ export function ShippingInfo({
                 {userRole === 'seller' ? 'Delivery terminal' : 'Pickup terminal'}
               </p>
               <p className="text-sm text-semantic-text-primary mt-0.5">
-                {terminalName}
+                {hasAddress
+                  ? formatTerminalAddress(terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry)
+                  : terminalName}
               </p>
             </div>
           )}
@@ -44,24 +69,6 @@ export function ShippingInfo({
               <p className="text-sm font-mono font-semibold text-semantic-text-heading mt-0.5">
                 {parcelId}
               </p>
-            </div>
-          )}
-
-          {barcode && (
-            <div>
-              <p className="text-sm text-semantic-text-muted">Barcode</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-sm font-mono text-semantic-text-primary">
-                  {barcode}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(barcode)}
-                  className="text-xs text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-                >
-                  Copy
-                </button>
-              </div>
             </div>
           )}
 

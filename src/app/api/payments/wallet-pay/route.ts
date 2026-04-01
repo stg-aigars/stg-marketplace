@@ -40,6 +40,9 @@ export async function POST(request: Request) {
   let listingId: string;
   let terminalId: string;
   let terminalName: string;
+  let terminalAddress: string | undefined;
+  let terminalCity: string | undefined;
+  let terminalPostalCode: string | undefined;
   let terminalCountry: string;
   let buyerPhone: string;
   let turnstileToken: string | undefined;
@@ -48,6 +51,9 @@ export async function POST(request: Request) {
     listingId = body.listingId;
     terminalId = body.terminalId;
     terminalName = body.terminalName;
+    terminalAddress = body.terminalAddress;
+    terminalCity = body.terminalCity;
+    terminalPostalCode = body.terminalPostalCode;
     terminalCountry = body.terminalCountry;
     buyerPhone = body.buyerPhone;
     turnstileToken = body.turnstileToken;
@@ -162,6 +168,9 @@ export async function POST(request: Request) {
       paymentMethod: 'wallet',
       terminalId,
       terminalName,
+      terminalAddress,
+      terminalCity,
+      terminalPostalCode,
       terminalCountry,
       buyerPhone,
       walletDebitCents: pricing.totalChargeCents,

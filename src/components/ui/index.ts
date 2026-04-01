@@ -35,6 +35,8 @@ export type { SpinnerProps } from './spinner';
 export { EmptyState } from './empty-state';
 export type { EmptyStateProps } from './empty-state';
 
+export { BackLink } from './BackLink';
+
 export { Breadcrumb } from './breadcrumb';
 export type { BreadcrumbProps } from './breadcrumb';
 

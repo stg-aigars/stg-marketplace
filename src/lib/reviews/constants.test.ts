@@ -10,9 +10,9 @@ describe('review constants', () => {
     expect(REVIEW_MAX_COMMENT_LENGTH).toBe(500);
   });
 
-  it('allows reviews for delivered and completed orders', () => {
-    expect(REVIEW_ELIGIBLE_STATUSES).toContain('delivered');
+  it('allows reviews only for completed orders', () => {
     expect(REVIEW_ELIGIBLE_STATUSES).toContain('completed');
-    expect(REVIEW_ELIGIBLE_STATUSES).toHaveLength(2);
+    expect(REVIEW_ELIGIBLE_STATUSES).not.toContain('delivered');
+    expect(REVIEW_ELIGIBLE_STATUSES).toHaveLength(1);
   });
 });

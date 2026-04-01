@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
-import { Badge, Breadcrumb, Card, CardBody } from '@/components/ui';
+import { Badge, BackLink, Card, CardBody } from '@/components/ui';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -30,16 +29,38 @@ interface OrderDetailClientProps {
   trackingEvents: TrackingEventRow[];
 }
 
+/** Buyer-facing cancelled copy based on cancellation reason */
+function getCancelledMessage(role: 'buyer' | 'seller', reason: string | null): string {
+  if (role === 'seller') {
+    return reason === 'declined' ? 'You declined this order' : 'This order was cancelled';
+  }
+  switch (reason) {
+    case 'declined':
+      return 'The seller declined this order. Your payment has been refunded.';
+    case 'response_timeout':
+      return 'This order expired because the seller didn\'t respond in time. Your payment has been refunded.';
+    case 'shipping_timeout':
+      return 'This order was cancelled because it was not shipped in time. Your payment has been refunded.';
+    case 'payment_expired':
+      return 'This order was cancelled because payment was not completed in time.';
+    default:
+      return 'This order was cancelled. Your payment has been refunded.';
+  }
+}
+
 /** Contextual status message for the current user */
-function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string | null {
-  const messages: Record<string, Record<OrderStatus, string | null>> = {
+function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: string | null): string | null {
+  if (status === 'cancelled') {
+    return getCancelledMessage(role, cancellationReason ?? null);
+  }
+
+  const messages: Record<string, Partial<Record<OrderStatus, string>>> = {
     seller: {
       pending_seller: 'Waiting for you to accept this order',
       accepted: 'Drop your parcel at any Unisend terminal',
       shipped: 'Waiting for the buyer to pick up the parcel',
       delivered: 'Buyer has picked up the parcel',
       completed: 'Order complete',
-      cancelled: 'You declined this order',
       disputed: 'The buyer reported an issue with this order. Please review and respond.',
       refunded: 'This order has been refunded',
     },
@@ -49,7 +70,6 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
       shipped: 'Your game is on the way — pick it up at your selected terminal',
       delivered: 'Confirm you received your game in good condition',
       completed: 'Order complete — enjoy your game',
-      cancelled: 'This order was cancelled',
       disputed: 'You reported an issue. The seller has been notified.',
       refunded: 'This order has been refunded',
     },
@@ -61,7 +81,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller'): string
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
-  const statusMessage = getStatusMessage(status, userRole);
+  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason);
 
   // Derive items from order_items (preferred) or legacy listings join
   const items = order.order_items ?? [];
@@ -69,11 +89,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      {/* Breadcrumb */}
-      <Breadcrumb items={[
-        { label: 'Your orders', href: '/account/orders' },
-        { label: order.order_number },
-      ]} />
+      <BackLink href="/account/orders" label="Your orders" />
 
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
@@ -191,15 +207,18 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           <TrackingTimeline
             events={trackingEvents}
             trackingUrl={order.tracking_url}
+            status={status}
           />
         )}
 
         {/* Shipping info (shown after accept) */}
         <ShippingInfo
           terminalName={order.terminal_name}
+          terminalAddress={order.terminal_address}
+          terminalCity={order.terminal_city}
+          terminalPostalCode={order.terminal_postal_code}
           terminalCountry={order.terminal_country}
           parcelId={order.unisend_parcel_id}
-          barcode={order.barcode}
           trackingUrl={order.tracking_url}
           userRole={userRole}
         />
@@ -327,9 +346,14 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           </CardBody>
         </Card>
 
-        {/* Order meta */}
         <p className="text-sm text-semantic-text-muted">
-          Order placed {formatDate(order.created_at)}
+          Need help?{' '}
+          <Link
+            href="/contact"
+            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+          >
+            Contact support
+          </Link>
         </p>
       </div>
     </div>

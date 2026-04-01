@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const parsed = await parseCartCheckoutBody(request);
   if (parsed instanceof NextResponse) return parsed;
 
-  const { listingIds, terminalId, terminalName, terminalCountry, buyerPhone, useWallet, turnstileToken } = parsed;
+  const { listingIds, terminalId, terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry, buyerPhone, useWallet, turnstileToken } = parsed;
 
   const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
   if (!turnstile.success) {
@@ -164,6 +164,9 @@ export async function POST(request: Request) {
       buyer_id: user.id,
       terminal_id: terminalId,
       terminal_name: terminalName,
+      terminal_address: terminalAddress,
+      terminal_city: terminalCity,
+      terminal_postal_code: terminalPostalCode,
       terminal_country: terminalCountry,
       buyer_phone: buyerPhone,
       total_amount_cents: grandTotalCents,

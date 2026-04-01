@@ -234,6 +234,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         .update({
           status: 'cancelled',
           cancelled_at: new Date().toISOString(),
+          cancellation_reason: reason,
         })
         .eq('id', order.id)
         .eq('status', status)
