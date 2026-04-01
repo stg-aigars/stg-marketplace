@@ -4,8 +4,8 @@ import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
 import { Card } from '@/components/ui';
 import { GameTitle, Price } from './atoms';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { getConditionLabel } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 
 interface ListingCardMiniProps {
   id: string;
@@ -25,7 +25,7 @@ function ListingCardMini({
   priceCents,
 }: ListingCardMiniProps) {
   const imageUrl = gameThumbnail ?? firstPhoto ?? null;
-  const conditionLabel = conditionConfig[conditionToBadgeKey[condition]].label;
+  const conditionLabel = getConditionLabel(condition);
 
   return (
     <Link href={`/listings/${id}`} className="group block">

@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { GameThumb } from './atoms/GameThumb';
 import { GameTitle } from './atoms/GameTitle';
 import { Price } from './atoms/Price';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { getConditionLabel } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 
 interface ListingRowProps {
   listing: {
@@ -20,7 +20,7 @@ interface ListingRowProps {
 
 function ListingRow({ listing, className = '' }: ListingRowProps) {
   const imageUrl = listing.bgg_thumbnail ?? listing.photos?.[0];
-  const conditionLabel = conditionConfig[conditionToBadgeKey[listing.condition]].label;
+  const conditionLabel = getConditionLabel(listing.condition);
 
   return (
     <Link

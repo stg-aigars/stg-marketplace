@@ -6,13 +6,9 @@ import { Card, Badge } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, GameMeta, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { getConditionLabel } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 import { FavoriteButton } from './FavoriteButton';
-
-function getConditionLabel(condition: ListingCondition): string {
-  return conditionConfig[conditionToBadgeKey[condition]].label;
-}
 
 interface ListingCardProps {
   id: string;
