@@ -26,7 +26,7 @@ export default async function FromOfferPage({ params }: Props) {
       id, amount_cents, counter_amount_cents, status, buyer_id, seller_id,
       shelf_items:shelf_item_id (
         id, bgg_game_id, game_name, game_year,
-        games:bgg_game_id (thumbnail, image, player_count)
+        games:bgg_game_id (thumbnail, image, player_count, alternate_names)
       )
     `)
     .eq('id', offerId)
@@ -45,7 +45,7 @@ export default async function FromOfferPage({ params }: Props) {
     bgg_game_id: number;
     game_name: string;
     game_year: number | null;
-    games: { thumbnail: string | null; image: string | null; player_count: string | null } | null;
+    games: { thumbnail: string | null; image: string | null; player_count: string | null; alternate_names: string[] | null } | null;
   };
 
   if (!shelfItem) notFound();
@@ -60,6 +60,7 @@ export default async function FromOfferPage({ params }: Props) {
     thumbnail: shelfItem.games?.thumbnail ?? null,
     image: shelfItem.games?.image ?? null,
     player_count: shelfItem.games?.player_count ?? null,
+    alternateNames: shelfItem.games?.alternate_names ?? [],
   };
 
   return (

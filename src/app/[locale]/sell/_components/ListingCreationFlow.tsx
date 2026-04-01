@@ -234,6 +234,8 @@ export function ListingCreationFlow({
           <VersionStep
             gameId={formData.bgg_game_id}
             gameName={formData.game_name}
+            selectedGame={selectedGame}
+            onGameNameChange={(name: string) => updateFormData({ game_name: name })}
             selectedVersionId={formData.bgg_version_id}
             selectedVersionSource={formData.version_source}
             onSelect={(version) => {
