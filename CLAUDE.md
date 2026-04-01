@@ -75,6 +75,9 @@ pending_seller → accepted → shipped → delivered → completed
                 cancelled   cancelled   disputed → resolved
 ```
 
+### Cancellation Reasons
+Orders store `cancellation_reason` (nullable): `'declined'` (seller), `'response_timeout'` (48h auto), `'shipping_timeout'` (5d auto), `'system'` (cart rollback). Type: `CancellationReason` in `src/lib/orders/types.ts`.
+
 ### Order Deadlines
 - `pending_seller`: 24h reminder, 48h auto-decline + refund
 - `accepted`: day 3 reminder, day 5 auto-cancel + refund
