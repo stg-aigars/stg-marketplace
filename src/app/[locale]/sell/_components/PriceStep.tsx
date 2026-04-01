@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Input, Select } from '@/components/ui';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
-import { MIN_PRICE_CENTS } from '@/lib/listings/types';
+import { MIN_PRICE_CENTS, MAX_DESCRIPTION_LENGTH, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
@@ -22,8 +22,6 @@ interface PriceStepProps {
   bggGameId?: number | null;
   condition?: ListingCondition | null;
 }
-
-const MAX_DESCRIPTION_LENGTH = 1000;
 
 export function PriceStep({
   priceCents,
@@ -167,7 +165,12 @@ export function PriceStep({
           htmlFor="listing-description"
           className="block text-sm font-medium text-semantic-text-primary mb-1.5"
         >
-          Description <span className="font-normal text-semantic-text-muted">(optional)</span>
+          Description{' '}
+          {condition && conditionRequiresDescription(condition) ? (
+            <span className="text-semantic-error">*</span>
+          ) : (
+            <span className="font-normal text-semantic-text-muted">(optional)</span>
+          )}
         </label>
         <textarea
           id="listing-description"
