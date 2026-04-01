@@ -128,7 +128,7 @@ export function CartCheckoutForm({
         }
 
         clearCart();
-        router.push(`/orders?from=cart&group=${data.groupId}`);
+        router.push(`/account/orders?from=cart&group=${data.groupId}`);
       } else {
         const response = await apiFetch('/api/payments/cart-create', {
           method: 'POST',

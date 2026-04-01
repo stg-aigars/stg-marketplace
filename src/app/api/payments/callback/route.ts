@@ -220,7 +220,7 @@ async function handleCartCallback(
     .eq('cart_group_id', group.id);
 
   if (existingOrders && existingOrders.length > 0) {
-    return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
+    return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}`);
   }
 
   // Validate callback token
@@ -230,7 +230,7 @@ async function handleCartCallback(
   }
 
   if (group.status === 'completed') {
-    return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
+    return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}`);
   }
 
   // Verify payment with EveryPay
@@ -287,12 +287,12 @@ async function handleCartCallback(
 
   switch (result.outcome) {
     case 'created':
-      return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
+      return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}`);
     case 'already_exists':
-      return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}`);
+      return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}`);
     case 'unavailable':
       return NextResponse.redirect(`${env.app.url}/cart?error=listing_unavailable`);
     case 'failed':
-      return NextResponse.redirect(`${env.app.url}/orders?from=cart&group=${group.id}&error=partial_creation`);
+      return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}&error=partial_creation`);
   }
 }
