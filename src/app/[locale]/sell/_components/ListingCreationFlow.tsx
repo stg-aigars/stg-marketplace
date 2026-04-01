@@ -6,20 +6,17 @@ import { Button, Stepper, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource } from '@/lib/listings/types';
+import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import { GameSearchStep } from './GameSearchStep';
 import type { EnrichedGame } from './GameSearchStep';
 import { VersionStep } from './VersionStep';
-import { PhotoUploadStep } from './PhotoUploadStep';
-import { ConditionStep } from './ConditionStep';
-import { PriceStep } from './PriceStep';
-import { ReviewStep } from './ReviewStep';
+import { ConditionPhotosStep } from './ConditionPhotosStep';
+import { ReviewPriceStep } from './ReviewPriceStep';
 
 const STEPS = [
   { id: 'game', label: 'Game' },
   { id: 'edition', label: 'Edition' },
-  { id: 'photos', label: 'Photos' },
-  { id: 'condition', label: 'Condition' },
-  { id: 'price', label: 'Price' },
+  { id: 'details', label: 'Details' },
   { id: 'review', label: 'Review' },
 ];
 
@@ -39,13 +36,12 @@ export interface FormData {
   language: string | null;
   edition_year: number | null;
   version_thumbnail: string | null;
-  // Step 3: Photos
+  // Step 3: Condition, photos & description
   photos: string[];
-  // Step 4: Condition
   condition: ListingCondition | null;
-  // Step 5: Price & description
-  price_cents: number;
   description: string;
+  // Step 4: Price (set on review step)
+  price_cents: number;
   // Auction fields
   starting_price_cents: number;
   auction_duration_days: number;
@@ -117,21 +113,21 @@ export function ListingCreationFlow({
         return formData.bgg_game_id !== null;
       case 2:
         return true; // Version is optional
-      case 3:
-        return true; // Photos are optional — BGG image used as fallback
-      case 4:
-        return formData.condition !== null;
-      case 5:
-        return isAuction ? formData.starting_price_cents >= 50 : formData.price_cents >= 50;
-      case 6:
+      case 3: {
+        if (!formData.condition) return false;
+        if (conditionRequiresPhotos(formData.condition) && formData.photos.length === 0) return false;
+        if (conditionRequiresDescription(formData.condition) && !formData.description.trim()) return false;
         return true;
+      }
+      case 4:
+        return true; // Price validated by Publish button inside ReviewPriceStep
       default:
         return false;
     }
   };
 
   const handleNext = () => {
-    if (canProceed() && step < 6) {
+    if (canProceed() && step < 4) {
       setStep(step + 1);
     }
   };
@@ -143,6 +139,8 @@ export function ListingCreationFlow({
       setStep(step - 1);
     }
   };
+
+  const handleEditStep = (targetStep: number) => setStep(targetStep);
 
   const handlePublish = async () => {
     if (publishing) return;
@@ -260,49 +258,37 @@ export function ListingCreationFlow({
         )}
 
         {step === 3 && (
-          <PhotoUploadStep
+          <ConditionPhotosStep
+            condition={formData.condition}
             photos={formData.photos}
+            description={formData.description}
+            onConditionChange={(condition) => updateFormData({ condition })}
             onPhotosChange={(photos) => updateFormData({ photos })}
+            onDescriptionChange={(description) => updateFormData({ description })}
           />
         )}
 
         {step === 4 && (
-          <ConditionStep
-            selectedCondition={formData.condition}
-            onSelect={(condition) => updateFormData({ condition })}
-          />
-        )}
-
-        {step === 5 && (
-          <PriceStep
-            priceCents={isAuction ? formData.starting_price_cents : formData.price_cents}
-            description={formData.description}
-            onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
-            onDescriptionChange={(description) => updateFormData({ description })}
-            lockedPrice={priceLocked ? formData.price_cents : undefined}
-            isAuction={isAuction}
-            auctionDurationDays={formData.auction_duration_days}
-            onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
-            bggGameId={formData.bgg_game_id}
-            condition={formData.condition}
-          />
-        )}
-
-        {step === 6 && (
           <>
             <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
-            <ReviewStep
+            <ReviewPriceStep
               formData={formData}
+              onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
               onPublish={handlePublish}
               publishing={publishing}
               error={error}
+              onEditStep={handleEditStep}
+              lockedPrice={priceLocked ? formData.price_cents : undefined}
+              isAuction={isAuction}
+              auctionDurationDays={formData.auction_duration_days}
+              onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
             />
           </>
         )}
       </div>
 
       {/* Navigation */}
-      {step <= 6 && (
+      {step <= 4 && (
         <div className="flex items-center justify-between pt-4 border-t border-semantic-border-subtle">
           <div>
             {step > minStep && (
@@ -311,7 +297,7 @@ export function ListingCreationFlow({
               </Button>
             )}
           </div>
-          {step < 6 && (
+          {step < 4 && (
             <Button
               variant="primary"
               onClick={handleNext}

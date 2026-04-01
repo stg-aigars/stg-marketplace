@@ -19,6 +19,8 @@ import {
   MAX_GAME_NAME_LENGTH,
   MAX_DESCRIPTION_LENGTH,
   MAX_TEXT_FIELD_LENGTH,
+  conditionRequiresPhotos,
+  conditionRequiresDescription,
 } from './types';
 
 interface ListingFieldsToValidate {
@@ -59,6 +61,14 @@ function validateListingFields(
     if (!photo.startsWith(photoUrlPrefix)) {
       return 'Invalid photo URL detected';
     }
+  }
+
+  if (conditionRequiresPhotos(data.condition) && data.photos.length === 0) {
+    return 'At least one photo is required for this condition';
+  }
+
+  if (conditionRequiresDescription(data.condition) && (!data.description || !data.description.trim())) {
+    return 'A description is required for this condition';
   }
 
   if (data.description && data.description.length > MAX_DESCRIPTION_LENGTH) {

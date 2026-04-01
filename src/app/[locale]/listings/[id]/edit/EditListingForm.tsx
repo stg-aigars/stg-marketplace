@@ -11,7 +11,7 @@ import { PhotoUploadStep } from '@/app/[locale]/sell/_components/PhotoUploadStep
 import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { updateListing } from '@/lib/listings/actions';
-import { MIN_PRICE_CENTS } from '@/lib/listings/types';
+import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition, VersionData } from '@/lib/listings/types';
 
 interface EditListingFormProps {
@@ -85,7 +85,10 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     JSON.stringify(version) !== initial.current.version;
 
   // Validation
-  const isValid = condition !== null && priceCents >= MIN_PRICE_CENTS && photos.length >= 1;
+  const isValid = condition !== null &&
+    priceCents >= MIN_PRICE_CENTS &&
+    (!conditionRequiresPhotos(condition) || photos.length >= 1) &&
+    (!conditionRequiresDescription(condition) || description.trim().length > 0);
 
   const canSubmit = isDirty && isValid && !submitting;
 

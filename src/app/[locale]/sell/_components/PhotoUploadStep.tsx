@@ -28,6 +28,8 @@ interface PhotoUploadStepProps {
   photos: string[];
   onPhotosChange: (photos: string[]) => void;
   compact?: boolean;
+  heading?: string | null;
+  requiredMin?: number;
 }
 
 function SortablePhoto({
@@ -101,7 +103,7 @@ function SortablePhoto({
   );
 }
 
-export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUploadStepProps) {
+export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requiredMin }: PhotoUploadStepProps) {
   const [uploading, setUploading] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +210,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
   return (
     <div className="space-y-4">
       {compact ? (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Photos</h2>
+        heading !== null && <h2 className="text-base font-semibold text-semantic-text-heading">{heading ?? 'Photos'}</h2>
       ) : (
         <>
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
@@ -220,10 +222,12 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
         </>
       )}
 
-      {/* Photo count */}
+      {/* Photo count / requirement */}
       <p className="text-sm text-semantic-text-muted">
-        {photos.length}/{MAX_PHOTOS} photos
-        {photos.length > 1 && ' — drag to reorder'}
+        {requiredMin != null && photos.length < requiredMin
+          ? `At least ${requiredMin} photo needed`
+          : `${photos.length}/${MAX_PHOTOS} photos${photos.length > 1 ? ' — drag to reorder' : ''}`
+        }
       </p>
 
       {/* Upload area — custom styled button needed for dropzone layout; Button component doesn't support this */}
@@ -245,7 +249,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
           ) : (
             <>
               <CloudArrowUp size={36} className="text-semantic-brand" />
-              <span className="text-sm">Tap to upload photos</span>
+              <span className="text-sm">Upload photos</span>
             </>
           )}
         </button>
@@ -289,8 +293,8 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
         </DndContext>
       )}
 
-      {/* Nudge when no photos */}
-      {photos.length === 0 && (
+      {/* Nudge when no photos — hidden in compact mode where parent provides messaging */}
+      {photos.length === 0 && !compact && (
         <p className="text-sm text-semantic-text-muted text-center">
           Listings with photos get more attention from buyers
         </p>
