@@ -222,17 +222,13 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
         </>
       )}
 
-      {/* Photo count */}
+      {/* Photo count / requirement */}
       <p className="text-sm text-semantic-text-muted">
-        {photos.length}/{MAX_PHOTOS} photos
-        {photos.length > 1 && ' — drag to reorder'}
+        {requiredMin != null && photos.length < requiredMin
+          ? `At least ${requiredMin} photo needed`
+          : `${photos.length}/${MAX_PHOTOS} photos${photos.length > 1 ? ' — drag to reorder' : ''}`
+        }
       </p>
-
-      {requiredMin != null && photos.length < requiredMin && (
-        <p className="text-sm text-semantic-text-secondary">
-          At least {requiredMin} photo needed
-        </p>
-      )}
 
       {/* Upload area — custom styled button needed for dropzone layout; Button component doesn't support this */}
       {photos.length < MAX_PHOTOS && (
