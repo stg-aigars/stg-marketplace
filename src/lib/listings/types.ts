@@ -70,6 +70,16 @@ export const LISTING_CONDITIONS: ListingCondition[] = [
   'for_parts',
 ];
 
+const PHOTO_REQUIRED_CONDITIONS: readonly ListingCondition[] = ['acceptable', 'for_parts'];
+
+export function conditionRequiresPhotos(condition: string): boolean {
+  return PHOTO_REQUIRED_CONDITIONS.includes(condition as ListingCondition);
+}
+
+export function conditionRequiresDescription(condition: string): boolean {
+  return PHOTO_REQUIRED_CONDITIONS.includes(condition as ListingCondition);
+}
+
 export const MIN_PRICE_CENTS = 50; // €0.50
 export const MAX_GAME_NAME_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 2000;

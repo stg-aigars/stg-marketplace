@@ -28,6 +28,7 @@ interface PhotoUploadStepProps {
   photos: string[];
   onPhotosChange: (photos: string[]) => void;
   compact?: boolean;
+  heading?: string;
 }
 
 function SortablePhoto({
@@ -101,7 +102,7 @@ function SortablePhoto({
   );
 }
 
-export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUploadStepProps) {
+export function PhotoUploadStep({ photos, onPhotosChange, compact, heading }: PhotoUploadStepProps) {
   const [uploading, setUploading] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +209,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact }: PhotoUpload
   return (
     <div className="space-y-4">
       {compact ? (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Photos</h2>
+        <h2 className="text-base font-semibold text-semantic-text-heading">{heading ?? 'Photos'}</h2>
       ) : (
         <>
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
