@@ -226,9 +226,31 @@ export function ReviewPriceStep({
                   <h3 className="font-semibold text-semantic-text-heading text-lg">
                     {formData.game_name}
                   </h3>
-                  {formData.game_year && (
+                  {hasEdition ? (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
+                      {formData.version_name && <span>{formData.version_name}</span>}
+                      {formData.publisher && (
+                        <span className="flex items-center gap-1">
+                          <Buildings size={14} className="shrink-0" />
+                          {formData.publisher}
+                        </span>
+                      )}
+                      {formData.language && (
+                        <span className="flex items-center gap-1">
+                          <Translate size={14} className="shrink-0" />
+                          {formData.language}
+                        </span>
+                      )}
+                      {formData.edition_year && (
+                        <span className="flex items-center gap-1">
+                          <CalendarBlank size={14} className="shrink-0" />
+                          {formData.edition_year}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
                     <p className="text-sm text-semantic-text-muted mt-0.5">
-                      {formData.game_year}
+                      No edition specified
                     </p>
                   )}
                 </div>
@@ -237,53 +259,7 @@ export function ReviewPriceStep({
                 type="button"
                 onClick={() => onEditStep(1)}
                 className="text-semantic-brand shrink-0 p-1"
-                aria-label="Edit game"
-              >
-                <PencilSimple size={16} />
-              </button>
-            </div>
-
-            <hr className="border-semantic-border-subtle" />
-
-            {/* Edition */}
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-semantic-text-primary mb-1">
-                  Edition
-                </p>
-                {hasEdition ? (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted">
-                    {formData.version_name && <span>{formData.version_name}</span>}
-                    {formData.publisher && (
-                      <span className="flex items-center gap-1">
-                        <Buildings size={14} className="shrink-0" />
-                        {formData.publisher}
-                      </span>
-                    )}
-                    {formData.language && (
-                      <span className="flex items-center gap-1">
-                        <Translate size={14} className="shrink-0" />
-                        {formData.language}
-                      </span>
-                    )}
-                    {formData.edition_year && (
-                      <span className="flex items-center gap-1">
-                        <CalendarBlank size={14} className="shrink-0" />
-                        {formData.edition_year}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-semantic-text-muted">
-                    No edition specified
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => onEditStep(2)}
-                className="text-semantic-brand shrink-0 p-1"
-                aria-label="Edit edition"
+                aria-label="Edit game and edition"
               >
                 <PencilSimple size={16} />
               </button>
