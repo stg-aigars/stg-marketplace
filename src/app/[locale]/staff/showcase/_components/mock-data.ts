@@ -6,7 +6,7 @@ export const MOCK_LISTING = {
   id: 'showcase-1',
   gameTitle: 'Catan',
   gameYear: 1995 as number | null,
-  gameThumbnail: null as string | null,
+  gameThumbnail: 'https://cf.geekdo-images.com/W3Bsga_uLP9kO91gZ7H8yw__original/img/aWGlEL8gZTjB2FVzOPU0kV-jnhc=/0x0/filters:format(jpeg)/pic2419375.jpg' as string | null,
   firstPhoto: null as string | null,
   condition: 'very_good' as ListingCondition,
   priceCents: 2500,
@@ -21,6 +21,7 @@ export const MOCK_LISTING_AUCTION = {
   id: 'showcase-2',
   gameTitle: 'Wingspan',
   gameYear: 2019 as number | null,
+  gameThumbnail: 'https://cf.geekdo-images.com/yLZJCVLlIx4c7eJEWUNJ7w__original/img/-RHKSX0uI_aJcGghnwIJ2V-JVGY=/0x0/filters:format(jpeg)/pic4458123.jpg' as string | null,
   condition: 'like_new' as ListingCondition,
   priceCents: 1500,
   sellerCountry: 'LT',
@@ -34,6 +35,7 @@ export const MOCK_LISTING_UNAVAILABLE = {
   id: 'showcase-3',
   gameTitle: 'Pandemic',
   gameYear: 2008 as number | null,
+  gameThumbnail: 'https://cf.geekdo-images.com/S3ybV1LAp-8uj2U0ZzFCiA__original/img/j-pfXGCUjC3JsMi0QhNXsj_pIWI=/0x0/filters:format(jpeg)/pic1534148.jpg' as string | null,
   condition: 'good' as ListingCondition,
   priceCents: 1800,
   sellerCountry: 'EE',
@@ -43,7 +45,7 @@ export const MOCK_LISTING_UNAVAILABLE = {
 export const MOCK_LISTING_MINI = {
   id: 'showcase-mini-1',
   gameTitle: 'Ticket to Ride: Europe',
-  gameThumbnail: null as string | null,
+  gameThumbnail: 'https://cf.geekdo-images.com/0K1AOciqlMVUWFPLTJSiww__original/img/5O1e6hpf2Lz2MKtx4VnhJVjRBcM=/0x0/filters:format(jpeg)/pic66668.jpg' as string | null,
   firstPhoto: null as string | null,
   condition: 'very_good' as ListingCondition,
   priceCents: 3200,
@@ -56,7 +58,7 @@ export const MOCK_LISTING_ROW = {
   price_cents: 2200,
   condition: 'good' as ListingCondition,
   photos: [] as string[],
-  bgg_thumbnail: null as string | null,
+  bgg_thumbnail: 'https://cf.geekdo-images.com/tz19PfklMdAdjxV9WArraA__original/img/jOTHhypigbUqKBhJNk_y0-aqipI=/0x0/filters:format(jpeg)/pic3718275.jpg' as string | null,
 };
 
 // -- Breadcrumbs --

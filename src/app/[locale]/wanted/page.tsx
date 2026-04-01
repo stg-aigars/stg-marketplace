@@ -32,7 +32,7 @@ interface WantedRow {
   country: string;
   notes: string | null;
   bgg_game_id: number;
-  games: { thumbnail: string | null };
+  games: { image: string | null };
 }
 
 export default async function WantedBrowsePage(
@@ -49,7 +49,7 @@ export default async function WantedBrowsePage(
   let query = supabase
     .from('wanted_listings')
     .select(
-      'id, game_name, game_year, min_condition, max_price_cents, country, notes, bgg_game_id, games:bgg_game_id(thumbnail)',
+      'id, game_name, game_year, min_condition, max_price_cents, country, notes, bgg_game_id, games:bgg_game_id(image)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -131,7 +131,7 @@ export default async function WantedBrowsePage(
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.thumbnail ?? null}
+                gameThumbnail={listing.games?.image ?? null}
                 minCondition={listing.min_condition}
                 maxPriceCents={listing.max_price_cents}
                 buyerCountry={listing.country}

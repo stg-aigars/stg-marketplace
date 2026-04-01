@@ -17,7 +17,7 @@ interface MyListingRow {
   photos: string[];
   country: string;
   status: string;
-  games: { thumbnail: string | null };
+  games: { image: string | null };
 }
 
 export default async function MyListingsPage() {
@@ -26,7 +26,7 @@ export default async function MyListingsPage() {
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, status, games(thumbnail)')
+    .select('id, game_name, game_year, condition, price_cents, photos, country, status, games(image)')
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false })
     .returns<MyListingRow[]>();

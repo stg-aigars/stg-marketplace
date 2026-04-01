@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
-import { Card, Badge } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { GameTitle, Price } from './atoms';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -24,9 +24,8 @@ function ListingCardMini({
   condition,
   priceCents,
 }: ListingCardMiniProps) {
-  const imageUrl = firstPhoto || gameThumbnail;
-  const badgeKey = conditionToBadgeKey[condition];
-  const conditionLabel = conditionConfig[badgeKey].label;
+  const imageUrl = gameThumbnail ?? firstPhoto ?? null;
+  const conditionLabel = conditionConfig[conditionToBadgeKey[condition]].label;
 
   return (
     <Link href={`/listings/${id}`} className="group block">
@@ -38,7 +37,7 @@ function ListingCardMini({
               src={imageUrl}
               alt={gameTitle}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="50vw"
               unoptimized={isBggImage(imageUrl)}
             />
@@ -50,8 +49,10 @@ function ListingCardMini({
         {/* Compact details */}
         <div className="p-2 space-y-1">
           <GameTitle name={gameTitle} size="xs" serif clamp={2} />
-          <Badge condition={badgeKey} className="text-[10px] px-1.5 py-0">{conditionLabel}</Badge>
-          <Price cents={priceCents} size="sm" />
+          <div className="flex items-center gap-1.5">
+            <Price cents={priceCents} size="sm" />
+            <span className="text-xs text-semantic-text-muted">{conditionLabel}</span>
+          </div>
         </div>
       </Card>
     </Link>

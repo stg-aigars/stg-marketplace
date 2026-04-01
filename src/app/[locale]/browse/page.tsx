@@ -37,7 +37,7 @@ interface ListingRow {
   listing_type: string;
   bid_count: number;
   auction_end_at: string | null;
-  games: { thumbnail: string | null };
+  games: { image: string | null };
 }
 
 export default async function BrowsePage(
@@ -93,7 +93,7 @@ export default async function BrowsePage(
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, games(thumbnail)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, games(image)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -187,7 +187,7 @@ export default async function BrowsePage(
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.thumbnail ?? null}
+                gameThumbnail={listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}

@@ -22,7 +22,7 @@ interface FavoriteRow {
     photos: string[];
     country: string;
     status: string;
-    games: { thumbnail: string | null };
+    games: { image: string | null };
   } | null;
 }
 
@@ -33,7 +33,7 @@ export default async function FavoritesPage() {
   const { data: favorites } = await supabase
     .from('favorites')
     .select(
-      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, games(thumbnail))'
+      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, games(image))'
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
@@ -80,7 +80,7 @@ export default async function FavoritesPage() {
                 id={listing.id}
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
-                gameThumbnail={listing.games?.thumbnail ?? null}
+                gameThumbnail={listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 condition={listing.condition}
