@@ -113,6 +113,7 @@ Always use these — do not write inline equivalents:
 | Loading placeholders | `Skeleton` | `@/components/ui` |
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
 | Empty / no-results states | `EmptyState` (icon, title, description, action, secondaryAction) | `@/components/ui` |
+| Back navigation | `BackLink` (href, label; arrow + text, muted with brand hover) | `@/components/ui` |
 | Breadcrumb navigation | `Breadcrumb` (items: { label, href? }[]) | `@/components/ui` |
 | Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
 | State-based tabs | `Tabs` (tabs, activeTab, onTabChange; underline style with counts) | `@/components/ui` |

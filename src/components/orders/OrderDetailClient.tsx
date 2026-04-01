@@ -9,7 +9,7 @@ import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
-import type { OrderStatus, OrderWithDetails } from '@/lib/orders/types';
+import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
 import { OrderTimeline } from './OrderTimeline';
 import { ShippingInfo } from './ShippingInfo';
 import { TrackingTimeline } from './TrackingTimeline';
@@ -30,7 +30,7 @@ interface OrderDetailClientProps {
 }
 
 /** Buyer-facing cancelled copy based on cancellation reason */
-function getCancelledMessage(role: 'buyer' | 'seller', reason: string | null): string {
+function getCancelledMessage(role: 'buyer' | 'seller', reason: CancellationReason | null): string {
   if (role === 'seller') {
     return reason === 'declined' ? 'You declined this order' : 'This order was cancelled';
   }
@@ -41,15 +41,13 @@ function getCancelledMessage(role: 'buyer' | 'seller', reason: string | null): s
       return 'This order expired because the seller didn\'t respond in time. Your payment has been refunded.';
     case 'shipping_timeout':
       return 'This order was cancelled because it was not shipped in time. Your payment has been refunded.';
-    case 'payment_expired':
-      return 'This order was cancelled because payment was not completed in time.';
     default:
       return 'This order was cancelled. Your payment has been refunded.';
   }
 }
 
 /** Contextual status message for the current user */
-function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: string | null): string | null {
+function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: CancellationReason | null): string | null {
   if (status === 'cancelled') {
     return getCancelledMessage(role, cancellationReason ?? null);
   }

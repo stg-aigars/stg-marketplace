@@ -21,7 +21,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { isBalticPhoneNumber } from '@/lib/phone-utils';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
-import { validateTerminalInput } from '@/lib/api/checkout-validation';
+import { validateTerminalInput, sanitizeInput } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify } from '@/lib/notifications';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
@@ -67,6 +67,9 @@ export async function POST(request: Request) {
     const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
     if (terminalCheck instanceof NextResponse) return terminalCheck;
     terminalName = terminalCheck.sanitizedName;
+    terminalAddress = sanitizeInput(terminalAddress);
+    terminalCity = sanitizeInput(terminalCity);
+    terminalPostalCode = sanitizeInput(terminalPostalCode);
     if (!buyerPhone || !isBalticPhoneNumber(buyerPhone)) {
       return NextResponse.json({ error: 'Please enter a valid Baltic phone number' }, { status: 400 });
     }

@@ -239,7 +239,7 @@ export function CartCheckoutForm({
             setSelectedTerminalName(t.name);
             setSelectedTerminalAddress(t.address);
             setSelectedTerminalCity(t.city);
-            setSelectedTerminalPostalCode(t.postalCode);
+            setSelectedTerminalPostalCode(t.postalCode ?? '');
             setSelectedTerminalCountry(t.countryCode);
           }}
           fetchFailed={terminalsFetchFailed}

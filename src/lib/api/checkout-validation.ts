@@ -22,6 +22,11 @@ export interface CartCheckoutBody {
   turnstileToken?: string;
 }
 
+/** Sanitize a user-provided string: strip control characters, truncate to 200 chars */
+export function sanitizeInput(s?: string): string | undefined {
+  return s ? s.slice(0, 200).replace(/[\x00-\x1f\x7f]/g, '') : undefined;
+}
+
 /**
  * Validate and sanitize terminal input from checkout requests.
  * Returns a NextResponse error if invalid, or the sanitized terminal name.
@@ -69,15 +74,13 @@ export async function parseCartCheckoutBody(
       return NextResponse.json({ error: 'Please enter a valid Baltic phone number' }, { status: 400 });
     }
 
-    const sanitize = (s?: string) => s ? s.slice(0, 200).replace(/[\x00-\x1f\x7f]/g, '') : undefined;
-
     return {
       listingIds,
       terminalId,
       terminalName: terminalCheck.sanitizedName,
-      terminalAddress: sanitize(terminalAddress),
-      terminalCity: sanitize(terminalCity),
-      terminalPostalCode: sanitize(terminalPostalCode),
+      terminalAddress: sanitizeInput(terminalAddress),
+      terminalCity: sanitizeInput(terminalCity),
+      terminalPostalCode: sanitizeInput(terminalPostalCode),
       terminalCountry,
       buyerPhone,
       useWallet: useWallet === true,

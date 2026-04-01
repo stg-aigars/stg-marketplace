@@ -15,6 +15,8 @@ export type OrderStatus =
 
 export type PaymentMethod = 'card' | 'bank_link' | 'wallet';
 
+export type CancellationReason = 'declined' | 'response_timeout' | 'shipping_timeout' | 'system';
+
 /** 1:1 mapping to the order_items table row */
 export interface OrderItemRow {
   id: string;
@@ -83,7 +85,7 @@ export interface OrderRow {
   refunded_at: string | null;
   cart_group_id: string | null;
   item_count: number;
-  cancellation_reason: string | null;
+  cancellation_reason: CancellationReason | null;
   deadline_reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
