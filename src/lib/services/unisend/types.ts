@@ -241,6 +241,11 @@ export function getShippingPriceCents(
   return SHIPPING_PRICES_CENTS[senderCountry]?.[receiverCountry] ?? null;
 }
 
+// Get cheapest shipping price in cents from a sender country (any destination)
+export function getMinShippingPriceCents(senderCountry: TerminalCountry): number {
+  return Math.min(...Object.values(SHIPPING_PRICES_CENTS[senderCountry]));
+}
+
 // ============================================
 // Parcel Size Info
 // ============================================

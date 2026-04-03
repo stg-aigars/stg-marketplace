@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { CalendarBlank, Buildings, Translate, PencilSimple } from '@phosphor-icons/react/ssr';
+import { CalendarBlank, Buildings, Translate, PencilSimple, Tag } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, MIN_PRICE_CENTS } from '@/lib/listings/types';
@@ -247,7 +247,12 @@ export function ReviewPriceStep({
                   </h3>
                   {hasEdition ? (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {formData.version_name && <span>{formData.version_name}</span>}
+                      {formData.version_name && (
+                        <span className="flex items-center gap-1">
+                          <Tag size={14} className="shrink-0" />
+                          {formData.version_name}
+                        </span>
+                      )}
                       {formData.publisher && (
                         <span className="flex items-center gap-1">
                           <Buildings size={14} className="shrink-0" />
