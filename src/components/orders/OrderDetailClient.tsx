@@ -240,18 +240,28 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                 const itemGameName = item.listings?.game_year
                   ? `${item.listings.game_name ?? 'Unknown game'} (${item.listings.game_year})`
                   : item.listings?.game_name ?? 'Unknown game';
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const itemExpansions = ((item.listings as any)?.listing_expansions ?? []) as Array<{ game_name: string }>;
 
                 return (
                   <div key={item.id} className={`flex gap-4 ${hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}`}>
                     <GameThumb src={itemImage} alt={itemGameName} size={hasMultipleItems ? 'lg' : 'xl'} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <Link
-                          href={`/listings/${item.listing_id}`}
-                          className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
-                        >
-                          <GameTitle name={itemGameName} size={hasMultipleItems ? 'md' : 'lg'} serif />
-                        </Link>
+                        <div>
+                          <Link
+                            href={`/listings/${item.listing_id}`}
+                            className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+                          >
+                            <GameTitle name={itemGameName} size={hasMultipleItems ? 'md' : 'lg'} serif />
+                          </Link>
+                          {itemExpansions.length > 0 && (
+                            <p className="text-xs text-semantic-text-muted mt-0.5">
+                              +{itemExpansions.length} {itemExpansions.length === 1 ? 'expansion' : 'expansions'}:{' '}
+                              {itemExpansions.map((e) => e.game_name).join(', ')}
+                            </p>
+                          )}
+                        </div>
                         {hasMultipleItems && (
                           <span className="text-sm font-semibold text-semantic-text-heading flex-shrink-0">
                             {formatCentsToCurrency(item.price_cents)}

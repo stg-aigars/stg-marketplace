@@ -165,7 +165,8 @@ export async function getOrder(orderId: string): Promise<OrderWithDetails | null
     .select(`
       *,
       order_items(id, order_id, listing_id, price_cents, active, created_at,
-        listings(game_name, game_year, condition, photos, games(thumbnail))
+        listings(game_name, game_year, condition, photos, games(thumbnail),
+          listing_expansions(game_name))
       ),
       listings(game_name, game_year, condition, photos, games(thumbnail)),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
