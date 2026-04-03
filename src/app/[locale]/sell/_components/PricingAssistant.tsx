@@ -20,6 +20,7 @@ interface PricingAssistantProps {
   condition: ListingCondition | null;
   isAuction: boolean;
   onFillPrice: (cents: number) => void;
+  expansionIds?: number[];
 }
 
 export function PricingAssistant({
@@ -27,6 +28,7 @@ export function PricingAssistant({
   condition,
   isAuction,
   onFillPrice,
+  expansionIds = [],
 }: PricingAssistantProps) {
   const [data, setData] = useState<PriceSuggestionResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,8 @@ export function PricingAssistant({
     setLoading(true);
     setError(false);
 
-    apiFetch(`/api/games/${bggGameId}/pricing`, { signal: controller.signal })
+    const expansionParam = expansionIds.length > 0 ? `&expansionIds=${expansionIds.join(',')}` : '';
+    apiFetch(`/api/games/${bggGameId}/pricing${expansionParam ? `?${expansionParam.slice(1)}` : ''}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -63,14 +66,22 @@ export function PricingAssistant({
       });
 
     return () => controller.abort();
-  }, [bggGameId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bggGameId, expansionIds.join(',')]);
+
+  // Use bundle retail price if available, otherwise base game only
+  const effectiveRetailCents = (data as any)?.bundleRetailPriceCents ?? data?.retailPriceCents;
+  const bundleBreakdown = (data as any)?.breakdown as Array<{ bggGameId: number; retailPriceCents: number | null; shopName: string | null }> | undefined;
+  const gamesWithData = (data as any)?.gamesWithRetailData as number | undefined;
+  const totalGames = (data as any)?.totalGames as number | undefined;
+  const hasBundle = totalGames != null && totalGames > 1;
 
   const suggestedPriceCents = useMemo(
     () =>
-      data?.retailPriceCents && condition
-        ? calculateSuggestedPrice(data.retailPriceCents, condition, isAuction)
+      effectiveRetailCents && condition
+        ? calculateSuggestedPrice(effectiveRetailCents, condition, isAuction)
         : null,
-    [data?.retailPriceCents, condition, isAuction],
+    [effectiveRetailCents, condition, isAuction],
   );
 
   const handleFill = (cents: number, buttonId: string) => {
@@ -135,8 +146,11 @@ export function PricingAssistant({
               </div>
             </div>
             <p className="text-xs text-semantic-text-muted">
-              {multiplierPct}% of {hasRetail ? formatCentsToCurrency(retailPriceCents!) : 'retail'} ({conditionLabel})
+              {multiplierPct}% of {effectiveRetailCents ? formatCentsToCurrency(effectiveRetailCents) : 'retail'} ({conditionLabel})
               {isAuction && ' \u00d7 30% auction start'}
+              {hasBundle && gamesWithData != null && totalGames != null && gamesWithData < totalGames && (
+                <span> · Retail price based on {gamesWithData} of {totalGames} games</span>
+              )}
             </p>
           </div>
         )}
