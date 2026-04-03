@@ -1,15 +1,17 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
-import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons } from '@/components/ui';
+import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag } from '@phosphor-icons/react/ssr';
+import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { formatDate } from '@/lib/date-utils';
 import { getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
+import { getShippingPriceCents, SHIPPING_PRICES_CENTS, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
@@ -25,6 +27,7 @@ import { OwnerActions } from './OwnerActions';
 
 interface ListingDetailRow {
   id: string;
+  bgg_game_id: number;
   seller_id: string;
   game_name: string;
   game_year: number | null;
@@ -35,6 +38,7 @@ interface ListingDetailRow {
   photos: string[];
   country: string;
   version_source: string;
+  version_name: string | null;
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
@@ -49,9 +53,15 @@ interface ListingDetailRow {
   highest_bidder_id: string | null;
   created_at: string;
   games: {
+    name: string;
+    yearpublished: number | null;
     thumbnail: string | null;
     image: string | null;
     player_count: string | null;
+    min_players: number | null;
+    max_players: number | null;
+    min_age: number | null;
+    playing_time: string | null;
     description: string | null;
     weight: number | null;
     categories: string[] | null;
@@ -126,7 +136,7 @@ export default async function ListingDetailPage(
   const { data: listing } = await supabase
     .from('listings')
     .select(
-      '*, games(thumbnail, image, player_count, description, weight, categories, mechanics)'
+      '*, games(name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics)'
     )
     .eq('id', id)
     .single<ListingDetailRow>();
@@ -159,15 +169,19 @@ export default async function ListingDetailPage(
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating, completed sales, and listing expansions in parallel
-  const [sellerRating, sellerCompletedSales, { data: listingExpansions }] = await Promise.all([
+  // Fetch seller rating, completed sales, listing expansions, and buyer country in parallel
+  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerCountryResult] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
     supabase
       .from('listing_expansions')
-      .select('bgg_game_id, game_name, publisher, language, edition_year, games(thumbnail)')
+      .select('bgg_game_id, game_name, version_name, publisher, language, edition_year, games(thumbnail)')
       .eq('listing_id', id)
       .order('created_at'),
+    // Fetch buyer country for shipping estimate (only if signed in and not the owner)
+    user && !isOwner
+      ? supabase.from('user_profiles').select('country').eq('id', user.id).single<{ country: string }>()
+      : Promise.resolve({ data: null }),
   ]);
 
   const isAuction = listing.listing_type === 'auction';
@@ -205,6 +219,36 @@ export default async function ListingDetailPage(
   const sellerCountryName = getCountryName(listing.user_profiles?.country);
   const gameImage = toBggFullSize(listing.version_thumbnail) ?? toBggFullSize(listing.games?.image) ?? toBggFullSize(listing.games?.thumbnail) ?? null;
 
+  // Shipping price calculation
+  const sellerCountry = listing.country;
+  const buyerCountry = buyerCountryResult?.data?.country ?? null;
+  let shippingCents: number | null = null;
+  let shippingFromCents: number | null = null;
+
+  if (buyerCountry && isTerminalCountry(sellerCountry) && isTerminalCountry(buyerCountry)) {
+    // Signed-in user with known country — show exact rate
+    shippingCents = getShippingPriceCents(sellerCountry, buyerCountry);
+  } else if (isTerminalCountry(sellerCountry)) {
+    // Signed-out or non-Baltic buyer — show cheapest rate from seller's country
+    shippingFromCents = Math.min(...Object.values(SHIPPING_PRICES_CENTS[sellerCountry]));
+  }
+
+  // Player count display
+  const games = listing.games;
+  const playerCountDisplay = games?.min_players
+    ? games.max_players && games.max_players !== games.min_players
+      ? `${games.min_players}–${games.max_players}`
+      : `${games.min_players}`
+    : games?.player_count ?? null;
+
+  // Playing time display
+  const playingTime = games?.playing_time && games.playing_time !== '0' ? games.playing_time : null;
+
+  // Expansion count for header
+  const expansionCount = listingExpansions?.length ?? 0;
+
+  const hasGameDetails = playerCountDisplay || playingTime || (games?.weight != null && games.weight > 0) || (games?.min_age != null && games.min_age > 0) || games?.categories?.length || games?.mechanics?.length || games?.description;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
@@ -233,41 +277,66 @@ export default async function ListingDetailPage(
         </Alert>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left: Photos */}
-        <div>
+        {/* Left column: Photos + Game details (desktop only) */}
+        <div className="space-y-6">
           <PhotoGallery
             photos={listing.photos ?? []}
             gameImage={gameImage}
             gameTitle={listing.game_name}
           />
+          {/* Game details — desktop only (mobile copy is at the bottom of right column) */}
+          {hasGameDetails && (
+            <div className="hidden lg:block">
+              <GameDetailsCard
+                games={games}
+                bggGameId={listing.bgg_game_id}
+                listingGameName={listing.game_name}
+                playerCountDisplay={playerCountDisplay}
+                playingTime={playingTime}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Right: Details */}
+        {/* Right column: About this copy */}
         <div className="space-y-6">
-          {/* Title & condition */}
-          <div>
-            {(listing.publisher || listing.game_year) && (
-              <p className="text-xs font-medium uppercase tracking-wider text-semantic-brand mb-1">
-                {[listing.publisher, listing.game_year].filter(Boolean).join(' \u00B7 ')}
-              </p>
-            )}
-            <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-              {listing.game_name}
-            </h1>
-            <div className="mt-3 flex items-center gap-3">
-              <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
-              <span className="text-sm text-semantic-text-muted">
-                {conditionInfo.description}
-              </span>
+          {/* Title */}
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+            {listing.game_name}
+          </h1>
+
+          {/* Edition details — compact icon row */}
+          {(listing.version_name || listing.language || listing.publisher || listing.edition_year) && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
+              {listing.version_name && (
+                <div className="flex items-center gap-1.5">
+                  <Tag size={15} className="flex-shrink-0" />
+                  <span>{listing.version_name}</span>
+                </div>
+              )}
+              {listing.language && (
+                <div className="flex items-center gap-1.5">
+                  <Translate size={15} className="flex-shrink-0" />
+                  <span>{listing.language}</span>
+                </div>
+              )}
+              {listing.publisher && (
+                <div className="flex items-center gap-1.5">
+                  <Buildings size={15} className="flex-shrink-0" />
+                  <span>{listing.publisher}</span>
+                </div>
+              )}
+              {listing.edition_year && (
+                <div className="flex items-center gap-1.5">
+                  <CalendarBlank size={15} className="flex-shrink-0" />
+                  <span>{listing.edition_year}</span>
+                </div>
+              )}
             </div>
-            <ShareButtons
-              url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/listings/${listing.id}`}
-              title={listing.game_name}
-            />
-          </div>
+          )}
 
           {/* Price & action */}
-          <div className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-input p-4 space-y-3">
+          <div className="rounded-lg border border-semantic-border-subtle p-4 space-y-3">
             <div className="flex items-center gap-2">
               {isAuction ? (
                 <Badge variant="auction">Auction</Badge>
@@ -276,14 +345,22 @@ export default async function ListingDetailPage(
                   {formatCentsToCurrency(listing.price_cents)}
                 </p>
               )}
-              {!isOwner && (
-                <FavoriteButton
-                  listingId={listing.id}
-                  initialFavorited={isFavorited}
-                  isAuthenticated={!!user}
-                />
-              )}
             </div>
+
+            {/* Shipping estimate */}
+            {!isOwner && (
+              <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
+                <Package size={16} className="flex-shrink-0" />
+                {shippingCents != null ? (
+                  <span>Shipping {formatCentsToCurrency(shippingCents)} · Ships from {sellerCountryName}</span>
+                ) : shippingFromCents != null ? (
+                  <span>Shipping from {formatCentsToCurrency(shippingFromCents)} · Ships from {sellerCountryName}</span>
+                ) : (
+                  <span>Ships from {sellerCountryName}</span>
+                )}
+              </div>
+            )}
+
             {isAuction && auctionState ? (
               <>
                 <BidPanel
@@ -330,64 +407,95 @@ export default async function ListingDetailPage(
                     sellerCountry: listing.country,
                     sellerId: listing.seller_id,
                     condition: listing.condition,
-                    expansionCount: listingExpansions?.length ?? 0,
+                    expansionCount: expansionCount,
                   }}
                 />
-                {user ? (
-                  <Link href={`/messages?listing=${listing.id}`}>
-                    <Button variant="secondary">Message seller</Button>
-                  </Link>
-                ) : (
-                  <Link href="/auth/signin">
-                    <Button variant="secondary">Message seller</Button>
-                  </Link>
-                )}
               </div>
             )}
           </div>
 
-          {/* Listing description */}
-          {listing.description && (
-            <div>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
-                Description
+          {/* Included expansions */}
+          {listingExpansions && expansionCount > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-base font-semibold text-semantic-text-heading">
+                {expansionCount === 1
+                  ? 'Included expansion'
+                  : `Included expansions (${expansionCount})`}
               </h2>
-              <p className="text-semantic-text-secondary whitespace-pre-line">
-                {listing.description}
-              </p>
+              <div className="space-y-2">
+                <ShowMoreList maxItems={2} label="expansions">
+                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; version_name: string | null; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null }[] }) => {
+                    const thumbnail = exp.games?.[0]?.thumbnail ?? null;
+                    return (
+                      <Card key={exp.bgg_game_id}>
+                        <CardBody>
+                          <div className="flex items-center gap-4">
+                            <GameThumb src={thumbnail} alt={exp.game_name} size="lg" />
+                            <div className="flex-1 min-w-0">
+                              <a
+                                href={`https://boardgamegeek.com/boardgame/${exp.bgg_game_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-semantic-text-primary sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom truncate block"
+                              >
+                                {exp.game_name}
+                              </a>
+                              {(exp.version_name || exp.language || exp.publisher || exp.edition_year) && (
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
+                                  {exp.version_name && (
+                                    <span className="flex items-center gap-1">
+                                      <Tag size={13} className="shrink-0" />
+                                      {exp.version_name}
+                                    </span>
+                                  )}
+                                  {exp.language && (
+                                    <span className="flex items-center gap-1">
+                                      <Translate size={13} className="shrink-0" />
+                                      {exp.language}
+                                    </span>
+                                  )}
+                                  {exp.publisher && (
+                                    <span className="flex items-center gap-1">
+                                      <Buildings size={13} className="shrink-0" />
+                                      {exp.publisher}
+                                    </span>
+                                  )}
+                                  {exp.edition_year && (
+                                    <span className="flex items-center gap-1">
+                                      <CalendarBlank size={13} className="shrink-0" />
+                                      {exp.edition_year}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </ShowMoreList>
+              </div>
             </div>
           )}
 
-          {/* Edition info */}
-          {(listing.publisher || listing.language || listing.edition_year) && (
-            <Card>
-              <CardBody className="space-y-2">
-                <h2 className="text-base font-semibold text-semantic-text-heading">
-                  Edition details
-                </h2>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                  {listing.publisher && (
-                    <>
-                      <dt className="text-semantic-text-muted">Publisher</dt>
-                      <dd className="text-semantic-text-secondary">{listing.publisher}</dd>
-                    </>
-                  )}
-                  {listing.language && (
-                    <>
-                      <dt className="text-semantic-text-muted">Language</dt>
-                      <dd className="text-semantic-text-secondary">{listing.language}</dd>
-                    </>
-                  )}
-                  {listing.edition_year && (
-                    <>
-                      <dt className="text-semantic-text-muted">Year</dt>
-                      <dd className="text-semantic-text-secondary">{listing.edition_year}</dd>
-                    </>
-                  )}
-                </dl>
-              </CardBody>
-            </Card>
-          )}
+          {/* Condition & notes */}
+          <div>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+              Condition & notes
+            </h2>
+            <div className="flex items-center gap-3">
+              <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
+              <span className="text-sm text-semantic-text-muted">
+                {conditionInfo.description}
+              </span>
+            </div>
+            {listing.description && (
+              <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
+                {listing.description}
+              </p>
+            )}
+          </div>
 
           {/* Seller info */}
           <Card>
@@ -436,88 +544,137 @@ export default async function ListingDetailPage(
             </CardBody>
           </Card>
 
-          {/* Included expansions */}
-          {listingExpansions && listingExpansions.length > 0 && (
-            <Card>
-              <CardBody className="space-y-3">
-                <h2 className="text-base font-semibold text-semantic-text-heading">
-                  Included expansions
-                </h2>
-                <div className="space-y-2">
-                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null }[] }) => {
-                    const thumbnail = exp.games?.[0]?.thumbnail ?? null;
-                    return (
-                    <div key={exp.bgg_game_id} className="flex items-center gap-3">
-                      <GameThumb src={thumbnail} alt={exp.game_name} size="sm" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-semantic-text-primary truncate">
-                          {exp.game_name}
-                        </p>
-                        {(exp.publisher || exp.language || exp.edition_year) && (
-                          <p className="text-xs text-semantic-text-muted truncate">
-                            {[exp.publisher, exp.language, exp.edition_year].filter(Boolean).join(' · ')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                  })}
-                </div>
-              </CardBody>
-            </Card>
-          )}
+          {/* Share + Favorite (utility actions) */}
+          <div className="flex items-center gap-3">
+            <ShareButtons
+              url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/listings/${listing.id}`}
+              title={listing.game_name}
+            />
+            {!isOwner && (
+              <FavoriteButton
+                listingId={listing.id}
+                initialFavorited={isFavorited}
+                isAuthenticated={!!user}
+              />
+            )}
+          </div>
 
-          {/* Game details from BGG */}
-          {(listing.games?.player_count || listing.games?.weight || listing.games?.description) && (
-            <Card>
-              <CardBody className="space-y-3">
-                <h2 className="text-base font-semibold text-semantic-text-heading">
-                  Game details
-                </h2>
-                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                  {listing.games.player_count && (
-                    <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
-                      <Users size={16} />
-                      <span>{listing.games.player_count} players</span>
-                    </div>
-                  )}
-                  {listing.games.weight != null && listing.games.weight > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-semantic-text-secondary">
-                      <Scales size={16} />
-                      <span>{getWeightLabel(listing.games.weight)} ({listing.games.weight.toFixed(1)} / 5)</span>
-                    </div>
-                  )}
-                </div>
-                {listing.games.categories && listing.games.categories.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Categories</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {listing.games.categories.map((cat) => (
-                        <Badge key={cat} variant="default">{cat}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {listing.games.mechanics && listing.games.mechanics.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Mechanics</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {listing.games.mechanics.map((mech) => (
-                        <Badge key={mech} variant="default">{mech}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {listing.games.description && (
-                  <p className="text-sm text-semantic-text-secondary line-clamp-6">
-                    {listing.games.description}
-                  </p>
-                )}
-              </CardBody>
-            </Card>
+          {/* Game details — mobile only (desktop copy is in the left column) */}
+          {hasGameDetails && (
+            <div className="lg:hidden">
+              <GameDetailsCard
+                games={games}
+                bggGameId={listing.bgg_game_id}
+                listingGameName={listing.game_name}
+                playerCountDisplay={playerCountDisplay}
+                playingTime={playingTime}
+              />
+            </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay, playingTime }: {
+  games: ListingDetailRow['games'];
+  bggGameId: number;
+  listingGameName: string;
+  playerCountDisplay: string | null;
+  playingTime: string | null;
+}) {
+  const primaryName = games?.name;
+  const showPrimaryName = primaryName && primaryName !== listingGameName;
+
+  return (
+    <Card>
+      <CardBody className="space-y-3">
+        {/* Game identity — same layout as expansion cards */}
+        <div className="flex items-center gap-4">
+          <GameThumb src={games?.thumbnail} alt={primaryName ?? listingGameName} size="xl" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-semantic-text-primary truncate">
+              {showPrimaryName ? primaryName : listingGameName}
+              {games?.yearpublished && (
+                <span className="text-semantic-text-muted"> · {games.yearpublished}</span>
+              )}
+              {showPrimaryName && !games?.yearpublished && (
+                <span className="text-semantic-text-muted"> · {listingGameName}</span>
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
+              {playerCountDisplay && (
+                <span className="flex items-center gap-1">
+                  <Users size={13} className="shrink-0" />
+                  {playerCountDisplay}
+                </span>
+              )}
+              {games?.min_age != null && games.min_age > 0 && (
+                <span className="flex items-center gap-1">
+                  <Baby size={13} className="shrink-0" />
+                  {games.min_age}+
+                </span>
+              )}
+              {playingTime && (
+                <span className="flex items-center gap-1">
+                  <Timer size={13} className="shrink-0" />
+                  {playingTime} min
+                </span>
+              )}
+              {games?.weight != null && games.weight > 0 && (
+                <span className="flex items-center gap-1">
+                  <Scales size={13} className="shrink-0" />
+                  {getWeightLabel(games.weight)} ({games.weight.toFixed(1)}/5)
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        {games?.categories && games.categories.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Categories</p>
+            <div className="flex flex-wrap gap-1.5">
+              {games.categories.map((cat) => (
+                <Badge key={cat} variant="default">{cat}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        {games?.mechanics && games.mechanics.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Mechanics</p>
+            <div className="flex flex-wrap gap-1.5">
+              {games.mechanics.map((mech) => (
+                <Badge key={mech} variant="default">{mech}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        {games?.description && (
+          <ShowMoreText lines={4} className="text-sm text-semantic-text-secondary">
+            {games.description}
+          </ShowMoreText>
+        )}
+      </CardBody>
+      {/* BGG attribution */}
+      <div className="border-t border-semantic-border-subtle px-4 py-3">
+        <a
+          href={`https://boardgamegeek.com/boardgame/${bggGameId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block opacity-60 hover:opacity-100 transition-opacity duration-250 ease-out-custom"
+        >
+          <Image
+            src="/images/powered-by-bgg.svg"
+            alt="Powered by BoardGameGeek"
+            width={120}
+            height={28}
+            className="h-auto"
+            unoptimized
+          />
+        </a>
+      </div>
+    </Card>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank, PencilSimple } from '@phosphor-icons/react/ssr';
+import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank, PencilSimple, Tag } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
@@ -200,8 +200,8 @@ export function VersionStep({
       version_source: 'bgg',
       bgg_version_id: version.id,
       version_name: version.name,
-      publisher: version.publisher ?? version.publishers?.[0] ?? null,
-      language: version.language ?? version.languages?.[0] ?? null,
+      publisher: version.publishers?.join(', ') ?? version.publisher ?? null,
+      language: version.languages?.join(', ') ?? version.language ?? null,
       edition_year: version.yearPublished ?? null,
       version_thumbnail: toBggFullSize(version.image) ?? toBggFullSize(version.thumbnail) ?? null,
     });
@@ -508,10 +508,11 @@ function VersionCard({
                   {gameName}
                 </p>
               )}
-              <p className={gameName
+              <p className={`flex items-center gap-1 ${gameName
                 ? 'text-sm text-semantic-text-muted'
                 : 'font-medium text-semantic-text-primary'
-              }>
+              }`}>
+                <Tag size={14} className="shrink-0" />
                 {version.name}
               </p>
               <VersionMeta version={version} />
