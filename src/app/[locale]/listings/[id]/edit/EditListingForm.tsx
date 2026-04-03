@@ -94,7 +94,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
   // Expansion state
-  const [availableExpansions, setAvailableExpansions] = useState<Array<{ id: number; name: string; year?: number }>>([]);
+  const [availableExpansions, setAvailableExpansions] = useState<Array<{ id: number; name: string; year?: number; thumbnail?: string | null }>>([]);
   const [selectedExpansionIds, setSelectedExpansionIds] = useState<number[]>(
     existingExpansions.map((e) => e.bgg_game_id)
   );

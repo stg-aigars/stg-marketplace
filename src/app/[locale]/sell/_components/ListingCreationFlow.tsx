@@ -23,6 +23,7 @@ interface GameExpansion {
   id: number;
   name: string;
   year?: number;
+  thumbnail?: string | null;
 }
 
 interface DuplicateListing {

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Input } from '@/components/ui';
+import { X } from '@phosphor-icons/react/ssr';
+import { Input, Card, CardBody, Button } from '@/components/ui';
+import { GameThumb } from '@/components/listings/atoms';
 
 interface ExpansionStepProps {
-  expansions: Array<{ id: number; name: string; year?: number }>;
+  expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null }>;
   selectedExpansionIds: number[];
   onSelectionChange: (ids: number[]) => void;
 }
@@ -31,6 +33,41 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
       <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
         Select included expansions
       </h2>
+
+      {/* Selected expansion cards */}
+      {selectedExpansionIds.length > 0 && (
+        <div className="space-y-2">
+          {selectedExpansionIds.map((id) => {
+            const expansion = expansions.find((e) => e.id === id);
+            if (!expansion) return null;
+            return (
+              <Card key={id}>
+                <CardBody className="py-2.5">
+                  <div className="flex items-center gap-3">
+                    <GameThumb src={expansion.thumbnail} alt={expansion.name} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-semantic-text-primary truncate">
+                        {expansion.name}
+                      </p>
+                      {expansion.year != null && (
+                        <p className="text-xs text-semantic-text-muted">{expansion.year}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSelectionChange(selectedExpansionIds.filter((eid) => eid !== id))}
+                      aria-label={`Remove ${expansion.name}`}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <Input
         placeholder="Filter expansions..."
