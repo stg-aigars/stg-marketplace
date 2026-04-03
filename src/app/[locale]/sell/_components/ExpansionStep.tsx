@@ -42,15 +42,15 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
             if (!expansion) return null;
             return (
               <Card key={id}>
-                <CardBody className="py-2.5">
-                  <div className="flex items-center gap-3">
-                    <GameThumb src={expansion.thumbnail} alt={expansion.name} size="sm" />
+                <CardBody>
+                  <div className="flex items-center gap-4">
+                    <GameThumb src={expansion.thumbnail} alt={expansion.name} size="lg" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-semantic-text-primary truncate">
+                      <p className="font-medium text-semantic-text-primary truncate">
                         {expansion.name}
                       </p>
                       {expansion.year != null && (
-                        <p className="text-xs text-semantic-text-muted">{expansion.year}</p>
+                        <p className="text-sm text-semantic-text-muted">{expansion.year}</p>
                       )}
                     </div>
                     <Button
