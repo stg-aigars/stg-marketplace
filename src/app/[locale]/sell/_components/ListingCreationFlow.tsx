@@ -10,7 +10,7 @@ import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/lis
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
-import { GameSearchStep, buildEnrichedGame } from './GameSearchStep';
+import { GameSearchStep } from './GameSearchStep';
 import type { EnrichedGame } from './GameSearchStep';
 import { VersionStep } from './VersionStep';
 import { ConditionPhotosStep } from './ConditionPhotosStep';
@@ -136,7 +136,6 @@ export function ListingCreationFlow({
   const [expansionGateAnswer, setExpansionGateAnswer] = useState<boolean | null>(null);
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
   const [enrichedExpansions, setEnrichedExpansions] = useState<Record<number, EnrichedGame>>({});
-  const [enrichingExpansionIds, setEnrichingExpansionIds] = useState<Set<number>>(new Set());
 
   const STEPS: { id: StepId; label: string }[] = [
     { id: 'game', label: 'Game' },
@@ -198,12 +197,15 @@ export function ListingCreationFlow({
     return () => { cancelled = true; };
   }, [formData.bgg_game_id, formData.is_expansion]);
 
-  // Enrich expansion thumbnails (non-blocking, one-shot per batch)
+  // Enrich expansion metadata (thumbnails + alternate names) via single batch call.
+  // Fires as soon as availableExpansions loads — before user even clicks "Yes".
+  // enrich-batch now saves full metadata to DB, so individual enrich calls on
+  // the Edition step become no-ops (ensureGameMetadata sees data already exists).
   const enrichedExpansionIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     const missing = availableExpansions.filter(
-      (e) => !e.thumbnail && !enrichedExpansionIdsRef.current.has(e.id)
+      (e) => !enrichedExpansionIdsRef.current.has(e.id)
     );
     if (missing.length === 0) return;
 
@@ -221,7 +223,9 @@ export function ListingCreationFlow({
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (cancelled || !data?.games) return;
-        const games: Record<number, { thumbnail: string | null }> = data.games;
+        const games: Record<number, { thumbnail: string | null; image: string | null; alternate_names: string[] | null }> = data.games;
+
+        // Update expansion thumbnails in the list
         setAvailableExpansions((prev) =>
           prev.map((exp) => {
             const enriched = games[exp.id];
@@ -231,70 +235,34 @@ export function ListingCreationFlow({
             return exp;
           })
         );
+
+        // Build EnrichedGame objects for expansion VersionSteps
+        const newEnriched: Record<number, EnrichedGame> = {};
+        for (const exp of missing) {
+          const g = games[exp.id];
+          if (g) {
+            newEnriched[exp.id] = {
+              id: exp.id,
+              name: exp.name,
+              yearpublished: exp.year ?? null,
+              thumbnail: g.thumbnail,
+              image: g.image,
+              player_count: null,
+              alternateNames: g.alternate_names ?? [],
+              matchedAlternateName: null,
+            };
+          }
+        }
+        if (Object.keys(newEnriched).length > 0) {
+          setEnrichedExpansions((prev) => ({ ...prev, ...newEnriched }));
+        }
       })
       .catch(() => {
-        // Non-fatal — cards show placeholder icon
+        // Non-fatal — expansions render without alternate names
       });
 
     return () => { cancelled = true; };
   }, [availableExpansions]);
-
-  // Enrich selected expansions sequentially (alternate names, metadata)
-  // Triggers when edition step renders with unenriched expansions
-  const enrichmentRunningRef = useRef(false);
-
-  useEffect(() => {
-    if (currentStepId !== 'edition') return;
-
-    const unenriched = formData.selected_expansion_ids.filter(
-      (id) => !enrichedExpansions[id] && !enrichingExpansionIds.has(id)
-    );
-    if (unenriched.length === 0 || enrichmentRunningRef.current) return;
-
-    enrichmentRunningRef.current = true;
-    let cancelled = false;
-
-    async function enrichSequentially() {
-      for (const expId of unenriched) {
-        if (cancelled) break;
-        const expansion = availableExpansions.find((e) => e.id === expId);
-        if (!expansion) continue;
-
-        setEnrichingExpansionIds((prev) => new Set([...prev, expId]));
-        try {
-          const res = await apiFetch(`/api/games/${expId}/enrich`, { method: 'POST' });
-          if (res.ok && !cancelled) {
-            const data = await res.json();
-            const enriched = buildEnrichedGame(
-              expId, expansion.name, data.game?.yearpublished ?? null, data.game
-            );
-            setEnrichedExpansions((prev) => ({ ...prev, [expId]: enriched }));
-          }
-        } catch {
-          // Non-fatal — expansion will render without alternate names
-        } finally {
-          if (!cancelled) {
-            setEnrichingExpansionIds((prev) => {
-              const next = new Set(prev);
-              next.delete(expId);
-              return next;
-            });
-          }
-        }
-
-        // 200ms delay between calls to respect BGG rate limits
-        if (!cancelled) await new Promise((r) => setTimeout(r, 200));
-      }
-      enrichmentRunningRef.current = false;
-    }
-
-    enrichSequentially();
-
-    return () => {
-      cancelled = true;
-      enrichmentRunningRef.current = false;
-    };
-  }, [currentStepId, formData.selected_expansion_ids, enrichedExpansions, enrichingExpansionIds, availableExpansions]);
 
   const canProceed = (): boolean => {
     switch (currentStepId) {
