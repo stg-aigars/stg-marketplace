@@ -11,7 +11,7 @@ import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { formatDate } from '@/lib/date-utils';
 import { getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
-import { getShippingPriceCents, SHIPPING_PRICES_CENTS, isTerminalCountry } from '@/lib/services/unisend/types';
+import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
@@ -230,7 +230,7 @@ export default async function ListingDetailPage(
     shippingCents = getShippingPriceCents(sellerCountry, buyerCountry);
   } else if (isTerminalCountry(sellerCountry)) {
     // Signed-out or non-Baltic buyer — show cheapest rate from seller's country
-    shippingFromCents = Math.min(...Object.values(SHIPPING_PRICES_CENTS[sellerCountry]));
+    shippingFromCents = getMinShippingPriceCents(sellerCountry);
   }
 
   // Player count display

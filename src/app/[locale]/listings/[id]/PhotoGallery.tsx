@@ -36,11 +36,12 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
       if (e.key === 'ArrowLeft') goPrev();
     }
     document.addEventListener('keydown', onKeyDown);
-    // Prevent body scroll while lightbox is open
+    // Prevent body scroll while lightbox is open — restore previous value on cleanup
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = '';
+      document.body.style.overflow = prevOverflow;
     };
   }, [lightboxOpen, closeLightbox, goNext, goPrev]);
 
@@ -111,7 +112,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
           <button
             type="button"
             onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 text-white/70 hover:text-white transition-colors p-2"
+            className="absolute top-4 right-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
             aria-label="Close"
           >
             <X size={28} weight="bold" />
@@ -123,7 +124,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                className="absolute left-4 z-10 text-white/70 hover:text-white transition-colors p-2"
+                className="absolute left-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
                 aria-label="Previous photo"
               >
                 <CaretLeft size={32} weight="bold" />
@@ -131,7 +132,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); goNext(); }}
-                className="absolute right-4 z-10 text-white/70 hover:text-white transition-colors p-2"
+                className="absolute right-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
                 aria-label="Next photo"
               >
                 <CaretRight size={32} weight="bold" />
