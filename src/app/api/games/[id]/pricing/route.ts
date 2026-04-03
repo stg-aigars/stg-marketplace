@@ -39,24 +39,28 @@ export async function GET(
   ]);
 
   // If expansion IDs provided, fetch their retail prices in parallel
+  // Reuse already-fetched base game retail to avoid duplicate call
   let bundleFields: Record<string, unknown> = {};
   if (expansionIds.length > 0) {
-    const allIds = [gameId, ...expansionIds];
-    const retailResults = await Promise.all(
-      allIds.map(async (id) => {
+    const expansionRetailResults = await Promise.all(
+      expansionIds.map(async (id) => {
         const r = await fetchRetailPrice(id, supabase);
         return { bggGameId: id, retailPriceCents: r.priceCents, shopName: r.shopName };
       })
     );
 
-    const withData = retailResults.filter((r) => r.retailPriceCents !== null);
+    const allResults = [
+      { bggGameId: gameId, retailPriceCents: retail.priceCents, shopName: retail.shopName },
+      ...expansionRetailResults,
+    ];
+    const withData = allResults.filter((r) => r.retailPriceCents !== null);
     const bundleTotal = withData.reduce((sum, r) => sum + (r.retailPriceCents ?? 0), 0);
 
     bundleFields = {
       bundleRetailPriceCents: withData.length > 0 ? bundleTotal : null,
-      breakdown: retailResults,
+      breakdown: allResults,
       gamesWithRetailData: withData.length,
-      totalGames: allIds.length,
+      totalGames: allResults.length,
     };
   }
 

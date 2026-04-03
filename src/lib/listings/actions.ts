@@ -465,23 +465,25 @@ export async function updateListing(
         })));
     }
 
-    // Update changed versions for existing expansions
+    // Update changed versions for existing expansions (parallel)
     const toUpdate = validExpansions.filter((e) => existingIds.has(e.bgg_game_id));
-    for (const exp of toUpdate) {
-      await service
-        .from('listing_expansions')
-        .update({
-          game_name: exp.game_name,
-          version_source: exp.version_source ?? null,
-          bgg_version_id: exp.bgg_version_id ?? null,
-          version_name: exp.version_name ?? null,
-          publisher: exp.publisher ?? null,
-          language: exp.language ?? null,
-          edition_year: exp.edition_year ?? null,
-          version_thumbnail: exp.version_thumbnail ?? null,
-        })
-        .eq('listing_id', data.id)
-        .eq('bgg_game_id', exp.bgg_game_id);
+    if (toUpdate.length > 0) {
+      await Promise.all(toUpdate.map((exp) =>
+        service
+          .from('listing_expansions')
+          .update({
+            game_name: exp.game_name,
+            version_source: exp.version_source ?? null,
+            bgg_version_id: exp.bgg_version_id ?? null,
+            version_name: exp.version_name ?? null,
+            publisher: exp.publisher ?? null,
+            language: exp.language ?? null,
+            edition_year: exp.edition_year ?? null,
+            version_thumbnail: exp.version_thumbnail ?? null,
+          })
+          .eq('listing_id', data.id)
+          .eq('bgg_game_id', exp.bgg_game_id)
+      ));
     }
   }
 

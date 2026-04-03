@@ -127,11 +127,11 @@ export function ListingCreationFlow({
   // Expansion discovery state
   const [availableExpansions, setAvailableExpansions] = useState<GameExpansion[]>([]);
   const [loadingExpansions, setLoadingExpansions] = useState(false);
-  const [expansionGateAnswer, setExpansionGateAnswer] = useState<'yes' | 'no' | null>(null);
+  const [expansionGateAnswer, setExpansionGateAnswer] = useState<boolean | null>(null);
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
 
   // Dynamic steps based on whether expansion step is shown
-  const showExpansionStep = expansionGateAnswer === 'yes';
+  const showExpansionStep = expansionGateAnswer === true;
 
   const steps = useMemo(() => {
     const allSteps: { id: StepId; label: string }[] = [
@@ -418,14 +418,14 @@ export function ListingCreationFlow({
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => setExpansionGateAnswer('yes')}
+                      onClick={() => setExpansionGateAnswer(true)}
                     >
                       Yes
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setExpansionGateAnswer('no')}
+                      onClick={() => setExpansionGateAnswer(false)}
                     >
                       No
                     </Button>
@@ -438,7 +438,7 @@ export function ListingCreationFlow({
             {showExpansionGateAnswered && (
               <div className="mt-4 flex items-center gap-2 text-sm text-semantic-text-muted">
                 <span>
-                  {expansionGateAnswer === 'yes'
+                  {expansionGateAnswer === true
                     ? `Expansions: Yes (${availableExpansions.length} available)`
                     : 'Expansions: No'}
                 </span>
@@ -447,7 +447,7 @@ export function ListingCreationFlow({
                   size="sm"
                   onClick={() => {
                     setExpansionGateAnswer(null);
-                    if (expansionGateAnswer === 'yes') {
+                    if (expansionGateAnswer === true) {
                       updateFormData({ selected_expansion_ids: [], expansion_versions: {} });
                     }
                   }}

@@ -444,9 +444,8 @@ export default async function ListingDetailPage(
                   Included expansions
                 </h2>
                 <div className="space-y-2">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {listingExpansions.map((exp: any) => {
-                    const thumbnail = exp.games?.thumbnail ?? null;
+                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null }[] }) => {
+                    const thumbnail = exp.games?.[0]?.thumbnail ?? null;
                     return (
                     <div key={exp.bgg_game_id} className="flex items-center gap-3">
                       <GameThumb src={thumbnail} alt={exp.game_name} size="sm" />

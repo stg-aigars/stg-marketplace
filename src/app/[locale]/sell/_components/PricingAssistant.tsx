@@ -46,8 +46,10 @@ export function PricingAssistant({
     setLoading(true);
     setError(false);
 
-    const expansionParam = expansionIds.length > 0 ? `&expansionIds=${expansionIds.join(',')}` : '';
-    apiFetch(`/api/games/${bggGameId}/pricing${expansionParam ? `?${expansionParam.slice(1)}` : ''}`, { signal: controller.signal })
+    const pricingUrl = expansionIds.length > 0
+      ? `/api/games/${bggGameId}/pricing?expansionIds=${expansionIds.join(',')}`
+      : `/api/games/${bggGameId}/pricing`;
+    apiFetch(pricingUrl, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
