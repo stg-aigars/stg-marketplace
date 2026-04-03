@@ -17,7 +17,6 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchBatchMetadata } from '../src/lib/bgg/api';
 
 const BGG_BATCH_SIZE = 20;
-const DELAY_BETWEEN_BATCHES_MS = 200;
 
 function parseArgs(): { count: number } {
   const args = process.argv.slice(2);
@@ -121,10 +120,7 @@ async function main() {
       failed += chunk.length;
     }
 
-    // Rate limit delay between batches
-    if (i + BGG_BATCH_SIZE < gameIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS));
-    }
+    // Rate limiting is handled by rateLimitedFetch() inside fetchBatchMetadata
   }
 
   console.log(`\nDone.`);

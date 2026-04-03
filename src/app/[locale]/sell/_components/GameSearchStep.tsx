@@ -318,8 +318,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                         <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
                       )}
                     </div>
-                    {game.matched_alternate_name &&
-                      !game.name.toLowerCase().includes(query.trim().toLowerCase()) && (
+                    {game.matched_alternate_name && (
                       <p className="text-xs text-semantic-text-muted truncate">
                         Also known as: {game.matched_alternate_name}
                       </p>
