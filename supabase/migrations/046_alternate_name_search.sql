@@ -17,26 +17,26 @@ RETURNS TABLE (
 DECLARE
   safe_query TEXT;
 BEGIN
-  -- Escape ILIKE wildcards into a distinct variable
-  -- so all three ILIKE clauses use the same escaped value
-  safe_query := replace(replace(replace(search_query, '\', '\\'), '%', '\%'), '_', '\_');
+  -- Escape ILIKE wildcards using '!' as the escape character
+  -- Avoids backslash ambiguity with standard_conforming_strings
+  safe_query := replace(replace(replace(search_query, '!', '!!'), '%', '!%'), '_', '!_');
 
   RETURN QUERY
   SELECT
     g.id, g.name, g.yearpublished, g.thumbnail, g.player_count, g.is_expansion,
     (
       SELECT val FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
-      WHERE x.val ILIKE '%' || safe_query || '%'
+      WHERE x.val ILIKE '%' || safe_query || '%' ESCAPE '!'
       LIMIT 1
     ) AS matched_alternate_name
   FROM games g
   WHERE
     (include_expansions OR g.is_expansion = FALSE)
     AND (
-      g.name ILIKE '%' || safe_query || '%'
+      g.name ILIKE '%' || safe_query || '%' ESCAPE '!'
       OR EXISTS (
         SELECT 1 FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
-        WHERE x.val ILIKE '%' || safe_query || '%'
+        WHERE x.val ILIKE '%' || safe_query || '%' ESCAPE '!'
       )
     )
   ORDER BY

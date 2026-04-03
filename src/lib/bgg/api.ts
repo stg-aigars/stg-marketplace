@@ -724,14 +724,19 @@ export interface GameMetadataUpdate {
   playing_time: string | null;
   designers: string[] | null;
   bayesaverage: number | null;
+  weight: number | null;
+  categories: string[] | null;
+  mechanics: string[] | null;
+  versions: BGGVersion[] | null;
+  versions_fetched_at: string;
   metadata_fetched_at: string;
 }
 
 /**
  * Fetch full metadata for multiple games in a single BGG API call.
- * Uses thing?id=X,Y,Z&stats=1 (no versions — enrichment scripts don't need them).
+ * Uses thing?id=X,Y,Z&stats=1&versions=1 for complete enrichment.
  * Returns a Map keyed by BGG game ID with parsed metadata ready for DB upsert.
- * Max 20 IDs per call (BGG limit).
+ * Caller must ensure max 20 IDs per call (BGG limit) — no internal chunking.
  */
 export async function fetchBatchMetadata(
   ids: number[]
@@ -743,7 +748,7 @@ export async function fetchBatchMetadata(
   const timeoutId = setTimeout(() => controller.abort(), 20000);
 
   const response = await rateLimitedFetch(
-    `https://boardgamegeek.com/xmlapi2/thing?id=${ids.join(',')}&stats=1`,
+    `https://boardgamegeek.com/xmlapi2/thing?id=${ids.join(',')}&stats=1&versions=1`,
     { signal: controller.signal, headers: createBGGHeaders() }
   );
   clearTimeout(timeoutId);
@@ -776,10 +781,21 @@ export async function fetchBatchMetadata(
       .filter((l) => l['@_type'] === 'boardgamedesigner')
       .map((l) => decodeHTMLEntities(l['@_value']));
 
+    const categories = links
+      .filter((l) => l['@_type'] === 'boardgamecategory')
+      .map((l) => decodeHTMLEntities(l['@_value']));
+
+    const mechanics = links
+      .filter((l) => l['@_type'] === 'boardgamemechanic')
+      .map((l) => decodeHTMLEntities(l['@_value']));
+
     const minPlayers = item.minplayers?.['@_value'] ? parseInt(item.minplayers['@_value']) : null;
     const maxPlayers = item.maxplayers?.['@_value'] ? parseInt(item.maxplayers['@_value']) : null;
     const playerCount = minPlayers && maxPlayers ? `${minPlayers}-${maxPlayers}` : null;
     const bayesaverage = item.statistics?.ratings?.bayesaverage?.['@_value'];
+    const averageweight = item.statistics?.ratings?.averageweight?.['@_value'];
+    const versions = parseVersionsFromXML(item);
+    const now = new Date().toISOString();
 
     result.set(id, {
       alternate_names: alternateNames.length > 0 ? alternateNames : null,
@@ -793,7 +809,12 @@ export async function fetchBatchMetadata(
       playing_time: item.playingtime?.['@_value'] || null,
       designers: designers.length > 0 ? designers : null,
       bayesaverage: bayesaverage ? parseFloat(bayesaverage) : null,
-      metadata_fetched_at: new Date().toISOString(),
+      weight: averageweight ? parseFloat(averageweight) : null,
+      categories: categories.length > 0 ? categories : null,
+      mechanics: mechanics.length > 0 ? mechanics : null,
+      versions: versions.length > 0 ? versions : null,
+      versions_fetched_at: now,
+      metadata_fetched_at: now,
     });
   }
 
