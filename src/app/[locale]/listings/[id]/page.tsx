@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
@@ -158,10 +159,15 @@ export default async function ListingDetailPage(
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating and completed sales in parallel
-  const [sellerRating, sellerCompletedSales] = await Promise.all([
+  // Fetch seller rating, completed sales, and listing expansions in parallel
+  const [sellerRating, sellerCompletedSales, { data: listingExpansions }] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
+    supabase
+      .from('listing_expansions')
+      .select('bgg_game_id, game_name, publisher, language, edition_year, games(thumbnail)')
+      .eq('listing_id', id)
+      .order('created_at'),
   ]);
 
   const isAuction = listing.listing_type === 'auction';
@@ -428,6 +434,48 @@ export default async function ListingDetailPage(
               </div>
             </CardBody>
           </Card>
+
+          {/* Included expansions */}
+          {listingExpansions && listingExpansions.length > 0 && (
+            <Card>
+              <CardBody className="space-y-3">
+                <h2 className="text-base font-semibold text-semantic-text-heading">
+                  Included expansions
+                </h2>
+                <div className="space-y-2">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {listingExpansions.map((exp: any) => {
+                    const thumbnail = exp.games?.thumbnail ?? null;
+                    return (
+                    <div key={exp.bgg_game_id} className="flex items-center gap-3">
+                      {thumbnail ? (
+                        <Image
+                          src={thumbnail}
+                          alt={exp.game_name}
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 rounded object-contain bg-semantic-bg-secondary shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-semantic-bg-secondary shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-semantic-text-primary truncate">
+                          {exp.game_name}
+                        </p>
+                        {(exp.publisher || exp.language || exp.edition_year) && (
+                          <p className="text-xs text-semantic-text-muted truncate">
+                            {[exp.publisher, exp.language, exp.edition_year].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                  })}
+                </div>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Game details from BGG */}
           {(listing.games?.player_count || listing.games?.weight || listing.games?.description) && (

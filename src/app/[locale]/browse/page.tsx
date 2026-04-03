@@ -144,6 +144,23 @@ export default async function BrowsePage(
   ]);
   const isAuthenticated = !!user;
 
+  // Fetch expansion counts for listed games
+  const listingIds = (listings ?? []).map((l) => l.id);
+  let expansionCounts: Record<string, number> = {};
+  if (listingIds.length > 0) {
+    const { data: expansions } = await supabase
+      .from('listing_expansions')
+      .select('listing_id')
+      .in('listing_id', listingIds);
+
+    if (expansions) {
+      expansionCounts = expansions.reduce((acc, e) => {
+        acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+  }
+
   const filteredListings = listings ?? [];
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -196,6 +213,7 @@ export default async function BrowsePage(
                 sellerCountry={listing.country}
                 isFavorited={favoriteIds.has(listing.id)}
                 isAuthenticated={isAuthenticated}
+                expansionCount={expansionCounts[listing.id] ?? 0}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}

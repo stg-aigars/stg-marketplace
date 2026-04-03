@@ -14,6 +14,7 @@ interface ListingCardMiniProps {
   firstPhoto: string | null;
   condition: ListingCondition;
   priceCents: number;
+  expansionCount?: number;
 }
 
 function ListingCardMini({
@@ -23,6 +24,7 @@ function ListingCardMini({
   firstPhoto,
   condition,
   priceCents,
+  expansionCount = 0,
 }: ListingCardMiniProps) {
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
   const conditionLabel = getConditionLabel(condition);
@@ -49,6 +51,11 @@ function ListingCardMini({
         {/* Compact details */}
         <div className="p-2 space-y-1">
           <GameTitle name={gameTitle} size="xs" serif clamp={2} />
+          {expansionCount > 0 && (
+            <p className="text-[10px] text-semantic-text-muted leading-tight">
+              +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
+            </p>
+          )}
           <div className="flex items-center gap-1.5">
             <Price cents={priceCents} size="sm" />
             <span className="text-xs text-semantic-text-muted">{conditionLabel}</span>
