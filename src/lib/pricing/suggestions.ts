@@ -39,6 +39,15 @@ export interface PriceSuggestionResponse {
   marketplace: MarketplaceStats;
   attributionUrl: string | null;
   cached: boolean;
+  // Bundle fields (present when expansionIds provided)
+  bundleRetailPriceCents?: number | null;
+  breakdown?: Array<{
+    bggGameId: number;
+    retailPriceCents: number | null;
+    shopName: string | null;
+  }>;
+  gamesWithRetailData?: number;
+  totalGames?: number;
 }
 
 interface RetailPriceResult {

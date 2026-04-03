@@ -12,13 +12,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ games: [] });
   }
 
+  const includeExpansions = request.nextUrl.searchParams.get('includeExpansions') === 'true';
+
   const supabase = await createClient();
 
-  const { data: games, error } = await supabase
+  let query = supabase
     .from('games')
-    .select('id, name, yearpublished, thumbnail, player_count')
-    .ilike('name', `%${q}%`)
-    .eq('is_expansion', false)
+    .select('id, name, yearpublished, thumbnail, player_count, is_expansion')
+    .ilike('name', `%${q}%`);
+
+  if (!includeExpansions) {
+    query = query.eq('is_expansion', false);
+  }
+
+  const { data: games, error } = await query
+    .order('is_expansion', { ascending: true })
     .order('bayesaverage', { ascending: false, nullsFirst: false })
     .limit(20);
 

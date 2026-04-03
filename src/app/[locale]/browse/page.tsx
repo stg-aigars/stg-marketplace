@@ -62,9 +62,25 @@ export default async function BrowsePage(
     filters.mechanics.length > 0 ||
     filters.weightLevels.length > 0;
 
+  // Pre-fetch expansion game IDs that have active listings, to exclude when toggle is off.
+  // This is bounded by active listing count (not total games), so it stays small.
+  let excludeExpansionGameIds: number[] = [];
+  if (!filters.showExpansions) {
+    const { data: activeExpListings } = await supabase
+      .from('listings')
+      .select('bgg_game_id, games!inner(is_expansion)')
+      .eq('status', 'active')
+      .eq('games.is_expansion', true);
+    excludeExpansionGameIds = [...new Set((activeExpListings ?? []).map((l) => l.bgg_game_id))];
+  }
+
   let gameFilterIds: number[] | null = null;
   if (hasGameFilters) {
-    let gamesQuery = supabase.from('games').select('id').eq('is_expansion', false);
+    let gamesQuery = supabase.from('games').select('id');
+    // Exclude expansions if toggle is off
+    if (!filters.showExpansions) {
+      gamesQuery = gamesQuery.eq('is_expansion', false);
+    }
 
     if (filters.playerCount !== null) {
       gamesQuery = gamesQuery
@@ -123,6 +139,9 @@ export default async function BrowsePage(
     } else {
       query = query.in('bgg_game_id', gameFilterIds);
     }
+  } else if (excludeExpansionGameIds.length > 0) {
+    // No game-level filters active, but exclude expansion-primary listings at DB level
+    query = query.not('bgg_game_id', 'in', `(${excludeExpansionGameIds.join(',')})`);
   }
 
   // Sort
@@ -143,6 +162,23 @@ export default async function BrowsePage(
     supabase.auth.getUser(),
   ]);
   const isAuthenticated = !!user;
+
+  // Fetch expansion counts for listed games
+  const listingIds = (listings ?? []).map((l) => l.id);
+  let expansionCounts: Record<string, number> = {};
+  if (listingIds.length > 0) {
+    const { data: expansions } = await supabase
+      .from('listing_expansions')
+      .select('listing_id')
+      .in('listing_id', listingIds);
+
+    if (expansions) {
+      expansionCounts = expansions.reduce((acc, e) => {
+        acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+  }
 
   const filteredListings = listings ?? [];
   const totalCount = count ?? 0;
@@ -196,6 +232,7 @@ export default async function BrowsePage(
                 sellerCountry={listing.country}
                 isFavorited={favoriteIds.has(listing.id)}
                 isAuthenticated={isAuthenticated}
+                expansionCount={expansionCounts[listing.id] ?? 0}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}

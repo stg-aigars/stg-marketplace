@@ -185,6 +185,37 @@ export async function createListing(
     return { error: 'Something went wrong. Please try again' };
   }
 
+  // Insert expansion rows (non-blocking — listing exists even if this fails)
+  if (data.expansions && data.expansions.length > 0) {
+    // Self-reference guard: reject if any expansion matches the base game
+    const validExpansions = data.expansions.filter((e) => e.bgg_game_id !== data.bgg_game_id);
+
+    if (validExpansions.length > 0) {
+      const service = createServiceClient();
+      const expansionRows = validExpansions.map((e) => ({
+        listing_id: listing.id,
+        bgg_game_id: e.bgg_game_id,
+        game_name: e.game_name,
+        version_source: e.version_source ?? null,
+        bgg_version_id: e.bgg_version_id ?? null,
+        version_name: e.version_name ?? null,
+        publisher: e.publisher ?? null,
+        language: e.language ?? null,
+        edition_year: e.edition_year ?? null,
+        version_thumbnail: e.version_thumbnail ?? null,
+      }));
+
+      const { error: expError } = await service
+        .from('listing_expansions')
+        .insert(expansionRows);
+
+      if (expError) {
+        console.error('Failed to insert listing expansions:', expError);
+        // Non-fatal — listing was created, seller can edit to add expansions later
+      }
+    }
+  }
+
   // If created from an accepted offer, link shelf item and complete the offer
   if (data.offer_id) {
 
@@ -381,6 +412,78 @@ export async function updateListing(
       if (storageError) {
         console.error('Failed to clean up removed photos:', storageError);
       }
+    }
+  }
+
+  // Sync expansion rows if provided
+  if (data.expansions !== undefined) {
+    // Self-reference guard: get base game ID to exclude from expansions
+    const { data: baseGame } = await service
+      .from('listings')
+      .select('bgg_game_id')
+      .eq('id', data.id)
+      .single();
+    const baseGameId = baseGame?.bgg_game_id;
+    const validExpansions = (data.expansions ?? []).filter(
+      (e) => e.bgg_game_id !== baseGameId
+    );
+
+    // Fetch existing expansions
+    const { data: existing } = await service
+      .from('listing_expansions')
+      .select('id, bgg_game_id')
+      .eq('listing_id', data.id);
+
+    const existingIds = new Set((existing ?? []).map((e) => e.bgg_game_id));
+    const newIds = new Set(validExpansions.map((e) => e.bgg_game_id));
+
+    // Delete removed expansions
+    const toRemove = (existing ?? []).filter((e) => !newIds.has(e.bgg_game_id));
+    if (toRemove.length > 0) {
+      await service
+        .from('listing_expansions')
+        .delete()
+        .in('id', toRemove.map((e) => e.id));
+    }
+
+    // Insert new expansions
+    const toAdd = validExpansions.filter((e) => !existingIds.has(e.bgg_game_id));
+    if (toAdd.length > 0) {
+      await service
+        .from('listing_expansions')
+        .insert(toAdd.map((e) => ({
+          listing_id: data.id,
+          bgg_game_id: e.bgg_game_id,
+          game_name: e.game_name,
+          version_source: e.version_source ?? null,
+          bgg_version_id: e.bgg_version_id ?? null,
+          version_name: e.version_name ?? null,
+          publisher: e.publisher ?? null,
+          language: e.language ?? null,
+          edition_year: e.edition_year ?? null,
+          version_thumbnail: e.version_thumbnail ?? null,
+        })));
+    }
+
+    // Update changed versions for existing expansions (parallel)
+    const toUpdate = validExpansions.filter((e) => existingIds.has(e.bgg_game_id));
+    if (toUpdate.length > 0) {
+      await Promise.all(toUpdate.map((exp) =>
+        service
+          .from('listing_expansions')
+          .update({
+            game_name: exp.game_name,
+            version_source: exp.version_source ?? null,
+            bgg_version_id: exp.bgg_version_id ?? null,
+            version_name: exp.version_name ?? null,
+            publisher: exp.publisher ?? null,
+            language: exp.language ?? null,
+            edition_year: exp.edition_year ?? null,
+            version_thumbnail: exp.version_thumbnail ?? null,
+          })
+          .eq('listing_id', data.id)
+          .eq('bgg_game_id', exp.bgg_game_id)
+      ));
     }
   }
 

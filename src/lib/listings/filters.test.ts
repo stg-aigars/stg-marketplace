@@ -98,6 +98,7 @@ describe('parseFiltersFromParams', () => {
       categories: [],
       mechanics: [],
       weightLevels: [],
+      showExpansions: false,
       sort: 'price_asc',
       page: 2,
     });
@@ -132,6 +133,7 @@ describe('filtersToSearchParams', () => {
       categories: ['Economic'],
       mechanics: ['Trading'],
       weightLevels: ['medium' as const],
+      showExpansions: false,
       sort: 'price_asc' as const,
       page: 2,
     };

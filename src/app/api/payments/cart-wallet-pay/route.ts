@@ -12,6 +12,7 @@ import { debitWallet, getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
+import { formatGameWithExpansions } from '@/lib/orders/utils';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { parseCartCheckoutBody } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
@@ -59,6 +60,19 @@ export async function POST(request: Request) {
     if (!canCheckout) {
       return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
     }
+  }
+
+  // Fetch expansion counts for all listings (for email enrichment)
+  const { data: expansionRows } = await serviceClient
+    .from('listing_expansions')
+    .select('listing_id, game_name')
+    .in('listing_id', listingIds);
+
+  const expansionsByListing = new Map<string, Array<{ game_name: string }>>();
+  for (const row of expansionRows ?? []) {
+    const arr = expansionsByListing.get(row.listing_id) ?? [];
+    arr.push({ game_name: row.game_name });
+    expansionsByListing.set(row.listing_id, arr);
   }
 
   // Get buyer profile
@@ -170,7 +184,7 @@ export async function POST(request: Request) {
 
       // Debit wallet for this order
       if (walletForOrder > 0) {
-        const gameNames = items.map((l) => l.game_name ?? 'Game').join(', ');
+        const gameNames = items.map((l) => formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? [])).join(', ');
         await debitWallet(
           user.id,
           walletForOrder,
@@ -209,7 +223,10 @@ export async function POST(request: Request) {
       orderId: id,
       orderNumber,
       sellerId: sid,
-      items: items.map((l) => ({ gameName: l.game_name ?? 'Game', priceCents: l.price_cents })),
+      items: items.map((l) => ({
+        gameName: formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? []),
+        priceCents: l.price_cents,
+      })),
       shippingCents,
       terminalName,
     })),

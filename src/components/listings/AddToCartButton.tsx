@@ -15,6 +15,7 @@ interface AddToCartButtonProps {
     sellerCountry: string;
     sellerId: string;
     condition: ListingCondition;
+    expansionCount?: number;
   };
 }
 
@@ -36,6 +37,7 @@ function AddToCartButton({ listing }: AddToCartButtonProps) {
         sellerId: listing.sellerId,
         condition: listing.condition,
         addedAt: new Date().toISOString(),
+        ...(listing.expansionCount ? { expansionCount: listing.expansionCount } : {}),
       };
       addItem(item);
     }

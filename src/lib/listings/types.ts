@@ -16,6 +16,18 @@ export interface VersionData {
   version_thumbnail: string | null;
 }
 
+export interface ListingExpansion {
+  bgg_game_id: number;
+  game_name: string;
+  version_source?: VersionSource | null;
+  bgg_version_id?: number | null;
+  version_name?: string | null;
+  publisher?: string | null;
+  language?: string | null;
+  edition_year?: number | null;
+  version_thumbnail?: string | null;
+}
+
 export interface CreateListingData {
   bgg_game_id: number;
   game_name: string;
@@ -37,6 +49,7 @@ export interface CreateListingData {
   listing_type?: ListingType;
   auction_duration_days?: number;
   starting_price_cents?: number;
+  expansions?: ListingExpansion[];
 }
 
 export interface UpdateListingData {
@@ -53,6 +66,7 @@ export interface UpdateListingData {
   price_cents: number;
   description: string | null;
   photos: string[];
+  expansions?: ListingExpansion[];
 }
 
 /** Maps condition DB values to Badge component condition keys */

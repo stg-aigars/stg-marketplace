@@ -20,6 +20,7 @@ import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sell
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { AddToCartButton } from '@/components/listings/AddToCartButton';
+import { GameThumb } from '@/components/listings/atoms';
 import { OwnerActions } from './OwnerActions';
 
 interface ListingDetailRow {
@@ -158,10 +159,15 @@ export default async function ListingDetailPage(
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating and completed sales in parallel
-  const [sellerRating, sellerCompletedSales] = await Promise.all([
+  // Fetch seller rating, completed sales, and listing expansions in parallel
+  const [sellerRating, sellerCompletedSales, { data: listingExpansions }] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
+    supabase
+      .from('listing_expansions')
+      .select('bgg_game_id, game_name, publisher, language, edition_year, games(thumbnail)')
+      .eq('listing_id', id)
+      .order('created_at'),
   ]);
 
   const isAuction = listing.listing_type === 'auction';
@@ -324,6 +330,7 @@ export default async function ListingDetailPage(
                     sellerCountry: listing.country,
                     sellerId: listing.seller_id,
                     condition: listing.condition,
+                    expansionCount: listingExpansions?.length ?? 0,
                   }}
                 />
                 {user ? (
@@ -428,6 +435,37 @@ export default async function ListingDetailPage(
               </div>
             </CardBody>
           </Card>
+
+          {/* Included expansions */}
+          {listingExpansions && listingExpansions.length > 0 && (
+            <Card>
+              <CardBody className="space-y-3">
+                <h2 className="text-base font-semibold text-semantic-text-heading">
+                  Included expansions
+                </h2>
+                <div className="space-y-2">
+                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null }[] }) => {
+                    const thumbnail = exp.games?.[0]?.thumbnail ?? null;
+                    return (
+                    <div key={exp.bgg_game_id} className="flex items-center gap-3">
+                      <GameThumb src={thumbnail} alt={exp.game_name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-semantic-text-primary truncate">
+                          {exp.game_name}
+                        </p>
+                        {(exp.publisher || exp.language || exp.edition_year) && (
+                          <p className="text-xs text-semantic-text-muted truncate">
+                            {[exp.publisher, exp.language, exp.edition_year].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                  })}
+                </div>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Game details from BGG */}
           {(listing.games?.player_count || listing.games?.weight || listing.games?.description) && (

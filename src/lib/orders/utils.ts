@@ -13,6 +13,24 @@ export function orderGameSummary(items: Array<{ gameName: string }>): string {
   return `${items[0].gameName} + ${items.length - 1} more`;
 }
 
+/**
+ * Format a game name with expansion info for display in orders/emails/notifications.
+ * "Catan" → "Catan"
+ * "Catan" + 1 expansion → "Catan + Seafarers"
+ * "Catan" + 2 expansions → "Catan + 2 expansions"
+ */
+export function formatGameWithExpansions(
+  gameName: string,
+  expansions: Array<{ game_name: string }> | number
+): string {
+  const count = typeof expansions === 'number' ? expansions : expansions.length;
+  if (count === 0) return gameName;
+  if (count === 1 && typeof expansions !== 'number') {
+    return `${gameName} + ${expansions[0].game_name}`;
+  }
+  return `${gameName} + ${count} expansions`;
+}
+
 /** Shape of order_items as returned by Supabase joins */
 interface OrderItemLike {
   listing_id: string;

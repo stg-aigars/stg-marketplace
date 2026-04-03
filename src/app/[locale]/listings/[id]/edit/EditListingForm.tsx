@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,10 +10,12 @@ import { ConditionStep } from '@/app/[locale]/sell/_components/ConditionStep';
 import { PhotoUploadStep } from '@/app/[locale]/sell/_components/PhotoUploadStep';
 import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
+import { ExpansionStep } from '@/app/[locale]/sell/_components/ExpansionStep';
 import { buildEnrichedGame, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateListing } from '@/lib/listings/actions';
+import { apiFetch } from '@/lib/api-fetch';
 import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
-import type { ListingCondition, VersionData } from '@/lib/listings/types';
+import type { ListingCondition, VersionData, ListingExpansion } from '@/lib/listings/types';
 
 interface EditListingFormProps {
   listing: {
@@ -41,6 +43,17 @@ interface EditListingFormProps {
   };
   alternateNames: string[];
   locale: string;
+  existingExpansions: Array<{
+    bgg_game_id: number;
+    game_name: string;
+    version_source: string | null;
+    bgg_version_id: number | null;
+    version_name: string | null;
+    publisher: string | null;
+    language: string | null;
+    edition_year: number | null;
+    version_thumbnail: string | null;
+  }>;
 }
 
 function initialVersion(listing: EditListingFormProps['listing']): VersionData {
@@ -55,7 +68,7 @@ function initialVersion(listing: EditListingFormProps['listing']): VersionData {
   };
 }
 
-export function EditListingForm({ listing, alternateNames, locale }: EditListingFormProps) {
+export function EditListingForm({ listing, alternateNames, locale, existingExpansions }: EditListingFormProps) {
   const router = useRouter();
 
   // Snapshot initial values for dirty detection
@@ -66,6 +79,7 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
     description: listing.description ?? '',
     photos: JSON.stringify(listing.photos),
     version: JSON.stringify(initialVersion(listing)),
+    expansionIds: JSON.stringify(existingExpansions.map((e) => e.bgg_game_id).sort()),
   });
 
   // Editable state
@@ -75,6 +89,42 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
   const [description, setDescription] = useState(listing.description ?? '');
   const [photos, setPhotos] = useState<string[]>(listing.photos);
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
+
+  // Expansion state
+  const [availableExpansions, setAvailableExpansions] = useState<Array<{ id: number; name: string; year?: number }>>([]);
+  const [selectedExpansionIds, setSelectedExpansionIds] = useState<number[]>(
+    existingExpansions.map((e) => e.bgg_game_id)
+  );
+  const [expansionVersions, setExpansionVersions] = useState<Record<number, VersionData>>(() => {
+    const versions: Record<number, VersionData> = {};
+    for (const e of existingExpansions) {
+      if (e.version_source) {
+        versions[e.bgg_game_id] = {
+          version_source: e.version_source as VersionData['version_source'],
+          bgg_version_id: e.bgg_version_id,
+          version_name: e.version_name,
+          publisher: e.publisher,
+          language: e.language,
+          edition_year: e.edition_year,
+          version_thumbnail: e.version_thumbnail,
+        };
+      }
+    }
+    return versions;
+  });
+  const [loadingExpansions, setLoadingExpansions] = useState(false);
+
+  // Fetch available expansions for this base game
+  useEffect(() => {
+    setLoadingExpansions(true);
+    apiFetch(`/api/games/${listing.bgg_game_id}/expansions`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.expansions) setAvailableExpansions(data.expansions);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingExpansions(false));
+  }, [listing.bgg_game_id]);
 
   // Stable reference for VersionStep — listing/alternateNames never change during edit
   const enrichedGame = useMemo<EnrichedGame>(
@@ -94,7 +144,8 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
     priceCents !== initial.current.price_cents ||
     description !== initial.current.description ||
     JSON.stringify(photos) !== initial.current.photos ||
-    JSON.stringify(version) !== initial.current.version;
+    JSON.stringify(version) !== initial.current.version ||
+    JSON.stringify([...selectedExpansionIds].sort()) !== initial.current.expansionIds;
 
   // Validation
   const isValid = condition !== null &&
@@ -110,6 +161,25 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
     setSubmitting(true);
     setError(null);
 
+    // Build expansion data for submit
+    const expansions: ListingExpansion[] = selectedExpansionIds.map((id) => {
+      const exp = availableExpansions.find((e) => e.id === id);
+      const ver = expansionVersions[id];
+      return {
+        bgg_game_id: id,
+        game_name: exp?.name ?? existingExpansions.find((e) => e.bgg_game_id === id)?.game_name ?? `Game ${id}`,
+        ...(ver ? {
+          version_source: ver.version_source,
+          bgg_version_id: ver.bgg_version_id,
+          version_name: ver.version_name,
+          publisher: ver.publisher,
+          language: ver.language,
+          edition_year: ver.edition_year,
+          version_thumbnail: ver.version_thumbnail,
+        } : {}),
+      };
+    });
+
     const result = await updateListing(
       {
         id: listing.id,
@@ -119,6 +189,7 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
         price_cents: priceCents,
         description: description || null,
         photos,
+        expansions,
       },
       turnstileToken ?? undefined
     );
@@ -190,6 +261,44 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
         onSelect={setVersion}
         compact
       />
+
+      {/* Expansions — shown if available */}
+      {!loadingExpansions && availableExpansions.length > 0 && (
+        <div className="space-y-4">
+          <ExpansionStep
+            expansions={availableExpansions}
+            selectedExpansionIds={selectedExpansionIds}
+            onSelectionChange={setSelectedExpansionIds}
+          />
+          {/* Expansion version selectors */}
+          {selectedExpansionIds.map((expId) => {
+            const expansion = availableExpansions.find((e) => e.id === expId);
+            if (!expansion) return null;
+            const expVersion = expansionVersions[expId];
+            return (
+              <div key={expId}>
+                <p className="text-sm font-medium text-semantic-text-muted mb-2">
+                  {expansion.name} edition
+                  <span className="text-semantic-text-muted font-normal ml-1">(optional)</span>
+                </p>
+                <VersionStep
+                  gameId={expId}
+                  gameName={expansion.name}
+                  selectedVersionId={expVersion?.bgg_version_id ?? null}
+                  selectedVersionSource={expVersion?.version_source ?? null}
+                  selectedPublisher={expVersion?.publisher ?? null}
+                  selectedLanguage={expVersion?.language ?? null}
+                  selectedEditionYear={expVersion?.edition_year ?? null}
+                  onSelect={(ver: VersionData) => {
+                    setExpansionVersions((prev) => ({ ...prev, [expId]: ver }));
+                  }}
+                  compact
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Photos */}
       <PhotoUploadStep photos={photos} onPhotosChange={setPhotos} compact />

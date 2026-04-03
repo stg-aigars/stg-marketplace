@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Input, Card, CardBody, Button, Spinner } from '@/components/ui';
+import { Input, Card, CardBody, Button, Spinner, Badge } from '@/components/ui';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { apiFetch } from '@/lib/api-fetch';
 
@@ -12,6 +12,7 @@ interface GameResult {
   yearpublished: number | null;
   thumbnail: string | null;
   player_count: string | null;
+  is_expansion?: boolean;
 }
 
 export interface EnrichedGame {
@@ -80,7 +81,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
       setError(null);
       try {
         const res = await apiFetch(
-          `/api/games/search?q=${encodeURIComponent(query.trim())}`,
+          `/api/games/search?q=${encodeURIComponent(query.trim())}&includeExpansions=true`,
           { signal: controller.signal }
         );
         if (res.ok) {
@@ -306,9 +307,14 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-semantic-text-primary truncate">
-                      {game.name}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-semantic-text-primary truncate">
+                        {game.name}
+                      </p>
+                      {game.is_expansion && (
+                        <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 text-sm text-semantic-text-muted">
                       {game.yearpublished && <span>{game.yearpublished}</span>}
                       {game.player_count && <span>{game.player_count} players</span>}

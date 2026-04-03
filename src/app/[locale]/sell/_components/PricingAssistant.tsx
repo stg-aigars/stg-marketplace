@@ -20,6 +20,7 @@ interface PricingAssistantProps {
   condition: ListingCondition | null;
   isAuction: boolean;
   onFillPrice: (cents: number) => void;
+  expansionIds?: number[];
 }
 
 export function PricingAssistant({
@@ -27,6 +28,7 @@ export function PricingAssistant({
   condition,
   isAuction,
   onFillPrice,
+  expansionIds = [],
 }: PricingAssistantProps) {
   const [data, setData] = useState<PriceSuggestionResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,10 @@ export function PricingAssistant({
     setLoading(true);
     setError(false);
 
-    apiFetch(`/api/games/${bggGameId}/pricing`, { signal: controller.signal })
+    const pricingUrl = expansionIds.length > 0
+      ? `/api/games/${bggGameId}/pricing?expansionIds=${expansionIds.join(',')}`
+      : `/api/games/${bggGameId}/pricing`;
+    apiFetch(pricingUrl, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -63,14 +68,19 @@ export function PricingAssistant({
       });
 
     return () => controller.abort();
-  }, [bggGameId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bggGameId, expansionIds.join(',')]);
+
+  // Use bundle retail price if available, otherwise base game only
+  const effectiveRetailCents = data?.bundleRetailPriceCents ?? data?.retailPriceCents;
+  const hasBundle = data?.totalGames != null && data.totalGames > 1;
 
   const suggestedPriceCents = useMemo(
     () =>
-      data?.retailPriceCents && condition
-        ? calculateSuggestedPrice(data.retailPriceCents, condition, isAuction)
+      effectiveRetailCents && condition
+        ? calculateSuggestedPrice(effectiveRetailCents, condition, isAuction)
         : null,
-    [data?.retailPriceCents, condition, isAuction],
+    [effectiveRetailCents, condition, isAuction],
   );
 
   const handleFill = (cents: number, buttonId: string) => {
@@ -135,8 +145,11 @@ export function PricingAssistant({
               </div>
             </div>
             <p className="text-xs text-semantic-text-muted">
-              {multiplierPct}% of {hasRetail ? formatCentsToCurrency(retailPriceCents!) : 'retail'} ({conditionLabel})
+              {multiplierPct}% of {effectiveRetailCents ? formatCentsToCurrency(effectiveRetailCents) : 'retail'} ({conditionLabel})
               {isAuction && ' \u00d7 30% auction start'}
+              {hasBundle && data?.gamesWithRetailData != null && data?.totalGames != null && data.gamesWithRetailData < data.totalGames && (
+                <span> · Retail price based on {data.gamesWithRetailData} of {data.totalGames} games</span>
+              )}
             </p>
           </div>
         )}

@@ -25,6 +25,8 @@ interface ListingCardProps {
   isAuthenticated?: boolean;
   /** If true, show "Sold" or "No longer available" overlay */
   unavailable?: boolean;
+  /** Expansion count for "+N expansions" badge */
+  expansionCount?: number;
   /** Auction fields */
   isAuction?: boolean;
   bidCount?: number;
@@ -44,6 +46,7 @@ function ListingCard({
   isFavorited,
   isAuthenticated = false,
   unavailable = false,
+  expansionCount = 0,
   isAuction = false,
   bidCount = 0,
   auctionEndAt,
@@ -105,6 +108,11 @@ function ListingCard({
           <div>
             <GameTitle name={gameTitle} size="md" serif clamp={2} />
             <GameMeta year={gameYear} className="mt-0.5" />
+            {expansionCount > 0 && (
+              <p className="text-xs text-semantic-text-muted mt-0.5">
+                +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between">

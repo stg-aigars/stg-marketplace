@@ -24,6 +24,7 @@ interface ReviewPriceStepProps {
   isAuction?: boolean;
   auctionDurationDays?: number;
   onDurationChange?: (days: number) => void;
+  expansions?: Array<{ id: number; name: string }>;
 }
 
 // --- Price input sub-component (co-located to manage complexity) ---
@@ -37,6 +38,7 @@ interface PriceInputSectionProps {
   onDurationChange?: (days: number) => void;
   bggGameId: number | null;
   condition: FormData['condition'];
+  expansionIds?: number[];
 }
 
 function PriceInputSection({
@@ -48,6 +50,7 @@ function PriceInputSection({
   onDurationChange,
   bggGameId,
   condition,
+  expansionIds = [],
 }: PriceInputSectionProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -105,6 +108,7 @@ function PriceInputSection({
         condition={condition ?? null}
         isAuction={isAuction}
         onFillPrice={onPriceChange}
+        expansionIds={expansionIds}
       />
 
       <Input
@@ -170,6 +174,7 @@ export function ReviewPriceStep({
   isAuction = false,
   auctionDurationDays,
   onDurationChange,
+  expansions = [],
 }: ReviewPriceStepProps) {
   const effectivePrice = isAuction ? formData.starting_price_cents : formData.price_cents;
   const earnings = effectivePrice > 0 ? calculateSellerEarnings(effectivePrice) : null;
@@ -199,6 +204,7 @@ export function ReviewPriceStep({
             onDurationChange={onDurationChange}
             bggGameId={formData.bgg_game_id}
             condition={formData.condition}
+            expansionIds={formData.selected_expansion_ids}
           />
         </CardBody>
       </Card>
@@ -264,6 +270,16 @@ export function ReviewPriceStep({
                 <PencilSimple size={16} />
               </button>
             </div>
+
+            {/* Included expansions */}
+            {expansions.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-semantic-text-muted">
+                  +{expansions.length} {expansions.length === 1 ? 'expansion' : 'expansions'}:{' '}
+                  {expansions.map((e) => e.name).join(', ')}
+                </p>
+              </div>
+            )}
 
             <hr className="border-semantic-border-subtle" />
 

@@ -475,6 +475,17 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
               onChange={(e) => setDraft((prev) => ({ ...prev, sort: e.target.value as SortOption }))}
             />
           </div>
+
+          {/* Show expansion listings */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.showExpansions}
+              onChange={(e) => setDraft((prev) => ({ ...prev, showExpansions: e.target.checked }))}
+              className="h-4 w-4 rounded border-semantic-border-default accent-semantic-brand"
+            />
+            <span className="text-sm text-semantic-text-secondary">Show expansion listings</span>
+          </label>
         </div>
         <div className="flex gap-3 mt-6 pt-4 border-t border-semantic-border-subtle">
           <Button variant="secondary" onClick={clearMobileDraft} className="flex-1">
@@ -563,6 +574,17 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
               onChange={handleMechanicsChange}
             />
           )}
+
+          {/* Show expansion listings */}
+          <label className="flex items-center gap-1.5 cursor-pointer min-h-[44px] sm:min-h-[32px]">
+            <input
+              type="checkbox"
+              checked={currentFilters.showExpansions}
+              onChange={(e) => applyFilters({ ...currentFilters, showExpansions: e.target.checked })}
+              className="h-3.5 w-3.5 rounded border-semantic-border-default accent-semantic-brand"
+            />
+            <span className="text-xs text-semantic-text-secondary whitespace-nowrap">Expansions</span>
+          </label>
 
           {/* Sort + clear */}
           <div className="flex items-center gap-2 ml-auto">

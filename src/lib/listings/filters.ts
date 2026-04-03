@@ -37,6 +37,7 @@ export interface BrowseFilters {
   categories: string[];
   mechanics: string[];
   weightLevels: WeightLevel[];
+  showExpansions: boolean;
   sort: SortOption;
   page: number;
 }
@@ -51,6 +52,7 @@ export const DEFAULT_FILTERS: BrowseFilters = {
   categories: [],
   mechanics: [],
   weightLevels: [],
+  showExpansions: false,
   sort: 'newest',
   page: 1,
 };
@@ -127,11 +129,14 @@ export function parseFiltersFromParams(
         .filter((w): w is WeightLevel => WEIGHT_LEVELS.includes(w as WeightLevel))
     : [];
 
+  // Show expansion listings
+  const showExpansions = get('expansions') === '1';
+
   // Page
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, conditions, priceMinCents, priceMaxCents, playerCount, countries, categories, mechanics, weightLevels, sort, page };
+  return { search, conditions, priceMinCents, priceMaxCents, playerCount, countries, categories, mechanics, weightLevels, showExpansions, sort, page };
 }
 
 /**
@@ -168,6 +173,9 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
   if (filters.weightLevels.length > 0) {
     params.set('weight', filters.weightLevels.join(','));
   }
+  if (filters.showExpansions) {
+    params.set('expansions', '1');
+  }
   if (filters.sort !== 'newest') {
     params.set('sort', filters.sort);
   }
@@ -192,6 +200,7 @@ export function countActiveFilters(filters: BrowseFilters): number {
   if (filters.categories.length > 0) count++;
   if (filters.mechanics.length > 0) count++;
   if (filters.weightLevels.length > 0) count++;
+  if (filters.showExpansions) count++;
   return count;
 }
 
