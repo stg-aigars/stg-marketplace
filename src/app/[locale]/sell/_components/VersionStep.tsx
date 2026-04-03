@@ -252,12 +252,20 @@ export function VersionStep({
           </h2>
         )}
 
-        {/* Selected edition card */}
+        {/* Selected edition card — game name as title, edition details below */}
         <Card>
           <CardBody>
-            <div className="flex items-center gap-4">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <p className="font-semibold text-semantic-text-heading truncate">
+                  {gameName}
+                </p>
+                <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setCollapsed(false)}>
+                  Change
+                </Button>
+              </div>
               {selectedVersionSource === 'bgg' && selectedVersion ? (
-                <>
+                <div className="flex items-start gap-3">
                   {(selectedVersion.image ?? selectedVersion.thumbnail) ? (
                     <Image
                       src={(selectedVersion.image ?? selectedVersion.thumbnail)!}
@@ -272,15 +280,15 @@ export function VersionStep({
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-semantic-text-primary truncate">
+                    <p className="text-sm font-medium text-semantic-text-primary truncate">
                       {selectedVersion.name}
                     </p>
                     <VersionMeta version={selectedVersion} />
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-semantic-text-primary">
+                <div>
+                  <p className="text-sm font-medium text-semantic-text-primary">
                     {selectedPublisher || selectedLanguage || selectedEditionYear
                       ? 'Custom edition'
                       : 'No specific edition'}
@@ -309,9 +317,6 @@ export function VersionStep({
                   )}
                 </div>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setCollapsed(false)}>
-                Change
-              </Button>
             </div>
           </CardBody>
         </Card>
@@ -643,7 +648,7 @@ function AlternateNameSelector({
               onSelect(name);
               setExpanded(false);
             }}
-            className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors duration-250 ease-out-custom ${
+            className={`w-full text-left px-3 py-1.5 rounded-md border text-sm transition-colors duration-250 ease-out-custom ${
               selectedName === name
                 ? 'border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium'
                 : 'border-semantic-border-subtle bg-semantic-bg-surface text-semantic-text-secondary hover:border-semantic-border-default'

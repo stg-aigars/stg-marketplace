@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Image from 'next/image';
-import { Button, Stepper, TurnstileWidget, Alert, Card, CardHeader, CardBody, Spinner } from '@/components/ui';
+import { Button, Stepper, TurnstileWidget, Alert, Card, CardBody, Spinner } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource, ListingExpansion } from '@/lib/listings/types';
@@ -11,7 +10,7 @@ import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/lis
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
-import { GameSearchStep } from './GameSearchStep';
+import { GameSearchStep, buildEnrichedGame } from './GameSearchStep';
 import type { EnrichedGame } from './GameSearchStep';
 import { VersionStep } from './VersionStep';
 import { ConditionPhotosStep } from './ConditionPhotosStep';
@@ -56,6 +55,7 @@ export interface FormData {
   version_thumbnail: string | null;
   // Step: Version (expansions) — keyed by bgg_game_id
   expansion_versions: Record<number, VersionData>;
+  expansion_game_names: Record<number, string>;
   // Step: Condition, photos & description
   photos: string[];
   condition: ListingCondition | null;
@@ -84,6 +84,7 @@ const initialFormData: FormData = {
   edition_year: null,
   version_thumbnail: null,
   expansion_versions: {},
+  expansion_game_names: {},
   photos: [],
   condition: null,
   price_cents: 0,
@@ -134,7 +135,8 @@ export function ListingCreationFlow({
   const [loadingExpansions, setLoadingExpansions] = useState(false);
   const [expansionGateAnswer, setExpansionGateAnswer] = useState<boolean | null>(null);
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
-  const [customizedExpansionIds, setCustomizedExpansionIds] = useState<Set<number>>(new Set());
+  const [enrichedExpansions, setEnrichedExpansions] = useState<Record<number, EnrichedGame>>({});
+  const [enrichingExpansionIds, setEnrichingExpansionIds] = useState<Set<number>>(new Set());
 
   const STEPS: { id: StepId; label: string }[] = [
     { id: 'game', label: 'Game' },
@@ -236,6 +238,63 @@ export function ListingCreationFlow({
 
     return () => { cancelled = true; };
   }, [availableExpansions]);
+
+  // Enrich selected expansions sequentially (alternate names, metadata)
+  // Triggers when edition step renders with unenriched expansions
+  const enrichmentRunningRef = useRef(false);
+
+  useEffect(() => {
+    if (currentStepId !== 'edition') return;
+
+    const unenriched = formData.selected_expansion_ids.filter(
+      (id) => !enrichedExpansions[id] && !enrichingExpansionIds.has(id)
+    );
+    if (unenriched.length === 0 || enrichmentRunningRef.current) return;
+
+    enrichmentRunningRef.current = true;
+    let cancelled = false;
+
+    async function enrichSequentially() {
+      for (const expId of unenriched) {
+        if (cancelled) break;
+        const expansion = availableExpansions.find((e) => e.id === expId);
+        if (!expansion) continue;
+
+        setEnrichingExpansionIds((prev) => new Set([...prev, expId]));
+        try {
+          const res = await apiFetch(`/api/games/${expId}/enrich`, { method: 'POST' });
+          if (res.ok && !cancelled) {
+            const data = await res.json();
+            const enriched = buildEnrichedGame(
+              expId, expansion.name, data.game?.yearpublished ?? null, data.game
+            );
+            setEnrichedExpansions((prev) => ({ ...prev, [expId]: enriched }));
+          }
+        } catch {
+          // Non-fatal — expansion will render without alternate names
+        } finally {
+          if (!cancelled) {
+            setEnrichingExpansionIds((prev) => {
+              const next = new Set(prev);
+              next.delete(expId);
+              return next;
+            });
+          }
+        }
+
+        // 200ms delay between calls to respect BGG rate limits
+        if (!cancelled) await new Promise((r) => setTimeout(r, 200));
+      }
+      enrichmentRunningRef.current = false;
+    }
+
+    enrichSequentially();
+
+    return () => {
+      cancelled = true;
+      enrichmentRunningRef.current = false;
+    };
+  }, [currentStepId, formData.selected_expansion_ids, enrichedExpansions, enrichingExpansionIds, availableExpansions]);
 
   const canProceed = (): boolean => {
     switch (currentStepId) {
@@ -402,10 +461,11 @@ export function ListingCreationFlow({
                     edition_year: null,
                     version_thumbnail: null,
                     expansion_versions: {},
+                    expansion_game_names: {},
                     condition: null,
                   });
                   setExpansionGateAnswer(null);
-                  setCustomizedExpansionIds(new Set());
+                  setEnrichedExpansions({});
                 } else {
                   updateFormData({
                     bgg_game_id: game.id,
@@ -492,8 +552,8 @@ export function ListingCreationFlow({
                   className="mt-2"
                   onClick={() => {
                     setExpansionGateAnswer(null);
-                    setCustomizedExpansionIds(new Set());
-                    updateFormData({ selected_expansion_ids: [], expansion_versions: {} });
+                    setEnrichedExpansions({});
+                    updateFormData({ selected_expansion_ids: [], expansion_versions: {}, expansion_game_names: {} });
                   }}
                 >
                   Remove expansions
@@ -517,54 +577,12 @@ export function ListingCreationFlow({
         )}
 
         {currentStepId === 'edition' && formData.bgg_game_id && (
-          <div className="space-y-6">
-            {/* Base game edition */}
-            {formData.selected_expansion_ids.length > 0 ? (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    {formData.game_thumbnail && (
-                      <Image
-                        src={formData.game_thumbnail}
-                        alt={formData.game_name}
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 rounded object-contain bg-semantic-bg-secondary shrink-0"
-                      />
-                    )}
-                    <p className="text-sm font-semibold text-semantic-text-heading">
-                      {formData.game_name}
-                      <span className="font-normal text-semantic-text-muted ml-1.5">Base game</span>
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardBody>
-                  <VersionStep
-                    userCountry={userCountry}
-                    gameId={formData.bgg_game_id}
-                    gameName={formData.game_name}
-                    selectedGame={selectedGame}
-                    onGameNameChange={(name: string) => updateFormData({ game_name: name })}
-                    selectedVersionId={formData.bgg_version_id}
-                    selectedVersionSource={formData.version_source}
-                    selectedPublisher={formData.publisher}
-                    selectedLanguage={formData.language}
-                    selectedEditionYear={formData.edition_year}
-                    onSelect={(version) => {
-                      updateFormData({
-                        version_source: version.version_source,
-                        bgg_version_id: version.bgg_version_id,
-                        version_name: version.version_name,
-                        publisher: version.publisher,
-                        language: version.language,
-                        edition_year: version.edition_year,
-                        version_thumbnail: version.version_thumbnail,
-                      });
-                    }}
-                  />
-                </CardBody>
-              </Card>
-            ) : (
+          <div className="space-y-8">
+            {/* Base game section */}
+            <div>
+              {formData.selected_expansion_ids.length > 0 && (
+                <h2 className="text-base font-semibold text-semantic-text-heading mb-4">Base game</h2>
+              )}
               <VersionStep
                 userCountry={userCountry}
                 gameId={formData.bgg_game_id}
@@ -588,71 +606,63 @@ export function ListingCreationFlow({
                   });
                 }}
               />
-            )}
+            </div>
 
-            {/* Expansion edition cards */}
-            {formData.selected_expansion_ids.map((expId) => {
-              const expansion = availableExpansions.find((e) => e.id === expId);
-              if (!expansion) return null;
-              const expVersion = formData.expansion_versions[expId];
-              const isCustomized = customizedExpansionIds.has(expId);
+            {/* Expansions section */}
+            {formData.selected_expansion_ids.length > 0 && (
+              <div>
+                <h2 className="text-base font-semibold text-semantic-text-heading mb-4">Expansions</h2>
+                <div className="space-y-6">
+                  {formData.selected_expansion_ids.map((expId, idx) => {
+                    const expansion = availableExpansions.find((e) => e.id === expId);
+                    if (!expansion) return null;
+                    const expVersion = formData.expansion_versions[expId];
+                    const isEnriching = enrichingExpansionIds.has(expId);
 
-              return (
-                <Card key={expId}>
-                  <CardHeader>
-                    <p className="text-sm font-semibold text-semantic-text-heading">
-                      {expansion.name}
-                      <span className="font-normal text-semantic-text-muted ml-1.5">Expansion, optional</span>
-                    </p>
-                  </CardHeader>
-                  <CardBody>
-                    {isCustomized ? (
-                      <VersionStep
-                        userCountry={userCountry}
-                        gameId={expId}
-                        gameName={expansion.name}
-                        selectedVersionId={expVersion?.bgg_version_id ?? null}
-                        selectedVersionSource={expVersion?.version_source ?? null}
-                        selectedPublisher={expVersion?.publisher ?? null}
-                        selectedLanguage={expVersion?.language ?? null}
-                        selectedEditionYear={expVersion?.edition_year ?? null}
-                        onSelect={(version: VersionData) => {
-                          updateFormData({
-                            expansion_versions: {
-                              ...formData.expansion_versions,
-                              [expId]: version,
-                            },
-                          });
-                        }}
-                        compact
-                      />
-                    ) : (
-                      <div className="space-y-2">
-                        {formData.language ? (
-                          <p className="text-sm text-semantic-text-secondary">
-                            <span className="font-medium text-semantic-text-primary">
-                              {formData.language}
-                            </span>
-                            {' '}(same as base game)
-                          </p>
-                        ) : (
-                          <p className="text-sm text-semantic-text-muted">
-                            Select the base game edition first
-                          </p>
+                    return (
+                      <div key={expId}>
+                        {idx > 0 && (
+                          <hr className="border-semantic-border-subtle mb-6" />
                         )}
-                        <button
-                          type="button"
-                          onClick={() => setCustomizedExpansionIds((prev) => new Set([...prev, expId]))}
-                          className="text-sm text-semantic-brand active:text-semantic-brand-active sm:hover:underline"
-                        >
-                          Choose a different edition
-                        </button>
+                        {isEnriching && !enrichedExpansions[expId] ? (
+                          <div className="space-y-3">
+                            <p className="text-sm font-medium text-semantic-text-muted">{expansion.name}</p>
+                            <div className="flex items-center gap-2 py-4">
+                              <Spinner size="sm" />
+                              <span className="text-sm text-semantic-text-muted">Loading editions...</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <VersionStep
+                            userCountry={userCountry}
+                            gameId={expId}
+                            gameName={formData.expansion_game_names[expId] ?? expansion.name}
+                            selectedGame={enrichedExpansions[expId] ?? null}
+                            onGameNameChange={(name: string) => updateFormData({
+                              expansion_game_names: { ...formData.expansion_game_names, [expId]: name },
+                            })}
+                            selectedVersionId={expVersion?.bgg_version_id ?? null}
+                            selectedVersionSource={expVersion?.version_source ?? null}
+                            selectedPublisher={expVersion?.publisher ?? null}
+                            selectedLanguage={expVersion?.language ?? null}
+                            selectedEditionYear={expVersion?.edition_year ?? null}
+                            onSelect={(version: VersionData) => {
+                              updateFormData({
+                                expansion_versions: {
+                                  ...formData.expansion_versions,
+                                  [expId]: version,
+                                },
+                              });
+                            }}
+                            compact
+                          />
+                        )}
                       </div>
-                    )}
-                  </CardBody>
-                </Card>
-              );
-            })}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
