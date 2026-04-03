@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Stepper, TurnstileWidget, Alert, Card, CardBody, Spinner } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
@@ -89,7 +89,7 @@ const initialFormData: FormData = {
   auction_duration_days: 3,
 };
 
-type StepId = 'game' | 'expansions' | 'edition' | 'details' | 'review';
+type StepId = 'game' | 'edition' | 'details' | 'review';
 
 interface ListingCreationFlowProps {
   initialData?: Partial<FormData>;
@@ -130,19 +130,14 @@ export function ListingCreationFlow({
   const [expansionGateAnswer, setExpansionGateAnswer] = useState<boolean | null>(null);
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
 
-  // Dynamic steps based on whether expansion step is shown
-  const showExpansionStep = expansionGateAnswer === true;
+  const STEPS: { id: StepId; label: string }[] = [
+    { id: 'game', label: 'Game' },
+    { id: 'edition', label: 'Edition' },
+    { id: 'details', label: 'Details' },
+    { id: 'review', label: 'Review' },
+  ];
 
-  const steps = useMemo(() => {
-    const allSteps: { id: StepId; label: string }[] = [
-      { id: 'game', label: 'Game' },
-      ...(showExpansionStep ? [{ id: 'expansions' as const, label: 'Expansions' }] : []),
-      { id: 'edition', label: 'Edition' },
-      { id: 'details', label: 'Details' },
-      { id: 'review', label: 'Review' },
-    ];
-    return gameLocked ? allSteps.filter((s) => s.id !== 'game') : allSteps;
-  }, [showExpansionStep, gameLocked]);
+  const steps = gameLocked ? STEPS.filter((s) => s.id !== 'game') : STEPS;
 
   // Track current step by ID for robustness against dynamic step changes
   const [currentStepId, setCurrentStepId] = useState<StepId>(gameLocked ? 'edition' : 'game');
@@ -203,8 +198,6 @@ export function ListingCreationFlow({
         if (loadingExpansions) return false;
         if (formData.is_expansion || availableExpansions.length === 0) return true;
         return expansionGateAnswer !== null;
-      case 'expansions':
-        return true; // Optional — seller can skip without selecting any
       case 'edition':
         if (formData.version_source === 'bgg') return formData.bgg_version_id !== null;
         if (formData.version_source === 'manual') return formData.language !== null;
@@ -437,37 +430,41 @@ export function ListingCreationFlow({
               </Card>
             )}
 
-            {/* Expansion gate answered indicator */}
-            {showExpansionGateAnswered && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-semantic-text-muted">
-                <span>
-                  {expansionGateAnswer === true
-                    ? 'Add expansions: Yes'
-                    : 'Add expansions: No'}
-                </span>
+            {/* Inline expansion selection after answering Yes */}
+            {showExpansionGateAnswered && expansionGateAnswer === true && (
+              <div className="mt-4">
+                <ExpansionStep
+                  expansions={availableExpansions}
+                  selectedExpansionIds={formData.selected_expansion_ids}
+                  onSelectionChange={(ids) => updateFormData({ selected_expansion_ids: ids })}
+                />
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="mt-2"
                   onClick={() => {
                     setExpansionGateAnswer(null);
-                    if (expansionGateAnswer === true) {
-                      updateFormData({ selected_expansion_ids: [], expansion_versions: {} });
-                    }
+                    updateFormData({ selected_expansion_ids: [], expansion_versions: {} });
                   }}
                 >
-                  Change
+                  Remove expansions
+                </Button>
+              </div>
+            )}
+
+            {/* Answered No — just show a change link */}
+            {showExpansionGateAnswered && expansionGateAnswer === false && (
+              <div className="mt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpansionGateAnswer(null)}
+                >
+                  Add expansions
                 </Button>
               </div>
             )}
           </>
-        )}
-
-        {currentStepId === 'expansions' && (
-          <ExpansionStep
-            expansions={availableExpansions}
-            selectedExpansionIds={formData.selected_expansion_ids}
-            onSelectionChange={(ids) => updateFormData({ selected_expansion_ids: ids })}
-          />
         )}
 
         {currentStepId === 'edition' && formData.bgg_game_id && (
