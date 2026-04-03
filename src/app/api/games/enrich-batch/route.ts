@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No valid game IDs' }, { status: 400 });
   }
 
-  // Find games — check which already have full metadata
   const { data: games } = await supabase
     .from('games')
     .select('id, thumbnail, image, alternate_names, metadata_fetched_at')
@@ -56,45 +55,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to query games' }, { status: 500 });
   }
 
-  // Only fetch from BGG for games missing full metadata
   const missingIds = games
     .filter((g) => !g.metadata_fetched_at)
     .map((g) => g.id);
 
-  // Merge fetched metadata into games array for response
   if (missingIds.length > 0) {
     try {
       const batchData = await fetchBatchMetadata(missingIds);
 
-      // Write full metadata to games table
       const service = createServiceClient();
-      const entries = Array.from(batchData.entries());
-      await Promise.all(
-        entries.map(([gameId, data]: [number, GameMetadataUpdate]) =>
-          service
-            .from('games')
-            .update({
-              thumbnail: data.thumbnail,
-              image: data.image,
-              alternate_names: data.alternate_names,
-              description: data.description,
-              player_count: data.player_count,
-              min_players: data.min_players,
-              max_players: data.max_players,
-              min_age: data.min_age,
-              playing_time: data.playing_time,
-              designers: data.designers,
-              bayesaverage: data.bayesaverage,
-              weight: data.weight,
-              categories: data.categories,
-              mechanics: data.mechanics,
-              versions: data.versions,
-              versions_fetched_at: data.versions_fetched_at,
-              metadata_fetched_at: data.metadata_fetched_at,
-            })
-            .eq('id', gameId)
-        )
+      const upsertRows = Array.from(batchData.entries()).map(
+        ([gameId, data]: [number, GameMetadataUpdate]) => ({
+          id: gameId,
+          thumbnail: data.thumbnail,
+          image: data.image,
+          alternate_names: data.alternate_names,
+          description: data.description,
+          player_count: data.player_count,
+          min_players: data.min_players,
+          max_players: data.max_players,
+          min_age: data.min_age,
+          playing_time: data.playing_time,
+          designers: data.designers,
+          bayesaverage: data.bayesaverage,
+          weight: data.weight,
+          categories: data.categories,
+          mechanics: data.mechanics,
+          versions: data.versions,
+          versions_fetched_at: data.versions_fetched_at,
+          metadata_fetched_at: data.metadata_fetched_at,
+        })
       );
+
+      if (upsertRows.length > 0) {
+        await service.from('games').upsert(upsertRows, { onConflict: 'id' });
+      }
 
       // Merge fetched data into response
       for (const game of games) {
@@ -111,7 +106,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Build response map
   const result: Record<number, { thumbnail: string | null; image: string | null; alternate_names: string[] | null }> = {};
   for (const game of games) {
     result[game.id] = {

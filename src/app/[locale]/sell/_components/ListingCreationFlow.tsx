@@ -10,7 +10,7 @@ import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/lis
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
-import { GameSearchStep } from './GameSearchStep';
+import { GameSearchStep, buildEnrichedGame } from './GameSearchStep';
 import type { EnrichedGame } from './GameSearchStep';
 import { VersionStep } from './VersionStep';
 import { ConditionPhotosStep } from './ConditionPhotosStep';
@@ -236,21 +236,14 @@ export function ListingCreationFlow({
           })
         );
 
-        // Build EnrichedGame objects for expansion VersionSteps
         const newEnriched: Record<number, EnrichedGame> = {};
         for (const exp of missing) {
           const g = games[exp.id];
           if (g) {
-            newEnriched[exp.id] = {
-              id: exp.id,
-              name: exp.name,
-              yearpublished: exp.year ?? null,
-              thumbnail: g.thumbnail,
-              image: g.image,
-              player_count: null,
-              alternateNames: g.alternate_names ?? [],
-              matchedAlternateName: null,
-            };
+            newEnriched[exp.id] = buildEnrichedGame(
+              exp.id, exp.name, exp.year ?? null,
+              { thumbnail: g.thumbnail, image: g.image, player_count: null, alternate_names: g.alternate_names },
+            );
           }
         }
         if (Object.keys(newEnriched).length > 0) {
@@ -547,60 +540,41 @@ export function ListingCreationFlow({
           </>
         )}
 
-        {currentStepId === 'edition' && formData.bgg_game_id && (
+        {currentStepId === 'edition' && formData.bgg_game_id && (() => {
+          const hasExpansions = formData.selected_expansion_ids.length > 0;
+          const baseGameStep = (
+            <VersionStep
+              userCountry={userCountry}
+              gameId={formData.bgg_game_id}
+              gameName={formData.game_name}
+              selectedGame={selectedGame}
+              onGameNameChange={(name: string) => updateFormData({ game_name: name })}
+              selectedVersionId={formData.bgg_version_id}
+              selectedVersionSource={formData.version_source}
+              selectedPublisher={formData.publisher}
+              selectedLanguage={formData.language}
+              selectedEditionYear={formData.edition_year}
+              onSelect={(version) => {
+                updateFormData({
+                  version_source: version.version_source,
+                  bgg_version_id: version.bgg_version_id,
+                  version_name: version.version_name,
+                  publisher: version.publisher,
+                  language: version.language,
+                  edition_year: version.edition_year,
+                  version_thumbnail: version.version_thumbnail,
+                });
+              }}
+            />
+          );
+
+          return (
           <div className="space-y-6">
-            {/* Base game section */}
-            {formData.selected_expansion_ids.length > 0 ? (
+            {hasExpansions ? (
               <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle">
-                <VersionStep
-                  userCountry={userCountry}
-                  gameId={formData.bgg_game_id}
-                  gameName={formData.game_name}
-                  selectedGame={selectedGame}
-                  onGameNameChange={(name: string) => updateFormData({ game_name: name })}
-                  selectedVersionId={formData.bgg_version_id}
-                  selectedVersionSource={formData.version_source}
-                  selectedPublisher={formData.publisher}
-                  selectedLanguage={formData.language}
-                  selectedEditionYear={formData.edition_year}
-                  onSelect={(version) => {
-                    updateFormData({
-                      version_source: version.version_source,
-                      bgg_version_id: version.bgg_version_id,
-                      version_name: version.version_name,
-                      publisher: version.publisher,
-                      language: version.language,
-                      edition_year: version.edition_year,
-                      version_thumbnail: version.version_thumbnail,
-                    });
-                  }}
-                />
+                {baseGameStep}
               </div>
-            ) : (
-              <VersionStep
-                userCountry={userCountry}
-                gameId={formData.bgg_game_id}
-                gameName={formData.game_name}
-                selectedGame={selectedGame}
-                onGameNameChange={(name: string) => updateFormData({ game_name: name })}
-                selectedVersionId={formData.bgg_version_id}
-                selectedVersionSource={formData.version_source}
-                selectedPublisher={formData.publisher}
-                selectedLanguage={formData.language}
-                selectedEditionYear={formData.edition_year}
-                onSelect={(version) => {
-                  updateFormData({
-                    version_source: version.version_source,
-                    bgg_version_id: version.bgg_version_id,
-                    version_name: version.version_name,
-                    publisher: version.publisher,
-                    language: version.language,
-                    edition_year: version.edition_year,
-                    version_thumbnail: version.version_thumbnail,
-                  });
-                }}
-              />
-            )}
+            ) : baseGameStep}
 
             {/* Expansions section */}
             {formData.selected_expansion_ids.length > 0 && (
@@ -644,7 +618,8 @@ export function ListingCreationFlow({
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {currentStepId === 'details' && (
           <ConditionPhotosStep
