@@ -37,8 +37,10 @@ interface PriceInputSectionProps {
   auctionDurationDays?: number;
   onDurationChange?: (days: number) => void;
   bggGameId: number | null;
+  gameName?: string;
   condition: FormData['condition'];
   expansionIds?: number[];
+  expansionNames?: Record<number, string>;
 }
 
 function PriceInputSection({
@@ -49,8 +51,10 @@ function PriceInputSection({
   auctionDurationDays,
   onDurationChange,
   bggGameId,
+  gameName,
   condition,
   expansionIds = [],
+  expansionNames = {},
 }: PriceInputSectionProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -105,10 +109,12 @@ function PriceInputSection({
     <div className="space-y-4">
       <PricingAssistant
         bggGameId={bggGameId}
+        gameName={gameName}
         condition={condition ?? null}
         isAuction={isAuction}
         onFillPrice={onPriceChange}
         expansionIds={expansionIds}
+        expansionNames={expansionNames}
       />
 
       <Input
@@ -203,8 +209,10 @@ export function ReviewPriceStep({
             auctionDurationDays={auctionDurationDays}
             onDurationChange={onDurationChange}
             bggGameId={formData.bgg_game_id}
+            gameName={formData.game_name}
             condition={formData.condition}
             expansionIds={formData.selected_expansion_ids}
+            expansionNames={expansions?.reduce((acc, e) => ({ ...acc, [e.id]: e.name }), {} as Record<number, string>)}
           />
         </CardBody>
       </Card>
