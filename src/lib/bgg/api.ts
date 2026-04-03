@@ -612,6 +612,103 @@ export async function ensureGameVersions(
 }
 
 // ============================================================================
+// Batch version fetch
+// ============================================================================
+
+const BGG_MAX_IDS_PER_REQUEST = 20;
+
+/**
+ * Fetch versions for multiple games in batch BGG API calls.
+ * BGG supports up to 20 IDs per request via comma-separated thing?id=X,Y,Z&versions=1.
+ * Splits into multiple calls if needed, checks DB cache first.
+ */
+export async function fetchBatchVersions(
+  gameIds: number[],
+  supabase: { from: (table: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
+): Promise<Record<number, BGGVersion[]>> {
+  const result: Record<number, BGGVersion[]> = {};
+  if (gameIds.length === 0) return result;
+
+  // Check DB cache for all games
+  const { data: cachedGames } = await supabase
+    .from('games')
+    .select('id, versions, versions_fetched_at')
+    .in('id', gameIds);
+
+  const uncachedIds: number[] = [];
+
+  for (const id of gameIds) {
+    const cached = cachedGames?.find((g: { id: number; versions: BGGVersion[] | null; versions_fetched_at: string | null }) => g.id === id);
+    if (cached?.versions_fetched_at) {
+      const ageMs = Date.now() - new Date(cached.versions_fetched_at).getTime();
+      if (ageMs < VERSIONS_STALE_DAYS * 24 * 60 * 60 * 1000) {
+        result[id] = (cached.versions as BGGVersion[]) ?? [];
+        continue;
+      }
+    }
+    uncachedIds.push(id);
+  }
+
+  if (uncachedIds.length === 0) return result;
+
+  // Split into chunks of BGG_MAX_IDS_PER_REQUEST
+  for (let i = 0; i < uncachedIds.length; i += BGG_MAX_IDS_PER_REQUEST) {
+    const chunk = uncachedIds.slice(i, i + BGG_MAX_IDS_PER_REQUEST);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await rateLimitedFetch(
+      `https://boardgamegeek.com/xmlapi2/thing?id=${chunk.join(',')}&versions=1`,
+      { signal: controller.signal, headers: createBGGHeaders() }
+    );
+    clearTimeout(timeoutId);
+
+    if (response.status === 429) throw createRateLimitError(5);
+    if (response.status >= 500) throw createAPIUnavailableError();
+    if (!response.ok) throw createAPIUnavailableError();
+
+    const xml = await response.text();
+    const parsed = parser.parse(xml) as BGGXMLResponse;
+    if (!parsed.items?.item) continue;
+
+    const items = Array.isArray(parsed.items.item)
+      ? (parsed.items.item as BGGXMLItem[])
+      : [parsed.items.item as BGGXMLItem];
+
+    for (const item of items) {
+      const id = parseInt(item['@_id']);
+      if (isNaN(id)) continue;
+
+      const versions = parseVersionsFromXML(item);
+      result[id] = versions;
+
+      // Persist to DB cache
+      void supabase
+        .from('games')
+        .update({
+          versions: versions.length > 0 ? versions : null,
+          versions_fetched_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .then(({ error }: { error: Error | null }) => {
+          if (error) console.error(`fetchBatchVersions: error persisting versions for game ${id}:`, error);
+        });
+    }
+
+    // For IDs in chunk that weren't in the response (deleted/invalid), set empty versions
+    for (const id of chunk) {
+      if (!(id in result)) {
+        result[id] = [];
+      }
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
 // Batch thumbnail fetch
 // ============================================================================
 
