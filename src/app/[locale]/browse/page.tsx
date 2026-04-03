@@ -64,7 +64,11 @@ export default async function BrowsePage(
 
   let gameFilterIds: number[] | null = null;
   if (hasGameFilters) {
-    let gamesQuery = supabase.from('games').select('id').eq('is_expansion', false);
+    let gamesQuery = supabase.from('games').select('id');
+    // Only exclude expansions if toggle is off
+    if (!filters.showExpansions) {
+      gamesQuery = gamesQuery.eq('is_expansion', false);
+    }
 
     if (filters.playerCount !== null) {
       gamesQuery = gamesQuery
@@ -94,7 +98,7 @@ export default async function BrowsePage(
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -161,7 +165,14 @@ export default async function BrowsePage(
     }
   }
 
-  const filteredListings = listings ?? [];
+  // Filter out expansion-primary listings when toggle is off (post-query filter)
+  // This is a lightweight filter since standalone expansion listings are rare
+  let filteredListings = listings ?? [];
+  if (!filters.showExpansions && !hasGameFilters) {
+    filteredListings = filteredListings.filter(
+      (l) => !(l.games as any)?.is_expansion
+    );
+  }
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const filtersActive = hasActiveFilters(filters);
