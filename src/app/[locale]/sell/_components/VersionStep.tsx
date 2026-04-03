@@ -58,9 +58,9 @@ export function VersionStep({
   const [showManual, setShowManual] = useState(false);
   const [collapsed, setCollapsed] = useState(selectedVersionSource !== null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
-  const [manualPublisher, setManualPublisher] = useState('');
-  const [manualLanguage, setManualLanguage] = useState('');
-  const [manualYear, setManualYear] = useState('');
+  const [manualPublisher, setManualPublisher] = useState(selectedPublisher ?? '');
+  const [manualLanguage, setManualLanguage] = useState(selectedLanguage ?? '');
+  const [manualYear, setManualYear] = useState(selectedEditionYear ? String(selectedEditionYear) : '');
   const [yearError, setYearError] = useState<string | null>(null);
 
   const primaryGameName = selectedGame?.name ?? gameName;
@@ -90,16 +90,20 @@ export function VersionStep({
           if (!cancelled) {
             const data = await res.json().catch(() => null);
             setFetchError(data?.error || 'Could not load editions. You can enter version details manually.');
+            setShowManual(true);
           }
           return;
         }
         const data = await res.json();
         if (!cancelled) {
-          setVersions(data.versions ?? []);
+          const fetched = data.versions ?? [];
+          setVersions(fetched);
+          if (fetched.length === 0) setShowManual(true);
         }
       } catch {
         if (!cancelled) {
           setFetchError('Could not load editions. You can enter version details manually.');
+          setShowManual(true);
         }
       } finally {
         if (!cancelled) setLoading(false);

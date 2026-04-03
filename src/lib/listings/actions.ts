@@ -305,7 +305,7 @@ export async function updateListing(
   // Fetch listing and verify ownership
   const { data: listing, error: fetchError } = await supabase
     .from('listings')
-    .select('seller_id, status, photos')
+    .select('seller_id, status, listing_type, bid_count, photos')
     .eq('id', data.id)
     .single();
 
@@ -319,6 +319,10 @@ export async function updateListing(
 
   if (listing.status !== 'active') {
     return { error: 'Only active listings can be edited' };
+  }
+
+  if (listing.listing_type === 'auction' && listing.bid_count > 0) {
+    return { error: 'Auctions with bids cannot be edited' };
   }
 
   // Game name validation
@@ -348,6 +352,7 @@ export async function updateListing(
       publisher: data.publisher,
       language: data.language,
       edition_year: data.edition_year,
+      version_thumbnail: data.version_thumbnail,
       condition: data.condition,
       price_cents: data.price_cents,
       description: data.description,

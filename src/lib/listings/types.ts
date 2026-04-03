@@ -48,6 +48,7 @@ export interface UpdateListingData {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  version_thumbnail: string | null;
   condition: ListingCondition;
   price_cents: number;
   description: string | null;
