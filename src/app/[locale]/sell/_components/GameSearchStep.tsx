@@ -42,6 +42,7 @@ export function buildEnrichedGame(
     image: games?.image ?? null,
     player_count: games?.player_count ?? null,
     alternateNames: games?.alternate_names ?? [],
+    matchedAlternateName: null,
   };
 }
 
@@ -318,7 +319,8 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                         <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
                       )}
                     </div>
-                    {game.matched_alternate_name && (
+                    {game.matched_alternate_name &&
+                      !game.name.toLowerCase().includes(query.trim().toLowerCase()) && (
                       <p className="text-xs text-semantic-text-muted truncate">
                         Also known as: {game.matched_alternate_name}
                       </p>
