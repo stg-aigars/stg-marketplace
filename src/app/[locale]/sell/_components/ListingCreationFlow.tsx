@@ -9,7 +9,8 @@ import type { ListingCondition, ListingType, VersionSource, ListingExpansion } f
 import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
-import { GameSearchStep } from './GameSearchStep';
+import { useAuth } from '@/contexts/AuthContext';
+import { GameSearchStep, buildEnrichedGame } from './GameSearchStep';
 import type { EnrichedGame } from './GameSearchStep';
 import { VersionStep } from './VersionStep';
 import { ConditionPhotosStep } from './ConditionPhotosStep';
@@ -21,6 +22,7 @@ interface GameExpansion {
   id: number;
   name: string;
   year?: number;
+  thumbnail?: string | null;
 }
 
 interface DuplicateListing {
@@ -53,6 +55,7 @@ export interface FormData {
   version_thumbnail: string | null;
   // Step: Version (expansions) — keyed by bgg_game_id
   expansion_versions: Record<number, VersionData>;
+  expansion_game_names: Record<number, string>;
   // Step: Condition, photos & description
   photos: string[];
   condition: ListingCondition | null;
@@ -81,6 +84,7 @@ const initialFormData: FormData = {
   edition_year: null,
   version_thumbnail: null,
   expansion_versions: {},
+  expansion_game_names: {},
   photos: [],
   condition: null,
   price_cents: 0,
@@ -112,6 +116,8 @@ export function ListingCreationFlow({
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
+  const { profile } = useAuth();
+  const userCountry = profile?.country ?? null;
   const gameLocked = lockedFields.includes('game');
   const priceLocked = lockedFields.includes('price');
 
@@ -129,6 +135,7 @@ export function ListingCreationFlow({
   const [loadingExpansions, setLoadingExpansions] = useState(false);
   const [expansionGateAnswer, setExpansionGateAnswer] = useState<boolean | null>(null);
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
+  const [enrichedExpansions, setEnrichedExpansions] = useState<Record<number, EnrichedGame>>({});
 
   const STEPS: { id: StepId; label: string }[] = [
     { id: 'game', label: 'Game' },
@@ -190,6 +197,66 @@ export function ListingCreationFlow({
     return () => { cancelled = true; };
   }, [formData.bgg_game_id, formData.is_expansion]);
 
+  // Enrich expansion metadata (thumbnails + alternate names) via single batch call.
+  // Fires as soon as availableExpansions loads — before user even clicks "Yes".
+  // enrich-batch now saves full metadata to DB, so individual enrich calls on
+  // the Edition step become no-ops (ensureGameMetadata sees data already exists).
+  const enrichedExpansionIdsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const missing = availableExpansions.filter(
+      (e) => !enrichedExpansionIdsRef.current.has(e.id)
+    );
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const ids = missing.map((e) => e.id).slice(0, 20);
+
+    // Mark as attempted immediately to prevent duplicate calls
+    for (const id of ids) enrichedExpansionIdsRef.current.add(id);
+
+    apiFetch('/api/games/enrich-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.games) return;
+        const games: Record<number, { thumbnail: string | null; image: string | null; alternate_names: string[] | null }> = data.games;
+
+        // Update expansion thumbnails in the list
+        setAvailableExpansions((prev) =>
+          prev.map((exp) => {
+            const enriched = games[exp.id];
+            if (enriched?.thumbnail && !exp.thumbnail) {
+              return { ...exp, thumbnail: enriched.thumbnail };
+            }
+            return exp;
+          })
+        );
+
+        const newEnriched: Record<number, EnrichedGame> = {};
+        for (const exp of missing) {
+          const g = games[exp.id];
+          if (g) {
+            newEnriched[exp.id] = buildEnrichedGame(
+              exp.id, exp.name, exp.year ?? null,
+              { thumbnail: g.thumbnail, image: g.image, player_count: null, alternate_names: g.alternate_names },
+            );
+          }
+        }
+        if (Object.keys(newEnriched).length > 0) {
+          setEnrichedExpansions((prev) => ({ ...prev, ...newEnriched }));
+        }
+      })
+      .catch(() => {
+        // Non-fatal — expansions render without alternate names
+      });
+
+    return () => { cancelled = true; };
+  }, [availableExpansions]);
+
   const canProceed = (): boolean => {
     switch (currentStepId) {
       case 'game':
@@ -243,7 +310,7 @@ export function ListingCreationFlow({
       const version = formData.expansion_versions[id];
       return {
         bgg_game_id: id,
-        game_name: expansion?.name ?? `Game ${id}`,
+        game_name: formData.expansion_game_names[id] ?? expansion?.name ?? `Game ${id}`,
         ...(version ? {
           version_source: version.version_source,
           bgg_version_id: version.bgg_version_id,
@@ -355,9 +422,11 @@ export function ListingCreationFlow({
                     edition_year: null,
                     version_thumbnail: null,
                     expansion_versions: {},
+                    expansion_game_names: {},
                     condition: null,
                   });
                   setExpansionGateAnswer(null);
+                  setEnrichedExpansions({});
                 } else {
                   updateFormData({
                     bgg_game_id: game.id,
@@ -434,7 +503,10 @@ export function ListingCreationFlow({
             {showExpansionGateAnswered && expansionGateAnswer === true && (
               <div className="mt-4">
                 <ExpansionStep
-                  expansions={availableExpansions}
+                  expansions={availableExpansions.map((e) => ({
+                    ...e,
+                    alternate_names: enrichedExpansions[e.id]?.alternateNames ?? null,
+                  }))}
                   selectedExpansionIds={formData.selected_expansion_ids}
                   onSelectionChange={(ids) => updateFormData({ selected_expansion_ids: ids })}
                 />
@@ -444,7 +516,8 @@ export function ListingCreationFlow({
                   className="mt-2"
                   onClick={() => {
                     setExpansionGateAnswer(null);
-                    updateFormData({ selected_expansion_ids: [], expansion_versions: {} });
+                    setEnrichedExpansions({});
+                    updateFormData({ selected_expansion_ids: [], expansion_versions: {}, expansion_game_names: {} });
                   }}
                 >
                   Remove expansions
@@ -467,71 +540,86 @@ export function ListingCreationFlow({
           </>
         )}
 
-        {currentStepId === 'edition' && formData.bgg_game_id && (
-          <div className="space-y-8">
-            {/* Base game version */}
-            <div>
-              {formData.selected_expansion_ids.length > 0 && (
-                <p className="text-sm font-medium text-semantic-text-muted mb-2">Base game edition</p>
-              )}
-              <VersionStep
-                gameId={formData.bgg_game_id}
-                gameName={formData.game_name}
-                selectedGame={selectedGame}
-                onGameNameChange={(name: string) => updateFormData({ game_name: name })}
-                selectedVersionId={formData.bgg_version_id}
-                selectedVersionSource={formData.version_source}
-                selectedPublisher={formData.publisher}
-                selectedLanguage={formData.language}
-                selectedEditionYear={formData.edition_year}
-                onSelect={(version) => {
-                  updateFormData({
-                    version_source: version.version_source,
-                    bgg_version_id: version.bgg_version_id,
-                    version_name: version.version_name,
-                    publisher: version.publisher,
-                    language: version.language,
-                    edition_year: version.edition_year,
-                    version_thumbnail: version.version_thumbnail,
-                  });
-                }}
-              />
-            </div>
+        {currentStepId === 'edition' && formData.bgg_game_id && (() => {
+          const hasExpansions = formData.selected_expansion_ids.length > 0;
+          const baseGameStep = (
+            <VersionStep
+              userCountry={userCountry}
+              gameId={formData.bgg_game_id}
+              gameName={formData.game_name}
+              selectedGame={selectedGame}
+              onGameNameChange={(name: string) => updateFormData({ game_name: name })}
+              selectedVersionId={formData.bgg_version_id}
+              selectedVersionSource={formData.version_source}
+              selectedPublisher={formData.publisher}
+              selectedLanguage={formData.language}
+              selectedEditionYear={formData.edition_year}
+              onSelect={(version) => {
+                updateFormData({
+                  version_source: version.version_source,
+                  bgg_version_id: version.bgg_version_id,
+                  version_name: version.version_name,
+                  publisher: version.publisher,
+                  language: version.language,
+                  edition_year: version.edition_year,
+                  version_thumbnail: version.version_thumbnail,
+                });
+              }}
+            />
+          );
 
-            {/* Expansion version selectors */}
-            {formData.selected_expansion_ids.map((expId) => {
-              const expansion = availableExpansions.find((e) => e.id === expId);
-              if (!expansion) return null;
-              const expVersion = formData.expansion_versions[expId];
-              return (
-                <div key={expId}>
-                  <p className="text-sm font-medium text-semantic-text-muted mb-2">
-                    {expansion.name} edition
-                    <span className="text-semantic-text-muted font-normal ml-1">(optional)</span>
-                  </p>
-                  <VersionStep
-                    gameId={expId}
-                    gameName={expansion.name}
-                    selectedVersionId={expVersion?.bgg_version_id ?? null}
-                    selectedVersionSource={expVersion?.version_source ?? null}
-                    selectedPublisher={expVersion?.publisher ?? null}
-                    selectedLanguage={expVersion?.language ?? null}
-                    selectedEditionYear={expVersion?.edition_year ?? null}
-                    onSelect={(version: VersionData) => {
-                      updateFormData({
-                        expansion_versions: {
-                          ...formData.expansion_versions,
-                          [expId]: version,
-                        },
-                      });
-                    }}
-                    compact
-                  />
-                </div>
-              );
-            })}
+          return (
+          <div className="space-y-6">
+            {hasExpansions ? (
+              <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle">
+                {baseGameStep}
+              </div>
+            ) : baseGameStep}
+
+            {/* Expansions section */}
+            {formData.selected_expansion_ids.length > 0 && (
+              <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle space-y-6">
+                {formData.selected_expansion_ids.map((expId, idx) => {
+                  const expansion = availableExpansions.find((e) => e.id === expId);
+                  if (!expansion) return null;
+                  const expVersion = formData.expansion_versions[expId];
+
+                  return (
+                    <div key={expId}>
+                      {idx > 0 && (
+                        <hr className="border-semantic-border-subtle mb-6" />
+                      )}
+                      <VersionStep
+                        userCountry={userCountry}
+                        gameId={expId}
+                        gameName={formData.expansion_game_names[expId] ?? expansion.name}
+                        selectedGame={enrichedExpansions[expId] ?? null}
+                        onGameNameChange={(name: string) => updateFormData({
+                          expansion_game_names: { ...formData.expansion_game_names, [expId]: name },
+                        })}
+                        selectedVersionId={expVersion?.bgg_version_id ?? null}
+                        selectedVersionSource={expVersion?.version_source ?? null}
+                        selectedPublisher={expVersion?.publisher ?? null}
+                        selectedLanguage={expVersion?.language ?? null}
+                        selectedEditionYear={expVersion?.edition_year ?? null}
+                        onSelect={(version: VersionData) => {
+                          updateFormData({
+                            expansion_versions: {
+                              ...formData.expansion_versions,
+                              [expId]: version,
+                            },
+                          });
+                        }}
+                        compact
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {currentStepId === 'details' && (
           <ConditionPhotosStep
@@ -560,7 +648,7 @@ export function ListingCreationFlow({
               onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
               expansions={formData.selected_expansion_ids.map((id) => {
                 const exp = availableExpansions.find((e) => e.id === id);
-                return { id, name: exp?.name ?? `Game ${id}` };
+                return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };
               })}
             />
           </>

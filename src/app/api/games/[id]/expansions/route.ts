@@ -9,6 +9,7 @@ export interface GameExpansion {
   id: number;
   name: string;
   year?: number;
+  thumbnail?: string | null;
 }
 
 export async function GET(
@@ -46,7 +47,7 @@ export async function GET(
     const expansionIds = expansionLinks.map((l) => parseInt(l.id));
     const { data: existingGames } = await supabase
       .from('games')
-      .select('id')
+      .select('id, thumbnail, yearpublished')
       .in('id', expansionIds);
 
     const existingIds = new Set((existingGames ?? []).map((g) => g.id));
@@ -67,11 +68,21 @@ export async function GET(
         .upsert(stubs, { onConflict: 'id', ignoreDuplicates: true });
     }
 
-    // Build response with decoded names
-    const expansions: GameExpansion[] = expansionLinks.map((link) => ({
-      id: parseInt(link.id),
-      name: decodeHTMLEntities(link.value),
-    }));
+    // Build response with decoded names + DB metadata (thumbnail, year)
+    const dbLookup = new Map(
+      (existingGames ?? []).map((g) => [g.id, g])
+    );
+
+    const expansions: GameExpansion[] = expansionLinks.map((link) => {
+      const id = parseInt(link.id);
+      const dbGame = dbLookup.get(id);
+      return {
+        id,
+        name: decodeHTMLEntities(link.value),
+        year: dbGame?.yearpublished ?? undefined,
+        thumbnail: dbGame?.thumbnail ?? null,
+      };
+    });
 
     // Sort alphabetically for consistent UI
     expansions.sort((a, b) => a.name.localeCompare(b.name));

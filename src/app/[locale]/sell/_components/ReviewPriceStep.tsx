@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { CalendarBlank, Buildings, Translate, PencilSimple } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
@@ -37,8 +37,10 @@ interface PriceInputSectionProps {
   auctionDurationDays?: number;
   onDurationChange?: (days: number) => void;
   bggGameId: number | null;
+  gameName?: string;
   condition: FormData['condition'];
   expansionIds?: number[];
+  expansionNames?: Record<number, string>;
 }
 
 function PriceInputSection({
@@ -49,8 +51,10 @@ function PriceInputSection({
   auctionDurationDays,
   onDurationChange,
   bggGameId,
+  gameName,
   condition,
   expansionIds = [],
+  expansionNames = {},
 }: PriceInputSectionProps) {
   const [displayPrice, setDisplayPrice] = useState(() =>
     priceCents > 0 ? (priceCents / 100).toFixed(2) : ''
@@ -105,10 +109,12 @@ function PriceInputSection({
     <div className="space-y-4">
       <PricingAssistant
         bggGameId={bggGameId}
+        gameName={gameName}
         condition={condition ?? null}
         isAuction={isAuction}
         onFillPrice={onPriceChange}
         expansionIds={expansionIds}
+        expansionNames={expansionNames}
       />
 
       <Input
@@ -186,6 +192,11 @@ export function ReviewPriceStep({
 
   const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? '';
 
+  const expansionNames = useMemo(
+    () => expansions.reduce((acc, e) => ({ ...acc, [e.id]: e.name }), {} as Record<number, string>),
+    [expansions],
+  );
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
@@ -203,8 +214,10 @@ export function ReviewPriceStep({
             auctionDurationDays={auctionDurationDays}
             onDurationChange={onDurationChange}
             bggGameId={formData.bgg_game_id}
+            gameName={formData.game_name}
             condition={formData.condition}
             expansionIds={formData.selected_expansion_ids}
+            expansionNames={expansionNames}
           />
         </CardBody>
       </Card>

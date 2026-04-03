@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank } from '@phosphor-icons/react/ssr';
+import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank, PencilSimple } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
 import type { VersionData, VersionSource } from '@/lib/listings/types';
+import type { CountryCode } from '@/lib/country-utils';
+import { COUNTRY_TO_LANGUAGE } from '@/lib/country-utils';
 import type { EnrichedGame } from './GameSearchStep';
 
 interface VersionStepProps {
@@ -23,6 +25,7 @@ interface VersionStepProps {
   selectedEditionYear?: number | null;
   onSelect: (version: VersionData) => void;
   compact?: boolean;
+  userCountry?: CountryCode | null;
 }
 
 const PRIORITY_LANGUAGES = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'German'];
@@ -51,6 +54,7 @@ export function VersionStep({
   selectedEditionYear,
   onSelect,
   compact,
+  userCountry,
 }: VersionStepProps) {
   const [versions, setVersions] = useState<BGGVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +119,45 @@ export function VersionStep({
       cancelled = true;
     };
   }, [gameId]);
+
+  // Auto-select language filter based on user's country (once, after versions load)
+  const hasAutoSelectedLanguage = useRef(false);
+
+  useEffect(() => {
+    if (versions.length === 0 || hasAutoSelectedLanguage.current) return;
+
+    const langSet = new Set<string>();
+    for (const v of versions) {
+      for (const lang of getVersionLanguages(v)) langSet.add(lang);
+    }
+    if (langSet.size < 2) return;
+
+    hasAutoSelectedLanguage.current = true;
+
+    // 1. Try user's country language
+    if (userCountry) {
+      const countryLang = COUNTRY_TO_LANGUAGE[userCountry];
+      if (countryLang && langSet.has(countryLang)) {
+        setLanguageFilter(countryLang);
+        return;
+      }
+    }
+    // 2. Fallback to English
+    if (langSet.has('English')) {
+      setLanguageFilter('English');
+      return;
+    }
+    // 3. First available by priority order
+    const sorted = Array.from(langSet).sort((a, b) => {
+      const aIdx = PRIORITY_LANGUAGES.indexOf(a);
+      const bIdx = PRIORITY_LANGUAGES.indexOf(b);
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    setLanguageFilter(sorted[0]);
+  }, [versions, userCountry]);
 
   // Extract unique languages sorted: Baltic-priority first, then alphabetical
   const uniqueLanguages = useMemo(() => {
@@ -201,77 +244,25 @@ export function VersionStep({
   if (canShowCollapsed) {
     return (
       <div className="space-y-4">
-        {compact ? (
-          <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
-        ) : (
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Edition
-          </h2>
-        )}
-
-        {/* Selected edition card */}
-        <Card>
-          <CardBody>
-            <div className="flex items-center gap-4">
-              {selectedVersionSource === 'bgg' && selectedVersion ? (
-                <>
-                  {(selectedVersion.image ?? selectedVersion.thumbnail) ? (
-                    <Image
-                      src={(selectedVersion.image ?? selectedVersion.thumbnail)!}
-                      alt={selectedVersion.name}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-                      <ImageSquare size={28} className="text-semantic-text-muted" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-semantic-text-primary truncate">
-                      {selectedVersion.name}
-                    </p>
-                    <VersionMeta version={selectedVersion} />
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-semantic-text-primary">
-                    {selectedPublisher || selectedLanguage || selectedEditionYear
-                      ? 'Custom edition'
-                      : 'No specific edition'}
-                  </p>
-                  {(selectedPublisher || selectedLanguage || selectedEditionYear) && (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {selectedPublisher && (
-                        <span className="flex items-center gap-1">
-                          <Buildings size={14} className="shrink-0" />
-                          {selectedPublisher}
-                        </span>
-                      )}
-                      {selectedLanguage && (
-                        <span className="flex items-center gap-1">
-                          <Translate size={14} className="shrink-0" />
-                          {selectedLanguage}
-                        </span>
-                      )}
-                      {selectedEditionYear && (
-                        <span className="flex items-center gap-1">
-                          <CalendarBlank size={14} className="shrink-0" />
-                          {selectedEditionYear}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              <Button variant="ghost" size="sm" onClick={() => setCollapsed(false)}>
-                Change
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Selected edition card — unified VersionCard in confirmed mode */}
+        <VersionCard
+          version={selectedVersionSource === 'bgg' && selectedVersion
+            ? selectedVersion
+            : {
+                id: 0,
+                name: selectedPublisher || selectedLanguage || selectedEditionYear
+                  ? 'Custom edition'
+                  : 'No specific edition',
+                publisher: selectedPublisher ?? undefined,
+                language: selectedLanguage ?? undefined,
+                yearPublished: selectedEditionYear ?? undefined,
+              }
+          }
+          gameName={gameName}
+          selected={false}
+          mode="confirmed"
+          onEdit={() => setCollapsed(false)}
+        />
 
         {/* Alternate name selector */}
         {alternateNames.length > 0 && onGameNameChange && (
@@ -289,9 +280,6 @@ export function VersionStep({
   if (loading) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          Which edition?
-        </h2>
         <div className="flex items-center justify-center py-8">
           <Spinner className="text-semantic-text-muted" />
           <span className="ml-2 text-sm text-semantic-text-muted">Loading editions...</span>
@@ -303,9 +291,6 @@ export function VersionStep({
   if (showManual) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          Enter edition details
-        </h2>
         <p className="text-sm text-semantic-text-secondary">
           Tell buyers about your specific edition of {primaryGameName}.
         </p>
@@ -359,17 +344,10 @@ export function VersionStep({
 
   return (
     <div className="space-y-4">
-      {compact ? (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
-      ) : (
-        <>
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Which edition?
-          </h2>
-          <p className="text-sm text-semantic-text-secondary">
-            Select the edition that matches your copy of {primaryGameName}. This helps buyers know exactly what they are getting.
-          </p>
-        </>
+      {!compact && (
+        <p className="text-sm text-semantic-text-secondary">
+          Select the edition that matches your copy of {primaryGameName}.
+        </p>
       )}
 
       {fetchError && (
@@ -380,18 +358,11 @@ export function VersionStep({
       {showLanguageFilter && (
         <div className="overflow-x-auto -mx-1 px-1 pb-1">
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setLanguageFilter(null)}
-              className={filterChipClass(languageFilter === null)}
-            >
-              All ({versions.length})
-            </button>
             {uniqueLanguages.languages.map((lang) => (
               <button
                 key={lang}
                 type="button"
-                onClick={() => setLanguageFilter(lang === languageFilter ? null : lang)}
+                onClick={() => setLanguageFilter(lang)}
                 className={filterChipClass(languageFilter === lang)}
               >
                 {lang} ({uniqueLanguages.counts.get(lang)})
@@ -409,6 +380,7 @@ export function VersionStep({
           </p>
           <VersionCard
             version={selectedVersion}
+            gameName={gameName}
             selected
             onClick={() => handleSelectBGGVersion(selectedVersion)}
           />
@@ -423,6 +395,7 @@ export function VersionStep({
               <VersionCard
                 key={version.id}
                 version={version}
+                gameName={gameName}
                 selected={isSelected(version.id)}
                 onClick={() => handleSelectBGGVersion(version)}
               />
@@ -482,50 +455,80 @@ function VersionMeta({ version }: { version: BGGVersion }) {
   );
 }
 
-// --- Version card sub-component ---
+// --- Version card sub-component (used for both selection list and collapsed confirmed view) ---
 
 function VersionCard({
   version,
+  gameName,
   selected,
+  mode = 'select',
   onClick,
+  onEdit,
 }: {
   version: BGGVersion;
+  gameName?: string;
   selected: boolean;
-  onClick: () => void;
+  mode?: 'select' | 'confirmed';
+  onClick?: () => void;
+  onEdit?: () => void;
 }) {
   const thumbnail = version.image ?? version.thumbnail;
+  const isSelect = mode === 'select';
 
   return (
     <Card
-      hoverable
-      className={`cursor-pointer transition-all duration-350 ease-out-custom ${
-        selected ? 'border-2 border-semantic-brand shadow-md' : ''
-      }`}
-      onClick={onClick}
+      hoverable={isSelect}
+      className={isSelect
+        ? `cursor-pointer transition-all duration-350 ease-out-custom ${selected ? 'border-2 border-semantic-brand shadow-md' : ''}`
+        : ''
+      }
+      onClick={isSelect ? onClick : undefined}
     >
       <CardBody className="py-3">
-        <div className="flex items-start gap-3">
-          {thumbnail ? (
-            <Image
-              src={thumbnail}
-              alt={version.name}
-              width={64}
-              height={64}
-              className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-              <ImageSquare size={28} className="text-semantic-text-muted" aria-hidden="true" />
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+            {thumbnail ? (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
+                <Image
+                  src={thumbnail}
+                  alt={version.name}
+                  fill
+                  className="object-contain"
+                  sizes="80px"
+                />
+              </div>
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                <ImageSquare size={28} className="text-semantic-text-muted" aria-hidden="true" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              {gameName && (
+                <p className="font-medium text-semantic-text-heading">
+                  {gameName}
+                </p>
+              )}
+              <p className={gameName
+                ? 'text-sm text-semantic-text-muted'
+                : 'font-medium text-semantic-text-primary'
+              }>
+                {version.name}
+              </p>
+              <VersionMeta version={version} />
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-semantic-text-primary">
-              {version.name}
-            </p>
-            <VersionMeta version={version} />
           </div>
-          {selected && (
+          {isSelect && selected && (
             <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
+          )}
+          {!isSelect && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="text-semantic-brand shrink-0 p-1"
+              aria-label="Change edition"
+            >
+              <PencilSimple size={16} />
+            </button>
           )}
         </div>
       </CardBody>
@@ -550,9 +553,12 @@ function AlternateNameSelector({
 }: {
   primaryName: string;
   alternateNames: string[];
+  // selectedName reflects the search-matched alternate name (via formData.game_name)
+  // or the primary name — so the collapsed view shows what the user searched for
   selectedName: string;
   onSelect: (name: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   const allNames = useMemo(() => [primaryName, ...alternateNames], [primaryName, alternateNames]);
@@ -561,7 +567,35 @@ function AlternateNameSelector({
 
   if (alternateNames.length === 0) return null;
 
-  // If selected name is non-Latin, always show all
+  // Collapsed view — matches a selected item from the expanded list
+  if (!expanded) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-semantic-text-secondary">
+          Name on the box
+        </p>
+        <div className="w-full text-left px-3 py-1.5 rounded-md border text-sm border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium">
+          <div className="flex items-center gap-2">
+            <CheckCircle size={16} weight="fill" className="text-semantic-brand shrink-0" />
+            <span className="truncate flex-1">{selectedName}</span>
+            {selectedName === primaryName && (
+              <span className="text-xs text-semantic-text-muted shrink-0">(primary)</span>
+            )}
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="text-xs text-semantic-brand shrink-0 ml-2"
+            >
+              change
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded view — full name picker
+  // If selected name is non-Latin, always show all scripts
   const effectiveShowAll = showAll || (selectedName !== primaryName && !isLatinScript(selectedName));
   const visibleNames = effectiveShowAll ? allNames : latinNames;
 
@@ -575,8 +609,11 @@ function AlternateNameSelector({
           <button
             key={name}
             type="button"
-            onClick={() => onSelect(name)}
-            className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors duration-250 ease-out-custom ${
+            onClick={() => {
+              onSelect(name);
+              setExpanded(false);
+            }}
+            className={`w-full text-left px-3 py-1.5 rounded-md border text-sm transition-colors duration-250 ease-out-custom ${
               selectedName === name
                 ? 'border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium'
                 : 'border-semantic-border-subtle bg-semantic-bg-surface text-semantic-text-secondary hover:border-semantic-border-default'

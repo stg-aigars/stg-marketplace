@@ -13,6 +13,7 @@ import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { ExpansionStep } from '@/app/[locale]/sell/_components/ExpansionStep';
 import { buildEnrichedGame, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateListing } from '@/lib/listings/actions';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition, VersionData, ListingExpansion } from '@/lib/listings/types';
@@ -70,6 +71,8 @@ function initialVersion(listing: EditListingFormProps['listing']): VersionData {
 
 export function EditListingForm({ listing, alternateNames, locale, existingExpansions }: EditListingFormProps) {
   const router = useRouter();
+  const { profile } = useAuth();
+  const userCountry = profile?.country ?? null;
 
   // Snapshot initial values for dirty detection
   const initial = useRef({
@@ -91,7 +94,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
   // Expansion state
-  const [availableExpansions, setAvailableExpansions] = useState<Array<{ id: number; name: string; year?: number }>>([]);
+  const [availableExpansions, setAvailableExpansions] = useState<Array<{ id: number; name: string; year?: number; thumbnail?: string | null }>>([]);
   const [selectedExpansionIds, setSelectedExpansionIds] = useState<number[]>(
     existingExpansions.map((e) => e.bgg_game_id)
   );
@@ -249,6 +252,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
 
       {/* Edition / Version */}
       <VersionStep
+        userCountry={userCountry}
         gameId={listing.bgg_game_id}
         gameName={gameName}
         selectedGame={enrichedGame}
@@ -282,6 +286,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
                   <span className="text-semantic-text-muted font-normal ml-1">(optional)</span>
                 </p>
                 <VersionStep
+                  userCountry={userCountry}
                   gameId={expId}
                   gameName={expansion.name}
                   selectedVersionId={expVersion?.bgg_version_id ?? null}

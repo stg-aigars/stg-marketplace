@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
-import { fetchGameThumbnails } from '@/lib/bgg/api';
+import { fetchBatchMetadata } from '@/lib/bgg/api';
+import type { GameMetadataUpdate } from '@/lib/bgg/api';
 import { thumbnailLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 const MAX_BATCH_SIZE = 20;
 
 /**
  * POST /api/games/enrich-batch
- * Accepts up to 20 BGG game IDs. Enriches games that lack thumbnails
+ * Accepts up to 20 BGG game IDs. Enriches games that lack full metadata
  * by fetching from BGG API and writing back to the games table.
- * Returns thumbnails for all requested IDs.
+ * Returns thumbnails and alternate names for all requested IDs.
  */
 export async function POST(request: NextRequest) {
   const rateLimitError = applyRateLimit(thumbnailLimiter, request);
@@ -45,10 +46,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No valid game IDs' }, { status: 400 });
   }
 
-  // Find games missing thumbnails
   const { data: games } = await supabase
     .from('games')
-    .select('id, thumbnail, image')
+    .select('id, thumbnail, image, alternate_names, metadata_fetched_at')
     .in('id', validIds);
 
   if (!games) {
@@ -56,49 +56,62 @@ export async function POST(request: NextRequest) {
   }
 
   const missingIds = games
-    .filter((g) => !g.thumbnail)
+    .filter((g) => !g.metadata_fetched_at)
     .map((g) => g.id);
 
-  // Fetch thumbnails from BGG for missing ones
   if (missingIds.length > 0) {
     try {
-      const thumbnails = await fetchGameThumbnails(missingIds);
+      const batchData = await fetchBatchMetadata(missingIds);
 
-      // Write back to games table in parallel (games table is read-only via RLS)
       const service = createServiceClient();
-      const entries = Array.from(thumbnails.entries());
-      await Promise.all(
-        entries.map(([gameId, data]) =>
-          service
-            .from('games')
-            .update({
-              thumbnail: data.thumbnail ?? null,
-              image: data.image ?? null,
-            })
-            .eq('id', gameId)
-        )
+      const upsertRows = Array.from(batchData.entries()).map(
+        ([gameId, data]: [number, GameMetadataUpdate]) => ({
+          id: gameId,
+          thumbnail: data.thumbnail,
+          image: data.image,
+          alternate_names: data.alternate_names,
+          description: data.description,
+          player_count: data.player_count,
+          min_players: data.min_players,
+          max_players: data.max_players,
+          min_age: data.min_age,
+          playing_time: data.playing_time,
+          designers: data.designers,
+          bayesaverage: data.bayesaverage,
+          weight: data.weight,
+          categories: data.categories,
+          mechanics: data.mechanics,
+          versions: data.versions,
+          versions_fetched_at: data.versions_fetched_at,
+          metadata_fetched_at: data.metadata_fetched_at,
+        })
       );
+
+      if (upsertRows.length > 0) {
+        await service.from('games').upsert(upsertRows, { onConflict: 'id' });
+      }
 
       // Merge fetched data into response
       for (const game of games) {
-        if (!game.thumbnail && thumbnails.has(game.id)) {
-          const fetched = thumbnails.get(game.id);
-          game.thumbnail = fetched?.thumbnail ?? null;
-          game.image = fetched?.image ?? null;
+        if (batchData.has(game.id)) {
+          const fetched = batchData.get(game.id)!;
+          game.thumbnail = fetched.thumbnail ?? game.thumbnail;
+          game.image = fetched.image ?? game.image;
+          game.alternate_names = fetched.alternate_names ?? game.alternate_names;
         }
       }
     } catch {
-      // Non-fatal: return whatever we have
+      // Non-fatal: return whatever we have from DB
       console.error('[enrich-batch] BGG fetch failed for some games');
     }
   }
 
-  // Build response map
-  const result: Record<number, { thumbnail: string | null; image: string | null }> = {};
+  const result: Record<number, { thumbnail: string | null; image: string | null; alternate_names: string[] | null }> = {};
   for (const game of games) {
     result[game.id] = {
       thumbnail: game.thumbnail,
       image: game.image,
+      alternate_names: game.alternate_names,
     };
   }
 

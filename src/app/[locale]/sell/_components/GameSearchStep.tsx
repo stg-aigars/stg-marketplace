@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Input, Card, CardBody, Button, Spinner, Badge } from '@/components/ui';
-import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { ImageSquare, PencilSimple } from '@phosphor-icons/react/ssr';
 import { apiFetch } from '@/lib/api-fetch';
 
 interface GameResult {
@@ -222,9 +222,14 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                 </div>
               </div>
               {!locked && (
-                <Button variant="ghost" size="sm" onClick={handleChange}>
-                  Change
-                </Button>
+                <button
+                  type="button"
+                  onClick={handleChange}
+                  className="text-semantic-brand shrink-0 p-1"
+                  aria-label="Change game"
+                >
+                  <PencilSimple size={16} />
+                </button>
               )}
             </div>
           </CardBody>

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Input } from '@/components/ui';
+import Image from 'next/image';
+import { X, Package } from '@phosphor-icons/react/ssr';
+import { Input, Card, CardBody, Button } from '@/components/ui';
 
 interface ExpansionStepProps {
-  expansions: Array<{ id: number; name: string; year?: number }>;
+  expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null; alternate_names?: string[] | null }>;
   selectedExpansionIds: number[];
   onSelectionChange: (ids: number[]) => void;
 }
@@ -15,7 +17,10 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
   const filtered = useMemo(() => {
     if (!filter.trim()) return expansions;
     const query = filter.trim().toLowerCase();
-    return expansions.filter((e) => e.name.toLowerCase().includes(query));
+    return expansions.filter((e) =>
+      e.name.toLowerCase().includes(query) ||
+      e.alternate_names?.some((alt) => alt.toLowerCase().includes(query))
+    );
   }, [expansions, filter]);
 
   function handleToggle(id: number) {
@@ -31,6 +36,53 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
       <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
         Select included expansions
       </h2>
+
+      {/* Selected expansion cards */}
+      {selectedExpansionIds.length > 0 && (
+        <div className="space-y-2">
+          {selectedExpansionIds.map((id) => {
+            const expansion = expansions.find((e) => e.id === id);
+            if (!expansion) return null;
+            return (
+              <Card key={id}>
+                <CardBody>
+                  <div className="flex items-center gap-4">
+                    {expansion.thumbnail ? (
+                      <Image
+                        src={expansion.thumbnail}
+                        alt={expansion.name}
+                        width={64}
+                        height={64}
+                        className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                        <Package size={24} className="text-semantic-text-muted" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-semantic-text-primary truncate">
+                        {expansion.name}
+                      </p>
+                      {expansion.year != null && (
+                        <p className="text-sm text-semantic-text-muted">{expansion.year}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSelectionChange(selectedExpansionIds.filter((eid) => eid !== id))}
+                      aria-label={`Remove ${expansion.name}`}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <Input
         placeholder="Filter expansions..."
@@ -55,7 +107,7 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
                   <span className="text-sm text-semantic-text-primary">
                     {expansion.name}
                     {expansion.year != null && (
-                      <span className="ml-1.5 text-semantic-text-muted">({expansion.year})</span>
+                      <span className="text-semantic-text-muted"> ({expansion.year})</span>
                     )}
                   </span>
                 </label>
