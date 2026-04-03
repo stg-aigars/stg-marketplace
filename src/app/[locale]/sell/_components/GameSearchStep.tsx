@@ -13,6 +13,7 @@ interface GameResult {
   thumbnail: string | null;
   player_count: string | null;
   is_expansion?: boolean;
+  matched_alternate_name?: string | null;
 }
 
 export interface EnrichedGame {
@@ -23,6 +24,7 @@ export interface EnrichedGame {
   image: string | null;
   player_count: string | null;
   alternateNames: string[];
+  matchedAlternateName?: string | null;
 }
 
 /** Build an EnrichedGame from a listing/shelf row with a games join. */
@@ -162,6 +164,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
           image: data.game?.image ?? null,
           player_count: data.game?.player_count ?? game.player_count,
           alternateNames: data.game?.alternate_names ?? [],
+          matchedAlternateName: game.matched_alternate_name ?? null,
         };
         setSelectedGame(enriched);
         onSelect(enriched);
@@ -315,6 +318,11 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                         <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
                       )}
                     </div>
+                    {game.matched_alternate_name && (
+                      <p className="text-xs text-semantic-text-muted truncate">
+                        Also known as: {game.matched_alternate_name}
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 text-sm text-semantic-text-muted">
                       {game.yearpublished && <span>{game.yearpublished}</span>}
                       {game.player_count && <span>{game.player_count} players</span>}

@@ -16,19 +16,11 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  let query = supabase
-    .from('games')
-    .select('id, name, yearpublished, thumbnail, player_count, is_expansion')
-    .ilike('name', `%${q}%`);
-
-  if (!includeExpansions) {
-    query = query.eq('is_expansion', false);
-  }
-
-  const { data: games, error } = await query
-    .order('is_expansion', { ascending: true })
-    .order('bayesaverage', { ascending: false, nullsFirst: false })
-    .limit(20);
+  const { data: games, error } = await supabase.rpc('search_games_by_name', {
+    search_query: q,
+    include_expansions: includeExpansions,
+    result_limit: 20,
+  });
 
   if (error) {
     return NextResponse.json({ error: 'Failed to search games' }, { status: 500 });
