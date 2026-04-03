@@ -185,6 +185,37 @@ export async function createListing(
     return { error: 'Something went wrong. Please try again' };
   }
 
+  // Insert expansion rows (non-blocking — listing exists even if this fails)
+  if (data.expansions && data.expansions.length > 0) {
+    // Self-reference guard: reject if any expansion matches the base game
+    const validExpansions = data.expansions.filter((e) => e.bgg_game_id !== data.bgg_game_id);
+
+    if (validExpansions.length > 0) {
+      const service = createServiceClient();
+      const expansionRows = validExpansions.map((e) => ({
+        listing_id: listing.id,
+        bgg_game_id: e.bgg_game_id,
+        game_name: e.game_name,
+        version_source: e.version_source ?? null,
+        bgg_version_id: e.bgg_version_id ?? null,
+        version_name: e.version_name ?? null,
+        publisher: e.publisher ?? null,
+        language: e.language ?? null,
+        edition_year: e.edition_year ?? null,
+        version_thumbnail: e.version_thumbnail ?? null,
+      }));
+
+      const { error: expError } = await service
+        .from('listing_expansions')
+        .insert(expansionRows);
+
+      if (expError) {
+        console.error('Failed to insert listing expansions:', expError);
+        // Non-fatal — listing was created, seller can edit to add expansions later
+      }
+    }
+  }
+
   // If created from an accepted offer, link shelf item and complete the offer
   if (data.offer_id) {
 
