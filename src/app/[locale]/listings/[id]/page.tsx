@@ -596,11 +596,10 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
           <div className="flex-1 min-w-0">
             <p className="font-medium text-semantic-text-primary truncate">
               {showPrimaryName ? primaryName : listingGameName}
-              {games?.yearpublished && (
-                <span className="text-semantic-text-muted"> · {games.yearpublished}</span>
-              )}
-              {showPrimaryName && !games?.yearpublished && (
-                <span className="text-semantic-text-muted"> · {listingGameName}</span>
+              {(showPrimaryName || games?.yearpublished) && (
+                <span className="text-semantic-text-muted">
+                  {' · '}{[showPrimaryName ? listingGameName : null, games?.yearpublished].filter(Boolean).join(' · ')}
+                </span>
               )}
             </p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
