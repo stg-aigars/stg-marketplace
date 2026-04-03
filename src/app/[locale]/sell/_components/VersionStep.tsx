@@ -242,88 +242,27 @@ export function VersionStep({
     (selectedVersionSource !== 'bgg' || selectedVersion !== null);
 
   if (canShowCollapsed) {
-    const versionThumbnail = selectedVersionSource === 'bgg' && selectedVersion
-      ? (selectedVersion.image ?? selectedVersion.thumbnail)
-      : null;
-
-    const hasEdition = selectedVersionSource === 'bgg'
-      ? !!selectedVersion
-      : !!(selectedPublisher || selectedLanguage || selectedEditionYear);
-
     return (
       <div className="space-y-4">
-        {/* Selected edition card — matches Review step layout */}
-        <Card>
-          <CardBody>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-4 min-w-0">
-                {versionThumbnail ? (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
-                    <Image
-                      src={versionThumbnail}
-                      alt={gameName}
-                      fill
-                      className="object-contain"
-                      sizes="96px"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-                    <ImageSquare size={28} className="text-semantic-text-muted" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-semantic-text-heading">
-                    {gameName}
-                  </p>
-                  {hasEdition ? (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {selectedVersionSource === 'bgg' && selectedVersion && (
-                        <span>{selectedVersion.name}</span>
-                      )}
-                      {(selectedVersionSource === 'bgg' ? selectedVersion?.publishers?.[0] ?? selectedVersion?.publisher : selectedPublisher) && (
-                        <span className="flex items-center gap-1">
-                          <Buildings size={14} className="shrink-0" />
-                          {selectedVersionSource === 'bgg'
-                            ? (selectedVersion?.publishers?.[0] ?? selectedVersion?.publisher)
-                            : selectedPublisher}
-                        </span>
-                      )}
-                      {(selectedVersionSource === 'bgg' ? selectedVersion?.languages?.[0] ?? selectedVersion?.language : selectedLanguage) && (
-                        <span className="flex items-center gap-1">
-                          <Translate size={14} className="shrink-0" />
-                          {selectedVersionSource === 'bgg'
-                            ? (selectedVersion?.languages?.[0] ?? selectedVersion?.language)
-                            : selectedLanguage}
-                        </span>
-                      )}
-                      {(selectedVersionSource === 'bgg' ? selectedVersion?.yearPublished : selectedEditionYear) && (
-                        <span className="flex items-center gap-1">
-                          <CalendarBlank size={14} className="shrink-0" />
-                          {selectedVersionSource === 'bgg'
-                            ? selectedVersion?.yearPublished
-                            : selectedEditionYear}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-semantic-text-muted mt-0.5">
-                      No edition specified
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCollapsed(false)}
-                className="text-semantic-brand shrink-0 p-1"
-                aria-label="Change edition"
-              >
-                <PencilSimple size={16} />
-              </button>
-            </div>
-          </CardBody>
-        </Card>
+        {/* Selected edition card — unified VersionCard in confirmed mode */}
+        <VersionCard
+          version={selectedVersionSource === 'bgg' && selectedVersion
+            ? selectedVersion
+            : {
+                id: 0,
+                name: selectedPublisher || selectedLanguage || selectedEditionYear
+                  ? 'Custom edition'
+                  : 'No specific edition',
+                publisher: selectedPublisher ?? undefined,
+                language: selectedLanguage ?? undefined,
+                yearPublished: selectedEditionYear ?? undefined,
+              }
+          }
+          gameName={gameName}
+          selected={false}
+          mode="confirmed"
+          onEdit={() => setCollapsed(false)}
+        />
 
         {/* Alternate name selector */}
         {alternateNames.length > 0 && onGameNameChange && (
@@ -516,60 +455,80 @@ function VersionMeta({ version }: { version: BGGVersion }) {
   );
 }
 
-// --- Version card sub-component ---
+// --- Version card sub-component (used for both selection list and collapsed confirmed view) ---
 
 function VersionCard({
   version,
   gameName,
   selected,
+  mode = 'select',
   onClick,
+  onEdit,
 }: {
   version: BGGVersion;
   gameName?: string;
   selected: boolean;
-  onClick: () => void;
+  mode?: 'select' | 'confirmed';
+  onClick?: () => void;
+  onEdit?: () => void;
 }) {
   const thumbnail = version.image ?? version.thumbnail;
+  const isSelect = mode === 'select';
 
   return (
     <Card
-      hoverable
-      className={`cursor-pointer transition-all duration-350 ease-out-custom ${
-        selected ? 'border-2 border-semantic-brand shadow-md' : ''
-      }`}
-      onClick={onClick}
+      hoverable={isSelect}
+      className={isSelect
+        ? `cursor-pointer transition-all duration-350 ease-out-custom ${selected ? 'border-2 border-semantic-brand shadow-md' : ''}`
+        : ''
+      }
+      onClick={isSelect ? onClick : undefined}
     >
       <CardBody className="py-3">
-        <div className="flex items-start gap-3">
-          {thumbnail ? (
-            <Image
-              src={thumbnail}
-              alt={version.name}
-              width={64}
-              height={64}
-              className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-              <ImageSquare size={28} className="text-semantic-text-muted" aria-hidden="true" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            {gameName && (
-              <p className="font-medium text-semantic-text-heading">
-                {gameName}
-              </p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+            {thumbnail ? (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
+                <Image
+                  src={thumbnail}
+                  alt={version.name}
+                  fill
+                  className="object-contain"
+                  sizes="80px"
+                />
+              </div>
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                <ImageSquare size={28} className="text-semantic-text-muted" aria-hidden="true" />
+              </div>
             )}
-            <p className={gameName
-              ? 'text-sm text-semantic-text-muted'
-              : 'font-medium text-semantic-text-primary'
-            }>
-              {version.name}
-            </p>
-            <VersionMeta version={version} />
+            <div className="flex-1 min-w-0">
+              {gameName && (
+                <p className="font-medium text-semantic-text-heading">
+                  {gameName}
+                </p>
+              )}
+              <p className={gameName
+                ? 'text-sm text-semantic-text-muted'
+                : 'font-medium text-semantic-text-primary'
+              }>
+                {version.name}
+              </p>
+              <VersionMeta version={version} />
+            </div>
           </div>
-          {selected && (
+          {isSelect && selected && (
             <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
+          )}
+          {!isSelect && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="text-semantic-brand shrink-0 p-1"
+              aria-label="Change edition"
+            >
+              <PencilSimple size={16} />
+            </button>
           )}
         </div>
       </CardBody>
