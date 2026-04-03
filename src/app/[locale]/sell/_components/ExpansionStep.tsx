@@ -104,7 +104,7 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
                   <span className="text-sm text-semantic-text-primary">
                     {expansion.name}
                     {expansion.year != null && (
-                      <span className="ml-1.5 text-semantic-text-muted">({expansion.year})</span>
+                      <span className="text-semantic-text-muted"> ({expansion.year})</span>
                     )}
                   </span>
                 </label>
