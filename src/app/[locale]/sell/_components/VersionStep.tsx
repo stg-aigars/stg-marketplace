@@ -600,26 +600,26 @@ function AlternateNameSelector({
 
   if (alternateNames.length === 0) return null;
 
-  // Collapsed view — show selected name with option to change
+  // Collapsed view — Card row matching the edition card pattern above
   if (!expanded) {
     return (
-      <div className="space-y-1">
+      <div className="space-y-2">
         <p className="text-sm font-medium text-semantic-text-secondary">
           Name on the box
         </p>
-        <p className="text-sm text-semantic-text-primary font-medium">
-          {selectedName}
-          {selectedName === primaryName && (
-            <span className="text-xs text-semantic-text-muted ml-1.5 font-normal">(primary)</span>
-          )}
-        </p>
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="text-sm text-semantic-brand active:text-semantic-brand-active sm:hover:underline"
-        >
-          Name doesn&apos;t match your box? Change it
-        </button>
+        <Card>
+          <CardBody>
+            <div className="flex items-center gap-3">
+              <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0" />
+              <p className="flex-1 min-w-0 font-medium text-semantic-text-primary truncate">
+                {selectedName}
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setExpanded(true)}>
+                Change
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
       </div>
     );
   }
