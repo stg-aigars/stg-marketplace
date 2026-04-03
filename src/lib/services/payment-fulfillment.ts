@@ -18,6 +18,7 @@ import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email'
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify } from '@/lib/notifications';
+import { formatGameWithExpansions } from '@/lib/orders/utils';
 import type { CheckoutSession } from '@/lib/checkout/types';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -224,6 +225,19 @@ export async function fulfillCartPayment(
     .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
     .in('id', group.listing_ids);
 
+  // Fetch expansion data for email enrichment
+  const { data: expansionRows } = await serviceClient
+    .from('listing_expansions')
+    .select('listing_id, game_name')
+    .in('listing_id', group.listing_ids);
+
+  const expansionsByListing = new Map<string, Array<{ game_name: string }>>();
+  for (const row of expansionRows ?? []) {
+    const arr = expansionsByListing.get(row.listing_id) ?? [];
+    arr.push({ game_name: row.game_name });
+    expansionsByListing.set(row.listing_id, arr);
+  }
+
   if (!listings) {
     console.error('[Payments] Cart: Failed to fetch listings');
     await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'failed to fetch listings');
@@ -323,7 +337,7 @@ export async function fulfillCartPayment(
 
       // Debit wallet for this order
       if (orderWalletDebit > 0) {
-        const gameNames = sellerItems.map((l) => l.game_name ?? 'Game').join(', ');
+        const gameNames = sellerItems.map((l) => formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? [])).join(', ');
         try {
           await debitWallet(
             group.buyer_id,
@@ -405,7 +419,10 @@ export async function fulfillCartPayment(
       orderId: id,
       orderNumber: order_number,
       sellerId: items[0].seller_id,
-      items: items.map((l) => ({ gameName: l.game_name ?? 'Game', priceCents: l.price_cents })),
+      items: items.map((l) => ({
+        gameName: formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? []),
+        priceCents: l.price_cents,
+      })),
       shippingCents,
       terminalName: group.terminal_name,
     })),
@@ -460,10 +477,21 @@ async function sendSingleItemNotifications(
       return;
     }
 
+    // Fetch expansion names for this listing
+    const { data: expansions } = await serviceClient
+      .from('listing_expansions')
+      .select('game_name')
+      .eq('listing_id', listing.id);
+
+    const gameName = formatGameWithExpansions(
+      listing.game_name ?? 'Game',
+      expansions ?? []
+    );
+
     const emailData = {
       orderNumber: order.order_number,
       orderId: order.id,
-      gameName: listing.game_name ?? 'Game',
+      gameName,
       priceCents: listing.price_cents,
       shippingCents,
       terminalName: session.terminal_name,
