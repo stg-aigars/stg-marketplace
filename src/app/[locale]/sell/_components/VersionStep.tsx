@@ -273,9 +273,9 @@ export function VersionStep({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-semantic-text-heading text-lg">
+                  <p className="font-medium text-semantic-text-heading">
                     {gameName}
-                  </h3>
+                  </p>
                   {hasEdition ? (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
                       {selectedVersionSource === 'bgg' && selectedVersion && (
@@ -441,6 +441,7 @@ export function VersionStep({
           </p>
           <VersionCard
             version={selectedVersion}
+            gameName={gameName}
             selected
             onClick={() => handleSelectBGGVersion(selectedVersion)}
           />
@@ -455,6 +456,7 @@ export function VersionStep({
               <VersionCard
                 key={version.id}
                 version={version}
+                gameName={gameName}
                 selected={isSelected(version.id)}
                 onClick={() => handleSelectBGGVersion(version)}
               />
@@ -518,10 +520,12 @@ function VersionMeta({ version }: { version: BGGVersion }) {
 
 function VersionCard({
   version,
+  gameName,
   selected,
   onClick,
 }: {
   version: BGGVersion;
+  gameName?: string;
   selected: boolean;
   onClick: () => void;
 }) {
@@ -551,7 +555,15 @@ function VersionCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-semantic-text-primary">
+            {gameName && (
+              <p className="font-medium text-semantic-text-heading">
+                {gameName}
+              </p>
+            )}
+            <p className={gameName
+              ? 'text-sm text-semantic-text-muted'
+              : 'font-medium text-semantic-text-primary'
+            }>
               {version.name}
             </p>
             <VersionMeta version={version} />
