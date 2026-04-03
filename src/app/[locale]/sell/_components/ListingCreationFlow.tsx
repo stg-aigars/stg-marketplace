@@ -617,36 +617,26 @@ export function ListingCreationFlow({
                     const expansion = availableExpansions.find((e) => e.id === expId);
                     if (!expansion) return null;
                     const expVersion = formData.expansion_versions[expId];
-                    const isEnriching = enrichingExpansionIds.has(expId);
 
                     return (
                       <div key={expId}>
                         {idx > 0 && (
                           <hr className="border-semantic-border-subtle mb-6" />
                         )}
-                        {isEnriching && !enrichedExpansions[expId] ? (
-                          <div className="space-y-3">
-                            <p className="text-sm font-medium text-semantic-text-muted">{expansion.name}</p>
-                            <div className="flex items-center gap-2 py-4">
-                              <Spinner size="sm" />
-                              <span className="text-sm text-semantic-text-muted">Loading editions...</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <VersionStep
-                            userCountry={userCountry}
-                            gameId={expId}
-                            gameName={formData.expansion_game_names[expId] ?? expansion.name}
-                            selectedGame={enrichedExpansions[expId] ?? null}
-                            onGameNameChange={(name: string) => updateFormData({
-                              expansion_game_names: { ...formData.expansion_game_names, [expId]: name },
-                            })}
-                            selectedVersionId={expVersion?.bgg_version_id ?? null}
-                            selectedVersionSource={expVersion?.version_source ?? null}
-                            selectedPublisher={expVersion?.publisher ?? null}
-                            selectedLanguage={expVersion?.language ?? null}
-                            selectedEditionYear={expVersion?.edition_year ?? null}
-                            onSelect={(version: VersionData) => {
+                        <VersionStep
+                          userCountry={userCountry}
+                          gameId={expId}
+                          gameName={formData.expansion_game_names[expId] ?? expansion.name}
+                          selectedGame={enrichedExpansions[expId] ?? null}
+                          onGameNameChange={(name: string) => updateFormData({
+                            expansion_game_names: { ...formData.expansion_game_names, [expId]: name },
+                          })}
+                          selectedVersionId={expVersion?.bgg_version_id ?? null}
+                          selectedVersionSource={expVersion?.version_source ?? null}
+                          selectedPublisher={expVersion?.publisher ?? null}
+                          selectedLanguage={expVersion?.language ?? null}
+                          selectedEditionYear={expVersion?.edition_year ?? null}
+                          onSelect={(version: VersionData) => {
                               updateFormData({
                                 expansion_versions: {
                                   ...formData.expansion_versions,
@@ -656,7 +646,6 @@ export function ListingCreationFlow({
                             }}
                             compact
                           />
-                        )}
                       </div>
                     );
                   })}
