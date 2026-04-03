@@ -74,9 +74,21 @@ export default async function EditListingPage(
     redirect(`/${locale}/listings/${id}`);
   }
 
+  // Fetch existing expansions for this listing
+  const { data: existingExpansions } = await supabase
+    .from('listing_expansions')
+    .select('bgg_game_id, game_name, version_source, bgg_version_id, version_name, publisher, language, edition_year, version_thumbnail')
+    .eq('listing_id', id)
+    .order('created_at');
+
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <EditListingForm listing={listing} alternateNames={listing.games?.alternate_names ?? []} locale={locale} />
+      <EditListingForm
+        listing={listing}
+        alternateNames={listing.games?.alternate_names ?? []}
+        locale={locale}
+        existingExpansions={existingExpansions ?? []}
+      />
     </main>
   );
 }
