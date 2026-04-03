@@ -6,7 +6,7 @@ import { X, Package } from '@phosphor-icons/react/ssr';
 import { Input, Card, CardBody, Button } from '@/components/ui';
 
 interface ExpansionStepProps {
-  expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null }>;
+  expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null; alternate_names?: string[] | null }>;
   selectedExpansionIds: number[];
   onSelectionChange: (ids: number[]) => void;
 }
@@ -17,7 +17,10 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
   const filtered = useMemo(() => {
     if (!filter.trim()) return expansions;
     const query = filter.trim().toLowerCase();
-    return expansions.filter((e) => e.name.toLowerCase().includes(query));
+    return expansions.filter((e) =>
+      e.name.toLowerCase().includes(query) ||
+      e.alternate_names?.some((alt) => alt.toLowerCase().includes(query))
+    );
   }, [expansions, filter]);
 
   function handleToggle(id: number) {

@@ -510,7 +510,10 @@ export function ListingCreationFlow({
             {showExpansionGateAnswered && expansionGateAnswer === true && (
               <div className="mt-4">
                 <ExpansionStep
-                  expansions={availableExpansions}
+                  expansions={availableExpansions.map((e) => ({
+                    ...e,
+                    alternate_names: enrichedExpansions[e.id]?.alternateNames ?? null,
+                  }))}
                   selectedExpansionIds={formData.selected_expansion_ids}
                   onSelectionChange={(ids) => updateFormData({ selected_expansion_ids: ids })}
                 />
