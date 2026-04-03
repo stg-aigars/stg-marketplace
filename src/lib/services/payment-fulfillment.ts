@@ -144,6 +144,13 @@ export async function fulfillSingleItemPayment(
       walletDebitCents,
     });
 
+    // Fetch expansion data for enriched display (used in wallet debit + emails)
+    const { data: singleItemExpansions } = await serviceClient
+      .from('listing_expansions')
+      .select('game_name')
+      .eq('listing_id', listing.id);
+    const enrichedGameName = formatGameWithExpansions(listing.game_name ?? 'Game', singleItemExpansions ?? []);
+
     // Debit buyer wallet if they used wallet balance
     if (walletDebitCents > 0) {
       try {
@@ -151,7 +158,7 @@ export async function fulfillSingleItemPayment(
           session.buyer_id,
           walletDebitCents,
           order.id,
-          `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
+          `Purchase: ${enrichedGameName} — ${order.order_number}`
         );
       } catch (walletError) {
         console.error(`[Payments] Wallet debit failed for order ${order.id}, expected ${walletDebitCents} cents — reconciliation cron will retry:`, walletError);
@@ -168,8 +175,8 @@ export async function fulfillSingleItemPayment(
       .update({ status: 'completed' })
       .eq('id', session.id);
 
-    // Send emails and notifications (non-blocking)
-    void sendSingleItemNotifications(session, listing, order, shippingCents, serviceClient);
+    // Send emails and notifications (non-blocking) — pass pre-fetched game name
+    void sendSingleItemNotifications(session, listing, order, shippingCents, serviceClient, enrichedGameName);
 
     void logAuditEvent({
       actorId: session.buyer_id,
@@ -457,7 +464,8 @@ async function sendSingleItemNotifications(
   order: { id: string; order_number: string },
   shippingCents: number,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>
+  serviceClient: SupabaseClient<any, any, any>,
+  enrichedGameName?: string,
 ) {
   try {
     const { data: profiles } = await serviceClient
@@ -477,16 +485,7 @@ async function sendSingleItemNotifications(
       return;
     }
 
-    // Fetch expansion names for this listing
-    const { data: expansions } = await serviceClient
-      .from('listing_expansions')
-      .select('game_name')
-      .eq('listing_id', listing.id);
-
-    const gameName = formatGameWithExpansions(
-      listing.game_name ?? 'Game',
-      expansions ?? []
-    );
+    const gameName = enrichedGameName ?? listing.game_name ?? 'Game';
 
     const emailData = {
       orderNumber: order.order_number,

@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Stepper, TurnstileWidget, Alert, Card, CardBody, Badge, Spinner } from '@/components/ui';
+import { Button, Stepper, TurnstileWidget, Alert, Card, CardBody, Spinner } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource, ListingExpansion } from '@/lib/listings/types';
-import { conditionRequiresPhotos, conditionRequiresDescription, conditionToBadgeKey } from '@/lib/listings/types';
+import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
 import { GameSearchStep } from './GameSearchStep';

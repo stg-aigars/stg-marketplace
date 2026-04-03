@@ -52,7 +52,7 @@ function ListingCardMini({
         <div className="p-2 space-y-1">
           <GameTitle name={gameTitle} size="xs" serif clamp={2} />
           {expansionCount > 0 && (
-            <p className="text-[10px] text-semantic-text-muted leading-tight">
+            <p className="text-xs text-semantic-text-muted leading-tight">
               +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
             </p>
           )}

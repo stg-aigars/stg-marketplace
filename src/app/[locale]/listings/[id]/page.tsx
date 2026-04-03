@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Prohibit, Users, Scales } from '@phosphor-icons/react/ssr';
@@ -21,6 +20,7 @@ import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sell
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { AddToCartButton } from '@/components/listings/AddToCartButton';
+import { GameThumb } from '@/components/listings/atoms';
 import { OwnerActions } from './OwnerActions';
 
 interface ListingDetailRow {
@@ -449,17 +449,7 @@ export default async function ListingDetailPage(
                     const thumbnail = exp.games?.thumbnail ?? null;
                     return (
                     <div key={exp.bgg_game_id} className="flex items-center gap-3">
-                      {thumbnail ? (
-                        <Image
-                          src={thumbnail}
-                          alt={exp.game_name}
-                          width={40}
-                          height={40}
-                          className="w-10 h-10 rounded object-contain bg-semantic-bg-secondary shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded bg-semantic-bg-secondary shrink-0" />
-                      )}
+                      <GameThumb src={thumbnail} alt={exp.game_name} size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-semantic-text-primary truncate">
                           {exp.game_name}

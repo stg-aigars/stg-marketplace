@@ -70,11 +70,8 @@ export function PricingAssistant({
   }, [bggGameId, expansionIds.join(',')]);
 
   // Use bundle retail price if available, otherwise base game only
-  const effectiveRetailCents = (data as any)?.bundleRetailPriceCents ?? data?.retailPriceCents;
-  const bundleBreakdown = (data as any)?.breakdown as Array<{ bggGameId: number; retailPriceCents: number | null; shopName: string | null }> | undefined;
-  const gamesWithData = (data as any)?.gamesWithRetailData as number | undefined;
-  const totalGames = (data as any)?.totalGames as number | undefined;
-  const hasBundle = totalGames != null && totalGames > 1;
+  const effectiveRetailCents = data?.bundleRetailPriceCents ?? data?.retailPriceCents;
+  const hasBundle = data?.totalGames != null && data.totalGames > 1;
 
   const suggestedPriceCents = useMemo(
     () =>
@@ -148,8 +145,8 @@ export function PricingAssistant({
             <p className="text-xs text-semantic-text-muted">
               {multiplierPct}% of {effectiveRetailCents ? formatCentsToCurrency(effectiveRetailCents) : 'retail'} ({conditionLabel})
               {isAuction && ' \u00d7 30% auction start'}
-              {hasBundle && gamesWithData != null && totalGames != null && gamesWithData < totalGames && (
-                <span> · Retail price based on {gamesWithData} of {totalGames} games</span>
+              {hasBundle && data?.gamesWithRetailData != null && data?.totalGames != null && data.gamesWithRetailData < data.totalGames && (
+                <span> · Retail price based on {data.gamesWithRetailData} of {data.totalGames} games</span>
               )}
             </p>
           </div>

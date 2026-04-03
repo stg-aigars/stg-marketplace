@@ -62,10 +62,20 @@ export default async function BrowsePage(
     filters.mechanics.length > 0 ||
     filters.weightLevels.length > 0;
 
+  // Pre-fetch expansion game IDs to exclude when toggle is off (lightweight — expansions are rare)
+  let expansionGameIds: number[] | null = null;
+  if (!filters.showExpansions) {
+    const { data: expGames } = await supabase
+      .from('games')
+      .select('id')
+      .eq('is_expansion', true);
+    expansionGameIds = expGames?.map((g) => g.id) ?? [];
+  }
+
   let gameFilterIds: number[] | null = null;
   if (hasGameFilters) {
     let gamesQuery = supabase.from('games').select('id');
-    // Only exclude expansions if toggle is off
+    // Exclude expansions if toggle is off
     if (!filters.showExpansions) {
       gamesQuery = gamesQuery.eq('is_expansion', false);
     }
@@ -98,7 +108,7 @@ export default async function BrowsePage(
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -127,6 +137,10 @@ export default async function BrowsePage(
     } else {
       query = query.in('bgg_game_id', gameFilterIds);
     }
+  } else if (expansionGameIds !== null && expansionGameIds.length > 0) {
+    // No game-level filters active, but exclude expansion-primary listings at DB level
+    // so count/pagination are correct
+    query = query.not('bgg_game_id', 'in', `(${expansionGameIds.join(',')})`);
   }
 
   // Sort
@@ -165,14 +179,7 @@ export default async function BrowsePage(
     }
   }
 
-  // Filter out expansion-primary listings when toggle is off (post-query filter)
-  // This is a lightweight filter since standalone expansion listings are rare
-  let filteredListings = listings ?? [];
-  if (!filters.showExpansions && !hasGameFilters) {
-    filteredListings = filteredListings.filter(
-      (l) => !(l.games as any)?.is_expansion
-    );
-  }
+  const filteredListings = listings ?? [];
   const totalCount = count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const filtersActive = hasActiveFilters(filters);
