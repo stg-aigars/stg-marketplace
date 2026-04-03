@@ -415,7 +415,7 @@ export function ListingCreationFlow({
               <Card className="mt-4">
                 <CardBody>
                   <p className="text-sm font-medium text-semantic-text-primary mb-3">
-                    Does your copy include any expansions?
+                    Do you want to add any expansions?
                   </p>
                   <div className="flex gap-3">
                     <Button
@@ -442,8 +442,8 @@ export function ListingCreationFlow({
               <div className="mt-4 flex items-center gap-2 text-sm text-semantic-text-muted">
                 <span>
                   {expansionGateAnswer === true
-                    ? `Expansions: Yes (${availableExpansions.length} available)`
-                    : 'Expansions: No'}
+                    ? 'Add expansions: Yes'
+                    : 'Add expansions: No'}
                 </span>
                 <Button
                   variant="ghost"
