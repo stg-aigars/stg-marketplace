@@ -340,11 +340,16 @@ export function ListingCreationFlow({
               selectedGame={selectedGame}
               locked={gameLocked}
               onSelect={(game) => {
+                // If matched via alternate name, use that as the default listing name
+                const defaultName = game.matchedAlternateName && game.alternateNames.includes(game.matchedAlternateName)
+                  ? game.matchedAlternateName
+                  : game.name;
+
                 // If selecting a different game, reset everything
                 if (formData.bgg_game_id !== null && formData.bgg_game_id !== game.id) {
                   updateFormData({
                     bgg_game_id: game.id,
-                    game_name: game.name,
+                    game_name: defaultName,
                     game_year: game.yearpublished,
                     game_thumbnail: game.thumbnail,
                     game_image: game.image,
@@ -365,7 +370,7 @@ export function ListingCreationFlow({
                 } else {
                   updateFormData({
                     bgg_game_id: game.id,
-                    game_name: game.name,
+                    game_name: defaultName,
                     game_year: game.yearpublished,
                     game_thumbnail: game.thumbnail,
                     game_image: game.image,

@@ -709,6 +709,98 @@ export async function fetchBatchVersions(
 }
 
 // ============================================================================
+// Batch metadata fetch (for enrichment scripts)
+// ============================================================================
+
+export interface GameMetadataUpdate {
+  alternate_names: string[] | null;
+  thumbnail: string | null;
+  image: string | null;
+  description: string | null;
+  player_count: string | null;
+  min_players: number | null;
+  max_players: number | null;
+  min_age: number | null;
+  playing_time: string | null;
+  designers: string[] | null;
+  bayesaverage: number | null;
+  metadata_fetched_at: string;
+}
+
+/**
+ * Fetch full metadata for multiple games in a single BGG API call.
+ * Uses thing?id=X,Y,Z&stats=1 (no versions — enrichment scripts don't need them).
+ * Returns a Map keyed by BGG game ID with parsed metadata ready for DB upsert.
+ * Max 20 IDs per call (BGG limit).
+ */
+export async function fetchBatchMetadata(
+  ids: number[]
+): Promise<Map<number, GameMetadataUpdate>> {
+  const result = new Map<number, GameMetadataUpdate>();
+  if (ids.length === 0) return result;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+  const response = await rateLimitedFetch(
+    `https://boardgamegeek.com/xmlapi2/thing?id=${ids.join(',')}&stats=1`,
+    { signal: controller.signal, headers: createBGGHeaders() }
+  );
+  clearTimeout(timeoutId);
+
+  if (response.status === 429) throw createRateLimitError(5);
+  if (response.status >= 500) throw createAPIUnavailableError();
+  if (!response.ok) throw createAPIUnavailableError();
+
+  const xml = await response.text();
+  const parsed = parser.parse(xml) as BGGXMLResponse;
+  if (!parsed.items?.item) return result;
+
+  const items = Array.isArray(parsed.items.item)
+    ? (parsed.items.item as BGGXMLItem[])
+    : [parsed.items.item as BGGXMLItem];
+
+  for (const item of items) {
+    const id = parseInt(item['@_id']);
+    if (isNaN(id)) continue;
+
+    const names = parseNames(item);
+    const links = parseLinks(item);
+
+    const alternateNames = names
+      .filter((n) => n['@_type'] !== 'primary')
+      .map((n) => decodeHTMLEntities(n['@_value']))
+      .filter(Boolean);
+
+    const designers = links
+      .filter((l) => l['@_type'] === 'boardgamedesigner')
+      .map((l) => decodeHTMLEntities(l['@_value']));
+
+    const minPlayers = item.minplayers?.['@_value'] ? parseInt(item.minplayers['@_value']) : null;
+    const maxPlayers = item.maxplayers?.['@_value'] ? parseInt(item.maxplayers['@_value']) : null;
+    const playerCount = minPlayers && maxPlayers ? `${minPlayers}-${maxPlayers}` : null;
+    const bayesaverage = item.statistics?.ratings?.bayesaverage?.['@_value'];
+
+    result.set(id, {
+      alternate_names: alternateNames.length > 0 ? alternateNames : null,
+      thumbnail: item.thumbnail || null,
+      image: item.image || null,
+      description: item.description ? decodeHTMLEntities(item.description) : null,
+      player_count: playerCount,
+      min_players: minPlayers,
+      max_players: maxPlayers,
+      min_age: item.minage?.['@_value'] ? parseInt(item.minage['@_value']) : null,
+      playing_time: item.playingtime?.['@_value'] || null,
+      designers: designers.length > 0 ? designers : null,
+      bayesaverage: bayesaverage ? parseFloat(bayesaverage) : null,
+      metadata_fetched_at: new Date().toISOString(),
+    });
+  }
+
+  return result;
+}
+
+// ============================================================================
 // Batch thumbnail fetch
 // ============================================================================
 
