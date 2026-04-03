@@ -134,6 +134,8 @@ Always use these — do not write inline equivalents:
 | Price display | `Price` (cents, size; always Inter, never display font) | `@/components/listings/atoms` |
 | Compact listing row | `ListingRow` (horizontal; uses atoms) | `@/components/listings` |
 | Mobile listing card | `ListingCardMini` (compressed for 2-col mobile grid) | `@/components/listings` |
+| Auction bid guard | `isAuctionWithBids(listingType, bidCount)` — use instead of inline `=== 'auction' && > 0` | `@/lib/listings/types` |
+| Enriched game builder | `buildEnrichedGame(bggGameId, gameName, gameYear, games)` — builds `EnrichedGame` from DB row with games join | `@/app/[locale]/sell/_components/GameSearchStep` |
 
 ## Design System Rules
 - **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.
