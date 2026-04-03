@@ -330,6 +330,7 @@ export default async function ListingDetailPage(
                     sellerCountry: listing.country,
                     sellerId: listing.seller_id,
                     condition: listing.condition,
+                    expansionCount: listingExpansions?.length ?? 0,
                   }}
                 />
                 {user ? (

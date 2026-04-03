@@ -200,6 +200,11 @@ export default function CartPage() {
                           <p className="text-sm font-medium text-semantic-text-primary truncate">
                             {item.gameTitle}
                           </p>
+                          {item.expansionCount != null && item.expansionCount > 0 && (
+                            <p className="text-xs text-semantic-text-muted">
+                              +{item.expansionCount} {item.expansionCount === 1 ? 'expansion' : 'expansions'}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 mt-1">
                             <Badge
                               condition={

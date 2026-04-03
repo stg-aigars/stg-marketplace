@@ -10,6 +10,7 @@ export interface CartItem {
   sellerId: string;
   condition: ListingCondition;
   addedAt: string;
+  expansionCount?: number;
 }
 
 export const MAX_CART_ITEMS = 10;
