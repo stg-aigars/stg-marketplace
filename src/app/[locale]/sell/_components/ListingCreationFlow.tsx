@@ -196,6 +196,47 @@ export function ListingCreationFlow({
     return () => { cancelled = true; };
   }, [formData.bgg_game_id, formData.is_expansion]);
 
+  // Enrich expansion thumbnails (non-blocking, one-shot per batch)
+  const enrichedExpansionIdsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const missing = availableExpansions.filter(
+      (e) => !e.thumbnail && !enrichedExpansionIdsRef.current.has(e.id)
+    );
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const ids = missing.map((e) => e.id).slice(0, 20);
+
+    // Mark as attempted immediately to prevent duplicate calls
+    for (const id of ids) enrichedExpansionIdsRef.current.add(id);
+
+    apiFetch('/api/games/enrich-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.games) return;
+        const games: Record<number, { thumbnail: string | null }> = data.games;
+        setAvailableExpansions((prev) =>
+          prev.map((exp) => {
+            const enriched = games[exp.id];
+            if (enriched?.thumbnail && !exp.thumbnail) {
+              return { ...exp, thumbnail: enriched.thumbnail };
+            }
+            return exp;
+          })
+        );
+      })
+      .catch(() => {
+        // Non-fatal — cards show placeholder icon
+      });
+
+    return () => { cancelled = true; };
+  }, [availableExpansions]);
+
   const canProceed = (): boolean => {
     switch (currentStepId) {
       case 'game':
