@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank } from '@phosphor-icons/react/ssr';
+import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank, PencilSimple } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
@@ -258,22 +258,24 @@ export function VersionStep({
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-4 min-w-0">
                 {versionThumbnail ? (
-                  <Image
-                    src={versionThumbnail}
-                    alt={gameName}
-                    width={80}
-                    height={80}
-                    className="w-20 h-20 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-                  />
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
+                    <Image
+                      src={versionThumbnail}
+                      alt={gameName}
+                      fill
+                      className="object-contain"
+                      sizes="96px"
+                    />
+                  </div>
                 ) : (
-                  <div className="w-20 h-20 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
                     <ImageSquare size={28} className="text-semantic-text-muted" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-semantic-text-heading text-lg truncate">
+                  <h3 className="font-semibold text-semantic-text-heading text-lg">
                     {gameName}
-                  </p>
+                  </h3>
                   {hasEdition ? (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
                       {selectedVersionSource === 'bgg' && selectedVersion && (
@@ -311,9 +313,14 @@ export function VersionStep({
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setCollapsed(false)}>
-                Change
-              </Button>
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                className="text-semantic-brand shrink-0 p-1"
+                aria-label="Change edition"
+              >
+                <PencilSimple size={16} />
+              </button>
             </div>
           </CardBody>
         </Card>
