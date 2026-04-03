@@ -112,7 +112,9 @@ export function ListingCreationFlow({
       case 1:
         return formData.bgg_game_id !== null;
       case 2:
-        return true; // Version is optional
+        if (formData.version_source === 'bgg') return formData.bgg_version_id !== null;
+        if (formData.version_source === 'manual') return formData.language !== null;
+        return false;
       case 3: {
         if (!formData.condition) return false;
         if (conditionRequiresPhotos(formData.condition) && formData.photos.length === 0) return false;

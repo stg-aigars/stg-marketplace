@@ -4,25 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { Badge, Button, Tabs } from '@/components/ui';
-import type { ListingCondition } from '@/lib/listings/types';
 import { ListingOverflowMenu } from './ListingOverflowMenu';
-
-interface ListingRow {
-  id: string;
-  game_name: string;
-  game_year: number | null;
-  condition: ListingCondition;
-  price_cents: number;
-  photos: string[];
-  country: string;
-  status: string;
-  version_thumbnail: string | null;
-  games: { image: string | null };
-}
+import type { MyListingRow } from './page';
 
 interface MyListingsTabsProps {
-  active: ListingRow[];
-  inactive: ListingRow[];
+  active: MyListingRow[];
+  inactive: MyListingRow[];
 }
 
 const statusLabels: Record<string, string> = {
@@ -74,9 +61,16 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                isAuction={listing.listing_type === 'auction'}
+                bidCount={listing.bid_count}
+                auctionEndAt={listing.auction_end_at}
               />
               {listing.status === 'active' && (
-                <ListingOverflowMenu listingId={listing.id} />
+                <ListingOverflowMenu
+                  listingId={listing.id}
+                  listingType={listing.listing_type}
+                  bidCount={listing.bid_count}
+                />
               )}
               {listing.status !== 'active' && (
                 <div className="absolute top-2 right-2">

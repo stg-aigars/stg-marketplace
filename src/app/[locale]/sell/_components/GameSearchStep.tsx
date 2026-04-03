@@ -24,6 +24,24 @@ export interface EnrichedGame {
   alternateNames: string[];
 }
 
+/** Build an EnrichedGame from a listing/shelf row with a games join. */
+export function buildEnrichedGame(
+  bggGameId: number,
+  gameName: string,
+  gameYear: number | null,
+  games: { thumbnail: string | null; image: string | null; player_count: string | null; alternate_names: string[] | null } | null,
+): EnrichedGame {
+  return {
+    id: bggGameId,
+    name: gameName,
+    yearpublished: gameYear,
+    thumbnail: games?.thumbnail ?? null,
+    image: games?.image ?? null,
+    player_count: games?.player_count ?? null,
+    alternateNames: games?.alternate_names ?? [],
+  };
+}
+
 interface GameSearchStepProps {
   selectedGameId: number | null;
   selectedGame?: EnrichedGame | null;

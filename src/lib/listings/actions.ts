@@ -21,6 +21,7 @@ import {
   MAX_TEXT_FIELD_LENGTH,
   conditionRequiresPhotos,
   conditionRequiresDescription,
+  isAuctionWithBids,
 } from './types';
 
 interface ListingFieldsToValidate {
@@ -305,7 +306,7 @@ export async function updateListing(
   // Fetch listing and verify ownership
   const { data: listing, error: fetchError } = await supabase
     .from('listings')
-    .select('seller_id, status, photos')
+    .select('seller_id, status, listing_type, bid_count, photos')
     .eq('id', data.id)
     .single();
 
@@ -319,6 +320,15 @@ export async function updateListing(
 
   if (listing.status !== 'active') {
     return { error: 'Only active listings can be edited' };
+  }
+
+  if (isAuctionWithBids(listing.listing_type, listing.bid_count)) {
+    return { error: 'Auctions with bids cannot be edited' };
+  }
+
+  // Game name validation
+  if (!data.game_name || data.game_name.length > MAX_GAME_NAME_LENGTH) {
+    return { error: `Game name must be ${MAX_GAME_NAME_LENGTH} characters or fewer` };
   }
 
   // Shared field validations
@@ -336,12 +346,14 @@ export async function updateListing(
   const { error: updateError } = await service
     .from('listings')
     .update({
+      game_name: data.game_name,
       version_source: data.version_source,
       bgg_version_id: data.bgg_version_id,
       version_name: data.version_name,
       publisher: data.publisher,
       language: data.language,
       edition_year: data.edition_year,
+      version_thumbnail: data.version_thumbnail,
       condition: data.condition,
       price_cents: data.price_cents,
       description: data.description,

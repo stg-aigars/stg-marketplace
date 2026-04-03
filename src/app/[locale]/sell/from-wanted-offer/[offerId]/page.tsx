@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { ListingCreationFlow } from '../../_components/ListingCreationFlow';
-import type { EnrichedGame } from '../../_components/GameSearchStep';
+import { buildEnrichedGame } from '../../_components/GameSearchStep';
 import { Alert } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { LISTING_DEADLINE_DAYS } from '@/lib/shelves/types';
@@ -52,15 +52,7 @@ export default async function FromWantedOfferPage({ params }: Props) {
   // The agreed price: counter_price_cents if countered, otherwise original price
   const agreedPrice = offer.counter_price_cents ?? offer.price_cents;
 
-  const initialGame: EnrichedGame = {
-    id: wantedListing.bgg_game_id,
-    name: wantedListing.game_name,
-    yearpublished: wantedListing.game_year,
-    thumbnail: wantedListing.games?.thumbnail ?? null,
-    image: wantedListing.games?.image ?? null,
-    player_count: wantedListing.games?.player_count ?? null,
-    alternateNames: wantedListing.games?.alternate_names ?? [],
-  };
+  const initialGame = buildEnrichedGame(wantedListing.bgg_game_id, wantedListing.game_name, wantedListing.game_year, wantedListing.games);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">

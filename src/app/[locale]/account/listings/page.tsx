@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { MyListingsTabs } from './MyListingsTabs';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
 export const metadata: Metadata = {
   title: 'My Listings',
 };
 
-interface MyListingRow {
+export interface MyListingRow {
   id: string;
   game_name: string;
   game_year: number | null;
@@ -17,6 +17,9 @@ interface MyListingRow {
   photos: string[];
   country: string;
   status: string;
+  listing_type: ListingType;
+  bid_count: number;
+  auction_end_at: string | null;
   version_thumbnail: string | null;
   games: { image: string | null };
 }
@@ -27,7 +30,7 @@ export default async function MyListingsPage() {
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image)')
+    .select('id, game_name, game_year, condition, price_cents, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)')
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false })
     .returns<MyListingRow[]>();

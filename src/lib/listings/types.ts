@@ -41,12 +41,14 @@ export interface CreateListingData {
 
 export interface UpdateListingData {
   id: string;
+  game_name: string;
   version_source: VersionSource;
   bgg_version_id: number | null;
   version_name: string | null;
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  version_thumbnail: string | null;
   condition: ListingCondition;
   price_cents: number;
   description: string | null;
@@ -78,6 +80,10 @@ export function conditionRequiresPhotos(condition: string): boolean {
 
 export function conditionRequiresDescription(condition: string): boolean {
   return PHOTO_REQUIRED_CONDITIONS.includes(condition as ListingCondition);
+}
+
+export function isAuctionWithBids(listingType: string, bidCount: number): boolean {
+  return listingType === 'auction' && bidCount > 0;
 }
 
 export const MIN_PRICE_CENTS = 50; // €0.50
