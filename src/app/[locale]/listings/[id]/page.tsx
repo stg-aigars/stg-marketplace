@@ -7,7 +7,7 @@ import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons 
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition, type ListingStatus } from '@/lib/listings/types';
+import { conditionToBadgeKey, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { formatDate } from '@/lib/date-utils';
 import { getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
 import { PhotoGallery } from './PhotoGallery';
@@ -40,7 +40,7 @@ interface ListingDetailRow {
   reserved_at: string | null;
   reserved_by: string | null;
   version_thumbnail: string | null;
-  listing_type: string;
+  listing_type: ListingType;
   auction_end_at: string | null;
   starting_price_cents: number | null;
   current_bid_cents: number | null;

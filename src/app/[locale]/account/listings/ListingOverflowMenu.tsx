@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
+import type { ListingType } from '@/lib/listings/types';
 
 interface ListingOverflowMenuProps {
   listingId: string;
-  listingType: string;
+  listingType: ListingType;
   bidCount: number;
 }
 
@@ -17,9 +18,7 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // No actions available for auctions with bids
-  if (listingType === 'auction' && bidCount > 0) return null;
+  const hasAuctionBids = listingType === 'auction' && bidCount > 0;
 
   // Close on outside click
   useEffect(() => {
@@ -34,6 +33,8 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
+
+  if (hasAuctionBids) return null;
 
   return (
     <>

@@ -4,12 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
-import type { ListingStatus } from '@/lib/listings/types';
+import type { ListingStatus, ListingType } from '@/lib/listings/types';
 
 interface OwnerActionsProps {
   listingId: string;
   status: ListingStatus;
-  listingType: string;
+  listingType: ListingType;
   bidCount: number;
   locale: string;
 }

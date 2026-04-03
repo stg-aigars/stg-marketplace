@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { MyListingsTabs } from './MyListingsTabs';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
 export const metadata: Metadata = {
   title: 'My Listings',
@@ -17,7 +17,7 @@ interface MyListingRow {
   photos: string[];
   country: string;
   status: string;
-  listing_type: string;
+  listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;

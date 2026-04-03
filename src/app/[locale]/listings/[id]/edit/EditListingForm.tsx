@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,6 +31,7 @@ interface EditListingFormProps {
     publisher: VersionData['publisher'];
     language: VersionData['language'];
     edition_year: VersionData['edition_year'];
+    version_thumbnail: string | null;
     games: {
       name: string | null;
       thumbnail: string | null;
@@ -50,7 +51,7 @@ function initialVersion(listing: EditListingFormProps['listing']): VersionData {
     publisher: listing.publisher,
     language: listing.language,
     edition_year: listing.edition_year,
-    version_thumbnail: null,
+    version_thumbnail: listing.version_thumbnail ?? null,
   };
 }
 
@@ -75,8 +76,8 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
   const [photos, setPhotos] = useState<string[]>(listing.photos);
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
-  // Build enriched game for VersionStep (alternate name selector)
-  const enrichedGame: EnrichedGame = {
+  // Stable reference for VersionStep — listing/alternateNames never change during edit
+  const enrichedGame = useMemo<EnrichedGame>(() => ({
     id: listing.bgg_game_id,
     name: listing.games?.name ?? listing.game_name,
     yearpublished: listing.game_year,
@@ -84,7 +85,7 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
     image: listing.games?.image ?? null,
     player_count: listing.games?.player_count ?? null,
     alternateNames,
-  };
+  }), [listing, alternateNames]);
 
   // Form state
   const [submitting, setSubmitting] = useState(false);

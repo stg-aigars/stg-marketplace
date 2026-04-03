@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { Badge, Button, Tabs } from '@/components/ui';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ListingType } from '@/lib/listings/types';
 import { ListingOverflowMenu } from './ListingOverflowMenu';
 
 interface ListingRow {
@@ -16,7 +16,7 @@ interface ListingRow {
   photos: string[];
   country: string;
   status: string;
-  listing_type: string;
+  listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;
