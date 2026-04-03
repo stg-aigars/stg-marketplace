@@ -41,6 +41,7 @@ export interface CreateListingData {
 
 export interface UpdateListingData {
   id: string;
+  game_name: string;
   version_source: VersionSource;
   bgg_version_id: number | null;
   version_name: string | null;

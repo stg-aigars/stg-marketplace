@@ -16,6 +16,9 @@ interface ListingRow {
   photos: string[];
   country: string;
   status: string;
+  listing_type: string;
+  bid_count: number;
+  auction_end_at: string | null;
   version_thumbnail: string | null;
   games: { image: string | null };
 }
@@ -74,9 +77,16 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                isAuction={listing.listing_type === 'auction'}
+                bidCount={listing.bid_count}
+                auctionEndAt={listing.auction_end_at}
               />
               {listing.status === 'active' && (
-                <ListingOverflowMenu listingId={listing.id} />
+                <ListingOverflowMenu
+                  listingId={listing.id}
+                  listingType={listing.listing_type}
+                  bidCount={listing.bid_count}
+                />
               )}
               {listing.status !== 'active' && (
                 <div className="absolute top-2 right-2">

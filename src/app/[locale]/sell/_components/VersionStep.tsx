@@ -185,24 +185,8 @@ export function VersionStep({
     collapseWithValidation();
   };
 
-  const handleSkip = () => {
-    onSelect({
-      version_source: 'manual',
-      bgg_version_id: null,
-      version_name: null,
-      publisher: null,
-      language: null,
-      edition_year: null,
-      version_thumbnail: null,
-    });
-    collapseWithValidation();
-  };
-
   const isSelected = (versionId: number) =>
     selectedVersionSource === 'bgg' && selectedVersionId === versionId;
-
-  const isManualSelected =
-    selectedVersionSource === 'manual' && selectedVersionId === null;
 
   const showLanguageFilter = uniqueLanguages.languages.length >= 2;
 
@@ -330,7 +314,7 @@ export function VersionStep({
             onChange={(e) => setManualPublisher(e.target.value)}
           />
           <Input
-            label="Language"
+            label="Language *"
             placeholder="e.g. English, Latvian, German"
             value={manualLanguage}
             onChange={(e) => setManualLanguage(e.target.value)}
@@ -360,7 +344,7 @@ export function VersionStep({
           <Button
             variant="primary"
             onClick={handleManualSubmit}
-            disabled={!manualPublisher && !manualLanguage && !manualYear}
+            disabled={!manualLanguage.trim()}
           >
             Use this edition
           </Button>
@@ -451,25 +435,13 @@ export function VersionStep({
         </p>
       )}
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-2">
+      <div className="pt-2">
         <Button
           variant="secondary"
           size="sm"
           onClick={() => setShowManual(true)}
         >
           My edition isn&apos;t listed
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSkip}
-          className={
-            isManualSelected && !showManual
-              ? 'text-semantic-brand font-medium'
-              : 'text-semantic-text-muted'
-          }
-        >
-          Skip this step
         </Button>
       </div>
     </div>

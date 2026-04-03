@@ -8,9 +8,11 @@ import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
 
 interface ListingOverflowMenuProps {
   listingId: string;
+  listingType: string;
+  bidCount: number;
 }
 
-export function ListingOverflowMenu({ listingId }: ListingOverflowMenuProps) {
+export function ListingOverflowMenu({ listingId, listingType, bidCount }: ListingOverflowMenuProps) {
   const { locale } = useParams<{ locale: string }>();
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -48,27 +50,31 @@ export function ListingOverflowMenu({ listingId }: ListingOverflowMenuProps) {
 
         {open && (
           <div className="absolute right-0 top-full mt-1 w-40 rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg overflow-hidden">
-            <Link
-              href={`/${locale}/listings/${listingId}/edit`}
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-text-primary hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
-            >
-              <PencilSimple size={16} />
-              Edit
-            </Link>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setOpen(false);
-                setShowConfirm(true);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-error hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
-            >
-              <Trash size={16} />
-              Remove
-            </button>
+            {!(listingType === 'auction' && bidCount > 0) && (
+              <Link
+                href={`/${locale}/listings/${listingId}/edit`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-text-primary hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
+              >
+                <PencilSimple size={16} />
+                Edit
+              </Link>
+            )}
+            {!(listingType === 'auction' && bidCount > 0) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setOpen(false);
+                  setShowConfirm(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-error hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
+              >
+                <Trash size={16} />
+                Remove
+              </button>
+            )}
           </div>
         )}
       </div>

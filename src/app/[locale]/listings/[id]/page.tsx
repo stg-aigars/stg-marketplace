@@ -279,15 +279,20 @@ export default async function ListingDetailPage(
               )}
             </div>
             {isAuction && auctionState ? (
-              <BidPanel
-                listingId={listing.id}
-                initialState={auctionState}
-                bids={bidHistory}
-                currentUserId={user?.id ?? null}
-                sellerId={listing.seller_id}
-              />
+              <>
+                <BidPanel
+                  listingId={listing.id}
+                  initialState={auctionState}
+                  bids={bidHistory}
+                  currentUserId={user?.id ?? null}
+                  sellerId={listing.seller_id}
+                />
+                {isOwner && (
+                  <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
+                )}
+              </>
             ) : isOwner ? (
-              <OwnerActions listingId={listing.id} status={listing.status} locale={locale} />
+              <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               /* Another buyer has reserved this listing */
               (<ReservationCountdown reservedAt={listing.reserved_at!} />)

@@ -10,6 +10,7 @@ import { ConditionStep } from '@/app/[locale]/sell/_components/ConditionStep';
 import { PhotoUploadStep } from '@/app/[locale]/sell/_components/PhotoUploadStep';
 import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
+import type { EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateListing } from '@/lib/listings/actions';
 import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition, VersionData } from '@/lib/listings/types';
@@ -37,6 +38,7 @@ interface EditListingFormProps {
       player_count: string | null;
     };
   };
+  alternateNames: string[];
   locale: string;
 }
 
@@ -52,11 +54,12 @@ function initialVersion(listing: EditListingFormProps['listing']): VersionData {
   };
 }
 
-export function EditListingForm({ listing, locale }: EditListingFormProps) {
+export function EditListingForm({ listing, alternateNames, locale }: EditListingFormProps) {
   const router = useRouter();
 
   // Snapshot initial values for dirty detection
   const initial = useRef({
+    game_name: listing.game_name,
     condition: listing.condition,
     price_cents: listing.price_cents,
     description: listing.description ?? '',
@@ -65,11 +68,23 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
   });
 
   // Editable state
+  const [gameName, setGameName] = useState(listing.game_name);
   const [condition, setCondition] = useState<ListingCondition | null>(listing.condition);
   const [priceCents, setPriceCents] = useState(listing.price_cents);
   const [description, setDescription] = useState(listing.description ?? '');
   const [photos, setPhotos] = useState<string[]>(listing.photos);
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
+
+  // Build enriched game for VersionStep (alternate name selector)
+  const enrichedGame: EnrichedGame = {
+    id: listing.bgg_game_id,
+    name: listing.games?.name ?? listing.game_name,
+    yearpublished: listing.game_year,
+    thumbnail: listing.games?.thumbnail ?? null,
+    image: listing.games?.image ?? null,
+    player_count: listing.games?.player_count ?? null,
+    alternateNames,
+  };
 
   // Form state
   const [submitting, setSubmitting] = useState(false);
@@ -78,6 +93,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
 
   // Dirty detection
   const isDirty =
+    gameName !== initial.current.game_name ||
     condition !== initial.current.condition ||
     priceCents !== initial.current.price_cents ||
     description !== initial.current.description ||
@@ -101,6 +117,7 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
     const result = await updateListing(
       {
         id: listing.id,
+        game_name: gameName,
         ...version,
         condition,
         price_cents: priceCents,
@@ -166,9 +183,14 @@ export function EditListingForm({ listing, locale }: EditListingFormProps) {
       {/* Edition / Version */}
       <VersionStep
         gameId={listing.bgg_game_id}
-        gameName={listing.game_name}
+        gameName={gameName}
+        selectedGame={enrichedGame}
+        onGameNameChange={setGameName}
         selectedVersionId={version.bgg_version_id}
         selectedVersionSource={version.version_source}
+        selectedPublisher={version.publisher}
+        selectedLanguage={version.language}
+        selectedEditionYear={version.edition_year}
         onSelect={setVersion}
         compact
       />

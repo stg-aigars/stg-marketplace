@@ -17,6 +17,9 @@ interface MyListingRow {
   photos: string[];
   country: string;
   status: string;
+  listing_type: string;
+  bid_count: number;
+  auction_end_at: string | null;
   version_thumbnail: string | null;
   games: { image: string | null };
 }
@@ -27,7 +30,7 @@ export default async function MyListingsPage() {
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image)')
+    .select('id, game_name, game_year, condition, price_cents, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)')
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false })
     .returns<MyListingRow[]>();

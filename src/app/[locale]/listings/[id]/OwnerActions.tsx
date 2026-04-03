@@ -9,10 +9,12 @@ import type { ListingStatus } from '@/lib/listings/types';
 interface OwnerActionsProps {
   listingId: string;
   status: ListingStatus;
+  listingType: string;
+  bidCount: number;
   locale: string;
 }
 
-export function OwnerActions({ listingId, status, locale }: OwnerActionsProps) {
+export function OwnerActions({ listingId, status, listingType, bidCount, locale }: OwnerActionsProps) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   if (status === 'sold' || status === 'cancelled') {
@@ -20,18 +22,26 @@ export function OwnerActions({ listingId, status, locale }: OwnerActionsProps) {
   }
 
   const isReserved = status === 'reserved';
+  const hasAuctionBids = listingType === 'auction' && bidCount > 0;
+  const editDisabled = isReserved || hasAuctionBids;
 
   return (
     <>
       <div className="flex gap-3">
-        <Link href={`/${locale}/listings/${listingId}/edit`}>
-          <Button variant="secondary" disabled={isReserved}>
+        {editDisabled ? (
+          <Button variant="secondary" disabled>
             Edit listing
           </Button>
-        </Link>
+        ) : (
+          <Link href={`/${locale}/listings/${listingId}/edit`}>
+            <Button variant="secondary">
+              Edit listing
+            </Button>
+          </Link>
+        )}
         <Button
           variant="danger"
-          disabled={isReserved}
+          disabled={isReserved || hasAuctionBids}
           onClick={() => setShowConfirm(true)}
         >
           Remove listing
@@ -40,6 +50,16 @@ export function OwnerActions({ listingId, status, locale }: OwnerActionsProps) {
       {isReserved && (
         <p className="text-sm text-semantic-text-muted mt-2">
           This listing has an active reservation
+        </p>
+      )}
+      {hasAuctionBids && (
+        <p className="text-sm text-semantic-text-muted mt-2">
+          Auctions with bids cannot be edited or removed
+        </p>
+      )}
+      {listingType === 'auction' && bidCount === 0 && (
+        <p className="text-sm text-semantic-text-muted mt-2">
+          Editing and removing will no longer be available once bids are placed
         </p>
       )}
 

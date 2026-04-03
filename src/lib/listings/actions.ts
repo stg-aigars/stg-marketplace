@@ -321,6 +321,11 @@ export async function updateListing(
     return { error: 'Only active listings can be edited' };
   }
 
+  // Game name validation
+  if (!data.game_name || data.game_name.length > MAX_GAME_NAME_LENGTH) {
+    return { error: `Game name must be ${MAX_GAME_NAME_LENGTH} characters or fewer` };
+  }
+
   // Shared field validations
   const photoUrlPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/${user.id}/`;
   const fieldError = validateListingFields(data, photoUrlPrefix);
@@ -336,6 +341,7 @@ export async function updateListing(
   const { error: updateError } = await service
     .from('listings')
     .update({
+      game_name: data.game_name,
       version_source: data.version_source,
       bgg_version_id: data.bgg_version_id,
       version_name: data.version_name,

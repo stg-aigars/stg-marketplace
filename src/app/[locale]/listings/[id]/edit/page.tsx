@@ -19,6 +19,8 @@ interface EditListingRow {
   price_cents: number;
   description: string | null;
   status: ListingStatus;
+  listing_type: string;
+  bid_count: number;
   photos: string[];
   version_source: VersionSource;
   bgg_version_id: number | null;
@@ -31,6 +33,7 @@ interface EditListingRow {
     thumbnail: string | null;
     image: string | null;
     player_count: string | null;
+    alternate_names: string[] | null;
   };
 }
 
@@ -53,7 +56,7 @@ export default async function EditListingPage(
   const { data: listing } = await supabase
     .from('listings')
     .select(
-      'id, seller_id, bgg_game_id, game_name, game_year, condition, price_cents, description, status, photos, version_source, bgg_version_id, version_name, publisher, language, edition_year, games(name, thumbnail, image, player_count)'
+      'id, seller_id, bgg_game_id, game_name, game_year, condition, price_cents, description, status, listing_type, bid_count, photos, version_source, bgg_version_id, version_name, publisher, language, edition_year, games(name, thumbnail, image, player_count, alternate_names)'
     )
     .eq('id', id)
     .single<EditListingRow>();
@@ -66,9 +69,13 @@ export default async function EditListingPage(
     redirect(`/${locale}/account/listings`);
   }
 
+  if (listing.listing_type === 'auction' && listing.bid_count > 0) {
+    redirect(`/${locale}/listings/${id}`);
+  }
+
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <EditListingForm listing={listing} locale={locale} />
+      <EditListingForm listing={listing} alternateNames={listing.games?.alternate_names ?? []} locale={locale} />
     </main>
   );
 }
