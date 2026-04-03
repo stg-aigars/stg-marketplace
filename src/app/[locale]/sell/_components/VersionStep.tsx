@@ -242,81 +242,78 @@ export function VersionStep({
     (selectedVersionSource !== 'bgg' || selectedVersion !== null);
 
   if (canShowCollapsed) {
+    const versionThumbnail = selectedVersionSource === 'bgg' && selectedVersion
+      ? (selectedVersion.image ?? selectedVersion.thumbnail)
+      : null;
+
+    const hasEdition = selectedVersionSource === 'bgg'
+      ? !!selectedVersion
+      : !!(selectedPublisher || selectedLanguage || selectedEditionYear);
+
     return (
       <div className="space-y-4">
-        {compact ? (
-          <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
-        ) : (
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Edition
-          </h2>
-        )}
-
-        {/* Selected edition card — game name as title, edition details below */}
+        {/* Selected edition card — matches Review step layout */}
         <Card>
           <CardBody>
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <p className="font-semibold text-semantic-text-heading truncate">
-                  {gameName}
-                </p>
-                <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setCollapsed(false)}>
-                  Change
-                </Button>
-              </div>
-              {selectedVersionSource === 'bgg' && selectedVersion ? (
-                <div className="flex items-start gap-3">
-                  {(selectedVersion.image ?? selectedVersion.thumbnail) ? (
-                    <Image
-                      src={(selectedVersion.image ?? selectedVersion.thumbnail)!}
-                      alt={selectedVersion.name}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-                      <ImageSquare size={28} className="text-semantic-text-muted" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-semantic-text-primary truncate">
-                      {selectedVersion.name}
-                    </p>
-                    <VersionMeta version={selectedVersion} />
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-4 min-w-0">
+                {versionThumbnail ? (
+                  <Image
+                    src={versionThumbnail}
+                    alt={gameName}
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                    <ImageSquare size={28} className="text-semantic-text-muted" />
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-sm font-medium text-semantic-text-primary">
-                    {selectedPublisher || selectedLanguage || selectedEditionYear
-                      ? 'Custom edition'
-                      : 'No specific edition'}
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-semantic-text-heading text-lg truncate">
+                    {gameName}
                   </p>
-                  {(selectedPublisher || selectedLanguage || selectedEditionYear) && (
+                  {hasEdition ? (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {selectedPublisher && (
+                      {selectedVersionSource === 'bgg' && selectedVersion && (
+                        <span>{selectedVersion.name}</span>
+                      )}
+                      {(selectedVersionSource === 'bgg' ? selectedVersion?.publishers?.[0] ?? selectedVersion?.publisher : selectedPublisher) && (
                         <span className="flex items-center gap-1">
                           <Buildings size={14} className="shrink-0" />
-                          {selectedPublisher}
+                          {selectedVersionSource === 'bgg'
+                            ? (selectedVersion?.publishers?.[0] ?? selectedVersion?.publisher)
+                            : selectedPublisher}
                         </span>
                       )}
-                      {selectedLanguage && (
+                      {(selectedVersionSource === 'bgg' ? selectedVersion?.languages?.[0] ?? selectedVersion?.language : selectedLanguage) && (
                         <span className="flex items-center gap-1">
                           <Translate size={14} className="shrink-0" />
-                          {selectedLanguage}
+                          {selectedVersionSource === 'bgg'
+                            ? (selectedVersion?.languages?.[0] ?? selectedVersion?.language)
+                            : selectedLanguage}
                         </span>
                       )}
-                      {selectedEditionYear && (
+                      {(selectedVersionSource === 'bgg' ? selectedVersion?.yearPublished : selectedEditionYear) && (
                         <span className="flex items-center gap-1">
                           <CalendarBlank size={14} className="shrink-0" />
-                          {selectedEditionYear}
+                          {selectedVersionSource === 'bgg'
+                            ? selectedVersion?.yearPublished
+                            : selectedEditionYear}
                         </span>
                       )}
                     </div>
+                  ) : (
+                    <p className="text-sm text-semantic-text-muted mt-0.5">
+                      No edition specified
+                    </p>
                   )}
                 </div>
-              )}
+              </div>
+              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setCollapsed(false)}>
+                Change
+              </Button>
             </div>
           </CardBody>
         </Card>
@@ -337,9 +334,6 @@ export function VersionStep({
   if (loading) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          Which edition?
-        </h2>
         <div className="flex items-center justify-center py-8">
           <Spinner className="text-semantic-text-muted" />
           <span className="ml-2 text-sm text-semantic-text-muted">Loading editions...</span>
@@ -351,9 +345,6 @@ export function VersionStep({
   if (showManual) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          Enter edition details
-        </h2>
         <p className="text-sm text-semantic-text-secondary">
           Tell buyers about your specific edition of {primaryGameName}.
         </p>
@@ -407,17 +398,10 @@ export function VersionStep({
 
   return (
     <div className="space-y-4">
-      {compact ? (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Edition</h2>
-      ) : (
-        <>
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Which edition?
-          </h2>
-          <p className="text-sm text-semantic-text-secondary">
-            Select the edition that matches your copy of {primaryGameName}. This helps buyers know exactly what they are getting.
-          </p>
-        </>
+      {!compact && (
+        <p className="text-sm text-semantic-text-secondary">
+          Select the edition that matches your copy of {primaryGameName}.
+        </p>
       )}
 
       {fetchError && (
@@ -605,26 +589,29 @@ function AlternateNameSelector({
 
   if (alternateNames.length === 0) return null;
 
-  // Collapsed view — Card row matching the edition card pattern above
+  // Collapsed view — matches a selected item from the expanded list
   if (!expanded) {
     return (
       <div className="space-y-2">
         <p className="text-sm font-medium text-semantic-text-secondary">
           Name on the box
         </p>
-        <Card>
-          <CardBody>
-            <div className="flex items-center gap-3">
-              <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0" />
-              <p className="flex-1 min-w-0 font-medium text-semantic-text-primary truncate">
-                {selectedName}
-              </p>
-              <Button variant="ghost" size="sm" onClick={() => setExpanded(true)}>
-                Change
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
+        <div className="w-full text-left px-3 py-1.5 rounded-md border text-sm border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium">
+          <div className="flex items-center gap-2">
+            <CheckCircle size={16} weight="fill" className="text-semantic-brand shrink-0" />
+            <span className="truncate flex-1">{selectedName}</span>
+            {selectedName === primaryName && (
+              <span className="text-xs text-semantic-text-muted shrink-0">(primary)</span>
+            )}
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="text-xs text-semantic-brand shrink-0 ml-2"
+            >
+              change
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

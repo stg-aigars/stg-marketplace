@@ -317,7 +317,7 @@ export function ListingCreationFlow({
       const version = formData.expansion_versions[id];
       return {
         bgg_game_id: id,
-        game_name: expansion?.name ?? `Game ${id}`,
+        game_name: formData.expansion_game_names[id] ?? expansion?.name ?? `Game ${id}`,
         ...(version ? {
           version_source: version.version_source,
           bgg_version_id: version.bgg_version_id,
@@ -548,12 +548,35 @@ export function ListingCreationFlow({
         )}
 
         {currentStepId === 'edition' && formData.bgg_game_id && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Base game section */}
-            <div>
-              {formData.selected_expansion_ids.length > 0 && (
-                <h2 className="text-base font-semibold text-semantic-text-heading mb-4">Base game</h2>
-              )}
+            {formData.selected_expansion_ids.length > 0 ? (
+              <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle">
+                <VersionStep
+                  userCountry={userCountry}
+                  gameId={formData.bgg_game_id}
+                  gameName={formData.game_name}
+                  selectedGame={selectedGame}
+                  onGameNameChange={(name: string) => updateFormData({ game_name: name })}
+                  selectedVersionId={formData.bgg_version_id}
+                  selectedVersionSource={formData.version_source}
+                  selectedPublisher={formData.publisher}
+                  selectedLanguage={formData.language}
+                  selectedEditionYear={formData.edition_year}
+                  onSelect={(version) => {
+                    updateFormData({
+                      version_source: version.version_source,
+                      bgg_version_id: version.bgg_version_id,
+                      version_name: version.version_name,
+                      publisher: version.publisher,
+                      language: version.language,
+                      edition_year: version.edition_year,
+                      version_thumbnail: version.version_thumbnail,
+                    });
+                  }}
+                />
+              </div>
+            ) : (
               <VersionStep
                 userCountry={userCountry}
                 gameId={formData.bgg_game_id}
@@ -577,50 +600,47 @@ export function ListingCreationFlow({
                   });
                 }}
               />
-            </div>
+            )}
 
             {/* Expansions section */}
             {formData.selected_expansion_ids.length > 0 && (
-              <div>
-                <h2 className="text-base font-semibold text-semantic-text-heading mb-4">Expansions</h2>
-                <div className="space-y-6">
-                  {formData.selected_expansion_ids.map((expId, idx) => {
-                    const expansion = availableExpansions.find((e) => e.id === expId);
-                    if (!expansion) return null;
-                    const expVersion = formData.expansion_versions[expId];
+              <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle space-y-6">
+                {formData.selected_expansion_ids.map((expId, idx) => {
+                  const expansion = availableExpansions.find((e) => e.id === expId);
+                  if (!expansion) return null;
+                  const expVersion = formData.expansion_versions[expId];
 
-                    return (
-                      <div key={expId}>
-                        {idx > 0 && (
-                          <hr className="border-semantic-border-subtle mb-6" />
-                        )}
-                        <VersionStep
-                          userCountry={userCountry}
-                          gameId={expId}
-                          gameName={formData.expansion_game_names[expId] ?? expansion.name}
-                          selectedGame={enrichedExpansions[expId] ?? null}
-                          onGameNameChange={(name: string) => updateFormData({
-                            expansion_game_names: { ...formData.expansion_game_names, [expId]: name },
-                          })}
-                          selectedVersionId={expVersion?.bgg_version_id ?? null}
-                          selectedVersionSource={expVersion?.version_source ?? null}
-                          selectedPublisher={expVersion?.publisher ?? null}
-                          selectedLanguage={expVersion?.language ?? null}
-                          selectedEditionYear={expVersion?.edition_year ?? null}
-                          onSelect={(version: VersionData) => {
-                              updateFormData({
-                                expansion_versions: {
-                                  ...formData.expansion_versions,
-                                  [expId]: version,
-                                },
-                              });
-                            }}
-                            compact
-                          />
-                      </div>
-                    );
-                  })}
-                </div>
+                  return (
+                    <div key={expId}>
+                      {idx > 0 && (
+                        <hr className="border-semantic-border-subtle mb-6" />
+                      )}
+                      <VersionStep
+                        userCountry={userCountry}
+                        gameId={expId}
+                        gameName={formData.expansion_game_names[expId] ?? expansion.name}
+                        selectedGame={enrichedExpansions[expId] ?? null}
+                        onGameNameChange={(name: string) => updateFormData({
+                          expansion_game_names: { ...formData.expansion_game_names, [expId]: name },
+                        })}
+                        selectedVersionId={expVersion?.bgg_version_id ?? null}
+                        selectedVersionSource={expVersion?.version_source ?? null}
+                        selectedPublisher={expVersion?.publisher ?? null}
+                        selectedLanguage={expVersion?.language ?? null}
+                        selectedEditionYear={expVersion?.edition_year ?? null}
+                        onSelect={(version: VersionData) => {
+                          updateFormData({
+                            expansion_versions: {
+                              ...formData.expansion_versions,
+                              [expId]: version,
+                            },
+                          });
+                        }}
+                        compact
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -653,7 +673,7 @@ export function ListingCreationFlow({
               onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
               expansions={formData.selected_expansion_ids.map((id) => {
                 const exp = availableExpansions.find((e) => e.id === id);
-                return { id, name: exp?.name ?? `Game ${id}` };
+                return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };
               })}
             />
           </>
