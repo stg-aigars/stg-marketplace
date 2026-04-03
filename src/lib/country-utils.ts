@@ -36,3 +36,10 @@ export function getCountry(countryCode: string | null | undefined): Country | un
 export function isValidCountryCode(countryCode: string): countryCode is CountryCode {
   return COUNTRIES.some(c => c.code === countryCode);
 }
+
+/** Maps Baltic country codes to their primary language name (as used in BGG version data). */
+export const COUNTRY_TO_LANGUAGE: Record<CountryCode, string> = {
+  LV: 'Latvian',
+  LT: 'Lithuanian',
+  EE: 'Estonian',
+};

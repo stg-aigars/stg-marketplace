@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
@@ -8,6 +8,8 @@ import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
 import type { VersionData, VersionSource } from '@/lib/listings/types';
+import type { CountryCode } from '@/lib/country-utils';
+import { COUNTRY_TO_LANGUAGE } from '@/lib/country-utils';
 import type { EnrichedGame } from './GameSearchStep';
 
 interface VersionStepProps {
@@ -23,6 +25,7 @@ interface VersionStepProps {
   selectedEditionYear?: number | null;
   onSelect: (version: VersionData) => void;
   compact?: boolean;
+  userCountry?: CountryCode | null;
 }
 
 const PRIORITY_LANGUAGES = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'German'];
@@ -51,6 +54,7 @@ export function VersionStep({
   selectedEditionYear,
   onSelect,
   compact,
+  userCountry,
 }: VersionStepProps) {
   const [versions, setVersions] = useState<BGGVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +119,45 @@ export function VersionStep({
       cancelled = true;
     };
   }, [gameId]);
+
+  // Auto-select language filter based on user's country (once, after versions load)
+  const hasAutoSelectedLanguage = useRef(false);
+
+  useEffect(() => {
+    if (versions.length === 0 || hasAutoSelectedLanguage.current) return;
+
+    const langSet = new Set<string>();
+    for (const v of versions) {
+      for (const lang of getVersionLanguages(v)) langSet.add(lang);
+    }
+    if (langSet.size < 2) return;
+
+    hasAutoSelectedLanguage.current = true;
+
+    // 1. Try user's country language
+    if (userCountry) {
+      const countryLang = COUNTRY_TO_LANGUAGE[userCountry];
+      if (countryLang && langSet.has(countryLang)) {
+        setLanguageFilter(countryLang);
+        return;
+      }
+    }
+    // 2. Fallback to English
+    if (langSet.has('English')) {
+      setLanguageFilter('English');
+      return;
+    }
+    // 3. First available by priority order
+    const sorted = Array.from(langSet).sort((a, b) => {
+      const aIdx = PRIORITY_LANGUAGES.indexOf(a);
+      const bIdx = PRIORITY_LANGUAGES.indexOf(b);
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    setLanguageFilter(sorted[0]);
+  }, [versions, userCountry]);
 
   // Extract unique languages sorted: Baltic-priority first, then alphabetical
   const uniqueLanguages = useMemo(() => {
@@ -380,18 +423,11 @@ export function VersionStep({
       {showLanguageFilter && (
         <div className="overflow-x-auto -mx-1 px-1 pb-1">
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setLanguageFilter(null)}
-              className={filterChipClass(languageFilter === null)}
-            >
-              All ({versions.length})
-            </button>
             {uniqueLanguages.languages.map((lang) => (
               <button
                 key={lang}
                 type="button"
-                onClick={() => setLanguageFilter(lang === languageFilter ? null : lang)}
+                onClick={() => setLanguageFilter(lang)}
                 className={filterChipClass(languageFilter === lang)}
               >
                 {lang} ({uniqueLanguages.counts.get(lang)})
@@ -550,9 +586,12 @@ function AlternateNameSelector({
 }: {
   primaryName: string;
   alternateNames: string[];
+  // selectedName reflects the search-matched alternate name (via formData.game_name)
+  // or the primary name — so the collapsed view shows what the user searched for
   selectedName: string;
   onSelect: (name: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   const allNames = useMemo(() => [primaryName, ...alternateNames], [primaryName, alternateNames]);
@@ -561,7 +600,32 @@ function AlternateNameSelector({
 
   if (alternateNames.length === 0) return null;
 
-  // If selected name is non-Latin, always show all
+  // Collapsed view — show selected name with option to change
+  if (!expanded) {
+    return (
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-semantic-text-secondary">
+          Name on the box
+        </p>
+        <p className="text-sm text-semantic-text-primary font-medium">
+          {selectedName}
+          {selectedName === primaryName && (
+            <span className="text-xs text-semantic-text-muted ml-1.5 font-normal">(primary)</span>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="text-sm text-semantic-brand active:text-semantic-brand-active sm:hover:underline"
+        >
+          Name doesn&apos;t match your box? Change it
+        </button>
+      </div>
+    );
+  }
+
+  // Expanded view — full name picker
+  // If selected name is non-Latin, always show all scripts
   const effectiveShowAll = showAll || (selectedName !== primaryName && !isLatinScript(selectedName));
   const visibleNames = effectiveShowAll ? allNames : latinNames;
 
@@ -575,7 +639,10 @@ function AlternateNameSelector({
           <button
             key={name}
             type="button"
-            onClick={() => onSelect(name)}
+            onClick={() => {
+              onSelect(name);
+              setExpanded(false);
+            }}
             className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors duration-250 ease-out-custom ${
               selectedName === name
                 ? 'border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium'
