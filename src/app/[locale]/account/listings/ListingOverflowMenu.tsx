@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
-import type { ListingType } from '@/lib/listings/types';
+import { isAuctionWithBids, type ListingType } from '@/lib/listings/types';
 
 interface ListingOverflowMenuProps {
   listingId: string;
@@ -18,7 +18,7 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const hasAuctionBids = listingType === 'auction' && bidCount > 0;
+  const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
 
   // Close on outside click
   useEffect(() => {

@@ -4,28 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { Badge, Button, Tabs } from '@/components/ui';
-import type { ListingCondition, ListingType } from '@/lib/listings/types';
 import { ListingOverflowMenu } from './ListingOverflowMenu';
-
-interface ListingRow {
-  id: string;
-  game_name: string;
-  game_year: number | null;
-  condition: ListingCondition;
-  price_cents: number;
-  photos: string[];
-  country: string;
-  status: string;
-  listing_type: ListingType;
-  bid_count: number;
-  auction_end_at: string | null;
-  version_thumbnail: string | null;
-  games: { image: string | null };
-}
+import type { MyListingRow } from './page';
 
 interface MyListingsTabsProps {
-  active: ListingRow[];
-  inactive: ListingRow[];
+  active: MyListingRow[];
+  inactive: MyListingRow[];
 }
 
 const statusLabels: Record<string, string> = {

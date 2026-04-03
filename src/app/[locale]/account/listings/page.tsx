@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'My Listings',
 };
 
-interface MyListingRow {
+export interface MyListingRow {
   id: string;
   game_name: string;
   game_year: number | null;

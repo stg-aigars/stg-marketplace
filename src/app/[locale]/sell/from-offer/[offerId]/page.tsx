@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { ListingCreationFlow } from '../../_components/ListingCreationFlow';
-import type { EnrichedGame } from '../../_components/GameSearchStep';
+import { buildEnrichedGame } from '../../_components/GameSearchStep';
 import { Alert } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { LISTING_DEADLINE_DAYS } from '@/lib/shelves/types';
@@ -53,15 +53,7 @@ export default async function FromOfferPage({ params }: Props) {
   // The agreed price: counter_amount_cents if countered, otherwise original amount
   const agreedPrice = offer.counter_amount_cents ?? offer.amount_cents;
 
-  const initialGame: EnrichedGame = {
-    id: shelfItem.bgg_game_id,
-    name: shelfItem.game_name,
-    yearpublished: shelfItem.game_year,
-    thumbnail: shelfItem.games?.thumbnail ?? null,
-    image: shelfItem.games?.image ?? null,
-    player_count: shelfItem.games?.player_count ?? null,
-    alternateNames: shelfItem.games?.alternate_names ?? [],
-  };
+  const initialGame = buildEnrichedGame(shelfItem.bgg_game_id, shelfItem.game_name, shelfItem.game_year, shelfItem.games);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">

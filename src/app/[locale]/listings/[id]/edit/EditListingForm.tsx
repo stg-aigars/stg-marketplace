@@ -10,7 +10,7 @@ import { ConditionStep } from '@/app/[locale]/sell/_components/ConditionStep';
 import { PhotoUploadStep } from '@/app/[locale]/sell/_components/PhotoUploadStep';
 import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
-import type { EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
+import { buildEnrichedGame, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateListing } from '@/lib/listings/actions';
 import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition, VersionData } from '@/lib/listings/types';
@@ -77,15 +77,10 @@ export function EditListingForm({ listing, alternateNames, locale }: EditListing
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
   // Stable reference for VersionStep — listing/alternateNames never change during edit
-  const enrichedGame = useMemo<EnrichedGame>(() => ({
-    id: listing.bgg_game_id,
-    name: listing.games?.name ?? listing.game_name,
-    yearpublished: listing.game_year,
-    thumbnail: listing.games?.thumbnail ?? null,
-    image: listing.games?.image ?? null,
-    player_count: listing.games?.player_count ?? null,
-    alternateNames,
-  }), [listing, alternateNames]);
+  const enrichedGame = useMemo<EnrichedGame>(
+    () => buildEnrichedGame(listing.bgg_game_id, listing.games?.name ?? listing.game_name, listing.game_year, { ...listing.games, alternate_names: alternateNames }),
+    [listing, alternateNames],
+  );
 
   // Form state
   const [submitting, setSubmitting] = useState(false);

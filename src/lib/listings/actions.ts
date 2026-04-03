@@ -21,6 +21,7 @@ import {
   MAX_TEXT_FIELD_LENGTH,
   conditionRequiresPhotos,
   conditionRequiresDescription,
+  isAuctionWithBids,
 } from './types';
 
 interface ListingFieldsToValidate {
@@ -321,7 +322,7 @@ export async function updateListing(
     return { error: 'Only active listings can be edited' };
   }
 
-  if (listing.listing_type === 'auction' && listing.bid_count > 0) {
+  if (isAuctionWithBids(listing.listing_type, listing.bid_count)) {
     return { error: 'Auctions with bids cannot be edited' };
   }
 

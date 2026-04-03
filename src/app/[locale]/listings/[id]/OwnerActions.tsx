@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
-import type { ListingStatus, ListingType } from '@/lib/listings/types';
+import { isAuctionWithBids, type ListingStatus, type ListingType } from '@/lib/listings/types';
 
 interface OwnerActionsProps {
   listingId: string;
@@ -22,7 +22,7 @@ export function OwnerActions({ listingId, status, listingType, bidCount, locale 
   }
 
   const isReserved = status === 'reserved';
-  const hasAuctionBids = listingType === 'auction' && bidCount > 0;
+  const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
   const editDisabled = isReserved || hasAuctionBids;
 
   return (

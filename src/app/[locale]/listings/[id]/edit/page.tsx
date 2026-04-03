@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
-import type { ListingCondition, ListingStatus, ListingType, VersionSource } from '@/lib/listings/types';
+import { isAuctionWithBids, type ListingCondition, type ListingStatus, type ListingType, type VersionSource } from '@/lib/listings/types';
 import { EditListingForm } from './EditListingForm';
 
 export const metadata: Metadata = {
@@ -70,7 +70,7 @@ export default async function EditListingPage(
     redirect(`/${locale}/account/listings`);
   }
 
-  if (listing.listing_type === 'auction' && listing.bid_count > 0) {
+  if (isAuctionWithBids(listing.listing_type, listing.bid_count)) {
     redirect(`/${locale}/listings/${id}`);
   }
 

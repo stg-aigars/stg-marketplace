@@ -82,6 +82,10 @@ export function conditionRequiresDescription(condition: string): boolean {
   return PHOTO_REQUIRED_CONDITIONS.includes(condition as ListingCondition);
 }
 
+export function isAuctionWithBids(listingType: string, bidCount: number): boolean {
+  return listingType === 'auction' && bidCount > 0;
+}
+
 export const MIN_PRICE_CENTS = 50; // €0.50
 export const MAX_GAME_NAME_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 2000;
