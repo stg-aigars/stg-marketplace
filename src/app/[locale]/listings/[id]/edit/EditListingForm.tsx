@@ -116,6 +116,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     return versions;
   });
   const [loadingExpansions, setLoadingExpansions] = useState(false);
+  const [enrichedExpansions, setEnrichedExpansions] = useState<Record<number, EnrichedGame>>({});
 
   // Fetch available expansions for this base game
   useEffect(() => {
@@ -128,6 +129,58 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       .catch(() => {})
       .finally(() => setLoadingExpansions(false));
   }, [listing.bgg_game_id]);
+
+  // Enrich expansion metadata (alternate names) via batch call
+  const enrichedExpansionIdsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const missing = availableExpansions.filter(
+      (e) => !enrichedExpansionIdsRef.current.has(e.id)
+    );
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const ids = missing.map((e) => e.id).slice(0, 20);
+    for (const id of ids) enrichedExpansionIdsRef.current.add(id);
+
+    apiFetch('/api/games/enrich-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.games) return;
+        const games: Record<number, { thumbnail: string | null; image: string | null; alternate_names: string[] | null }> = data.games;
+
+        setAvailableExpansions((prev) =>
+          prev.map((exp) => {
+            const enriched = games[exp.id];
+            if (enriched?.thumbnail && !exp.thumbnail) {
+              return { ...exp, thumbnail: enriched.thumbnail };
+            }
+            return exp;
+          })
+        );
+
+        const newEnriched: Record<number, EnrichedGame> = {};
+        for (const exp of missing) {
+          const g = games[exp.id];
+          if (g) {
+            newEnriched[exp.id] = buildEnrichedGame(
+              exp.id, exp.name, exp.year ?? null,
+              { thumbnail: g.thumbnail, image: g.image, player_count: null, alternate_names: g.alternate_names },
+            );
+          }
+        }
+        if (Object.keys(newEnriched).length > 0) {
+          setEnrichedExpansions((prev) => ({ ...prev, ...newEnriched }));
+        }
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [availableExpansions]);
 
   // Stable reference for VersionStep — listing/alternateNames never change during edit
   const enrichedGame = useMemo<EnrichedGame>(
@@ -270,7 +323,10 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       {!loadingExpansions && availableExpansions.length > 0 && (
         <div className="space-y-4">
           <ExpansionStep
-            expansions={availableExpansions}
+            expansions={availableExpansions.map((e) => ({
+              ...e,
+              alternate_names: enrichedExpansions[e.id]?.alternateNames ?? null,
+            }))}
             selectedExpansionIds={selectedExpansionIds}
             onSelectionChange={setSelectedExpansionIds}
           />

@@ -511,7 +511,7 @@ export async function cancelListing(
 
   const { data: listing, error: fetchError } = await supabase
     .from('listings')
-    .select('seller_id, status')
+    .select('seller_id, status, listing_type, bid_count')
     .eq('id', listingId)
     .single();
 
@@ -521,6 +521,10 @@ export async function cancelListing(
 
   if (listing.seller_id !== user.id) {
     return { error: 'Listing not found' };
+  }
+
+  if (isAuctionWithBids(listing.listing_type, listing.bid_count)) {
+    return { error: 'Cannot remove an auction that has bids' };
   }
 
   if (listing.status === 'reserved') {
