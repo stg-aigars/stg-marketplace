@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
+import type { ListingType } from '@/lib/listings/types';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { getUserFavoriteIds } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
@@ -14,7 +15,7 @@ interface RelatedListingRow {
   price_cents: number;
   photos: string[];
   country: string;
-  listing_type: string;
+  listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;
@@ -63,7 +64,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
 
   if (copiesList.length === 0 && sellerList.length === 0 && isOwner) return null;
 
-  const allIds = [...new Set([...copiesList, ...sellerList].map((l) => l.id))];
+  const allIds = [...copiesList, ...sellerList].map((l) => l.id);
   const { expansionCounts, commentCounts } = await getListingCardCounts(supabase, allIds);
   const isAuthenticated = !!user;
 
