@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { MyListingsTabs } from './MyListingsTabs';
+import { getListingCardCounts } from '@/lib/listings/queries';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
 export const metadata: Metadata = {
@@ -39,35 +40,10 @@ export default async function MyListingsPage() {
 
   const allListings = listings ?? [];
 
-  // Fetch expansion counts and comment counts
-  const listingIds = allListings.map((l) => l.id);
-  let expansionCounts: Record<string, number> = {};
-  let commentCounts: Record<string, number> = {};
-  if (listingIds.length > 0) {
-    const [{ data: expansions }, { data: comments }] = await Promise.all([
-      supabase
-        .from('listing_expansions')
-        .select('listing_id')
-        .in('listing_id', listingIds),
-      supabase
-        .from('listing_comments')
-        .select('listing_id')
-        .in('listing_id', listingIds),
-    ]);
-
-    if (expansions) {
-      expansionCounts = expansions.reduce((acc, e) => {
-        acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-    if (comments) {
-      commentCounts = comments.reduce((acc, c) => {
-        acc[c.listing_id] = (acc[c.listing_id] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-  }
+  const { expansionCounts, commentCounts } = await getListingCardCounts(
+    supabase,
+    allListings.map((l) => l.id)
+  );
 
   const withCounts = allListings.map((l) => ({
     ...l,

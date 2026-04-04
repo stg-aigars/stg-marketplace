@@ -54,6 +54,7 @@ function ListingCard({
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
   const flagClass = getCountryFlag(sellerCountry);
   const countryName = getCountryName(sellerCountry);
+  const hasPhotos = photoCount !== undefined && photoCount > 0;
 
   return (
     <Link href={`/listings/${id}`} className={`group block ${unavailable ? 'opacity-60' : ''}`}>
@@ -89,7 +90,7 @@ function ListingCard({
               <AuctionCountdown endAt={auctionEndAt} overlay />
             </span>
           )}
-          {!unavailable && (commentCount > 0 || (photoCount !== undefined && photoCount > 0)) && (
+          {!unavailable && (commentCount > 0 || hasPhotos) && (
             <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1">
               {commentCount > 0 && (
                 <span className="flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
@@ -97,7 +98,7 @@ function ListingCard({
                   {commentCount}
                 </span>
               )}
-              {photoCount !== undefined && photoCount > 0 && (
+              {hasPhotos && (
                 <span className="flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
                   <Camera size={12} />
                   {photoCount}
