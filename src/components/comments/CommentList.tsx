@@ -30,7 +30,7 @@ export function CommentList({ comments, isStaff, locale }: CommentListProps) {
   }
 
   const hasMore = comments.length > INITIAL_VISIBLE;
-  const visible = expanded ? comments : comments.slice(-INITIAL_VISIBLE);
+  const visible = expanded ? comments : comments.slice(0, INITIAL_VISIBLE);
 
   return (
     <div className="divide-y divide-semantic-border-subtle">

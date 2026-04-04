@@ -553,7 +553,7 @@ export default async function ListingDetailPage(
                 </CardBody>
                 {user && (
                   <div className="border-t border-semantic-border-subtle px-4 py-3 sm:px-5">
-                    <CommentForm listingId={id} isAuthenticated={!!user} />
+                    <CommentForm listingId={id} />
                   </div>
                 )}
               </Card>

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { postComment } from '@/lib/comments/actions';
@@ -10,27 +9,15 @@ import { MAX_COMMENT_LENGTH } from '@/lib/comments/types';
 
 interface CommentFormProps {
   listingId: string;
-  isAuthenticated: boolean;
 }
 
-export function CommentForm({ listingId, isAuthenticated }: CommentFormProps) {
+export function CommentForm({ listingId }: CommentFormProps) {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
-
-  if (!isAuthenticated) {
-    return (
-      <p className="text-sm text-semantic-text-muted">
-        <Link href="/auth/signin" className="text-semantic-brand sm:hover:underline font-medium">
-          Sign in
-        </Link>
-        {' '}to leave a comment
-      </p>
-    );
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
