@@ -76,6 +76,11 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             priority={activeIndex === 0}
             unoptimized={isBggImage(activeUrl)}
           />
+          {activeUrl === gameImage && (
+            <span className="absolute bottom-2 right-2 w-6 h-6 rounded bg-semantic-bg-secondary flex items-center justify-center">
+              <Image src="/images/bgg-logo.jpeg" alt="BoardGameGeek" width={16} height={16} className="object-contain rounded-sm" />
+            </span>
+          )}
         </button>
 
         {/* Thumbnail strip — only show when there are multiple images */}
@@ -156,6 +161,11 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
               sizes="90vw"
               unoptimized={isBggImage(activeUrl)}
             />
+            {activeUrl === gameImage && (
+              <span className="absolute bottom-4 right-4 w-8 h-8 rounded bg-black/90 flex items-center justify-center">
+                <Image src="/images/bgg-logo.jpeg" alt="BoardGameGeek" width={20} height={20} className="object-contain rounded-sm" />
+              </span>
+            )}
           </div>
 
           {/* Image counter */}
