@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { ImageSquare, X, CaretLeft, CaretRight } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
+import { useTouchGestures } from './useTouchGestures';
 
 interface PhotoGalleryProps {
   photos: string[];
@@ -29,6 +30,13 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
   const goPrev = useCallback(() => {
     setActiveIndex((i) => (i - 1 + images.length) % images.length);
   }, [images.length]);
+
+  const hasMultipleImages = images.length > 1;
+  const { containerRef, gestureStyle, isZoomed } = useTouchGestures({
+    onSwipeLeft: hasMultipleImages ? goNext : null,
+    onSwipeRight: hasMultipleImages ? goPrev : null,
+    imageIndex: activeIndex,
+  });
 
   // Keyboard navigation in lightbox
   useEffect(() => {
@@ -114,7 +122,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
       {lightboxOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={closeLightbox}
+          onClick={isZoomed ? undefined : closeLightbox}
         >
           {/* Close button */}
           <button
@@ -126,13 +134,13 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             <X size={28} weight="bold" />
           </button>
 
-          {/* Navigation arrows */}
+          {/* Navigation arrows — hidden when zoomed to prevent accidental taps */}
           {images.length > 1 && (
             <>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                className="absolute left-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
+                className={`absolute left-4 z-10 text-white/70 hover:text-white transition-all duration-250 ease-out-custom p-2 ${isZoomed ? 'opacity-0 pointer-events-none' : ''}`}
                 aria-label="Previous photo"
               >
                 <CaretLeft size={32} weight="bold" />
@@ -140,7 +148,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); goNext(); }}
-                className="absolute right-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
+                className={`absolute right-4 z-10 text-white/70 hover:text-white transition-all duration-250 ease-out-custom p-2 ${isZoomed ? 'opacity-0 pointer-events-none' : ''}`}
                 aria-label="Next photo"
               >
                 <CaretRight size={32} weight="bold" />
@@ -148,8 +156,10 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             </>
           )}
 
-          {/* Full-size image */}
+          {/* Full-size image — gesture container for pinch-to-zoom and swipe */}
           <div
+            ref={containerRef}
+            style={gestureStyle}
             className="relative w-full h-full max-w-[90vw] max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
