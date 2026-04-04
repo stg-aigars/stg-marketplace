@@ -6,16 +6,13 @@ import { Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import type { ListingCondition } from '@/lib/listings/types'; // kept for ListingCardProps interface
 import { FavoriteButton } from './FavoriteButton';
 
 interface ListingCardProps {
   id: string;
   gameTitle: string;
-  gameYear: number | null;
   gameThumbnail: string | null;
   firstPhoto: string | null;
-  condition: ListingCondition;
   priceCents: number;
   sellerCountry: string;
   /** Number of photos (shows count badge when > 0) */

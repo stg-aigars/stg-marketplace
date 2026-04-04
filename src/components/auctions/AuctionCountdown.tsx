@@ -64,7 +64,7 @@ function tierClass(tier: UrgencyTier): string {
 }
 
 function sizeClass(size: 'sm' | 'lg'): string {
-  // Only controls text size — font weight is owned by tierClass
+  // Only controls text size — font weight is owned by tierClass (or colorClass in overlay mode)
   return size === 'lg' ? 'text-lg' : 'text-sm';
 }
 

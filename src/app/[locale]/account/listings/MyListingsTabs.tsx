@@ -54,11 +54,9 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
               <ListingCard
                 id={listing.id}
                 gameTitle={listing.game_name}
-                gameYear={listing.game_year}
                 gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
-                condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
                 expansionCount={listing.expansion_count}
