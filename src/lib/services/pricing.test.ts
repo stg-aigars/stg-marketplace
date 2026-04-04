@@ -95,39 +95,39 @@ describe('calculateCheckoutPricing', () => {
 
 describe('formatPrice', () => {
   it('formats with two decimal places', () => {
-    expect(formatPrice(25.5)).toBe('€25.50');
+    expect(formatPrice(25.5)).toBe('25,50 €');
   });
 
   it('formats zero', () => {
-    expect(formatPrice(0)).toBe('€0.00');
+    expect(formatPrice(0)).toBe('0,00 €');
   });
 
   it('formats whole numbers', () => {
-    expect(formatPrice(10)).toBe('€10.00');
+    expect(formatPrice(10)).toBe('10,00 €');
   });
 });
 
 describe('formatCentsToEuros', () => {
   it('converts cents to euros string', () => {
-    expect(formatCentsToEuros(2550)).toBe('25.50');
+    expect(formatCentsToEuros(2550)).toBe('25,50');
   });
 
   it('handles single cent', () => {
-    expect(formatCentsToEuros(1)).toBe('0.01');
+    expect(formatCentsToEuros(1)).toBe('0,01');
   });
 
   it('handles zero', () => {
-    expect(formatCentsToEuros(0)).toBe('0.00');
+    expect(formatCentsToEuros(0)).toBe('0,00');
   });
 });
 
 describe('formatCentsToCurrency', () => {
   it('formats cents with euro symbol', () => {
-    expect(formatCentsToCurrency(2550)).toBe('€25.50');
+    expect(formatCentsToCurrency(2550)).toBe('25,50 €');
   });
 
   it('formats zero cents', () => {
-    expect(formatCentsToCurrency(0)).toBe('€0.00');
+    expect(formatCentsToCurrency(0)).toBe('0,00 €');
   });
 });
 

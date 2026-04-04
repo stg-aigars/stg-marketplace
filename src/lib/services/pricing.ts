@@ -66,17 +66,17 @@ export function calculateCheckoutPricing(
   return { ...buyer, walletDebitCents, everypayChargeCents: buyer.totalChargeCents - walletDebitCents };
 }
 
-/** Format euro amount: formatPrice(25.5) => "€25.50" */
+/** Format euro amount: formatPrice(25.5) => "25,50 €" */
 export function formatPrice(euros: number): string {
-  return `€${euros.toFixed(2)}`;
+  return `${euros.toFixed(2).replace('.', ',')} €`;
 }
 
-/** Format cents to euros string: formatCentsToEuros(2550) => "25.50" */
+/** Format cents to euros string: formatCentsToEuros(2550) => "25,50" */
 export function formatCentsToEuros(cents: number): string {
-  return (cents / 100).toFixed(2);
+  return (cents / 100).toFixed(2).replace('.', ',');
 }
 
-/** Format cents to currency: formatCentsToCurrency(2550) => "€25.50" */
+/** Format cents to currency: formatCentsToCurrency(2550) => "25,50 €" */
 export function formatCentsToCurrency(cents: number): string {
   return formatPrice(cents / 100);
 }
