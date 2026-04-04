@@ -6,6 +6,8 @@ import { Timer } from '@phosphor-icons/react/ssr';
 interface AuctionCountdownProps {
   endAt: string;
   size?: 'sm' | 'lg';
+  /** Render in white text for use on dark image overlays */
+  overlay?: boolean;
   className?: string;
 }
 
@@ -13,7 +15,7 @@ const ONE_HOUR = 3600;
 const TWELVE_HOURS = 43200;
 const FIVE_MINUTES = 300;
 
-export function AuctionCountdown({ endAt, size = 'sm', className = '' }: AuctionCountdownProps) {
+export function AuctionCountdown({ endAt, size = 'sm', overlay = false, className = '' }: AuctionCountdownProps) {
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(endAt));
 
   // Only flips once (when crossing the 1-hour mark), so the interval
@@ -29,15 +31,17 @@ export function AuctionCountdown({ endAt, size = 'sm', className = '' }: Auction
   }, [endAt, isShortInterval]);
 
   if (timeLeft.totalSeconds <= 0) {
-    return <span className={`text-semantic-text-muted ${sizeClass(size)} ${className}`}>Ended</span>;
+    const endedClass = overlay ? 'text-snow-white' : 'text-semantic-text-muted';
+    return <span className={`${endedClass} ${sizeClass(size)} ${className}`}>Ended</span>;
   }
 
   const tier = getUrgencyTier(timeLeft.totalSeconds);
+  const colorClass = overlay ? 'text-snow-white font-medium' : tierClass(tier);
 
   return (
-    <span className={`inline-flex items-center gap-1.5 ${tierClass(tier)} ${sizeClass(size)} tabular-nums ${className}`}>
-      <Timer size={size === 'lg' ? 20 : 14} weight={tier === 'normal' ? 'regular' : 'bold'} />
-      {tier === 'critical' && 'Ending soon — '}
+    <span className={`inline-flex items-center gap-1.5 ${colorClass} ${sizeClass(size)} tabular-nums ${className}`}>
+      {!overlay && <Timer size={size === 'lg' ? 20 : 14} weight={tier === 'normal' ? 'regular' : 'bold'} />}
+      {!overlay && tier === 'critical' && 'Ending soon — '}
       {formatTimeLeft(timeLeft)}
     </span>
   );

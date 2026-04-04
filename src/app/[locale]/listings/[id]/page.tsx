@@ -3,14 +3,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag } from '@phosphor-icons/react/ssr';
+import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { formatDate } from '@/lib/date-utils';
-import { getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
+import { decodeHTMLEntities, getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
@@ -69,6 +69,7 @@ interface ListingDetailRow {
     weight: number | null;
     categories: string[] | null;
     mechanics: string[] | null;
+    is_expansion: boolean;
   };
   user_profiles: {
     full_name: string | null;
@@ -139,7 +140,7 @@ export default async function ListingDetailPage(
   const { data: listing } = await supabase
     .from('listings')
     .select(
-      '*, games(name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics)'
+      '*, games(name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics, is_expansion)'
     )
     .eq('id', id)
     .single<ListingDetailRow>();
@@ -310,6 +311,12 @@ export default async function ListingDetailPage(
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {listing.game_name}
           </h1>
+
+          {games?.is_expansion && (
+            <Alert variant="info" icon={PuzzlePiece} title="Expansion">
+              This is an expansion — it requires a base game to play.
+            </Alert>
+          )}
 
           {/* Edition details — compact icon row */}
           {(listing.version_name || listing.language || listing.publisher || listing.edition_year) && (
@@ -582,8 +589,7 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
   playerCountDisplay: string | null;
   playingTime: string | null;
 }) {
-  const primaryName = games?.name;
-  const showPrimaryName = primaryName && primaryName !== listingGameName;
+  const displayName = games?.name ?? listingGameName;
 
   return (
     <Card>
@@ -608,7 +614,7 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
       <CardBody className="space-y-3">
         {/* Game identity — same layout as expansion cards */}
         <div className="flex items-center gap-4">
-          <GameThumb src={games?.thumbnail} alt={primaryName ?? listingGameName} size="xl" />
+          <GameThumb src={games?.thumbnail} alt={displayName} size="xl" />
           <div className="flex-1 min-w-0">
             <p className="font-medium text-semantic-text-primary truncate">
               <a
@@ -617,11 +623,11 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
                 rel="noopener noreferrer"
                 className="hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
               >
-                {showPrimaryName ? primaryName : listingGameName}
+                {displayName}
               </a>
-              {(showPrimaryName || games?.yearpublished) && (
+              {games?.yearpublished && (
                 <span className="text-semantic-text-muted">
-                  {' · '}{[showPrimaryName ? listingGameName : null, games?.yearpublished].filter(Boolean).join(' · ')}
+                  {' · '}{games.yearpublished}
                 </span>
               )}
             </p>
@@ -675,7 +681,7 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
         )}
         {games?.description && (
           <ShowMoreText lines={4} className="text-sm text-semantic-text-secondary">
-            {games.description}
+            {decodeHTMLEntities(games.description)}
           </ShowMoreText>
         )}
       </CardBody>

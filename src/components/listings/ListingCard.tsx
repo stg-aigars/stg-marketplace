@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, ImageSquare, Gavel, ChatCircle } from '@phosphor-icons/react/ssr';
+import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
-import { Card, Badge } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
-import { GameTitle, GameMeta, Price } from './atoms';
+import { GameTitle, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { getConditionLabel } from '@/lib/condition-config';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition } from '@/lib/listings/types'; // kept for ListingCardProps interface
 import { FavoriteButton } from './FavoriteButton';
 
 interface ListingCardProps {
@@ -29,6 +28,8 @@ interface ListingCardProps {
   expansionCount?: number;
   /** Comment count for comment indicator */
   commentCount?: number;
+  /** Whether this listing is for an expansion (not a base game) */
+  isExpansion?: boolean;
   /** Auction fields */
   isAuction?: boolean;
   bidCount?: number;
@@ -38,11 +39,9 @@ interface ListingCardProps {
 function ListingCard({
   id,
   gameTitle,
-  gameYear,
   gameThumbnail,
   firstPhoto,
   photoCount,
-  condition,
   priceCents,
   sellerCountry,
   isFavorited,
@@ -50,12 +49,12 @@ function ListingCard({
   unavailable = false,
   expansionCount = 0,
   commentCount = 0,
+  isExpansion = false,
   isAuction = false,
   bidCount = 0,
   auctionEndAt,
 }: ListingCardProps) {
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
-  const conditionLabel = getConditionLabel(condition);
   const flagClass = getCountryFlag(sellerCountry);
   const countryName = getCountryName(sellerCountry);
 
@@ -87,14 +86,27 @@ function ListingCard({
               </span>
             </div>
           )}
-          <span className="absolute bottom-2 left-2 bg-polar-night/70 backdrop-blur-sm text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
-            {conditionLabel}
-          </span>
-          {!unavailable && photoCount !== undefined && photoCount > 0 && (
-            <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
-              <Camera size={12} />
-              {photoCount}
+          {isAuction && auctionEndAt && (
+            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 bg-polar-night/70 backdrop-blur-sm text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
+              <Gavel size={11} />
+              <AuctionCountdown endAt={auctionEndAt} overlay />
             </span>
+          )}
+          {!unavailable && (commentCount > 0 || (photoCount !== undefined && photoCount > 0)) && (
+            <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1">
+              {commentCount > 0 && (
+                <span className="flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
+                  <ChatCircle size={12} />
+                  {commentCount}
+                </span>
+              )}
+              {photoCount !== undefined && photoCount > 0 && (
+                <span className="flex items-center gap-1 bg-polar-night/70 text-snow-white px-1.5 py-0.5 rounded text-xs font-medium">
+                  <Camera size={12} />
+                  {photoCount}
+                </span>
+              )}
+            </div>
           )}
           {isFavorited !== undefined && (
             <FavoriteButton
@@ -110,17 +122,16 @@ function ListingCard({
         <div className="px-3 py-3 space-y-2">
           <div>
             <GameTitle name={gameTitle} size="md" serif clamp={2} />
-            <GameMeta year={gameYear} className="mt-0.5" />
-            {(expansionCount > 0 || commentCount > 0) && (
+            {(isExpansion || expansionCount > 0) && (
               <div className="flex items-center gap-2 text-xs text-semantic-text-muted mt-0.5">
+                {isExpansion && (
+                  <span className="inline-flex items-center gap-0.5">
+                    <PuzzlePiece size={11} />
+                    Expansion
+                  </span>
+                )}
                 {expansionCount > 0 && (
                   <span>+{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}</span>
-                )}
-                {commentCount > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    <ChatCircle size={11} />
-                    {commentCount}
-                  </span>
                 )}
               </div>
             )}
@@ -147,17 +158,6 @@ function ListingCard({
             )}
           </div>
 
-          {isAuction && (
-            <div className="flex items-center gap-1.5">
-              <Badge variant="default">
-                <Gavel size={10} className="mr-0.5" />
-                Auction
-              </Badge>
-              {auctionEndAt && (
-                <AuctionCountdown endAt={auctionEndAt} className="text-xs" />
-              )}
-            </div>
-          )}
         </div>
       </Card>
     </Link>

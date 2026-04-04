@@ -23,7 +23,7 @@ interface FavoriteRow {
     country: string;
     status: string;
     version_thumbnail: string | null;
-    games: { image: string | null };
+    games: { image: string | null; is_expansion: boolean };
   } | null;
 }
 
@@ -34,13 +34,43 @@ export default async function FavoritesPage() {
   const { data: favorites } = await supabase
     .from('favorites')
     .select(
-      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image))'
+      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image, is_expansion))'
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .returns<FavoriteRow[]>();
 
   const items = favorites ?? [];
+
+  // Fetch expansion counts and comment counts
+  const listingIds = items.map((f) => f.listing_id);
+  let expansionCounts: Record<string, number> = {};
+  let commentCounts: Record<string, number> = {};
+  if (listingIds.length > 0) {
+    const [{ data: expansions }, { data: comments }] = await Promise.all([
+      supabase
+        .from('listing_expansions')
+        .select('listing_id')
+        .in('listing_id', listingIds),
+      supabase
+        .from('listing_comments')
+        .select('listing_id')
+        .in('listing_id', listingIds),
+    ]);
+
+    if (expansions) {
+      expansionCounts = expansions.reduce((acc, e) => {
+        acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+    if (comments) {
+      commentCounts = comments.reduce((acc, c) => {
+        acc[c.listing_id] = (acc[c.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -90,6 +120,9 @@ export default async function FavoritesPage() {
                 isFavorited={true}
                 isAuthenticated={true}
                 unavailable={isUnavailable}
+                expansionCount={expansionCounts[listing.id] ?? 0}
+                commentCount={commentCounts[listing.id] ?? 0}
+                isExpansion={listing.games?.is_expansion ?? false}
               />
             );
           })}

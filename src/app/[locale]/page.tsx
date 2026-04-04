@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { getUserFavoriteIds } from '@/lib/favorites/actions';
 import { Button } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -17,20 +18,55 @@ interface RecentListingRow {
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;
-  games: { image: string | null };
+  games: { image: string | null; is_expansion: boolean };
 }
 
 export default async function HomePage() {
   const t = await getTranslations();
 
   const supabase = await createClient();
-  const { data: recentListings } = await supabase
-    .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(8)
-    .returns<RecentListingRow[]>();
+  const [{ data: recentListings }, favoriteIds, { data: { user } }] = await Promise.all([
+    supabase
+      .from('listings')
+      .select('id, game_name, game_year, condition, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(8)
+      .returns<RecentListingRow[]>(),
+    getUserFavoriteIds(),
+    supabase.auth.getUser(),
+  ]);
+  const isAuthenticated = !!user;
+
+  // Fetch expansion counts and comment counts
+  const listingIds = (recentListings ?? []).map((l) => l.id);
+  let expansionCounts: Record<string, number> = {};
+  let commentCounts: Record<string, number> = {};
+  if (listingIds.length > 0) {
+    const [{ data: expansions }, { data: comments }] = await Promise.all([
+      supabase
+        .from('listing_expansions')
+        .select('listing_id')
+        .in('listing_id', listingIds),
+      supabase
+        .from('listing_comments')
+        .select('listing_id')
+        .in('listing_id', listingIds),
+    ]);
+
+    if (expansions) {
+      expansionCounts = expansions.reduce((acc, e) => {
+        acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+    if (comments) {
+      commentCounts = comments.reduce((acc, c) => {
+        acc[c.listing_id] = (acc[c.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -95,6 +131,11 @@ export default async function HomePage() {
                 condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                isFavorited={favoriteIds.has(listing.id)}
+                isAuthenticated={isAuthenticated}
+                expansionCount={expansionCounts[listing.id] ?? 0}
+                commentCount={commentCounts[listing.id] ?? 0}
+                isExpansion={listing.games?.is_expansion ?? false}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}
