@@ -21,8 +21,8 @@ export function MobileBuyBar({ targetRef, listingId, priceCents, isReservedByMe 
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Show bar when purchase card is fully out of viewport
-        setVisible(!entry.isIntersecting);
+        const shouldShow = !entry.isIntersecting;
+        setVisible((prev) => (prev === shouldShow ? prev : shouldShow));
       },
       { threshold: 1 }
     );

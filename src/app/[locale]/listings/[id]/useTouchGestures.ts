@@ -7,26 +7,19 @@ interface UseTouchGesturesOptions {
 }
 
 interface GestureState {
-  // Pinch
   initialPinchDistance: number;
   scaleAtPinchStart: number;
-  // Pan
   lastPanX: number;
   lastPanY: number;
-  isPanning: boolean;
-  // Swipe
   swipeStartX: number;
   swipeStartY: number;
   swipeStartTime: number;
-  // Double-tap
   lastTapTime: number;
   lastTapX: number;
   lastTapY: number;
-  // Transform
   scale: number;
   translateX: number;
   translateY: number;
-  // Gesture mode
   mode: 'none' | 'pinch' | 'pan' | 'swipe';
 }
 
@@ -35,7 +28,6 @@ const INITIAL_STATE: GestureState = {
   scaleAtPinchStart: 1,
   lastPanX: 0,
   lastPanY: 0,
-  isPanning: false,
   swipeStartX: 0,
   swipeStartY: 0,
   swipeStartTime: 0,
@@ -68,12 +60,20 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+const GESTURE_STYLE = { touchAction: 'none' as const };
+
 export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseTouchGesturesOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<GestureState>({ ...INITIAL_STATE });
   const rafRef = useRef<number>(0);
   const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [isZoomed, setIsZoomed] = useState(false);
+
+  // Store swipe callbacks in refs so the touch listener effect doesn't re-run on callback identity changes
+  const onSwipeLeftRef = useRef(onSwipeLeft);
+  const onSwipeRightRef = useRef(onSwipeRight);
+  onSwipeLeftRef.current = onSwipeLeft;
+  onSwipeRightRef.current = onSwipeRight;
 
   const applyTransform = useCallback((animate = false) => {
     const el = containerRef.current;
@@ -167,7 +167,6 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
           g.mode = 'pan';
           g.lastPanX = touch.clientX;
           g.lastPanY = touch.clientY;
-          g.isPanning = false;
         } else {
           // Potential swipe
           g.mode = 'swipe';
@@ -204,7 +203,6 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
         g.lastPanY = touch.clientY;
         g.translateX += dx;
         g.translateY += dy;
-        g.isPanning = true;
 
         clampTranslate();
 
@@ -245,12 +243,12 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
       } else if (g.mode === 'swipe' && e.touches.length === 0) {
         // Check swipe
         const elapsed = Date.now() - g.swipeStartTime;
-        if (elapsed < SWIPE_MAX_TIME && onSwipeLeft && onSwipeRight) {
+        if (elapsed < SWIPE_MAX_TIME) {
           const dx = e.changedTouches[0].clientX - g.swipeStartX;
           if (dx < -SWIPE_THRESHOLD) {
-            onSwipeLeft();
+            onSwipeLeftRef.current?.();
           } else if (dx > SWIPE_THRESHOLD) {
-            onSwipeRight();
+            onSwipeRightRef.current?.();
           }
         }
         g.mode = 'none';
@@ -270,9 +268,7 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
       cancelAnimationFrame(rafRef.current);
       clearTimeout(transitionTimeoutRef.current);
     };
-  }, [onSwipeLeft, onSwipeRight, applyTransform, resetZoom, clampTranslate]);
+  }, [applyTransform, resetZoom, clampTranslate]);
 
-  const gestureStyle = { touchAction: 'none' as const };
-
-  return { containerRef, gestureStyle, isZoomed };
+  return { containerRef, gestureStyle: GESTURE_STYLE, isZoomed };
 }

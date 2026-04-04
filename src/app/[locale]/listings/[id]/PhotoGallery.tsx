@@ -207,7 +207,6 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
         )}
       </div>
 
-      {/* Lightbox — separate component so gesture hook mounts with the overlay */}
       {lightboxOpen && (
         <Lightbox
           images={images}
