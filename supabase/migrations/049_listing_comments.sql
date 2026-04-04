@@ -33,10 +33,13 @@ CREATE POLICY "Authenticated users can post comments"
 
 -- ============================================================
 -- 2. Update notification type constraint (comment.* replaces message.*)
+-- Drop old constraint first, migrate rows, then add new constraint
 -- ============================================================
 
 ALTER TABLE notifications
   DROP CONSTRAINT IF EXISTS notifications_type_check;
+
+UPDATE notifications SET type = 'comment.received' WHERE type = 'message.received';
 
 ALTER TABLE notifications
   ADD CONSTRAINT notifications_type_check
