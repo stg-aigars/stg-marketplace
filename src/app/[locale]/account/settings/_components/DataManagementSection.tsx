@@ -112,7 +112,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
           </h2>
 
           <p className="text-sm text-semantic-text-muted mb-3">
-            Download a copy of all your data including your profile, listings, orders, and messages.
+            Download a copy of all your data including your profile, listings, orders, and comments.
           </p>
           <Button
             variant="secondary"

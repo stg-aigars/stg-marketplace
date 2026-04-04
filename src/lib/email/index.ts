@@ -19,7 +19,6 @@ import { DisputeResolvedRefund } from './templates/dispute-resolved-refund';
 import { DisputeResolvedNoRefund } from './templates/dispute-resolved-no-refund';
 import { DisputeEscalated } from './templates/dispute-escalated';
 import { DisputeWithdrawn } from './templates/dispute-withdrawn';
-import { NewMessage } from './templates/new-message';
 import { OfferReceived } from './templates/offer-received';
 import { OfferCountered } from './templates/offer-countered';
 import { OfferAccepted } from './templates/offer-accepted';
@@ -293,30 +292,6 @@ export async function sendOrderDisputedToSeller(params: {
       buyerName: params.buyerName,
       reason: params.reason,
       appUrl: env.app.url,
-    }),
-  });
-}
-
-/**
- * New message notification → recipient
- */
-export async function sendNewMessageNotification(params: {
-  to: string;
-  recipientName: string;
-  senderName: string;
-  gameTitle: string;
-  messagePreview: string;
-  conversationId: string;
-}): Promise<void> {
-  await sendEmail({
-    to: params.to,
-    subject: `New message from ${params.senderName} about ${params.gameTitle}`,
-    react: React.createElement(NewMessage, {
-      recipientName: params.recipientName,
-      senderName: params.senderName,
-      gameTitle: params.gameTitle,
-      messagePreview: params.messagePreview,
-      conversationUrl: `${env.app.url}/messages/${params.conversationId}`,
     }),
   });
 }

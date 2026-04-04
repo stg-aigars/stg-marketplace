@@ -24,6 +24,9 @@ import { ReservationCountdown } from '@/components/listings/ReservationCountdown
 import { AddToCartButton } from '@/components/listings/AddToCartButton';
 import { GameThumb, GameIdentityRow } from '@/components/listings/atoms';
 import { OwnerActions } from './OwnerActions';
+import { getComments } from '@/lib/comments/actions';
+import { CommentList } from '@/components/comments/CommentList';
+import { CommentForm } from '@/components/comments/CommentForm';
 
 interface ListingDetailRow {
   id: string;
@@ -169,8 +172,8 @@ export default async function ListingDetailPage(
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating, completed sales, listing expansions, and buyer country in parallel
-  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerCountryResult] = await Promise.all([
+  // Fetch seller rating, completed sales, listing expansions, buyer profile, and comments in parallel
+  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerProfileResult, comments] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
     supabase
@@ -178,11 +181,14 @@ export default async function ListingDetailPage(
       .select('bgg_game_id, game_name, version_name, publisher, language, edition_year, games(thumbnail)')
       .eq('listing_id', id)
       .order('created_at'),
-    // Fetch buyer country for shipping estimate (only if signed in and not the owner)
-    user && !isOwner
-      ? supabase.from('user_profiles').select('country').eq('id', user.id).single<{ country: string }>()
+    // Single query for buyer's country + staff flag (avoids two round-trips to user_profiles)
+    user
+      ? supabase.from('user_profiles').select('country, is_staff').eq('id', user.id).single<{ country: string; is_staff: boolean }>()
       : Promise.resolve({ data: null }),
+    getComments(id, listing.seller_id),
   ]);
+
+  const isStaff = buyerProfileResult?.data?.is_staff ?? false;
 
   const isAuction = listing.listing_type === 'auction';
 
@@ -221,7 +227,7 @@ export default async function ListingDetailPage(
 
   // Shipping price calculation
   const sellerCountry = listing.country;
-  const buyerCountry = buyerCountryResult?.data?.country ?? null;
+  const buyerCountry = !isOwner ? (buyerProfileResult?.data?.country ?? null) : null;
   let shippingCents: number | null = null;
   let shippingFromCents: number | null = null;
 
@@ -336,7 +342,8 @@ export default async function ListingDetailPage(
           )}
 
           {/* Price & action */}
-          <div className="rounded-lg border border-semantic-border-subtle p-4 space-y-3">
+          <Card>
+          <CardBody className="space-y-3">
             <div className="flex items-center gap-2">
               {isAuction ? (
                 <Badge variant="auction">Auction</Badge>
@@ -412,7 +419,8 @@ export default async function ListingDetailPage(
                 />
               </div>
             )}
-          </div>
+          </CardBody>
+          </Card>
 
           {/* Included expansions */}
           {listingExpansions && expansionCount > 0 && (
@@ -449,22 +457,24 @@ export default async function ListingDetailPage(
           )}
 
           {/* Condition & notes */}
-          <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
-              Condition & notes
-            </h2>
-            <div className="flex items-center gap-3">
-              <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
-              <span className="text-sm text-semantic-text-muted">
-                {conditionInfo.description}
-              </span>
-            </div>
-            {listing.description && (
-              <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
-                {listing.description}
-              </p>
-            )}
-          </div>
+          <Card>
+            <CardBody>
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+                Condition & notes
+              </h2>
+              <div className="flex items-center gap-3">
+                <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
+                <span className="text-sm text-semantic-text-muted">
+                  {conditionInfo.description}
+                </span>
+              </div>
+              {listing.description && (
+                <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
+                  {listing.description}
+                </p>
+              )}
+            </CardBody>
+          </Card>
 
           {/* Seller info */}
           <Card>
@@ -527,6 +537,25 @@ export default async function ListingDetailPage(
               />
             )}
           </div>
+
+          {/* Comments — hide entirely for anonymous users when empty */}
+          {(comments.length > 0 || user) && (
+            <section id="comments">
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                Comments{comments.length > 0 ? ` (${comments.length})` : ''}
+              </h2>
+              <Card>
+                <CardBody>
+                  <CommentList comments={comments} isStaff={isStaff} locale={locale} />
+                </CardBody>
+                {user && (
+                  <div className="border-t border-semantic-border-subtle px-4 py-3 sm:px-5">
+                    <CommentForm listingId={id} />
+                  </div>
+                )}
+              </Card>
+            </section>
+          )}
 
           {/* Game details — mobile only (desktop copy is in the left column) */}
           {hasGameDetails && (
