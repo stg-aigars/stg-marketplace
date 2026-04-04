@@ -163,18 +163,31 @@ export default async function BrowsePage(
   ]);
   const isAuthenticated = !!user;
 
-  // Fetch expansion counts for listed games
+  // Fetch expansion counts and comment counts for listed games
   const listingIds = (listings ?? []).map((l) => l.id);
   let expansionCounts: Record<string, number> = {};
+  let commentCounts: Record<string, number> = {};
   if (listingIds.length > 0) {
-    const { data: expansions } = await supabase
-      .from('listing_expansions')
-      .select('listing_id')
-      .in('listing_id', listingIds);
+    const [{ data: expansions }, { data: comments }] = await Promise.all([
+      supabase
+        .from('listing_expansions')
+        .select('listing_id')
+        .in('listing_id', listingIds),
+      supabase
+        .from('listing_comments')
+        .select('listing_id')
+        .in('listing_id', listingIds),
+    ]);
 
     if (expansions) {
       expansionCounts = expansions.reduce((acc, e) => {
         acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+    if (comments) {
+      commentCounts = comments.reduce((acc, c) => {
+        acc[c.listing_id] = (acc[c.listing_id] ?? 0) + 1;
         return acc;
       }, {} as Record<string, number>);
     }
@@ -233,6 +246,7 @@ export default async function BrowsePage(
                 isFavorited={favoriteIds.has(listing.id)}
                 isAuthenticated={isAuthenticated}
                 expansionCount={expansionCounts[listing.id] ?? 0}
+                commentCount={commentCounts[listing.id] ?? 0}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}

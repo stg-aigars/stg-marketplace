@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThumbsUp, ThumbsDown } from '@phosphor-icons/react/ssr';
-import { Alert, Button } from '@/components/ui';
+import { Alert, Button, Textarea } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { REVIEW_MAX_COMMENT_LENGTH } from '@/lib/reviews/constants';
 import type { ReviewRow } from '@/lib/reviews/types';
@@ -110,13 +110,12 @@ export function ReviewForm({ orderId, sellerId, sellerName }: ReviewFormProps) {
       {/* Comment textarea */}
       {isPositive !== null && (
         <div>
-          <textarea
+          <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             maxLength={REVIEW_MAX_COMMENT_LENGTH}
             placeholder="Share your experience with other buyers (optional)"
             rows={3}
-            className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-primary px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           <p className="mt-1 text-xs text-semantic-text-muted text-right">
             {comment.length}/{REVIEW_MAX_COMMENT_LENGTH}

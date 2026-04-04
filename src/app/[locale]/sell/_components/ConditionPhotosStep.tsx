@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Card, CardBody } from '@/components/ui';
+import { Card, CardBody, Textarea } from '@/components/ui';
 import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
@@ -103,7 +103,7 @@ export function ConditionPhotosStep({
             <p className="text-sm font-semibold text-semantic-text-secondary mb-3">
               3. {notesLabel}{descriptionRequired && <span className="text-semantic-error"> *</span>}
             </p>
-            <textarea
+            <Textarea
               id="listing-description"
               value={description}
               onChange={(e) => {
@@ -113,7 +113,6 @@ export function ConditionPhotosStep({
               }}
               placeholder="Describe any wear, missing components, or other details about the game's condition"
               rows={4}
-              className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
             />
             <div className="flex justify-between mt-1">
               {descriptionRequired && (

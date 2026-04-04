@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Modal } from '@/components/ui';
+import { Alert, Button, Modal, Textarea } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 
@@ -49,22 +49,14 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <label
-          htmlFor="staff-notes"
-          className="block text-sm font-medium text-semantic-text-secondary mb-1"
-        >
-          Staff notes (optional)
-        </label>
-        <textarea
-          id="staff-notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          placeholder="Internal notes about the resolution decision..."
-          className="w-full px-3 py-2 text-sm rounded-lg border border-semantic-border-subtle bg-semantic-bg-primary text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
-        />
-      </div>
+      <Textarea
+        id="staff-notes"
+        label="Staff notes (optional)"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={3}
+        placeholder="Internal notes about the resolution decision..."
+      />
 
       <div className="flex gap-3">
         <Button

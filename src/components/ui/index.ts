@@ -16,6 +16,9 @@ export type { PhoneInputProps } from './PhoneInput';
 export { Select } from './select';
 export type { SelectProps, SelectOption } from './select';
 
+export { Textarea } from './textarea';
+export type { TextareaProps } from './textarea';
+
 export { Modal } from './modal';
 export type { ModalProps } from './modal';
 

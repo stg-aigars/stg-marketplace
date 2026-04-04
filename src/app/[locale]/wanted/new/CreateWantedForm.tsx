@@ -2,7 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Button, Input, Select, Alert, TurnstileWidget } from '@/components/ui';
+import { Card, CardBody, Button, Input, Select, Alert, Textarea, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { GameSearchStep, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { LISTING_CONDITIONS, conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -103,15 +103,12 @@ export function CreateWantedForm() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-semantic-text-primary mb-1">
-                Notes (optional)
-              </label>
-              <textarea
+              <Textarea
+                label="Notes (optional)"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={500}
                 rows={3}
-                className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-elevated px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand"
                 placeholder="Preferred language, edition, or anything else sellers should know"
               />
               <p className="text-xs text-semantic-text-muted mt-1">

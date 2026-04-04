@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, TurnstileWidget } from '@/components/ui';
+import { Button, Textarea, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { postComment } from '@/lib/comments/actions';
 import { MAX_COMMENT_LENGTH } from '@/lib/comments/types';
@@ -44,13 +44,12 @@ export function CommentForm({ listingId }: CommentFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <textarea
+      <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Ask a question or leave a comment..."
         maxLength={MAX_COMMENT_LENGTH}
         rows={2}
-        className="w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
       />
       <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
       {error && (

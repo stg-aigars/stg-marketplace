@@ -68,10 +68,7 @@ export interface NotificationContext {
   orderId?: string;
   offerId?: string;
   listingId?: string;
-  conversationId?: string;
-  senderName?: string;
   commenterName?: string;
-  commentId?: string;
   buyerName?: string;
   sellerName?: string;
   reason?: string;

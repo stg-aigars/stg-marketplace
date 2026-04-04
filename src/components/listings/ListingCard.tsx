@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, ImageSquare, Gavel } from '@phosphor-icons/react/ssr';
+import { Camera, ImageSquare, Gavel, ChatCircle } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
@@ -27,6 +27,8 @@ interface ListingCardProps {
   unavailable?: boolean;
   /** Expansion count for "+N expansions" badge */
   expansionCount?: number;
+  /** Comment count for comment indicator */
+  commentCount?: number;
   /** Auction fields */
   isAuction?: boolean;
   bidCount?: number;
@@ -47,6 +49,7 @@ function ListingCard({
   isAuthenticated = false,
   unavailable = false,
   expansionCount = 0,
+  commentCount = 0,
   isAuction = false,
   bidCount = 0,
   auctionEndAt,
@@ -108,10 +111,18 @@ function ListingCard({
           <div>
             <GameTitle name={gameTitle} size="md" serif clamp={2} />
             <GameMeta year={gameYear} className="mt-0.5" />
-            {expansionCount > 0 && (
-              <p className="text-xs text-semantic-text-muted mt-0.5">
-                +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
-              </p>
+            {(expansionCount > 0 || commentCount > 0) && (
+              <div className="flex items-center gap-2 text-xs text-semantic-text-muted mt-0.5">
+                {expansionCount > 0 && (
+                  <span>+{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}</span>
+                )}
+                {commentCount > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <ChatCircle size={11} />
+                    {commentCount}
+                  </span>
+                )}
+              </div>
             )}
           </div>
 

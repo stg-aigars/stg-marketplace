@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Input, Select } from '@/components/ui';
+import { Input, Select, Textarea } from '@/components/ui';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { MIN_PRICE_CENTS, MAX_DESCRIPTION_LENGTH, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -172,7 +172,7 @@ export function PriceStep({
             <span className="font-normal text-semantic-text-muted">(optional)</span>
           )}
         </label>
-        <textarea
+        <Textarea
           id="listing-description"
           value={description}
           onChange={(e) => {
@@ -182,7 +182,6 @@ export function PriceStep({
           }}
           placeholder="Describe your copy — missing components, notable wear, or anything a buyer should know"
           rows={4}
-          className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
         />
         <p className="mt-1 text-xs text-semantic-text-muted text-right">
           {description.length}/{MAX_DESCRIPTION_LENGTH}

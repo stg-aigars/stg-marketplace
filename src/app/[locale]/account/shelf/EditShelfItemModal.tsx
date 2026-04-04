@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Button, Select } from '@/components/ui';
+import { Modal, Button, Select, Textarea } from '@/components/ui';
 import { updateShelfItem } from '@/lib/shelves/actions';
 import type { ShelfItemWithGame, ShelfVisibility } from '@/lib/shelves/types';
 import { MAX_NOTE_LENGTH, SHELF_VISIBILITY_OPTIONS } from '@/lib/shelves/types';
@@ -66,16 +66,13 @@ export function EditShelfItemModal({ item, open, onClose, onUpdated }: EditShelf
         />
 
         <div>
-          <label className="block text-sm font-medium text-semantic-text-primary mb-1.5">
-            Notes <span className="text-semantic-text-muted font-normal">(optional)</span>
-          </label>
-          <textarea
+          <Textarea
+            label="Notes (optional)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             maxLength={MAX_NOTE_LENGTH}
             rows={3}
             placeholder="Condition details, language, edition..."
-            className="block w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           <p className="mt-1 text-xs text-semantic-text-muted text-right">
             {notes.length}/{MAX_NOTE_LENGTH}
