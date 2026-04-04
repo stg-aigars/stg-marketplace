@@ -558,6 +558,24 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
 
   return (
     <Card>
+      {/* BGG attribution */}
+      <div className="border-b border-semantic-border-subtle px-4 py-3">
+        <a
+          href={`https://boardgamegeek.com/boardgame/${bggGameId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block opacity-60 hover:opacity-100 transition-opacity duration-250 ease-out-custom"
+        >
+          <Image
+            src="/images/powered-by-bgg.svg"
+            alt="Powered by BoardGameGeek"
+            width={120}
+            height={28}
+            className="h-auto w-auto"
+            unoptimized
+          />
+        </a>
+      </div>
       <CardBody className="space-y-3">
         {/* Game identity — same layout as expansion cards */}
         <div className="flex items-center gap-4">
@@ -625,24 +643,6 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
           </ShowMoreText>
         )}
       </CardBody>
-      {/* BGG attribution */}
-      <div className="border-t border-semantic-border-subtle px-4 py-3">
-        <a
-          href={`https://boardgamegeek.com/boardgame/${bggGameId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block opacity-60 hover:opacity-100 transition-opacity duration-250 ease-out-custom"
-        >
-          <Image
-            src="/images/powered-by-bgg.svg"
-            alt="Powered by BoardGameGeek"
-            width={120}
-            height={28}
-            className="h-auto w-auto"
-            unoptimized
-          />
-        </a>
-      </div>
     </Card>
   );
 }
