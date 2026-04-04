@@ -537,14 +537,24 @@ export default async function ListingDetailPage(
             )}
           </div>
 
-          {/* Comments */}
-          <section id="comments" className="space-y-4">
-            <h2 className="text-base font-semibold text-semantic-text-heading">
-              Comments{comments.length > 0 ? ` (${comments.length})` : ''}
-            </h2>
-            <CommentList comments={comments} isStaff={isStaff} />
-            <CommentForm listingId={id} isAuthenticated={!!user} />
-          </section>
+          {/* Comments — hide entirely for anonymous users when empty */}
+          {(comments.length > 0 || user) && (
+            <section id="comments">
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                Comments{comments.length > 0 ? ` (${comments.length})` : ''}
+              </h2>
+              <Card>
+                <CardBody className="space-y-0">
+                  <CommentList comments={comments} isStaff={isStaff} locale={locale} />
+                </CardBody>
+                {user && (
+                  <div className="border-t border-semantic-border-subtle px-4 py-3 sm:px-5">
+                    <CommentForm listingId={id} isAuthenticated={!!user} />
+                  </div>
+                )}
+              </Card>
+            </section>
+          )}
 
           {/* Game details — mobile only (desktop copy is in the left column) */}
           {hasGameDetails && (
