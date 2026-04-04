@@ -561,7 +561,7 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
       {/* BGG attribution */}
       <div className="border-b border-semantic-border-subtle px-4 py-3">
         <a
-          href={`https://boardgamegeek.com/boardgame/${bggGameId}`}
+          href="https://boardgamegeek.com"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block opacity-60 hover:opacity-100 transition-opacity duration-250 ease-out-custom"
@@ -571,7 +571,7 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
             alt="Powered by BoardGameGeek"
             width={120}
             height={28}
-            className="h-auto w-auto"
+            className="h-7 w-auto"
             unoptimized
           />
         </a>
@@ -582,7 +582,14 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
           <GameThumb src={games?.thumbnail} alt={primaryName ?? listingGameName} size="xl" />
           <div className="flex-1 min-w-0">
             <p className="font-medium text-semantic-text-primary truncate">
-              {showPrimaryName ? primaryName : listingGameName}
+              <a
+                href={`https://boardgamegeek.com/boardgame/${bggGameId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+              >
+                {showPrimaryName ? primaryName : listingGameName}
+              </a>
               {(showPrimaryName || games?.yearpublished) && (
                 <span className="text-semantic-text-muted">
                   {' · '}{[showPrimaryName ? listingGameName : null, games?.yearpublished].filter(Boolean).join(' · ')}
