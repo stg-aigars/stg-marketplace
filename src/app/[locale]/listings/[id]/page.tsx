@@ -638,7 +638,7 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
             alt="Powered by BoardGameGeek"
             width={120}
             height={28}
-            className="h-auto"
+            className="h-auto w-auto"
             unoptimized
           />
         </a>

@@ -79,12 +79,16 @@ export async function POST(request: NextRequest) {
       });
 
       if (upsertRows.length > 0) {
-        void serviceClient
-          .from('games')
-          .upsert(upsertRows, { onConflict: 'id' })
-          .then(({ error }) => {
-            if (error) console.error('Failed to persist thumbnails:', error);
-          });
+        // Update only — don't upsert, since games not in the table lack required fields (name)
+        const updates = upsertRows.map((row) =>
+          serviceClient
+            .from('games')
+            .update({ thumbnail: row.thumbnail, image: row.image, updated_at: row.updated_at })
+            .eq('id', row.id)
+        );
+        void Promise.all(updates).catch((err) =>
+          console.error('Failed to persist thumbnails:', err)
+        );
       }
     } catch (err) {
       console.error('Unexpected error fetching BGG thumbnails:', err);
