@@ -195,7 +195,7 @@ export function CartCheckoutForm({
                     <div key={item.listingId} className="flex items-center gap-3 py-2">
                       <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-semantic-bg-secondary">
                         {item.gameThumbnail ? (
-                          <Image src={item.gameThumbnail} alt={item.gameTitle} fill className="object-cover" sizes="40px" />
+                          <Image src={item.gameThumbnail} alt={item.gameTitle} fill className="object-contain" sizes="40px" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <ShoppingCart size={16} className="text-semantic-text-tertiary" />

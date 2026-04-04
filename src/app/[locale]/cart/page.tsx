@@ -182,7 +182,7 @@ export default function CartPage() {
                               src={item.gameThumbnail}
                               alt={item.gameTitle}
                               fill
-                              className="object-cover"
+                              className="object-contain"
                               sizes="64px"
                             />
                           ) : (

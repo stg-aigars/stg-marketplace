@@ -30,7 +30,7 @@ function GameThumb({ src, alt, size = 'md', className = '' }: GameThumbProps) {
           alt={alt}
           width={px}
           height={px}
-          className={`w-full h-full ${isBGG ? 'object-contain' : 'object-cover'}`}
+          className="w-full h-full object-contain"
           unoptimized={isBGG}
         />
       ) : (
