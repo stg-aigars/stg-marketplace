@@ -37,9 +37,11 @@ export function OrderTabs({ purchases, sales }: OrderTabsProps) {
               ? 'No purchases yet. Browse pre-loved games to find your next favourite.'
               : 'No sales yet. List a game to start selling.'}
           </p>
-          <Link href={activeTab === 'purchases' ? '/browse' : '/sell'} className="inline-block mt-4">
-            <Button>{activeTab === 'purchases' ? 'Browse games' : 'List a game'}</Button>
-          </Link>
+          <Button asChild>
+            <Link href={activeTab === 'purchases' ? '/browse' : '/sell'} className="inline-block mt-4">
+              {activeTab === 'purchases' ? 'Browse games' : 'List a game'}
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">

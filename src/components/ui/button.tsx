@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { forwardRef, isValidElement, cloneElement, type ButtonHTMLAttributes, type ReactElement } from 'react';
 import { Spinner } from './spinner';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -8,6 +8,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  /** Render styling on the child element instead of wrapping in a <button>.
+   *  Use with <Link> to avoid nested interactive elements (<a> inside <button>). */
+  asChild?: boolean;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -27,13 +30,23 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: 'min-h-[48px] px-6 py-3 text-base rounded-lg w-full sm:w-auto',
 };
 
+const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-250 ease-out-custom active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50';
+
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', loading, disabled, className = '', children, ...props }, ref) => {
+  ({ variant = 'primary', size = 'md', loading, disabled, className = '', children, asChild, ...props }, ref) => {
+    const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+
+    if (asChild && isValidElement(children)) {
+      return cloneElement(children as ReactElement<Record<string, unknown>>, {
+        className: `${classes} ${(children.props as { className?: string }).className ?? ''}`.trim(),
+      });
+    }
+
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center font-medium transition-all duration-250 ease-out-custom active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+        className={classes}
         {...props}
       >
         {loading ? (

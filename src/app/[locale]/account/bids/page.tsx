@@ -108,9 +108,9 @@ function BidSection({ title, bids, userId }: {
                       <Badge variant="warning">Outbid</Badge>
                     )}
                     {needsPayment && (
-                      <Link href={`/checkout/auction/${bid.listing_id}`}>
-                        <Button size="sm">Pay now</Button>
-                      </Link>
+                      <Button size="sm" asChild>
+                        <Link href={`/checkout/auction/${bid.listing_id}`}>Pay now</Link>
+                      </Button>
                     )}
                     {!isActive && isWinner && bid.listing_status === 'sold' && (
                       <Badge variant="success">Won</Badge>

@@ -55,12 +55,12 @@ export default async function HomePage() {
           {t('home.heroSub')}
         </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/browse">
-            <Button size="lg">{t('home.browseCta')}</Button>
-          </Link>
-          <Link href="/sell">
-            <Button size="lg" variant="secondary">{t('home.sellCta')}</Button>
-          </Link>
+          <Button size="lg" asChild>
+            <Link href="/browse">{t('home.browseCta')}</Link>
+          </Button>
+          <Button size="lg" variant="secondary" asChild>
+            <Link href="/sell">{t('home.sellCta')}</Link>
+          </Button>
         </div>
         <div className="mt-8 flex items-center justify-center gap-6 sm:gap-10 text-sm text-semantic-text-muted">
           <div>

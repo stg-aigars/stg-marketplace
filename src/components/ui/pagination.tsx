@@ -51,9 +51,9 @@ function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, c
       </p>
       <div className="flex items-center gap-1">
         {currentPage > 1 ? (
-          <Link href={buildUrl(currentPage - 1)}>
-            <Button variant="secondary" size="sm">Previous</Button>
-          </Link>
+          <Button variant="secondary" size="sm" asChild>
+            <Link href={buildUrl(currentPage - 1)}>Previous</Link>
+          </Button>
         ) : (
           <Button variant="secondary" size="sm" disabled>Previous</Button>
         )}
@@ -74,15 +74,15 @@ function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, c
                 {page}
               </Button>
             ) : (
-              <Link key={page} href={buildUrl(page)}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="min-w-[44px]"
-                >
-                  {page}
-                </Button>
-              </Link>
+              <Button
+                key={page}
+                variant="ghost"
+                size="sm"
+                className="min-w-[44px]"
+                asChild
+              >
+                <Link href={buildUrl(page)}>{page}</Link>
+              </Button>
             )
           )}
         </div>
@@ -92,9 +92,9 @@ function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, c
         </span>
 
         {currentPage < totalPages ? (
-          <Link href={buildUrl(currentPage + 1)}>
-            <Button variant="secondary" size="sm">Next</Button>
-          </Link>
+          <Button variant="secondary" size="sm" asChild>
+            <Link href={buildUrl(currentPage + 1)}>Next</Link>
+          </Button>
         ) : (
           <Button variant="secondary" size="sm" disabled>Next</Button>
         )}
