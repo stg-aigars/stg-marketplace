@@ -25,6 +25,16 @@ Sentry.init({
     if (event.exception?.values?.some((e) => e.type === 'NEXT_NOT_FOUND')) {
       return null;
     }
+
+    // Filter out transient CDN load failures (external network issues, not bugs)
+    if (
+      event.exception?.values?.some(
+        (e) => e.type === 'TypeError' && e.value?.includes('Load failed')
+      )
+    ) {
+      return null;
+    }
+
     return event;
   },
 });
