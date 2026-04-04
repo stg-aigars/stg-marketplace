@@ -30,9 +30,10 @@ interface RelatedListingsProps {
   sellerId: string;
   gameName: string;
   sellerName: string | null;
+  isOwner: boolean;
 }
 
-export async function RelatedListings({ listingId, bggGameId, sellerId, gameName, sellerName }: RelatedListingsProps) {
+export async function RelatedListings({ listingId, bggGameId, sellerId, gameName, sellerName, isOwner }: RelatedListingsProps) {
   const supabase = await createClient();
 
   const [{ data: copies }, { data: sellerListings }, favoriteIds, { data: { user } }] =
@@ -63,6 +64,8 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
   const copiesList = copies ?? [];
   const sellerList = sellerListings ?? [];
 
+  if (copiesList.length === 0 && sellerList.length === 0 && isOwner) return null;
+
   const allIds = [...new Set([...copiesList, ...sellerList].map((l) => l.id))];
   const { expansionCounts, commentCounts } = await getListingCardCounts(supabase, allIds);
   const isAuthenticated = !!user;
@@ -92,15 +95,17 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
           commentCounts={commentCounts}
         />
       )}
-      <div className={`flex items-center justify-center ${hasSections ? 'pt-2' : ''} pb-2`}>
-        <Link
-          href="/sell"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-semantic-brand hover:underline transition-colors duration-250 ease-out-custom"
-        >
-          Have this game? List it now
-          <ArrowRight size={16} weight="bold" />
-        </Link>
-      </div>
+      {!isOwner && (
+        <div className={`flex items-center justify-center ${hasSections ? 'pt-2' : ''} pb-2`}>
+          <Link
+            href="/sell"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-semantic-brand hover:underline transition-colors duration-250 ease-out-custom"
+          >
+            Have this game? List it now
+            <ArrowRight size={16} weight="bold" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

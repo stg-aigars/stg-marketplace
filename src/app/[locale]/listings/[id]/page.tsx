@@ -595,6 +595,7 @@ export default async function ListingDetailPage(
         sellerId={listing.seller_id}
         gameName={games?.name ?? listing.game_name}
         sellerName={sellerProfile?.full_name ?? null}
+        isOwner={isOwner}
       />
     </div>
   );
