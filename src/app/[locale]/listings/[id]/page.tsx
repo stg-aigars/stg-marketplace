@@ -313,7 +313,7 @@ export default async function ListingDetailPage(
           </h1>
 
           {games?.is_expansion && (
-            <Alert variant="info" title="Expansion">
+            <Alert variant="info">
               This is an expansion — it requires a base game to play.
             </Alert>
           )}
