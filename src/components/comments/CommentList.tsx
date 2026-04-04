@@ -1,8 +1,13 @@
+'use client';
+
+import { useState } from 'react';
 import { ChatCircleDots } from '@phosphor-icons/react/ssr';
 import { Avatar, Badge } from '@/components/ui';
 import { formatMessageTime } from '@/lib/date-utils';
 import { DeleteCommentButton } from './DeleteCommentButton';
 import type { ListingComment } from '@/lib/comments/types';
+
+const INITIAL_VISIBLE = 5;
 
 interface CommentListProps {
   comments: ListingComment[];
@@ -11,6 +16,8 @@ interface CommentListProps {
 }
 
 export function CommentList({ comments, isStaff, locale }: CommentListProps) {
+  const [expanded, setExpanded] = useState(false);
+
   if (comments.length === 0) {
     return (
       <div className="text-center py-6">
@@ -22,10 +29,24 @@ export function CommentList({ comments, isStaff, locale }: CommentListProps) {
     );
   }
 
+  const hasMore = comments.length > INITIAL_VISIBLE;
+  const visible = expanded ? comments : comments.slice(-INITIAL_VISIBLE);
+
   return (
     <div className="divide-y divide-semantic-border-subtle">
-      {comments.map((comment) => (
-        <div key={comment.id} className="py-3 first:pt-0 last:pb-0">
+      {hasMore && !expanded && (
+        <div className="pb-3">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="text-sm text-semantic-brand font-medium cursor-pointer"
+          >
+            Show all {comments.length} comments
+          </button>
+        </div>
+      )}
+      {visible.map((comment) => (
+        <div key={comment.id} className="py-3 last:pb-0">
           <div className="flex items-center gap-2 mb-1.5">
             <Avatar name={comment.author_name ?? '?'} size="sm" />
             <span className="text-sm font-medium text-semantic-text-heading truncate">

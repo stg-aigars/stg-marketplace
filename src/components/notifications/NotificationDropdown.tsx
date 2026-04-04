@@ -89,7 +89,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-80 max-h-[28rem] rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg overflow-hidden z-50">
+        <div className="absolute right-0 mt-1 w-96 max-h-[28rem] rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg overflow-hidden z-50">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-semantic-border-subtle">
             <h3 className="text-sm font-semibold text-semantic-text-heading">Notifications</h3>
             {unreadCount > 0 && (

@@ -62,7 +62,7 @@ export function CommentForm({ listingId, isAuthenticated }: CommentFormProps) {
         onChange={(e) => setContent(e.target.value)}
         placeholder="Ask a question or leave a comment..."
         maxLength={MAX_COMMENT_LENGTH}
-        rows={3}
+        rows={2}
         className="w-full rounded-lg border border-semantic-border-default px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-elevated placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
       />
       <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />

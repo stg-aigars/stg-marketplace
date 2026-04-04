@@ -345,7 +345,8 @@ export default async function ListingDetailPage(
           )}
 
           {/* Price & action */}
-          <div className="rounded-lg border border-semantic-border-subtle p-4 space-y-3">
+          <Card>
+          <CardBody className="space-y-3">
             <div className="flex items-center gap-2">
               {isAuction ? (
                 <Badge variant="auction">Auction</Badge>
@@ -421,7 +422,8 @@ export default async function ListingDetailPage(
                 />
               </div>
             )}
-          </div>
+          </CardBody>
+          </Card>
 
           {/* Included expansions */}
           {listingExpansions && expansionCount > 0 && (
@@ -458,22 +460,24 @@ export default async function ListingDetailPage(
           )}
 
           {/* Condition & notes */}
-          <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
-              Condition & notes
-            </h2>
-            <div className="flex items-center gap-3">
-              <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
-              <span className="text-sm text-semantic-text-muted">
-                {conditionInfo.description}
-              </span>
-            </div>
-            {listing.description && (
-              <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
-                {listing.description}
-              </p>
-            )}
-          </div>
+          <Card>
+            <CardBody>
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+                Condition & notes
+              </h2>
+              <div className="flex items-center gap-3">
+                <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
+                <span className="text-sm text-semantic-text-muted">
+                  {conditionInfo.description}
+                </span>
+              </div>
+              {listing.description && (
+                <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
+                  {listing.description}
+                </p>
+              )}
+            </CardBody>
+          </Card>
 
           {/* Seller info */}
           <Card>
