@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   const { data: games } = await supabase
     .from('games')
-    .select('id, thumbnail, image, alternate_names, metadata_fetched_at')
+    .select('id, name, thumbnail, image, alternate_names, metadata_fetched_at')
     .in('id', validIds);
 
   if (!games) {
@@ -64,9 +64,11 @@ export async function POST(request: NextRequest) {
       const batchData = await fetchBatchMetadata(missingIds);
 
       const service = createServiceClient();
+      const gamesById = new Map(games.map((g) => [g.id, g]));
       const upsertRows = Array.from(batchData.entries()).map(
         ([gameId, data]: [number, GameMetadataUpdate]) => ({
           id: gameId,
+          name: gamesById.get(gameId)?.name ?? `Game ${gameId}`,
           thumbnail: data.thumbnail,
           image: data.image,
           alternate_names: data.alternate_names,
@@ -88,7 +90,10 @@ export async function POST(request: NextRequest) {
       );
 
       if (upsertRows.length > 0) {
-        await service.from('games').upsert(upsertRows, { onConflict: 'id' });
+        const { error: upsertError } = await service.from('games').upsert(upsertRows, { onConflict: 'id' });
+        if (upsertError) {
+          console.error('[enrich-batch] Failed to save metadata:', upsertError.message);
+        }
       }
 
       // Merge fetched data into response
