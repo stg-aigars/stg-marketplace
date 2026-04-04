@@ -2,7 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Modal, Button, Input, Select, Alert, TurnstileWidget } from '@/components/ui';
+import { Modal, Button, Input, Select, Alert, Textarea, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { conditionToBadgeKey } from '@/lib/listings/types';
@@ -100,19 +100,14 @@ export function MakeWantedOfferModal({
           placeholder={maxPriceCents ? `Budget: up to ${(maxPriceCents / 100).toFixed(2)}` : 'Your price'}
         />
 
-        <div>
-          <label className="block text-sm font-medium text-semantic-text-primary mb-1">
-            Note (optional)
-          </label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={500}
-            rows={3}
-            className="w-full rounded-lg border border-semantic-border-default bg-semantic-bg-elevated px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand"
-            placeholder="Edition details, shipping preferences, etc."
-          />
-        </div>
+        <Textarea
+          label="Note (optional)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={500}
+          rows={3}
+          placeholder="Edition details, shipping preferences, etc."
+        />
 
         <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 

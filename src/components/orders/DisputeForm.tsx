@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { X } from '@phosphor-icons/react/ssr';
-import { Button, Modal } from '@/components/ui';
+import { Button, Modal, Textarea } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
 
@@ -102,19 +102,13 @@ export function DisputeForm({ orderId, onClose, open }: DisputeFormProps) {
       <div className="space-y-4">
         {/* Reason textarea */}
         <div>
-          <label
-            htmlFor="dispute-reason"
-            className="block text-sm font-medium text-semantic-text-primary mb-1"
-          >
-            Describe the issue
-          </label>
-          <textarea
+          <Textarea
             id="dispute-reason"
+            label="Describe the issue"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Please describe what is wrong with the item you received..."
             rows={4}
-            className="w-full rounded-lg border border-semantic-border-subtle bg-semantic-bg-subtle px-3 py-2 text-sm text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand resize-none"
           />
           {reason.length > 0 && reason.trim().length < 10 && (
             <p className="text-xs text-semantic-text-muted mt-1">

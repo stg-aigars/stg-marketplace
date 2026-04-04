@@ -77,25 +77,59 @@ export async function postComment(
     if (!isSeller) {
       void notify(listing.seller_id, 'comment.received', notificationContext);
     } else {
-      // TODO: dedup guard — skip notifying commenters who were already notified
-      // since their last comment (prevents noise from consecutive seller replies)
+      // Seller replied — notify previous commenters, but only those who commented
+      // after their last notification for this listing (dedup consecutive seller replies)
       const serviceClient = createServiceClient();
-      const { data: previousCommenters } = await serviceClient
-        .from('listing_comments')
-        .select('user_id')
-        .eq('listing_id', listingId)
-        .not('user_id', 'is', null)
-        .neq('user_id', user.id);
+      const [{ data: previousComments }, { data: existingNotifications }] = await Promise.all([
+        serviceClient
+          .from('listing_comments')
+          .select('user_id, created_at')
+          .eq('listing_id', listingId)
+          .not('user_id', 'is', null)
+          .neq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        serviceClient
+          .from('notifications')
+          .select('user_id, created_at')
+          .eq('type', 'comment.received')
+          .eq('metadata->>listingId', listingId)
+          .order('created_at', { ascending: false }),
+      ]);
 
-      if (previousCommenters && previousCommenters.length > 0) {
-        const uniqueUserIds = [...new Set(previousCommenters.map((c) => c.user_id as string))];
-        void notifyMany(
-          uniqueUserIds.map((userId) => ({
-            userId,
-            type: 'comment.received' as const,
-            context: notificationContext,
-          }))
-        );
+      if (previousComments && previousComments.length > 0) {
+        // Build map of each user's latest comment on this listing
+        const lastCommentByUser = new Map<string, string>();
+        for (const c of previousComments) {
+          const uid = c.user_id as string;
+          if (!lastCommentByUser.has(uid)) lastCommentByUser.set(uid, c.created_at);
+        }
+
+        // Build map of each user's latest notification for this listing
+        const lastNotifByUser = new Map<string, string>();
+        if (existingNotifications) {
+          for (const n of existingNotifications) {
+            const uid = n.user_id as string;
+            if (!lastNotifByUser.has(uid)) lastNotifByUser.set(uid, n.created_at);
+          }
+        }
+
+        // Only notify users whose last comment is after their last notification
+        const toNotify = [...lastCommentByUser.entries()]
+          .filter(([uid, lastComment]) => {
+            const lastNotif = lastNotifByUser.get(uid);
+            return !lastNotif || lastComment > lastNotif;
+          })
+          .map(([uid]) => uid);
+
+        if (toNotify.length > 0) {
+          void notifyMany(
+            toNotify.map((userId) => ({
+              userId,
+              type: 'comment.received' as const,
+              context: notificationContext,
+            }))
+          );
+        }
       }
     }
   })().catch((err) => console.error('[Comments] Notification dispatch failed:', err));
