@@ -12,7 +12,10 @@ interface PhotoGalleryProps {
 }
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
-  const images = photos.length > 0 ? photos : gameImage ? [gameImage] : [];
+  const images =
+    photos.length > 0
+      ? gameImage ? [...photos, gameImage] : photos
+      : gameImage ? [gameImage] : [];
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
