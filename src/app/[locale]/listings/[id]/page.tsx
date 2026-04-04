@@ -28,6 +28,7 @@ import { getComments } from '@/lib/comments/actions';
 import { CommentList } from '@/components/comments/CommentList';
 import { CommentForm } from '@/components/comments/CommentForm';
 import { PurchaseSection } from './PurchaseSection';
+import { RelatedListings } from './RelatedListings';
 
 interface ListingDetailRow {
   id: string;
@@ -587,6 +588,12 @@ export default async function ListingDetailPage(
           )}
         </div>
       </div>
+
+      <RelatedListings
+        listingId={listing.id}
+        bggGameId={listing.bgg_game_id}
+        sellerId={listing.seller_id}
+      />
     </div>
   );
 }
