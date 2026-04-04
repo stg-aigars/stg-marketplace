@@ -41,7 +41,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId }: Relate
         .neq('id', listingId)
         .neq('seller_id', sellerId)
         .order('price_cents', { ascending: true })
-        .limit(6)
+        .limit(4)
         .returns<RelatedListingRow[]>(),
       supabase
         .from('listings')
@@ -50,7 +50,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId }: Relate
         .eq('seller_id', sellerId)
         .neq('id', listingId)
         .order('created_at', { ascending: false })
-        .limit(6)
+        .limit(4)
         .returns<RelatedListingRow[]>(),
       getUserFavoriteIds(),
       supabase.auth.getUser(),
