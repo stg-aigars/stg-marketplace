@@ -1,26 +1,12 @@
 import Link from 'next/link';
 import { ArrowRight } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import type { ListingType } from '@/lib/listings/types';
-import { ListingCard } from '@/components/listings/ListingCard';
-import { getUserFavoriteIds } from '@/lib/favorites/actions';
+import { ListingSection } from '@/components/listings/ListingSection';
 import { getListingCardCounts } from '@/lib/listings/queries';
+import type { ListingSectionItem } from '@/components/listings/ListingSection';
 
 const LISTING_SELECT =
   'id, game_name, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
-
-interface RelatedListingRow {
-  id: string;
-  game_name: string;
-  price_cents: number;
-  photos: string[];
-  country: string;
-  listing_type: ListingType;
-  bid_count: number;
-  auction_end_at: string | null;
-  version_thumbnail: string | null;
-  games: { image: string | null; is_expansion: boolean } | null;
-}
 
 interface RelatedListingsProps {
   listingId: string;
@@ -29,12 +15,15 @@ interface RelatedListingsProps {
   gameName: string;
   sellerName: string | null;
   isOwner: boolean;
+  isAuthenticated: boolean;
+  /** Server Component only — Set doesn't survive JSON serialization */
+  favoriteIds: Set<string>;
 }
 
-export async function RelatedListings({ listingId, bggGameId, sellerId, gameName, sellerName, isOwner }: RelatedListingsProps) {
+export async function RelatedListings({ listingId, bggGameId, sellerId, gameName, sellerName, isOwner, isAuthenticated, favoriteIds }: RelatedListingsProps) {
   const supabase = await createClient();
 
-  const [{ data: copies }, { data: sellerListings }, favoriteIds, { data: { user } }] =
+  const [{ data: copies }, { data: sellerListings }] =
     await Promise.all([
       supabase
         .from('listings')
@@ -45,7 +34,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
         .neq('seller_id', sellerId)
         .order('price_cents', { ascending: true })
         .limit(4)
-        .returns<RelatedListingRow[]>(),
+        .returns<ListingSectionItem[]>(),
       supabase
         .from('listings')
         .select(LISTING_SELECT)
@@ -54,9 +43,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
         .neq('id', listingId)
         .order('created_at', { ascending: false })
         .limit(4)
-        .returns<RelatedListingRow[]>(),
-      getUserFavoriteIds(),
-      supabase.auth.getUser(),
+        .returns<ListingSectionItem[]>(),
     ]);
 
   const copiesList = copies ?? [];
@@ -66,7 +53,6 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
 
   const allIds = [...copiesList, ...sellerList].map((l) => l.id);
   const { expansionCounts, commentCounts } = await getListingCardCounts(supabase, allIds);
-  const isAuthenticated = !!user;
 
   const hasSections = copiesList.length > 0 || sellerList.length > 0;
 
@@ -105,63 +91,5 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
         </div>
       )}
     </div>
-  );
-}
-
-function ListingSection({
-  heading,
-  href,
-  listings,
-  favoriteIds,
-  isAuthenticated,
-  expansionCounts,
-  commentCounts,
-}: {
-  heading: string;
-  href?: string;
-  listings: RelatedListingRow[];
-  favoriteIds: Set<string>;
-  isAuthenticated: boolean;
-  expansionCounts: Record<string, number>;
-  commentCounts: Record<string, number>;
-}) {
-  return (
-    <section>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          {heading}
-        </h2>
-        {href && (
-          <Link
-            href={href}
-            className="text-sm font-medium text-semantic-brand hover:underline transition-colors duration-250 ease-out-custom"
-          >
-            View all
-          </Link>
-        )}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {listings.map((listing) => (
-          <ListingCard
-            key={listing.id}
-            id={listing.id}
-            gameTitle={listing.game_name}
-            gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
-            firstPhoto={listing.photos?.[0] ?? null}
-            photoCount={listing.photos?.length ?? 0}
-            priceCents={listing.price_cents}
-            sellerCountry={listing.country}
-            isFavorited={favoriteIds.has(listing.id)}
-            isAuthenticated={isAuthenticated}
-            expansionCount={expansionCounts[listing.id] ?? 0}
-            commentCount={commentCounts[listing.id] ?? 0}
-            isExpansion={listing.games?.is_expansion ?? false}
-            isAuction={listing.listing_type === 'auction'}
-            bidCount={listing.bid_count}
-            auctionEndAt={listing.auction_end_at}
-          />
-        ))}
-      </div>
-    </section>
   );
 }

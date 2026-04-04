@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getSellerShelf } from '@/lib/shelves/actions';
 import { Avatar, Card, CardBody, ShareButtons } from '@/components/ui';
-import { ListingCard } from '@/components/listings/ListingCard';
+import { ListingSection } from '@/components/listings/ListingSection';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
@@ -203,11 +203,12 @@ export default async function SellerProfilePage(
       </section>
 
       {/* Active listings section */}
-      <section>
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
-          Active listings
-        </h2>
-        {activeListings.length === 0 ? (
+      <ListingSection
+        heading="Active listings"
+        listings={activeListings}
+        expansionCounts={expansionCounts}
+        commentCounts={commentCounts}
+        emptyState={
           <Card>
             <CardBody>
               <p className="text-sm text-semantic-text-muted">
@@ -215,26 +216,8 @@ export default async function SellerProfilePage(
               </p>
             </CardBody>
           </Card>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {activeListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                id={listing.id}
-                gameTitle={listing.game_name}
-                gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
-                firstPhoto={listing.photos?.[0] ?? null}
-                photoCount={listing.photos?.length ?? 0}
-                priceCents={listing.price_cents}
-                sellerCountry={listing.country}
-                expansionCount={expansionCounts[listing.id] ?? 0}
-                commentCount={commentCounts[listing.id] ?? 0}
-                isExpansion={listing.games?.is_expansion ?? false}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+        }
+      />
     </div>
   );
 }

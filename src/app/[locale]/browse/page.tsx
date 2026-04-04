@@ -12,7 +12,7 @@ import {
   hasActiveFilters,
   WEIGHT_LEVEL_RANGES,
 } from '@/lib/listings/filters';
-import { getUserFavoriteIds } from '@/lib/favorites/actions';
+import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
 
 const PAGE_SIZE = 24;
@@ -157,10 +157,9 @@ export default async function BrowsePage(
   // Paginate
   query = query.range(offset, offset + PAGE_SIZE - 1);
 
-  const [{ data: listings, count }, favoriteIds, { data: { user } }] = await Promise.all([
+  const [{ data: listings, count }, { user, favoriteIds }] = await Promise.all([
     query.returns<ListingRow[]>(),
-    getUserFavoriteIds(),
-    supabase.auth.getUser(),
+    getUserWithFavorites(),
   ]);
   const isAuthenticated = !!user;
 

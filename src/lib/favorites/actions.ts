@@ -65,3 +65,27 @@ export async function getUserFavoriteIds(): Promise<Set<string>> {
 
   return new Set(data?.map((f) => f.listing_id) ?? []);
 }
+
+/**
+ * Get the current user and their favorited listing IDs in a single auth call.
+ * Eliminates the duplicate getUser() when pages need both user and favorites.
+ */
+export async function getUserWithFavorites(): Promise<{
+  user: import('@supabase/supabase-js').User | null;
+  favoriteIds: Set<string>;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { user: null, favoriteIds: new Set() };
+
+  // TODO: paginate or cap — unbounded for users with hundreds of favorites
+  const { data } = await supabase
+    .from('favorites')
+    .select('listing_id')
+    .eq('user_id', user.id);
+
+  return { user, favoriteIds: new Set(data?.map((f) => f.listing_id) ?? []) };
+}

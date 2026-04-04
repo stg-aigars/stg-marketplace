@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -134,10 +135,8 @@ export default async function ListingDetailPage(
 
   const supabase = await createClient();
 
-  // Get current user (optional — don't redirect if not authenticated)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get current user + their favorites in a single auth call
+  const { user, favoriteIds } = await getUserWithFavorites();
 
   const { data: listing } = await supabase
     .from('listings')
@@ -162,18 +161,7 @@ export default async function ListingDetailPage(
   listing.user_profiles = sellerProfile;
 
   const isOwner = user?.id === listing.seller_id;
-
-  // Check if user has favorited this listing
-  let isFavorited = false;
-  if (user && !isOwner) {
-    const { data: fav } = await supabase
-      .from('favorites')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('listing_id', id)
-      .maybeSingle();
-    isFavorited = !!fav;
-  }
+  const isFavorited = favoriteIds.has(id);
 
   // Fetch seller rating, completed sales, listing expansions, buyer profile, and comments in parallel
   const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerProfileResult, comments] = await Promise.all([
@@ -596,6 +584,8 @@ export default async function ListingDetailPage(
         gameName={games?.name ?? listing.game_name}
         sellerName={sellerProfile?.full_name ?? null}
         isOwner={isOwner}
+        isAuthenticated={!!user}
+        favoriteIds={favoriteIds}
       />
     </div>
   );
