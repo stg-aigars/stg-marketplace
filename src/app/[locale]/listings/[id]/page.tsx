@@ -424,11 +424,13 @@ export default async function ListingDetailPage(
               </h2>
               <div className="space-y-2">
                 <ShowMoreList maxItems={2} label="expansions">
-                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; version_name: string | null; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null }[] }) => (
+                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; version_name: string | null; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null } | { thumbnail: string | null }[] | null }) => {
+                    const thumbnail = Array.isArray(exp.games) ? exp.games[0]?.thumbnail : exp.games?.thumbnail;
+                    return (
                       <Card key={exp.bgg_game_id}>
                         <CardBody>
                           <GameIdentityRow
-                            thumbnail={exp.games?.[0]?.thumbnail ?? null}
+                            thumbnail={thumbnail ?? null}
                             name={exp.game_name}
                             href={`https://boardgamegeek.com/boardgame/${exp.bgg_game_id}`}
                             target="_blank"
@@ -439,7 +441,8 @@ export default async function ListingDetailPage(
                           />
                         </CardBody>
                       </Card>
-                  ))}
+                    );
+                  })}
                 </ShowMoreList>
               </div>
             </div>
