@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { EmptyState } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
+import { getListingCardCounts } from '@/lib/listings/queries';
 import type { ListingCondition } from '@/lib/listings/types';
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ interface FavoriteRow {
     country: string;
     status: string;
     version_thumbnail: string | null;
-    games: { image: string | null };
+    games: { image: string | null; is_expansion: boolean };
   } | null;
 }
 
@@ -34,13 +35,18 @@ export default async function FavoritesPage() {
   const { data: favorites } = await supabase
     .from('favorites')
     .select(
-      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image))'
+      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image, is_expansion))'
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .returns<FavoriteRow[]>();
 
   const items = favorites ?? [];
+
+  const { expansionCounts, commentCounts } = await getListingCardCounts(
+    supabase,
+    items.map((f) => f.listing_id)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -80,16 +86,17 @@ export default async function FavoritesPage() {
                 key={listing.id}
                 id={listing.id}
                 gameTitle={listing.game_name}
-                gameYear={listing.game_year}
                 gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
-                condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
                 isFavorited={true}
                 isAuthenticated={true}
                 unavailable={isUnavailable}
+                expansionCount={expansionCounts[listing.id] ?? 0}
+                commentCount={commentCounts[listing.id] ?? 0}
+                isExpansion={listing.games?.is_expansion ?? false}
               />
             );
           })}

@@ -9,6 +9,7 @@ import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getSellerShelf } from '@/lib/shelves/actions';
 import { Avatar, Card, CardBody, ShareButtons } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
+import { getListingCardCounts } from '@/lib/listings/queries';
 import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
 import { SellerShelfSection } from './SellerShelfSection';
@@ -30,7 +31,7 @@ interface SellerListing {
   photos: string[];
   country: string;
   version_thumbnail: string | null;
-  games: { image: string | null } | null;
+  games: { image: string | null; is_expansion: boolean } | null;
 }
 
 export async function generateMetadata(
@@ -99,7 +100,7 @@ export default async function SellerProfilePage(
     getSellerCompletedSales(id),
     supabase
       .from('listings')
-      .select('id, game_name, game_year, condition, price_cents, photos, country, version_thumbnail, games(image)')
+      .select('id, game_name, game_year, condition, price_cents, photos, country, version_thumbnail, games(image, is_expansion)')
       .eq('seller_id', id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -110,6 +111,11 @@ export default async function SellerProfilePage(
 
   const activeListings = listings ?? [];
   const sellerName = profile.full_name ?? 'Seller';
+
+  const { expansionCounts, commentCounts } = await getListingCardCounts(
+    supabase,
+    activeListings.map((l) => l.id)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -216,13 +222,14 @@ export default async function SellerProfilePage(
                 key={listing.id}
                 id={listing.id}
                 gameTitle={listing.game_name}
-                gameYear={listing.game_year}
                 gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
-                condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                expansionCount={expansionCounts[listing.id] ?? 0}
+                commentCount={commentCounts[listing.id] ?? 0}
+                isExpansion={listing.games?.is_expansion ?? false}
               />
             ))}
           </div>

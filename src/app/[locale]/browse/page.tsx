@@ -13,6 +13,7 @@ import {
   WEIGHT_LEVEL_RANGES,
 } from '@/lib/listings/filters';
 import { getUserFavoriteIds } from '@/lib/favorites/actions';
+import { getListingCardCounts } from '@/lib/listings/queries';
 
 const PAGE_SIZE = 24;
 
@@ -38,7 +39,7 @@ interface ListingRow {
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;
-  games: { image: string | null };
+  games: { image: string | null; is_expansion: boolean };
 }
 
 export default async function BrowsePage(
@@ -110,7 +111,7 @@ export default async function BrowsePage(
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -163,35 +164,10 @@ export default async function BrowsePage(
   ]);
   const isAuthenticated = !!user;
 
-  // Fetch expansion counts and comment counts for listed games
-  const listingIds = (listings ?? []).map((l) => l.id);
-  let expansionCounts: Record<string, number> = {};
-  let commentCounts: Record<string, number> = {};
-  if (listingIds.length > 0) {
-    const [{ data: expansions }, { data: comments }] = await Promise.all([
-      supabase
-        .from('listing_expansions')
-        .select('listing_id')
-        .in('listing_id', listingIds),
-      supabase
-        .from('listing_comments')
-        .select('listing_id')
-        .in('listing_id', listingIds),
-    ]);
-
-    if (expansions) {
-      expansionCounts = expansions.reduce((acc, e) => {
-        acc[e.listing_id] = (acc[e.listing_id] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-    if (comments) {
-      commentCounts = comments.reduce((acc, c) => {
-        acc[c.listing_id] = (acc[c.listing_id] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-  }
+  const { expansionCounts, commentCounts } = await getListingCardCounts(
+    supabase,
+    (listings ?? []).map((l) => l.id)
+  );
 
   const filteredListings = listings ?? [];
   const totalCount = count ?? 0;
@@ -236,17 +212,16 @@ export default async function BrowsePage(
                 key={listing.id}
                 id={listing.id}
                 gameTitle={listing.game_name}
-                gameYear={listing.game_year}
                 gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
-                condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
                 isFavorited={favoriteIds.has(listing.id)}
                 isAuthenticated={isAuthenticated}
                 expansionCount={expansionCounts[listing.id] ?? 0}
                 commentCount={commentCounts[listing.id] ?? 0}
+                isExpansion={listing.games?.is_expansion ?? false}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
+import { getUserFavoriteIds } from '@/lib/favorites/actions';
+import { getListingCardCounts } from '@/lib/listings/queries';
 import { Button } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -17,20 +19,30 @@ interface RecentListingRow {
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;
-  games: { image: string | null };
+  games: { image: string | null; is_expansion: boolean };
 }
 
 export default async function HomePage() {
   const t = await getTranslations();
 
   const supabase = await createClient();
-  const { data: recentListings } = await supabase
-    .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image)')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(8)
-    .returns<RecentListingRow[]>();
+  const [{ data: recentListings }, favoriteIds, { data: { user } }] = await Promise.all([
+    supabase
+      .from('listings')
+      .select('id, game_name, game_year, condition, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(8)
+      .returns<RecentListingRow[]>(),
+    getUserFavoriteIds(),
+    supabase.auth.getUser(),
+  ]);
+  const isAuthenticated = !!user;
+
+  const { expansionCounts, commentCounts } = await getListingCardCounts(
+    supabase,
+    (recentListings ?? []).map((l) => l.id)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -88,13 +100,16 @@ export default async function HomePage() {
                 key={listing.id}
                 id={listing.id}
                 gameTitle={listing.game_name}
-                gameYear={listing.game_year}
                 gameThumbnail={listing.version_thumbnail ?? listing.games?.image ?? null}
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
-                condition={listing.condition}
                 priceCents={listing.price_cents}
                 sellerCountry={listing.country}
+                isFavorited={favoriteIds.has(listing.id)}
+                isAuthenticated={isAuthenticated}
+                expansionCount={expansionCounts[listing.id] ?? 0}
+                commentCount={commentCounts[listing.id] ?? 0}
+                isExpansion={listing.games?.is_expansion ?? false}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}
