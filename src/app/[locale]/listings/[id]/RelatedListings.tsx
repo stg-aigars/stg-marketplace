@@ -6,17 +6,14 @@ import { getUserFavoriteIds } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
 
 const LISTING_SELECT =
-  'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
+  'id, game_name, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
 
 interface RelatedListingRow {
   id: string;
   game_name: string;
-  game_year: number | null;
-  condition: string;
   price_cents: number;
   photos: string[];
   country: string;
-  bgg_game_id: number;
   listing_type: string;
   bid_count: number;
   auction_end_at: string | null;
@@ -134,12 +131,12 @@ function ListingSection({
           {heading}
         </h2>
         {href && (
-          <a
+          <Link
             href={href}
-            className="text-sm font-medium text-semantic-brand hover:underline"
+            className="text-sm font-medium text-semantic-brand hover:underline transition-colors duration-250 ease-out-custom"
           >
             View all
-          </a>
+          </Link>
         )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
