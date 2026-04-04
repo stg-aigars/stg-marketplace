@@ -386,9 +386,9 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       {/* Sticky bottom bar */}
       <div className="sticky bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-semantic-bg-elevated border-t border-semantic-border-subtle z-10">
         <div className="flex gap-3 justify-end">
-          <Link href={`/${locale}/listings/${listing.id}`}>
-            <Button variant="ghost">Cancel</Button>
-          </Link>
+          <Button variant="ghost" asChild>
+            <Link href={`/${locale}/listings/${listing.id}`}>Cancel</Link>
+          </Button>
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit}

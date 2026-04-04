@@ -43,9 +43,9 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
               ? 'No active listings yet.'
               : 'No past listings.'}
           </p>
-          <Link href="/sell" className="inline-block mt-4">
-            <Button>List a game</Button>
-          </Link>
+          <Button className="mt-4" asChild>
+            <Link href="/sell">List a game</Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

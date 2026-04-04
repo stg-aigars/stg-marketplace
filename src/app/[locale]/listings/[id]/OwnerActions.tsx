@@ -33,11 +33,11 @@ export function OwnerActions({ listingId, status, listingType, bidCount, locale 
             Edit listing
           </Button>
         ) : (
-          <Link href={`/${locale}/listings/${listingId}/edit`}>
-            <Button variant="secondary">
+          <Button variant="secondary" asChild>
+            <Link href={`/${locale}/listings/${listingId}/edit`}>
               Edit listing
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         )}
         <Button
           variant="danger"

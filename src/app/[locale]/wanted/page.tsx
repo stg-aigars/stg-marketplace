@@ -96,12 +96,12 @@ export default async function WantedBrowsePage(
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           Wanted games
         </h1>
-        <Link href="/wanted/new">
-          <Button size="sm">
+        <Button size="sm" asChild>
+          <Link href="/wanted/new">
             <Plus size={16} weight="bold" className="mr-1.5" />
             Post a want
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <WantedBrowseFilters key={wantedFiltersToSearchParams(filters)} currentFilters={filters} />

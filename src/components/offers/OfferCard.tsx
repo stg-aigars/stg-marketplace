@@ -134,11 +134,11 @@ export function OfferCard({ offer, role, onUpdated }: OfferCardProps) {
     // Seller on accepted → create listing link
     if (role === 'seller' && offer.status === 'accepted') {
       return (
-        <Link href={`/sell/from-offer/${offer.id}`}>
-          <Button variant="primary" size="sm">
+        <Button variant="primary" size="sm" asChild>
+          <Link href={`/sell/from-offer/${offer.id}`}>
             Create listing
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       );
     }
 

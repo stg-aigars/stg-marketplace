@@ -214,9 +214,9 @@ export default async function ListingDetailPage(
           <p className="text-semantic-text-secondary mb-6">
             It may have been sold or removed by the seller.
           </p>
-          <Link href="/browse">
-            <Button variant="secondary">Browse other games</Button>
-          </Link>
+          <Button variant="secondary" asChild>
+            <Link href="/browse">Browse other games</Link>
+          </Button>
         </div>
       </div>
     );
@@ -411,15 +411,15 @@ export default async function ListingDetailPage(
                     </p>
                   </CardBody>
                 </Card>
-                <Link href={`/checkout/${listing.id}`}>
-                  <Button>Complete payment</Button>
-                </Link>
+                <Button asChild>
+                  <Link href={`/checkout/${listing.id}`}>Complete payment</Link>
+                </Button>
               </div>)
             ) : (
               <div className="flex flex-wrap gap-3">
-                <Link href={`/checkout/${listing.id}`}>
-                  <Button>Buy now</Button>
-                </Link>
+                <Button asChild>
+                  <Link href={`/checkout/${listing.id}`}>Buy now</Link>
+                </Button>
                 <AddToCartButton
                   listing={{
                     id: listing.id,

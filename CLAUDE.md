@@ -105,7 +105,7 @@ Always use these — do not write inline equivalents:
 
 | Pattern | Component | Location |
 |---------|-----------|----------|
-| All buttons | `Button` (variants: primary, secondary, ghost, danger; sizes: sm, md, lg) | `@/components/ui` |
+| All buttons | `Button` (variants: primary, secondary, ghost, danger; sizes: sm, md, lg; `asChild` renders styling on child element — use with `<Link>`) | `@/components/ui` |
 | Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
 | Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
@@ -144,6 +144,7 @@ Always use these — do not write inline equivalents:
 - **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.
 - **No hardcoded colors.** Never use raw Tailwind color classes (`red-600`, `amber-500`, `blue-100`). Always use semantic tokens (`semantic-error`, `semantic-warning`, `semantic-primary`) or design palette tokens (`aurora-*`, `frost-*`, `condition-*`).
 - **No inline button/card/input styling.** If it looks like a button, use `<Button>`. If it's a bordered content area, use `<Card>`. If it's a text field, use `<Input>` or `<Select>`.
+- **Button + Link:** Never nest `<Link>` inside `<Button>` (invalid `<a>` inside `<button>`). Use `<Button asChild><Link href="...">text</Link></Button>` — `asChild` renders Button styling on the Link element directly.
 - **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold font-display tracking-tight`. Card-subsection H2 = `text-base font-semibold` (Inter, no `font-display`).
 - **Typography:** `font-display` (Fraunces) is for headings and game identity text only. Never for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Inter).
 - **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Sell) use `semantic-primary` (orange).

@@ -48,7 +48,7 @@ const DOUBLE_TAP_MAX_TIME = 300; // ms
 const DOUBLE_TAP_MAX_DISTANCE = 20; // px
 const SNAP_THRESHOLD = 1.05;
 const DOUBLE_TAP_SCALE = 2;
-const TRANSITION_DURATION = 200; // ms
+const TRANSITION_DURATION = 250; // ms — branded duration
 
 function getDistance(t1: Touch, t2: Touch): number {
   const dx = t1.clientX - t2.clientX;

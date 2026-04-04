@@ -20,12 +20,12 @@ export default async function MyWantedPage() {
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           My wanted games
         </h1>
-        <Link href="/wanted/new">
-          <Button size="sm">
+        <Button size="sm" asChild>
+          <Link href="/wanted/new">
             <Plus size={16} weight="bold" className="mr-1.5" />
             Post a want
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       {listings.length === 0 ? (
