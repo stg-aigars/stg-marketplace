@@ -593,6 +593,8 @@ export default async function ListingDetailPage(
         listingId={listing.id}
         bggGameId={listing.bgg_game_id}
         sellerId={listing.seller_id}
+        gameName={listing.game_name}
+        sellerName={sellerProfile?.full_name ?? null}
       />
     </div>
   );

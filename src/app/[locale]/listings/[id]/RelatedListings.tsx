@@ -26,9 +26,11 @@ interface RelatedListingsProps {
   listingId: string;
   bggGameId: number;
   sellerId: string;
+  gameName: string;
+  sellerName: string | null;
 }
 
-export async function RelatedListings({ listingId, bggGameId, sellerId }: RelatedListingsProps) {
+export async function RelatedListings({ listingId, bggGameId, sellerId, gameName, sellerName }: RelatedListingsProps) {
   const supabase = await createClient();
 
   const [{ data: copies }, { data: sellerListings }, favoriteIds, { data: { user } }] =
@@ -69,7 +71,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId }: Relate
     <div className="mt-10 space-y-10">
       {copiesList.length > 0 && (
         <ListingSection
-          heading="More copies of this game"
+          heading={`More copies of ${gameName}`}
           listings={copiesList}
           favoriteIds={favoriteIds}
           isAuthenticated={isAuthenticated}
@@ -79,7 +81,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId }: Relate
       )}
       {sellerList.length > 0 && (
         <ListingSection
-          heading="More from this seller"
+          heading={sellerName ? `More from ${sellerName}` : 'More from this seller'}
           href={`/sellers/${sellerId}`}
           listings={sellerList}
           favoriteIds={favoriteIds}
