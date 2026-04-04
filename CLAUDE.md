@@ -198,6 +198,15 @@ Buyer makes offer → seller accepts/counters/declines → if accepted, seller c
 - Listing cancelled → shelf item reverts to open_to_offers
 - Order completed → shelf item set to not_for_sale
 
+## Listing Comments
+Public Q&A on listing detail pages. Flat thread, oldest first, no editing, max 1000 chars.
+- `listing_comments` table: `user_id` FK `ON DELETE SET NULL` (anonymize, don't cascade)
+- RLS: public SELECT (non-deleted), authenticated INSERT, no UPDATE (staff soft-delete via service role)
+- Notifications: seller on new comment, previous commenters on seller reply (`comment.received`)
+- Moderation: staff soft-delete via `deleteComment` → `logAuditEvent`
+- Collapse: shows first 5 comments, "Show all N comments" toggle
+- Key files: `src/lib/comments/`, `src/components/comments/`
+
 ## Key Files
 - `src/middleware.ts` - Auth and i18n routing
 - `src/lib/supabase/` - Database clients
@@ -229,7 +238,7 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 - 38 notification types with prefixes: `order.`, `comment.`, `offer.`, `dispute.`, `shipping.`, `auction.`, `wanted.`
 - Copy centralized in `src/lib/notifications/templates.ts` — integration sites pass type + context, not strings
 - Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
-- Polling on pathname change for unread count (consistent with message unread badge)
+- Polling on pathname change for unread count
 
 ## Server Action Error Handling
 - Server actions return `{ success: true }` or `{ error: string }` — never throw to the client
