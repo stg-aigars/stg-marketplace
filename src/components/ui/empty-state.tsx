@@ -41,8 +41,8 @@ function EmptyState({ icon: Icon, title, description, action, secondaryAction, c
         <p className="text-semantic-text-muted mt-1">{description}</p>
       )}
       {action && 'href' in action && (
-        <Button variant={action.variant ?? 'primary'} asChild>
-          <Link href={action.href} className="inline-block mt-4">{action.label}</Link>
+        <Button variant={action.variant ?? 'primary'} className="mt-4" asChild>
+          <Link href={action.href}>{action.label}</Link>
         </Button>
       )}
       {action && 'onClick' in action && (

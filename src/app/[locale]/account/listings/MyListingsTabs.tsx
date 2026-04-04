@@ -43,8 +43,8 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
               ? 'No active listings yet.'
               : 'No past listings.'}
           </p>
-          <Button asChild>
-            <Link href="/sell" className="inline-block mt-4">List a game</Link>
+          <Button className="mt-4" asChild>
+            <Link href="/sell">List a game</Link>
           </Button>
         </div>
       ) : (

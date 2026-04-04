@@ -293,20 +293,21 @@ export default function CartPage() {
 
               <div className="mt-6">
                 {user ? (
-                  <Button
-                    variant="primary"
-                    className="w-full"
-                    disabled={!canCheckout || validating}
-                    asChild
-                  >
-                    <Link href={canCheckout ? '/cart/checkout' : '#'}>
+                  canCheckout && !validating ? (
+                    <Button variant="primary" className="w-full" asChild>
+                      <Link href="/cart/checkout">Proceed to checkout</Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      className="w-full"
+                      disabled
+                    >
                       {validating
                         ? 'Validating...'
-                        : hasUnavailable
-                          ? 'Remove unavailable items first'
-                          : 'Proceed to checkout'}
-                    </Link>
-                  </Button>
+                        : 'Remove unavailable items first'}
+                    </Button>
+                  )
                 ) : (
                   <Button variant="primary" className="w-full" asChild>
                     <Link href="/auth/signin">
