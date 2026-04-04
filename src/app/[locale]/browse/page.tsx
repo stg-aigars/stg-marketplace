@@ -5,7 +5,7 @@ import { EmptyState, Pagination } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ListingType } from '@/lib/listings/types';
 import {
   parseFiltersFromParams,
   filtersToSearchParams,
@@ -35,7 +35,7 @@ interface ListingRow {
   photos: string[];
   country: string;
   bgg_game_id: number;
-  listing_type: string;
+  listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;

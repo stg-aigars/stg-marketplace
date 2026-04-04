@@ -5,7 +5,7 @@ import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { Button } from '@/components/ui';
 import { ListingSection } from '@/components/listings/ListingSection';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
 interface RecentListingRow {
   id: string;
@@ -15,7 +15,7 @@ interface RecentListingRow {
   price_cents: number;
   photos: string[];
   country: string;
-  listing_type: string;
+  listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
   version_thumbnail: string | null;

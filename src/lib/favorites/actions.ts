@@ -1,5 +1,6 @@
 'use server';
 
+import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 
 export async function toggleFavorite(
@@ -47,31 +48,11 @@ export async function toggleFavorite(
 }
 
 /**
- * Get the set of listing IDs the current user has favorited.
- * Returns empty set for unauthenticated users.
- */
-export async function getUserFavoriteIds(): Promise<Set<string>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return new Set();
-
-  const { data } = await supabase
-    .from('favorites')
-    .select('listing_id')
-    .eq('user_id', user.id);
-
-  return new Set(data?.map((f) => f.listing_id) ?? []);
-}
-
-/**
  * Get the current user and their favorited listing IDs in a single auth call.
  * Eliminates the duplicate getUser() when pages need both user and favorites.
  */
 export async function getUserWithFavorites(): Promise<{
-  user: import('@supabase/supabase-js').User | null;
+  user: User | null;
   favoriteIds: Set<string>;
 }> {
   const supabase = await createClient();

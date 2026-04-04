@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ListingCard } from '@/components/listings/ListingCard';
+import type { ListingType } from '@/lib/listings/types';
 
 /**
  * A listing row shape that maps to ListingCard props.
@@ -13,7 +14,7 @@ export interface ListingSectionItem {
   country: string;
   version_thumbnail: string | null;
   games: { image: string | null; is_expansion: boolean } | null;
-  listing_type?: string;
+  listing_type?: ListingType;
   bid_count?: number;
   auction_end_at?: string | null;
 }
