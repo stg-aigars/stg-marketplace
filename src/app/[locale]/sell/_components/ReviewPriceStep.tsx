@@ -188,10 +188,7 @@ export function ReviewPriceStep({
   const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
   const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
-  const hasEdition =
-    formData.version_name || formData.publisher || formData.language || formData.edition_year;
-
-  const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? '';
+  const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? null;
 
   const expansionNames = useMemo(
     () => expansions.reduce((acc, e) => ({ ...acc, [e.id]: e.name }), {} as Record<number, string>),
@@ -229,7 +226,7 @@ export function ReviewPriceStep({
           <div className="space-y-5">
             {/* Game + Edition */}
             <GameIdentityRow
-              thumbnail={summaryImageUrl || null}
+              thumbnail={summaryImageUrl}
               name={formData.game_name}
               versionName={formData.version_name}
               language={formData.language}

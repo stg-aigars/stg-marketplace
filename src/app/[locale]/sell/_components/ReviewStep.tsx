@@ -29,9 +29,6 @@ export function ReviewStep({
   const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
   const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
-  const hasEdition =
-    formData.version_name || formData.publisher || formData.language || formData.edition_year;
-
   return (
     <div className="space-y-6">
       <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
