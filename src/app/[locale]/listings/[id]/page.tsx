@@ -172,8 +172,8 @@ export default async function ListingDetailPage(
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating, completed sales, listing expansions, buyer country, comments, and staff flag in parallel
-  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerCountryResult, comments, staffResult] = await Promise.all([
+  // Fetch seller rating, completed sales, listing expansions, buyer profile, and comments in parallel
+  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerProfileResult, comments] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
     supabase
@@ -181,17 +181,14 @@ export default async function ListingDetailPage(
       .select('bgg_game_id, game_name, version_name, publisher, language, edition_year, games(thumbnail)')
       .eq('listing_id', id)
       .order('created_at'),
-    // Fetch buyer country for shipping estimate (only if signed in and not the owner)
-    user && !isOwner
-      ? supabase.from('user_profiles').select('country').eq('id', user.id).single<{ country: string }>()
-      : Promise.resolve({ data: null }),
-    getComments(id),
+    // Single query for buyer's country + staff flag (avoids two round-trips to user_profiles)
     user
-      ? supabase.from('user_profiles').select('is_staff').eq('id', user.id).single<{ is_staff: boolean }>()
+      ? supabase.from('user_profiles').select('country, is_staff').eq('id', user.id).single<{ country: string; is_staff: boolean }>()
       : Promise.resolve({ data: null }),
+    getComments(id, listing.seller_id),
   ]);
 
-  const isStaff = staffResult?.data?.is_staff ?? false;
+  const isStaff = buyerProfileResult?.data?.is_staff ?? false;
 
   const isAuction = listing.listing_type === 'auction';
 
@@ -230,7 +227,7 @@ export default async function ListingDetailPage(
 
   // Shipping price calculation
   const sellerCountry = listing.country;
-  const buyerCountry = buyerCountryResult?.data?.country ?? null;
+  const buyerCountry = !isOwner ? (buyerProfileResult?.data?.country ?? null) : null;
   let shippingCents: number | null = null;
   let shippingFromCents: number | null = null;
 
@@ -548,7 +545,7 @@ export default async function ListingDetailPage(
                 Comments{comments.length > 0 ? ` (${comments.length})` : ''}
               </h2>
               <Card>
-                <CardBody className="space-y-0">
+                <CardBody>
                   <CommentList comments={comments} isStaff={isStaff} locale={locale} />
                 </CardBody>
                 {user && (

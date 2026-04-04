@@ -33,7 +33,6 @@ export async function postComment(
   const limitResult = commentLimiter.check(user.id);
   if (!limitResult.success) return { error: 'Too many comments. Please wait a moment.' };
 
-  // Fetch listing for seller_id, game_name, and status check
   const { data: listing } = await supabase
     .from('listings')
     .select('id, seller_id, game_name, status')
@@ -45,7 +44,6 @@ export async function postComment(
     return { error: 'This listing is no longer accepting comments' };
   }
 
-  // Insert comment (RLS: auth.uid() = user_id)
   const { error: insertError } = await supabase
     .from('listing_comments')
     .insert({
@@ -59,67 +57,58 @@ export async function postComment(
     return { error: 'Failed to post comment. Please try again.' };
   }
 
-  // Fire-and-forget notifications
-  const isSeller = user.id === listing.seller_id;
+  // Fire-and-forget: notification dispatch doesn't block the response
+  void (async () => {
+    const isSeller = user.id === listing.seller_id;
 
-  // Get commenter's display name
-  const { data: commenterProfile } = await supabase
-    .from('public_profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .single<{ full_name: string | null }>();
+    const { data: commenterProfile } = await supabase
+      .from('public_profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single<{ full_name: string | null }>();
 
-  const commenterName = commenterProfile?.full_name ?? 'Someone';
-  const notificationContext = {
-    gameName: listing.game_name,
-    listingId: listing.id,
-    commenterName,
-  };
+    const commenterName = commenterProfile?.full_name ?? 'Someone';
+    const notificationContext = {
+      gameName: listing.game_name,
+      listingId: listing.id,
+      commenterName,
+    };
 
-  if (!isSeller) {
-    // Notify the seller
-    void notify(listing.seller_id, 'comment.received', notificationContext);
-  } else {
-    // Seller replied — notify all distinct previous commenters (excluding seller)
-    // TODO: dedup guard — skip notifying commenters who were already notified
-    // since their last comment (prevents noise from consecutive seller replies)
-    const serviceClient = createServiceClient();
-    const { data: previousCommenters } = await serviceClient
-      .from('listing_comments')
-      .select('user_id')
-      .eq('listing_id', listingId)
-      .not('user_id', 'is', null)
-      .neq('user_id', user.id);
+    if (!isSeller) {
+      void notify(listing.seller_id, 'comment.received', notificationContext);
+    } else {
+      // TODO: dedup guard — skip notifying commenters who were already notified
+      // since their last comment (prevents noise from consecutive seller replies)
+      const serviceClient = createServiceClient();
+      const { data: previousCommenters } = await serviceClient
+        .from('listing_comments')
+        .select('user_id')
+        .eq('listing_id', listingId)
+        .not('user_id', 'is', null)
+        .neq('user_id', user.id);
 
-    if (previousCommenters && previousCommenters.length > 0) {
-      const uniqueUserIds = [...new Set(previousCommenters.map((c) => c.user_id as string))];
-      void notifyMany(
-        uniqueUserIds.map((userId) => ({
-          userId,
-          type: 'comment.received' as const,
-          context: notificationContext,
-        }))
-      );
+      if (previousCommenters && previousCommenters.length > 0) {
+        const uniqueUserIds = [...new Set(previousCommenters.map((c) => c.user_id as string))];
+        void notifyMany(
+          uniqueUserIds.map((userId) => ({
+            userId,
+            type: 'comment.received' as const,
+            context: notificationContext,
+          }))
+        );
+      }
     }
-  }
+  })().catch((err) => console.error('[Comments] Notification dispatch failed:', err));
 
   return { success: true };
 }
 
 /**
  * Get all comments for a listing, oldest first.
+ * Accepts sellerId to avoid an extra DB round-trip (caller already has it).
  */
-export async function getComments(listingId: string): Promise<ListingComment[]> {
+export async function getComments(listingId: string, sellerId: string): Promise<ListingComment[]> {
   const supabase = await createClient();
-
-  // Get listing seller_id to flag seller comments
-  const { data: listing } = await supabase
-    .from('listings')
-    .select('seller_id')
-    .eq('id', listingId)
-    .single<{ seller_id: string }>();
-
-  if (!listing) return [];
 
   const { data: comments } = await supabase
     .from('listing_comments')
@@ -148,7 +137,7 @@ export async function getComments(listingId: string): Promise<ListingComment[]> 
     content: c.content,
     created_at: c.created_at,
     author_name: c.user_id ? (profileMap.get(c.user_id) ?? null) : null,
-    author_is_seller: c.user_id === listing.seller_id,
+    author_is_seller: c.user_id === sellerId,
   }));
 }
 
@@ -162,7 +151,6 @@ export async function deleteComment(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  // Verify staff status
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('is_staff')
@@ -171,7 +159,6 @@ export async function deleteComment(
 
   if (!profile?.is_staff) return { error: 'Not authorized' };
 
-  // Soft-delete via service role (no UPDATE RLS policy on listing_comments)
   const serviceClient = createServiceClient();
   const { error: updateError } = await serviceClient
     .from('listing_comments')
