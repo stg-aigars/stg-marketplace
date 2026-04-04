@@ -132,6 +132,7 @@ Always use these — do not write inline equivalents:
 | Game title | `GameTitle` (name, size, serif; display font by default) | `@/components/listings/atoms` |
 | Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
 | Price display | `Price` (cents, size; always Inter, never display font) | `@/components/listings/atoms` |
+| Game identity row | `GameIdentityRow` (thumbnail + name + edition metadata icons; bare row, caller wraps in Card; size, href, action slot) | `@/components/listings/atoms` |
 | Compact listing row | `ListingRow` (horizontal; uses atoms) | `@/components/listings` |
 | Mobile listing card | `ListingCardMini` (compressed for 2-col mobile grid) | `@/components/listings` |
 | Truncated text | `ShowMoreText` (lines, children, className; line-clamp with "Show more/less" toggle; auto-detects if truncation needed) | `@/components/ui` |
