@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { ArrowRight } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { getUserFavoriteIds } from '@/lib/favorites/actions';
@@ -61,11 +63,11 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
   const copiesList = copies ?? [];
   const sellerList = sellerListings ?? [];
 
-  if (copiesList.length === 0 && sellerList.length === 0) return null;
-
   const allIds = [...new Set([...copiesList, ...sellerList].map((l) => l.id))];
   const { expansionCounts, commentCounts } = await getListingCardCounts(supabase, allIds);
   const isAuthenticated = !!user;
+
+  const hasSections = copiesList.length > 0 || sellerList.length > 0;
 
   return (
     <div className="mt-10 space-y-10">
@@ -90,6 +92,15 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
           commentCounts={commentCounts}
         />
       )}
+      <div className={`flex items-center justify-center ${hasSections ? 'pt-2' : ''} pb-2`}>
+        <Link
+          href="/sell"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-semantic-brand hover:underline transition-colors duration-250 ease-out-custom"
+        >
+          Have this game? List it now
+          <ArrowRight size={16} weight="bold" />
+        </Link>
+      </div>
     </div>
   );
 }
