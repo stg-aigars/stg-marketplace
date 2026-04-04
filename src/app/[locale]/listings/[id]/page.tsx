@@ -27,6 +27,7 @@ import { OwnerActions } from './OwnerActions';
 import { getComments } from '@/lib/comments/actions';
 import { CommentList } from '@/components/comments/CommentList';
 import { CommentForm } from '@/components/comments/CommentForm';
+import { PurchaseSection } from './PurchaseSection';
 
 interface ListingDetailRow {
   id: string;
@@ -199,6 +200,7 @@ export default async function ListingDetailPage(
     : [null, []];
 
   const isReserver = listing.status === 'reserved' && listing.reserved_by === user?.id;
+  const showMobileBuyBar = !isOwner && !isAuction && (listing.status === 'active' || isReserver);
 
   // If listing is not active/reserved and viewer is not the seller, show unavailable message
   if (listing.status !== 'active' && listing.status !== 'reserved' && listing.status !== 'auction_ended' && !isOwner) {
@@ -349,6 +351,12 @@ export default async function ListingDetailPage(
           )}
 
           {/* Price & action */}
+          <PurchaseSection
+            listingId={listing.id}
+            priceCents={listing.price_cents}
+            isReservedByMe={isReserver}
+            showMobileBuyBar={showMobileBuyBar}
+          >
           <Card>
           <CardBody className="space-y-3">
             <div className="flex items-center gap-2">
@@ -428,6 +436,7 @@ export default async function ListingDetailPage(
             )}
           </CardBody>
           </Card>
+          </PurchaseSection>
 
           {/* Included expansions */}
           {listingExpansions && expansionCount > 0 && (

@@ -4,11 +4,126 @@ import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { ImageSquare, X, CaretLeft, CaretRight } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
+import { useTouchGestures } from './useTouchGestures';
 
 interface PhotoGalleryProps {
   photos: string[];
   gameImage: string | null;
   gameTitle: string;
+}
+
+/* Lightbox extracted as a separate component so useTouchGestures mounts/unmounts
+   with the overlay — avoids the stale-ref problem where the hook's useEffect runs
+   before the container DOM node exists. */
+function Lightbox({
+  images,
+  activeIndex,
+  gameImage,
+  gameTitle,
+  onClose,
+  onNext,
+  onPrev,
+}: {
+  images: string[];
+  activeIndex: number;
+  gameImage: string | null;
+  gameTitle: string;
+  onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+}) {
+  const hasMultipleImages = images.length > 1;
+  const { containerRef, gestureStyle, isZoomed } = useTouchGestures({
+    onSwipeLeft: hasMultipleImages ? onNext : null,
+    onSwipeRight: hasMultipleImages ? onPrev : null,
+    imageIndex: activeIndex,
+  });
+
+  // Keyboard navigation + body scroll lock
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') onNext();
+      if (e.key === 'ArrowLeft') onPrev();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose, onNext, onPrev]);
+
+  const activeUrl = images[activeIndex];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      onClick={isZoomed ? undefined : onClose}
+    >
+      {/* Close button */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
+        aria-label="Close"
+      >
+        <X size={28} weight="bold" />
+      </button>
+
+      {/* Navigation arrows — hidden when zoomed to prevent accidental taps */}
+      {hasMultipleImages && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onPrev(); }}
+            className={`absolute left-4 z-10 text-white/70 hover:text-white transition-all duration-250 ease-out-custom p-2 ${isZoomed ? 'opacity-0 pointer-events-none' : ''}`}
+            aria-label="Previous photo"
+          >
+            <CaretLeft size={32} weight="bold" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onNext(); }}
+            className={`absolute right-4 z-10 text-white/70 hover:text-white transition-all duration-250 ease-out-custom p-2 ${isZoomed ? 'opacity-0 pointer-events-none' : ''}`}
+            aria-label="Next photo"
+          >
+            <CaretRight size={32} weight="bold" />
+          </button>
+        </>
+      )}
+
+      {/* Full-size image — gesture container for pinch-to-zoom and swipe */}
+      <div
+        ref={containerRef}
+        style={gestureStyle}
+        className="relative w-full h-full max-w-[90vw] max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Image
+          src={activeUrl}
+          alt={`${gameTitle} - photo ${activeIndex + 1}`}
+          fill
+          className="object-contain"
+          sizes="90vw"
+          unoptimized={isBggImage(activeUrl)}
+        />
+        {activeUrl === gameImage && (
+          <span className="absolute bottom-4 right-4 w-8 h-8 rounded bg-black/90 flex items-center justify-center">
+            <Image src="/images/bgg-logo.jpeg" alt="BoardGameGeek" width={20} height={20} className="object-contain rounded-sm" />
+          </span>
+        )}
+      </div>
+
+      {/* Image counter */}
+      {hasMultipleImages && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+          {activeIndex + 1} / {images.length}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
@@ -29,24 +144,6 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
   const goPrev = useCallback(() => {
     setActiveIndex((i) => (i - 1 + images.length) % images.length);
   }, [images.length]);
-
-  // Keyboard navigation in lightbox
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowRight') goNext();
-      if (e.key === 'ArrowLeft') goPrev();
-    }
-    document.addEventListener('keydown', onKeyDown);
-    // Prevent body scroll while lightbox is open — restore previous value on cleanup
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [lightboxOpen, closeLightbox, goNext, goPrev]);
 
   if (images.length === 0) {
     return (
@@ -110,71 +207,16 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
         )}
       </div>
 
-      {/* Lightbox overlay */}
       {lightboxOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
-            aria-label="Close"
-          >
-            <X size={28} weight="bold" />
-          </button>
-
-          {/* Navigation arrows */}
-          {images.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                className="absolute left-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
-                aria-label="Previous photo"
-              >
-                <CaretLeft size={32} weight="bold" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); goNext(); }}
-                className="absolute right-4 z-10 text-white/70 hover:text-white transition-colors duration-250 ease-out-custom p-2"
-                aria-label="Next photo"
-              >
-                <CaretRight size={32} weight="bold" />
-              </button>
-            </>
-          )}
-
-          {/* Full-size image */}
-          <div
-            className="relative w-full h-full max-w-[90vw] max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={activeUrl}
-              alt={`${gameTitle} - photo ${activeIndex + 1}`}
-              fill
-              className="object-contain"
-              sizes="90vw"
-              unoptimized={isBggImage(activeUrl)}
-            />
-            {activeUrl === gameImage && (
-              <span className="absolute bottom-4 right-4 w-8 h-8 rounded bg-black/90 flex items-center justify-center">
-                <Image src="/images/bgg-logo.jpeg" alt="BoardGameGeek" width={20} height={20} className="object-contain rounded-sm" />
-              </span>
-            )}
-          </div>
-
-          {/* Image counter */}
-          {images.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
-              {activeIndex + 1} / {images.length}
-            </div>
-          )}
-        </div>
+        <Lightbox
+          images={images}
+          activeIndex={activeIndex}
+          gameImage={gameImage}
+          gameTitle={gameTitle}
+          onClose={closeLightbox}
+          onNext={goNext}
+          onPrev={goPrev}
+        />
       )}
     </>
   );
