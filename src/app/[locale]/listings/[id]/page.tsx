@@ -24,6 +24,9 @@ import { ReservationCountdown } from '@/components/listings/ReservationCountdown
 import { AddToCartButton } from '@/components/listings/AddToCartButton';
 import { GameThumb, GameIdentityRow } from '@/components/listings/atoms';
 import { OwnerActions } from './OwnerActions';
+import { getComments } from '@/lib/comments/actions';
+import { CommentList } from '@/components/comments/CommentList';
+import { CommentForm } from '@/components/comments/CommentForm';
 
 interface ListingDetailRow {
   id: string;
@@ -169,8 +172,8 @@ export default async function ListingDetailPage(
     isFavorited = !!fav;
   }
 
-  // Fetch seller rating, completed sales, listing expansions, and buyer country in parallel
-  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerCountryResult] = await Promise.all([
+  // Fetch seller rating, completed sales, listing expansions, buyer country, comments, and staff flag in parallel
+  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerCountryResult, comments, staffResult] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
     supabase
@@ -182,7 +185,13 @@ export default async function ListingDetailPage(
     user && !isOwner
       ? supabase.from('user_profiles').select('country').eq('id', user.id).single<{ country: string }>()
       : Promise.resolve({ data: null }),
+    getComments(id),
+    user
+      ? supabase.from('user_profiles').select('is_staff').eq('id', user.id).single<{ is_staff: boolean }>()
+      : Promise.resolve({ data: null }),
   ]);
+
+  const isStaff = staffResult?.data?.is_staff ?? false;
 
   const isAuction = listing.listing_type === 'auction';
 
@@ -527,6 +536,15 @@ export default async function ListingDetailPage(
               />
             )}
           </div>
+
+          {/* Comments */}
+          <section id="comments" className="space-y-4">
+            <h2 className="text-base font-semibold text-semantic-text-heading">
+              Comments{comments.length > 0 ? ` (${comments.length})` : ''}
+            </h2>
+            <CommentList comments={comments} isStaff={isStaff} />
+            <CommentForm listingId={id} isAuthenticated={!!user} />
+          </section>
 
           {/* Game details — mobile only (desktop copy is in the left column) */}
           {hasGameDetails && (

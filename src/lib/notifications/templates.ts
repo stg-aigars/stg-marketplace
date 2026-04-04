@@ -82,11 +82,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     link: orderLink,
   },
 
-  // --- Messages ---
-  'message.received': {
-    title: () => 'New message',
-    body: (ctx) => `${ctx.senderName ?? 'Someone'} sent you a message about ${ctx.gameName ?? 'a listing'}`,
-    link: (ctx) => ctx.conversationId ? `/messages/${ctx.conversationId}` : '/messages',
+  // --- Comments ---
+  'comment.received': {
+    title: () => 'New comment',
+    body: (ctx) => `${ctx.commenterName ?? 'Someone'} commented on ${ctx.gameName ?? 'your listing'}`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}#comments` : null,
   },
 
   // --- Offers ---

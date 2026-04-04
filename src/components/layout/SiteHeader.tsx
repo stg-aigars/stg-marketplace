@@ -7,7 +7,6 @@ import { CaretDown, X, List, ShoppingCart, Bell } from '@phosphor-icons/react/ss
 import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
-import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
@@ -27,7 +26,6 @@ function SiteHeader() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
-  const unreadCount = useUnreadCount();
   const [notificationCount, refreshNotificationCount] = useUnreadNotificationCount();
   const { count: cartCount } = useCart();
 
@@ -187,15 +185,6 @@ function SiteHeader() {
                       Favorites
                     </Link>
                     <Link
-                      href="/messages"
-                      role="menuitem"
-                      className="flex items-center justify-between px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Messages
-                      <CountBadge count={unreadCount} className="ml-2" />
-                    </Link>
-                    <Link
                       href="/account/settings"
                       role="menuitem"
                       className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
@@ -303,14 +292,6 @@ function SiteHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   Favorites
-                </Link>
-                <Link
-                  href="/messages"
-                  className="flex items-center py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Messages
-                  <CountBadge count={unreadCount} className="ml-2" />
                 </Link>
                 <Link
                   href="/account/settings"

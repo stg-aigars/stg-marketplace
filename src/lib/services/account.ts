@@ -108,7 +108,6 @@ export async function checkDeletionEligibility(userId: string): Promise<Deletion
 /**
  * Gather all user data for GDPR data export.
  * Uses service client to bypass RLS and access all user-related data.
- * Redacts message content from other users (respects their authorship).
  */
 export async function gatherUserData(userId: string): Promise<Record<string, unknown>> {
   const supabase = createServiceClient();
@@ -118,7 +117,7 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
     { data: listings },
     { data: ordersAsBuyer },
     { data: ordersAsSeller },
-    { data: conversations },
+    { data: comments },
     { data: wallet },
     { data: walletTransactions },
     { data: withdrawalRequests },
@@ -151,10 +150,10 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
       .order('created_at', { ascending: false }),
 
     supabase
-      .from('conversations')
+      .from('listing_comments')
       .select('*')
-      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-      .order('updated_at', { ascending: false }),
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }),
 
     supabase
       .from('wallets')
@@ -193,44 +192,13 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
 
   ]);
 
-  // Fetch messages from user's conversations (messages table has no receiver_id —
-  // scope through conversations which have buyer_id/seller_id)
-  const conversationIds = (conversations ?? []).map((c: Record<string, unknown>) => c.id);
-  let processedMessages: Record<string, unknown>[] = [];
-
-  if (conversationIds.length > 0) {
-    const { data: messages } = await supabase
-      .from('messages')
-      .select('*')
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false });
-
-    // Redact content of messages received from other users
-    processedMessages = (messages ?? []).map((msg: Record<string, unknown>) => {
-      if (msg.sender_id === userId) {
-        // User's own sent messages — include full content
-        return msg;
-      }
-      // Messages from other users — metadata only, redact content
-      return {
-        id: msg.id,
-        conversation_id: msg.conversation_id,
-        sender_id: msg.sender_id,
-        created_at: msg.created_at,
-        read_at: msg.read_at,
-        content: '[Message from another user]',
-      };
-    });
-  }
-
   return {
     exported_at: new Date().toISOString(),
     profile: profile ?? null,
     listings: listings ?? [],
     orders_as_buyer: ordersAsBuyer ?? [],
     orders_as_seller: ordersAsSeller ?? [],
-    conversations: conversations ?? [],
-    messages: processedMessages,
+    comments: comments ?? [],
     wallet: wallet ?? null,
     wallet_transactions: walletTransactions ?? [],
     withdrawal_requests: withdrawalRequests ?? [],
@@ -286,6 +254,13 @@ export async function deleteUserAccount(
     console.error('[Account] Failed to send deletion confirmation email:', err);
     // Continue with deletion — email failure should not block account deletion
   }
+
+  // Anonymize comments BEFORE profile deletion — user_id FK is ON DELETE SET NULL,
+  // so after profile is gone we can no longer match comments by user_id
+  await supabase
+    .from('listing_comments')
+    .update({ content: '[deleted]' })
+    .eq('user_id', userId);
 
   const { error: profileError } = await supabase
     .from('user_profiles')
