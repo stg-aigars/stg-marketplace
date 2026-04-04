@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import Image from 'next/image';
-import { CheckCircle, ImageSquare, Buildings, Translate, CalendarBlank, PencilSimple, Tag } from '@phosphor-icons/react/ssr';
+import { CheckCircle, PencilSimple } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
+import { GameIdentityRow } from '@/components/listings/atoms';
 import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
@@ -425,36 +425,6 @@ export function VersionStep({
   );
 }
 
-// --- Version metadata (shared between VersionCard and collapsed view) ---
-
-function VersionMeta({ version }: { version: BGGVersion }) {
-  const publishers = version.publishers ?? (version.publisher ? [version.publisher] : []);
-  const languages = version.languages ?? (version.language ? [version.language] : []);
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-      {publishers.length > 0 && (
-        <span className="flex items-center gap-1">
-          <Buildings size={14} className="shrink-0" />
-          {publishers.join(', ')}
-        </span>
-      )}
-      {languages.length > 0 && (
-        <span className="flex items-center gap-1">
-          <Translate size={14} className="shrink-0" />
-          {languages.join(', ')}
-        </span>
-      )}
-      {version.yearPublished && (
-        <span className="flex items-center gap-1">
-          <CalendarBlank size={14} className="shrink-0" />
-          {version.yearPublished}
-        </span>
-      )}
-    </div>
-  );
-}
-
 // --- Version card sub-component (used for both selection list and collapsed confirmed view) ---
 
 function VersionCard({
@@ -472,8 +442,21 @@ function VersionCard({
   onClick?: () => void;
   onEdit?: () => void;
 }) {
-  const thumbnail = version.image ?? version.thumbnail;
   const isSelect = mode === 'select';
+
+  const actionElement = isSelect && selected
+    ? <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0" />
+    : !isSelect && onEdit
+    ? (
+      <button
+        type="button"
+        onClick={onEdit}
+        className="text-semantic-brand shrink-0 p-1"
+        aria-label="Change edition"
+      >
+        <PencilSimple size={16} />
+      </button>
+    ) : null;
 
   return (
     <Card
@@ -485,53 +468,18 @@ function VersionCard({
       onClick={isSelect ? onClick : undefined}
     >
       <CardBody className="py-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-            {thumbnail ? (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
-                <Image
-                  src={thumbnail}
-                  alt={version.name}
-                  fill
-                  className="object-contain"
-                  sizes="80px"
-                />
-              </div>
-            ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-                <ImageSquare size={28} className="text-semantic-text-muted" aria-hidden="true" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              {gameName && (
-                <p className="font-medium text-semantic-text-heading">
-                  {gameName}
-                </p>
-              )}
-              <p className={`flex items-center gap-1 ${gameName
-                ? 'text-sm text-semantic-text-muted'
-                : 'font-medium text-semantic-text-primary'
-              }`}>
-                <Tag size={14} className="shrink-0" />
-                {version.name}
-              </p>
-              <VersionMeta version={version} />
-            </div>
-          </div>
-          {isSelect && selected && (
-            <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0 mt-0.5" />
-          )}
-          {!isSelect && onEdit && (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="text-semantic-brand shrink-0 p-1"
-              aria-label="Change edition"
-            >
-              <PencilSimple size={16} />
-            </button>
-          )}
-        </div>
+        {gameName && (
+          <p className="font-medium text-semantic-text-heading mb-1">{gameName}</p>
+        )}
+        <GameIdentityRow
+          thumbnail={version.image ?? version.thumbnail}
+          name={version.name}
+          language={version.languages?.join(', ') ?? version.language}
+          publisher={version.publishers?.join(', ') ?? version.publisher}
+          year={version.yearPublished}
+          size="lg"
+          action={actionElement}
+        />
       </CardBody>
     </Card>
   );

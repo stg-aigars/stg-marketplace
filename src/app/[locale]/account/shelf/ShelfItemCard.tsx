@@ -99,7 +99,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
               src={imageUrl}
               alt={item.game_name}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               unoptimized={isBggImage(imageUrl)}
             />

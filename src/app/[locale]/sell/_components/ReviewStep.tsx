@@ -3,8 +3,8 @@
 'use client';
 
 import Image from 'next/image';
-import { CalendarBlank, Buildings, Translate, Tag } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button } from '@/components/ui';
+import { GameIdentityRow } from '@/components/listings/atoms';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
@@ -29,9 +29,6 @@ export function ReviewStep({
   const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
   const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
-  const hasEdition =
-    formData.version_name || formData.publisher || formData.language || formData.edition_year;
-
   return (
     <div className="space-y-6">
       <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
@@ -42,57 +39,15 @@ export function ReviewStep({
         <CardBody>
           <div className="space-y-5">
             {/* Game + Edition */}
-            <div className="flex items-start gap-4">
-              {(formData.version_thumbnail || formData.game_image || formData.game_thumbnail) && (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
-                  <Image
-                    src={formData.version_thumbnail ?? formData.game_image ?? formData.game_thumbnail ?? ''}
-                    alt={formData.game_name}
-                    fill
-                    className="object-contain"
-                    sizes="96px"
-                    unoptimized
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-semantic-text-heading text-lg">
-                  {formData.game_name}
-                </h3>
-                {hasEdition ? (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                    {formData.version_name && (
-                      <span className="flex items-center gap-1">
-                        <Tag size={14} className="shrink-0" />
-                        {formData.version_name}
-                      </span>
-                    )}
-                    {formData.publisher && (
-                      <span className="flex items-center gap-1">
-                        <Buildings size={14} className="shrink-0" />
-                        {formData.publisher}
-                      </span>
-                    )}
-                    {formData.language && (
-                      <span className="flex items-center gap-1">
-                        <Translate size={14} className="shrink-0" />
-                        {formData.language}
-                      </span>
-                    )}
-                    {formData.edition_year && (
-                      <span className="flex items-center gap-1">
-                        <CalendarBlank size={14} className="shrink-0" />
-                        {formData.edition_year}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    No edition specified
-                  </p>
-                )}
-              </div>
-            </div>
+            <GameIdentityRow
+              thumbnail={formData.version_thumbnail ?? formData.game_image ?? formData.game_thumbnail ?? null}
+              name={formData.game_name}
+              versionName={formData.version_name}
+              language={formData.language}
+              publisher={formData.publisher}
+              year={formData.edition_year}
+              size="xl"
+            />
 
             <hr className="border-semantic-border-subtle" />
 

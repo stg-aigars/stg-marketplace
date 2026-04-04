@@ -23,14 +23,14 @@ function GameThumb({ src, alt, size = 'md', className = '' }: GameThumbProps) {
   const px = sizePx[size];
 
   return (
-    <div className={`${sizeClasses[size]} rounded-lg bg-semantic-bg-secondary flex-shrink-0 overflow-hidden flex items-center justify-center ${className}`}>
+    <div className={`${sizeClasses[size]} rounded-lg bg-semantic-bg-secondary flex-shrink-0 overflow-hidden relative flex items-center justify-center ${className}`}>
       {src ? (
         <Image
           src={src}
           alt={alt}
-          width={px}
-          height={px}
-          className={isBGG ? 'object-contain' : 'object-cover w-full h-full'}
+          fill
+          className="object-contain"
+          sizes={`${px}px`}
           unoptimized={isBGG}
         />
       ) : (

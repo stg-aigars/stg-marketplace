@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { CalendarBlank, Buildings, Translate, PencilSimple, Tag } from '@phosphor-icons/react/ssr';
+import { PencilSimple } from '@phosphor-icons/react/ssr';
+import { GameIdentityRow } from '@/components/listings/atoms';
 import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
-import { toBggFullSize, isBggImage } from '@/lib/bgg/utils';
+import { toBggFullSize } from '@/lib/bgg/utils';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
 import type { FormData } from './ListingCreationFlow';
@@ -187,10 +188,7 @@ export function ReviewPriceStep({
   const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
   const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
-  const hasEdition =
-    formData.version_name || formData.publisher || formData.language || formData.edition_year;
-
-  const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? '';
+  const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? null;
 
   const expansionNames = useMemo(
     () => expansions.reduce((acc, e) => ({ ...acc, [e.id]: e.name }), {} as Record<number, string>),
@@ -227,67 +225,25 @@ export function ReviewPriceStep({
         <CardBody>
           <div className="space-y-5">
             {/* Game + Edition */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-4 min-w-0">
-                {summaryImageUrl && (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 relative bg-semantic-bg-secondary">
-                    <Image
-                      src={summaryImageUrl}
-                      alt={formData.game_name}
-                      fill
-                      className="object-contain"
-                      sizes="96px"
-                      unoptimized={isBggImage(summaryImageUrl)}
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-semantic-text-heading text-lg">
-                    {formData.game_name}
-                  </h3>
-                  {hasEdition ? (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-semantic-text-muted mt-0.5">
-                      {formData.version_name && (
-                        <span className="flex items-center gap-1">
-                          <Tag size={14} className="shrink-0" />
-                          {formData.version_name}
-                        </span>
-                      )}
-                      {formData.publisher && (
-                        <span className="flex items-center gap-1">
-                          <Buildings size={14} className="shrink-0" />
-                          {formData.publisher}
-                        </span>
-                      )}
-                      {formData.language && (
-                        <span className="flex items-center gap-1">
-                          <Translate size={14} className="shrink-0" />
-                          {formData.language}
-                        </span>
-                      )}
-                      {formData.edition_year && (
-                        <span className="flex items-center gap-1">
-                          <CalendarBlank size={14} className="shrink-0" />
-                          {formData.edition_year}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-semantic-text-muted mt-0.5">
-                      No edition specified
-                    </p>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onEditStep(1)}
-                className="text-semantic-brand shrink-0 p-1"
-                aria-label="Edit game and edition"
-              >
-                <PencilSimple size={16} />
-              </button>
-            </div>
+            <GameIdentityRow
+              thumbnail={summaryImageUrl}
+              name={formData.game_name}
+              versionName={formData.version_name}
+              language={formData.language}
+              publisher={formData.publisher}
+              year={formData.edition_year}
+              size="xl"
+              action={
+                <button
+                  type="button"
+                  onClick={() => onEditStep(1)}
+                  className="text-semantic-brand shrink-0 p-1"
+                  aria-label="Edit game and edition"
+                >
+                  <PencilSimple size={16} />
+                </button>
+              }
+            />
 
             {/* Included expansions */}
             {expansions.length > 0 && (

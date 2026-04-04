@@ -6,3 +6,5 @@ export { GameMeta } from './GameMeta';
 export type { GameMetaProps } from './GameMeta';
 export { Price } from './Price';
 export type { PriceProps } from './Price';
+export { GameIdentityRow } from './GameIdentityRow';
+export type { GameIdentityRowProps } from './GameIdentityRow';

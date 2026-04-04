@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
-import { X, Package } from '@phosphor-icons/react/ssr';
+import { X } from '@phosphor-icons/react/ssr';
 import { Input, Card, CardBody, Button } from '@/components/ui';
+import { GameIdentityRow } from '@/components/listings/atoms';
 
 interface ExpansionStepProps {
   expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null; alternate_names?: string[] | null }>;
@@ -46,37 +46,22 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
             return (
               <Card key={id}>
                 <CardBody>
-                  <div className="flex items-center gap-4">
-                    {expansion.thumbnail ? (
-                      <Image
-                        src={expansion.thumbnail}
-                        alt={expansion.name}
-                        width={64}
-                        height={64}
-                        className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-                        <Package size={24} className="text-semantic-text-muted" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-semantic-text-primary truncate">
-                        {expansion.name}
-                      </p>
-                      {expansion.year != null && (
-                        <p className="text-sm text-semantic-text-muted">{expansion.year}</p>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSelectionChange(selectedExpansionIds.filter((eid) => eid !== id))}
-                      aria-label={`Remove ${expansion.name}`}
-                    >
-                      <X size={16} />
-                    </Button>
-                  </div>
+                  <GameIdentityRow
+                    thumbnail={expansion.thumbnail}
+                    name={expansion.name}
+                    year={expansion.year}
+                    size="lg"
+                    action={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onSelectionChange(selectedExpansionIds.filter((eid) => eid !== id))}
+                        aria-label={`Remove ${expansion.name}`}
+                      >
+                        <X size={16} />
+                      </Button>
+                    }
+                  />
                 </CardBody>
               </Card>
             );

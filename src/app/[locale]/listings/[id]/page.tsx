@@ -22,7 +22,7 @@ import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sell
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { AddToCartButton } from '@/components/listings/AddToCartButton';
-import { GameThumb } from '@/components/listings/atoms';
+import { GameThumb, GameIdentityRow } from '@/components/listings/atoms';
 import { OwnerActions } from './OwnerActions';
 
 interface ListingDetailRow {
@@ -424,52 +424,21 @@ export default async function ListingDetailPage(
               </h2>
               <div className="space-y-2">
                 <ShowMoreList maxItems={2} label="expansions">
-                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; version_name: string | null; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null }[] }) => {
-                    const thumbnail = exp.games?.[0]?.thumbnail ?? null;
+                  {listingExpansions.map((exp: { bgg_game_id: number; game_name: string; version_name: string | null; publisher: string | null; language: string | null; edition_year: number | null; games: { thumbnail: string | null } | { thumbnail: string | null }[] | null }) => {
+                    const thumbnail = Array.isArray(exp.games) ? exp.games[0]?.thumbnail : exp.games?.thumbnail;
                     return (
                       <Card key={exp.bgg_game_id}>
                         <CardBody>
-                          <div className="flex items-center gap-4">
-                            <GameThumb src={thumbnail} alt={exp.game_name} size="lg" />
-                            <div className="flex-1 min-w-0">
-                              <a
-                                href={`https://boardgamegeek.com/boardgame/${exp.bgg_game_id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-medium text-semantic-text-primary sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom truncate block"
-                              >
-                                {exp.game_name}
-                              </a>
-                              {(exp.version_name || exp.language || exp.publisher || exp.edition_year) && (
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
-                                  {exp.version_name && (
-                                    <span className="flex items-center gap-1">
-                                      <Tag size={13} className="shrink-0" />
-                                      {exp.version_name}
-                                    </span>
-                                  )}
-                                  {exp.language && (
-                                    <span className="flex items-center gap-1">
-                                      <Translate size={13} className="shrink-0" />
-                                      {exp.language}
-                                    </span>
-                                  )}
-                                  {exp.publisher && (
-                                    <span className="flex items-center gap-1">
-                                      <Buildings size={13} className="shrink-0" />
-                                      {exp.publisher}
-                                    </span>
-                                  )}
-                                  {exp.edition_year && (
-                                    <span className="flex items-center gap-1">
-                                      <CalendarBlank size={13} className="shrink-0" />
-                                      {exp.edition_year}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          <GameIdentityRow
+                            thumbnail={thumbnail ?? null}
+                            name={exp.game_name}
+                            href={`https://boardgamegeek.com/boardgame/${exp.bgg_game_id}`}
+                            target="_blank"
+                            versionName={exp.version_name}
+                            language={exp.language}
+                            publisher={exp.publisher}
+                            year={exp.edition_year}
+                          />
                         </CardBody>
                       </Card>
                     );

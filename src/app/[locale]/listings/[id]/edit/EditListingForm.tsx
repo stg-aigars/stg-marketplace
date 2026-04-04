@@ -285,7 +285,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
                 alt={listing.game_name}
                 width={64}
                 height={64}
-                className="rounded-lg object-cover w-16 h-16 flex-shrink-0"
+                className="rounded-lg object-contain bg-semantic-bg-secondary w-16 h-16 flex-shrink-0"
               />
             )}
             <div className="min-w-0">

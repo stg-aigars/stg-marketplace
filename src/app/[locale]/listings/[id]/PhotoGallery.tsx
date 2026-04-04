@@ -92,7 +92,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                   src={src}
                   alt={`${gameTitle} - thumbnail ${i + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   sizes="64px"
                   unoptimized={isBggImage(src)}
                 />
