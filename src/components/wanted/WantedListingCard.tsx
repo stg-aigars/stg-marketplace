@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Card, Badge } from '@/components/ui';
+import { GameTitle, GameMeta } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
@@ -49,14 +50,8 @@ export function WantedListingCard({
 
         {/* Content */}
         <div className="px-3 py-2.5 flex flex-col flex-1">
-          <p className="text-sm font-medium text-semantic-text-heading line-clamp-2 leading-tight">
-            {gameTitle}
-          </p>
-          {gameYear && (
-            <p className="text-xs text-semantic-text-muted mt-0.5">
-              ({gameYear})
-            </p>
-          )}
+          <GameTitle name={gameTitle} clamp={2} />
+          <GameMeta year={gameYear} className="mt-0.5" />
 
           <div className="mt-2 flex flex-wrap gap-1">
             <Badge condition={conditionToBadgeKey[minCondition]} />

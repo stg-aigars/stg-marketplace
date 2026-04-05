@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
 import { Button, Badge, Card } from '@/components/ui';
+import { GameTitle, GameMeta } from '@/components/listings/atoms';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
 import { MakeOfferModal } from '@/components/offers/MakeOfferModal';
@@ -59,14 +60,8 @@ export function SellerShelfSection({ items, sellerId, currentUserId }: SellerShe
               {/* Info */}
               <div className="p-3 space-y-2">
                 <div>
-                  <p className="font-medium text-semantic-text-primary line-clamp-2 text-sm">
-                    {item.game_name}
-                  </p>
-                  {item.game_year && (
-                    <p className="text-xs text-semantic-text-muted mt-0.5">
-                      {item.game_year}
-                    </p>
-                  )}
+                  <GameTitle name={item.game_name} clamp={2} />
+                  <GameMeta year={item.game_year} className="mt-0.5" />
                 </div>
 
                 <Badge variant={SHELF_VISIBILITY_BADGE_VARIANT[item.visibility]}>

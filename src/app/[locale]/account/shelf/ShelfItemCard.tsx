@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { DotsThreeVertical, PencilSimple, Trash, ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
 import { Card, Badge, Button, Modal } from '@/components/ui';
+import { GameTitle, GameMeta } from '@/components/listings/atoms';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
 import { removeFromShelf } from '@/lib/shelves/actions';
@@ -111,14 +112,8 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
         {/* Details */}
         <div className="px-3 py-3 space-y-2">
           <div>
-            <h3 className="font-semibold font-display tracking-tight text-semantic-text-heading text-sm leading-tight line-clamp-2">
-              {item.game_name}
-            </h3>
-            {item.game_year && (
-              <p className="text-xs text-semantic-text-muted mt-0.5">
-                {item.game_year}
-              </p>
-            )}
+            <GameTitle name={item.game_name} clamp={2} />
+            <GameMeta year={item.game_year} className="mt-0.5" />
           </div>
 
           <Badge variant={badgeVariant}>{badgeLabel}</Badge>
