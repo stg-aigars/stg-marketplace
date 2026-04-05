@@ -22,20 +22,30 @@ export async function POST(request: Request) {
   const serviceClient = createServiceClient();
 
   // Build set of all photo paths referenced by any listing (any status)
-  const { data: listings, error: listingsError } = await serviceClient
-    .from('listings')
-    .select('photos')
-    .not('photos', 'is', null)
-    .not('photos', 'eq', '{}');
+  const activePhotoPaths = new Set<string>();
+  const PAGE_SIZE = 1000;
+  let listingOffset = 0;
 
-  if (listingsError) {
-    console.error('[cleanup-photos] Failed to query listings:', listingsError);
-    return NextResponse.json({ error: listingsError.message }, { status: 500 });
+  while (true) {
+    const { data: page, error: listingsError } = await serviceClient
+      .from('listings')
+      .select('photos')
+      .not('photos', 'is', null)
+      .not('photos', 'eq', '{}')
+      .range(listingOffset, listingOffset + PAGE_SIZE - 1);
+
+    if (listingsError) {
+      console.error('[cleanup-photos] Failed to query listings:', listingsError);
+      return NextResponse.json({ error: listingsError.message }, { status: 500 });
+    }
+
+    if (!page?.length) break;
+    for (const l of page) {
+      for (const url of l.photos) activePhotoPaths.add(extractStoragePath(url));
+    }
+    if (page.length < PAGE_SIZE) break;
+    listingOffset += PAGE_SIZE;
   }
-
-  const activePhotoPaths = new Set(
-    (listings ?? []).flatMap((l) => l.photos.map(extractStoragePath))
-  );
 
   // Scan storage bucket for orphaned files
   const orphans: string[] = [];

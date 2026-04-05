@@ -89,7 +89,6 @@ export function VersionStep({
   };
 
   useEffect(() => {
-    // Use parent-level cache if available (avoids re-fetch on back/forward navigation)
     if (cachedVersions) {
       setVersions(cachedVersions);
       if (cachedVersions.length === 0) setShowManual(true);
@@ -133,7 +132,9 @@ export function VersionStep({
     return () => {
       cancelled = true;
     };
-  }, [gameId, cachedVersions, onVersionsFetched]);
+    // cachedVersions/onVersionsFetched intentionally excluded — effect should only re-run on game change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId]);
 
   // Auto-select language filter based on user's country (once, after versions load)
   const hasAutoSelectedLanguage = useRef(false);
