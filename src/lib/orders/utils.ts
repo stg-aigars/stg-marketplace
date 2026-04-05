@@ -32,14 +32,14 @@ export function formatGameWithExpansions(
 }
 
 /** Shape of order_items as returned by Supabase joins */
-interface OrderItemLike {
+export interface OrderItemLike {
   listing_id: string;
   price_cents?: number;
   listings?: { game_name: string; seller_id?: string } | null;
 }
 
 /** Shape of the legacy listings join on orders */
-interface LegacyListingsLike {
+export interface LegacyListingsLike {
   game_name: string;
   seller_id?: string;
 }

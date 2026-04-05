@@ -13,6 +13,7 @@ import type { TrackingStateType } from './types';
 import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify, notifyMany } from '@/lib/notifications';
+import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from '@/lib/orders/utils';
 
 /** Max age for PARCEL_RECEIVED events to trigger auto-ship (prevents stale transitions) */
 const AUTO_SHIP_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
@@ -91,7 +92,7 @@ export async function syncTrackingForOrder(
         })
         .eq('id', orderId)
         .eq('status', 'shipped') // Optimistic lock
-        .select('*, listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email)')
+        .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email)')
         .single();
 
       if (delivered && !deliverError) {
@@ -108,19 +109,19 @@ export async function syncTrackingForOrder(
 
         // Notify buyer — this is their signal that the 2-day dispute window has started
         const buyerProfile = delivered.buyer_profile as { full_name?: string; email?: string } | null;
-        const listing = delivered.listings as { game_name?: string } | null;
+        const gameName = getOrderGameSummary(delivered.order_items as OrderItemLike[], delivered.listings as LegacyListingsLike);
         if (buyerProfile?.email) {
           void sendOrderDeliveredToBuyer({
             buyerName: buyerProfile.full_name ?? 'Buyer',
             buyerEmail: buyerProfile.email,
             orderNumber: delivered.order_number,
             orderId,
-            gameName: listing?.game_name ?? 'Game',
+            gameName,
           }).catch((err) => console.error('[Email] Failed to send auto-delivery email:', err));
         }
 
         void notify(delivered.buyer_id, 'order.delivered', {
-          gameName: listing?.game_name ?? 'Game',
+          gameName,
           orderNumber: delivered.order_number,
           orderId,
         });
@@ -147,7 +148,7 @@ export async function syncTrackingForOrder(
         })
         .eq('id', orderId)
         .eq('status', 'accepted') // Optimistic lock
-        .select('*, listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email)')
+        .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email)')
         .single();
 
       if (shipped && !shipError) {
@@ -163,7 +164,7 @@ export async function syncTrackingForOrder(
         });
 
         const buyerProfile = shipped.buyer_profile as { full_name?: string; email?: string } | null;
-        const listing = shipped.listings as { game_name?: string } | null;
+        const gameName = getOrderGameSummary(shipped.order_items as OrderItemLike[], shipped.listings as LegacyListingsLike);
         const terminalName = receivedEvent.location || undefined;
 
         if (buyerProfile?.email) {
@@ -172,7 +173,7 @@ export async function syncTrackingForOrder(
             buyerEmail: buyerProfile.email,
             orderNumber: shipped.order_number,
             orderId,
-            gameName: listing?.game_name ?? 'Game',
+            gameName,
             barcode: shipped.barcode ?? undefined,
             trackingUrl: shipped.tracking_url ?? undefined,
             terminalName,
@@ -180,7 +181,7 @@ export async function syncTrackingForOrder(
         }
 
         void notify(shipped.buyer_id, 'shipping.scanned', {
-          gameName: listing?.game_name ?? 'Game',
+          gameName,
           orderNumber: shipped.order_number,
           orderId,
           terminalName,
@@ -191,12 +192,15 @@ export async function syncTrackingForOrder(
     }
 
     // Auto-transition: if RETURNING detected and order is shipped → disputed (uncollected parcel)
-    const hasReturningEvent = trackingEvents.some(
-      (e) => (e.stateType as TrackingStateType) === 'RETURNING'
+    // Guard: only act on recent events (same rationale as PARCEL_RECEIVED age guard)
+    const returningEvent = trackingEvents.find(
+      (e) =>
+        (e.stateType as TrackingStateType) === 'RETURNING' &&
+        Date.now() - new Date(e.timestamp).getTime() < AUTO_SHIP_MAX_AGE_MS
     );
     const currentStatus = statusChanged ? newStatus : oldStatus;
 
-    if (hasReturningEvent && currentStatus === 'shipped') {
+    if (returningEvent && currentStatus === 'shipped') {
       // Idempotency: skip if dispute already exists
       const { data: existingDispute } = await supabase
         .from('disputes')
@@ -213,7 +217,7 @@ export async function syncTrackingForOrder(
           })
           .eq('id', orderId)
           .eq('status', 'shipped') // Optimistic lock
-          .select('*, listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email), seller_profile:user_profiles!orders_seller_id_fkey(full_name, email)')
+          .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email), seller_profile:user_profiles!orders_seller_id_fkey(full_name, email)')
           .single();
 
         if (disputed && !disputeError) {
@@ -239,8 +243,7 @@ export async function syncTrackingForOrder(
 
           const buyerProfile = disputed.buyer_profile as { full_name?: string; email?: string } | null;
           const sellerProfile = disputed.seller_profile as { full_name?: string; email?: string } | null;
-          const listing = disputed.listings as { game_name?: string } | null;
-          const gameName = listing?.game_name ?? 'Game';
+          const gameName = getOrderGameSummary(disputed.order_items as OrderItemLike[], disputed.listings as LegacyListingsLike);
 
           void sendDisputeEscalated({
             buyerName: buyerProfile?.full_name ?? 'Buyer',
