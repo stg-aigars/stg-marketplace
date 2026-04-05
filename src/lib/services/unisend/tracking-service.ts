@@ -13,7 +13,7 @@ import type { TrackingStateType } from './types';
 import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify, notifyMany } from '@/lib/notifications';
-import { getOrderGameSummary } from '@/lib/orders/utils';
+import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from '@/lib/orders/utils';
 
 /** Max age for PARCEL_RECEIVED events to trigger auto-ship (prevents stale transitions) */
 const AUTO_SHIP_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
@@ -109,8 +109,7 @@ export async function syncTrackingForOrder(
 
         // Notify buyer — this is their signal that the 2-day dispute window has started
         const buyerProfile = delivered.buyer_profile as { full_name?: string; email?: string } | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const gameName = getOrderGameSummary(delivered.order_items as any[], delivered.listings as any);
+        const gameName = getOrderGameSummary(delivered.order_items as OrderItemLike[], delivered.listings as LegacyListingsLike);
         if (buyerProfile?.email) {
           void sendOrderDeliveredToBuyer({
             buyerName: buyerProfile.full_name ?? 'Buyer',
@@ -165,8 +164,7 @@ export async function syncTrackingForOrder(
         });
 
         const buyerProfile = shipped.buyer_profile as { full_name?: string; email?: string } | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const gameName = getOrderGameSummary(shipped.order_items as any[], shipped.listings as any);
+        const gameName = getOrderGameSummary(shipped.order_items as OrderItemLike[], shipped.listings as LegacyListingsLike);
         const terminalName = receivedEvent.location || undefined;
 
         if (buyerProfile?.email) {
@@ -245,8 +243,7 @@ export async function syncTrackingForOrder(
 
           const buyerProfile = disputed.buyer_profile as { full_name?: string; email?: string } | null;
           const sellerProfile = disputed.seller_profile as { full_name?: string; email?: string } | null;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const gameName = getOrderGameSummary(disputed.order_items as any[], disputed.listings as any);
+          const gameName = getOrderGameSummary(disputed.order_items as OrderItemLike[], disputed.listings as LegacyListingsLike);
 
           void sendDisputeEscalated({
             buyerName: buyerProfile?.full_name ?? 'Buyer',
