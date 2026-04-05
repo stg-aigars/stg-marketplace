@@ -31,6 +31,7 @@ const CSP_TEMPLATE = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "worker-src 'self'",
 ].join('; ');
 
 export function buildCspHeader(nonce: string): string {
