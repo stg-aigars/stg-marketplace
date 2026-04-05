@@ -1,0 +1,36 @@
+# Second Turn Games
+
+> Every game deserves a second turn.
+
+Second Turn Games is a peer-to-peer marketplace for pre-loved board games in the Baltic region (Latvia, Lithuania, Estonia).
+
+## What We Do
+
+Buyers and sellers trade used board games at fair prices. Every listing includes condition grading, seller photos, and ships via parcel locker networks across all three Baltic countries.
+
+## How It Works
+
+- **Browse games** at /browse — filter by condition, price, player count, country, categories, and mechanics
+- **Search games** at /browse?q={query} — text search by game name
+- **Listing pages** at /listings/{id} — individual game listings with price, condition, photos, seller info, and shipping options
+- **Wanted listings** at /wanted — buyers post what games they're looking for
+- **Seller profiles** at /sellers/{id} — seller ratings, trust badges, active listings, and game shelf
+
+## Pricing
+
+All prices are in EUR. Buyers pay item price + shipping only (no service fee). Shipping is via Unisend parcel lockers across Latvia, Lithuania, and Estonia.
+
+## Markets
+
+- Latvia (LV)
+- Lithuania (LT)
+- Estonia (EE)
+
+## Game Data
+
+Game metadata (title, player count, play time, weight, categories, mechanics) is sourced from BoardGameGeek. Each listing includes the specific edition, publisher, and language of the copy being sold.
+
+## Contact
+
+Website: https://secondturn.games
+Contact page: https://secondturn.games/contact
