@@ -17,6 +17,7 @@ import { ConditionPhotosStep } from './ConditionPhotosStep';
 import { ReviewPriceStep } from './ReviewPriceStep';
 import { ExpansionStep } from './ExpansionStep';
 import type { VersionData } from '@/lib/listings/types';
+import type { BGGVersion } from '@/lib/bgg/types';
 
 interface GameExpansion {
   id: number;
@@ -136,6 +137,11 @@ export function ListingCreationFlow({
   const [expansionGateAnswer, setExpansionGateAnswer] = useState<boolean | null>(null);
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
   const [enrichedExpansions, setEnrichedExpansions] = useState<Record<number, EnrichedGame>>({});
+  // Version cache: avoids re-fetching BGG versions on back/forward navigation
+  const [versionCache, setVersionCache] = useState<Record<number, BGGVersion[]>>({});
+  const handleVersionsFetched = useCallback((gameId: number, versions: BGGVersion[]) => {
+    setVersionCache((prev) => ({ ...prev, [gameId]: versions }));
+  }, []);
 
   const STEPS: { id: StepId; label: string }[] = [
     { id: 'game', label: 'Game' },
@@ -554,6 +560,8 @@ export function ListingCreationFlow({
               selectedPublisher={formData.publisher}
               selectedLanguage={formData.language}
               selectedEditionYear={formData.edition_year}
+              cachedVersions={versionCache[formData.bgg_game_id]}
+              onVersionsFetched={handleVersionsFetched}
               onSelect={(version) => {
                 updateFormData({
                   version_source: version.version_source,
@@ -602,6 +610,8 @@ export function ListingCreationFlow({
                         selectedPublisher={expVersion?.publisher ?? null}
                         selectedLanguage={expVersion?.language ?? null}
                         selectedEditionYear={expVersion?.edition_year ?? null}
+                        cachedVersions={versionCache[expId]}
+                        onVersionsFetched={handleVersionsFetched}
                         onSelect={(version: VersionData) => {
                           updateFormData({
                             expansion_versions: {

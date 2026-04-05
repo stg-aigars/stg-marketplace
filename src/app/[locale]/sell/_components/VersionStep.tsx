@@ -26,6 +26,10 @@ interface VersionStepProps {
   onSelect: (version: VersionData) => void;
   compact?: boolean;
   userCountry?: CountryCode | null;
+  /** Parent-level cache: if provided, skip fetch */
+  cachedVersions?: BGGVersion[];
+  /** Called after fetch so parent can cache for back/forward navigation */
+  onVersionsFetched?: (gameId: number, versions: BGGVersion[]) => void;
 }
 
 const PRIORITY_LANGUAGES = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'German'];
@@ -55,6 +59,8 @@ export function VersionStep({
   onSelect,
   compact,
   userCountry,
+  cachedVersions,
+  onVersionsFetched,
 }: VersionStepProps) {
   const [versions, setVersions] = useState<BGGVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +89,13 @@ export function VersionStep({
   };
 
   useEffect(() => {
+    if (cachedVersions) {
+      setVersions(cachedVersions);
+      if (cachedVersions.length === 0) setShowManual(true);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function fetchVersions() {
@@ -102,6 +115,7 @@ export function VersionStep({
         if (!cancelled) {
           const fetched = data.versions ?? [];
           setVersions(fetched);
+          onVersionsFetched?.(gameId, fetched);
           if (fetched.length === 0) setShowManual(true);
         }
       } catch {
@@ -118,6 +132,8 @@ export function VersionStep({
     return () => {
       cancelled = true;
     };
+    // cachedVersions/onVersionsFetched intentionally excluded — effect should only re-run on game change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   // Auto-select language filter based on user's country (once, after versions load)
