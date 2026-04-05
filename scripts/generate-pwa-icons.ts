@@ -34,7 +34,7 @@ async function generateMaskable(size: number, filename: string) {
       width: size,
       height: size,
       channels: 4,
-      background: { r: 208, g: 135, b: 112, alpha: 1 }, // #D08770
+      background: { r: 208, g: 135, b: 112, alpha: 1 }, // aurora.orange — primary CTA token
     },
   })
     .composite([{ input: logoBuffer, top: offset, left: offset }])
@@ -51,14 +51,11 @@ async function main() {
     generateStandard(512, 'icon-512.png'),
     generateMaskable(192, 'icon-maskable-192.png'),
     generateMaskable(512, 'icon-maskable-512.png'),
+    // Apple touch icon in public root (not icons/)
+    sharp(Buffer.from(squareSvg)).resize(180, 180).png()
+      .toFile(join(ROOT, 'public', 'apple-touch-icon.png'))
+      .then(() => console.log('  apple-touch-icon.png (180x180)')),
   ]);
-
-  // Apple touch icon goes in public root
-  await sharp(Buffer.from(squareSvg))
-    .resize(180, 180)
-    .png()
-    .toFile(join(ROOT, 'public', 'apple-touch-icon.png'));
-  console.log('  apple-touch-icon.png (180x180)');
 
   console.log('Done.');
 }

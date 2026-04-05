@@ -61,7 +61,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#6BA3B5',
+  themeColor: '#6BA3B5', // semantic.brand — keep in sync with tokens.ts
 };
 
 export default async function LocaleLayout(
