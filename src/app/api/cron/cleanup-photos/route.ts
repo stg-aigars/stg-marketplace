@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
+import { extractStoragePath } from '@/lib/listings/storage-utils';
 
 const GRACE_PERIOD_MS = 2 * 60 * 60 * 1000; // 2 hours — covers in-progress uploads
 const BATCH_SIZE = 1000;
 const DELETE_BATCH_SIZE = 100;
 const MAX_DELETIONS = 500;
-
-const STORAGE_PREFIX = `${env.supabase.url}/storage/v1/object/public/listing-photos/`;
-
-function extractStoragePath(url: string): string {
-  return url.slice(STORAGE_PREFIX.length);
-}
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');

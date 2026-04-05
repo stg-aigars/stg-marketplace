@@ -10,6 +10,7 @@ import { fetchProfiles } from '@/lib/supabase/helpers';
 import { notify } from '@/lib/notifications';
 import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
+import { extractStoragePath } from './storage-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import {
@@ -399,9 +400,8 @@ export async function updateListing(
 
   // Clean up removed photos from storage (after DB update succeeded)
   if (removedPhotos.length > 0) {
-    const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/`;
     const pathsToRemove = removedPhotos
-      .map((url) => url.replace(storagePrefix, ''))
+      .map(extractStoragePath)
       .filter((path) => path.length > 0);
 
     if (pathsToRemove.length > 0) {
