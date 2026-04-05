@@ -164,6 +164,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Your parcel for ${ctx.gameName ?? 'a game'} was scanned at ${ctx.terminalName ?? 'the terminal'} — it's on its way`,
     link: orderLink,
   },
+  'shipping.returning': {
+    title: () => 'Parcel returning to sender',
+    body: (ctx) => `The parcel for ${ctx.gameName ?? 'a game'} was not collected and is returning to sender. A dispute has been opened.`,
+    link: orderLink,
+  },
 
   // --- Auctions ---
   'auction.bid_placed': {

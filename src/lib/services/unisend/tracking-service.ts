@@ -4,14 +4,15 @@
  * Auto-transitions:
  *   - PARCEL_RECEIVED + accepted → shipped (hybrid auto-ship)
  *   - PARCEL_DELIVERED + shipped → delivered
+ *   - RETURNING + shipped → disputed (uncollected parcel, auto-dispute)
  */
 
 import { getUnisendClient } from './client';
 import { createServiceClient } from '@/lib/supabase';
 import type { TrackingStateType } from './types';
-import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer } from '@/lib/email';
+import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
-import { notify } from '@/lib/notifications';
+import { notify, notifyMany } from '@/lib/notifications';
 
 /** Max age for PARCEL_RECEIVED events to trigger auto-ship (prevents stale transitions) */
 const AUTO_SHIP_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
@@ -186,6 +187,78 @@ export async function syncTrackingForOrder(
         });
 
         console.log(`[Tracking] Auto-shipped order ${orderId} via PARCEL_RECEIVED at ${terminalName ?? 'unknown terminal'}`);
+      }
+    }
+
+    // Auto-transition: if RETURNING detected and order is shipped → disputed (uncollected parcel)
+    const hasReturningEvent = trackingEvents.some(
+      (e) => (e.stateType as TrackingStateType) === 'RETURNING'
+    );
+    const currentStatus = statusChanged ? newStatus : oldStatus;
+
+    if (hasReturningEvent && currentStatus === 'shipped') {
+      // Idempotency: skip if dispute already exists
+      const { data: existingDispute } = await supabase
+        .from('disputes')
+        .select('id')
+        .eq('order_id', orderId)
+        .maybeSingle();
+
+      if (!existingDispute) {
+        const { data: disputed, error: disputeError } = await supabase
+          .from('orders')
+          .update({
+            status: 'disputed',
+            disputed_at: new Date().toISOString(),
+          })
+          .eq('id', orderId)
+          .eq('status', 'shipped') // Optimistic lock
+          .select('*, listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email), seller_profile:user_profiles!orders_seller_id_fkey(full_name, email)')
+          .single();
+
+        if (disputed && !disputeError) {
+          statusChanged = true;
+          newStatus = 'disputed';
+
+          await supabase.from('disputes').insert({
+            order_id: orderId,
+            buyer_id: disputed.buyer_id,
+            seller_id: disputed.seller_id,
+            reason: 'Auto-escalated: parcel not collected, returning to sender',
+            photos: [],
+            escalated_at: new Date().toISOString(),
+          });
+
+          void logAuditEvent({
+            actorType: 'cron',
+            action: 'order.parcel_returning',
+            resourceType: 'order',
+            resourceId: orderId,
+            metadata: { orderNumber: disputed.order_number, trigger: 'tracking_returning' },
+          });
+
+          const buyerProfile = disputed.buyer_profile as { full_name?: string; email?: string } | null;
+          const sellerProfile = disputed.seller_profile as { full_name?: string; email?: string } | null;
+          const listing = disputed.listings as { game_name?: string } | null;
+          const gameName = listing?.game_name ?? 'Game';
+
+          void sendDisputeEscalated({
+            buyerName: buyerProfile?.full_name ?? 'Buyer',
+            buyerEmail: buyerProfile?.email ?? '',
+            sellerName: sellerProfile?.full_name ?? 'Seller',
+            sellerEmail: sellerProfile?.email ?? '',
+            orderNumber: disputed.order_number,
+            orderId,
+            gameName,
+          }).catch((err) => console.error('[Tracking] Failed to send returning-parcel escalation email:', err));
+
+          void notifyMany([
+            { userId: disputed.buyer_id, type: 'shipping.returning', context: { gameName, orderNumber: disputed.order_number, orderId } },
+            { userId: disputed.seller_id, type: 'shipping.returning', context: { gameName, orderNumber: disputed.order_number, orderId } },
+          ]);
+
+          console.log(`[Tracking] Auto-disputed order ${orderId} — parcel returning (uncollected)`);
+        }
       }
     }
 

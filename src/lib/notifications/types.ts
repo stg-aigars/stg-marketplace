@@ -31,6 +31,7 @@ export type NotificationType =
   // Shipping
   | 'shipping.instructions'
   | 'shipping.scanned'
+  | 'shipping.returning'
   // Auctions
   | 'auction.bid_placed'
   | 'auction.outbid'
