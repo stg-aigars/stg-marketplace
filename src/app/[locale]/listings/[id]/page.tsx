@@ -8,8 +8,11 @@ import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, Ca
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionConfig } from '@/lib/condition-config';
+import { conditionConfig, getConditionLabel } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
+import { JsonLd } from '@/lib/seo/json-ld';
+import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
+import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
 import { formatDate } from '@/lib/date-utils';
 import { decodeHTMLEntities, getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
@@ -104,19 +107,30 @@ export async function generateMetadata(
       games: { image: string | null; thumbnail: string | null } | null;
     }>();
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
   const title = data?.game_name ?? 'Listing';
-  const description = data
-    ? `${data.game_name} — ${data.condition} condition, ${formatCentsToCurrency(data.price_cents)}`
-    : 'Pre-loved board game listing on Second Turn Games';
   const image = data?.games?.image ?? data?.games?.thumbnail ?? undefined;
+
+  if (!data) {
+    return {
+      title,
+      description: 'Pre-loved board game listing on Second Turn Games',
+    };
+  }
+
+  const condLabel = getConditionLabel(data.condition as ListingCondition);
+  const price = formatCentsToCurrency(data.price_cents);
+  const description = `Pre-loved ${data.game_name} in ${condLabel} condition. ${price} — ships across Latvia, Lithuania, Estonia.`;
 
   return {
     title,
     description,
     openGraph: {
-      title: `${title} | Second Turn Games`,
-      description,
-      ...(image ? { images: [{ url: image }] } : {}),
+      title: `${title} — ${price}`,
+      description: `${condLabel} condition. Ships across the Baltics.`,
+      url: `${baseUrl}/listings/${id}`,
+      siteName: 'Second Turn Games',
+      ...(image ? { images: [{ url: image, alt: data.game_name }] } : {}),
     },
   };
 }
@@ -159,6 +173,29 @@ export default async function ListingDetailPage(
 
   // Attach to listing shape for backward compatibility with template
   listing.user_profiles = sellerProfile;
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
+  const listingJsonLd = buildListingJsonLd({
+    id: listing.id,
+    title: listing.game_name,
+    priceCents: listing.price_cents,
+    status: listing.status,
+    conditionLabel: getConditionLabel(listing.condition),
+    sellerNotes: listing.description,
+    imageUrls: [
+      ...listing.photos,
+      ...(listing.games?.image ? [listing.games.image] : []),
+    ],
+    publisher: listing.publisher,
+    sellerName: sellerProfile?.full_name ?? 'Seller',
+    isAuction: listing.listing_type === 'auction',
+    currentBidCents: listing.current_bid_cents,
+  }, baseUrl);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Second Turn Games', url: '/' },
+    { name: 'Browse', url: '/browse' },
+    { name: listing.game_name },
+  ], baseUrl);
 
   const isOwner = user?.id === listing.seller_id;
   const isFavorited = favoriteIds.has(id);
@@ -249,6 +286,7 @@ export default async function ListingDetailPage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <JsonLd data={[listingJsonLd, breadcrumbJsonLd].filter((d): d is NonNullable<typeof d> => d != null)} />
       {/* Breadcrumb */}
       <Breadcrumb items={[
         { label: 'Browse', href: '/browse' },
@@ -531,7 +569,7 @@ export default async function ListingDetailPage(
           {/* Share + Favorite (utility actions) */}
           <div className="flex items-center gap-3">
             <ShareButtons
-              url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/listings/${listing.id}`}
+              url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`}
               title={listing.game_name}
             />
             {!isOwner && (

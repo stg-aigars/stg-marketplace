@@ -10,6 +10,8 @@ import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Toaster } from '@/components/ui/toaster';
 import { StaleActionGuard } from '@/components/StaleActionGuard';
+import { JsonLd } from '@/lib/seo/json-ld';
+import type { SearchAction } from 'schema-dts';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import '../globals.css';
 
@@ -90,6 +92,35 @@ export default async function LocaleLayout(
   return (
     <html lang={locale}>
       <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
+        <JsonLd data={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Second Turn Games',
+            url: baseUrl,
+            description: 'Pre-loved board games for the Baltic region',
+            areaServed: [
+              { '@type': 'Country', name: 'Latvia' },
+              { '@type': 'Country', name: 'Lithuania' },
+              { '@type': 'Country', name: 'Estonia' },
+            ],
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Second Turn Games',
+            url: baseUrl,
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: {
+                '@type': 'EntryPoint',
+                urlTemplate: `${baseUrl}/browse?q={search_term_string}`,
+              },
+              // Google-specific extension — not in Schema.org spec, requires type escape
+              'query-input': 'required name=search_term_string',
+            } as unknown as SearchAction,
+          },
+        ]} />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <CartProvider>
