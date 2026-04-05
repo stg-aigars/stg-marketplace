@@ -55,6 +55,10 @@ async function main() {
     sharp(Buffer.from(squareSvg)).resize(180, 180).png()
       .toFile(join(ROOT, 'public', 'apple-touch-icon.png'))
       .then(() => console.log('  apple-touch-icon.png (180x180)')),
+    // 32×32 PNG favicon fallback for legacy browsers
+    sharp(Buffer.from(squareSvg)).resize(32, 32).png()
+      .toFile(join(ROOT, 'src', 'app', 'icon.png'))
+      .then(() => console.log('  icon.png (32x32, favicon fallback)')),
   ]);
 
   console.log('Done.');

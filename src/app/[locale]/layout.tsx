@@ -53,6 +53,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   manifest: '/manifest.webmanifest',
   icons: {
+    icon: '/favicon.svg',
     apple: '/apple-touch-icon.png',
   },
 };
