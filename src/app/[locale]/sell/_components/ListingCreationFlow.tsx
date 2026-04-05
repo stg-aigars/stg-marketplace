@@ -17,6 +17,7 @@ import { ConditionPhotosStep } from './ConditionPhotosStep';
 import { ReviewPriceStep } from './ReviewPriceStep';
 import { ExpansionStep } from './ExpansionStep';
 import type { VersionData } from '@/lib/listings/types';
+import type { BGGVersion } from '@/lib/bgg/types';
 
 interface GameExpansion {
   id: number;
@@ -137,8 +138,8 @@ export function ListingCreationFlow({
   const [duplicateListings, setDuplicateListings] = useState<DuplicateListing[]>([]);
   const [enrichedExpansions, setEnrichedExpansions] = useState<Record<number, EnrichedGame>>({});
   // Version cache: avoids re-fetching BGG versions on back/forward navigation
-  const [versionCache, setVersionCache] = useState<Record<number, import('@/lib/bgg/types').BGGVersion[]>>({});
-  const handleVersionsFetched = useCallback((gameId: number, versions: import('@/lib/bgg/types').BGGVersion[]) => {
+  const [versionCache, setVersionCache] = useState<Record<number, BGGVersion[]>>({});
+  const handleVersionsFetched = useCallback((gameId: number, versions: BGGVersion[]) => {
     setVersionCache((prev) => ({ ...prev, [gameId]: versions }));
   }, []);
 
