@@ -10,6 +10,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Toaster } from '@/components/ui/toaster';
 import { StaleActionGuard } from '@/components/StaleActionGuard';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import '../globals.css';
 
 // Cookie consent: not required. Only browser cookies are Supabase auth session
@@ -50,12 +51,17 @@ export const metadata: Metadata = {
     description: 'Every game deserves a second turn. Pre-loved board games for the Baltic region.',
   },
   metadataBase: new URL(baseUrl),
+  manifest: '/manifest.webmanifest',
+  icons: {
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#6BA3B5',
 };
 
 export default async function LocaleLayout(
@@ -93,6 +99,7 @@ export default async function LocaleLayout(
               <SiteFooter />
               <Toaster />
               <StaleActionGuard />
+              <ServiceWorkerRegistration />
             </CartProvider>
           </AuthProvider>
         </NextIntlClientProvider>
