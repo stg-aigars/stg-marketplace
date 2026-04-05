@@ -107,7 +107,7 @@ export async function generateMetadata(
       games: { image: string | null; thumbnail: string | null } | null;
     }>();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
   const title = data?.game_name ?? 'Listing';
   const image = data?.games?.image ?? data?.games?.thumbnail ?? undefined;
 
@@ -174,7 +174,7 @@ export default async function ListingDetailPage(
   // Attach to listing shape for backward compatibility with template
   listing.user_profiles = sellerProfile;
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
   const listingJsonLd = buildListingJsonLd({
     id: listing.id,
     title: listing.game_name,
@@ -569,7 +569,7 @@ export default async function ListingDetailPage(
           {/* Share + Favorite (utility actions) */}
           <div className="flex items-center gap-3">
             <ShareButtons
-              url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/listings/${listing.id}`}
+              url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`}
               title={listing.game_name}
             />
             {!isOwner && (

@@ -59,15 +59,9 @@ export function buildListingJsonLd(
       price,
       itemCondition: SCHEMA_ITEM_CONDITION,
       availability,
-    },
+      ...(input.sellerName ? { seller: { '@type': 'Person', name: input.sellerName } } : {}),
+    } as WithContext<Product>['offers'],
   };
-
-  if (input.sellerName) {
-    (jsonLd.offers as Record<string, unknown>).seller = {
-      '@type': 'Person',
-      name: input.sellerName,
-    };
-  }
 
   if (input.imageUrls.length > 0) {
     jsonLd.image = input.imageUrls;

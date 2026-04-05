@@ -11,6 +11,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Toaster } from '@/components/ui/toaster';
 import { StaleActionGuard } from '@/components/StaleActionGuard';
 import { JsonLd } from '@/lib/seo/json-ld';
+import type { SearchAction } from 'schema-dts';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import '../globals.css';
 
@@ -117,7 +118,7 @@ export default async function LocaleLayout(
               },
               // Google-specific extension — not in Schema.org spec, requires type escape
               'query-input': 'required name=search_term_string',
-            } as unknown as import('schema-dts').SearchAction,
+            } as unknown as SearchAction,
           },
         ]} />
         <NextIntlClientProvider messages={messages}>

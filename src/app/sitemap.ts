@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
-      // Deduplicate sellers — keep the most recent updated_at per seller
+      // One entry per seller — listings ordered newest-first, so first occurrence = most recent activity
       const sellerMap = new Map<string, string>();
       for (const row of listings) {
         if (!sellerMap.has(row.seller_id)) {
