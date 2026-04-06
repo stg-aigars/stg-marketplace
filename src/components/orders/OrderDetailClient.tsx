@@ -193,7 +193,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             refunded_at: order.refunded_at,
             cancellation_reason: order.cancellation_reason,
             seller_country: order.seller_country,
-            buyer_country: order.terminal_country,
+            destination_country: order.terminal_country,
           }}
           trackingEvents={trackingEvents}
           trackingUrl={order.tracking_url}

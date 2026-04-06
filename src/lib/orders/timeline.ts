@@ -50,7 +50,7 @@ export interface OrderForTimeline {
   refunded_at?: string | null;
   cancellation_reason?: CancellationReason | null;
   seller_country?: string | null;
-  buyer_country?: string | null;
+  destination_country?: string | null;
 }
 
 /** Structural type — satisfied by TrackingEventRow */
@@ -85,9 +85,9 @@ export function buildOrderTimeline(
         isCurrent: false,
         isFuture: false,
       };
-      if (event.state_type === 'ON_THE_WAY' && order.seller_country && order.buyer_country) {
-        entry.detail = order.seller_country !== order.buyer_country
-          ? 'Typically 2\u20133 working days'
+      if (event.state_type === 'ON_THE_WAY' && order.seller_country && order.destination_country) {
+        entry.detail = order.seller_country !== order.destination_country
+          ? 'Typically 2–3 working days'
           : 'Typically next working day';
       }
       entries.push(entry);
