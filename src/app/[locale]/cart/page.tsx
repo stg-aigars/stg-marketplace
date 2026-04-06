@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, Badge, Button, Card, CardBody, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { formatExpansionCount } from '@/lib/listings/types';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import {
@@ -202,7 +203,7 @@ export default function CartPage() {
                           </p>
                           {item.expansionCount != null && item.expansionCount > 0 && (
                             <p className="text-xs text-semantic-text-muted">
-                              +{item.expansionCount} {item.expansionCount === 1 ? 'expansion' : 'expansions'}
+                              {formatExpansionCount(item.expansionCount)}
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-1">

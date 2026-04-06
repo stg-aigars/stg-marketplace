@@ -5,7 +5,7 @@ import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Card } from '@/components/ui';
 import { GameTitle, Price } from './atoms';
 import { getConditionLabel } from '@/lib/condition-config';
-import type { ListingCondition } from '@/lib/listings/types';
+import { formatExpansionCount, type ListingCondition } from '@/lib/listings/types';
 
 interface ListingCardMiniProps {
   id: string;
@@ -53,7 +53,7 @@ function ListingCardMini({
           <GameTitle name={gameTitle} size="xs" serif clamp={2} />
           {expansionCount > 0 && (
             <p className="text-xs text-semantic-text-muted leading-tight">
-              +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
+              {formatExpansionCount(expansionCount)}
             </p>
           )}
           <div className="flex items-center gap-1.5">

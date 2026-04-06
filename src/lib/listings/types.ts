@@ -100,6 +100,10 @@ export function isAuctionWithBids(listingType: string, bidCount: number): boolea
   return listingType === 'auction' && bidCount > 0;
 }
 
+export function formatExpansionCount(count: number): string {
+  return `+${count} ${count === 1 ? 'expansion' : 'expansions'}`;
+}
+
 export const MIN_PRICE_CENTS = 50; // €0.50
 export const MAX_GAME_NAME_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 2000;

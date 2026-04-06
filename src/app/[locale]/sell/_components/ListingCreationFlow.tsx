@@ -6,7 +6,7 @@ import { Button, Stepper, TurnstileWidget, Alert, Card, CardBody, Spinner } from
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource, ListingExpansion } from '@/lib/listings/types';
-import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
+import { conditionRequiresPhotos, conditionRequiresDescription, formatExpansionCount } from '@/lib/listings/types';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -470,7 +470,7 @@ export function ListingCreationFlow({
                     >
                       {listing.game_name} — {formatCentsToCurrency(listing.price_cents)}
                       {listing.expansion_count > 0 && (
-                        <span className="text-semantic-text-muted ml-1">+{listing.expansion_count} expansions</span>
+                        <span className="text-semantic-text-muted ml-1">{formatExpansionCount(listing.expansion_count)}</span>
                       )}
                     </a>
                   ))}
