@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { orderMessageLimiter } from '@/lib/rate-limit';
 import { notify } from '@/lib/notifications';
 import { logAuditEvent } from '@/lib/services/audit';
+import { fetchProfileNames } from '@/lib/supabase/profiles';
 import { MAX_ORDER_MESSAGE_LENGTH, type OrderMessage } from './types';
 
 /**
@@ -86,17 +87,8 @@ export async function getOrderMessages(orderId: string): Promise<OrderMessage[]>
 
   if (!messages || messages.length === 0) return [];
 
-  // Batch-fetch author names from public_profiles
   const userIds = [...new Set(messages.map((m) => m.user_id).filter(Boolean))] as string[];
-
-  const { data: profiles } = userIds.length > 0
-    ? await supabase
-        .from('public_profiles')
-        .select('id, full_name')
-        .in('id', userIds)
-    : { data: [] };
-
-  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const profileMap = await fetchProfileNames(supabase, userIds);
 
   return messages.map((m) => ({
     id: m.id,

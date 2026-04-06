@@ -7,6 +7,7 @@ import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { commentLimiter } from '@/lib/rate-limit';
 import { notify, notifyMany } from '@/lib/notifications';
 import { logAuditEvent } from '@/lib/services/audit';
+import { fetchProfileNames } from '@/lib/supabase/profiles';
 import { MAX_COMMENT_LENGTH, type ListingComment } from './types';
 
 const COMMENTABLE_STATUSES = ['active', 'reserved', 'auction_ended'];
@@ -154,17 +155,8 @@ export async function getComments(listingId: string, sellerId: string): Promise<
 
   if (!comments || comments.length === 0) return [];
 
-  // Batch-fetch author names from public_profiles
   const userIds = [...new Set(comments.map((c) => c.user_id).filter(Boolean))] as string[];
-
-  const { data: profiles } = userIds.length > 0
-    ? await supabase
-        .from('public_profiles')
-        .select('id, full_name')
-        .in('id', userIds)
-    : { data: [] };
-
-  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const profileMap = await fetchProfileNames(supabase, userIds);
 
   return comments.map((c) => ({
     id: c.id,
