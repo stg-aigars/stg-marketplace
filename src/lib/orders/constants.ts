@@ -91,11 +91,3 @@ export function getDisputeStatusConfig(
   return { label: 'Open', badgeVariant: 'warning' };
 }
 
-/** Timeline steps in display order */
-export const TIMELINE_STEPS: { status: OrderStatus; label: string }[] = [
-  { status: 'pending_seller', label: 'Ordered' },
-  { status: 'accepted', label: 'Accepted' },
-  { status: 'shipped', label: 'Shipped' },
-  { status: 'delivered', label: 'Delivered' },
-  { status: 'completed', label: 'Completed' },
-];
