@@ -93,7 +93,7 @@ export default async function LocaleLayout(
   return (
     <html lang={locale}>
       <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
-        <NextTopLoader color="#5E9CA0" showSpinner={false} height={3} shadow={false} />
+        <NextTopLoader color="#6BA3B5" showSpinner={false} height={3} shadow={false} /> {/* semantic.brand — keep in sync with tokens.ts */}
         <JsonLd data={[
           {
             '@context': 'https://schema.org',
