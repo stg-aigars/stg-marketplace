@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Button, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
-import { signInWithEmail } from '@/lib/auth/actions';
+import { validateSignIn } from '@/lib/auth/actions';
+import { createClient } from '@/lib/supabase/browser';
 import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
@@ -17,6 +18,7 @@ interface SignInFormProps {
 export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(errorMessage || '');
@@ -36,12 +38,31 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
     setError('');
     setLoading(true);
 
-    const result = await signInWithEmail({ email, password }, returnUrl, turnstileToken);
-    if (result?.error) {
-      setError(result.error);
+    // Step 1: Validate rate-limit + Turnstile server-side
+    const validation = await validateSignIn(turnstileToken);
+    if (validation?.error) {
+      setError(validation.error);
       setLoading(false);
       turnstileRef.current?.reset();
+      return;
     }
+
+    // Step 2: Sign in on the browser client so onAuthStateChange fires
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError('Invalid email or password');
+      setLoading(false);
+      turnstileRef.current?.reset();
+      return;
+    }
+
+    // onAuthStateChange fires SIGNED_IN → AuthProvider sets user + router.refresh()
+    // Navigate to the return URL
+    router.push(returnUrl || '/');
   }
 
   return (
