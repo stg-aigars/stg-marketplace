@@ -27,18 +27,19 @@ export async function postOrderMessage(
   const limitResult = orderMessageLimiter.check(user.id);
   if (!limitResult.success) return { error: 'Too many messages. Please wait a moment.' };
 
-  // Fetch order — RLS ensures only participants can read
-  const { data: order } = await supabase
-    .from('orders')
-    .select('id, buyer_id, seller_id, order_number, order_items(listings(game_name))')
-    .eq('id', orderId)
-    .single<{
-      id: string;
-      buyer_id: string;
-      seller_id: string;
-      order_number: string;
-      order_items: Array<{ listings: { game_name: string } | null }>;
-    }>();
+  // Fetch order + sender name in parallel — RLS ensures only participants can read
+  const [{ data: order }, { data: senderProfile }] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('id, buyer_id, seller_id, order_number')
+      .eq('id', orderId)
+      .single<{ id: string; buyer_id: string; seller_id: string; order_number: string }>(),
+    supabase
+      .from('public_profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single<{ full_name: string | null }>(),
+  ]);
 
   if (!order) return { error: 'Order not found' };
 
@@ -59,24 +60,12 @@ export async function postOrderMessage(
   }
 
   // Fire-and-forget: notify the other party
-  void (async () => {
-    const recipientId = authorRole === 'buyer' ? order.seller_id : order.buyer_id;
-
-    const { data: senderProfile } = await supabase
-      .from('public_profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single<{ full_name: string | null }>();
-
-    const gameName = order.order_items?.[0]?.listings?.game_name ?? undefined;
-
-    void notify(recipientId, 'order.message_received', {
-      senderName: senderProfile?.full_name ?? 'Someone',
-      orderNumber: order.order_number,
-      orderId: order.id,
-      gameName,
-    });
-  })().catch((err) => console.error('[OrderMessages] Notification dispatch failed:', err));
+  const recipientId = authorRole === 'buyer' ? order.seller_id : order.buyer_id;
+  void notify(recipientId, 'order.message_received', {
+    senderName: senderProfile?.full_name ?? 'Someone',
+    orderNumber: order.order_number,
+    orderId: order.id,
+  }).catch((err) => console.error('[OrderMessages] Notification dispatch failed:', err));
 
   revalidatePath(`/orders/${orderId}`);
   return { success: true };

@@ -36,7 +36,7 @@ export default async function OrderDetailPage(
     id
   } = params;
 
-  const { user } = await requireServerAuth();
+  const { user, isStaff } = await requireServerAuth();
 
   const order = await getOrder(id);
 
@@ -50,16 +50,12 @@ export default async function OrderDetailPage(
 
   // Fetch dispute, review, tracking, and messages in parallel (independent queries)
   const hasTracking = !!order.barcode;
-  const supabase = (await import('@/lib/supabase/server')).createClient;
-  const client = await supabase();
-  const [dispute, existingReview, trackingEvents, messages, staffProfile] = await Promise.all([
+  const [dispute, existingReview, trackingEvents, messages] = await Promise.all([
     getDispute(id),
     getReviewForOrder(id),
     hasTracking ? getTrackingEvents(id) : Promise.resolve([]),
     getOrderMessages(id),
-    client.from('user_profiles').select('is_staff').eq('id', user.id).single<{ is_staff: boolean }>().then((r) => r.data),
   ]);
-  const isStaff = staffProfile?.is_staff ?? false;
   const orderWithDispute = { ...order, dispute };
 
   // Compute review eligibility — window counts from completion (not delivery)
