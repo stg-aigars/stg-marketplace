@@ -30,6 +30,8 @@ interface UnifiedTimelineProps {
     disputed_at?: string | null;
     refunded_at?: string | null;
     cancellation_reason?: CancellationReason | null;
+    seller_country?: string | null;
+    buyer_country?: string | null;
   };
   trackingEvents: TrackingEventRow[];
   trackingUrl: string | null;
