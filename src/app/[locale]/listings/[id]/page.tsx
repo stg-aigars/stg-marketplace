@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
-import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag } from '@phosphor-icons/react/ssr';
+import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -340,6 +340,13 @@ export default async function ListingDetailPage(
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {listing.game_name}
           </h1>
+
+          {expansionCount > 0 && (
+            <p className="text-sm text-semantic-text-muted flex items-center gap-1.5">
+              <PuzzlePiece size={15} />
+              +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
+            </p>
+          )}
 
           {games?.is_expansion && (
             <Alert variant="info">
