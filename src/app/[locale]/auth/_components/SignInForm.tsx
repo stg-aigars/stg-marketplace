@@ -10,6 +10,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
 
+// createBrowserClient returns a module-level singleton — safe to call at top level
+const supabase = createClient();
+
+/** Prevent open redirects — only allow relative paths. */
+function safeReturnUrl(url?: string): string {
+  if (!url || !url.startsWith('/') || url.startsWith('//')) {
+    return '/';
+  }
+  return url;
+}
+
 interface SignInFormProps {
   returnUrl?: string;
   errorMessage?: string;
@@ -29,7 +40,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
   // Redirect away if user becomes authenticated (e.g. after OAuth callback)
   useEffect(() => {
     if (user) {
-      router.replace(returnUrl || '/');
+      router.replace(safeReturnUrl(returnUrl));
     }
   }, [user, router, returnUrl]);
 
@@ -38,7 +49,6 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
     setError('');
     setLoading(true);
 
-    // Step 1: Validate rate-limit + Turnstile server-side
     const validation = await validateSignIn(turnstileToken);
     if (validation?.error) {
       setError(validation.error);
@@ -47,7 +57,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
       return;
     }
 
-    // Step 2: Sign in on the browser client so onAuthStateChange fires
+    // Sign in on browser client so onAuthStateChange fires SIGNED_IN
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -60,9 +70,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
       return;
     }
 
-    // onAuthStateChange fires SIGNED_IN → AuthProvider sets user + router.refresh()
-    // Navigate to the return URL
-    router.push(returnUrl || '/');
+    // AuthProvider's onAuthStateChange sets user → useEffect above handles redirect
   }
 
   return (
