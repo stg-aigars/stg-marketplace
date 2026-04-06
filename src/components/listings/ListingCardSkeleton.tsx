@@ -2,18 +2,18 @@ import { Card, Skeleton } from '@/components/ui';
 
 function ListingCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden h-full flex flex-col">
       {/* Image placeholder — square */}
       <Skeleton className="aspect-square rounded-none" />
 
       {/* Details */}
-      <div className="px-3 py-3 space-y-2">
+      <div className="px-3 py-3 flex flex-col flex-1 gap-2">
         <div>
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-12 mt-1" />
         </div>
         <Skeleton className="h-5 w-20 rounded-md" />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto">
           <Skeleton className="h-5 w-16" />
           <Skeleton className="h-4 w-6 rounded-full" />
         </div>

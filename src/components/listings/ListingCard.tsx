@@ -59,7 +59,7 @@ function ListingCard({
   return (
     <Link href={`/listings/${id}`} className={`group block h-full ${unavailable ? 'opacity-60' : ''}`}>
       <Card
-        className={`overflow-hidden h-full flex flex-col border border-semantic-border-subtle transition-all duration-350 ease-out-custom ${
+        className={`overflow-hidden h-full flex flex-col transition-all duration-350 ease-out-custom ${
           !unavailable ? 'sm:hover:border-semantic-brand sm:hover:shadow-lg sm:hover:-translate-y-0.5' : ''
         }`}
       >
