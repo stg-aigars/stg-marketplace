@@ -23,10 +23,9 @@ export default function PrivacyPage() {
           </h2>
           <p>
             Second Turn Games SIA (&ldquo;STG&rdquo;), registration number 50203665371, registered at
-            Evalda Valtera iela 5 - 35, Riga, LV-1021, Latvia, is the data controller for personal
-            data processed through this platform. This policy explains how we collect, use, and protect
-            your personal data in accordance with the General Data Protection Regulation (GDPR, EU
-            2016/679) and Latvian data protection laws.
+            Evalda Valtera iela 5 - 35, Riga, LV-1021, Latvia, is the data controller. This policy
+            explains how we collect, use, and protect your personal data under the General Data
+            Protection Regulation (GDPR, EU 2016/679) and Latvian data protection law.
           </p>
           <p>
             Contact:{' '}
@@ -61,12 +60,12 @@ export default function PrivacyPage() {
               account details (IBAN) for withdrawals
             </li>
             <li>
-              <strong>Payment data:</strong> processed securely by EveryPay (Swedbank) &mdash; we do
-              not store card details
+              <strong>Payment data:</strong> processed by EveryPay (Swedbank). We do not store card
+              details
             </li>
             <li>
               <strong>Usage data:</strong> pages visited, browser type, IP address (for security and
-              service improvement)
+              to improve the platform)
             </li>
           </ul>
         </section>
@@ -139,11 +138,9 @@ export default function PrivacyPage() {
             5. Data storage and security
           </h2>
           <p>
-            Your data is stored securely using Supabase (cloud database) with row-level security
-            policies. Our servers are hosted in the EU (Helsinki, Finland). All data transmission is
-            encrypted via TLS, and data at rest is encrypted using AES-256. Photos are stored in
-            Supabase Storage with access controls. Authentication uses HTTP-only cookies to prevent
-            cross-site scripting access.
+            Your data is stored in Supabase (cloud database) with row-level security policies. Our
+            servers are in the EU (Helsinki, Finland). Data in transit is encrypted via TLS, data at
+            rest via AES-256. Photos are stored in Supabase Storage with access controls.
           </p>
         </section>
 
@@ -151,7 +148,7 @@ export default function PrivacyPage() {
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             6. Data sharing
           </h2>
-          <p>We share your data only with the following processors, all of which are EU-based or provide adequate data protection safeguards:</p>
+          <p>We share your data with these processors:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>EveryPay (Swedbank):</strong> payment processing &mdash; name, email,
@@ -281,9 +278,9 @@ export default function PrivacyPage() {
             10. Data breach notification
           </h2>
           <p>
-            In the event of a personal data breach that poses a risk to your rights and freedoms, we
-            will notify the supervisory authority within 72 hours in accordance with GDPR Article 33.
-            If the breach is likely to result in a high risk to you, we will also notify you directly.
+            If a data breach poses a risk to your rights, we will notify the supervisory authority
+            within 72 hours per GDPR Article 33. If the risk to you is high, we will notify you
+            directly as well.
           </p>
         </section>
 
@@ -292,10 +289,8 @@ export default function PrivacyPage() {
             11. Children&apos;s data
           </h2>
           <p>
-            The platform is not intended for users under 16 years of age. Users must be at least 18
-            to sell items. We do not knowingly collect personal data from children under 16. If you
-            believe a child under 16 has provided us with personal data, please contact us and we
-            will delete it.
+            You must be at least 16 to use the platform and at least 18 to sell. If someone under 16
+            has created an account, contact us and we will delete their data.
           </p>
         </section>
 
@@ -304,8 +299,8 @@ export default function PrivacyPage() {
             12. Supervisory authority
           </h2>
           <p>
-            If you believe your data protection rights have been violated, you have the right to
-            lodge a complaint with the Latvian Data State Inspectorate (DVI) at{' '}
+            If you believe your data protection rights have been violated, you can lodge a complaint
+            with the Latvian Data State Inspectorate (DVI) at{' '}
             <a
               href="https://www.dvi.gov.lv"
               className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"

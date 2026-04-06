@@ -24,9 +24,9 @@ export default function TermsPage() {
           <p>
             Second Turn Games SIA (&ldquo;STG&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;),
             registration number 50203665371, registered at Evalda Valtera iela 5 - 35, Riga, LV-1021,
-            Latvia, operates a peer-to-peer marketplace for pre-loved board games in the Baltic region
-            (Latvia, Lithuania, and Estonia). We act as a commercial agent under PSD2 Article 3(b),
-            facilitating transactions between buyers and sellers.
+            Latvia, operates a peer-to-peer marketplace for pre-loved board games in Latvia, Lithuania,
+            and Estonia. We act as a commercial agent under PSD2 Article 3(b), connecting buyers and
+            sellers and handling payments on their behalf.
           </p>
         </section>
 
@@ -46,15 +46,14 @@ export default function TermsPage() {
             3. Consumer protection notice
           </h2>
           <p>
-            All sellers on Second Turn Games are private individuals selling personal items. They are
-            not businesses or professional traders. As such, EU consumer protection rules that apply to
-            business-to-consumer sales &mdash; including the 14-day withdrawal right and the 2-year
-            legal guarantee of conformity &mdash; do not apply to transactions on this platform.
+            All sellers on Second Turn Games are private individuals selling personal items, not
+            businesses or professional traders. EU consumer protection rules that apply to
+            business-to-consumer sales (the 14-day withdrawal right, the 2-year legal guarantee of
+            conformity) do not apply to transactions on this platform.
           </p>
           <p>
-            Instead, STG provides alternative protections: buyer payments are held securely until
-            delivery is confirmed, and buyers have a 2-day dispute window after delivery to report
-            issues with their order.
+            What we do instead: buyer payments are held until delivery is confirmed, and buyers have
+            2 days after delivery to report issues with their order.
           </p>
         </section>
 
@@ -78,21 +77,21 @@ export default function TermsPage() {
             5. Seller obligations
           </h2>
           <p>
-            Selling on Second Turn Games is subject to additional terms outlined in our{' '}
+            Sellers have additional obligations under our{' '}
             <Link
               href="/seller-terms"
               className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
             >
               Seller Agreement
             </Link>
-            . By creating a listing, you confirm that you are at least 18 years old and agree to the
-            Seller Agreement. Key obligations include:
+            . By creating a listing, you confirm that you are at least 18 years old and agree to
+            those terms. The key ones:
           </p>
           <ul className="list-disc pl-6 space-y-1">
             <li>List items accurately, including condition, edition, and language</li>
             <li>Confirm or decline orders within 24 hours</li>
             <li>Ship items within the agreed timeframe using the provided Unisend shipping labels</li>
-            <li>Package items securely &mdash; sellers are liable for damage during transit</li>
+            <li>Package items securely. Sellers are liable for damage during transit</li>
             <li>Respond to buyer inquiries and disputes in good faith</li>
           </ul>
         </section>
@@ -116,10 +115,9 @@ export default function TermsPage() {
             7. Payments
           </h2>
           <p>
-            Payments are processed securely through EveryPay (Swedbank). Orders are only created
-            after payment has been confirmed. STG does not store payment card details. Buyer funds are
-            held by the platform until the order is completed, providing payment protection for both
-            parties.
+            Payments are processed through EveryPay (Swedbank). Orders are only created after
+            payment is confirmed. STG does not store card details. Buyer funds are held by the
+            platform until the order is completed.
           </p>
         </section>
 
@@ -181,10 +179,10 @@ export default function TermsPage() {
             12. Account suspension and termination
           </h2>
           <p>
-            STG may suspend or terminate accounts for violations of these terms, including but not
-            limited to: fraud, misrepresenting items, failing to ship orders, excessive chargebacks,
-            or suspected commercial activity. Upon termination, any pending payouts may be held for
-            up to 180 days to cover potential chargebacks or disputes.
+            STG may suspend or terminate accounts for violations of these terms, including fraud,
+            misrepresenting items, failing to ship orders, excessive chargebacks, or suspected
+            commercial activity. On termination, pending payouts may be held for up to 180 days to
+            cover chargebacks or disputes.
           </p>
           <p>
             You may delete your account at any time through your account settings, subject to
@@ -198,8 +196,8 @@ export default function TermsPage() {
           </h2>
           <p>
             The platform is provided &ldquo;as is&rdquo; without warranties of any kind. STG
-            facilitates transactions between buyers and sellers but is not a party to the sale itself.
-            We do not guarantee the condition, authenticity, or quality of items listed by sellers.
+            connects buyers and sellers but is not a party to the sale itself. We do not guarantee
+            the condition, authenticity, or quality of listed items.
           </p>
           <p>
             To the maximum extent permitted by law, STG&apos;s total liability to any user is limited
@@ -213,9 +211,9 @@ export default function TermsPage() {
             14. Governing law and disputes
           </h2>
           <p>
-            These terms are governed by the laws of the Republic of Latvia. Any disputes arising from
-            these terms or the use of the platform shall be subject to the jurisdiction of the courts
-            of Riga, Latvia.
+            These terms are governed by the laws of the Republic of Latvia. Disputes arising from
+            these terms or use of the platform fall under the jurisdiction of the courts of Riga,
+            Latvia.
           </p>
           <p>
             If you have a complaint, please contact us first at{' '}

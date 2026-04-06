@@ -32,15 +32,10 @@ export default function SellerTermsPage() {
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             1. Eligibility
           </h2>
-          <p>To sell on Second Turn Games, you must:</p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Be at least 18 years old</li>
-            <li>Be a private individual (not a business or professional trader)</li>
-            <li>Reside in Latvia, Lithuania, or Estonia</li>
-            <li>Be selling personal items, not purchasing items to resell for profit</li>
-          </ul>
-          <p>
-            By creating a listing, you confirm that you meet these requirements.
+          <p>To sell on Second Turn Games you must be at least 18, reside in Latvia, Lithuania, or
+            Estonia, and be a private individual (not a business). The platform is for selling
+            personal items, not for buying and reselling for profit. By creating a listing you
+            confirm you meet these requirements.
           </p>
         </section>
 
@@ -49,9 +44,9 @@ export default function SellerTermsPage() {
             2. Payment authorization
           </h2>
           <p>
-            By listing an item, you authorize Second Turn Games SIA to act as your commercial agent
-            under PSD2 Article 3(b) to receive payments from buyers on your behalf. Buyer funds are
-            held securely by the platform until the transaction is completed.
+            By listing an item, you authorize Second Turn Games SIA to receive payments from buyers
+            on your behalf, acting as your commercial agent under PSD2 Article 3(b). Funds are held
+            by the platform until the transaction is completed.
           </p>
         </section>
 
@@ -62,24 +57,22 @@ export default function SellerTermsPage() {
           <p>When an order is placed, you must:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>Confirm or decline</strong> the order within 24 hours. Orders not confirmed
-              within this period may be automatically cancelled with a full refund to the buyer
+              Confirm or decline the order within 24 hours. Orders not confirmed in time may be
+              automatically cancelled with a full refund to the buyer
             </li>
             <li>
-              <strong>Ship</strong> the item within the agreed timeframe after accepting the order.
-              Orders not shipped in time may be automatically cancelled
+              Ship the item within the agreed timeframe after accepting. Orders not shipped in time
+              may be automatically cancelled
             </li>
             <li>
-              <strong>Use the provided Unisend shipping labels</strong> for all deliveries. Do not
-              arrange alternative shipping
+              Use the provided Unisend shipping labels for all deliveries
             </li>
             <li>
-              <strong>Package items securely.</strong> You are liable for damage that occurs during
-              transit due to inadequate packaging
+              Package items securely. You are liable for transit damage caused by poor packaging
             </li>
             <li>
-              <strong>Describe items accurately,</strong> including condition, edition, language, and
-              any defects. Misrepresentation may result in disputes, refunds, or account suspension
+              Describe items accurately, including condition, edition, language, and any defects.
+              Misrepresentation may lead to disputes, refunds, or account suspension
             </li>
           </ul>
         </section>
@@ -118,7 +111,7 @@ export default function SellerTermsPage() {
             6. Suspension and termination
           </h2>
           <p>
-            STG may suspend or terminate your selling privileges for any of the following:
+            STG may suspend or terminate your selling privileges for:
           </p>
           <ul className="list-disc pl-6 space-y-1">
             <li>Fraud or deceptive practices</li>
@@ -128,8 +121,8 @@ export default function SellerTermsPage() {
             <li>Suspected commercial activity (buying to resell for profit)</li>
           </ul>
           <p>
-            Upon suspension or termination, any pending payouts may be held for up to 180 days to
-            cover potential chargebacks, refunds, or unresolved disputes.
+            On suspension or termination, pending payouts may be held for up to 180 days to cover
+            chargebacks, refunds, or unresolved disputes.
           </p>
         </section>
 
@@ -142,12 +135,11 @@ export default function SellerTermsPage() {
             your country of residence. STG does not provide tax advice.
           </p>
           <p>
-            Under the EU DAC7 directive (Council Directive 2021/514), STG may be required to report
-            seller information to the Latvian State Revenue Service (VID) when you reach certain
-            thresholds (30 or more transactions or &euro;2,000 or more in sales per calendar year).
-            If reporting is required, we will notify you and may request additional information such
-            as your full legal name, date of birth, address, and tax identification number. Failure
-            to provide required information may result in your selling privileges being suspended.
+            Under the EU DAC7 directive (Council Directive 2021/514), STG may need to report seller
+            information to the Latvian State Revenue Service (VID) once you reach 30 transactions or
+            &euro;2,000 in sales per calendar year. If this applies to you, we will let you know and
+            ask for your full legal name, date of birth, address, and tax identification number. If
+            you do not provide this information, we may have to suspend your selling privileges.
           </p>
         </section>
 
@@ -156,10 +148,9 @@ export default function SellerTermsPage() {
             8. Changes to this agreement
           </h2>
           <p>
-            We may update this agreement from time to time. Material changes &mdash; including
-            changes to fees, commission rates, or seller obligations &mdash; will be communicated
-            via email with at least 14 days notice. Continued selling after the notice period
-            constitutes acceptance of the updated terms.
+            We may update this agreement. For material changes (fees, commission rates, seller
+            obligations) we will email you at least 14 days before they take effect. Continued
+            selling after the notice period means you accept the updated terms.
           </p>
         </section>
 
