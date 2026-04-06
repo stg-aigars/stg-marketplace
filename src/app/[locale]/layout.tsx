@@ -14,6 +14,7 @@ import { JsonLd } from '@/lib/seo/json-ld';
 import type { SearchAction } from 'schema-dts';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import NextTopLoader from 'nextjs-toploader';
+import { colors } from '@/styles/tokens';
 import '../globals.css';
 
 // Cookie consent: not required. Only browser cookies are Supabase auth session
@@ -93,7 +94,7 @@ export default async function LocaleLayout(
   return (
     <html lang={locale}>
       <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
-        <NextTopLoader color="#6BA3B5" showSpinner={false} height={3} shadow={false} /> {/* semantic.brand — keep in sync with tokens.ts */}
+        <NextTopLoader color={colors.semantic.brand} showSpinner={false} shadow={false} />
         <JsonLd data={[
           {
             '@context': 'https://schema.org',
