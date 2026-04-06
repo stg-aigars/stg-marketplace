@@ -7,6 +7,7 @@
 import { Button, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, templateStyles as s } from './layout';
+import { getCountryName } from '@/lib/country-utils';
 
 interface OrderShippedSellerProps {
   sellerName: string;
@@ -55,7 +56,7 @@ export function OrderShippedSeller({
           <>
             <Text style={s.detailLabel}>Pickup terminal</Text>
             <Text style={s.detailValue}>
-              {terminalName}{terminalCountry ? `, ${terminalCountry}` : ''}
+              {terminalName}{terminalCountry ? `, ${getCountryName(terminalCountry)}` : ''}
             </Text>
           </>
         )}
