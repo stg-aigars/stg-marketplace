@@ -7,6 +7,7 @@ import { getReviewForOrder } from '@/lib/reviews/service';
 import { getTrackingEvents } from '@/lib/services/tracking';
 import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
+import { getOrderMessages } from '@/lib/order-messages/actions';
 
 export async function generateMetadata(
   props: {
@@ -35,7 +36,7 @@ export default async function OrderDetailPage(
     id
   } = params;
 
-  const { user } = await requireServerAuth();
+  const { user, isStaff } = await requireServerAuth();
 
   const order = await getOrder(id);
 
@@ -47,12 +48,13 @@ export default async function OrderDetailPage(
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
-  // Fetch dispute, review, and tracking data in parallel (independent queries)
+  // Fetch dispute, review, tracking, and messages in parallel (independent queries)
   const hasTracking = !!order.barcode;
-  const [dispute, existingReview, trackingEvents] = await Promise.all([
+  const [dispute, existingReview, trackingEvents, messages] = await Promise.all([
     getDispute(id),
     getReviewForOrder(id),
     hasTracking ? getTrackingEvents(id) : Promise.resolve([]),
+    getOrderMessages(id),
   ]);
   const orderWithDispute = { ...order, dispute };
 
@@ -74,6 +76,8 @@ export default async function OrderDetailPage(
       existingReview={existingReview}
       isReviewEligible={isReviewEligible}
       trackingEvents={trackingEvents}
+      messages={messages}
+      isStaff={isStaff}
     />
   );
 }
