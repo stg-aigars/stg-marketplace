@@ -45,7 +45,6 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Account data:</strong> email address, display name, country, phone number
-              (required for sellers)
             </li>
             <li>
               <strong>Listing data:</strong> game details, condition, photos, pricing. Location
@@ -126,7 +125,7 @@ export default function PrivacyPage() {
           </h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>To provide and operate the marketplace</li>
-            <li>To process transactions and generate shipping labels</li>
+            <li>To process transactions and arrange shipping</li>
             <li>To send transactional emails (order confirmations, shipping updates)</li>
             <li>To prevent fraud and enforce our terms of service</li>
             <li>To improve our platform based on usage patterns</li>
@@ -138,9 +137,10 @@ export default function PrivacyPage() {
             5. Data storage and security
           </h2>
           <p>
-            Your data is stored in Supabase (cloud database) with row-level security policies. Our
-            servers are in the EU (Helsinki, Finland). Data in transit is encrypted via TLS, data at
-            rest via AES-256. Photos are stored in Supabase Storage with access controls.
+            Your data is stored in Supabase (cloud database, hosted in Stockholm, Sweden) with
+            row-level security policies. Our application servers are in Helsinki, Finland. Data in
+            transit is encrypted via TLS, data at rest via AES-256. Photos are stored in Supabase
+            Storage with access controls.
           </p>
         </section>
 
@@ -169,6 +169,10 @@ export default function PrivacyPage() {
             <li>
               <strong>Cloudflare:</strong> security, CDN, and bot protection &mdash; IP address,
               browser fingerprint
+            </li>
+            <li>
+              <strong>Sentry:</strong> error monitoring &mdash; error details, browser info, IP
+              address (used to diagnose and fix technical issues)
             </li>
           </ul>
           <p>We do not sell your personal data to third parties.</p>

@@ -90,7 +90,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>List items accurately, including condition, edition, and language</li>
             <li>Confirm or decline orders within 24 hours</li>
-            <li>Ship items within the agreed timeframe using the provided Unisend shipping labels</li>
+            <li>Ship items within 5 days of accepting the order using the provided Unisend shipping code</li>
             <li>Package items securely. Sellers are liable for damage during transit</li>
             <li>Respond to buyer inquiries and disputes in good faith</li>
           </ul>
@@ -126,9 +126,10 @@ export default function TermsPage() {
             8. Shipping
           </h2>
           <p>
-            All shipments are handled through Unisend parcel lockers across Latvia, Lithuania, and
-            Estonia. Cross-border shipping between Baltic states is supported. Shipping labels are
-            generated automatically after the seller accepts an order.
+            All shipments go through the Unisend parcel locker network, which includes Unisend,
+            Latvijas Pasts, and uDrop terminals across Latvia, Lithuania, and Estonia. Cross-border
+            shipping between Baltic states is supported. A shipping code is generated automatically
+            after the seller accepts an order.
           </p>
         </section>
 
@@ -137,9 +138,10 @@ export default function TermsPage() {
             9. Disputes and refunds
           </h2>
           <p>
-            Buyers may open a dispute within 2 days of delivery if an item is not received, arrives
-            damaged, is the wrong item, or does not match its listing description. Disputes for
-            &ldquo;changed mind&rdquo; or buyer&apos;s remorse are not eligible for refunds.
+            Buyers have 2 days after delivery to open a dispute if an item arrives damaged, is the
+            wrong item, or does not match its listing description. If an item is not delivered at all,
+            buyers can report the issue regardless of the dispute window. Disputes for &ldquo;changed
+            mind&rdquo; or buyer&apos;s remorse are not eligible for refunds.
           </p>
           <p>
             Once a dispute is opened, the seller and buyer have 7 days to negotiate a resolution.

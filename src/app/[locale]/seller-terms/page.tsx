@@ -61,11 +61,11 @@ export default function SellerTermsPage() {
               automatically cancelled with a full refund to the buyer
             </li>
             <li>
-              Ship the item within the agreed timeframe after accepting. Orders not shipped in time
-              may be automatically cancelled
+              Ship the item within 5 days of accepting. You will get a reminder on day 3. Orders not
+              shipped by day 5 are automatically cancelled and the buyer is refunded
             </li>
             <li>
-              Use the provided Unisend shipping labels for all deliveries
+              Use the provided Unisend shipping code for all deliveries
             </li>
             <li>
               Package items securely. You are liable for transit damage caused by poor packaging
