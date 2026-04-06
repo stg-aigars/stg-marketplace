@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { orderMessageLimiter } from '@/lib/rate-limit';
 import { notify } from '@/lib/notifications';
 import { logAuditEvent } from '@/lib/services/audit';
+import { fetchPublicProfiles } from '@/lib/supabase/helpers';
 import { MAX_ORDER_MESSAGE_LENGTH, type OrderMessage } from './types';
 
 /**
@@ -86,17 +87,8 @@ export async function getOrderMessages(orderId: string): Promise<OrderMessage[]>
 
   if (!messages || messages.length === 0) return [];
 
-  // Batch-fetch author names from public_profiles
   const userIds = [...new Set(messages.map((m) => m.user_id).filter(Boolean))] as string[];
-
-  const { data: profiles } = userIds.length > 0
-    ? await supabase
-        .from('public_profiles')
-        .select('id, full_name')
-        .in('id', userIds)
-    : { data: [] };
-
-  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const profileMap = await fetchPublicProfiles(supabase, userIds);
 
   return messages.map((m) => ({
     id: m.id,
@@ -105,7 +97,7 @@ export async function getOrderMessages(orderId: string): Promise<OrderMessage[]>
     author_role: m.author_role as 'buyer' | 'seller',
     content: m.content,
     created_at: m.created_at,
-    author_name: m.user_id ? (profileMap.get(m.user_id) ?? null) : null,
+    author_name: m.user_id ? (profileMap.get(m.user_id)?.full_name ?? null) : null,
   }));
 }
 

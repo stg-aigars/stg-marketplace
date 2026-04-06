@@ -118,6 +118,7 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
     { data: ordersAsBuyer },
     { data: ordersAsSeller },
     { data: comments },
+    { data: orderMessages },
     { data: wallet },
     { data: walletTransactions },
     { data: withdrawalRequests },
@@ -151,6 +152,12 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
 
     supabase
       .from('listing_comments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }),
+
+    supabase
+      .from('order_messages')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false }),
@@ -199,6 +206,7 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
     orders_as_buyer: ordersAsBuyer ?? [],
     orders_as_seller: ordersAsSeller ?? [],
     comments: comments ?? [],
+    order_messages: orderMessages ?? [],
     wallet: wallet ?? null,
     wallet_transactions: walletTransactions ?? [],
     withdrawal_requests: withdrawalRequests ?? [],
@@ -255,12 +263,18 @@ export async function deleteUserAccount(
     // Continue with deletion — email failure should not block account deletion
   }
 
-  // Anonymize comments BEFORE profile deletion — user_id FK is ON DELETE SET NULL,
-  // so after profile is gone we can no longer match comments by user_id
-  await supabase
-    .from('listing_comments')
-    .update({ content: '[deleted]' })
-    .eq('user_id', userId);
+  // Anonymize user content BEFORE profile deletion — user_id FK is ON DELETE SET NULL,
+  // so after profile is gone we can no longer match rows by user_id
+  await Promise.all([
+    supabase
+      .from('listing_comments')
+      .update({ content: '[deleted]' })
+      .eq('user_id', userId),
+    supabase
+      .from('order_messages')
+      .update({ content: '[deleted]' })
+      .eq('user_id', userId),
+  ]);
 
   const { error: profileError } = await supabase
     .from('user_profiles')
