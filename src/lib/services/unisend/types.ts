@@ -288,16 +288,6 @@ export const PARCEL_SIZES: ParcelSizeInfo[] = [
 // UI Helpers
 // ============================================
 
-// Tracking state colors for UI
-export const TRACKING_STATE_COLORS: Record<TrackingStateType, string> = {
-  LABEL_CREATED: 'blue',
-  PARCEL_RECEIVED: 'purple',
-  ON_THE_WAY: 'yellow',
-  PARCEL_DELIVERED: 'green',
-  PARCEL_CANCELED: 'red',
-  RETURNING: 'orange',
-};
-
 // User-friendly field names for validation errors
 export const FIELD_NAME_MAP: Record<string, string> = {
   'receiver.contacts.phone': 'Buyer phone number',
