@@ -1,8 +1,10 @@
+'use client';
+
 import { WarningCircle } from '@phosphor-icons/react/ssr';
 import { Alert } from '@/components/ui';
 import { ActionChipList } from '@/components/ActionChipList';
-import type { PendingActions } from '@/lib/services/pending-actions';
-import { getTotalPendingCount, buildActionChips } from '@/lib/services/pending-actions';
+import type { PendingActions } from '@/lib/pending-actions/types';
+import { getTotalPendingCount, buildActionChips } from '@/lib/pending-actions/types';
 
 interface ActionStripProps {
   actions: PendingActions;
