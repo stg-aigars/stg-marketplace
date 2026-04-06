@@ -46,9 +46,10 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative text-center lg:text-left overflow-hidden bg-gradient-to-br from-semantic-brand-hover via-semantic-brand-active to-frost-ocean">
-        <div className="absolute -top-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-white/[0.06] blur-3xl will-change-transform" />
-        <div className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full bg-semantic-brand-active/40 blur-3xl will-change-transform" />
+      <section className="relative text-center lg:text-left overflow-hidden bg-gradient-to-br from-polar-night-light via-polar-night-dark to-frost-ocean">
+        <div className="absolute -top-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-aurora-orange/10 blur-3xl" />
+        <div className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full bg-frost-ocean/30 blur-3xl" />
+        <div className="absolute top-1/4 right-[20%] w-[300px] h-[300px] rounded-full bg-aurora-orange/[0.07] blur-3xl" />
         {/* Decorative dice */}
         <div className="hidden lg:block absolute right-[12%] top-1/2 -translate-y-1/2" aria-hidden="true">
           <svg className="absolute -top-16 -left-6 rotate-[75deg] drop-shadow-lg" width="100" height="100" viewBox="0 0 100 100" fill="none">
