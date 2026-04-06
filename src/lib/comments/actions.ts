@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
@@ -134,6 +135,7 @@ export async function postComment(
     }
   })().catch((err) => console.error('[Comments] Notification dispatch failed:', err));
 
+  revalidatePath(`/listings/${listingId}`);
   return { success: true };
 }
 
@@ -179,7 +181,8 @@ export async function getComments(listingId: string, sellerId: string): Promise<
  * Soft-delete a comment (staff only). Uses service role client.
  */
 export async function deleteComment(
-  commentId: string
+  commentId: string,
+  listingId: string
 ): Promise<{ success: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -213,5 +216,6 @@ export async function deleteComment(
     resourceId: commentId,
   });
 
+  revalidatePath(`/listings/${listingId}`);
   return { success: true };
 }

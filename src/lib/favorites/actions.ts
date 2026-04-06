@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 
@@ -33,6 +34,7 @@ export async function toggleFavorite(
     if (error) {
       return { error: 'Failed to remove favorite' };
     }
+    revalidatePath('/account/favorites');
     return { favorited: false };
   } else {
     // Add favorite
@@ -43,6 +45,7 @@ export async function toggleFavorite(
     if (error) {
       return { error: 'Failed to add favorite' };
     }
+    revalidatePath('/account/favorites');
     return { favorited: true };
   }
 }
