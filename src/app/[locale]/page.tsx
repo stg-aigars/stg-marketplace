@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { GlobeHemisphereWest, Package, ShieldCheck } from '@phosphor-icons/react/ssr';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
@@ -46,26 +47,11 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative text-center lg:text-left overflow-hidden bg-gradient-to-br from-polar-night-light via-polar-night-dark to-frost-ocean">
-        <div className="absolute -top-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-aurora-orange/10 blur-3xl" />
-        <div className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full bg-frost-ocean/30 blur-3xl" />
-        <div className="absolute top-1/4 right-[20%] w-[300px] h-[300px] rounded-full bg-aurora-orange/[0.07] blur-3xl" />
-        {/* Decorative dice */}
-        <div className="hidden lg:block absolute right-[12%] top-1/2 -translate-y-1/2" aria-hidden="true">
-          <svg className="absolute -top-16 -left-6 rotate-[75deg] drop-shadow-lg" width="100" height="100" viewBox="0 0 100 100" fill="none">
-            <rect x="5" y="5" width="90" height="90" rx="16" className="fill-semantic-primary" />
-            <circle cx="33" cy="33" r="8" fill="white" />
-            <circle cx="67" cy="67" r="8" fill="white" />
-          </svg>
-          <svg className="absolute top-12 left-20 rotate-[100deg] drop-shadow-lg" width="80" height="80" viewBox="0 0 100 100" fill="none">
-            <rect x="5" y="5" width="90" height="90" rx="16" className="fill-semantic-primary" />
-            <circle cx="33" cy="33" r="8" fill="white" />
-            <circle cx="67" cy="67" r="8" fill="white" />
-          </svg>
-        </div>
+      <section className="relative text-center lg:text-left overflow-hidden bg-[#363e4b] lg:bg-[url('/images/hero-bg-2.webp')] lg:bg-cover lg:bg-center">
+        <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#363e4b]/80 from-0% via-[#363e4b]/60 via-25% to-transparent to-40%" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12 lg:py-16">
           <div className="max-w-2xl mx-auto lg:mx-0">
-            <h1 className="text-3xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white">
               {t('home.hero')}
             </h1>
             <p className="mt-3 text-base sm:text-lg text-white/80">
@@ -79,12 +65,10 @@ export default async function HomePage() {
                 <Link href="/sell">{t('home.sellCta')}</Link>
               </Button>
             </div>
-            <div className="hidden lg:flex mt-8 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70">
-              <span>{t('home.statBaltics')}</span>
-              <span className="w-px h-4 bg-white/30" aria-hidden="true" />
-              <span>{t('home.statShipping')}</span>
-              <span className="w-px h-4 bg-white/30" aria-hidden="true" />
-              <span>{t('home.statPayments')}</span>
+            <div className="hidden lg:flex mt-8 flex-col items-start gap-y-2 text-sm text-white/70">
+              <span className="flex items-center gap-2"><GlobeHemisphereWest size={16} className="text-white/50" />{t('home.statBaltics')}</span>
+              <span className="flex items-center gap-2"><Package size={16} className="text-white/50" />{t('home.statShipping')}</span>
+              <span className="flex items-center gap-2"><ShieldCheck size={16} className="text-white/50" />{t('home.statPayments')}</span>
             </div>
           </div>
         </div>
