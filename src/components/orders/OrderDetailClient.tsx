@@ -145,19 +145,6 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           <DisputeDetails dispute={order.dispute} />
         )}
 
-        {/* Messages */}
-        <Card>
-          <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
-              Messages
-            </h2>
-            <OrderMessageList messages={messages} isStaff={isStaff} />
-            <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-              <OrderMessageForm orderId={order.id} />
-            </div>
-          </CardBody>
-        </Card>
-
         {/* Review section (buyer only) */}
         {userRole === 'buyer' && (existingReview || isReviewEligible) && (
           <Card>
@@ -357,6 +344,19 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                   </Link>
                 </div>
               </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Messages */}
+        <Card>
+          <CardBody>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              Messages
+            </h2>
+            <OrderMessageList messages={messages} isStaff={isStaff} />
+            <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+              <OrderMessageForm orderId={order.id} />
             </div>
           </CardBody>
         </Card>
