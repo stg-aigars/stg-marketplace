@@ -14,7 +14,7 @@ export function PendingActionsBanner() {
   const { seller, buyer } = buildActionChips(actions);
 
   return (
-    <div className="bg-semantic-warning-bg border-b border-semantic-warning/20">
+    <div className="bg-semantic-primary-bg border-b border-semantic-primary/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2">
         <span className="font-medium text-sm text-semantic-text-heading shrink-0">Needs attention:</span>
         <div className="flex-1 min-w-0">
