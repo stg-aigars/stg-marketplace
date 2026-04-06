@@ -342,7 +342,7 @@ export default async function ListingDetailPage(
           </h1>
 
           {expansionCount > 0 && (
-            <p className="text-sm text-semantic-text-muted flex items-center gap-1">
+            <p className="text-sm text-semantic-text-muted flex items-center gap-1.5">
               <PuzzlePiece size={15} />
               +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
             </p>
