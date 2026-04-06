@@ -12,6 +12,7 @@ export type NotificationType =
   | 'order.reminder.shipping'
   | 'order.reminder.delivery'
   | 'order.escalated'
+  | 'order.message_received'
   // Comments
   | 'comment.received'
   // Offers
@@ -71,6 +72,7 @@ export interface NotificationContext {
   offerId?: string;
   listingId?: string;
   commenterName?: string;
+  senderName?: string;
   buyerName?: string;
   sellerName?: string;
   reason?: string;

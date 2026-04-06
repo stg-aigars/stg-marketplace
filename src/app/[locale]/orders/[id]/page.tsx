@@ -7,6 +7,7 @@ import { getReviewForOrder } from '@/lib/reviews/service';
 import { getTrackingEvents } from '@/lib/services/tracking';
 import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
+import { getOrderMessages } from '@/lib/order-messages/actions';
 
 export async function generateMetadata(
   props: {
@@ -47,13 +48,18 @@ export default async function OrderDetailPage(
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
-  // Fetch dispute, review, and tracking data in parallel (independent queries)
+  // Fetch dispute, review, tracking, and messages in parallel (independent queries)
   const hasTracking = !!order.barcode;
-  const [dispute, existingReview, trackingEvents] = await Promise.all([
+  const supabase = (await import('@/lib/supabase/server')).createClient;
+  const client = await supabase();
+  const [dispute, existingReview, trackingEvents, messages, staffProfile] = await Promise.all([
     getDispute(id),
     getReviewForOrder(id),
     hasTracking ? getTrackingEvents(id) : Promise.resolve([]),
+    getOrderMessages(id),
+    client.from('user_profiles').select('is_staff').eq('id', user.id).single<{ is_staff: boolean }>().then((r) => r.data),
   ]);
+  const isStaff = staffProfile?.is_staff ?? false;
   const orderWithDispute = { ...order, dispute };
 
   // Compute review eligibility — window counts from completion (not delivery)
@@ -74,6 +80,8 @@ export default async function OrderDetailPage(
       existingReview={existingReview}
       isReviewEligible={isReviewEligible}
       trackingEvents={trackingEvents}
+      messages={messages}
+      isStaff={isStaff}
     />
   );
 }

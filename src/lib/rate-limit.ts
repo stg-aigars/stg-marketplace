@@ -106,3 +106,4 @@ export const loginLimiter = rateLimit({ interval: 60_000, maxRequests: 10 });
 export const signupLimiter = rateLimit({ interval: 60_000, maxRequests: 5 });
 export const passwordResetLimiter = rateLimit({ interval: 60_000, maxRequests: 3 });
 export const pricingLimiter = rateLimit({ interval: 60_000, maxRequests: 30 });
+export const orderMessageLimiter = rateLimit({ interval: 60_000, maxRequests: 20 });

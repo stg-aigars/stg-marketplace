@@ -81,6 +81,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Your order for ${ctx.gameName ?? 'a game'} has been escalated for review`,
     link: orderLink,
   },
+  'order.message_received': {
+    title: () => 'New order message',
+    body: (ctx) => `${ctx.senderName ?? 'Someone'} sent a message about order ${ctx.orderNumber ?? 'your order'}`,
+    link: orderLink,
+  },
 
   // --- Comments ---
   'comment.received': {
