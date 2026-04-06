@@ -254,7 +254,7 @@ export default function PrivacyPage() {
               <tbody className="divide-y divide-semantic-border-subtle">
                 <tr>
                   <td className="py-2 pr-4">Account data</td>
-                  <td className="py-2">Until account deletion + 90 days</td>
+                  <td className="py-2">Until account deletion (anonymized immediately)</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4">Listing data</td>
