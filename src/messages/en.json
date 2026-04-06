@@ -20,10 +20,13 @@
     "signOut": "Sign out"
   },
   "home": {
-    "hero": "Find your next favourite board game",
-    "heroSub": "Pre-loved board games from the Baltic community",
+    "hero": "Every game deserves a Second Turn",
+    "heroSub": "Buy and sell board games from fellow enthusiasts",
     "browseCta": "Browse games",
-    "sellCta": "Sell a game"
+    "sellCta": "Sell a game",
+    "statBaltics": "Available in the Baltics",
+    "statShipping": "Cross-border shipping via parcel lockers",
+    "statPayments": "Secure payments"
   },
   "listing": {
     "condition": "Condition",
