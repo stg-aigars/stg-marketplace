@@ -16,9 +16,12 @@ function safeReturnUrl(url?: string): string {
   return url;
 }
 
-export async function signInWithEmail(
-  formData: SignInFormData,
-  returnUrl?: string,
+/**
+ * Validate rate-limit and Turnstile before the client signs in.
+ * The actual `signInWithPassword` must happen on the browser client
+ * so that `onAuthStateChange` fires and the UI updates immediately.
+ */
+export async function validateSignIn(
   turnstileToken?: string
 ): Promise<AuthActionResult> {
   const ip = await getServerActionIp();
@@ -28,18 +31,7 @@ export async function signInWithEmail(
   const turnstile = await verifyTurnstileToken(turnstileToken, ip);
   if (!turnstile.success) return { error: turnstile.error };
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email: formData.email,
-    password: formData.password,
-  });
-
-  if (error) {
-    return { error: 'Invalid email or password' };
-  }
-
-  redirect(safeReturnUrl(returnUrl));
+  return {};
 }
 
 export async function signUpWithEmail(

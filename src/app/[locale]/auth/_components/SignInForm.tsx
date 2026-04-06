@@ -4,10 +4,22 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Button, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
-import { signInWithEmail } from '@/lib/auth/actions';
+import { validateSignIn } from '@/lib/auth/actions';
+import { createClient } from '@/lib/supabase/browser';
 import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
+
+// createBrowserClient returns a module-level singleton — safe to call at top level
+const supabase = createClient();
+
+/** Prevent open redirects — only allow relative paths. */
+function safeReturnUrl(url?: string): string {
+  if (!url || !url.startsWith('/') || url.startsWith('//')) {
+    return '/';
+  }
+  return url;
+}
 
 interface SignInFormProps {
   returnUrl?: string;
@@ -27,7 +39,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
   // Redirect away if user becomes authenticated (e.g. after OAuth callback)
   useEffect(() => {
     if (user) {
-      router.replace(returnUrl || '/');
+      router.replace(safeReturnUrl(returnUrl));
     }
   }, [user, router, returnUrl]);
 
@@ -36,12 +48,28 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
     setError('');
     setLoading(true);
 
-    const result = await signInWithEmail({ email, password }, returnUrl, turnstileToken);
-    if (result?.error) {
-      setError(result.error);
+    const validation = await validateSignIn(turnstileToken);
+    if (validation?.error) {
+      setError(validation.error);
       setLoading(false);
       turnstileRef.current?.reset();
+      return;
     }
+
+    // Sign in on browser client so onAuthStateChange fires SIGNED_IN
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError('Invalid email or password');
+      setLoading(false);
+      turnstileRef.current?.reset();
+      return;
+    }
+
+    // AuthProvider's onAuthStateChange sets user → useEffect above handles redirect
   }
 
   return (
