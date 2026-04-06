@@ -79,7 +79,7 @@ const TRACKING_ICONS: Record<string, PhosphorIcon> = {
   RETURNING: ArrowUUpLeft,
 };
 
-const ERROR_KEYS = new Set(['cancelled', 'disputed', 'PARCEL_CANCELED', 'RETURNING']);
+const ERROR_KEYS = new Set(['cancelled', 'disputed', 'refunded', 'PARCEL_CANCELED', 'RETURNING']);
 
 export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinationTerminal }: UnifiedTimelineProps) {
   const orderInput: OrderForTimeline = {
