@@ -13,6 +13,9 @@ function SiteFooter() {
               <Link href="/privacy" className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
                 Privacy Policy
               </Link>
+              <Link href="/seller-terms" className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+                Seller Terms
+              </Link>
               <Link href="/help" className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
                 Help
               </Link>
