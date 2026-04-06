@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Button, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
@@ -9,6 +9,9 @@ import { createClient } from '@/lib/supabase/browser';
 import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
+
+// createBrowserClient returns a module-level singleton — safe to call at top level
+const supabase = createClient();
 
 /** Prevent open redirects — only allow relative paths. */
 function safeReturnUrl(url?: string): string {
@@ -26,7 +29,6 @@ interface SignInFormProps {
 export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
   const { user } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(errorMessage || '');
@@ -46,7 +48,6 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
     setError('');
     setLoading(true);
 
-    // Step 1: Validate rate-limit + Turnstile server-side
     const validation = await validateSignIn(turnstileToken);
     if (validation?.error) {
       setError(validation.error);
@@ -55,7 +56,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
       return;
     }
 
-    // Step 2: Sign in on the browser client so onAuthStateChange fires
+    // Sign in on browser client so onAuthStateChange fires SIGNED_IN
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -68,8 +69,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
       return;
     }
 
-    // onAuthStateChange fires SIGNED_IN → AuthProvider sets user + router.refresh()
-    // The useEffect watching `user` handles redirect once AuthProvider updates
+    // AuthProvider's onAuthStateChange sets user → useEffect above handles redirect
   }
 
   return (
