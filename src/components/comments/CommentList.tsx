@@ -59,7 +59,7 @@ export function CommentList({ comments, isStaff, locale }: CommentListProps) {
               {formatMessageTime(comment.created_at, locale)}
             </span>
             {isStaff && (
-              <DeleteCommentButton commentId={comment.id} />
+              <DeleteCommentButton commentId={comment.id} listingId={comment.listing_id} />
             )}
           </div>
           <p className="text-sm text-semantic-text-secondary whitespace-pre-line pl-8">

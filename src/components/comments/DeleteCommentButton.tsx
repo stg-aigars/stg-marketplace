@@ -7,9 +7,10 @@ import { deleteComment } from '@/lib/comments/actions';
 
 interface DeleteCommentButtonProps {
   commentId: string;
+  listingId: string;
 }
 
-export function DeleteCommentButton({ commentId }: DeleteCommentButtonProps) {
+export function DeleteCommentButton({ commentId, listingId }: DeleteCommentButtonProps) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(false);
@@ -18,7 +19,7 @@ export function DeleteCommentButton({ commentId }: DeleteCommentButtonProps) {
   const handleDelete = async () => {
     setDeleting(true);
     setError(false);
-    const result = await deleteComment(commentId);
+    const result = await deleteComment(commentId, listingId);
     if ('error' in result) {
       setDeleting(false);
       setError(true);
