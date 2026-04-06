@@ -18,7 +18,7 @@ export function OrderMessageList({ messages, isStaff, locale }: OrderMessageList
       <div className="text-center py-6">
         <ChatCircleDots size={36} className="mx-auto text-semantic-text-muted mb-2" />
         <p className="text-sm text-semantic-text-muted">
-          No messages yet. Send a message to coordinate details.
+          No messages yet
         </p>
       </div>
     );
