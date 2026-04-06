@@ -35,6 +35,13 @@ Sentry.init({
       return null;
     }
 
+    // Strip PII from error reports (GDPR compliance)
+    if (event.user) {
+      delete event.user.email;
+      delete event.user.username;
+      delete event.user.ip_address;
+    }
+
     return event;
   },
 });

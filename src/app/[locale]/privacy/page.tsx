@@ -171,8 +171,8 @@ export default function PrivacyPage() {
               browser fingerprint
             </li>
             <li>
-              <strong>Sentry:</strong> error monitoring &mdash; error details, browser info, IP
-              address (used to diagnose and fix technical issues)
+              <strong>Sentry:</strong> error monitoring &mdash; error details, browser info
+              (IP addresses and user identity are stripped before transmission)
             </li>
           </ul>
           <p>We do not sell your personal data to third parties.</p>
