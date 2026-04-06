@@ -37,7 +37,7 @@ export function OrderShippedBuyer({
       <Text style={s.body}>
         {terminalName
           ? `Your game is on its way. Your parcel was scanned at ${terminalName}.`
-          : 'Your game is on its way. The seller has dropped it off at the parcel terminal.'}
+          : 'Your game is on its way. The seller has sent your parcel and it is on its way.'}
       </Text>
 
       <div style={s.orderCard}>
