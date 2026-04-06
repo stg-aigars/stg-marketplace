@@ -57,9 +57,9 @@ function ListingCard({
   const hasPhotos = photoCount !== undefined && photoCount > 0;
 
   return (
-    <Link href={`/listings/${id}`} className={`group block ${unavailable ? 'opacity-60' : ''}`}>
+    <Link href={`/listings/${id}`} className={`group block h-full ${unavailable ? 'opacity-60' : ''}`}>
       <Card
-        className={`overflow-hidden border border-semantic-border-subtle transition-all duration-350 ease-out-custom ${
+        className={`overflow-hidden h-full flex flex-col border border-semantic-border-subtle transition-all duration-350 ease-out-custom ${
           !unavailable ? 'sm:hover:border-semantic-brand sm:hover:shadow-lg sm:hover:-translate-y-0.5' : ''
         }`}
       >
@@ -117,7 +117,7 @@ function ListingCard({
         </div>
 
         {/* Details */}
-        <div className="px-3 py-3 space-y-2">
+        <div className="px-3 py-3 flex flex-col flex-1 gap-2">
           <div>
             <GameTitle name={gameTitle} size="md" serif clamp={2} />
             {(isExpansion || expansionCount > 0) && (
@@ -135,7 +135,7 @@ function ListingCard({
             )}
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-auto">
             <div>
               {isAuction && bidCount === 0 && (
                 <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
