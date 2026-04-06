@@ -192,9 +192,14 @@ function TimelineRow({
         <p className={`text-sm font-medium ${textClass}`}>
           {label}
         </p>
-        {(entry.location || detailText) && (
+        {entry.location && (
           <p className="text-xs text-semantic-text-muted mt-0.5">
-            {entry.location || detailText}
+            {entry.location}
+          </p>
+        )}
+        {detailText && (
+          <p className="text-xs text-semantic-text-muted mt-0.5">
+            {detailText}
           </p>
         )}
         {entry.timestamp && !entry.isFuture && (
