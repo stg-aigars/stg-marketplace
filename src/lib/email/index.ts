@@ -9,6 +9,7 @@ import { sendEmail } from './service';
 import { NewOrderSeller } from './templates/new-order-seller';
 import { OrderConfirmationBuyer } from './templates/order-confirmation-buyer';
 import { OrderShippedBuyer } from './templates/order-shipped-buyer';
+import { OrderShippedSeller } from './templates/order-shipped-seller';
 import { ShippingInstructionsSeller } from './templates/shipping-instructions-seller';
 import { OrderAcceptedBuyer } from './templates/order-accepted-buyer';
 import { OrderDeliveredBuyer } from './templates/order-delivered-buyer';
@@ -133,6 +134,37 @@ export async function sendOrderShippedToBuyer(params: {
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
       terminalName: params.terminalName,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+/**
+ * Order shipped notification → seller (auto-ship via PARCEL_RECEIVED)
+ */
+export async function sendOrderShippedToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  buyerName: string;
+  terminalName?: string;
+  terminalCountry?: string;
+  isCrossBorder: boolean;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Parcel picked up — ${params.orderNumber}`,
+    react: React.createElement(OrderShippedSeller, {
+      sellerName: params.sellerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      buyerName: params.buyerName,
+      terminalName: params.terminalName,
+      terminalCountry: params.terminalCountry,
+      isCrossBorder: params.isCrossBorder,
       appUrl: env.app.url,
     }),
   });
