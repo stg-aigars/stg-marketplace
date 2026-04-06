@@ -200,15 +200,13 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           destinationTerminal={order.terminal_name ?? undefined}
         />
 
-        {/* Shipping info (shown after accept) */}
+        {/* Terminal reference panel */}
         <ShippingInfo
           terminalName={order.terminal_name}
           terminalAddress={order.terminal_address}
           terminalCity={order.terminal_city}
           terminalPostalCode={order.terminal_postal_code}
           terminalCountry={order.terminal_country}
-          parcelId={order.unisend_parcel_id}
-          trackingUrl={order.tracking_url}
           userRole={userRole}
         />
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { Card, CardBody } from '@/components/ui';
 
 interface ShippingInfoProps {
@@ -8,8 +6,6 @@ interface ShippingInfoProps {
   terminalCity: string | null;
   terminalPostalCode: string | null;
   terminalCountry: string | null;
-  parcelId: number | null;
-  trackingUrl: string | null;
   userRole: 'buyer' | 'seller';
 }
 
@@ -35,57 +31,23 @@ export function ShippingInfo({
   terminalCity,
   terminalPostalCode,
   terminalCountry,
-  parcelId,
-  trackingUrl,
   userRole,
 }: ShippingInfoProps) {
-  if (!parcelId && !terminalName) return null;
+  if (!terminalName) return null;
 
   const hasAddress = terminalAddress || terminalCity;
 
   return (
     <Card>
       <CardBody>
-        <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
-          Shipping
-        </h2>
-        <div className="space-y-3">
-          {terminalName && (
-            <div>
-              <p className="text-sm text-semantic-text-muted">
-                {userRole === 'seller' ? 'Delivery terminal' : 'Pickup terminal'}
-              </p>
-              <p className="text-sm text-semantic-text-primary mt-0.5">
-                {hasAddress
-                  ? formatTerminalAddress(terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry)
-                  : terminalName}
-              </p>
-            </div>
-          )}
-
-          {parcelId && (
-            <div>
-              <p className="text-sm text-semantic-text-muted">Parcel ID</p>
-              <p className="text-sm font-mono font-semibold text-semantic-text-heading mt-0.5">
-                {parcelId}
-              </p>
-            </div>
-          )}
-
-          {trackingUrl && (
-            <div>
-              <a
-                href={trackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-              >
-                Track parcel
-              </a>
-            </div>
-          )}
-
-        </div>
+        <p className="text-sm text-semantic-text-muted">
+          {userRole === 'seller' ? "Buyer's pickup terminal" : 'Your pickup terminal'}
+        </p>
+        <p className="text-sm text-semantic-text-primary mt-1">
+          {hasAddress
+            ? formatTerminalAddress(terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry)
+            : terminalName}
+        </p>
       </CardBody>
     </Card>
   );
