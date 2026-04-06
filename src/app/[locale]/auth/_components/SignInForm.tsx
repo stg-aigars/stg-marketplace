@@ -10,6 +10,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
 
+/** Prevent open redirects — only allow relative paths. */
+function safeReturnUrl(url?: string): string {
+  if (!url || !url.startsWith('/') || url.startsWith('//')) {
+    return '/';
+  }
+  return url;
+}
+
 interface SignInFormProps {
   returnUrl?: string;
   errorMessage?: string;
@@ -29,7 +37,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
   // Redirect away if user becomes authenticated (e.g. after OAuth callback)
   useEffect(() => {
     if (user) {
-      router.replace(returnUrl || '/');
+      router.replace(safeReturnUrl(returnUrl));
     }
   }, [user, router, returnUrl]);
 
@@ -61,8 +69,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
     }
 
     // onAuthStateChange fires SIGNED_IN → AuthProvider sets user + router.refresh()
-    // Navigate to the return URL
-    router.push(returnUrl || '/');
+    // The useEffect watching `user` handles redirect once AuthProvider updates
   }
 
   return (
