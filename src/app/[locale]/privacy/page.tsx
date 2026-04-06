@@ -171,8 +171,8 @@ export default function PrivacyPage() {
               browser fingerprint
             </li>
             <li>
-              <strong>Sentry:</strong> error monitoring &mdash; error details, browser info, IP
-              address (used to diagnose and fix technical issues)
+              <strong>Sentry:</strong> error monitoring &mdash; error details, browser info
+              (IP addresses and user identity are stripped before transmission)
             </li>
           </ul>
           <p>We do not sell your personal data to third parties.</p>
@@ -254,7 +254,7 @@ export default function PrivacyPage() {
               <tbody className="divide-y divide-semantic-border-subtle">
                 <tr>
                   <td className="py-2 pr-4">Account data</td>
-                  <td className="py-2">Until account deletion + 90 days</td>
+                  <td className="py-2">Until account deletion (anonymized immediately)</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4">Listing data</td>

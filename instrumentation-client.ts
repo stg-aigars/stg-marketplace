@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { stripPii } from '@/lib/sentry/strip-pii';
 
 // Required by Sentry to instrument client-side navigations in App Router
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
@@ -35,6 +36,6 @@ Sentry.init({
       return null;
     }
 
-    return event;
+    return stripPii(event);
   },
 });
