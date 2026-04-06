@@ -42,21 +42,21 @@ export default async function AccountPage() {
   const isSeller = completedSales > 0 || activeListings > 0;
 
   const shopLinks = [
-    { href: '/account/listings', icon: Tag, label: 'My Listings', desc: 'Manage your active and past listings', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
-    { href: '/account/shelf', icon: BookBookmark, label: 'My shelf', desc: 'Showcase your game collection', tint: 'bg-semantic-success-bg border-semantic-success/20 text-semantic-success' },
-    { href: '/account/offers', icon: Handshake, label: 'Offers', desc: 'View and manage price offers', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
+    { href: '/account/listings', icon: Tag, label: 'Listings', desc: 'Active and past listings', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
+    { href: '/account/shelf', icon: BookBookmark, label: 'Shelf', desc: 'Your game collection', tint: 'bg-semantic-success-bg border-semantic-success/20 text-semantic-success' },
+    { href: '/account/offers', icon: Handshake, label: 'Offers', desc: 'Price offers and negotiations', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
   ];
 
   const buyingLinks = [
-    { href: '/account/orders', icon: Package, label: 'Your orders', desc: 'View your purchases and sales', tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
-    { href: '/account/wallet', icon: Wallet, label: 'Wallet', desc: walletBalanceCents > 0 ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}` : 'View your earnings and withdrawals', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
-    { href: '/account/bids', icon: Gavel, label: 'My bids', desc: 'Auctions you have bid on', tint: 'bg-semantic-purple-bg border-aurora-purple/20 text-aurora-purple' },
-    { href: '/account/wanted', icon: MagnifyingGlass, label: 'Wanted games', desc: 'Games you are looking for', tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
-    { href: '/account/favorites', icon: Heart, label: 'Favorites', desc: 'Games you have saved for later', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
+    { href: '/account/orders', icon: Package, label: 'Orders', desc: 'Purchases and sales', tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
+    { href: '/account/wallet', icon: Wallet, label: 'Wallet', desc: walletBalanceCents > 0 ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}` : 'Earnings and withdrawals', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
+    { href: '/account/bids', icon: Gavel, label: 'Bids', desc: "Auctions you've bid on", tint: 'bg-semantic-purple-bg border-aurora-purple/20 text-aurora-purple' },
+    { href: '/account/wanted', icon: MagnifyingGlass, label: 'Wanted', desc: "Games you're looking for", tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
+    { href: '/account/favorites', icon: Heart, label: 'Favorites', desc: 'Saved for later', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
   ];
 
   const settingsLink = {
-    href: '/account/settings', icon: GearSix, label: 'Settings', desc: 'Email, password, and data management', tint: 'bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted',
+    href: '/account/settings', icon: GearSix, label: 'Settings', desc: 'Email, password, and data', tint: 'bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted',
   };
 
   return (
@@ -84,7 +84,7 @@ export default async function AccountPage() {
       {isSeller && (
         <div className="mb-6">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-3">
-            Your Shop
+            Selling
           </h2>
           <div className="space-y-3">
             {shopLinks.map((link) => (
