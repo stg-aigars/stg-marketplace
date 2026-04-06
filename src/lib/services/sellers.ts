@@ -19,6 +19,44 @@ export async function getSellerCompletedSales(sellerId: string): Promise<number>
   return data ?? 0;
 }
 
+/**
+ * Count all listings ever created by a seller (any status, including cancelled).
+ * Used to determine if a user has ever been a seller.
+ */
+export async function getSellerListingCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('seller_id', userId);
+
+  if (error) {
+    console.error('Failed to get seller listing count:', error);
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
+/**
+ * Count active listings for a seller.
+ */
+export async function getActiveListingCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('seller_id', userId)
+    .eq('status', 'active');
+
+  if (error) {
+    console.error('Failed to get active listing count:', error);
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
 export type TrustTier = 'new' | 'bronze' | 'gold' | 'trusted';
 
 export function calculateTrustTier(completedSales: number, positivePct: number, ratingCount: number): TrustTier {

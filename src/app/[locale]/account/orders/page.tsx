@@ -21,6 +21,7 @@ export default async function MyOrdersPage(
     getUserOrders(user.id, 'seller'),
   ]);
 
+  const defaultTab = searchParams.tab === 'sales' ? 'sales' as const : 'purchases' as const;
   const fromCart = searchParams.from === 'cart';
   const cartGroupId = typeof searchParams.group === 'string' ? searchParams.group : undefined;
 
@@ -46,7 +47,7 @@ export default async function MyOrdersPage(
         Your orders
       </h1>
 
-      <OrderTabs purchases={purchases} sales={sales} />
+      <OrderTabs purchases={purchases} sales={sales} defaultTab={defaultTab} />
     </div>
   );
 }
