@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { PendingActions } from '@/lib/pending-actions/types';
 
-// Re-export types and utilities so server-side callers can import from one place
 export type { PendingActions, ActionChip } from '@/lib/pending-actions/types';
 export { getTotalPendingCount, buildActionChips } from '@/lib/pending-actions/types';
 

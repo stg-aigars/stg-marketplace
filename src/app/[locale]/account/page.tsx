@@ -9,7 +9,7 @@ import { getWalletBalance } from '@/lib/services/wallet';
 import { getOnboardingState } from '@/lib/services/onboarding';
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { getSellerCompletedSales, getSellerListingCount, getActiveListingCount } from '@/lib/services/sellers';
+import { getSellerCompletedSales, getActiveListingCount } from '@/lib/services/sellers';
 import { getSellerRating } from '@/lib/reviews/service';
 import { getPendingActions } from '@/lib/services/pending-actions';
 import { AccountHeader } from './AccountHeader';
@@ -26,7 +26,6 @@ export default async function AccountPage() {
   const [
     walletBalanceCents,
     completedSales,
-    listingCount,
     activeListings,
     sellerRating,
     pendingActions,
@@ -34,14 +33,13 @@ export default async function AccountPage() {
   ] = await Promise.all([
     getWalletBalance(user.id),
     getSellerCompletedSales(user.id),
-    getSellerListingCount(user.id),
     getActiveListingCount(user.id),
     getSellerRating(user.id),
     getPendingActions(user.id),
     getOnboardingState(user, profile),
   ]);
 
-  const isSeller = listingCount > 0 || completedSales > 0;
+  const isSeller = completedSales > 0 || activeListings > 0;
 
   const shopLinks = [
     { href: '/account/listings', icon: Tag, label: 'My Listings', desc: 'Manage your active and past listings', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },

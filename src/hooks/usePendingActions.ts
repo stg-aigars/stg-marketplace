@@ -1,12 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import type { PendingActions } from '@/lib/pending-actions/types';
 import { getTotalPendingCount } from '@/lib/pending-actions/types';
+import { stripLocalePrefix } from '@/lib/locale-utils';
 
 const STORAGE_KEY = 'stg-pending-actions-dismissed';
+const MIN_FETCH_INTERVAL_MS = 60_000;
 
 function getStoredDismissCount(): number {
   if (typeof window === 'undefined') return 0;
@@ -20,37 +22,44 @@ function getStoredDismissCount(): number {
   }
 }
 
-// Match the account hub page exactly — sub-pages like /account/orders should still show the banner.
-// The pathname includes a locale prefix (e.g. /en/account), so we check for /account at the end.
-function isAccountHubPage(pathname: string): boolean {
-  return pathname === '/account' || /^\/[a-z]{2}\/account$/.test(pathname);
-}
-
 export function usePendingActions() {
   const [actions, setActions] = useState<PendingActions | null>(null);
   const [dismissedAtCount, setDismissedAtCount] = useState(getStoredDismissCount);
+  const lastFetchedAt = useRef(0);
   const { user } = useAuth();
   const pathname = usePathname();
 
-  const fetchActions = useCallback(async () => {
+  useEffect(() => {
     if (!user) {
       setActions(null);
       return;
     }
-    try {
-      const res = await fetch('/api/pending-actions');
-      if (res.ok) {
-        const data = await res.json();
-        setActions(data);
-      }
-    } catch {
-      // Silent failure — non-blocking UI enhancement
-    }
-  }, [user]);
 
-  useEffect(() => {
-    fetchActions();
-  }, [fetchActions, pathname]);
+    // Throttle: skip if fetched recently (unless navigating within account pages)
+    const now = Date.now();
+    const isAccountArea = stripLocalePrefix(pathname).startsWith('/account');
+    if (now - lastFetchedAt.current < MIN_FETCH_INTERVAL_MS && !isAccountArea) {
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch('/api/pending-actions', { signal: controller.signal })
+      .then((res) => {
+        if (res.ok) return res.json();
+        return null;
+      })
+      .then((data) => {
+        if (data) {
+          setActions(data);
+          lastFetchedAt.current = Date.now();
+        }
+      })
+      .catch(() => {
+        // Silent failure — non-blocking UI enhancement (includes AbortError)
+      });
+
+    return () => controller.abort();
+  }, [user, pathname]);
 
   const total = actions ? getTotalPendingCount(actions) : 0;
 
@@ -58,7 +67,7 @@ export function usePendingActions() {
   const dismissed = total > 0 && total <= dismissedAtCount;
 
   // Suppress on the account hub page only — it has its own server-rendered ActionStrip
-  const onAccountHub = isAccountHubPage(pathname);
+  const onAccountHub = stripLocalePrefix(pathname) === '/account';
 
   const dismiss = useCallback(() => {
     setDismissedAtCount(total);
