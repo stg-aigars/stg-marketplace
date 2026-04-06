@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { PencilSimple } from '@phosphor-icons/react/ssr';
 import { GameIdentityRow } from '@/components/listings/atoms';
 import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
@@ -360,7 +361,13 @@ export function ReviewPriceStep({
       </Button>
 
       <p className="text-xs text-semantic-text-muted text-center">
-        Your listing will be visible to buyers across Latvia, Lithuania, and Estonia
+        By publishing, you confirm you are at least 18 and agree to our{' '}
+        <Link
+          href="/seller-terms"
+          className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+        >
+          Seller Terms
+        </Link>
       </p>
     </div>
   );
