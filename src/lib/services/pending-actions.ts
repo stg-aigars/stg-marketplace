@@ -1,14 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
+import type { PendingActions } from '@/lib/pending-actions/types';
 
-export interface PendingActions {
-  sellerOrdersPending: number;
-  sellerOrdersToShip: number;
-  sellerDisputes: number;
-  sellerOffersPending: number;
-  buyerDisputes: number;
-  buyerDeliveryConfirm: number;
-  buyerWantedOffers: number;
-}
+// Re-export types and utilities so server-side callers can import from one place
+export type { PendingActions, ActionChip } from '@/lib/pending-actions/types';
+export { getTotalPendingCount, buildActionChips } from '@/lib/pending-actions/types';
 
 const EMPTY: PendingActions = {
   sellerOrdersPending: 0,
@@ -42,16 +37,4 @@ export async function getPendingActions(userId: string): Promise<PendingActions>
     buyerDeliveryConfirm: data.buyer_delivery_confirm ?? 0,
     buyerWantedOffers: data.buyer_wanted_offers ?? 0,
   };
-}
-
-export function getTotalPendingCount(actions: PendingActions): number {
-  return (
-    actions.sellerOrdersPending +
-    actions.sellerOrdersToShip +
-    actions.sellerDisputes +
-    actions.sellerOffersPending +
-    actions.buyerDisputes +
-    actions.buyerDeliveryConfirm +
-    actions.buyerWantedOffers
-  );
 }

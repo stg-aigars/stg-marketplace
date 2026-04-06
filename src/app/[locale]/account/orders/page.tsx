@@ -47,7 +47,7 @@ export default async function MyOrdersPage(
         Your orders
       </h1>
 
-      <OrderTabs purchases={purchases} sales={sales} defaultTab={defaultTab} />
+      <OrderTabs key={defaultTab} purchases={purchases} sales={sales} defaultTab={defaultTab} />
     </div>
   );
 }

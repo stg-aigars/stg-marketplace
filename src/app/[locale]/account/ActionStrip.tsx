@@ -2,73 +2,7 @@ import Link from 'next/link';
 import { WarningCircle } from '@phosphor-icons/react/ssr';
 import { Alert } from '@/components/ui';
 import type { PendingActions } from '@/lib/services/pending-actions';
-import { getTotalPendingCount } from '@/lib/services/pending-actions';
-
-// TODO: i18n — replace hardcoded English strings with next-intl keys using ICU plural syntax
-
-interface ActionChip {
-  count: number;
-  label: string;
-  href: string;
-}
-
-function buildChips(actions: PendingActions): { seller: ActionChip[]; buyer: ActionChip[] } {
-  const seller: ActionChip[] = [];
-  const buyer: ActionChip[] = [];
-
-  if (actions.sellerOrdersPending > 0) {
-    seller.push({
-      count: actions.sellerOrdersPending,
-      label: actions.sellerOrdersPending === 1 ? 'order needs response' : 'orders need response',
-      href: '/account/orders?tab=sales',
-    });
-  }
-  if (actions.sellerOrdersToShip > 0) {
-    seller.push({
-      count: actions.sellerOrdersToShip,
-      label: actions.sellerOrdersToShip === 1 ? 'order to ship' : 'orders to ship',
-      href: '/account/orders?tab=sales',
-    });
-  }
-  if (actions.sellerDisputes > 0) {
-    seller.push({
-      count: actions.sellerDisputes,
-      label: actions.sellerDisputes === 1 ? 'dispute' : 'disputes',
-      href: '/account/orders?tab=sales',
-    });
-  }
-  if (actions.sellerOffersPending > 0) {
-    seller.push({
-      count: actions.sellerOffersPending,
-      label: actions.sellerOffersPending === 1 ? 'offer pending' : 'offers pending',
-      href: '/account/offers',
-    });
-  }
-
-  if (actions.buyerDisputes > 0) {
-    buyer.push({
-      count: actions.buyerDisputes,
-      label: actions.buyerDisputes === 1 ? 'dispute' : 'disputes',
-      href: '/account/orders?tab=purchases',
-    });
-  }
-  if (actions.buyerDeliveryConfirm > 0) {
-    buyer.push({
-      count: actions.buyerDeliveryConfirm,
-      label: actions.buyerDeliveryConfirm === 1 ? 'delivery to confirm' : 'deliveries to confirm',
-      href: '/account/orders?tab=purchases',
-    });
-  }
-  if (actions.buyerWantedOffers > 0) {
-    buyer.push({
-      count: actions.buyerWantedOffers,
-      label: actions.buyerWantedOffers === 1 ? 'wanted offer' : 'wanted offers',
-      href: '/account/wanted',
-    });
-  }
-
-  return { seller, buyer };
-}
+import { getTotalPendingCount, buildActionChips } from '@/lib/services/pending-actions';
 
 interface ActionStripProps {
   actions: PendingActions;
@@ -77,7 +11,7 @@ interface ActionStripProps {
 export function ActionStrip({ actions }: ActionStripProps) {
   if (getTotalPendingCount(actions) === 0) return null;
 
-  const { seller, buyer } = buildChips(actions);
+  const { seller, buyer } = buildActionChips(actions);
   const hasBothGroups = seller.length > 0 && buyer.length > 0;
 
   return (

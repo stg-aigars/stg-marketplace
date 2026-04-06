@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import type { PendingActions } from '@/lib/services/pending-actions';
+import type { PendingActions } from '@/lib/pending-actions/types';
+import { getTotalPendingCount } from '@/lib/pending-actions/types';
 
 const STORAGE_KEY = 'stg-pending-actions-dismissed';
 
@@ -19,16 +20,10 @@ function getStoredDismissCount(): number {
   }
 }
 
-function getTotalCount(actions: PendingActions): number {
-  return (
-    actions.sellerOrdersPending +
-    actions.sellerOrdersToShip +
-    actions.sellerDisputes +
-    actions.sellerOffersPending +
-    actions.buyerDisputes +
-    actions.buyerDeliveryConfirm +
-    actions.buyerWantedOffers
-  );
+// Match the account hub page exactly — sub-pages like /account/orders should still show the banner.
+// The pathname includes a locale prefix (e.g. /en/account), so we check for /account at the end.
+function isAccountHubPage(pathname: string): boolean {
+  return pathname === '/account' || /^\/[a-z]{2}\/account$/.test(pathname);
 }
 
 export function usePendingActions() {
@@ -57,14 +52,13 @@ export function usePendingActions() {
     fetchActions();
   }, [fetchActions, pathname]);
 
-  const total = actions ? getTotalCount(actions) : 0;
+  const total = actions ? getTotalPendingCount(actions) : 0;
 
   // Reset dismiss when new actions appear since dismissal
   const dismissed = total > 0 && total <= dismissedAtCount;
 
-  // Suppress on /account pages — account page has its own server-rendered ActionStrip
-  // TODO: i18n — when locale prefix changes, update this check
-  const onAccountPage = pathname.includes('/account');
+  // Suppress on the account hub page only — it has its own server-rendered ActionStrip
+  const onAccountHub = isAccountHubPage(pathname);
 
   const dismiss = useCallback(() => {
     setDismissedAtCount(total);
@@ -78,7 +72,7 @@ export function usePendingActions() {
   return {
     actions,
     total,
-    dismissed: dismissed || onAccountPage,
+    dismissed: dismissed || onAccountHub,
     dismiss,
   };
 }
