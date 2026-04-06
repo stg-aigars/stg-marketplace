@@ -9,10 +9,11 @@ import type { OrderWithDetails } from '@/lib/orders/types';
 interface OrderTabsProps {
   purchases: OrderWithDetails[];
   sales: OrderWithDetails[];
+  defaultTab?: 'purchases' | 'sales';
 }
 
-export function OrderTabs({ purchases, sales }: OrderTabsProps) {
-  const [activeTab, setActiveTab] = useState<'purchases' | 'sales'>('purchases');
+export function OrderTabs({ purchases, sales, defaultTab = 'purchases' }: OrderTabsProps) {
+  const [activeTab, setActiveTab] = useState<'purchases' | 'sales'>(defaultTab);
 
   const orders = activeTab === 'purchases' ? purchases : sales;
   const showAs = activeTab === 'purchases' ? 'buyer' : 'seller';
