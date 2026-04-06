@@ -10,7 +10,7 @@
 import { getUnisendClient } from './client';
 import { createServiceClient } from '@/lib/supabase';
 import type { TrackingStateType } from './types';
-import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer, sendDisputeEscalated } from '@/lib/email';
+import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify, notifyMany } from '@/lib/notifications';
 import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from '@/lib/orders/utils';
@@ -148,7 +148,7 @@ export async function syncTrackingForOrder(
         })
         .eq('id', orderId)
         .eq('status', 'accepted') // Optimistic lock
-        .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email)')
+        .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email), seller_profile:user_profiles!orders_seller_id_fkey(full_name, email)')
         .single();
 
       if (shipped && !shipError) {
@@ -164,6 +164,7 @@ export async function syncTrackingForOrder(
         });
 
         const buyerProfile = shipped.buyer_profile as { full_name?: string; email?: string } | null;
+        const sellerProfile = shipped.seller_profile as { full_name?: string; email?: string } | null;
         const gameName = getOrderGameSummary(shipped.order_items as OrderItemLike[], shipped.listings as LegacyListingsLike);
         const terminalName = receivedEvent.location || undefined;
 
@@ -177,7 +178,21 @@ export async function syncTrackingForOrder(
             barcode: shipped.barcode ?? undefined,
             trackingUrl: shipped.tracking_url ?? undefined,
             terminalName,
-          }).catch((err) => console.error('[Email] Failed to send auto-ship email:', err));
+          }).catch((err) => console.error('[Email] Failed to send auto-ship buyer email:', err));
+        }
+
+        if (sellerProfile?.email) {
+          void sendOrderShippedToSeller({
+            sellerName: sellerProfile.full_name ?? 'Seller',
+            sellerEmail: sellerProfile.email,
+            orderNumber: shipped.order_number,
+            orderId,
+            gameName,
+            buyerName: buyerProfile?.full_name ?? 'Buyer',
+            terminalName: shipped.terminal_name ?? undefined,
+            terminalCountry: shipped.terminal_country ?? undefined,
+            isCrossBorder: shipped.seller_country !== shipped.terminal_country,
+          }).catch((err) => console.error('[Email] Failed to send auto-ship seller email:', err));
         }
 
         void notify(shipped.buyer_id, 'shipping.scanned', {
@@ -185,6 +200,12 @@ export async function syncTrackingForOrder(
           orderNumber: shipped.order_number,
           orderId,
           terminalName,
+        });
+
+        void notify(shipped.seller_id, 'shipping.scanned_seller', {
+          orderId,
+          orderNumber: shipped.order_number,
+          gameName,
         });
 
         console.log(`[Tracking] Auto-shipped order ${orderId} via PARCEL_RECEIVED at ${terminalName ?? 'unknown terminal'}`);
