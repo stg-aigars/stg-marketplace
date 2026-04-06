@@ -7,6 +7,7 @@ import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { FavoriteButton } from './FavoriteButton';
+import { formatExpansionCount } from '@/lib/listings/types';
 
 interface ListingCardProps {
   id: string;
@@ -129,7 +130,7 @@ function ListingCard({
                   </span>
                 )}
                 {expansionCount > 0 && (
-                  <span>+{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}</span>
+                  <span>{formatExpansionCount(expansionCount)}</span>
                 )}
               </div>
             )}

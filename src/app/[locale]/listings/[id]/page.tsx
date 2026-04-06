@@ -9,7 +9,7 @@ import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons,
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig, getConditionLabel } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
+import { conditionToBadgeKey, formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
@@ -344,7 +344,7 @@ export default async function ListingDetailPage(
           {expansionCount > 0 && (
             <p className="text-sm text-semantic-text-muted flex items-center gap-1.5">
               <PuzzlePiece size={15} />
-              +{expansionCount} {expansionCount === 1 ? 'expansion' : 'expansions'}
+              {formatExpansionCount(expansionCount)}
             </p>
           )}
 
