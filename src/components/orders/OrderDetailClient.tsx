@@ -10,9 +10,8 @@ import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
-import { OrderTimeline } from './OrderTimeline';
 import { ShippingInfo } from './ShippingInfo';
-import { TrackingTimeline } from './TrackingTimeline';
+import { UnifiedTimeline } from './UnifiedTimeline';
 import type { TrackingEventRow } from '@/lib/services/tracking';
 import { OrderActions } from './OrderActions';
 import { DisputeDetails } from './DisputeDetails';
@@ -180,36 +179,24 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           </Card>
         )}
 
-        {/* Timeline */}
-        <Card>
-          <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
-              Order progress
-            </h2>
-            <OrderTimeline
-              status={status}
-              timestamps={{
-                created_at: order.created_at,
-                accepted_at: order.accepted_at,
-                shipped_at: order.shipped_at,
-                delivered_at: order.delivered_at,
-                completed_at: order.completed_at,
-                cancelled_at: order.cancelled_at,
-                disputed_at: order.disputed_at,
-                refunded_at: order.refunded_at,
-              }}
-            />
-          </CardBody>
-        </Card>
-
-        {/* Parcel tracking events (shown when shipping is active) */}
-        {order.barcode && ['shipped', 'delivered', 'completed'].includes(status) && (
-          <TrackingTimeline
-            events={trackingEvents}
-            trackingUrl={order.tracking_url}
-            status={status}
-          />
-        )}
+        {/* Unified order + tracking timeline */}
+        <UnifiedTimeline
+          order={{
+            status,
+            created_at: order.created_at,
+            accepted_at: order.accepted_at,
+            shipped_at: order.shipped_at,
+            delivered_at: order.delivered_at,
+            completed_at: order.completed_at,
+            cancelled_at: order.cancelled_at,
+            disputed_at: order.disputed_at,
+            refunded_at: order.refunded_at,
+            cancellation_reason: order.cancellation_reason,
+          }}
+          trackingEvents={trackingEvents}
+          trackingUrl={order.tracking_url}
+          destinationTerminal={order.terminal_name ?? undefined}
+        />
 
         {/* Shipping info (shown after accept) */}
         <ShippingInfo
