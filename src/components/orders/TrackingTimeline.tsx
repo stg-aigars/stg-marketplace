@@ -11,9 +11,9 @@ interface TrackingTimelineProps {
 }
 
 const STATE_LABELS: Partial<Record<TrackingStateType, string>> = {
-  PARCEL_RECEIVED: 'Dropped off at terminal',
+  PARCEL_RECEIVED: 'Arrived at pickup terminal',
   ON_THE_WAY: 'In transit',
-  PARCEL_DELIVERED: 'Ready for pickup',
+  PARCEL_DELIVERED: 'Picked up',
   PARCEL_CANCELED: 'Shipment cancelled',
   RETURNING: 'Returning to sender',
 };
