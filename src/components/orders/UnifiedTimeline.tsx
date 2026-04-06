@@ -1,8 +1,9 @@
 import { Card, CardBody } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
-import { buildOrderTimeline, type TimelineEntry, type OrderForTimeline, type TrackingEventForTimeline } from '@/lib/orders/timeline';
-import type { OrderStatus } from '@/lib/orders/types';
+import { buildOrderTimeline, type TimelineEntry } from '@/lib/orders/timeline';
+import type { OrderStatus, CancellationReason } from '@/lib/orders/types';
 import type { TrackingEventRow } from '@/lib/services/tracking';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import {
   Receipt,
   Check,
@@ -16,7 +17,6 @@ import {
   MapPin,
   XCircle,
 } from '@phosphor-icons/react/ssr';
-import type { ComponentType } from 'react';
 
 interface UnifiedTimelineProps {
   order: {
@@ -29,14 +29,12 @@ interface UnifiedTimelineProps {
     cancelled_at: string | null;
     disputed_at?: string | null;
     refunded_at?: string | null;
-    cancellation_reason?: string | null;
+    cancellation_reason?: CancellationReason | null;
   };
   trackingEvents: TrackingEventRow[];
   trackingUrl: string | null;
   destinationTerminal?: string;
 }
-
-// ─── Labels ──────────────────────────────────────────────────
 
 const LABELS: Record<string, string> = {
   ordered: 'Order placed',
@@ -54,10 +52,6 @@ const LABELS: Record<string, string> = {
   PARCEL_CANCELED: 'Shipment cancelled',
   RETURNING: 'Returning to sender',
 };
-
-// ─── Icons ───────────────────────────────────────────────────
-
-type PhosphorIcon = ComponentType<{ size?: number; weight?: 'bold' | 'regular'; className?: string }>;
 
 const MILESTONE_ICONS: Record<string, PhosphorIcon> = {
   ordered: Receipt,
@@ -82,26 +76,7 @@ const TRACKING_ICONS: Record<string, PhosphorIcon> = {
 const ERROR_KEYS = new Set(['cancelled', 'disputed', 'refunded', 'PARCEL_CANCELED', 'RETURNING']);
 
 export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinationTerminal }: UnifiedTimelineProps) {
-  const orderInput: OrderForTimeline = {
-    status: order.status,
-    created_at: order.created_at,
-    accepted_at: order.accepted_at,
-    shipped_at: order.shipped_at,
-    delivered_at: order.delivered_at,
-    completed_at: order.completed_at,
-    cancelled_at: order.cancelled_at,
-    disputed_at: order.disputed_at,
-    refunded_at: order.refunded_at,
-    cancellation_reason: order.cancellation_reason as OrderForTimeline['cancellation_reason'],
-  };
-
-  const trackingInput: TrackingEventForTimeline[] = trackingEvents.map((e) => ({
-    state_type: e.state_type,
-    event_timestamp: e.event_timestamp,
-    location: e.location,
-  }));
-
-  const entries = buildOrderTimeline(orderInput, trackingInput);
+  const entries = buildOrderTimeline(order, trackingEvents);
 
   return (
     <Card>
@@ -139,8 +114,6 @@ export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinatio
   );
 }
 
-// ─── Row ─────────────────────────────────────────────────────
-
 function TimelineRow({
   entry,
   isLast,
@@ -157,12 +130,10 @@ function TimelineRow({
   const Icon = isMilestone ? MILESTONE_ICONS[entry.key] : TRACKING_ICONS[entry.key];
   const label = LABELS[entry.key] ?? entry.key;
 
-  // Dot sizing: milestones are larger
   const dotSize = isMilestone ? 'w-5 h-5' : 'w-4 h-4';
   const iconSize = isMilestone ? 12 : 10;
   const iconWeight = isMilestone ? 'bold' as const : 'regular' as const;
 
-  // Color logic
   let dotClass: string;
   let textClass: string;
   if (entry.isFuture) {
@@ -179,7 +150,6 @@ function TimelineRow({
     textClass = 'text-semantic-text-primary';
   }
 
-  // Connecting line: dashed before future steps, solid between past steps
   const showLine = !isLast;
   let lineClass = '';
   if (showLine) {
@@ -191,9 +161,7 @@ function TimelineRow({
       lineClass = 'bg-semantic-brand w-0.5';
     }
   }
-  const isDashedLine = entry.isFuture || nextIsFuture;
 
-  // Detail text: LABEL_CREATED with destination terminal gets special treatment
   let detailText = entry.detail;
   if (entry.key === 'LABEL_CREATED' && entry.isCurrent && destinationTerminal) {
     detailText = `Pickup from ${destinationTerminal}`;
@@ -201,7 +169,6 @@ function TimelineRow({
 
   return (
     <div className="flex gap-3">
-      {/* Dot / icon column */}
       <div className="flex flex-col items-center">
         <div
           className={`${dotSize} rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center ${dotClass}`}
@@ -215,17 +182,10 @@ function TimelineRow({
           )}
         </div>
         {showLine && (
-          <div
-            className={`flex-1 min-h-[20px] ${
-              isDashedLine
-                ? 'border-l-2 border-dashed border-semantic-border-subtle'
-                : lineClass
-            }`}
-          />
+          <div className={`flex-1 min-h-[20px] ${lineClass}`} />
         )}
       </div>
 
-      {/* Content */}
       <div className={isLast ? 'pb-0' : 'pb-3'}>
         <p className={`text-sm font-medium ${textClass}`}>
           {label}

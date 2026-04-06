@@ -6,8 +6,6 @@
 import type { TrackingStateType } from '@/lib/services/unisend/types';
 import type { CancellationReason } from './types';
 
-// ─── Types ───────────────────────────────────────────────────
-
 export type TimelineEntryType = 'order_milestone' | 'tracking_event';
 
 export type OrderMilestone =
@@ -30,8 +28,6 @@ export interface TimelineEntry {
   isFuture: boolean;
 }
 
-// ─── Constants ───────────────────────────────────────────────
-
 const CANCELLATION_LABELS: Record<CancellationReason, string> = {
   declined: 'The seller declined this order',
   response_timeout: "The seller didn't respond in time",
@@ -41,8 +37,7 @@ const CANCELLATION_LABELS: Record<CancellationReason, string> = {
 
 const TERMINAL_STATUSES = new Set(['cancelled', 'disputed', 'refunded']);
 
-// ─── Builder ─────────────────────────────────────────────────
-
+/** Structural type — satisfied by OrderRow, OrderWithDetails, and component prop objects */
 export interface OrderForTimeline {
   status: string;
   created_at: string;
@@ -56,6 +51,7 @@ export interface OrderForTimeline {
   cancellation_reason?: CancellationReason | null;
 }
 
+/** Structural type — satisfied by TrackingEventRow */
 export interface TrackingEventForTimeline {
   state_type: string;
   event_timestamp: string;
@@ -70,15 +66,13 @@ export function buildOrderTimeline(
   const hasTracking = trackingEvents.length > 0;
   const isTerminal = TERMINAL_STATUSES.has(order.status);
 
-  // 1. Always add "ordered"
   entries.push(milestone('ordered', order.created_at));
 
-  // 2. Add "accepted" if it happened
   if (order.accepted_at) {
     entries.push(milestone('accepted', order.accepted_at));
   }
 
-  // 3. Middle phase: tracking events vs order milestones
+  // When tracking events exist, they replace shipped/delivered milestones with more granular data
   if (hasTracking) {
     for (const event of trackingEvents) {
       entries.push({
@@ -99,7 +93,6 @@ export function buildOrderTimeline(
     }
   }
 
-  // 4. Terminal states
   if (order.completed_at) {
     entries.push(milestone('completed', order.completed_at));
   }
@@ -115,7 +108,6 @@ export function buildOrderTimeline(
     entries.push(milestone('refunded', order.refunded_at));
   }
 
-  // 5. Future steps (one max, happy path only)
   if (!isTerminal) {
     const futureEntry = getFutureStep(order.status, hasTracking, trackingEvents);
     if (futureEntry) {
@@ -123,7 +115,6 @@ export function buildOrderTimeline(
     }
   }
 
-  // 6. Sort chronologically; future entries (null timestamp) sort last
   entries.sort((a, b) => {
     if (a.timestamp === null && b.timestamp === null) return 0;
     if (a.timestamp === null) return 1;
@@ -131,7 +122,6 @@ export function buildOrderTimeline(
     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
   });
 
-  // 7. Mark isCurrent on last non-future entry
   const lastPastIndex = entries.findLastIndex((e) => !e.isFuture);
   if (lastPastIndex >= 0) {
     entries[lastPastIndex].isCurrent = true;
@@ -139,8 +129,6 @@ export function buildOrderTimeline(
 
   return entries;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────
 
 function milestone(key: OrderMilestone, timestamp: string, detail?: string): TimelineEntry {
   return {
@@ -174,13 +162,10 @@ function getFutureStep(
 
     case 'accepted':
       if (!hasTracking) return future('shipped');
-      // If only LABEL_CREATED, no future — next real event will appear when it happens
       if (trackingEvents.every((e) => e.state_type === 'LABEL_CREATED')) return null;
       return future('completed');
 
     case 'shipped':
-      return future('completed');
-
     case 'delivered':
       return future('completed');
 
