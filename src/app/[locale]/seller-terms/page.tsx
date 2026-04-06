@@ -57,7 +57,7 @@ export default function SellerTermsPage() {
           <p>When an order is placed, you must:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              Confirm or decline the order within 24 hours. Orders not confirmed in time may be
+              Confirm or decline the order within 48 hours. Orders not confirmed in time are
               automatically cancelled with a full refund to the buyer
             </li>
             <li>

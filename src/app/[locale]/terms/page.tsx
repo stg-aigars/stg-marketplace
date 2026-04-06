@@ -89,7 +89,7 @@ export default function TermsPage() {
           </p>
           <ul className="list-disc pl-6 space-y-1">
             <li>List items accurately, including condition, edition, and language</li>
-            <li>Confirm or decline orders within 24 hours</li>
+            <li>Confirm or decline orders within 48 hours</li>
             <li>Ship items within 5 days of accepting the order using the provided Unisend shipping code</li>
             <li>Package items securely. Sellers are liable for damage during transit</li>
             <li>Respond to buyer inquiries and disputes in good faith</li>
@@ -139,17 +139,19 @@ export default function TermsPage() {
           </h2>
           <p>
             Buyers have 2 days after delivery to open a dispute if an item arrives damaged, is the
-            wrong item, or does not match its listing description. If an item is not delivered at all,
-            buyers can report the issue regardless of the dispute window. Disputes for &ldquo;changed
-            mind&rdquo; or buyer&apos;s remorse are not eligible for refunds.
+            wrong item, or does not match its listing description. If an item is not delivered within
+            21 days of shipping, the platform will automatically open a dispute on the buyer&apos;s
+            behalf. Disputes for &ldquo;changed mind&rdquo; or buyer&apos;s remorse are not eligible
+            for refunds.
           </p>
           <p>
             Once a dispute is opened, the seller and buyer have 7 days to negotiate a resolution.
             If no agreement is reached, either party may escalate the dispute to STG staff for review.
           </p>
           <p>
-            Refunds, when approved, are returned to the original payment method within 3&ndash;5
-            business days.
+            Refunds, when approved, are returned to the original payment method. Card refunds
+            typically take 3&ndash;5 business days. If you paid partly with wallet balance, each
+            portion is refunded to its source (card to card, wallet to wallet).
           </p>
         </section>
 
