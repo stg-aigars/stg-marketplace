@@ -235,4 +235,85 @@ describe('buildOrderTimeline', () => {
     expect(result.every((e) => !e.isFuture)).toBe(true);
     expect(result[result.length - 1]).toMatchObject({ key: 'completed', isCurrent: true });
   });
+
+  describe('ON_THE_WAY transit estimate', () => {
+    it('same country: shows next working day', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        seller_country: 'LV',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('LABEL_CREATED', '2026-04-01T13:00:00Z'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
+      expect(onTheWay?.detail).toBe('Typically next working day');
+    });
+
+    it('cross-border: shows 2-3 working days', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        seller_country: 'LV',
+        destination_country: 'EE',
+      });
+      const events = [
+        trackingEvent('LABEL_CREATED', '2026-04-01T13:00:00Z'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
+      expect(onTheWay?.detail).toBe('Typically 2–3 working days');
+    });
+
+    it('missing seller_country: no detail', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        destination_country: 'LV',
+      });
+      const events = [trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z')];
+
+      const result = buildOrderTimeline(order, events);
+      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
+      expect(onTheWay?.detail).toBeUndefined();
+    });
+
+    it('missing destination_country: no detail', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        seller_country: 'LV',
+      });
+      const events = [trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z')];
+
+      const result = buildOrderTimeline(order, events);
+      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
+      expect(onTheWay?.detail).toBeUndefined();
+    });
+
+    it('past ON_THE_WAY with later events: detail still present', () => {
+      const order = makeOrder({
+        status: 'delivered',
+        accepted_at: '2026-04-01T12:00:00Z',
+        seller_country: 'LT',
+        destination_country: 'EE',
+      });
+      const events = [
+        trackingEvent('LABEL_CREATED', '2026-04-01T13:00:00Z'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z'),
+        trackingEvent('PARCEL_RECEIVED', '2026-04-02T18:00:00Z'),
+        trackingEvent('PARCEL_DELIVERED', '2026-04-03T14:00:00Z'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
+      expect(onTheWay?.detail).toBe('Typically 2–3 working days');
+    });
+  });
 });

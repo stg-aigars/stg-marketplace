@@ -49,6 +49,8 @@ export interface OrderForTimeline {
   disputed_at?: string | null;
   refunded_at?: string | null;
   cancellation_reason?: CancellationReason | null;
+  seller_country?: string | null;
+  destination_country?: string | null;
 }
 
 /** Structural type — satisfied by TrackingEventRow */
@@ -75,14 +77,20 @@ export function buildOrderTimeline(
   // When tracking events exist, they replace shipped/delivered milestones with more granular data
   if (hasTracking) {
     for (const event of trackingEvents) {
-      entries.push({
+      const entry: TimelineEntry = {
         type: 'tracking_event',
         key: event.state_type as TrackingStateType,
         timestamp: event.event_timestamp,
         location: event.location ?? undefined,
         isCurrent: false,
         isFuture: false,
-      });
+      };
+      if (event.state_type === 'ON_THE_WAY' && order.seller_country && order.destination_country) {
+        entry.detail = order.seller_country !== order.destination_country
+          ? 'Typically 2–3 working days'
+          : 'Typically next working day';
+      }
+      entries.push(entry);
     }
   } else {
     if (order.shipped_at) {

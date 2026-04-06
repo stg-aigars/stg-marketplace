@@ -30,6 +30,8 @@ interface UnifiedTimelineProps {
     disputed_at?: string | null;
     refunded_at?: string | null;
     cancellation_reason?: CancellationReason | null;
+    seller_country?: string | null;
+    destination_country?: string | null;
   };
   trackingEvents: TrackingEventRow[];
   trackingUrl: string | null;
@@ -190,9 +192,14 @@ function TimelineRow({
         <p className={`text-sm font-medium ${textClass}`}>
           {label}
         </p>
-        {(entry.location || detailText) && (
+        {entry.location && (
           <p className="text-xs text-semantic-text-muted mt-0.5">
-            {entry.location || detailText}
+            {entry.location}
+          </p>
+        )}
+        {detailText && (
+          <p className="text-xs text-semantic-text-muted mt-0.5">
+            {detailText}
           </p>
         )}
         {entry.timestamp && !entry.isFuture && (
