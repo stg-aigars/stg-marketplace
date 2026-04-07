@@ -37,8 +37,8 @@ export interface Terminal {
   comment?: string;
 }
 
-/** Display subset of Terminal used in checkout UIs */
-export type TerminalOption = Pick<Terminal, 'id' | 'name' | 'city' | 'address' | 'postalCode' | 'countryCode'>;
+/** Display subset of Terminal used in checkout UIs (includes coordinates for map) */
+export type TerminalOption = Pick<Terminal, 'id' | 'name' | 'city' | 'address' | 'postalCode' | 'countryCode' | 'latitude' | 'longitude'>;
 
 export type TerminalCountry = 'LT' | 'LV' | 'EE';
 

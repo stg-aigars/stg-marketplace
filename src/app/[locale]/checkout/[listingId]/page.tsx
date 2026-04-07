@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Alert, Badge, Breadcrumb, Card, CardBody, Stepper } from '@/components/ui';
 import { calculateBuyerPricing, calculateCheckoutPricing, formatCentsToCurrency } from '@/lib/services/pricing';
@@ -9,11 +9,14 @@ import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
-import { getTerminals } from '@/lib/services/unisend/client';
+import { getAllTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
 import { reserveListingForCheckout } from '@/lib/listings/actions';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
+import { formatDateTime } from '@/lib/date-utils';
+import { LEGAL_ENTITY_NAME } from '@/lib/constants';
+import { PaymentMethodLogos } from '@/components/checkout/PaymentMethodLogos';
 import { CheckoutForm } from './CheckoutForm';
 
 interface CheckoutListingRow {
@@ -31,6 +34,10 @@ interface CheckoutListingRow {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  listing_type: string;
+  highest_bidder_id: string | null;
+  current_bid_cents: number | null;
+  payment_deadline_at: string | null;
   games: {
     thumbnail: string | null;
     image: string | null;
@@ -74,9 +81,22 @@ export default async function CheckoutPage(
     notFound();
   }
 
-  // Listing must be active or reserved by this buyer
+  // Auction detection
+  const isAuction = listing.listing_type === 'auction' && listing.status === 'auction_ended';
+  const isAuctionWinner = isAuction && listing.highest_bidder_id === user.id;
+
+  // Auction guards
+  if (isAuction && !isAuctionWinner) {
+    redirect(`/${params.locale}/listings/${listingId}`);
+  }
+  if (isAuction && !listing.current_bid_cents) {
+    redirect(`/${params.locale}/listings/${listingId}`);
+  }
+
+  // Listing must be active, reserved by this buyer, or auction_ended for the winner
   const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id);
+    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
+    isAuctionWinner;
 
   // Cannot buy own listing — check BEFORE reservation to avoid locking seller's own item
   if (listing.seller_id === user.id) {
@@ -117,8 +137,9 @@ export default async function CheckoutPage(
 
   // Reserve the listing on checkout page load (not at payment time).
   // reserved_at is set once and NOT refreshed on revisit (hard 30-min TTL).
+  // Auctions skip reservation — auction_ended status already locks the listing.
   let reservedAt: string | null = null;
-  if (listing.status === 'active') {
+  if (!isAuction && listing.status === 'active') {
     const result = await reserveListingForCheckout(listingId);
     if ('error' in result) {
       const isReservedByOther = result.code === 'reserved_by_other';
@@ -171,28 +192,33 @@ export default async function CheckoutPage(
     );
   }
 
-  const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
+  const itemPriceCents = isAuction ? listing.current_bid_cents! : listing.price_cents;
+  const pricing = calculateBuyerPricing(itemPriceCents, shippingCents);
 
-  // Fetch wallet balance and terminals in parallel (independent operations)
+  // Fetch wallet balance and all terminals in parallel (independent operations)
   let terminalsFetchFailed = false;
   let terminals: TerminalOption[] = [];
   const [walletBalanceCents, terminalsResult] = await Promise.all([
     getWalletBalance(user.id),
-    getTerminals(buyerCountry).catch((error) => {
+    getAllTerminals().catch((error) => {
       console.error('[Checkout] Failed to fetch terminals:', error);
       terminalsFetchFailed = true;
-      return [] as Awaited<ReturnType<typeof getTerminals>>;
+      return [] as Awaited<ReturnType<typeof getAllTerminals>>;
     }),
   ]);
 
   if (!terminalsFetchFailed) {
     terminals = terminalsResult
       .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
-      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, postalCode: t.postalCode, countryCode: t.countryCode }));
+      .map((t) => ({
+        id: t.id, name: t.name, city: t.city, address: t.address,
+        postalCode: t.postalCode, countryCode: t.countryCode,
+        latitude: t.latitude, longitude: t.longitude,
+      }));
   }
 
   const walletPricing = walletBalanceCents > 0
-    ? calculateCheckoutPricing(listing.price_cents, shippingCents, walletBalanceCents)
+    ? calculateCheckoutPricing(itemPriceCents, shippingCents, walletBalanceCents)
     : null;
 
   const badgeKey = conditionToBadgeKey[listing.condition];
@@ -217,7 +243,7 @@ export default async function CheckoutPage(
   const errorMessage = searchParams.error ? errorMessages[searchParams.error] ?? 'Something went wrong. Please try again.' : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
       <Breadcrumb items={[
         { label: 'Browse', href: '/browse' },
@@ -237,22 +263,29 @@ export default async function CheckoutPage(
       />
 
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
-        Checkout
+        {isAuction ? 'Pay for your winning auction' : 'Checkout'}
       </h1>
 
       {errorMessage && (
         <Alert variant="error" className="mb-6">{errorMessage}</Alert>
       )}
 
-      {reservedAt && (
+      {isAuction && listing.payment_deadline_at && (
+        <Alert variant="warning" className="mb-4">
+          Complete payment by {formatDateTime(listing.payment_deadline_at)} to secure this game.
+        </Alert>
+      )}
+
+      {!isAuction && reservedAt && (
         <div className="mb-4">
           <ReservationCountdown reservedAt={reservedAt} isOwner compact />
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* Left: Order summary */}
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        {/* Left column: Order details + Terminal + Phone */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Order summary card */}
           <Card>
             <CardBody className="sm:p-6">
               <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
@@ -266,7 +299,6 @@ export default async function CheckoutPage(
                   size="xl"
                 />
 
-                {/* Game details */}
                 <div className="min-w-0 flex-1">
                   <GameTitle
                     name={listing.game_year ? `${listing.game_name} (${listing.game_year})` : listing.game_name}
@@ -277,7 +309,6 @@ export default async function CheckoutPage(
                     <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
                   </div>
 
-                  {/* Edition info */}
                   {(listing.publisher || listing.language) && (
                     <p className="mt-2 text-sm text-semantic-text-muted">
                       {[listing.publisher, listing.language, listing.edition_year]
@@ -285,38 +316,34 @@ export default async function CheckoutPage(
                         .join(' · ')}
                     </p>
                   )}
-                </div>
-              </div>
 
-              {/* Seller info */}
-              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-                <p className="text-sm text-semantic-text-muted">Seller</p>
-                <div className="flex items-center gap-2 mt-1">
-                  {sellerFlagClass && (
-                    <span className={sellerFlagClass} title={sellerCountryName} />
-                  )}
-                  <span className="text-sm text-semantic-text-secondary">
-                    {listing.user_profiles?.full_name ?? 'Anonymous'}
-                  </span>
-                  <span className="text-sm text-semantic-text-muted">
-                    · {sellerCountryName}
-                  </span>
+                  <p className="mt-2 text-lg font-bold font-sans text-semantic-text-heading">
+                    {formatCentsToCurrency(itemPriceCents)}
+                    {isAuction && (
+                      <span className="text-sm font-normal text-semantic-text-muted ml-2">winning bid</span>
+                    )}
+                  </p>
                 </div>
-              </div>
-
-              {/* Shipping route */}
-              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-                <p className="text-sm text-semantic-text-muted">Shipping</p>
-                <p className="text-sm text-semantic-text-secondary mt-1">
-                  Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
-                </p>
               </div>
             </CardBody>
           </Card>
+
+          {/* Terminal + Phone — rendered by CheckoutForm client component */}
+          <CheckoutForm
+            listingId={listing.id}
+            buyerCountry={buyerCountry}
+            buyerPhone={profile?.phone ?? ''}
+            terminals={terminals}
+            terminalsFetchFailed={terminalsFetchFailed}
+            walletBalanceCents={walletBalanceCents}
+            walletCoversTotal={walletPricing?.everypayChargeCents === 0}
+            isAuction={isAuction}
+            paymentDeadlineAt={isAuction ? listing.payment_deadline_at : undefined}
+          />
         </div>
 
-        {/* Right: Payment card */}
-        <div className="lg:col-span-2">
+        {/* Right column: Payment breakdown + Seller + Pay button */}
+        <div className="lg:col-span-4">
           <Card className="lg:sticky lg:top-6">
             <CardBody className="sm:p-6">
               <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
@@ -325,7 +352,9 @@ export default async function CheckoutPage(
 
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-semantic-text-secondary">Item price</span>
+                  <span className="text-semantic-text-secondary">
+                    {isAuction ? 'Winning bid' : 'Item price'}
+                  </span>
                   <span className="text-semantic-text-primary">
                     {formatCentsToCurrency(pricing.itemsTotalCents)}
                   </span>
@@ -347,7 +376,7 @@ export default async function CheckoutPage(
               </div>
 
               {walletBalanceCents > 0 && walletPricing && (
-                <>
+                <div className="mt-3 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-semantic-text-secondary">Wallet balance</span>
                     <span className="text-semantic-success">
@@ -364,19 +393,40 @@ export default async function CheckoutPage(
                       </span>
                     </div>
                   </div>
-                </>
+                </div>
               )}
 
-              <div className="mt-6">
-                <CheckoutForm
-                  listingId={listing.id}
-                  buyerCountry={buyerCountry}
-                  buyerPhone={profile?.phone ?? ''}
-                  terminals={terminals}
-                  terminalsFetchFailed={terminalsFetchFailed}
-                  walletBalanceCents={walletBalanceCents}
-                  walletCoversTotal={walletPricing?.everypayChargeCents === 0}
-                />
+              <p className="text-xs text-semantic-text-muted mt-2">All prices include VAT</p>
+
+              {/* Seller info */}
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                <p className="text-xs text-semantic-text-muted mb-1">Seller</p>
+                <div className="flex items-center gap-2">
+                  {sellerFlagClass && (
+                    <span className={sellerFlagClass} title={sellerCountryName} />
+                  )}
+                  <span className="text-sm text-semantic-text-secondary">
+                    {listing.user_profiles?.full_name ?? 'Anonymous'}
+                  </span>
+                  <span className="text-xs text-semantic-text-muted">
+                    · {sellerCountryName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Shipping route */}
+              <div className="mt-3 pt-3 border-t border-semantic-border-subtle">
+                <p className="text-xs text-semantic-text-muted mb-1">Shipping</p>
+                <p className="text-sm text-semantic-text-secondary">
+                  Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
+                </p>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle space-y-2">
+                <PaymentMethodLogos />
+                <p className="text-xs text-semantic-text-muted text-center">
+                  Payment processed by {LEGAL_ENTITY_NAME}
+                </p>
               </div>
             </CardBody>
           </Card>

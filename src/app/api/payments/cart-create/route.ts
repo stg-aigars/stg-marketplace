@@ -7,6 +7,7 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { createServiceClient } from '@/lib/supabase';
 import { generateOrderNumber } from '@/lib/services/orders';
 import { env } from '@/lib/env';
+import { COUNTRY_TO_EVERYPAY_LOCALE } from '@/lib/constants';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { parseCartCheckoutBody } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
@@ -211,6 +212,7 @@ export async function POST(request: Request) {
       orderNumber,
       callbackUrl,
       {
+        locale: COUNTRY_TO_EVERYPAY_LOCALE[buyerProfile.country] ?? 'en',
         email: user.email,
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }

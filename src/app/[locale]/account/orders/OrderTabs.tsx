@@ -79,7 +79,7 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
 
                     <div className="flex items-center shrink-0">
                       <Button size="sm" asChild>
-                        <Link href={`/checkout/auction/${auction.id}`}>Pay now</Link>
+                        <Link href={`/checkout/${auction.id}`}>Pay now</Link>
                       </Button>
                     </div>
                   </div>

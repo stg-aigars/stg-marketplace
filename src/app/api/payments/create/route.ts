@@ -9,6 +9,7 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { createServiceClient } from '@/lib/supabase';
 import { isBalticPhoneNumber } from '@/lib/phone-utils';
 import { env } from '@/lib/env';
+import { COUNTRY_TO_EVERYPAY_LOCALE } from '@/lib/constants';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { validateTerminalInput, sanitizeInput } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
@@ -220,6 +221,7 @@ export async function POST(request: Request) {
       session.order_number,
       callbackUrl,
       {
+        locale: COUNTRY_TO_EVERYPAY_LOCALE[buyerCountryCode] ?? 'en',
         email: user.email,
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }

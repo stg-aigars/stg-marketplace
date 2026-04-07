@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Button, PhoneInput, TurnstileWidget } from '@/components/ui';
+import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { Button, Alert, Skeleton, PhoneInput, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
-import { TerminalPicker } from '@/components/checkout/TerminalPicker';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
-import type { TerminalOption } from '@/lib/services/unisend/types';
+import type { TerminalOption, TerminalCountry } from '@/lib/services/unisend/types';
 import type { CountryCode } from '@/lib/country-utils';
+
+const TerminalSelectorWithMap = dynamic(
+  () => import('@/components/checkout/TerminalSelectorWithMap'),
+  { ssr: false, loading: () => <Skeleton className="h-[420px] rounded-lg" /> }
+);
 
 interface CheckoutFormProps {
   listingId: string;
@@ -17,6 +22,8 @@ interface CheckoutFormProps {
   terminalsFetchFailed?: boolean;
   walletBalanceCents?: number;
   walletCoversTotal?: boolean;
+  isAuction?: boolean;
+  paymentDeadlineAt?: string | null;
 }
 
 export function CheckoutForm({
@@ -27,37 +34,52 @@ export function CheckoutForm({
   terminalsFetchFailed,
   walletBalanceCents = 0,
   walletCoversTotal = false,
+  isAuction = false,
+  paymentDeadlineAt,
 }: CheckoutFormProps) {
   const [phone, setPhone] = useState(initialPhone);
-  const [selectedTerminalId, setSelectedTerminalId] = useState('');
-  const [selectedTerminalName, setSelectedTerminalName] = useState('');
-  const [selectedTerminalAddress, setSelectedTerminalAddress] = useState('');
-  const [selectedTerminalCity, setSelectedTerminalCity] = useState('');
-  const [selectedTerminalPostalCode, setSelectedTerminalPostalCode] = useState('');
-  const [selectedTerminalCountry, setSelectedTerminalCountry] = useState('');
+  const [selectedTerminal, setSelectedTerminal] = useState<TerminalOption | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [deadlineExpired, setDeadlineExpired] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
-  const canSubmit = phone.trim() && selectedTerminalId;
+  // Auction deadline countdown — disable form when deadline passes
+  useEffect(() => {
+    if (!isAuction || !paymentDeadlineAt) return;
+
+    const deadlineMs = new Date(paymentDeadlineAt).getTime();
+    if (Date.now() >= deadlineMs) {
+      setDeadlineExpired(true);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setDeadlineExpired(true);
+    }, deadlineMs - Date.now());
+
+    return () => clearTimeout(timeout);
+  }, [isAuction, paymentDeadlineAt]);
+
+  const canSubmit = phone.trim() && selectedTerminal && !deadlineExpired;
 
   const useWallet = walletBalanceCents > 0;
 
   async function handleCheckout() {
-    if (!canSubmit) return;
+    if (!canSubmit || !selectedTerminal) return;
 
     setLoading(true);
     setError(null);
 
     const commonBody = {
       listingId,
-      terminalId: selectedTerminalId,
-      terminalName: selectedTerminalName,
-      terminalAddress: selectedTerminalAddress,
-      terminalCity: selectedTerminalCity,
-      terminalPostalCode: selectedTerminalPostalCode,
-      terminalCountry: selectedTerminalCountry || buyerCountry,
+      terminalId: selectedTerminal.id,
+      terminalName: selectedTerminal.name,
+      terminalAddress: selectedTerminal.address,
+      terminalCity: selectedTerminal.city,
+      terminalPostalCode: selectedTerminal.postalCode ?? undefined,
+      terminalCountry: selectedTerminal.countryCode || buyerCountry,
       buyerPhone: phone.trim(),
       turnstileToken,
     };
@@ -109,6 +131,12 @@ export function CheckoutForm({
 
   return (
     <div className="space-y-4">
+      {deadlineExpired && (
+        <Alert variant="error">
+          Payment deadline has passed. This auction is no longer available.
+        </Alert>
+      )}
+
       {/* Phone number */}
       <div>
         <PhoneInput
@@ -122,18 +150,12 @@ export function CheckoutForm({
         </p>
       </div>
 
-      <TerminalPicker
+      <TerminalSelectorWithMap
         terminals={terminals}
-        selectedId={selectedTerminalId}
-        onSelect={(t) => {
-          setSelectedTerminalId(t.id);
-          setSelectedTerminalName(t.name);
-          setSelectedTerminalAddress(t.address);
-          setSelectedTerminalCity(t.city);
-          setSelectedTerminalPostalCode(t.postalCode ?? '');
-          setSelectedTerminalCountry(t.countryCode);
-        }}
-        fetchFailed={terminalsFetchFailed}
+        defaultCountry={buyerCountry as TerminalCountry}
+        selectedTerminal={selectedTerminal}
+        onSelect={setSelectedTerminal}
+        error={terminalsFetchFailed ? 'Failed to load terminals. Please refresh the page.' : undefined}
       />
 
       <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />

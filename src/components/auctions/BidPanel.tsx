@@ -190,7 +190,7 @@ export function BidPanel({
         <div className="space-y-3">
           <Alert variant="success">You won this auction</Alert>
           <Button asChild>
-            <Link href={`/checkout/auction/${listingId}`}>Pay now</Link>
+            <Link href={`/checkout/${listingId}`}>Pay now</Link>
           </Button>
         </div>
       )}

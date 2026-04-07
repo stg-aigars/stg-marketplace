@@ -24,14 +24,14 @@ const CSP_TEMPLATE = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' ${SUPABASE_URL} https://cf.geekdo-images.com data: blob:`,
+  `img-src 'self' ${SUPABASE_URL} https://cf.geekdo-images.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com data: blob:`,
   "font-src 'self'",
-  `connect-src 'self' ${SUPABASE_URL} https://*.everypay.co https://*.unisend.com https://*.sentry.io https://challenges.cloudflare.com`,
+  `connect-src 'self' ${SUPABASE_URL} https://*.everypay.co https://*.unisend.com https://*.sentry.io https://challenges.cloudflare.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com`,
   "frame-src 'self' https://*.everypay.co https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "worker-src 'self'",
+  "worker-src 'self' blob:",
 ].join('; ');
 
 export function buildCspHeader(nonce: string): string {

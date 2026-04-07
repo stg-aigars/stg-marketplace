@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance } from '@/lib/services/wallet';
-import { getTerminals } from '@/lib/services/unisend/client';
+import { getAllTerminals } from '@/lib/services/unisend/client';
 import type { TerminalCountry, TerminalOption } from '@/lib/services/unisend/types';
 import Link from 'next/link';
 import { Breadcrumb } from '@/components/ui';
@@ -32,14 +32,18 @@ export default async function CartCheckoutPage() {
   let walletBalanceCents = 0;
 
   const [terminalsResult, walletBalance] = await Promise.all([
-    getTerminals(buyerCountry).catch(() => {
+    getAllTerminals().catch(() => {
       terminalsFetchFailed = true;
       return [];
     }),
     getWalletBalance(user.id),
   ]);
 
-  terminals = terminalsResult;
+  terminals = terminalsResult.map((t) => ({
+    id: t.id, name: t.name, city: t.city, address: t.address,
+    postalCode: t.postalCode, countryCode: t.countryCode,
+    latitude: t.latitude, longitude: t.longitude,
+  }));
   walletBalanceCents = walletBalance;
 
   return (

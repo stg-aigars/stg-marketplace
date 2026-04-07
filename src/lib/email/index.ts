@@ -965,7 +965,7 @@ export async function sendAuctionWonToWinner(params: {
     subject: `You won ${params.gameName} — pay within 24 hours`,
     react: React.createElement(AuctionWon, {
       ...params,
-      checkoutUrl: `${env.app.url}/checkout/auction/${params.listingId}`,
+      checkoutUrl: `${env.app.url}/checkout/${params.listingId}`,
     }),
   });
 }
@@ -1028,7 +1028,7 @@ export async function sendAuctionPaymentReminderToWinner(params: {
     subject: `12 hours left to pay for ${params.gameName}`,
     react: React.createElement(AuctionPaymentReminder, {
       ...params,
-      checkoutUrl: `${env.app.url}/checkout/auction/${params.listingId}`,
+      checkoutUrl: `${env.app.url}/checkout/${params.listingId}`,
     }),
   });
 }
