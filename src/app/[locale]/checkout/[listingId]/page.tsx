@@ -243,7 +243,7 @@ export default async function CheckoutPage(
   const errorMessage = searchParams.error ? errorMessages[searchParams.error] ?? 'Something went wrong. Please try again.' : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Breadcrumb */}
       <Breadcrumb items={[
         { label: 'Browse', href: '/browse' },
@@ -282,9 +282,10 @@ export default async function CheckoutPage(
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* Left: Order summary */}
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        {/* Left column: Order details + Terminal + Phone */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Order summary card */}
           <Card>
             <CardBody className="sm:p-6">
               <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
@@ -298,7 +299,6 @@ export default async function CheckoutPage(
                   size="xl"
                 />
 
-                {/* Game details */}
                 <div className="min-w-0 flex-1">
                   <GameTitle
                     name={listing.game_year ? `${listing.game_name} (${listing.game_year})` : listing.game_name}
@@ -309,7 +309,6 @@ export default async function CheckoutPage(
                     <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
                   </div>
 
-                  {/* Edition info */}
                   {(listing.publisher || listing.language) && (
                     <p className="mt-2 text-sm text-semantic-text-muted">
                       {[listing.publisher, listing.language, listing.edition_year]
@@ -317,38 +316,34 @@ export default async function CheckoutPage(
                         .join(' · ')}
                     </p>
                   )}
-                </div>
-              </div>
 
-              {/* Seller info */}
-              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-                <p className="text-sm text-semantic-text-muted">Seller</p>
-                <div className="flex items-center gap-2 mt-1">
-                  {sellerFlagClass && (
-                    <span className={sellerFlagClass} title={sellerCountryName} />
-                  )}
-                  <span className="text-sm text-semantic-text-secondary">
-                    {listing.user_profiles?.full_name ?? 'Anonymous'}
-                  </span>
-                  <span className="text-sm text-semantic-text-muted">
-                    · {sellerCountryName}
-                  </span>
+                  <p className="mt-2 text-lg font-bold font-sans text-semantic-text-heading">
+                    {formatCentsToCurrency(itemPriceCents)}
+                    {isAuction && (
+                      <span className="text-sm font-normal text-semantic-text-muted ml-2">winning bid</span>
+                    )}
+                  </p>
                 </div>
-              </div>
-
-              {/* Shipping route */}
-              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-                <p className="text-sm text-semantic-text-muted">Shipping</p>
-                <p className="text-sm text-semantic-text-secondary mt-1">
-                  Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
-                </p>
               </div>
             </CardBody>
           </Card>
+
+          {/* Terminal + Phone — rendered by CheckoutForm client component */}
+          <CheckoutForm
+            listingId={listing.id}
+            buyerCountry={buyerCountry}
+            buyerPhone={profile?.phone ?? ''}
+            terminals={terminals}
+            terminalsFetchFailed={terminalsFetchFailed}
+            walletBalanceCents={walletBalanceCents}
+            walletCoversTotal={walletPricing?.everypayChargeCents === 0}
+            isAuction={isAuction}
+            paymentDeadlineAt={isAuction ? listing.payment_deadline_at : undefined}
+          />
         </div>
 
-        {/* Right: Payment card */}
-        <div className="lg:col-span-2">
+        {/* Right column: Payment breakdown + Seller + Pay button */}
+        <div className="lg:col-span-4">
           <Card className="lg:sticky lg:top-6">
             <CardBody className="sm:p-6">
               <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
@@ -381,7 +376,7 @@ export default async function CheckoutPage(
               </div>
 
               {walletBalanceCents > 0 && walletPricing && (
-                <>
+                <div className="mt-3 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-semantic-text-secondary">Wallet balance</span>
                     <span className="text-semantic-success">
@@ -398,23 +393,33 @@ export default async function CheckoutPage(
                       </span>
                     </div>
                   </div>
-                </>
+                </div>
               )}
 
               <p className="text-xs text-semantic-text-muted mt-2">All prices include VAT</p>
 
-              <div className="mt-6">
-                <CheckoutForm
-                  listingId={listing.id}
-                  buyerCountry={buyerCountry}
-                  buyerPhone={profile?.phone ?? ''}
-                  terminals={terminals}
-                  terminalsFetchFailed={terminalsFetchFailed}
-                  walletBalanceCents={walletBalanceCents}
-                  walletCoversTotal={walletPricing?.everypayChargeCents === 0}
-                  isAuction={isAuction}
-                  paymentDeadlineAt={isAuction ? listing.payment_deadline_at : undefined}
-                />
+              {/* Seller info */}
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                <p className="text-xs text-semantic-text-muted mb-1">Seller</p>
+                <div className="flex items-center gap-2">
+                  {sellerFlagClass && (
+                    <span className={sellerFlagClass} title={sellerCountryName} />
+                  )}
+                  <span className="text-sm text-semantic-text-secondary">
+                    {listing.user_profiles?.full_name ?? 'Anonymous'}
+                  </span>
+                  <span className="text-xs text-semantic-text-muted">
+                    · {sellerCountryName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Shipping route */}
+              <div className="mt-3 pt-3 border-t border-semantic-border-subtle">
+                <p className="text-xs text-semantic-text-muted mb-1">Shipping</p>
+                <p className="text-sm text-semantic-text-secondary">
+                  Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
+                </p>
               </div>
 
               <div className="mt-4 pt-4 border-t border-semantic-border-subtle space-y-2">
