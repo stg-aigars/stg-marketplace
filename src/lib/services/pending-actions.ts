@@ -12,6 +12,7 @@ const EMPTY: PendingActions = {
   buyerDisputes: 0,
   buyerDeliveryConfirm: 0,
   buyerWantedOffers: 0,
+  buyerAuctionsWon: 0,
   isSeller: false,
 };
 
@@ -36,6 +37,7 @@ export async function getPendingActions(userId: string): Promise<PendingActions>
     buyerDisputes: data.buyer_disputes ?? 0,
     buyerDeliveryConfirm: data.buyer_delivery_confirm ?? 0,
     buyerWantedOffers: data.buyer_wanted_offers ?? 0,
+    buyerAuctionsWon: data.buyer_auctions_won ?? 0,
     isSeller: data.is_seller ?? false,
   };
 }
