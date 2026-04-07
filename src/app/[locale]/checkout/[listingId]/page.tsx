@@ -11,7 +11,6 @@ import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import { getAllTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
-import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatDateTime } from '@/lib/date-utils';
 import { LEGAL_ENTITY_NAME } from '@/lib/constants';
@@ -99,7 +98,7 @@ export default async function CheckoutPage(
 
   const canCheckout = isAuctionWinner;
 
-  // Cannot buy own listing — check BEFORE reservation to avoid locking seller's own item
+  // Cannot buy own listing
   if (listing.seller_id === user.id) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -135,9 +134,6 @@ export default async function CheckoutPage(
       </div>
     );
   }
-
-  // Auctions skip reservation — auction_ended status already locks the listing.
-  const reservedAt: string | null = null;
 
   // Calculate shipping
   const sellerCountry = listing.country as TerminalCountry;
@@ -244,12 +240,6 @@ export default async function CheckoutPage(
         <Alert variant="warning" className="mb-4">
           Complete payment by {formatDateTime(listing.payment_deadline_at)} to secure this game.
         </Alert>
-      )}
-
-      {!isAuction && reservedAt && (
-        <div className="mb-4">
-          <ReservationCountdown reservedAt={reservedAt} isOwner compact />
-        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
