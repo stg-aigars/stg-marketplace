@@ -15,7 +15,7 @@ import {
   getShippingPriceCents,
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
-import type { CartItem, CartValidationResult } from '@/lib/checkout/cart-types';
+import type { CartItem, CartValidationResult, UnavailableItem } from '@/lib/checkout/cart-types';
 import { MAX_CART_ITEMS } from '@/lib/checkout/cart-types';
 
 interface SellerGroup {
@@ -28,7 +28,7 @@ interface SellerGroup {
 export default function CartPage() {
   const { items, removeItem, clearCart, count } = useCart();
   const { user, profile } = useAuth();
-  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
+  const [unavailableMap, setUnavailableMap] = useState<Map<string, 'reserved' | 'sold' | 'cancelled'>>(new Map());
   const [validating, setValidating] = useState(false);
 
   // Validate cart items on mount only
@@ -47,7 +47,11 @@ export default function CartPage() {
     })
       .then((res) => res.json())
       .then((data: CartValidationResult) => {
-        setUnavailableIds(new Set(data.unavailable));
+        const map = new Map<string, 'reserved' | 'sold' | 'cancelled'>();
+        for (const item of data.unavailable) {
+          map.set(item.id, item.reason);
+        }
+        setUnavailableMap(map);
       })
       .catch(() => {})
       .finally(() => setValidating(false));
@@ -81,8 +85,8 @@ export default function CartPage() {
     return Array.from(groupMap.values());
   }, [items, buyerCountry]);
 
-  // Totals
-  const availableItems = items.filter((i) => !unavailableIds.has(i.listingId));
+  // Totals (informational)
+  const availableItems = items.filter((i) => !unavailableMap.has(i.listingId));
   const itemsTotal = availableItems.reduce((sum, i) => sum + i.priceCents, 0);
 
   const shippingTotal = useMemo(() => {
@@ -104,9 +108,6 @@ export default function CartPage() {
 
   const grandTotal =
     shippingTotal !== null ? itemsTotal + shippingTotal : null;
-
-  const hasUnavailable = unavailableIds.size > 0;
-  const canCheckout = availableItems.length > 0 && !hasUnavailable;
 
   // Empty state
   if (count === 0) {
@@ -135,16 +136,22 @@ export default function CartPage() {
         )}
       </div>
 
-      {hasUnavailable && (
+      {unavailableMap.size > 0 && (
         <Alert variant="warning" className="mb-4">
           Some items in your cart are no longer available. Please remove them before checking out.
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Items column */}
-        <div className="lg:col-span-2 space-y-4">
-          {sellerGroups.map((group) => (
+      <div className="space-y-6">
+        {sellerGroups.map((group) => {
+          const groupAvailableItems = group.items.filter((i) => !unavailableMap.has(i.listingId));
+          const groupHasUnavailable = group.items.some((i) => unavailableMap.has(i.listingId));
+          const groupItemsTotal = groupAvailableItems.reduce((sum, i) => sum + i.priceCents, 0);
+          const groupSubtotal = group.shippingCents !== null
+            ? groupItemsTotal + group.shippingCents
+            : groupItemsTotal;
+
+          return (
             <Card key={group.sellerId}>
               <CardBody>
                 {/* Seller header */}
@@ -168,7 +175,8 @@ export default function CartPage() {
                 {/* Items */}
                 <div className="space-y-3">
                   {group.items.map((item) => {
-                    const isUnavailable = unavailableIds.has(item.listingId);
+                    const unavailableReason = unavailableMap.get(item.listingId);
+                    const isUnavailable = !!unavailableReason;
                     return (
                       <div
                         key={item.listingId}
@@ -214,7 +222,17 @@ export default function CartPage() {
                                 ]
                               }
                             />
-                            {isUnavailable && (
+                            {unavailableReason === 'reserved' && (
+                              <span className="text-xs font-medium text-semantic-warning">
+                                Being purchased
+                              </span>
+                            )}
+                            {unavailableReason === 'sold' && (
+                              <span className="text-xs font-medium text-semantic-error">
+                                Sold
+                              </span>
+                            )}
+                            {unavailableReason === 'cancelled' && (
                               <span className="text-xs font-medium text-semantic-error">
                                 No longer available
                               </span>
@@ -239,87 +257,59 @@ export default function CartPage() {
                     );
                   })}
                 </div>
+
+                {/* Group footer: subtotal + checkout */}
+                <div className="mt-4 pt-3 border-t border-semantic-border">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-semantic-text-secondary">Subtotal: </span>
+                      <span className="font-semibold text-semantic-text-primary">
+                        {formatCentsToCurrency(groupSubtotal)}
+                      </span>
+                      {buyerCountry && group.shippingCents !== null && (
+                        <span className="text-semantic-text-tertiary text-xs ml-1">
+                          (incl. shipping)
+                        </span>
+                      )}
+                    </div>
+
+                    {user ? (
+                      groupHasUnavailable || validating ? (
+                        <Button variant="primary" size="sm" disabled>
+                          {validating ? 'Validating...' : 'Remove unavailable items first'}
+                        </Button>
+                      ) : (
+                        <Button variant="primary" size="sm" asChild>
+                          <Link href={`/cart/checkout?seller=${group.sellerId}`}>
+                            Checkout
+                          </Link>
+                        </Button>
+                      )
+                    ) : (
+                      <Button variant="primary" size="sm" asChild>
+                        <Link href="/auth/signin">
+                          Sign in to checkout
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </CardBody>
             </Card>
-          ))}
-        </div>
+          );
+        })}
 
-        {/* Summary column */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
-                Order summary
-              </h2>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-semantic-text-secondary">
-                    Items ({availableItems.length})
-                  </span>
-                  <span className="text-semantic-text-primary">
-                    {formatCentsToCurrency(itemsTotal)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-semantic-text-secondary">
-                    Shipping
-                  </span>
-                  <span className="text-semantic-text-primary">
-                    {!user
-                      ? 'Sign in to see'
-                      : shippingTotal !== null
-                        ? formatCentsToCurrency(shippingTotal)
-                        : 'Unavailable'}
-                  </span>
-                </div>
-
-                <div className="border-t border-semantic-border pt-2 mt-2">
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-semantic-text-primary">Total</span>
-                    <span className="text-semantic-text-heading">
-                      {grandTotal !== null
-                        ? formatCentsToCurrency(grandTotal)
-                        : formatCentsToCurrency(itemsTotal)}
-                    </span>
-                  </div>
-                  {grandTotal === null && buyerCountry && (
-                    <p className="text-xs text-semantic-text-tertiary mt-1">
-                      Shipping will be calculated at checkout
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                {user ? (
-                  canCheckout && !validating ? (
-                    <Button variant="primary" className="w-full" asChild>
-                      <Link href="/cart/checkout">Proceed to checkout</Link>
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      className="w-full"
-                      disabled
-                    >
-                      {validating
-                        ? 'Validating...'
-                        : 'Remove unavailable items first'}
-                    </Button>
-                  )
-                ) : (
-                  <Button variant="primary" className="w-full" asChild>
-                    <Link href="/auth/signin">
-                      Sign in to checkout
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </CardBody>
-          </Card>
-        </div>
+        {/* Combined total (informational) */}
+        {sellerGroups.length > 1 && (
+          <div className="flex justify-between items-center px-1 text-sm text-semantic-text-secondary">
+            <span>Combined total ({availableItems.length} {availableItems.length === 1 ? 'item' : 'items'})</span>
+            <span className="font-semibold text-semantic-text-primary">
+              {grandTotal !== null
+                ? formatCentsToCurrency(grandTotal)
+                : formatCentsToCurrency(itemsTotal)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

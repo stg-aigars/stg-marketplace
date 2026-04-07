@@ -49,6 +49,7 @@ const config: Config = {
           'brand-bg': colors.semantic.brandBg,
           'primary-bg': colors.semantic.primaryBg,
           'success-bg': colors.semantic.successBg,
+          'warning-bg': colors.semantic.warningBg,
           'purple-bg': colors.semantic.purpleBg,
           success: colors.semantic.success,
           'success-hover': colors.semantic.successHover,

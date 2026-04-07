@@ -7,6 +7,7 @@ interface CartContextValue {
   items: CartItem[];
   addItem: (item: CartItem) => void;
   removeItem: (listingId: string) => void;
+  removeItems: (listingIds: string[]) => void;
   clearCart: () => void;
   isInCart: (listingId: string) => boolean;
   isFull: boolean;
@@ -78,6 +79,11 @@ function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((i) => i.listingId !== listingId));
   }, []);
 
+  const removeItems = useCallback((listingIds: string[]) => {
+    const idSet = new Set(listingIds);
+    setItems((prev) => prev.filter((i) => !idSet.has(i.listingId)));
+  }, []);
+
   const clearCart = useCallback(() => {
     setItems([]);
   }, []);
@@ -92,12 +98,13 @@ function CartProvider({ children }: { children: React.ReactNode }) {
       items,
       addItem,
       removeItem,
+      removeItems,
       clearCart,
       isInCart,
       isFull: items.length >= MAX_CART_ITEMS,
       count: items.length,
     }),
-    [items, addItem, removeItem, clearCart, isInCart]
+    [items, addItem, removeItem, removeItems, clearCart, isInCart]
   );
 
   return (

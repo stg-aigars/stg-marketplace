@@ -16,6 +16,7 @@ interface RecentListingRow {
   price_cents: number;
   photos: string[];
   country: string;
+  status: string;
   listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
@@ -30,8 +31,8 @@ export default async function HomePage() {
   const [{ data: recentListings }, { user, favoriteIds }] = await Promise.all([
     supabase
       .from('listings')
-      .select('id, game_name, game_year, condition, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
-      .eq('status', 'active')
+      .select('id, game_name, game_year, condition, price_cents, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+      .in('status', ['active', 'reserved'])
       .order('created_at', { ascending: false })
       .limit(8)
       .returns<RecentListingRow[]>(),

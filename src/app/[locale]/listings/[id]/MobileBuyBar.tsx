@@ -2,18 +2,21 @@
 
 import { useState, useEffect, type RefObject } from 'react';
 import Link from 'next/link';
+import { ShoppingCart } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { useBuyNow, type BuyNowListing } from '@/lib/hooks/useBuyNow';
 
 interface MobileBuyBarProps {
   targetRef: RefObject<HTMLDivElement | null>;
-  listingId: string;
   priceCents: number;
   isReservedByMe: boolean;
+  listing: BuyNowListing;
 }
 
-export function MobileBuyBar({ targetRef, listingId, priceCents, isReservedByMe }: MobileBuyBarProps) {
+export function MobileBuyBar({ targetRef, priceCents, isReservedByMe, listing }: MobileBuyBarProps) {
   const [visible, setVisible] = useState(false);
+  const { buyNow } = useBuyNow(listing);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -41,11 +44,16 @@ export function MobileBuyBar({ targetRef, listingId, priceCents, isReservedByMe 
         <p className="text-xl font-bold font-sans tracking-tight text-semantic-text-heading">
           {formatCentsToCurrency(priceCents)}
         </p>
-        <Button size="sm" asChild>
-          <Link href={`/checkout/${listingId}`}>
-            {isReservedByMe ? 'Complete payment' : 'Buy now'}
-          </Link>
-        </Button>
+        {isReservedByMe ? (
+          <Button size="sm" variant="secondary" asChild>
+            <Link href="/account/orders">View your orders</Link>
+          </Button>
+        ) : (
+          <Button size="sm" onClick={buyNow}>
+            <ShoppingCart size={16} weight="bold" className="mr-1" />
+            Buy now
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ export async function GET() {
   const { data: activeGameIds } = await supabase
     .from('listings')
     .select('bgg_game_id')
-    .eq('status', 'active');
+    .in('status', ['active', 'reserved']);
 
   if (!activeGameIds || activeGameIds.length === 0) {
     return NextResponse.json(

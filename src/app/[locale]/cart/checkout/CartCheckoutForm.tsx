@@ -29,6 +29,7 @@ interface CartCheckoutFormProps {
   terminals: TerminalOption[];
   terminalsFetchFailed?: boolean;
   walletBalanceCents?: number;
+  sellerFilter: string;
 }
 
 export function CartCheckoutForm({
@@ -37,9 +38,10 @@ export function CartCheckoutForm({
   terminals,
   terminalsFetchFailed,
   walletBalanceCents = 0,
+  sellerFilter,
 }: CartCheckoutFormProps) {
   const router = useRouter();
-  const { items, clearCart } = useCart();
+  const { items, removeItems } = useCart();
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminal, setSelectedTerminal] = useState<TerminalOption | null>(null);
   const [useWallet, setUseWallet] = useState(walletBalanceCents > 0);
@@ -49,48 +51,40 @@ export function CartCheckoutForm({
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
 
+  // Filter items to only those matching the seller
+  const sellerItems = useMemo(
+    () => items.filter((i) => i.sellerId === sellerFilter),
+    [items, sellerFilter]
+  );
+
   // Validate items on mount only
   const validatedRef = useRef(false);
   useEffect(() => {
-    if (validatedRef.current || items.length === 0) return;
+    if (validatedRef.current || sellerItems.length === 0) return;
     validatedRef.current = true;
 
     fetch('/api/cart/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ listingIds: items.map((i) => i.listingId) }),
+      body: JSON.stringify({ listingIds: sellerItems.map((i) => i.listingId) }),
     })
       .then((r) => r.json())
       .then((data: CartValidationResult) => {
         if (data.unavailable?.length > 0) {
-          setUnavailableIds(new Set(data.unavailable));
+          setUnavailableIds(new Set(data.unavailable.map((u) => u.id)));
           setError('Some items are no longer available. Please return to your cart to remove them.');
         }
       })
       .catch(() => {});
-  }, [items]);
+  }, [sellerItems]);
 
-  // Group items by seller
-  const sellerGroups = useMemo(() => {
-    const groups = new Map<string, { sellerCountry: string; items: typeof items; shippingCents: number }>();
-    for (const item of items) {
-      if (unavailableIds.has(item.listingId)) continue;
-      if (!groups.has(item.sellerId)) {
-        const shipping = getShippingPriceCents(
-          item.sellerCountry as TerminalCountry,
-          buyerCountry as TerminalCountry
-        ) ?? 0;
-        groups.set(item.sellerId, { sellerCountry: item.sellerCountry, items: [], shippingCents: shipping });
-      }
-      groups.get(item.sellerId)!.items.push(item);
-    }
-    return Array.from(groups.values());
-  }, [items, buyerCountry, unavailableIds]);
-
-  const availableItems = items.filter((i) => !unavailableIds.has(i.listingId));
+  const availableItems = sellerItems.filter((i) => !unavailableIds.has(i.listingId));
+  const sellerCountry = sellerItems[0]?.sellerCountry;
+  const shippingCents = sellerCountry
+    ? (getShippingPriceCents(sellerCountry as TerminalCountry, buyerCountry as TerminalCountry) ?? 0)
+    : 0;
   const itemsTotalCents = availableItems.reduce((sum, i) => sum + i.priceCents, 0);
-  const shippingTotalCents = sellerGroups.reduce((sum, g) => sum + g.shippingCents, 0);
-  const grandTotalCents = itemsTotalCents + shippingTotalCents;
+  const grandTotalCents = itemsTotalCents + shippingCents;
 
   const walletDebitCents = useWallet ? Math.min(walletBalanceCents, grandTotalCents) : 0;
   const cardChargeCents = grandTotalCents - walletDebitCents;
@@ -105,6 +99,23 @@ export function CartCheckoutForm({
     setError(null);
 
     if (!selectedTerminal) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function handlePaymentError(data: any) {
+      if (Array.isArray(data.unavailable) && data.unavailable.length > 0) {
+        const ids = new Set<string>(data.unavailable);
+        setUnavailableIds(ids);
+        const names = sellerItems
+          .filter((i) => ids.has(i.listingId))
+          .map((i) => i.gameTitle);
+        const nameList = names.length > 0 ? names.join(', ') : 'some items';
+        setError(`Some items are no longer available: ${nameList}. Please return to your cart to remove them.`);
+      } else {
+        setError(sanitizeApiError(data.error));
+      }
+      setLoading(false);
+      turnstileRef.current?.reset();
+    }
 
     const commonBody = {
       listingIds: availableItems.map((i) => i.listingId),
@@ -129,13 +140,11 @@ export function CartCheckoutForm({
         const data = await response.json();
 
         if (!response.ok) {
-          setError(sanitizeApiError(data.error));
-          setLoading(false);
-          turnstileRef.current?.reset();
+          handlePaymentError(data);
           return;
         }
 
-        clearCart();
+        removeItems(availableItems.map(i => i.listingId));
         router.push(`/account/orders?from=cart&group=${data.groupId}`);
       } else {
         const response = await apiFetch('/api/payments/cart-create', {
@@ -147,13 +156,11 @@ export function CartCheckoutForm({
         const data = await response.json();
 
         if (!response.ok) {
-          setError(sanitizeApiError(data.error));
-          setLoading(false);
-          turnstileRef.current?.reset();
+          handlePaymentError(data);
           return;
         }
 
-        clearCart();
+        removeItems(availableItems.map(i => i.listingId));
         window.location.href = data.paymentLink;
       }
     } catch {
@@ -163,10 +170,10 @@ export function CartCheckoutForm({
     }
   }
 
-  if (items.length === 0) {
+  if (sellerItems.length === 0) {
     return (
       <Alert variant="info">
-        Your cart is empty. <Link href="/browse" className="underline">Browse games</Link> to add items.
+        No items found for this seller. <Link href="/cart" className="underline">Return to cart</Link>.
       </Alert>
     );
   }
@@ -176,8 +183,15 @@ export function CartCheckoutForm({
       {/* Left: Form */}
       <div className="lg:col-span-2 space-y-6">
         {error && (
-          <Alert variant="error" dismissible onDismiss={() => setError(null)}>
+          <Alert variant="error" dismissible={unavailableIds.size === 0} onDismiss={() => setError(null)}>
             {error}
+            {unavailableIds.size > 0 && (
+              <div className="mt-2">
+                <Link href="/cart" className="text-sm font-medium underline">
+                  Back to cart
+                </Link>
+              </div>
+            )}
           </Alert>
         )}
 
@@ -188,31 +202,27 @@ export function CartCheckoutForm({
               Order summary ({availableItems.length} {availableItems.length === 1 ? 'item' : 'items'})
             </h2>
             <div className="space-y-4">
-              {sellerGroups.map((group, idx) => (
-                <div key={idx}>
-                  <p className="text-xs font-medium text-semantic-text-muted mb-2">
-                    From {getCountryName(group.sellerCountry)} — Shipping: {formatCentsToCurrency(group.shippingCents)}
-                  </p>
-                  {group.items.map((item) => (
-                    <div key={item.listingId} className="flex items-center gap-3 py-2">
-                      <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-semantic-bg-secondary">
-                        {item.gameThumbnail ? (
-                          <Image src={item.gameThumbnail} alt={item.gameTitle} fill className="object-contain" sizes="40px" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingCart size={16} className="text-semantic-text-tertiary" />
-                          </div>
-                        )}
+              <p className="text-xs font-medium text-semantic-text-muted mb-2">
+                From {getCountryName(sellerCountry)} — Shipping: {formatCentsToCurrency(shippingCents)}
+              </p>
+              {sellerItems.map((item) => (
+                <div key={item.listingId} className="flex items-center gap-3 py-2">
+                  <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-semantic-bg-secondary">
+                    {item.gameThumbnail ? (
+                      <Image src={item.gameThumbnail} alt={item.gameTitle} fill className="object-contain" sizes="40px" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ShoppingCart size={16} className="text-semantic-text-tertiary" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-semantic-text-primary truncate">{item.gameTitle}</p>
-                        <Badge condition={conditionToBadgeKey[item.condition]} />
-                      </div>
-                      <span className="text-sm font-medium text-semantic-text-primary">
-                        {formatCentsToCurrency(item.priceCents)}
-                      </span>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-semantic-text-primary truncate">{item.gameTitle}</p>
+                    <Badge condition={conditionToBadgeKey[item.condition]} />
+                  </div>
+                  <span className="text-sm font-medium text-semantic-text-primary">
+                    {formatCentsToCurrency(item.priceCents)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -259,7 +269,7 @@ export function CartCheckoutForm({
               </div>
               <div className="flex justify-between">
                 <span className="text-semantic-text-secondary">Shipping</span>
-                <span>{formatCentsToCurrency(shippingTotalCents)}</span>
+                <span>{formatCentsToCurrency(shippingCents)}</span>
               </div>
 
               {walletBalanceCents > 0 && (

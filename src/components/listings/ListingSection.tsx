@@ -14,6 +14,7 @@ export interface ListingSectionItem {
   country: string;
   version_thumbnail: string | null;
   games: { image: string | null; is_expansion: boolean } | null;
+  status?: string;
   listing_type?: ListingType;
   bid_count?: number;
   auction_end_at?: string | null;
@@ -79,6 +80,7 @@ export function ListingSection({
               isAuthenticated={isAuthenticated}
               expansionCount={expansionCounts?.[listing.id] ?? 0}
               commentCount={commentCounts?.[listing.id] ?? 0}
+              status={listing.status}
               isExpansion={listing.games?.is_expansion ?? false}
               isAuction={listing.listing_type === 'auction'}
               bidCount={listing.bid_count}

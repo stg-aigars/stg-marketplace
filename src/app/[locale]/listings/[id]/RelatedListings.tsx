@@ -6,7 +6,7 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import type { ListingSectionItem } from '@/components/listings/ListingSection';
 
 const LISTING_SELECT =
-  'id, game_name, price_cents, photos, country, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
+  'id, game_name, price_cents, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
 
 interface RelatedListingsProps {
   listingId: string;
@@ -28,7 +28,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
       supabase
         .from('listings')
         .select(LISTING_SELECT)
-        .eq('status', 'active')
+        .in('status', ['active', 'reserved'])
         .eq('bgg_game_id', bggGameId)
         .neq('id', listingId)
         .neq('seller_id', sellerId)
@@ -38,7 +38,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
       supabase
         .from('listings')
         .select(LISTING_SELECT)
-        .eq('status', 'active')
+        .in('status', ['active', 'reserved'])
         .eq('seller_id', sellerId)
         .neq('id', listingId)
         .order('created_at', { ascending: false })

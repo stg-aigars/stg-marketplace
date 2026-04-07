@@ -62,6 +62,7 @@ export const colors = {
     brandBg: '#EDF5F7',         // Brand teal tint
     primaryBg: '#FBF0EB',       // Primary orange tint
     successBg: '#EEF5EB',       // Success green tint
+    warningBg: '#FBF5E6',       // Warning yellow tint
     purpleBg: '#F3EDF5',        // Aurora purple tint
 
     success: '#A3BE8C',

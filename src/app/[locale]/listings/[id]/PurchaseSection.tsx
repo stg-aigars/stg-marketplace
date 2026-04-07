@@ -2,21 +2,31 @@
 
 import { useRef, type ReactNode } from 'react';
 import { MobileBuyBar } from './MobileBuyBar';
+import type { ListingCondition } from '@/lib/listings/types';
 
 interface PurchaseSectionProps {
   children: ReactNode;
-  listingId: string;
   priceCents: number;
   isReservedByMe: boolean;
   showMobileBuyBar: boolean;
+  listing: {
+    id: string;
+    gameTitle: string;
+    gameThumbnail: string | null;
+    priceCents: number;
+    sellerCountry: string;
+    sellerId: string;
+    condition: ListingCondition;
+    expansionCount?: number;
+  };
 }
 
 export function PurchaseSection({
   children,
-  listingId,
   priceCents,
   isReservedByMe,
   showMobileBuyBar,
+  listing,
 }: PurchaseSectionProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -26,9 +36,9 @@ export function PurchaseSection({
       {showMobileBuyBar && (
         <MobileBuyBar
           targetRef={cardRef}
-          listingId={listingId}
           priceCents={priceCents}
           isReservedByMe={isReservedByMe}
+          listing={listing}
         />
       )}
     </div>

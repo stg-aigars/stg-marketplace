@@ -35,6 +35,7 @@ interface ListingRow {
   photos: string[];
   country: string;
   bgg_game_id: number;
+  status: string;
   listing_type: ListingType;
   bid_count: number;
   auction_end_at: string | null;
@@ -111,10 +112,10 @@ export default async function BrowsePage(
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)',
       { count: 'exact' }
     )
-    .eq('status', 'active');
+    .in('status', ['active', 'reserved']);
 
   // Apply listing-level filters
   if (filters.search) {
@@ -220,6 +221,7 @@ export default async function BrowsePage(
                 isAuthenticated={isAuthenticated}
                 expansionCount={expansionCounts[listing.id] ?? 0}
                 commentCount={commentCounts[listing.id] ?? 0}
+                status={listing.status}
                 isExpansion={listing.games?.is_expansion ?? false}
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
