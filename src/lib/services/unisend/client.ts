@@ -258,13 +258,18 @@ export async function getAllTerminals(): Promise<Terminal[]> {
     .flatMap((r) => r.value);
 
   // Log failures but don't block checkout
+  const allSucceeded = results.every((r) => r.status === 'fulfilled');
   results.forEach((r, i) => {
     if (r.status === 'rejected') {
       console.error(`[Unisend] Failed to fetch terminals for ${countries[i]}:`, r.reason);
     }
   });
 
-  await cacheSet(cacheKey, all, TERMINAL_CACHE_TTL_SECONDS).catch(() => {});
+  // Only cache when all countries succeeded — partial results would hide
+  // terminals for the failed country for the entire cache TTL
+  if (allSucceeded) {
+    await cacheSet(cacheKey, all, TERMINAL_CACHE_TTL_SECONDS).catch(() => {});
+  }
 
   return all;
 }
