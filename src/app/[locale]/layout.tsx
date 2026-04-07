@@ -10,6 +10,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Toaster } from '@/components/ui/toaster';
 import { StaleActionGuard } from '@/components/StaleActionGuard';
+import { PendingActionsProvider } from '@/contexts/PendingActionsContext';
 import { PendingActionsBanner } from '@/components/layout/PendingActionsBanner';
 import { JsonLd } from '@/lib/seo/json-ld';
 import type { SearchAction } from 'schema-dts';
@@ -128,15 +129,17 @@ export default async function LocaleLayout(
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <CartProvider>
-              <SiteHeader />
-              <PendingActionsBanner />
-              <main className="min-h-[calc(100vh-theme(spacing.16))]">
-                {children}
-              </main>
-              <SiteFooter />
-              <Toaster />
-              <StaleActionGuard />
-              <ServiceWorkerRegistration />
+              <PendingActionsProvider>
+                <SiteHeader />
+                <PendingActionsBanner />
+                <main className="min-h-[calc(100vh-theme(spacing.16))]">
+                  {children}
+                </main>
+                <SiteFooter />
+                <Toaster />
+                <StaleActionGuard />
+                <ServiceWorkerRegistration />
+              </PendingActionsProvider>
             </CartProvider>
           </AuthProvider>
         </NextIntlClientProvider>
