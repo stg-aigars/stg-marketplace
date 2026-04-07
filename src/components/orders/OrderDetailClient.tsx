@@ -3,10 +3,8 @@
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
 import { Badge, BackLink, Card, CardBody, UserIdentity } from '@/components/ui';
-import { GameThumb, GameTitle } from '@/components/listings/atoms';
+import { ListingIdentity } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
 import { ShippingInfo } from './ShippingInfo';
@@ -224,9 +222,6 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             )}
             <div className={hasMultipleItems ? 'space-y-3' : ''}>
               {items.map((item) => {
-                const itemCondition = item.listings?.condition as ListingCondition | undefined;
-                const itemBadgeKey = itemCondition ? conditionToBadgeKey[itemCondition] : undefined;
-                const itemConditionInfo = itemBadgeKey ? conditionConfig[itemBadgeKey] : undefined;
                 const itemImage = item.listings?.games?.thumbnail ?? null;
                 const itemGameName = item.listings?.game_year
                   ? `${item.listings.game_name ?? 'Unknown game'} (${item.listings.game_year})`
@@ -235,36 +230,23 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                 const itemExpansions = ((item.listings as any)?.listing_expansions ?? []) as Array<{ game_name: string }>;
 
                 return (
-                  <div key={item.id} className={`flex gap-4 ${hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}`}>
-                    <GameThumb src={itemImage} alt={itemGameName} size={hasMultipleItems ? 'lg' : 'xl'} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <Link
-                            href={`/listings/${item.listing_id}`}
-                            className="sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
-                          >
-                            <GameTitle name={itemGameName} size={hasMultipleItems ? 'md' : 'lg'} serif />
-                          </Link>
-                          {itemExpansions.length > 0 && (
-                            <p className="text-xs text-semantic-text-muted mt-0.5">
-                              +{itemExpansions.length} {itemExpansions.length === 1 ? 'expansion' : 'expansions'}:{' '}
-                              {itemExpansions.map((e) => e.game_name).join(', ')}
-                            </p>
-                          )}
-                        </div>
-                        {hasMultipleItems && (
-                          <span className="text-sm font-semibold text-semantic-text-heading flex-shrink-0">
-                            {formatCentsToCurrency(item.price_cents)}
-                          </span>
-                        )}
-                      </div>
-                      {itemBadgeKey && itemConditionInfo && (
-                        <div className="mt-1">
-                          <Badge condition={itemBadgeKey}>{itemConditionInfo.label}</Badge>
-                        </div>
-                      )}
-                    </div>
+                  <div key={item.id} className={hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}>
+                    <ListingIdentity
+                      listingId={item.listing_id}
+                      image={itemImage}
+                      title={itemGameName}
+                      size="md"
+                      price={hasMultipleItems ? (
+                        <span className="text-sm font-semibold text-semantic-text-heading">
+                          {formatCentsToCurrency(item.price_cents)}
+                        </span>
+                      ) : undefined}
+                    />
+                    {itemExpansions.length > 0 && (
+                      <p className="text-xs text-semantic-text-muted mt-1 ml-[68px]">
+                        {itemExpansions.map((e) => e.game_name).join(', ')}
+                      </p>
+                    )}
                   </div>
                 );
               })}

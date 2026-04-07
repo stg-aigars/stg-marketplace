@@ -1,7 +1,5 @@
 import Link from 'next/link';
-import { GameThumb } from './atoms/GameThumb';
-import { GameTitle } from './atoms/GameTitle';
-import { Price } from './atoms/Price';
+import { ListingIdentity, Price } from './atoms';
 import { getConditionLabel } from '@/lib/condition-config';
 import type { ListingCondition } from '@/lib/listings/types';
 
@@ -25,16 +23,20 @@ function ListingRow({ listing, className = '' }: ListingRowProps) {
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className={`flex items-center gap-3 rounded-lg border border-semantic-border-subtle shadow-sm bg-semantic-bg-elevated p-3 transition-all duration-250 ease-out-custom sm:hover:shadow-md ${className}`}
+      className={`block rounded-lg border border-semantic-border-subtle shadow-sm bg-semantic-bg-elevated p-3 transition-all duration-250 ease-out-custom sm:hover:shadow-md ${className}`}
     >
-      <GameThumb src={imageUrl} alt={listing.game_name} size="md" />
-      <div className="flex-1 min-w-0">
-        <GameTitle name={listing.game_name} size="sm" serif />
-        <div className="flex items-center gap-2 mt-1">
-          <Price cents={listing.price_cents} size="sm" />
-          <span className="text-xs text-semantic-text-muted">{conditionLabel}</span>
-        </div>
-      </div>
+      <ListingIdentity
+        listingId={listing.id}
+        image={imageUrl ?? null}
+        title={listing.game_name}
+        disableLink
+        price={
+          <div className="flex items-center gap-2">
+            <Price cents={listing.price_cents} size="sm" />
+            <span className="text-xs text-semantic-text-muted">{conditionLabel}</span>
+          </div>
+        }
+      />
     </Link>
   );
 }
