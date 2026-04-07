@@ -109,8 +109,8 @@ function SiteHeader() {
                 <span className="text-semantic-brand">every game deserves </span>
                 <span className="text-semantic-primary">a</span>
               </span>
-              <span className="text-sm sm:text-base font-display font-bold text-semantic-primary uppercase tracking-widest">
-                Second Turn
+              <span className="text-sm sm:text-base font-display font-bold text-semantic-primary tracking-widest">
+                second turn
               </span>
             </span>
           </Link>
