@@ -51,6 +51,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
   }
 
+  // Verify all listings belong to same seller
+  const sellerIds = new Set(listings.map(l => l.seller_id));
+  if (sellerIds.size > 1) {
+    return NextResponse.json({ error: 'All items must be from the same seller' }, { status: 400 });
+  }
+
   for (const listing of listings) {
     if (listing.seller_id === user.id) {
       return NextResponse.json({ error: 'You cannot buy your own listing' }, { status: 400 });
@@ -125,8 +131,13 @@ export async function POST(request: Request) {
       p_buyer_id: user.id,
     });
 
-  if (rpcError || (failedIds && failedIds.length > 0)) {
-    return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
+  if (rpcError) {
+    console.error('[Cart Wallet] Reservation RPC failed:', rpcError);
+    return NextResponse.json({ error: 'Failed to reserve items. Please try again.' }, { status: 500 });
+  }
+
+  if (failedIds && failedIds.length > 0) {
+    return NextResponse.json({ error: 'Some items are no longer available', unavailable: failedIds }, { status: 400 });
   }
 
   // Create a cart checkout group for record-keeping

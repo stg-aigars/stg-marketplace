@@ -51,6 +51,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
   }
 
+  // Verify all listings belong to same seller
+  const sellerIds = new Set(listings.map(l => l.seller_id));
+  if (sellerIds.size > 1) {
+    return NextResponse.json({ error: 'All items must be from the same seller' }, { status: 400 });
+  }
+
   // Validate all listings
   for (const listing of listings) {
     if (listing.seller_id === user.id) {

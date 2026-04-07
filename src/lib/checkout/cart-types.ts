@@ -38,8 +38,13 @@ export interface CartCheckoutGroup {
   created_at: string;
 }
 
+export interface UnavailableItem {
+  id: string;
+  reason: 'reserved' | 'sold' | 'cancelled';
+}
+
 /** Response from /api/cart/validate */
 export interface CartValidationResult {
   available: string[];
-  unavailable: string[];
+  unavailable: UnavailableItem[];
 }

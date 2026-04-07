@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getAllTerminals } from '@/lib/services/unisend/client';
@@ -11,7 +12,18 @@ export const metadata: Metadata = {
   title: 'Cart Checkout',
 };
 
-export default async function CartCheckoutPage() {
+export default async function CartCheckoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ seller?: string }>;
+}) {
+  const params = await searchParams;
+  const seller = params.seller;
+
+  if (!seller) {
+    redirect('/cart');
+  }
+
   const { user, profile } = await requireServerAuth();
 
   if (!profile?.country) {
@@ -65,6 +77,7 @@ export default async function CartCheckoutPage() {
         terminals={terminals}
         terminalsFetchFailed={terminalsFetchFailed}
         walletBalanceCents={walletBalanceCents}
+        sellerFilter={seller}
       />
     </div>
   );
