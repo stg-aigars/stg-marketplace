@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { detectImageType, EXTENSION_MAP, stripExifMetadata } from '@/lib/images/process';
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+const AVATAR_DIMENSION = 256; // px — cap uploaded images to 256x256
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const BUCKET = 'avatars';
 
@@ -38,28 +40,27 @@ export async function POST(request: Request) {
 
   if (!detectedType || !ALLOWED_TYPES.includes(detectedType)) {
     return NextResponse.json(
-      { error: `Invalid file type. Allowed: JPEG, PNG, WebP` },
+      { error: 'Invalid file type. Allowed: JPEG, PNG, WebP' },
       { status: 400 }
     );
   }
 
-  const strippedBuffer = await stripExifMetadata(buffer, detectedType);
+  // Resize to cap dimensions, then strip EXIF
+  const resized = await sharp(buffer)
+    .resize(AVATAR_DIMENSION, AVATAR_DIMENSION, { fit: 'cover' })
+    .toBuffer();
+  const strippedBuffer = await stripExifMetadata(resized, detectedType);
   const extension = EXTENSION_MAP[detectedType] ?? 'jpg';
 
-  // Delete old avatar if it exists (handles extension mismatch)
+  // Read current avatar URL before uploading (for old file cleanup)
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('avatar_url')
     .eq('id', user.id)
     .single();
+  const oldPath = profile?.avatar_url ? extractStoragePath(profile.avatar_url) : null;
 
-  if (profile?.avatar_url) {
-    const oldPath = extractStoragePath(profile.avatar_url);
-    if (oldPath) {
-      await supabase.storage.from(BUCKET).remove([oldPath]);
-    }
-  }
-
+  // Upload new avatar first — if this fails, the old avatar remains intact
   const path = `${user.id}/avatar.${extension}`;
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
@@ -81,6 +82,11 @@ export async function POST(request: Request) {
   if (updateError) {
     console.error('Failed to update avatar_url:', updateError);
     return NextResponse.json({ error: 'Failed to save avatar' }, { status: 500 });
+  }
+
+  // Delete old file after successful upload + DB update (handles extension mismatch)
+  if (oldPath && oldPath !== path) {
+    await supabase.storage.from(BUCKET).remove([oldPath]);
   }
 
   return NextResponse.json({ avatarUrl });

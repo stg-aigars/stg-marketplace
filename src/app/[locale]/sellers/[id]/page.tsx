@@ -122,7 +122,7 @@ export default async function SellerProfilePage(
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
-        <Avatar name={sellerName} src={profile.avatar_url} size="md" className="w-14 h-14 text-lg bg-gradient-to-br from-semantic-brand to-semantic-brand-active text-white" />
+        <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {sellerName}

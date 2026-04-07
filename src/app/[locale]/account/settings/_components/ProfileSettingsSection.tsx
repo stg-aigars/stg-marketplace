@@ -165,8 +165,7 @@ export function ProfileSettingsSection({ profile, returnUrl }: ProfileSettingsSe
           <Avatar
             name={displayName || 'User'}
             src={avatarPreview || avatarUrl || null}
-            size="md"
-            className="!w-16 !h-16 !text-xl !rounded-xl"
+            size="lg"
           />
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
