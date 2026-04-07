@@ -29,7 +29,7 @@ export function OrderMessageList({ messages, isStaff, locale }: OrderMessageList
       {messages.map((message) => (
         <div key={message.id} className="py-3 last:pb-0 first:pt-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <Avatar name={message.author_name ?? '?'} size="sm" />
+            <Avatar name={message.author_name ?? '?'} src={message.author_avatar_url} size="sm" />
             <span className="text-sm font-medium text-semantic-text-heading truncate">
               {message.author_name ?? '[deleted]'}
             </span>

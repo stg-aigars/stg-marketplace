@@ -48,7 +48,7 @@ export function CommentList({ comments, isStaff, locale }: CommentListProps) {
       {visible.map((comment) => (
         <div key={comment.id} className="py-3 last:pb-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <Avatar name={comment.author_name ?? '?'} size="sm" />
+            <Avatar name={comment.author_name ?? '?'} src={comment.author_avatar_url} size="sm" />
             <span className="text-sm font-medium text-semantic-text-heading truncate">
               {comment.author_name ?? '[deleted]'}
             </span>

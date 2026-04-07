@@ -9,4 +9,5 @@ export interface OrderMessage {
   created_at: string;
   /** Enriched from public_profiles at read time; null for deleted accounts */
   author_name: string | null;
+  author_avatar_url: string | null;
 }

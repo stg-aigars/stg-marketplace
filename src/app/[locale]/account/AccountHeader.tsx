@@ -5,17 +5,18 @@ import { getCountryFlag } from '@/lib/country-utils';
 
 interface AccountHeaderProps {
   fullName: string | null;
+  avatarUrl: string | null;
   country: string | null;
 }
 
-export function AccountHeader({ fullName, country }: AccountHeaderProps) {
+export function AccountHeader({ fullName, avatarUrl, country }: AccountHeaderProps) {
   const name = fullName || 'User';
   const flagClass = getCountryFlag(country);
 
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3 min-w-0">
-        <Avatar name={name} size="md" />
+        <Avatar name={name} src={avatarUrl} size="md" />
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading truncate">
             {name}

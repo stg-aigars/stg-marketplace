@@ -18,6 +18,7 @@ import type { ListingCondition } from '@/lib/listings/types';
 interface SellerProfile {
   id: string;
   full_name: string | null;
+  avatar_url: string | null;
   country: string;
   created_at: string;
 }
@@ -82,7 +83,7 @@ export default async function SellerProfilePage(
   // Fetch seller profile (public_profiles view — safe for anonymous access)
   const { data: profile } = await supabase
     .from('public_profiles')
-    .select('id, full_name, country, created_at')
+    .select('id, full_name, avatar_url, country, created_at')
     .eq('id', id)
     .single<SellerProfile>();
 
@@ -121,7 +122,7 @@ export default async function SellerProfilePage(
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
-        <Avatar name={sellerName} size="md" className="w-14 h-14 text-lg bg-gradient-to-br from-semantic-brand to-semantic-brand-active text-white" />
+        <Avatar name={sellerName} src={profile.avatar_url} size="md" className="w-14 h-14 text-lg bg-gradient-to-br from-semantic-brand to-semantic-brand-active text-white" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             {sellerName}

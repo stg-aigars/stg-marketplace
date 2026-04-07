@@ -64,6 +64,7 @@ export default async function AccountPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <AccountHeader
         fullName={profile?.full_name ?? null}
+        avatarUrl={profile?.avatar_url ?? null}
         country={profile?.country ?? null}
       />
 

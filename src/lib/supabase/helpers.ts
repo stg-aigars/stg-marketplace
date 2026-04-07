@@ -1,6 +1,7 @@
 export interface PublicProfile {
   id: string;
   full_name: string | null;
+  avatar_url: string | null;
   country: string | null;
 }
 
@@ -12,7 +13,7 @@ export async function fetchPublicProfiles(
 ): Promise<Map<string, PublicProfile>> {
   const { data } = await supabase
     .from('public_profiles')
-    .select('id, full_name, country')
+    .select('id, full_name, avatar_url, country')
     .in('id', ids);
   return new Map((data as PublicProfile[] ?? []).map((p: PublicProfile) => [p.id, p]));
 }

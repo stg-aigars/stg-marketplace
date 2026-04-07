@@ -98,6 +98,7 @@ export async function getOrderMessages(orderId: string): Promise<OrderMessage[]>
     content: m.content,
     created_at: m.created_at,
     author_name: m.user_id ? (profileMap.get(m.user_id)?.full_name ?? null) : null,
+    author_avatar_url: m.user_id ? (profileMap.get(m.user_id)?.avatar_url ?? null) : null,
   }));
 }
 
