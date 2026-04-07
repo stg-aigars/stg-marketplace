@@ -104,12 +104,12 @@ function SiteHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="flex flex-col leading-tight">
+            <span className="flex flex-col leading-none gap-0">
               <span className="text-[10px] sm:text-[11px] font-bold tracking-wide">
                 <span className="text-semantic-brand">every game deserves </span>
                 <span className="text-semantic-primary">a</span>
               </span>
-              <span className="text-base sm:text-lg font-display font-bold text-semantic-primary tracking-wide">
+              <span className="text-lg sm:text-xl font-display font-bold text-semantic-primary tracking-wide">
                 second turn
               </span>
             </span>
