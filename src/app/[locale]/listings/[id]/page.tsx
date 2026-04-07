@@ -442,7 +442,7 @@ export default async function ListingDetailPage(
               <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               <div className="p-3 rounded-lg bg-semantic-warning-bg">
-                <p className="text-sm text-semantic-text-secondary">Being purchased by another buyer</p>
+                <p className="text-sm text-semantic-text-secondary">Reserved — may become available shortly</p>
               </div>
             ) : listing.status === 'reserved' && isReserver ? (
               <div className="space-y-3">

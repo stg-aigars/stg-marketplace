@@ -145,7 +145,7 @@ function ListingCard({
 
           <div className="flex items-center justify-between mt-auto">
             {isReserved ? (
-              <span className="text-sm text-semantic-text-muted">Being purchased</span>
+              <span className="text-sm text-semantic-text-muted">Reserved</span>
             ) : (
               <div>
                 {isAuction && bidCount === 0 && (

@@ -150,6 +150,9 @@ export async function acceptOrder(
     deadline_reminder_sent_at: null,
   }, order);
 
+  // Mark listings as sold early — also called at completeOrder, idempotent
+  markSoldAndSyncShelf(order);
+
   // 2. Attempt shipping — failure won't roll back the accept
   const items = order.order_items && order.order_items.length > 0
     ? order.order_items.map((i) => ({ gameName: i.listings?.game_name ?? null, priceCents: i.price_cents }))
