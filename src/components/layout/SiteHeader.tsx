@@ -159,14 +159,13 @@ function SiteHeader() {
                     role="menu"
                     className="absolute right-0 mt-1 w-48 rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg py-1"
                   >
-                    {isSeller ? (
+                    {isSeller && (
                       <>
                         <DropdownLink href="/account/orders?tab=sales" label="Sales" onClose={() => setDropdownOpen(false)} />
                         <DropdownLink href="/account/wallet" label="Wallet" onClose={() => setDropdownOpen(false)} />
                       </>
-                    ) : (
-                      <DropdownLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setDropdownOpen(false)} />
                     )}
+                    <DropdownLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setDropdownOpen(false)} />
                     <DropdownLink href="/account" label="Account" onClose={() => setDropdownOpen(false)} />
                     <div className="border-t border-semantic-border-subtle my-1" />
                     <button
@@ -249,14 +248,13 @@ function SiteHeader() {
               </Link>
             ) : (
               <>
-                {isSeller ? (
+                {isSeller && (
                   <>
                     <MobileLink href="/account/orders?tab=sales" label="Sales" onClose={() => setMobileOpen(false)} />
                     <MobileLink href="/account/wallet" label="Wallet" onClose={() => setMobileOpen(false)} />
                   </>
-                ) : (
-                  <MobileLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setMobileOpen(false)} />
                 )}
+                <MobileLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setMobileOpen(false)} />
                 <MobileLink href="/account" label="Account" onClose={() => setMobileOpen(false)} />
                 <button
                   onClick={handleSignOut}
