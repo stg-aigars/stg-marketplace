@@ -23,8 +23,7 @@ import { getBidHistory, getAuctionState } from '@/lib/auctions/actions';
 import { getSellerRating } from '@/lib/reviews/service';
 import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
-import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
-import { AddToCartButton } from '@/components/listings/AddToCartButton';
+import { BuyActions } from '@/components/listings/BuyActions';
 import { GameThumb, GameIdentityRow } from '@/components/listings/atoms';
 import { OwnerActions } from './OwnerActions';
 import { getComments } from '@/lib/comments/actions';
@@ -386,10 +385,19 @@ export default async function ListingDetailPage(
 
           {/* Price & action */}
           <PurchaseSection
-            listingId={listing.id}
             priceCents={listing.price_cents}
             isReservedByMe={isReserver}
             showMobileBuyBar={showMobileBuyBar}
+            listing={{
+              id: listing.id,
+              gameTitle: listing.game_name,
+              gameThumbnail: listing.games?.thumbnail ?? null,
+              priceCents: listing.price_cents,
+              sellerCountry: listing.country,
+              sellerId: listing.seller_id,
+              condition: listing.condition,
+              expansionCount: expansionCount,
+            }}
           >
           <Card>
           <CardBody className="space-y-3">
@@ -433,40 +441,31 @@ export default async function ListingDetailPage(
             ) : isOwner ? (
               <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
-              /* Another buyer has reserved this listing */
-              (<ReservationCountdown reservedAt={listing.reserved_at!} />)
-            ) : listing.status === 'reserved' && isReserver ? (
-              /* This buyer reserved it — prompt them to complete payment */
-              (<div className="space-y-3">
-                <Card>
-                  <CardBody>
-                    <p className="text-sm text-semantic-text-secondary">
-                      You have reserved this game. Complete your payment to secure it.
-                    </p>
-                  </CardBody>
-                </Card>
-                <Button asChild>
-                  <Link href={`/checkout/${listing.id}`}>Complete payment</Link>
-                </Button>
-              </div>)
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                <Button asChild>
-                  <Link href={`/checkout/${listing.id}`}>Buy now</Link>
-                </Button>
-                <AddToCartButton
-                  listing={{
-                    id: listing.id,
-                    gameTitle: listing.game_name,
-                    gameThumbnail: listing.games?.thumbnail ?? null,
-                    priceCents: listing.price_cents,
-                    sellerCountry: listing.country,
-                    sellerId: listing.seller_id,
-                    condition: listing.condition,
-                    expansionCount: expansionCount,
-                  }}
-                />
+              <div className="p-3 rounded-lg bg-semantic-warning-bg">
+                <p className="text-sm text-semantic-text-secondary">Being purchased by another buyer</p>
               </div>
+            ) : listing.status === 'reserved' && isReserver ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-semantic-success-bg">
+                  <p className="text-sm text-semantic-text-secondary">You are purchasing this game</p>
+                </div>
+                <Button variant="secondary" asChild>
+                  <Link href="/account/orders">View your orders</Link>
+                </Button>
+              </div>
+            ) : (
+              <BuyActions
+                listing={{
+                  id: listing.id,
+                  gameTitle: listing.game_name,
+                  gameThumbnail: listing.games?.thumbnail ?? null,
+                  priceCents: listing.price_cents,
+                  sellerCountry: listing.country,
+                  sellerId: listing.seller_id,
+                  condition: listing.condition,
+                  expansionCount: expansionCount,
+                }}
+              />
             )}
           </CardBody>
           </Card>

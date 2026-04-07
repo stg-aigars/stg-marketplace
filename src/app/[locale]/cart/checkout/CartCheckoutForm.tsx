@@ -123,7 +123,17 @@ export function CartCheckoutForm({
         const data = await response.json();
 
         if (!response.ok) {
-          setError(sanitizeApiError(data.error));
+          if (Array.isArray(data.unavailable) && data.unavailable.length > 0) {
+            const ids = new Set<string>(data.unavailable);
+            setUnavailableIds(ids);
+            const names = sellerItems
+              .filter((i) => ids.has(i.listingId))
+              .map((i) => i.gameTitle);
+            const nameList = names.length > 0 ? names.join(', ') : 'some items';
+            setError(`Some items are no longer available: ${nameList}. Please return to your cart to remove them.`);
+          } else {
+            setError(sanitizeApiError(data.error));
+          }
           setLoading(false);
           turnstileRef.current?.reset();
           return;
@@ -141,7 +151,17 @@ export function CartCheckoutForm({
         const data = await response.json();
 
         if (!response.ok) {
-          setError(sanitizeApiError(data.error));
+          if (Array.isArray(data.unavailable) && data.unavailable.length > 0) {
+            const ids = new Set<string>(data.unavailable);
+            setUnavailableIds(ids);
+            const names = sellerItems
+              .filter((i) => ids.has(i.listingId))
+              .map((i) => i.gameTitle);
+            const nameList = names.length > 0 ? names.join(', ') : 'some items';
+            setError(`Some items are no longer available: ${nameList}. Please return to your cart to remove them.`);
+          } else {
+            setError(sanitizeApiError(data.error));
+          }
           setLoading(false);
           turnstileRef.current?.reset();
           return;
@@ -170,8 +190,15 @@ export function CartCheckoutForm({
       {/* Left: Form */}
       <div className="lg:col-span-2 space-y-6">
         {error && (
-          <Alert variant="error" dismissible onDismiss={() => setError(null)}>
+          <Alert variant="error" dismissible={unavailableIds.size === 0} onDismiss={() => setError(null)}>
             {error}
+            {unavailableIds.size > 0 && (
+              <div className="mt-2">
+                <Link href="/cart" className="text-sm font-medium underline">
+                  Back to cart
+                </Link>
+              </div>
+            )}
           </Alert>
         )}
 
