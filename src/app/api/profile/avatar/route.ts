@@ -71,10 +71,11 @@ export async function POST(request: Request) {
   }
 
   const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  const avatarUrl = `${publicUrl}?v=${Date.now()}`;
 
   const { error: updateError } = await supabase
     .from('user_profiles')
-    .update({ avatar_url: publicUrl })
+    .update({ avatar_url: avatarUrl })
     .eq('id', user.id);
 
   if (updateError) {
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save avatar' }, { status: 500 });
   }
 
-  return NextResponse.json({ avatarUrl: publicUrl });
+  return NextResponse.json({ avatarUrl });
 }
 
 export async function DELETE(request: Request) {

@@ -64,16 +64,17 @@ export function ProfileSettingsSection({ profile, returnUrl }: ProfileSettingsSe
 
       if (!res.ok) {
         setAvatarError(data.error || 'Upload failed');
+        URL.revokeObjectURL(blobUrl);
         setAvatarPreview('');
       } else {
         setAvatarUrl(data.avatarUrl);
-        // Revoke blob now that we have the real URL
         URL.revokeObjectURL(blobUrl);
         setAvatarPreview('');
         router.refresh();
       }
     } catch {
       setAvatarError('Something went wrong. Please try again');
+      URL.revokeObjectURL(blobUrl);
       setAvatarPreview('');
     }
 

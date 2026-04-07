@@ -145,6 +145,7 @@ function SiteHeader() {
                   onClick={() => setDropdownOpen((prev) => !prev)}
                   aria-expanded={dropdownOpen}
                   aria-haspopup="true"
+                  aria-label={displayName}
                   className="flex items-center gap-1.5 text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium min-h-[44px] px-2"
                 >
                   <Avatar name={displayName} src={profile?.avatar_url} size="sm" className="!w-7 !h-7 !text-xs" />
