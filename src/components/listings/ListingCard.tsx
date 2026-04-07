@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
-import { Card } from '@/components/ui';
+import { Badge, Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -28,6 +28,8 @@ interface ListingCardProps {
   commentCount?: number;
   /** Whether this listing is for an expansion (not a base game) */
   isExpansion?: boolean;
+  /** Listing status (e.g. 'reserved') */
+  status?: string;
   /** Auction fields */
   isAuction?: boolean;
   bidCount?: number;
@@ -48,10 +50,12 @@ function ListingCard({
   expansionCount = 0,
   commentCount = 0,
   isExpansion = false,
+  status,
   isAuction = false,
   bidCount = 0,
   auctionEndAt,
 }: ListingCardProps) {
+  const isReserved = status === 'reserved';
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
   const flagClass = getCountryFlag(sellerCountry);
   const countryName = getCountryName(sellerCountry);
@@ -71,12 +75,15 @@ function ListingCard({
               src={imageUrl}
               alt={gameTitle}
               fill
-              className="object-contain transition-transform duration-350 ease-out-custom group-hover:scale-105"
+              className={`object-contain transition-transform duration-350 ease-out-custom group-hover:scale-105 ${isReserved ? 'opacity-60' : ''}`}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               unoptimized={isBggImage(imageUrl)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />
+          )}
+          {isReserved && (
+            <Badge variant="warning" className="absolute top-2 right-2 z-10">Reserved</Badge>
           )}
           {unavailable && (
             <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
@@ -137,17 +144,21 @@ function ListingCard({
           </div>
 
           <div className="flex items-center justify-between mt-auto">
-            <div>
-              {isAuction && bidCount === 0 && (
-                <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
-              )}
-              <Price cents={priceCents} />
-              {isAuction && (
-                <span className="text-xs text-semantic-text-muted ml-3">
-                  {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}
-                </span>
-              )}
-            </div>
+            {isReserved ? (
+              <span className="text-sm text-semantic-text-muted">Being purchased</span>
+            ) : (
+              <div>
+                {isAuction && bidCount === 0 && (
+                  <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
+                )}
+                <Price cents={priceCents} />
+                {isAuction && (
+                  <span className="text-xs text-semantic-text-muted ml-3">
+                    {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}
+                  </span>
+                )}
+              </div>
+            )}
             {flagClass && (
               <span
                 className={`${flagClass} text-base`}

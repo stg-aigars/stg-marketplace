@@ -11,7 +11,6 @@ import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import { getAllTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
-import { reserveListingForCheckout } from '@/lib/listings/actions';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatDateTime } from '@/lib/date-utils';
@@ -81,22 +80,24 @@ export default async function CheckoutPage(
     notFound();
   }
 
-  // Auction detection
-  const isAuction = listing.listing_type === 'auction' && listing.status === 'auction_ended';
-  const isAuctionWinner = isAuction && listing.highest_bidder_id === user.id;
+  // Non-auction listings use cart checkout now
+  if (listing.listing_type !== 'auction' || listing.status !== 'auction_ended') {
+    redirect(`/${params.locale}/cart`);
+  }
+
+  // After the guard above, this page only serves auction winners
+  const isAuction = true;
+  const isAuctionWinner = listing.highest_bidder_id === user.id;
 
   // Auction guards
-  if (isAuction && !isAuctionWinner) {
+  if (!isAuctionWinner) {
     redirect(`/${params.locale}/listings/${listingId}`);
   }
-  if (isAuction && !listing.current_bid_cents) {
+  if (!listing.current_bid_cents) {
     redirect(`/${params.locale}/listings/${listingId}`);
   }
 
-  // Listing must be active, reserved by this buyer, or auction_ended for the winner
-  const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
-    isAuctionWinner;
+  const canCheckout = isAuctionWinner;
 
   // Cannot buy own listing — check BEFORE reservation to avoid locking seller's own item
   if (listing.seller_id === user.id) {
@@ -135,39 +136,8 @@ export default async function CheckoutPage(
     );
   }
 
-  // Reserve the listing on checkout page load (not at payment time).
-  // reserved_at is set once and NOT refreshed on revisit (hard 30-min TTL).
   // Auctions skip reservation — auction_ended status already locks the listing.
-  let reservedAt: string | null = null;
-  if (!isAuction && listing.status === 'active') {
-    const result = await reserveListingForCheckout(listingId);
-    if ('error' in result) {
-      const isReservedByOther = result.code === 'reserved_by_other';
-      return (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-          <div className="text-center py-16">
-            <h1 className="text-2xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
-              {isReservedByOther
-                ? 'This game is currently reserved'
-                : 'This listing is no longer available'}
-            </h1>
-            <p className="text-semantic-text-secondary mb-6">
-              {isReservedByOther
-                ? 'Another buyer is completing their purchase. Check back shortly.'
-                : 'It may have been sold or removed by the seller.'}
-            </p>
-            <Link href={`/listings/${listingId}`} className="text-semantic-brand font-medium">
-              Back to listing
-            </Link>
-          </div>
-        </div>
-      );
-    }
-    reservedAt = result.reservedAt;
-  } else {
-    // Already reserved by this buyer (revisit) — use existing reserved_at
-    reservedAt = listing.reserved_by === user.id ? listing.reserved_at : null;
-  }
+  const reservedAt: string | null = null;
 
   // Calculate shipping
   const sellerCountry = listing.country as TerminalCountry;
