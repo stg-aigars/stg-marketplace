@@ -45,8 +45,16 @@ export interface UnavailableItem {
   reason: 'reserved' | 'sold' | 'cancelled';
 }
 
+/** Seller profile returned by cart validation */
+export interface CartSellerProfile {
+  name: string;
+  avatarUrl: string | null;
+  country: string | null;
+}
+
 /** Response from /api/cart/validate */
 export interface CartValidationResult {
   available: string[];
   unavailable: UnavailableItem[];
+  sellers: Record<string, CartSellerProfile>;
 }

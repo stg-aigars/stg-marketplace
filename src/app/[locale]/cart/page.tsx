@@ -15,7 +15,7 @@ import {
   getShippingPriceCents,
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
-import type { CartItem, CartValidationResult } from '@/lib/checkout/cart-types';
+import type { CartItem, CartValidationResult, CartSellerProfile } from '@/lib/checkout/cart-types';
 
 interface SellerGroup {
   sellerId: string;
@@ -30,6 +30,7 @@ export default function CartPage() {
   const { items, removeItem, clearCart, count } = useCart();
   const { user, profile } = useAuth();
   const [unavailableMap, setUnavailableMap] = useState<Map<string, 'reserved' | 'sold' | 'cancelled'>>(new Map());
+  const [sellerProfiles, setSellerProfiles] = useState<Record<string, CartSellerProfile>>({});
   const [validating, setValidating] = useState(false);
 
   // Validate cart items on mount only
@@ -53,6 +54,7 @@ export default function CartPage() {
           map.set(item.id, item.reason);
         }
         setUnavailableMap(map);
+        if (data.sellers) setSellerProfiles(data.sellers);
       })
       .catch(() => {})
       .finally(() => setValidating(false));
@@ -60,7 +62,7 @@ export default function CartPage() {
 
   const buyerCountry = profile?.country ?? null;
 
-  // Group items by seller — use most recently added item for seller identity
+  // Group items by seller — use fetched profiles for display, localStorage as fallback
   const sellerGroups = useMemo(() => {
     const groupMap = new Map<string, SellerGroup>();
 
@@ -73,26 +75,21 @@ export default function CartPage() {
             buyerCountry as TerminalCountry,
           );
         }
+        const fetched = sellerProfiles[item.sellerId];
         groupMap.set(item.sellerId, {
           sellerId: item.sellerId,
-          sellerCountry: item.sellerCountry,
-          sellerName: item.sellerName,
-          sellerAvatarUrl: item.sellerAvatarUrl ?? null,
+          sellerCountry: fetched?.country ?? item.sellerCountry,
+          sellerName: fetched?.name ?? item.sellerName,
+          sellerAvatarUrl: fetched?.avatarUrl ?? item.sellerAvatarUrl ?? null,
           items: [],
           shippingCents,
         });
       }
-      const group = groupMap.get(item.sellerId)!;
-      group.items.push(item);
-      // Use most recently added item's seller data (freshest)
-      if (item.addedAt > (group.items[group.items.length - 2]?.addedAt ?? '')) {
-        group.sellerName = item.sellerName;
-        group.sellerAvatarUrl = item.sellerAvatarUrl ?? null;
-      }
+      groupMap.get(item.sellerId)!.items.push(item);
     }
 
     return Array.from(groupMap.values());
-  }, [items, buyerCountry]);
+  }, [items, buyerCountry, sellerProfiles]);
 
   // Totals (informational)
   const availableItems = items.filter((i) => !unavailableMap.has(i.listingId));
