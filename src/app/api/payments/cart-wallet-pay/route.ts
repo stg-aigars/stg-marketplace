@@ -92,28 +92,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Please set your country in your profile first' }, { status: 400 });
   }
 
-  // Calculate totals
-  const sellerMap = new Map<string, typeof listings>();
-  for (const listing of listings) {
-    const group = sellerMap.get(listing.seller_id) ?? [];
-    group.push(listing);
-    sellerMap.set(listing.seller_id, group);
-  }
-
+  // Calculate totals — single-seller guard above guarantees one seller
+  const sellerId = listings[0].seller_id;
+  const sellerCountry = listings[0].country;
   const itemsTotalCents = listings.reduce((sum, l) => sum + l.price_cents, 0);
-  let shippingTotalCents = 0;
-  const sellerShipping = new Map<string, number>();
-
-  for (const [sellerId, sellerListings] of Array.from(sellerMap.entries())) {
-    const shippingCents = getShippingPriceCents(
-      sellerListings[0].country as TerminalCountry,
-      buyerProfile.country as TerminalCountry
-    );
-    if (shippingCents === null) {
-      return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
-    }
-    sellerShipping.set(sellerId, shippingCents);
-    shippingTotalCents += shippingCents;
+  const shippingTotalCents = getShippingPriceCents(
+    sellerCountry as TerminalCountry,
+    buyerProfile.country as TerminalCountry
+  );
+  if (shippingTotalCents === null) {
+    return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
   }
 
   const grandTotalCents = itemsTotalCents + shippingTotalCents;
@@ -143,67 +131,38 @@ export async function POST(request: Request) {
   // Create a cart checkout group for record-keeping
   const cartGroupId = crypto.randomUUID();
 
-  // Build per-seller-group order allocations (one order per seller)
-  const sellerGroupAllocations: Array<{
-    sellerId: string;
-    items: typeof listings;
-    shippingCents: number;
-    walletDebit: number;
-  }> = [];
-  let allocatedTotal = 0;
-  const sellerEntries = Array.from(sellerMap.entries());
-
-  for (let i = 0; i < sellerEntries.length; i++) {
-    const [sellerId, sellerListings] = sellerEntries[i];
-    const shippingCents = sellerShipping.get(sellerId) ?? 0;
-    const sellerItemsTotal = sellerListings.reduce((sum, l) => sum + l.price_cents, 0);
-    const sellerTotal = sellerItemsTotal + shippingCents;
-
-    if (i < sellerEntries.length - 1) {
-      sellerGroupAllocations.push({ sellerId, items: sellerListings, shippingCents, walletDebit: sellerTotal });
-      allocatedTotal += sellerTotal;
-    } else {
-      // Last seller group gets remainder to avoid rounding drift
-      sellerGroupAllocations.push({ sellerId, items: sellerListings, shippingCents, walletDebit: grandTotalCents - allocatedTotal });
-    }
-  }
-
-  // Create one consolidated order per seller group and debit wallet
-  const createdOrders: Array<{ id: string; orderNumber: string; sellerId: string; items: typeof listings; shippingCents: number }> = [];
+  // Create single order (single-seller guard ensures one seller)
+  let createdOrder: { id: string; orderNumber: string };
 
   try {
-    for (const { sellerId, items, shippingCents, walletDebit: walletForOrder } of sellerGroupAllocations) {
-      const order = await createOrder({
-        buyerId: user.id,
-        sellerId,
-        items: items.map((l) => ({ listingId: l.id, priceCents: l.price_cents })),
-        shippingCostCents: shippingCents,
-        sellerCountry: items[0].country,
-        paymentMethod: 'wallet',
-        walletDebitCents: walletForOrder,
-        terminalId,
-        terminalName,
-        terminalAddress,
-        terminalCity,
-        terminalPostalCode,
-        terminalCountry,
-        buyerPhone,
-        cartGroupId,
-      });
+    const order = await createOrder({
+      buyerId: user.id,
+      sellerId,
+      items: listings.map((l) => ({ listingId: l.id, priceCents: l.price_cents })),
+      shippingCostCents: shippingTotalCents,
+      sellerCountry,
+      paymentMethod: 'wallet',
+      walletDebitCents: grandTotalCents,
+      terminalId,
+      terminalName,
+      terminalAddress,
+      terminalCity,
+      terminalPostalCode,
+      terminalCountry,
+      buyerPhone,
+      cartGroupId,
+    });
 
-      createdOrders.push({ id: order.id, orderNumber: order.order_number, sellerId, items, shippingCents });
+    createdOrder = { id: order.id, orderNumber: order.order_number };
 
-      // Debit wallet for this order
-      if (walletForOrder > 0) {
-        const gameNames = items.map((l) => formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? [])).join(', ');
-        await debitWallet(
-          user.id,
-          walletForOrder,
-          order.id,
-          `Purchase: ${gameNames} — ${order.order_number}`
-        );
-      }
-    }
+    // Debit wallet
+    const gameNames = listings.map((l) => formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? [])).join(', ');
+    await debitWallet(
+      user.id,
+      grandTotalCents,
+      order.id,
+      `Purchase: ${gameNames} — ${order.order_number}`
+    );
   } catch (error) {
     console.error('[Cart Wallet] Failed during order creation:', error);
     // Unreserve remaining listings
@@ -221,7 +180,7 @@ export async function POST(request: Request) {
     resourceType: 'cart_group',
     resourceId: cartGroupId,
     metadata: {
-      orderCount: createdOrders.length,
+      orderCount: 1,
       totalItemCount: listings.length,
       totalAmountCents: grandTotalCents,
       paymentMethod: 'wallet',
@@ -230,19 +189,19 @@ export async function POST(request: Request) {
 
   // Send emails (non-blocking)
   void sendCartOrderEmails(
-    createdOrders.map(({ id, orderNumber, sellerId: sid, items, shippingCents }) => ({
-      orderId: id,
-      orderNumber,
-      sellerId: sid,
-      items: items.map((l) => ({
+    [{
+      orderId: createdOrder.id,
+      orderNumber: createdOrder.orderNumber,
+      sellerId,
+      items: listings.map((l) => ({
         gameName: formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? []),
         priceCents: l.price_cents,
       })),
-      shippingCents,
+      shippingCents: shippingTotalCents,
       terminalName,
-    })),
+    }],
     user.id
   );
 
-  return NextResponse.json({ groupId: cartGroupId, orderIds: createdOrders.map((o) => o.id) });
+  return NextResponse.json({ groupId: cartGroupId, orderIds: [createdOrder.id] });
 }

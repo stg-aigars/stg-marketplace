@@ -80,28 +80,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Please set your country in your profile first' }, { status: 400 });
   }
 
-  // Group listings by seller for shipping calculation
-  const sellerMap = new Map<string, typeof listings>();
-  for (const listing of listings) {
-    const group = sellerMap.get(listing.seller_id) ?? [];
-    group.push(listing);
-    sellerMap.set(listing.seller_id, group);
-  }
-
-  // Calculate totals
+  // Calculate totals — single-seller guard above guarantees one seller
   const itemsTotalCents = listings.reduce((sum, l) => sum + l.price_cents, 0);
-  let shippingTotalCents = 0;
-  const sellerShipping = new Map<string, number>(); // sellerId → shippingCents
-
-  for (const entry of Array.from(sellerMap.entries())) {
-    const [sellerId, sellerListings] = entry;
-    const sellerCountry = sellerListings[0].country as TerminalCountry;
-    const shippingCents = getShippingPriceCents(sellerCountry, buyerProfile.country as TerminalCountry);
-    if (shippingCents === null) {
-      return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
-    }
-    sellerShipping.set(sellerId, shippingCents);
-    shippingTotalCents += shippingCents;
+  const sellerCountry = listings[0].country as TerminalCountry;
+  const shippingTotalCents = getShippingPriceCents(sellerCountry, buyerProfile.country as TerminalCountry);
+  if (shippingTotalCents === null) {
+    return NextResponse.json({ error: 'Shipping is not available for this route' }, { status: 400 });
   }
 
   const grandTotalCents = itemsTotalCents + shippingTotalCents;
@@ -129,16 +113,13 @@ export async function POST(request: Request) {
   const walletAllocation: Record<string, number> = {};
   if (walletDebitCents > 0) {
     // Compute each listing's share of the total
+    // Shipping is assigned to the first listing (single seller)
     let allocated = 0;
     const listingTotals: { id: string; total: number }[] = [];
 
-    // Assign shipping to first listing per seller
-    const firstForSeller = new Set<string>();
-    for (const listing of listings) {
-      const shipping = !firstForSeller.has(listing.seller_id)
-        ? (sellerShipping.get(listing.seller_id) ?? 0)
-        : 0;
-      firstForSeller.add(listing.seller_id);
+    for (let j = 0; j < listings.length; j++) {
+      const listing = listings[j];
+      const shipping = j === 0 ? shippingTotalCents : 0;
       listingTotals.push({ id: listing.id, total: listing.price_cents + shipping });
     }
 

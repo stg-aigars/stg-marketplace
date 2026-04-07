@@ -1,13 +1,7 @@
 /**
- * Full wallet payment route.
- * Used when the buyer's wallet balance covers the entire order total.
- * Bypasses EveryPay — reserves listing, debits wallet, creates order directly.
- *
- * Known edge case: If the process crashes between reservation and wallet debit,
- * the listing stays reserved with no order and no checkout session. The EveryPay
- * cleanup cron (/api/cron/cleanup-sessions) won't catch this since no session exists.
- * The cleanup cron should be extended to sweep stale reserved listings with no
- * corresponding order (reserved_at > 30 min ago AND no order AND no checkout session).
+ * Full wallet payment route (auction-only).
+ * Used when the auction winner's wallet balance covers the entire order total.
+ * Bypasses EveryPay — debits wallet, creates order directly.
  */
 
 import { NextResponse } from 'next/server';
@@ -87,7 +81,7 @@ export async function POST(request: Request) {
   const serviceClient = createServiceClient();
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id')
+    .select('id, seller_id, price_cents, status, country, game_name, listing_type, highest_bidder_id')
     .eq('id', listingId)
     .single();
 
@@ -95,15 +89,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
   }
 
+  // Only auction winners can reach this route (checkout page guard)
   const isAuctionWinner = listing.listing_type === 'auction' &&
     listing.status === 'auction_ended' &&
     listing.highest_bidder_id === user.id;
 
-  const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
-    isAuctionWinner;
-
-  if (!canCheckout) {
+  if (!isAuctionWinner) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
   }
 
@@ -142,24 +133,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Reserve listing atomically — prevents two buyers purchasing simultaneously
-  const { data: reserved } = await serviceClient
-    .from('listings')
-    .update({
-      status: 'reserved',
-      reserved_at: new Date().toISOString(),
-      reserved_by: user.id,
-    })
-    .eq('id', listingId)
-    .or(`status.eq.active,and(status.eq.reserved,reserved_by.eq.${user.id})`)
-    .select('id')
-    .single();
-
-  if (!reserved) {
-    return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
-  }
-
-  // 2. Create order first (so we have a real order ID for wallet transaction FK)
+  // 1. Create order (auction_ended status already prevents double-purchase)
   let order;
   try {
     order = await createOrder({
@@ -179,13 +153,6 @@ export async function POST(request: Request) {
       walletDebitCents: pricing.totalChargeCents,
     });
   } catch (orderError) {
-    // Revert reservation
-    await serviceClient
-      .from('listings')
-      .update({ status: 'active', reserved_at: null, reserved_by: null })
-      .eq('id', listingId)
-      .eq('reserved_by', user.id);
-
     console.error('[Payments] Wallet-pay order creation failed:', orderError);
     return NextResponse.json(
       { error: 'Failed to create order. Please try again.' },
@@ -193,7 +160,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 3. Debit wallet using the real order ID
+  // 2. Debit wallet using the real order ID
   try {
     await debitWallet(
       user.id,
@@ -202,19 +169,14 @@ export async function POST(request: Request) {
       `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
     );
   } catch (walletError) {
-    // Wallet debit failed — delete the order and revert reservation
+    // Wallet debit failed — delete the order
     await serviceClient.from('orders').delete().eq('id', order.id);
-    await serviceClient
-      .from('listings')
-      .update({ status: 'active', reserved_at: null, reserved_by: null })
-      .eq('id', listingId)
-      .eq('reserved_by', user.id);
 
     const message = walletError instanceof Error ? walletError.message : 'Wallet payment failed';
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  // 4. Send emails (non-blocking)
+  // 3. Send emails (non-blocking)
   void (async () => {
     const { data: sellerProfile } = await serviceClient
       .from('user_profiles')
