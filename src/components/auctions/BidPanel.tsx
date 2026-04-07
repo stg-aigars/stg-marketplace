@@ -37,6 +37,7 @@ export function BidPanel({
   const [isPending, startTransition] = useTransition();
   const [quickBidLoading, setQuickBidLoading] = useState<number | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [showAllBids, setShowAllBids] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const bidEurRef = useRef(bidEur);
   bidEurRef.current = bidEur;
@@ -261,7 +262,7 @@ export function BidPanel({
         <div className="pt-3 border-t border-semantic-border-subtle">
           <p className="text-sm font-medium text-semantic-text-heading mb-2">Bid history</p>
           <ul className="space-y-2">
-            {bids.slice(0, 5).map((bid) => (
+            {(showAllBids ? bids : bids.slice(0, 5)).map((bid) => (
               <li key={bid.id} className="flex items-center justify-between text-xs gap-2">
                 <UserIdentity
                   name={bid.bidder_name}
@@ -280,6 +281,15 @@ export function BidPanel({
               </li>
             ))}
           </ul>
+          {bids.length > 5 && !showAllBids && (
+            <button
+              type="button"
+              onClick={() => setShowAllBids(true)}
+              className="text-xs text-semantic-brand font-medium mt-2 active:opacity-70 sm:hover:underline"
+            >
+              Show all {bids.length} bids
+            </button>
+          )}
         </div>
       )}
     </div>
