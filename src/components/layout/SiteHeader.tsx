@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
-import { usePendingActions } from '@/contexts/PendingActionsContext';
+import { usePendingActions } from '@/hooks/usePendingActions';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 function CountBadge({ count, className }: { count: number; className?: string }) {
