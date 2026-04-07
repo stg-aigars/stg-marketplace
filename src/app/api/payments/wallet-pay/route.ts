@@ -169,8 +169,16 @@ export async function POST(request: Request) {
       `Purchase: ${listing.game_name ?? 'Game'} — ${order.order_number}`
     );
   } catch (walletError) {
-    // Wallet debit failed — delete the order
-    await serviceClient.from('orders').delete().eq('id', order.id);
+    // Wallet debit failed — delete the order and restore listing status
+    try {
+      await serviceClient.from('orders').delete().eq('id', order.id);
+      await serviceClient.from('listings')
+        .update({ status: 'auction_ended', reserved_at: null, reserved_by: null })
+        .eq('id', listingId)
+        .eq('status', 'reserved');
+    } catch (rollbackErr) {
+      console.error('[Payments] Wallet-pay rollback failed:', rollbackErr);
+    }
 
     const message = walletError instanceof Error ? walletError.message : 'Wallet payment failed';
     return NextResponse.json({ error: message }, { status: 400 });

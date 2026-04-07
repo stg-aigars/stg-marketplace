@@ -134,6 +134,7 @@ export async function POST(request: Request) {
   // Create single order (single-seller guard ensures one seller)
   let createdOrder: { id: string; orderNumber: string };
 
+  // Step 1: Create order
   try {
     const order = await createOrder({
       buyerId: user.id,
@@ -154,23 +155,38 @@ export async function POST(request: Request) {
     });
 
     createdOrder = { id: order.id, orderNumber: order.order_number };
-
-    // Debit wallet
-    const gameNames = listings.map((l) => formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? [])).join(', ');
-    await debitWallet(
-      user.id,
-      grandTotalCents,
-      order.id,
-      `Purchase: ${gameNames} — ${order.order_number}`
-    );
   } catch (error) {
-    console.error('[Cart Wallet] Failed during order creation:', error);
-    // Unreserve remaining listings
+    console.error('[Cart Wallet] Order creation failed:', error);
     await serviceClient.rpc('unreserve_listings', {
       p_listing_ids: listingIds,
       p_buyer_id: user.id,
     });
-    return NextResponse.json({ error: 'Failed to create orders. Please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create order. Please try again.' }, { status: 500 });
+  }
+
+  // Step 2: Debit wallet
+  try {
+    const gameNames = listings.map((l) => formatGameWithExpansions(l.game_name ?? 'Game', expansionsByListing.get(l.id) ?? [])).join(', ');
+    await debitWallet(
+      user.id,
+      grandTotalCents,
+      createdOrder.id,
+      `Purchase: ${gameNames} — ${createdOrder.orderNumber}`
+    );
+  } catch (walletError) {
+    console.error('[Cart Wallet] Wallet debit failed:', walletError);
+    // Delete the unpaid order and unreserve listings
+    try {
+      await serviceClient.from('orders').delete().eq('id', createdOrder.id);
+      await serviceClient.rpc('unreserve_listings', {
+        p_listing_ids: listingIds,
+        p_buyer_id: user.id,
+      });
+    } catch (rollbackErr) {
+      console.error('[Cart Wallet] Rollback failed:', rollbackErr);
+    }
+    const message = walletError instanceof Error ? walletError.message : 'Wallet payment failed';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   void logAuditEvent({
