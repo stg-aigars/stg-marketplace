@@ -395,6 +395,8 @@ export default async function ListingDetailPage(
               priceCents: listing.price_cents,
               sellerCountry: listing.country,
               sellerId: listing.seller_id,
+              sellerName: listing.user_profiles?.full_name ?? 'Seller',
+              sellerAvatarUrl: listing.user_profiles?.avatar_url ?? null,
               condition: listing.condition,
               expansionCount: expansionCount,
             }}
@@ -462,6 +464,8 @@ export default async function ListingDetailPage(
                   priceCents: listing.price_cents,
                   sellerCountry: listing.country,
                   sellerId: listing.seller_id,
+                  sellerName: listing.user_profiles?.full_name ?? 'Seller',
+                  sellerAvatarUrl: listing.user_profiles?.avatar_url ?? null,
                   condition: listing.condition,
                   expansionCount: expansionCount,
                 }}

@@ -1,26 +1,27 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Trash } from '@phosphor-icons/react/ssr';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Alert, Badge, Button, Card, CardBody, EmptyState } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardBody, EmptyState, UserIdentity } from '@/components/ui';
+import { GameThumb } from '@/components/listings/atoms';
+import { Price } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatExpansionCount } from '@/lib/listings/types';
-import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionToBadgeKey } from '@/lib/listings/types';
 import {
   getShippingPriceCents,
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
-import type { CartItem, CartValidationResult, UnavailableItem } from '@/lib/checkout/cart-types';
-import { MAX_CART_ITEMS } from '@/lib/checkout/cart-types';
+import type { CartItem, CartValidationResult, CartSellerProfile } from '@/lib/checkout/cart-types';
 
 interface SellerGroup {
   sellerId: string;
   sellerCountry: string;
+  sellerName: string;
+  sellerAvatarUrl: string | null;
   items: CartItem[];
   shippingCents: number | null;
 }
@@ -29,6 +30,7 @@ export default function CartPage() {
   const { items, removeItem, clearCart, count } = useCart();
   const { user, profile } = useAuth();
   const [unavailableMap, setUnavailableMap] = useState<Map<string, 'reserved' | 'sold' | 'cancelled'>>(new Map());
+  const [sellerProfiles, setSellerProfiles] = useState<Record<string, CartSellerProfile>>({});
   const [validating, setValidating] = useState(false);
 
   // Validate cart items on mount only
@@ -52,6 +54,7 @@ export default function CartPage() {
           map.set(item.id, item.reason);
         }
         setUnavailableMap(map);
+        if (data.sellers) setSellerProfiles(data.sellers);
       })
       .catch(() => {})
       .finally(() => setValidating(false));
@@ -59,7 +62,7 @@ export default function CartPage() {
 
   const buyerCountry = profile?.country ?? null;
 
-  // Group items by seller
+  // Group items by seller — use fetched profiles for display, localStorage as fallback
   const sellerGroups = useMemo(() => {
     const groupMap = new Map<string, SellerGroup>();
 
@@ -72,9 +75,12 @@ export default function CartPage() {
             buyerCountry as TerminalCountry,
           );
         }
+        const fetched = sellerProfiles[item.sellerId];
         groupMap.set(item.sellerId, {
           sellerId: item.sellerId,
-          sellerCountry: item.sellerCountry,
+          sellerCountry: fetched?.country ?? item.sellerCountry,
+          sellerName: fetched?.name ?? item.sellerName,
+          sellerAvatarUrl: fetched?.avatarUrl ?? item.sellerAvatarUrl ?? null,
           items: [],
           shippingCents,
         });
@@ -83,7 +89,7 @@ export default function CartPage() {
     }
 
     return Array.from(groupMap.values());
-  }, [items, buyerCountry]);
+  }, [items, buyerCountry, sellerProfiles]);
 
   // Totals (informational)
   const availableItems = items.filter((i) => !unavailableMap.has(i.listingId));
@@ -96,15 +102,16 @@ export default function CartPage() {
     for (const item of availableItems) {
       if (seenSellers.has(item.sellerId)) continue;
       seenSellers.add(item.sellerId);
+      const sellerCountry = sellerProfiles[item.sellerId]?.country ?? item.sellerCountry;
       const cost = getShippingPriceCents(
-        item.sellerCountry as TerminalCountry,
+        sellerCountry as TerminalCountry,
         buyerCountry as TerminalCountry,
       );
       if (cost === null) return null;
       total += cost;
     }
     return total;
-  }, [availableItems, buyerCountry]);
+  }, [availableItems, buyerCountry, sellerProfiles]);
 
   const grandTotal =
     shippingTotal !== null ? itemsTotal + shippingTotal : null;
@@ -127,7 +134,7 @@ export default function CartPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-          Cart ({count}/{MAX_CART_ITEMS})
+          Cart
         </h1>
         {count > 1 && (
           <Button variant="ghost" size="sm" onClick={clearCart}>
@@ -155,21 +162,23 @@ export default function CartPage() {
             <Card key={group.sellerId}>
               <CardBody>
                 {/* Seller header */}
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-semantic-border">
-                  <span className={getCountryFlag(group.sellerCountry)} />
-                  <span className="text-sm font-medium text-semantic-text-secondary">
-                    Shipping from {getCountryName(group.sellerCountry)}
-                  </span>
-                  {buyerCountry && group.shippingCents !== null && (
-                    <span className="ml-auto text-sm text-semantic-text-secondary">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-semantic-border">
+                  <UserIdentity
+                    name={group.sellerName}
+                    avatarUrl={group.sellerAvatarUrl}
+                    country={group.sellerCountry}
+                    href={`/sellers/${group.sellerId}`}
+                    size="sm"
+                  />
+                  {buyerCountry && group.shippingCents !== null ? (
+                    <span className="text-sm text-semantic-text-secondary shrink-0">
                       Shipping: {formatCentsToCurrency(group.shippingCents)}
                     </span>
-                  )}
-                  {!buyerCountry && (
-                    <span className="ml-auto text-xs text-semantic-text-tertiary">
+                  ) : !buyerCountry ? (
+                    <span className="text-xs text-semantic-text-muted shrink-0">
                       Sign in to see shipping
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Items */}
@@ -180,74 +189,48 @@ export default function CartPage() {
                     return (
                       <div
                         key={item.listingId}
-                        className={`flex items-center gap-3 ${
-                          isUnavailable ? 'opacity-50' : ''
-                        }`}
+                        className={`flex items-center gap-3 ${isUnavailable ? 'opacity-50' : ''}`}
                       >
-                        {/* Thumbnail */}
-                        <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-semantic-bg-secondary">
-                          {item.gameThumbnail ? (
-                            <Image
-                              src={item.gameThumbnail}
-                              alt={item.gameTitle}
-                              fill
-                              className="object-contain"
-                              sizes="64px"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ShoppingCart
-                                size={24}
-                                className="text-semantic-text-tertiary"
-                              />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Details */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-semantic-text-primary truncate">
-                            {item.gameTitle}
-                          </p>
-                          {item.expansionCount != null && item.expansionCount > 0 && (
-                            <p className="text-xs text-semantic-text-muted">
-                              {formatExpansionCount(item.expansionCount)}
+                        {/* Linked thumbnail + details */}
+                        <Link
+                          href={`/listings/${item.listingId}`}
+                          className="flex items-center gap-3 flex-1 min-w-0 group"
+                        >
+                          <GameThumb
+                            src={item.gameThumbnail}
+                            alt={item.gameTitle}
+                            size="md"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-semantic-text-heading truncate group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+                              {item.gameTitle}
                             </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge
-                              condition={
-                                conditionToBadgeKey[
-                                  item.condition
-                                ]
-                              }
-                            />
-                            {unavailableReason === 'reserved' && (
-                              <span className="text-xs font-medium text-semantic-warning">
-                                Being purchased
-                              </span>
+                            {item.expansionCount != null && item.expansionCount > 0 && (
+                              <p className="text-xs text-semantic-text-muted">
+                                {formatExpansionCount(item.expansionCount)}
+                              </p>
                             )}
-                            {unavailableReason === 'sold' && (
-                              <span className="text-xs font-medium text-semantic-error">
-                                Sold
-                              </span>
-                            )}
-                            {unavailableReason === 'cancelled' && (
-                              <span className="text-xs font-medium text-semantic-error">
-                                No longer available
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Badge condition={conditionToBadgeKey[item.condition]} />
+                              {unavailableReason === 'reserved' && (
+                                <span className="text-xs font-medium text-semantic-warning">Reserved</span>
+                              )}
+                              {unavailableReason === 'sold' && (
+                                <span className="text-xs font-medium text-semantic-error">Sold</span>
+                              )}
+                              {unavailableReason === 'cancelled' && (
+                                <span className="text-xs font-medium text-semantic-error">No longer available</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        </Link>
 
                         {/* Price + remove */}
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-sm font-semibold text-semantic-text-primary">
-                            {formatCentsToCurrency(item.priceCents)}
-                          </span>
+                          <Price cents={item.priceCents} size="sm" />
                           <button
                             onClick={() => removeItem(item.listingId)}
-                            className="p-1.5 rounded-md text-semantic-text-tertiary hover:text-semantic-error hover:bg-semantic-error-bg transition-colors duration-250 ease-out-custom"
+                            className="p-1.5 rounded-md text-semantic-text-muted hover:text-semantic-error hover:bg-semantic-error-bg transition-colors duration-250 ease-out-custom"
                             aria-label={`Remove ${item.gameTitle} from cart`}
                           >
                             <Trash size={18} />
@@ -267,7 +250,7 @@ export default function CartPage() {
                         {formatCentsToCurrency(groupSubtotal)}
                       </span>
                       {buyerCountry && group.shippingCents !== null && (
-                        <span className="text-semantic-text-tertiary text-xs ml-1">
+                        <span className="text-semantic-text-muted text-xs ml-1">
                           (incl. shipping)
                         </span>
                       )}

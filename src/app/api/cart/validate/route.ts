@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     listingIds = body.listingIds;
     if (!Array.isArray(listingIds) || listingIds.length === 0) {
-      return NextResponse.json({ available: [], unavailable: [] });
+      return NextResponse.json({ available: [], unavailable: [], sellers: {} });
     }
     if (listingIds.length > 20) {
       return NextResponse.json({ error: 'Too many items' }, { status: 400 });
@@ -26,12 +26,14 @@ export async function POST(request: Request) {
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, status')
+    .select('id, status, seller_id')
     .in('id', listingIds);
 
   const statusMap = new Map<string, string>();
+  const sellerIds = new Set<string>();
   for (const l of listings ?? []) {
     statusMap.set(l.id, l.status);
+    sellerIds.add(l.seller_id);
   }
 
   const available: string[] = [];
@@ -46,10 +48,26 @@ export async function POST(request: Request) {
     } else if (status === 'sold') {
       unavailable.push({ id, reason: 'sold' });
     } else {
-      // Not found in DB or any other status (draft, cancelled, etc.)
       unavailable.push({ id, reason: 'cancelled' });
     }
   }
 
-  return NextResponse.json({ available, unavailable });
+  // Fetch seller profiles for cart display (name, avatar, country)
+  const sellers: Record<string, { name: string; avatarUrl: string | null; country: string | null }> = {};
+  if (sellerIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('id, full_name, avatar_url, country')
+      .in('id', Array.from(sellerIds));
+
+    for (const p of profiles ?? []) {
+      sellers[p.id] = {
+        name: p.full_name ?? 'Seller',
+        avatarUrl: p.avatar_url ?? null,
+        country: p.country ?? null,
+      };
+    }
+  }
+
+  return NextResponse.json({ available, unavailable, sellers });
 }
