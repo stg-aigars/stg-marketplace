@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
+import { usePendingActions } from '@/contexts/PendingActionsContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 function CountBadge({ count, className }: { count: number; className?: string }) {
@@ -28,6 +29,7 @@ function SiteHeader() {
   const pathname = usePathname();
   const [notificationCount, refreshNotificationCount] = useUnreadNotificationCount();
   const { count: cartCount } = useCart();
+  const { isSeller } = usePendingActions();
 
   // Close menus on route change
   useEffect(() => {
@@ -87,9 +89,6 @@ function SiteHeader() {
     <>
       <Link href="/browse" className={navLinkClass('/browse')}>
         Browse
-      </Link>
-      <Link href="/wanted" className={navLinkClass('/wanted')}>
-        Wanted
       </Link>
       <Link href="/sell" className={navLinkClass('/sell')}>
         Sell a game
@@ -160,38 +159,16 @@ function SiteHeader() {
                     role="menu"
                     className="absolute right-0 mt-1 w-48 rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg py-1"
                   >
-                    <Link
-                      href="/account"
-                      role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Account
-                    </Link>
-                    <Link
-                      href="/account/listings"
-                      role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      My Listings
-                    </Link>
-                    <Link
-                      href="/account/favorites"
-                      role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Favorites
-                    </Link>
-                    <Link
-                      href="/account/settings"
-                      role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      Settings
-                    </Link>
+                    {isSeller ? (
+                      <>
+                        <DropdownLink href="/account/orders?tab=sales" label="Sales" onClose={() => setDropdownOpen(false)} />
+                        <DropdownLink href="/account/wallet" label="Wallet" onClose={() => setDropdownOpen(false)} />
+                      </>
+                    ) : (
+                      <DropdownLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setDropdownOpen(false)} />
+                    )}
+                    <DropdownLink href="/account" label="Account" onClose={() => setDropdownOpen(false)} />
+                    <div className="border-t border-semantic-border-subtle my-1" />
                     <button
                       role="menuitem"
                       onClick={handleSignOut}
@@ -272,34 +249,15 @@ function SiteHeader() {
               </Link>
             ) : (
               <>
-                <Link
-                  href="/account"
-                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Account
-                </Link>
-                <Link
-                  href="/account/listings"
-                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  My Listings
-                </Link>
-                <Link
-                  href="/account/favorites"
-                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Favorites
-                </Link>
-                <Link
-                  href="/account/settings"
-                  className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Settings
-                </Link>
+                {isSeller ? (
+                  <>
+                    <MobileLink href="/account/orders?tab=sales" label="Sales" onClose={() => setMobileOpen(false)} />
+                    <MobileLink href="/account/wallet" label="Wallet" onClose={() => setMobileOpen(false)} />
+                  </>
+                ) : (
+                  <MobileLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setMobileOpen(false)} />
+                )}
+                <MobileLink href="/account" label="Account" onClose={() => setMobileOpen(false)} />
                 <button
                   onClick={handleSignOut}
                   className="py-2.5 text-left text-semantic-text-secondary active:text-semantic-text-primary font-medium"
@@ -312,6 +270,31 @@ function SiteHeader() {
         </nav>
       )}
     </header>
+  );
+}
+
+function DropdownLink({ href, label, onClose }: { href: string; label: string; onClose: () => void }) {
+  return (
+    <Link
+      href={href}
+      role="menuitem"
+      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
+      onClick={onClose}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function MobileLink({ href, label, onClose }: { href: string; label: string; onClose: () => void }) {
+  return (
+    <Link
+      href={href}
+      className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
+      onClick={onClose}
+    >
+      {label}
+    </Link>
   );
 }
 

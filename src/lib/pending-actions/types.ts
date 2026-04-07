@@ -6,6 +6,7 @@ export interface PendingActions {
   buyerDisputes: number;
   buyerDeliveryConfirm: number;
   buyerWantedOffers: number;
+  isSeller: boolean;
 }
 
 export function getTotalPendingCount(actions: PendingActions): number {
