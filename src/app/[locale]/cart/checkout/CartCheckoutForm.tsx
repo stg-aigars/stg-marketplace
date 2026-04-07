@@ -2,18 +2,16 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart } from '@phosphor-icons/react/ssr';
-import { Alert, Badge, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget } from '@/components/ui';
+import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
+import { ListingIdentity, Price } from '@/components/listings/atoms';
 import { useCart } from '@/contexts/CartContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryName } from '@/lib/country-utils';
-import { conditionToBadgeKey } from '@/lib/listings/types';
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import type { CountryCode } from '@/lib/country-utils';
 import type { CartValidationResult } from '@/lib/checkout/cart-types';
@@ -206,24 +204,15 @@ export function CartCheckoutForm({
                 From {getCountryName(sellerCountry)} — Shipping: {formatCentsToCurrency(shippingCents)}
               </p>
               {sellerItems.map((item) => (
-                <div key={item.listingId} className="flex items-center gap-3 py-2">
-                  <div className="relative w-10 h-10 shrink-0 rounded overflow-hidden bg-semantic-bg-secondary">
-                    {item.gameThumbnail ? (
-                      <Image src={item.gameThumbnail} alt={item.gameTitle} fill className="object-contain" sizes="40px" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ShoppingCart size={16} className="text-semantic-text-tertiary" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-semantic-text-primary truncate">{item.gameTitle}</p>
-                    <Badge condition={conditionToBadgeKey[item.condition]} />
-                  </div>
-                  <span className="text-sm font-medium text-semantic-text-primary">
-                    {formatCentsToCurrency(item.priceCents)}
-                  </span>
-                </div>
+                <ListingIdentity
+                  key={item.listingId}
+                  listingId={item.listingId}
+                  image={item.gameThumbnail}
+                  title={item.gameTitle}
+                  expansionCount={item.expansionCount ?? undefined}
+                  disabled={unavailableIds.has(item.listingId)}
+                  price={<Price cents={item.priceCents} size="sm" />}
+                />
               ))}
             </div>
           </CardBody>
