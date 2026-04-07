@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
-import { Badge, BackLink, Card, CardBody } from '@/components/ui';
+import { Badge, BackLink, Card, CardBody, UserIdentity } from '@/components/ui';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
@@ -315,34 +314,22 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-semantic-text-muted mb-1">Buyer</p>
-                <div className="flex items-center gap-2">
-                  {order.buyer_profile?.country && (
-                    <span
-                      className={getCountryFlag(order.buyer_profile.country)}
-                      title={getCountryName(order.buyer_profile.country)}
-                    />
-                  )}
-                  <span className="text-sm text-semantic-text-primary">
-                    {order.buyer_profile?.full_name ?? 'Anonymous'}
-                  </span>
-                </div>
+                <UserIdentity
+                  name={order.buyer_profile?.full_name ?? 'Anonymous'}
+                  avatarUrl={order.buyer_profile?.avatar_url}
+                  country={order.buyer_profile?.country}
+                  size="sm"
+                />
               </div>
               <div>
                 <p className="text-sm text-semantic-text-muted mb-1">Seller</p>
-                <div className="flex items-center gap-2">
-                  {order.seller_profile?.country && (
-                    <span
-                      className={getCountryFlag(order.seller_profile.country)}
-                      title={getCountryName(order.seller_profile.country)}
-                    />
-                  )}
-                  <Link
-                    href={`/sellers/${order.seller_id}`}
-                    className="text-sm text-semantic-text-primary sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
-                  >
-                    {order.seller_profile?.full_name ?? 'Anonymous'}
-                  </Link>
-                </div>
+                <UserIdentity
+                  name={order.seller_profile?.full_name ?? 'Anonymous'}
+                  avatarUrl={order.seller_profile?.avatar_url}
+                  country={order.seller_profile?.country}
+                  size="sm"
+                  href={`/sellers/${order.seller_id}`}
+                />
               </div>
             </div>
           </CardBody>

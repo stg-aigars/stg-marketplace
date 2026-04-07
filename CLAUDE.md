@@ -112,7 +112,8 @@ Always use these — do not write inline equivalents:
 | Condition & status badges | `Badge` (variants: default, success, warning, error, trust, auction; condition keys; `dot` prop for status dots) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
 | Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible; optional icon + title) | `@/components/ui` |
-| User avatars / initials | `Avatar` (sizes: sm, md) | `@/components/ui` |
+| User avatars / initials | `Avatar` (sizes: xs, sm, md; optional `src` for image with initials fallback) | `@/components/ui` |
+| User identity row | `UserIdentity` (avatar + name + flag inline; `href` for linked name, `children` for badges) | `@/components/ui` |
 | Loading placeholders | `Skeleton` | `@/components/ui` |
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
 | Empty / no-results states | `EmptyState` (icon, title, description, action, secondaryAction) | `@/components/ui` |

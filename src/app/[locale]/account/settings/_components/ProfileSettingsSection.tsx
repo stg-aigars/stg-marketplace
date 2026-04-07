@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Input, PhoneInput, Button, Alert } from '@/components/ui';
+import { Camera, Trash } from '@phosphor-icons/react/ssr';
+import { Card, CardBody, Input, PhoneInput, Button, Alert, Avatar } from '@/components/ui';
 import { updateDisplayName } from '@/lib/auth/actions';
 import { apiFetch } from '@/lib/api-fetch';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -25,6 +26,83 @@ export function ProfileSettingsSection({ profile, returnUrl }: ProfileSettingsSe
   const [phoneError, setPhoneError] = useState('');
   const [phoneSuccess, setPhoneSuccess] = useState('');
   const [phoneLoading, setPhoneLoading] = useState(false);
+
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '');
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Revoke blob URL on unmount or when preview changes
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
+  const handleAvatarUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarError('');
+    setAvatarLoading(true);
+
+    // Immediate blob preview
+    const blobUrl = URL.createObjectURL(file);
+    setAvatarPreview(blobUrl);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiFetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAvatarError(data.error || 'Upload failed');
+        URL.revokeObjectURL(blobUrl);
+        setAvatarPreview('');
+      } else {
+        setAvatarUrl(data.avatarUrl);
+        URL.revokeObjectURL(blobUrl);
+        setAvatarPreview('');
+        router.refresh();
+      }
+    } catch {
+      setAvatarError('Something went wrong. Please try again');
+      URL.revokeObjectURL(blobUrl);
+      setAvatarPreview('');
+    }
+
+    setAvatarLoading(false);
+    // Reset file input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [router]);
+
+  async function handleAvatarRemove() {
+    setAvatarError('');
+    setAvatarLoading(true);
+
+    try {
+      const res = await apiFetch('/api/profile/avatar', { method: 'DELETE' });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAvatarError(data.error || 'Failed to remove avatar');
+      } else {
+        setAvatarUrl('');
+        router.refresh();
+      }
+    } catch {
+      setAvatarError('Something went wrong. Please try again');
+    }
+
+    setAvatarLoading(false);
+  }
 
   async function handleNameSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +159,49 @@ export function ProfileSettingsSection({ profile, returnUrl }: ProfileSettingsSe
         <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
           Profile
         </h2>
+
+        {/* Avatar */}
+        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-semantic-border-subtle">
+          <Avatar
+            name={displayName || 'User'}
+            src={avatarPreview || avatarUrl || null}
+            size="md"
+            className="!w-16 !h-16 !text-xl !rounded-xl"
+          />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => fileInputRef.current?.click()}
+                loading={avatarLoading}
+              >
+                <Camera size={16} className="mr-1.5" />
+                {avatarUrl ? 'Change photo' : 'Add photo'}
+              </Button>
+              {avatarUrl && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleAvatarRemove}
+                  disabled={avatarLoading}
+                >
+                  <Trash size={16} className="mr-1.5" />
+                  Remove
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-semantic-text-muted">JPEG, PNG, or WebP. Max 2MB.</p>
+            {avatarError && <p className="text-xs text-semantic-error">{avatarError}</p>}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
+        </div>
 
         {/* Display name */}
         <form onSubmit={handleNameSubmit} className="space-y-3">

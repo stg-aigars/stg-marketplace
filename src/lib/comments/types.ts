@@ -7,5 +7,6 @@ export interface ListingComment {
   content: string;
   created_at: string;
   author_name: string | null;
+  author_avatar_url: string | null;
   author_is_seller: boolean;
 }

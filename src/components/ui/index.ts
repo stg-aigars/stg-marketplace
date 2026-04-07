@@ -29,6 +29,9 @@ export { Alert } from './alert';
 
 export { Avatar } from './avatar';
 
+export { UserIdentity } from './user-identity';
+export type { UserIdentityProps } from './user-identity';
+
 export { TurnstileWidget } from './TurnstileWidget';
 export type { TurnstileWidgetRef } from './TurnstileWidget';
 

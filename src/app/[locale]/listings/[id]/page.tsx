@@ -79,6 +79,7 @@ interface ListingDetailRow {
   };
   user_profiles: {
     full_name: string | null;
+    avatar_url: string | null;
     country: string;
     created_at: string;
   } | null;
@@ -167,9 +168,9 @@ export default async function ListingDetailPage(
   // Fetch seller profile separately (public_profiles view — safe for anonymous access)
   const { data: sellerProfile } = await supabase
     .from('public_profiles')
-    .select('full_name, country, created_at')
+    .select('full_name, avatar_url, country, created_at')
     .eq('id', listing.seller_id)
-    .single<{ full_name: string | null; country: string; created_at: string }>();
+    .single<{ full_name: string | null; avatar_url: string | null; country: string; created_at: string }>();
 
   // Attach to listing shape for backward compatibility with template
   listing.user_profiles = sellerProfile;
@@ -533,7 +534,7 @@ export default async function ListingDetailPage(
                 Seller
               </h2>
               <div className="flex items-center gap-3">
-                <Avatar name={listing.user_profiles?.full_name ?? '?'} />
+                <Avatar name={listing.user_profiles?.full_name ?? '?'} src={listing.user_profiles?.avatar_url} />
                 <div>
                   <Link
                     href={`/sellers/${listing.seller_id}`}

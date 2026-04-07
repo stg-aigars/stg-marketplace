@@ -165,6 +165,7 @@ export async function getComments(listingId: string, sellerId: string): Promise<
     content: c.content,
     created_at: c.created_at,
     author_name: c.user_id ? (profileMap.get(c.user_id)?.full_name ?? null) : null,
+    author_avatar_url: c.user_id ? (profileMap.get(c.user_id)?.avatar_url ?? null) : null,
     author_is_seller: c.user_id === sellerId,
   }));
 }
