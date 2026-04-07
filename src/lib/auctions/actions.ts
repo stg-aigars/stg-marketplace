@@ -105,6 +105,46 @@ export async function getAuctionState(
   };
 }
 
+/** Get auctions the user won but hasn't paid for yet (auction_ended status) */
+export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
+  id: string;
+  game_name: string;
+  game_year: number | null;
+  thumbnail: string | null;
+  current_bid_cents: number;
+  payment_deadline_at: string | null;
+}>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('listings')
+    .select(`
+      id, game_name, game_year, current_bid_cents, payment_deadline_at,
+      games:bgg_game_id (thumbnail)
+    `)
+    .eq('listing_type', 'auction')
+    .eq('status', 'auction_ended')
+    .eq('highest_bidder_id', user.id)
+    .order('payment_deadline_at', { ascending: true });
+
+  if (!data) return [];
+
+  return data.map((row) => {
+    const games = row.games as unknown as { thumbnail: string | null } | null;
+    return {
+      id: row.id,
+      game_name: row.game_name,
+      game_year: row.game_year,
+      thumbnail: games?.thumbnail ?? null,
+      current_bid_cents: row.current_bid_cents,
+      payment_deadline_at: row.payment_deadline_at,
+    };
+  });
+}
+
 /** Get user's bid history across all auctions */
 export async function getMyBids(): Promise<Array<{
   id: string;

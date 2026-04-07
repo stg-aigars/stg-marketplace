@@ -37,6 +37,7 @@ export type NotificationType =
   // Auctions
   | 'auction.bid_placed'
   | 'auction.outbid'
+  | 'auction.ending_soon'
   | 'auction.won'
   | 'auction.lost'
   | 'auction.ended_no_bids'

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getUserOrders } from '@/lib/services/orders';
+import { getWonAuctionsAwaitingPayment } from '@/lib/auctions/actions';
 import { Alert } from '@/components/ui';
 import { OrderTabs } from './OrderTabs';
 
@@ -16,9 +17,10 @@ export default async function MyOrdersPage(
   const searchParams = await props.searchParams;
   const { user } = await requireServerAuth();
 
-  const [purchases, sales] = await Promise.all([
+  const [purchases, sales, wonAuctions] = await Promise.all([
     getUserOrders(user.id, 'buyer'),
     getUserOrders(user.id, 'seller'),
+    getWonAuctionsAwaitingPayment(),
   ]);
 
   const defaultTab = searchParams.tab === 'sales' ? 'sales' as const : 'purchases' as const;
@@ -47,7 +49,7 @@ export default async function MyOrdersPage(
         Your orders
       </h1>
 
-      <OrderTabs key={defaultTab} purchases={purchases} sales={sales} defaultTab={defaultTab} />
+      <OrderTabs key={defaultTab} purchases={purchases} sales={sales} wonAuctions={wonAuctions} defaultTab={defaultTab} />
     </div>
   );
 }

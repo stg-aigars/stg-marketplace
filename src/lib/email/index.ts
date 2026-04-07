@@ -35,6 +35,7 @@ import { DeliveryReminderBuyer } from './templates/delivery-reminder-buyer';
 import { WantedOfferReceived } from './templates/wanted-offer-received';
 import { AuctionBidReceived } from './templates/auction-bid-received';
 import { AuctionOutbid } from './templates/auction-outbid';
+import { AuctionEndingSoon } from './templates/auction-ending-soon';
 import { AuctionWon } from './templates/auction-won';
 import { AuctionWonSeller } from './templates/auction-won-seller';
 import { AuctionLost } from './templates/auction-lost';
@@ -930,6 +931,22 @@ export async function sendAuctionOutbidNotification(params: {
     to: params.bidderEmail,
     subject: `You have been outbid on ${params.gameName}`,
     react: React.createElement(AuctionOutbid, {
+      ...params,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendAuctionEndingSoon(params: {
+  recipientName: string;
+  recipientEmail: string;
+  gameName: string;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.recipientEmail,
+    subject: `${params.gameName} auction ends in 30 minutes`,
+    react: React.createElement(AuctionEndingSoon, {
       ...params,
       listingUrl: `${env.app.url}/listings/${params.listingId}`,
     }),

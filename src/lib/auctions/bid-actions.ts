@@ -9,6 +9,7 @@ import {
   sendAuctionBidReceivedToSeller,
   sendAuctionOutbidNotification,
 } from '@/lib/email';
+import { QUIET_WINDOW_MS } from './types';
 import type { PlaceBidResult } from './types';
 
 // ============================================================================
@@ -53,54 +54,61 @@ export async function placeBid(
   // Fetch listing info for notifications
   const { data: listing } = await supabase
     .from('listings')
-    .select('seller_id, game_name')
+    .select('seller_id, game_name, auction_end_at')
     .eq('id', listingId)
     .single();
 
   if (listing) {
-    const profileIds = [user.id, listing.seller_id];
-    if (result.prev_bidder_id && result.prev_bidder_id !== user.id) {
-      profileIds.push(result.prev_bidder_id);
-    }
-    const profiles = await fetchProfiles(supabase, profileIds);
-    const bidder = profiles.get(user.id);
-    const seller = profiles.get(listing.seller_id);
+    // Quiet window: skip per-bid notifications in the final 30 minutes
+    const auctionEndAt = result.new_end_at ?? listing.auction_end_at;
+    const msUntilEnd = auctionEndAt ? new Date(auctionEndAt).getTime() - Date.now() : Infinity;
+    const isQuietWindow = msUntilEnd > 0 && msUntilEnd <= QUIET_WINDOW_MS;
 
-    // Notify + email seller of new bid
-    void notify(listing.seller_id, 'auction.bid_placed', {
-      gameName: listing.game_name,
-      listingId,
-      buyerName: bidder?.full_name ?? 'A bidder',
-    });
+    if (!isQuietWindow) {
+      const profileIds = [user.id, listing.seller_id];
+      if (result.prev_bidder_id && result.prev_bidder_id !== user.id) {
+        profileIds.push(result.prev_bidder_id);
+      }
+      const profiles = await fetchProfiles(supabase, profileIds);
+      const bidder = profiles.get(user.id);
+      const seller = profiles.get(listing.seller_id);
 
-    if (seller?.email) {
-      sendAuctionBidReceivedToSeller({
-        sellerName: seller.full_name,
-        sellerEmail: seller.email,
-        bidderName: bidder?.full_name ?? 'A bidder',
-        gameName: listing.game_name,
-        bidAmountCents: amountCents,
-        bidCount: result.bid_count ?? 0,
-        listingId,
-      }).catch(() => {});
-    }
-
-    // Notify + email previous highest bidder they've been outbid
-    if (result.prev_bidder_id && result.prev_bidder_id !== user.id) {
-      void notify(result.prev_bidder_id, 'auction.outbid', {
+      // Notify + email seller of new bid
+      void notify(listing.seller_id, 'auction.bid_placed', {
         gameName: listing.game_name,
         listingId,
+        buyerName: bidder?.full_name ?? 'A bidder',
       });
 
-      const prevBidder = profiles.get(result.prev_bidder_id);
-      if (prevBidder?.email) {
-        sendAuctionOutbidNotification({
-          bidderName: prevBidder.full_name,
-          bidderEmail: prevBidder.email,
+      if (seller?.email) {
+        sendAuctionBidReceivedToSeller({
+          sellerName: seller.full_name,
+          sellerEmail: seller.email,
+          bidderName: bidder?.full_name ?? 'A bidder',
           gameName: listing.game_name,
-          currentBidCents: amountCents,
+          bidAmountCents: amountCents,
+          bidCount: result.bid_count ?? 0,
           listingId,
         }).catch(() => {});
+      }
+
+      // Notify + email previous highest bidder they've been outbid
+      if (result.prev_bidder_id && result.prev_bidder_id !== user.id) {
+        void notify(result.prev_bidder_id, 'auction.outbid', {
+          gameName: listing.game_name,
+          listingId,
+        });
+
+        const prevBidder = profiles.get(result.prev_bidder_id);
+        if (prevBidder?.email) {
+          sendAuctionOutbidNotification({
+            bidderName: prevBidder.full_name,
+            bidderEmail: prevBidder.email,
+            gameName: listing.game_name,
+            currentBidCents: amountCents,
+            listingId,
+          }).catch(() => {});
+        }
       }
     }
   }

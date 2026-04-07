@@ -16,6 +16,7 @@ export const AUCTION_DURATION_OPTIONS = [
 export const MIN_BID_INCREMENT_CENTS = 100; // €1.00
 
 export const SNIPE_WINDOW_MINUTES = 5;
+export const QUIET_WINDOW_MS = 30 * 60 * 1000;
 
 export const PAYMENT_DEADLINE_HOURS = 24;
 
