@@ -90,13 +90,13 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
                   <span className="text-xs text-semantic-text-muted flex items-center gap-1">
                     {counterpartyLabel}:
                     <Avatar name={counterparty.full_name ?? '?'} src={counterparty.avatar_url} size="sm" className="!w-4 !h-4 !text-[8px] !rounded" />
+                    {counterparty.full_name ?? 'Anonymous'}
                     {counterparty.country && (
                       <span
                         className={getCountryFlag(counterparty.country)}
                         title={getCountryName(counterparty.country)}
                       />
                     )}
-                    {counterparty.full_name ?? 'Anonymous'}
                   </span>
                 )}
               </div>

@@ -246,16 +246,16 @@ export function BidPanel({
               <li key={bid.id} className="flex items-center justify-between text-xs gap-2">
                 <span className="text-semantic-text-muted flex items-center gap-1.5 min-w-0">
                   <Avatar name={bid.bidder_name} src={bid.bidder_avatar_url} size="sm" className="!w-5 !h-5 !text-[10px] !rounded shrink-0" />
+                  <span className="truncate">
+                    {bid.bidder_name}
+                    {bid.bidder_id === currentUserId && ' (you)'}
+                  </span>
                   {bid.bidder_country && (
                     <span
                       className={`${getCountryFlag(bid.bidder_country)} shrink-0`}
                       title={getCountryName(bid.bidder_country)}
                     />
                   )}
-                  <span className="truncate">
-                    {bid.bidder_name}
-                    {bid.bidder_id === currentUserId && ' (you)'}
-                  </span>
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
                   <span className="text-semantic-text-muted">{formatMessageTime(bid.created_at)}</span>

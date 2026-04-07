@@ -317,33 +317,33 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                 <p className="text-sm text-semantic-text-muted mb-1">Buyer</p>
                 <div className="flex items-center gap-2">
                   <Avatar name={order.buyer_profile?.full_name ?? '?'} src={order.buyer_profile?.avatar_url} size="sm" />
+                  <span className="text-sm text-semantic-text-primary">
+                    {order.buyer_profile?.full_name ?? 'Anonymous'}
+                  </span>
                   {order.buyer_profile?.country && (
                     <span
                       className={getCountryFlag(order.buyer_profile.country)}
                       title={getCountryName(order.buyer_profile.country)}
                     />
                   )}
-                  <span className="text-sm text-semantic-text-primary">
-                    {order.buyer_profile?.full_name ?? 'Anonymous'}
-                  </span>
                 </div>
               </div>
               <div>
                 <p className="text-sm text-semantic-text-muted mb-1">Seller</p>
                 <div className="flex items-center gap-2">
                   <Avatar name={order.seller_profile?.full_name ?? '?'} src={order.seller_profile?.avatar_url} size="sm" />
-                  {order.seller_profile?.country && (
-                    <span
-                      className={getCountryFlag(order.seller_profile.country)}
-                      title={getCountryName(order.seller_profile.country)}
-                    />
-                  )}
                   <Link
                     href={`/sellers/${order.seller_id}`}
                     className="text-sm text-semantic-text-primary sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
                   >
                     {order.seller_profile?.full_name ?? 'Anonymous'}
                   </Link>
+                  {order.seller_profile?.country && (
+                    <span
+                      className={getCountryFlag(order.seller_profile.country)}
+                      title={getCountryName(order.seller_profile.country)}
+                    />
+                  )}
                 </div>
               </div>
             </div>
