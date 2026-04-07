@@ -102,8 +102,8 @@ export interface OrderWithDetails extends OrderRow {
     photos: string[];
     games: { thumbnail: string | null } | null;
   } | null;
-  buyer_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
-  seller_profile: { full_name: string | null; country: string; phone: string | null; email: string | null } | null;
+  buyer_profile: { full_name: string | null; avatar_url: string | null; country: string; phone: string | null; email: string | null } | null;
+  seller_profile: { full_name: string | null; avatar_url: string | null; country: string; phone: string | null; email: string | null } | null;
   dispute?: DisputeRow | null;
 }
 
@@ -112,8 +112,8 @@ export interface OrderWithRelations extends OrderRow {
   order_items: Array<{ listing_id: string; price_cents: number; listings: { game_name: string; seller_id: string } | null }>;
   /** @deprecated Legacy join — use order_items instead. Null for new multi-item orders. */
   listings: { game_name: string; seller_id: string } | null;
-  buyer_profile: { full_name: string | null; email: string | null; phone: string | null; country: string } | null;
-  seller_profile: { full_name: string | null; email: string | null; phone: string | null; country: string } | null;
+  buyer_profile: { full_name: string | null; avatar_url: string | null; email: string | null; phone: string | null; country: string } | null;
+  seller_profile: { full_name: string | null; avatar_url: string | null; email: string | null; phone: string | null; country: string } | null;
 }
 
 /** Dispute resolution outcome */

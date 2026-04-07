@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Avatar, Card, CardBody, Badge } from '@/components/ui';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
@@ -89,6 +89,7 @@ export function OrderCard({ order, showAs }: OrderCardProps) {
                 {counterparty && (
                   <span className="text-xs text-semantic-text-muted flex items-center gap-1">
                     {counterpartyLabel}:
+                    <Avatar name={counterparty.full_name ?? '?'} src={counterparty.avatar_url} size="sm" className="!w-4 !h-4 !text-[8px] !rounded" />
                     {counterparty.country && (
                       <span
                         className={getCountryFlag(counterparty.country)}

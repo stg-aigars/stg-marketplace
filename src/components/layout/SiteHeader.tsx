@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CaretDown, X, List, ShoppingCart, Bell } from '@phosphor-icons/react/ssr';
+import { Avatar } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
@@ -146,7 +147,7 @@ function SiteHeader() {
                   aria-haspopup="true"
                   className="flex items-center gap-1.5 text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium min-h-[44px] px-2"
                 >
-                  <span className="max-w-[140px] truncate">{displayName}</span>
+                  <Avatar name={displayName} src={profile?.avatar_url} size="sm" className="!w-7 !h-7 !text-xs" />
                   <CaretDown
                     size={16}
                     className={`transition-transform duration-150 ease-out-custom ${dropdownOpen ? 'rotate-180' : ''}`}

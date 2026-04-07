@@ -60,7 +60,7 @@ export async function enrichBidsWithProfiles(
   const profileMap = await fetchPublicProfiles(supabase, bidderIds);
   return bids.map((row) => {
     const p = profileMap.get(row.bidder_id);
-    return { ...row, bidder_name: p?.full_name ?? 'Anonymous', bidder_country: p?.country ?? null };
+    return { ...row, bidder_name: p?.full_name ?? 'Anonymous', bidder_avatar_url: p?.avatar_url ?? null, bidder_country: p?.country ?? null };
   });
 }
 

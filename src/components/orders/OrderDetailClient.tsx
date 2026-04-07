@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
-import { Badge, BackLink, Card, CardBody } from '@/components/ui';
+import { Avatar, Badge, BackLink, Card, CardBody } from '@/components/ui';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -316,6 +316,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               <div>
                 <p className="text-sm text-semantic-text-muted mb-1">Buyer</p>
                 <div className="flex items-center gap-2">
+                  <Avatar name={order.buyer_profile?.full_name ?? '?'} src={order.buyer_profile?.avatar_url} size="sm" />
                   {order.buyer_profile?.country && (
                     <span
                       className={getCountryFlag(order.buyer_profile.country)}
@@ -330,6 +331,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               <div>
                 <p className="text-sm text-semantic-text-muted mb-1">Seller</p>
                 <div className="flex items-center gap-2">
+                  <Avatar name={order.seller_profile?.full_name ?? '?'} src={order.seller_profile?.avatar_url} size="sm" />
                   {order.seller_profile?.country && (
                     <span
                       className={getCountryFlag(order.seller_profile.country)}

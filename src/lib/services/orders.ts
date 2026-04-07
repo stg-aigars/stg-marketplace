@@ -169,8 +169,8 @@ export async function getOrder(orderId: string): Promise<OrderWithDetails | null
           listing_expansions(game_name))
       ),
       listings(game_name, game_year, condition, photos, games(thumbnail)),
-      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
-      seller_profile:user_profiles!orders_seller_id_fkey(full_name, country, phone, email)
+      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, avatar_url, country, phone, email),
+      seller_profile:user_profiles!orders_seller_id_fkey(full_name, avatar_url, country, phone, email)
     `)
     .eq('id', orderId)
     .single<OrderWithDetails>();
@@ -203,8 +203,8 @@ export async function getUserOrders(
         listings(game_name, games(thumbnail))
       ),
       listings(game_name, games(thumbnail)),
-      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, country, phone, email),
-      seller_profile:user_profiles!orders_seller_id_fkey(full_name, country, phone, email)
+      buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, avatar_url, country, phone, email),
+      seller_profile:user_profiles!orders_seller_id_fkey(full_name, avatar_url, country, phone, email)
     `)
     .eq(column, userId)
     .order('created_at', { ascending: false });
