@@ -41,14 +41,25 @@ export async function POST(request: Request) {
 
   const serviceClient = createServiceClient();
 
-  // Fetch all listings
-  const { data: listings } = await serviceClient
-    .from('listings')
-    .select('id, seller_id, price_cents, status, country, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
-    .in('id', listingIds);
+  // Fetch listings and buyer profile in parallel (independent operations)
+  const [{ data: listings }, { data: buyerProfile }] = await Promise.all([
+    serviceClient
+      .from('listings')
+      .select('id, seller_id, price_cents, status, country, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
+      .in('id', listingIds),
+    supabase
+      .from('user_profiles')
+      .select('country')
+      .eq('id', user.id)
+      .single(),
+  ]);
 
   if (!listings || listings.length !== listingIds.length) {
     return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
+  }
+
+  if (!buyerProfile?.country) {
+    return NextResponse.json({ error: 'Please set your country in your profile first' }, { status: 400 });
   }
 
   // Verify all listings belong to same seller
@@ -84,17 +95,6 @@ export async function POST(request: Request) {
       }
       regularIds.push(listing.id);
     }
-  }
-
-  // Get buyer profile for country
-  const { data: buyerProfile } = await supabase
-    .from('user_profiles')
-    .select('country')
-    .eq('id', user.id)
-    .single();
-
-  if (!buyerProfile?.country) {
-    return NextResponse.json({ error: 'Please set your country in your profile first' }, { status: 400 });
   }
 
   // Calculate totals — single-seller guard above guarantees one seller

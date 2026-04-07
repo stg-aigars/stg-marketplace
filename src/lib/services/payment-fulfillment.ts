@@ -226,17 +226,17 @@ export async function fulfillCartPayment(
   const walletDebit = group.wallet_debit_cents ?? 0;
   const expectedEverypayAmountCents = group.total_amount_cents - walletDebit;
 
-  // Fetch all listings in the group
-  const { data: listings } = await serviceClient
-    .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
-    .in('id', group.listing_ids);
-
-  // Fetch expansion data for email enrichment
-  const { data: expansionRows } = await serviceClient
-    .from('listing_expansions')
-    .select('listing_id, game_name')
-    .in('listing_id', group.listing_ids);
+  // Fetch listings and expansion data in parallel (independent operations)
+  const [{ data: listings }, { data: expansionRows }] = await Promise.all([
+    serviceClient
+      .from('listings')
+      .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
+      .in('id', group.listing_ids),
+    serviceClient
+      .from('listing_expansions')
+      .select('listing_id, game_name')
+      .in('listing_id', group.listing_ids),
+  ]);
 
   const expansionsByListing = new Map<string, Array<{ game_name: string }>>();
   for (const row of expansionRows ?? []) {

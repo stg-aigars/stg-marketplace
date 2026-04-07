@@ -133,7 +133,7 @@ export function CheckoutForm({
   const walletCoversTotal = walletDebitCents >= grandTotalCents;
 
   const allExpired = availableItems.length === 0 && expiredAuctionIds.size > 0;
-  const canSubmit = phone.trim() && selectedTerminal && availableItems.length > 0 && unavailableIds.size === 0 && !allExpired && acceptedTerms;
+  const canSubmit = phone.trim() && selectedTerminal && availableItems.length > 0 && unavailableIds.size === 0 && acceptedTerms;
 
   async function handleCheckout() {
     if (!canSubmit) return;

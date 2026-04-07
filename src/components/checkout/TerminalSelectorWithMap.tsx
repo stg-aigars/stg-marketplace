@@ -95,16 +95,16 @@ export function TerminalSelectorWithMap({
   }, [allTerminals, mapSearchQuery]);
 
   const filteredTerminals = useMemo(() => {
-    if (!listSearchQuery.trim()) return allTerminals;
+    if (!listSearchQuery.trim()) return terminals;
 
     const query = listSearchQuery.toLowerCase();
-    return allTerminals.filter(
+    return terminals.filter(
       (t) =>
         t.name.toLowerCase().includes(query) ||
         t.address.toLowerCase().includes(query) ||
         t.city.toLowerCase().includes(query)
     );
-  }, [allTerminals, listSearchQuery]);
+  }, [terminals, listSearchQuery]);
 
   const terminalsByCity = useMemo(() => {
     const grouped: Record<string, TerminalOption[]> = {};

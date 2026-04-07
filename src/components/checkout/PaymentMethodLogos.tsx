@@ -9,21 +9,33 @@ interface PaymentMethod {
   logo_url: string;
 }
 
+// Module-level cache — payment methods don't change during a session
+const methodsCache = new Map<string, PaymentMethod[]>();
+
 interface PaymentMethodLogosProps {
   country: string;
 }
 
 export function PaymentMethodLogos({ country }: PaymentMethodLogosProps) {
-  const [methods, setMethods] = useState<PaymentMethod[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = methodsCache.get(country);
+  const [methods, setMethods] = useState<PaymentMethod[]>(cached ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [hiddenSources, setHiddenSources] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (methodsCache.has(country)) {
+      setMethods(methodsCache.get(country)!);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     fetch(`/api/checkout/payment-methods?country=${encodeURIComponent(country)}`)
       .then((res) => res.json())
       .then((data: PaymentMethod[]) => {
-        setMethods(Array.isArray(data) ? data : []);
+        const result = Array.isArray(data) ? data : [];
+        methodsCache.set(country, result);
+        setMethods(result);
         setHiddenSources(new Set());
       })
       .catch(() => setMethods([]))
