@@ -75,12 +75,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: turnstile.error }, { status: 403 });
   }
 
-  // 3. Fetch listing (use service client to read reserved listings — RLS only
-  // exposes active listings + seller's own, so a buyer can't read their own reserved listing)
+  // 3. Fetch listing (use service client to bypass RLS for auction_ended status)
   const serviceClient = createServiceClient();
   const { data: listing } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, reserved_by, listing_type, highest_bidder_id')
+    .select('id, seller_id, price_cents, status, country, listing_type, highest_bidder_id')
     .eq('id', listingId)
     .single();
 
@@ -88,16 +87,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
   }
 
-  // Allow 'active', 'reserved' by same buyer, or 'auction_ended' for the winner
+  // Only auction winners can reach this route (checkout page guard)
   const isAuctionWinner = listing.listing_type === 'auction' &&
     listing.status === 'auction_ended' &&
     listing.highest_bidder_id === user.id;
 
-  const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
-    isAuctionWinner;
-
-  if (!canCheckout) {
+  if (!isAuctionWinner) {
     return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
   }
 
@@ -177,44 +172,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to start checkout. Please try again.' }, { status: 500 });
   }
 
-  // 8. Verify listing is still reserved by this buyer (reservation happens at checkout page load).
-  // Skip for auction listings — they're already locked via 'auction_ended' status.
-  if (!isAuctionWinner) {
-    const { data: current } = await serviceClient
-      .from('listings')
-      .select('status, reserved_by')
-      .eq('id', listingId)
-      .single();
-
-    const isReservedByBuyer = current?.status === 'reserved' && current.reserved_by === user.id;
-    const isActive = current?.status === 'active';
-
-    if (!isReservedByBuyer && !isActive) {
-      await serviceClient
-        .from('checkout_sessions')
-        .update({ status: 'expired' })
-        .eq('id', session.id);
-      return NextResponse.json({ error: 'This listing is no longer available' }, { status: 400 });
-    }
-
-    // If somehow still active (e.g. cart checkout path), reserve now
-    if (isActive) {
-      await serviceClient
-        .from('listings')
-        .update({
-          status: 'reserved',
-          reserved_at: new Date().toISOString(),
-          reserved_by: user.id,
-        })
-        .eq('id', listingId)
-        .eq('status', 'active');
-    }
-  }
-
-  // 9. Build callback URL with callback token for security
+  // 8. Build callback URL with callback token for security
   const callbackUrl = `${env.app.url}/api/payments/callback?token=${session.callback_token}`;
 
-  // 10. Create EveryPay payment with order number as order reference
+  // 9. Create EveryPay payment with order number as order reference
   try {
     const paymentResponse = await createPayment(
       everypayChargeCents,
@@ -253,8 +214,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Payments] Failed to create payment:', error);
 
-    // Keep the reservation alive — buyer can retry from checkout page.
-    // The 30-min TTL (expire-reservations cron) handles expiry if they abandon.
     await serviceClient
       .from('checkout_sessions')
       .update({ status: 'expired' })
