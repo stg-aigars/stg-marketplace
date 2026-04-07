@@ -9,7 +9,7 @@ import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
-import { getTerminals } from '@/lib/services/unisend/client';
+import { getAllTerminals } from '@/lib/services/unisend/client';
 import { createClient } from '@/lib/supabase/server';
 import { reserveListingForCheckout } from '@/lib/listings/actions';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
@@ -195,22 +195,26 @@ export default async function CheckoutPage(
   const itemPriceCents = isAuction ? listing.current_bid_cents! : listing.price_cents;
   const pricing = calculateBuyerPricing(itemPriceCents, shippingCents);
 
-  // Fetch wallet balance and terminals in parallel (independent operations)
+  // Fetch wallet balance and all terminals in parallel (independent operations)
   let terminalsFetchFailed = false;
   let terminals: TerminalOption[] = [];
   const [walletBalanceCents, terminalsResult] = await Promise.all([
     getWalletBalance(user.id),
-    getTerminals(buyerCountry).catch((error) => {
+    getAllTerminals().catch((error) => {
       console.error('[Checkout] Failed to fetch terminals:', error);
       terminalsFetchFailed = true;
-      return [] as Awaited<ReturnType<typeof getTerminals>>;
+      return [] as Awaited<ReturnType<typeof getAllTerminals>>;
     }),
   ]);
 
   if (!terminalsFetchFailed) {
     terminals = terminalsResult
       .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
-      .map((t) => ({ id: t.id, name: t.name, city: t.city, address: t.address, postalCode: t.postalCode, countryCode: t.countryCode }));
+      .map((t) => ({
+        id: t.id, name: t.name, city: t.city, address: t.address,
+        postalCode: t.postalCode, countryCode: t.countryCode,
+        latitude: t.latitude, longitude: t.longitude,
+      }));
   }
 
   const walletPricing = walletBalanceCents > 0

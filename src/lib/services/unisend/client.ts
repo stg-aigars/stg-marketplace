@@ -252,8 +252,17 @@ export async function getAllTerminals(): Promise<Terminal[]> {
   if (cached) return cached;
 
   const countries: TerminalCountry[] = ['LT', 'LV', 'EE'];
-  const results = await Promise.all(countries.map((c) => getTerminals(c)));
-  const all = results.flat();
+  const results = await Promise.allSettled(countries.map((c) => getTerminals(c)));
+  const all = results
+    .filter((r): r is PromiseFulfilledResult<Terminal[]> => r.status === 'fulfilled')
+    .flatMap((r) => r.value);
+
+  // Log failures but don't block checkout
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      console.error(`[Unisend] Failed to fetch terminals for ${countries[i]}:`, r.reason);
+    }
+  });
 
   await cacheSet(cacheKey, all, TERMINAL_CACHE_TTL_SECONDS).catch(() => {});
 

@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, Alert, PhoneInput, TurnstileWidget } from '@/components/ui';
+import dynamic from 'next/dynamic';
+import { Button, Alert, Skeleton, PhoneInput, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
-import { TerminalPicker } from '@/components/checkout/TerminalPicker';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
-import type { TerminalOption } from '@/lib/services/unisend/types';
+import type { TerminalOption, TerminalCountry } from '@/lib/services/unisend/types';
 import type { CountryCode } from '@/lib/country-utils';
+
+const TerminalSelectorWithMap = dynamic(
+  () => import('@/components/checkout/TerminalSelectorWithMap'),
+  { ssr: false, loading: () => <Skeleton className="h-[420px] rounded-lg" /> }
+);
 
 interface CheckoutFormProps {
   listingId: string;
@@ -145,11 +150,12 @@ export function CheckoutForm({
         </p>
       </div>
 
-      <TerminalPicker
+      <TerminalSelectorWithMap
         terminals={terminals}
-        selectedId={selectedTerminal?.id ?? ''}
+        defaultCountry={buyerCountry as TerminalCountry}
+        selectedTerminal={selectedTerminal}
         onSelect={setSelectedTerminal}
-        fetchFailed={terminalsFetchFailed}
+        error={terminalsFetchFailed ? 'Failed to load terminals. Please refresh the page.' : undefined}
       />
 
       <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />

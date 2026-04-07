@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart } from '@phosphor-icons/react/ssr';
-import { Alert, Badge, Button, Card, CardBody, PhoneInput, TurnstileWidget } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
-import { TerminalPicker } from '@/components/checkout/TerminalPicker';
 import { useCart } from '@/contexts/CartContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
@@ -17,6 +17,11 @@ import { conditionToBadgeKey } from '@/lib/listings/types';
 import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import type { CountryCode } from '@/lib/country-utils';
 import type { CartValidationResult } from '@/lib/checkout/cart-types';
+
+const TerminalSelectorWithMap = dynamic(
+  () => import('@/components/checkout/TerminalSelectorWithMap'),
+  { ssr: false, loading: () => <Skeleton className="h-[420px] rounded-lg" /> }
+);
 
 interface CartCheckoutFormProps {
   buyerCountry: string;
@@ -36,12 +41,7 @@ export function CartCheckoutForm({
   const router = useRouter();
   const { items, clearCart } = useCart();
   const [phone, setPhone] = useState(initialPhone);
-  const [selectedTerminalId, setSelectedTerminalId] = useState('');
-  const [selectedTerminalName, setSelectedTerminalName] = useState('');
-  const [selectedTerminalAddress, setSelectedTerminalAddress] = useState('');
-  const [selectedTerminalCity, setSelectedTerminalCity] = useState('');
-  const [selectedTerminalPostalCode, setSelectedTerminalPostalCode] = useState('');
-  const [selectedTerminalCountry, setSelectedTerminalCountry] = useState('');
+  const [selectedTerminal, setSelectedTerminal] = useState<TerminalOption | null>(null);
   const [useWallet, setUseWallet] = useState(walletBalanceCents > 0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export function CartCheckoutForm({
   const cardChargeCents = grandTotalCents - walletDebitCents;
   const walletCoversTotal = walletDebitCents >= grandTotalCents;
 
-  const canSubmit = phone.trim() && selectedTerminalId && availableItems.length > 0 && unavailableIds.size === 0;
+  const canSubmit = phone.trim() && selectedTerminal && availableItems.length > 0 && unavailableIds.size === 0;
 
   async function handleCheckout() {
     if (!canSubmit) return;
@@ -104,14 +104,16 @@ export function CartCheckoutForm({
     setLoading(true);
     setError(null);
 
+    if (!selectedTerminal) return;
+
     const commonBody = {
       listingIds: availableItems.map((i) => i.listingId),
-      terminalId: selectedTerminalId,
-      terminalName: selectedTerminalName,
-      terminalAddress: selectedTerminalAddress,
-      terminalCity: selectedTerminalCity,
-      terminalPostalCode: selectedTerminalPostalCode,
-      terminalCountry: selectedTerminalCountry || buyerCountry,
+      terminalId: selectedTerminal.id,
+      terminalName: selectedTerminal.name,
+      terminalAddress: selectedTerminal.address,
+      terminalCity: selectedTerminal.city,
+      terminalPostalCode: selectedTerminal.postalCode ?? undefined,
+      terminalCountry: selectedTerminal.countryCode || buyerCountry,
       buyerPhone: phone.trim(),
       turnstileToken,
     };
@@ -231,18 +233,12 @@ export function CartCheckoutForm({
         </div>
 
         {/* Terminal selection */}
-        <TerminalPicker
+        <TerminalSelectorWithMap
           terminals={terminals}
-          selectedId={selectedTerminalId}
-          onSelect={(t) => {
-            setSelectedTerminalId(t.id);
-            setSelectedTerminalName(t.name);
-            setSelectedTerminalAddress(t.address);
-            setSelectedTerminalCity(t.city);
-            setSelectedTerminalPostalCode(t.postalCode ?? '');
-            setSelectedTerminalCountry(t.countryCode);
-          }}
-          fetchFailed={terminalsFetchFailed}
+          defaultCountry={buyerCountry as TerminalCountry}
+          selectedTerminal={selectedTerminal}
+          onSelect={setSelectedTerminal}
+          error={terminalsFetchFailed ? 'Failed to load terminals. Please refresh the page.' : undefined}
         />
 
         <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
