@@ -100,6 +100,23 @@ export function CartCheckoutForm({
 
     if (!selectedTerminal) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function handlePaymentError(data: any) {
+      if (Array.isArray(data.unavailable) && data.unavailable.length > 0) {
+        const ids = new Set<string>(data.unavailable);
+        setUnavailableIds(ids);
+        const names = sellerItems
+          .filter((i) => ids.has(i.listingId))
+          .map((i) => i.gameTitle);
+        const nameList = names.length > 0 ? names.join(', ') : 'some items';
+        setError(`Some items are no longer available: ${nameList}. Please return to your cart to remove them.`);
+      } else {
+        setError(sanitizeApiError(data.error));
+      }
+      setLoading(false);
+      turnstileRef.current?.reset();
+    }
+
     const commonBody = {
       listingIds: availableItems.map((i) => i.listingId),
       terminalId: selectedTerminal.id,
@@ -123,19 +140,7 @@ export function CartCheckoutForm({
         const data = await response.json();
 
         if (!response.ok) {
-          if (Array.isArray(data.unavailable) && data.unavailable.length > 0) {
-            const ids = new Set<string>(data.unavailable);
-            setUnavailableIds(ids);
-            const names = sellerItems
-              .filter((i) => ids.has(i.listingId))
-              .map((i) => i.gameTitle);
-            const nameList = names.length > 0 ? names.join(', ') : 'some items';
-            setError(`Some items are no longer available: ${nameList}. Please return to your cart to remove them.`);
-          } else {
-            setError(sanitizeApiError(data.error));
-          }
-          setLoading(false);
-          turnstileRef.current?.reset();
+          handlePaymentError(data);
           return;
         }
 
@@ -151,19 +156,7 @@ export function CartCheckoutForm({
         const data = await response.json();
 
         if (!response.ok) {
-          if (Array.isArray(data.unavailable) && data.unavailable.length > 0) {
-            const ids = new Set<string>(data.unavailable);
-            setUnavailableIds(ids);
-            const names = sellerItems
-              .filter((i) => ids.has(i.listingId))
-              .map((i) => i.gameTitle);
-            const nameList = names.length > 0 ? names.join(', ') : 'some items';
-            setError(`Some items are no longer available: ${nameList}. Please return to your cart to remove them.`);
-          } else {
-            setError(sanitizeApiError(data.error));
-          }
-          setLoading(false);
-          turnstileRef.current?.reset();
+          handlePaymentError(data);
           return;
         }
 

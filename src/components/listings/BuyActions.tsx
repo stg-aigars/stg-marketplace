@@ -1,49 +1,20 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { ShoppingCart } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 import { AddToCartButton } from '@/components/listings/AddToCartButton';
-import { useCart } from '@/contexts/CartContext';
-import type { ListingCondition } from '@/lib/listings/types';
+import { useBuyNow, type BuyNowListing } from '@/lib/hooks/useBuyNow';
 
 interface BuyActionsProps {
-  listing: {
-    id: string;
-    gameTitle: string;
-    gameThumbnail: string | null;
-    priceCents: number;
-    sellerCountry: string;
-    sellerId: string;
-    condition: ListingCondition;
-    expansionCount?: number;
-  };
+  listing: BuyNowListing;
 }
 
 export function BuyActions({ listing }: BuyActionsProps) {
-  const router = useRouter();
-  const { addItem, isInCart } = useCart();
-
-  function handleBuyNow() {
-    if (!isInCart(listing.id)) {
-      addItem({
-        listingId: listing.id,
-        gameTitle: listing.gameTitle,
-        gameThumbnail: listing.gameThumbnail,
-        priceCents: listing.priceCents,
-        sellerCountry: listing.sellerCountry,
-        sellerId: listing.sellerId,
-        condition: listing.condition,
-        addedAt: new Date().toISOString(),
-        ...(listing.expansionCount ? { expansionCount: listing.expansionCount } : {}),
-      });
-    }
-    router.push('/cart');
-  }
+  const { buyNow } = useBuyNow(listing);
 
   return (
     <div className="flex flex-wrap gap-3">
-      <Button onClick={handleBuyNow}>
+      <Button onClick={buyNow}>
         <ShoppingCart size={18} weight="bold" className="mr-1.5" />
         Buy now
       </Button>
