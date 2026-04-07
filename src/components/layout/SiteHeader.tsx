@@ -102,11 +102,16 @@ function SiteHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
-          <Link
-            href="/"
-            className="text-semantic-text-heading font-bold text-lg font-display tracking-tight whitespace-nowrap"
-          >
-            Second Turn
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
+            <span className="flex flex-col leading-tight">
+              <span className="text-[10px] sm:text-[11px] text-semantic-text-muted tracking-wide">
+                every game deserves a
+              </span>
+              <span className="text-sm sm:text-base font-display font-bold text-semantic-text-heading uppercase tracking-widest">
+                Second Turn
+              </span>
+            </span>
           </Link>
 
           {/* Desktop nav */}
