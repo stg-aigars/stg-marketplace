@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -656,13 +655,11 @@ function GameDetailsCard({ games, bggGameId, listingGameName, playerCountDisplay
           rel="noopener noreferrer"
           className="inline-block opacity-60 hover:opacity-100 transition-opacity duration-250 ease-out-custom"
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/images/powered-by-bgg.svg"
             alt="Powered by BoardGameGeek"
-            width={120}
-            height={28}
             className="h-7 w-auto"
-            unoptimized
           />
         </a>
       </div>
