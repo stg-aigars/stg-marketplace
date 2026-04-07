@@ -34,7 +34,6 @@
     "shipping": "Shipping",
     "seller": "Seller",
     "buyNow": "Buy now",
-    "preLovedGames": "Pre-loved games",
-    "expansionCount": "+{count, plural, one {# expansion} other {# expansions}}"
+    "preLovedGames": "Pre-loved games"
   }
 }

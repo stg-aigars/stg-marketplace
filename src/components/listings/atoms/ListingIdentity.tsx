@@ -1,9 +1,8 @@
-'use client';
-
 import Link from 'next/link';
 import { PuzzlePiece } from '@phosphor-icons/react/ssr';
-import { useTranslations } from 'next-intl';
 import { GameThumb } from './GameThumb';
+import { GameTitle } from './GameTitle';
+import { formatExpansionCount } from '@/lib/listings/types';
 
 interface ListingIdentityProps {
   listingId: string;
@@ -12,7 +11,7 @@ interface ListingIdentityProps {
   expansionCount?: number;
   /** Typically `<Price cents={…} size="sm" />`, but callers own the rendering */
   price?: React.ReactNode;
-  /** Controls GameThumb size only. sm = 48px, md = 56px. Title/text sizes are fixed. */
+  /** Controls GameThumb size only. sm → 48px, md → 56px. Title/text sizes are fixed. */
   size?: 'sm' | 'md';
   /** Trailing slot for context-specific actions (remove button, pay button, etc.) */
   action?: React.ReactNode;
@@ -37,19 +36,20 @@ function ListingIdentity({
   disabled,
   className = '',
 }: ListingIdentityProps) {
-  const t = useTranslations('listing');
-
   const content = (
     <>
       <GameThumb src={image} alt={title} size={thumbSize[size]} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold font-display tracking-tight text-semantic-text-heading truncate group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
-          {title}
-        </p>
+        <GameTitle
+          name={title}
+          size="md"
+          serif
+          className="group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+        />
         {expansionCount != null && expansionCount > 0 && (
           <p className="flex items-center gap-1 text-xs text-semantic-text-muted mt-0.5">
             <PuzzlePiece size={12} className="shrink-0" />
-            {t('expansionCount', { count: expansionCount })}
+            {formatExpansionCount(expansionCount)}
           </p>
         )}
       </div>
