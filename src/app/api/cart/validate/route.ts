@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     listingIds = body.listingIds;
     if (!Array.isArray(listingIds) || listingIds.length === 0) {
-      return NextResponse.json({ available: [], unavailable: [] });
+      return NextResponse.json({ available: [], unavailable: [], sellers: {} });
     }
     if (listingIds.length > 20) {
       return NextResponse.json({ error: 'Too many items' }, { status: 400 });

@@ -102,15 +102,16 @@ export default function CartPage() {
     for (const item of availableItems) {
       if (seenSellers.has(item.sellerId)) continue;
       seenSellers.add(item.sellerId);
+      const sellerCountry = sellerProfiles[item.sellerId]?.country ?? item.sellerCountry;
       const cost = getShippingPriceCents(
-        item.sellerCountry as TerminalCountry,
+        sellerCountry as TerminalCountry,
         buyerCountry as TerminalCountry,
       );
       if (cost === null) return null;
       total += cost;
     }
     return total;
-  }, [availableItems, buyerCountry]);
+  }, [availableItems, buyerCountry, sellerProfiles]);
 
   const grandTotal =
     shippingTotal !== null ? itemsTotal + shippingTotal : null;
