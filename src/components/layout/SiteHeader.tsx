@@ -104,7 +104,7 @@ function SiteHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="flex flex-col leading-none gap-0">
+            <span className="flex flex-col leading-none gap-0 translate-y-px">
               <span className="text-[10px] sm:text-[11px] font-bold tracking-wide">
                 <span className="text-semantic-brand">Every game deserves a</span>
               </span>
