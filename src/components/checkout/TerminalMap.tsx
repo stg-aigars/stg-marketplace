@@ -149,7 +149,7 @@ export function TerminalMap({
           >
             <MarkerContent className="z-10">
               <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-semantic-success border-3 border-white shadow-lg flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-semantic-success border-2 border-white shadow-lg flex items-center justify-center">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-semantic-success" />

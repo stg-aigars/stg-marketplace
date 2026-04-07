@@ -54,10 +54,8 @@ export function TerminalSelectorWithMap({
   const [showTerminalList, setShowTerminalList] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Derive loading from empty terminals
   const loading = allTerminals.length === 0;
 
-  // Derive per-country terminals for map display
   const terminals = useMemo(
     () => allTerminals.filter((t) => t.countryCode === country),
     [allTerminals, country]
@@ -82,7 +80,6 @@ export function TerminalSelectorWithMap({
     setListSearchQuery('');
   }, [country, onSelect]);
 
-  // Map search: search across ALL countries (for map overlay dropdown)
   const searchResults = useMemo(() => {
     if (!mapSearchQuery.trim()) return [];
 
@@ -95,7 +92,6 @@ export function TerminalSelectorWithMap({
     );
   }, [allTerminals, mapSearchQuery]);
 
-  // List search: filter across ALL countries (for full list view)
   const filteredTerminals = useMemo(() => {
     if (!listSearchQuery.trim()) return allTerminals;
 
@@ -108,7 +104,6 @@ export function TerminalSelectorWithMap({
     );
   }, [allTerminals, listSearchQuery]);
 
-  // Group terminals by city (for full list view) — flat across all countries
   const terminalsByCity = useMemo(() => {
     const grouped: Record<string, TerminalOption[]> = {};
     filteredTerminals.forEach((terminal) => {
@@ -120,35 +115,30 @@ export function TerminalSelectorWithMap({
     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
   }, [filteredTerminals]);
 
-  // Search results dropdown (for map overlay search)
-  const SearchDropdown = () => {
-    if (!mapSearchQuery.trim() || searchResults.length === 0) return null;
-    return (
-      <div className="absolute left-0 right-0 mt-1 bg-white/95 backdrop-blur-sm border border-semantic-border-default rounded-lg shadow-lg max-h-60 overflow-y-auto z-30">
-        {searchResults.slice(0, 8).map((terminal) => (
-          <button
-            key={terminal.id}
-            type="button"
-            onClick={() => handleTerminalSelect(terminal)}
-            className={`w-full text-left px-3 py-2.5 hover:bg-semantic-brand/10 transition-colors duration-250 ease-out-custom border-b border-semantic-border-default last:border-b-0 ${
-              selectedTerminal?.id === terminal.id ? 'bg-semantic-brand/5' : ''
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <span className={`${getCountryFlag(terminal.countryCode)} text-sm flex-shrink-0`} aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-semantic-text-heading">{terminal.name}</p>
-                <p className="text-xs text-semantic-text-secondary">{terminal.address}, {terminal.city}</p>
-              </div>
+  const searchDropdownContent = mapSearchQuery.trim() && searchResults.length > 0 ? (
+    <div className="absolute left-0 right-0 mt-1 bg-white/95 backdrop-blur-sm border border-semantic-border-default rounded-lg shadow-lg max-h-60 overflow-y-auto z-30">
+      {searchResults.slice(0, 8).map((terminal) => (
+        <button
+          key={terminal.id}
+          type="button"
+          onClick={() => handleTerminalSelect(terminal)}
+          className={`w-full text-left px-3 py-2.5 hover:bg-semantic-brand/10 transition-colors duration-250 ease-out-custom border-b border-semantic-border-default last:border-b-0 ${
+            selectedTerminal?.id === terminal.id ? 'bg-semantic-brand/5' : ''
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className={`${getCountryFlag(terminal.countryCode)} text-sm flex-shrink-0`} aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-semantic-text-heading">{terminal.name}</p>
+              <p className="text-xs text-semantic-text-secondary">{terminal.address}, {terminal.city}</p>
             </div>
-          </button>
-        ))}
-      </div>
-    );
-  };
+          </div>
+        </button>
+      ))}
+    </div>
+  ) : null;
 
-  // Full terminal list component (all countries, grouped by city)
-  const TerminalList = ({ maxHeight = '350px' }: { maxHeight?: string }) => (
+  function renderTerminalList(maxHeight = '350px') { return (
     <div className="space-y-2">
       {loading ? (
         <div className="flex items-center justify-center py-8" role="status">
@@ -208,7 +198,7 @@ export function TerminalSelectorWithMap({
         </div>
       )}
     </div>
-  );
+  ); }
 
   return (
     <div className="space-y-4">
@@ -275,7 +265,7 @@ export function TerminalSelectorWithMap({
                 </button>
               )}
             </div>
-            <SearchDropdown />
+            {searchDropdownContent}
           </div>
         </div>
 
@@ -312,7 +302,7 @@ export function TerminalSelectorWithMap({
             />
           </div>
         </div>
-        <TerminalList />
+        {renderTerminalList()}
       </div>
 
       {/* Desktop: Map-First View */}
@@ -349,7 +339,7 @@ export function TerminalSelectorWithMap({
                 </button>
               )}
             </div>
-            <SearchDropdown />
+            {searchDropdownContent}
           </div>
         </div>
 
@@ -416,7 +406,7 @@ export function TerminalSelectorWithMap({
                 />
               </div>
             </div>
-            <TerminalList maxHeight="350px" />
+            {renderTerminalList('350px')}
           </div>
         )}
       </div>
