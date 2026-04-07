@@ -24,15 +24,18 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
+  // Get current user for auction winner check (optional — unauthenticated callers skip auction validation)
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, status, seller_id')
+    .select('id, status, seller_id, listing_type, highest_bidder_id')
     .in('id', listingIds);
 
-  const statusMap = new Map<string, string>();
+  const listingMap = new Map<string, { status: string; seller_id: string; listing_type: string; highest_bidder_id: string | null }>();
   const sellerIds = new Set<string>();
   for (const l of listings ?? []) {
-    statusMap.set(l.id, l.status);
+    listingMap.set(l.id, l);
     sellerIds.add(l.seller_id);
   }
 
@@ -40,12 +43,20 @@ export async function POST(request: Request) {
   const unavailable: UnavailableItem[] = [];
 
   for (const id of listingIds) {
-    const status = statusMap.get(id);
-    if (status === 'active') {
+    const listing = listingMap.get(id);
+    if (!listing) {
+      unavailable.push({ id, reason: 'cancelled' });
+      continue;
+    }
+
+    if (listing.status === 'active') {
       available.push(id);
-    } else if (status === 'reserved') {
+    } else if (listing.status === 'auction_ended' && listing.listing_type === 'auction' && user?.id === listing.highest_bidder_id) {
+      // Auction winner can check out their won auction
+      available.push(id);
+    } else if (listing.status === 'reserved') {
       unavailable.push({ id, reason: 'reserved' });
-    } else if (status === 'sold') {
+    } else if (listing.status === 'sold') {
       unavailable.push({ id, reason: 'sold' });
     } else {
       unavailable.push({ id, reason: 'cancelled' });

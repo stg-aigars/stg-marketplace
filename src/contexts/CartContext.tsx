@@ -27,6 +27,8 @@ function loadCart(): CartItem[] {
       ...item,
       sellerName: item.sellerName ?? 'Seller',
       sellerAvatarUrl: item.sellerAvatarUrl ?? null,
+      isAuction: item.isAuction ?? false,
+      auctionDeadlineAt: item.auctionDeadlineAt ?? null,
     }));
   } catch {
     return [];
@@ -65,6 +67,8 @@ function CartProvider({ children }: { children: React.ReactNode }) {
             ...item,
             sellerName: item.sellerName ?? 'Seller',
             sellerAvatarUrl: item.sellerAvatarUrl ?? null,
+            isAuction: item.isAuction ?? false,
+            auctionDeadlineAt: item.auctionDeadlineAt ?? null,
           })) : []);
         } catch {
           setItems([]);
