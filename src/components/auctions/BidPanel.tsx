@@ -49,6 +49,8 @@ export function BidPanel({
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
+  const msRemaining = new Date(state.auctionEndAt).getTime() - Date.now();
+  const isWithinOneHour = !isEnded && msRemaining > 0 && msRemaining <= 3600000;
 
   const [inc1, inc2] = getQuickBidIncrements(minBid);
   const quickBids = [
@@ -57,31 +59,32 @@ export function BidPanel({
     { cents: minBid + inc2 },
   ];
 
+  async function pollState() {
+    try {
+      const res = await fetch(`/api/auctions/${listingId}/state?bids=1`);
+      if (res.ok) {
+        const fresh = await res.json();
+        const cur = stateRef.current;
+        if (fresh.bidCount !== cur.bidCount || fresh.status !== cur.status || fresh.auctionEndAt !== cur.auctionEndAt) {
+          setState({
+            currentBidCents: fresh.currentBidCents,
+            startingPriceCents: fresh.startingPriceCents,
+            bidCount: fresh.bidCount,
+            highestBidderId: fresh.highestBidderId,
+            auctionEndAt: fresh.auctionEndAt,
+            status: fresh.status,
+          });
+          if (fresh.bids) setBids(fresh.bids);
+          // Clear stale success message when state changes (e.g. outbid)
+          setSuccess(null);
+        }
+      }
+    } catch { /* silent — will retry next interval */ }
+  }
+
   useEffect(() => {
     if (isEnded) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/auctions/${listingId}/state?bids=1`);
-        if (res.ok) {
-          const fresh = await res.json();
-          const cur = stateRef.current;
-          // Skip no-op updates to avoid unnecessary re-renders
-          if (fresh.bidCount !== cur.bidCount || fresh.status !== cur.status || fresh.auctionEndAt !== cur.auctionEndAt) {
-            setState({
-              currentBidCents: fresh.currentBidCents,
-              startingPriceCents: fresh.startingPriceCents,
-              bidCount: fresh.bidCount,
-              highestBidderId: fresh.highestBidderId,
-              auctionEndAt: fresh.auctionEndAt,
-              status: fresh.status,
-            });
-            if (fresh.bids) setBids(fresh.bids);
-          }
-        }
-      } catch { /* silent — will retry next interval */ }
-    }, 10000);
-
+    const interval = setInterval(pollState, 10000);
     return () => clearInterval(interval);
   }, [listingId, isEnded]);
 
@@ -120,6 +123,8 @@ export function BidPanel({
       }));
       turnstileRef.current?.reset();
       router.refresh();
+      // Fetch fresh bid history immediately so it appears without waiting for next poll
+      void pollState();
     }
   }
 
@@ -150,6 +155,12 @@ export function BidPanel({
         <p className="text-sm text-semantic-text-muted mb-0.5">Time remaining</p>
         <AuctionCountdown endAt={state.auctionEndAt} size="lg" />
       </div>
+
+      {isWithinOneHour && (
+        <Alert variant="info">
+          Bids in the last 5 minutes extend the auction by 5 minutes.
+        </Alert>
+      )}
 
       <div>
         <p className="text-sm text-semantic-text-muted">

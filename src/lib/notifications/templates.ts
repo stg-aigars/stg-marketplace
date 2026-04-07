@@ -191,6 +191,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Someone placed a higher bid on ${ctx.gameName ?? 'an auction you bid on'}`,
     link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : null,
   },
+  'auction.ending_soon': {
+    title: () => 'Auction ending soon',
+    body: (ctx) => `${ctx.gameName ?? 'An auction you bid on'} ends in about 30 minutes`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : null,
+  },
   'auction.lost': {
     title: () => 'Auction ended',
     body: (ctx) => `The auction for ${ctx.gameName ?? 'a game'} has ended — your bid was not the winning bid`,
