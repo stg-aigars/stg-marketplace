@@ -8,7 +8,7 @@ import { Card, CardBody, Badge, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
-import { PayAuctionButton } from './PayAuctionButton';
+import { PayAuctionButton } from '@/components/auctions/PayAuctionButton';
 import type { ListingCondition } from '@/lib/listings/types';
 
 export const metadata: Metadata = { title: 'My bids' };

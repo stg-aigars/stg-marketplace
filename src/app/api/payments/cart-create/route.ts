@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   // Fetch all listings
   const { data: listings } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, reserved_by')
+    .select('id, seller_id, price_cents, status, country, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
     .in('id', listingIds);
 
   if (!listings || listings.length !== listingIds.length) {
@@ -57,15 +57,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'All items must be from the same seller' }, { status: 400 });
   }
 
+  // Partition into regular and auction items
+  const regularIds: string[] = [];
+  const auctionIds: string[] = [];
+
   // Validate all listings
   for (const listing of listings) {
     if (listing.seller_id === user.id) {
       return NextResponse.json({ error: 'You cannot buy your own listing' }, { status: 400 });
     }
-    const canCheckout = listing.status === 'active' ||
-      (listing.status === 'reserved' && listing.reserved_by === user.id);
-    if (!canCheckout) {
-      return NextResponse.json({ error: `"${listing.id}" is no longer available` }, { status: 400 });
+
+    if (listing.listing_type === 'auction') {
+      // Auction validation: must be ended and user must be the winner
+      if (listing.status !== 'auction_ended' || listing.highest_bidder_id !== user.id) {
+        return NextResponse.json({ error: `"${listing.id}" is no longer available` }, { status: 400 });
+      }
+      // Override client price — use winning bid from DB
+      listing.price_cents = listing.current_bid_cents ?? listing.price_cents;
+      auctionIds.push(listing.id);
+    } else {
+      // Regular validation: must be active or reserved by this buyer
+      const canCheckout = listing.status === 'active' ||
+        (listing.status === 'reserved' && listing.reserved_by === user.id);
+      if (!canCheckout) {
+        return NextResponse.json({ error: `"${listing.id}" is no longer available` }, { status: 400 });
+      }
+      regularIds.push(listing.id);
     }
   }
 
@@ -171,23 +188,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to start checkout. Please try again.' }, { status: 500 });
   }
 
-  // Reserve all listings atomically via RPC
-  const { data: failedIds, error: rpcError } = await serviceClient
-    .rpc('reserve_listings_atomic', {
-      p_listing_ids: listingIds,
-      p_buyer_id: user.id,
-    });
+  // Reserve regular items atomically (auction items are already locked by auction_ended status)
+  if (regularIds.length > 0) {
+    const { data: failedIds, error: rpcError } = await serviceClient
+      .rpc('reserve_listings_atomic', {
+        p_listing_ids: regularIds,
+        p_buyer_id: user.id,
+      });
 
-  if (rpcError) {
-    console.error('[Cart] Reservation RPC failed:', rpcError);
-    await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
-    return NextResponse.json({ error: 'Failed to reserve items. Please try again.' }, { status: 500 });
-  }
+    if (rpcError) {
+      console.error('[Cart] Reservation RPC failed:', rpcError);
+      await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
+      return NextResponse.json({ error: 'Failed to reserve items. Please try again.' }, { status: 500 });
+    }
 
-  if (failedIds && failedIds.length > 0) {
-    // Some items couldn't be reserved — clean up and report
-    await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
-    return NextResponse.json({ error: 'Some items are no longer available', unavailable: failedIds }, { status: 400 });
+    if (failedIds && failedIds.length > 0) {
+      await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
+      return NextResponse.json({ error: 'Some items are no longer available', unavailable: failedIds }, { status: 400 });
+    }
   }
 
   // Create EveryPay payment
@@ -232,11 +250,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[Cart] Failed to create payment:', error);
 
-    // Unreserve all listings and expire the group
-    await serviceClient.rpc('unreserve_listings', {
-      p_listing_ids: listingIds,
-      p_buyer_id: user.id,
-    });
+    // Unreserve regular listings (auction items were never reserved)
+    if (regularIds.length > 0) {
+      await serviceClient.rpc('unreserve_listings', {
+        p_listing_ids: regularIds,
+        p_buyer_id: user.id,
+      });
+    }
     await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
 
     return NextResponse.json({ error: 'Failed to initiate payment. Please try again.' }, { status: 500 });

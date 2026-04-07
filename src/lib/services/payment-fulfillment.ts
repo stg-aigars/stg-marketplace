@@ -229,7 +229,7 @@ export async function fulfillCartPayment(
   // Fetch all listings in the group
   const { data: listings } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
+    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
     .in('id', group.listing_ids);
 
   // Fetch expansion data for email enrichment
@@ -252,12 +252,20 @@ export async function fulfillCartPayment(
   }
 
   // Split into available and unavailable
-  const available = listings.filter(
-    (l) => l.status === 'reserved' && l.reserved_by === group.buyer_id
-  );
-  const unavailable = listings.filter(
-    (l) => !(l.status === 'reserved' && l.reserved_by === group.buyer_id)
-  );
+  // Regular items must be reserved by this buyer; auction items must still be auction_ended
+  const isAvailable = (l: typeof listings[0]) =>
+    (l.status === 'reserved' && l.reserved_by === group.buyer_id) ||
+    (l.listing_type === 'auction' && l.status === 'auction_ended' && l.highest_bidder_id === group.buyer_id);
+
+  const available = listings.filter(isAvailable);
+  const unavailable = listings.filter((l) => !isAvailable(l));
+
+  // Use winning bid price for auction items
+  for (const listing of available) {
+    if (listing.listing_type === 'auction' && listing.current_bid_cents) {
+      listing.price_cents = listing.current_bid_cents;
+    }
+  }
 
   if (available.length === 0) {
     await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');

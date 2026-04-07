@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { Gavel, Timer } from '@phosphor-icons/react/ssr';
 import { Button, Tabs, Card, CardBody } from '@/components/ui';
 import { ListingIdentity } from '@/components/listings/atoms';
+import { PayAuctionButton } from '@/components/auctions/PayAuctionButton';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
-import { usePayAuction } from '@/lib/hooks/usePayAuction';
 import type { ListingCondition } from '@/lib/listings/types';
 import type { OrderWithDetails } from '@/lib/orders/types';
 
@@ -31,22 +31,6 @@ interface OrderTabsProps {
   sales: OrderWithDetails[];
   wonAuctions?: WonAuction[];
   defaultTab?: 'purchases' | 'sales';
-}
-
-function PayAuctionButton({ auction }: { auction: WonAuction }) {
-  const { payNow } = usePayAuction({
-    id: auction.id,
-    gameTitle: auction.game_name,
-    gameThumbnail: auction.thumbnail,
-    currentBidCents: auction.current_bid_cents,
-    paymentDeadlineAt: auction.payment_deadline_at,
-    sellerCountry: auction.seller_country,
-    sellerId: auction.seller_id,
-    sellerName: auction.seller_name,
-    sellerAvatarUrl: auction.seller_avatar_url,
-    condition: auction.condition as ListingCondition,
-  });
-  return <Button size="sm" onClick={payNow}>Pay now</Button>;
 }
 
 export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'purchases' }: OrderTabsProps) {
@@ -88,7 +72,20 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
                         <span>Won for {formatCentsToCurrency(auction.current_bid_cents)}</span>
                       </div>
                     }
-                    action={<PayAuctionButton auction={auction} />}
+                    action={
+                      <PayAuctionButton listing={{
+                        id: auction.id,
+                        gameTitle: auction.game_name,
+                        gameThumbnail: auction.thumbnail,
+                        currentBidCents: auction.current_bid_cents,
+                        paymentDeadlineAt: auction.payment_deadline_at,
+                        sellerCountry: auction.seller_country,
+                        sellerId: auction.seller_id,
+                        sellerName: auction.seller_name,
+                        sellerAvatarUrl: auction.seller_avatar_url,
+                        condition: auction.condition as ListingCondition,
+                      }} />
+                    }
                   />
                   {auction.payment_deadline_at && (
                     <div className="flex items-center gap-1.5 mt-1 ml-[68px] text-xs text-aurora-orange">
