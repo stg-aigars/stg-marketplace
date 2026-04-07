@@ -186,6 +186,15 @@ export function BidPanel({
         <Alert variant="warning">You have been outbid</Alert>
       )}
 
+      {isEnded && isHighestBidder && state.status === 'auction_ended' && (
+        <div className="space-y-3">
+          <Alert variant="success">You won this auction</Alert>
+          <Button asChild>
+            <Link href={`/checkout/auction/${listingId}`}>Pay now</Link>
+          </Button>
+        </div>
+      )}
+
       {!isOwner && !isEnded && currentUserId && !isHighestBidder && (
         <div className="space-y-3 pt-2 border-t border-semantic-border-subtle">
           {error && <Alert variant="error">{error}</Alert>}
