@@ -58,6 +58,7 @@ interface ListingDetailRow {
   current_bid_cents: number | null;
   bid_count: number;
   highest_bidder_id: string | null;
+  payment_deadline_at: string | null;
   created_at: string;
   games: {
     name: string;
@@ -391,7 +392,7 @@ export default async function ListingDetailPage(
             listing={{
               id: listing.id,
               gameTitle: listing.game_name,
-              gameThumbnail: listing.games?.thumbnail ?? null,
+              gameThumbnail: listing.version_thumbnail ?? listing.games?.thumbnail ?? null,
               priceCents: listing.price_cents,
               sellerCountry: listing.country,
               sellerId: listing.seller_id,
@@ -435,6 +436,18 @@ export default async function ListingDetailPage(
                   bids={bidHistory}
                   currentUserId={user?.id ?? null}
                   sellerId={listing.seller_id}
+                  payAuctionListing={{
+                    id: listing.id,
+                    gameTitle: listing.game_name,
+                    gameThumbnail: listing.version_thumbnail ?? listing.games?.thumbnail ?? null,
+                    currentBidCents: listing.current_bid_cents ?? 0,
+                    paymentDeadlineAt: listing.payment_deadline_at ?? null,
+                    sellerCountry: listing.country,
+                    sellerId: listing.seller_id,
+                    sellerName: listing.user_profiles?.full_name ?? 'Seller',
+                    sellerAvatarUrl: listing.user_profiles?.avatar_url ?? null,
+                    condition: listing.condition,
+                  }}
                 />
                 {isOwner && (
                   <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
@@ -460,7 +473,7 @@ export default async function ListingDetailPage(
                 listing={{
                   id: listing.id,
                   gameTitle: listing.game_name,
-                  gameThumbnail: listing.games?.thumbnail ?? null,
+                  gameThumbnail: listing.version_thumbnail ?? listing.games?.thumbnail ?? null,
                   priceCents: listing.price_cents,
                   sellerCountry: listing.country,
                   sellerId: listing.seller_id,

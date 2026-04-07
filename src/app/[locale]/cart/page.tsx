@@ -241,7 +241,7 @@ export default function CartPage() {
                         </Button>
                       ) : (
                         <Button variant="primary" size="sm" asChild>
-                          <Link href={`/cart/checkout?seller=${group.sellerId}`}>
+                          <Link href={`/checkout?seller=${group.sellerId}`}>
                             Checkout
                           </Link>
                         </Button>

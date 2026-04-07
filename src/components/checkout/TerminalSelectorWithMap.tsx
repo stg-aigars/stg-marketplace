@@ -52,6 +52,7 @@ export function TerminalSelectorWithMap({
   const [listSearchQuery, setListSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [showTerminalList, setShowTerminalList] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const loading = allTerminals.length === 0;
@@ -76,6 +77,7 @@ export function TerminalSelectorWithMap({
     }
     onSelect(terminal);
     setShowTerminalList(false);
+    setCollapsed(true);
     setMapSearchQuery('');
     setListSearchQuery('');
   }, [country, onSelect]);
@@ -93,16 +95,16 @@ export function TerminalSelectorWithMap({
   }, [allTerminals, mapSearchQuery]);
 
   const filteredTerminals = useMemo(() => {
-    if (!listSearchQuery.trim()) return allTerminals;
+    if (!listSearchQuery.trim()) return terminals;
 
     const query = listSearchQuery.toLowerCase();
-    return allTerminals.filter(
+    return terminals.filter(
       (t) =>
         t.name.toLowerCase().includes(query) ||
         t.address.toLowerCase().includes(query) ||
         t.city.toLowerCase().includes(query)
     );
-  }, [allTerminals, listSearchQuery]);
+  }, [terminals, listSearchQuery]);
 
   const terminalsByCity = useMemo(() => {
     const grouped: Record<string, TerminalOption[]> = {};
@@ -199,6 +201,45 @@ export function TerminalSelectorWithMap({
       )}
     </div>
   ); }
+
+  // Collapsed state: show selected terminal with change button
+  if (collapsed && selectedTerminal) {
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-lg bg-semantic-success/10 border border-semantic-success/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-semantic-success text-sm">
+              <Check className="w-4 h-4" />
+              <span className="font-medium">Selected terminal</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCollapsed(false)}
+              className="text-xs text-semantic-brand hover:underline"
+            >
+              Change
+            </button>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`${getCountryFlag(selectedTerminal.countryCode)} text-sm flex-shrink-0`} aria-hidden="true" />
+            <div>
+              <p className="text-sm text-semantic-text-heading">
+                {selectedTerminal.name}
+              </p>
+              <p className="text-xs text-semantic-text-secondary">
+                {selectedTerminal.address}, {selectedTerminal.city}
+              </p>
+            </div>
+          </div>
+        </div>
+        {error && (
+          <p className="text-sm text-semantic-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

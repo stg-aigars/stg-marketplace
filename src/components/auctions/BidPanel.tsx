@@ -12,6 +12,7 @@ import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { placeBid } from '@/lib/auctions/bid-actions';
 import { getMinimumBid, getQuickBidIncrements } from '@/lib/auctions/types';
 import type { AuctionState, BidWithBidder } from '@/lib/auctions/types';
+import { usePayAuction, type PayAuctionListing } from '@/lib/hooks/usePayAuction';
 import { AuctionCountdown } from './AuctionCountdown';
 
 interface BidPanelProps {
@@ -20,6 +21,7 @@ interface BidPanelProps {
   bids: BidWithBidder[];
   currentUserId: string | null;
   sellerId: string;
+  payAuctionListing?: PayAuctionListing;
 }
 
 export function BidPanel({
@@ -28,7 +30,11 @@ export function BidPanel({
   bids: initialBids,
   currentUserId,
   sellerId,
+  payAuctionListing,
 }: BidPanelProps) {
+  // Hook must be called unconditionally — use a dummy when not applicable
+  const dummyListing: PayAuctionListing = { id: '', gameTitle: '', gameThumbnail: null, currentBidCents: 0, paymentDeadlineAt: null, sellerCountry: '', sellerId: '', sellerName: '', condition: 'good' };
+  const { payNow } = usePayAuction(payAuctionListing ?? dummyListing);
   const [state, setState] = useState(initialState);
   const [bids, setBids] = useState(initialBids);
   const [bidEur, setBidEur] = useState('');
@@ -189,9 +195,7 @@ export function BidPanel({
       {isEnded && isHighestBidder && state.status === 'auction_ended' && (
         <div className="space-y-3">
           <Alert variant="success">You won this auction</Alert>
-          <Button asChild>
-            <Link href={`/checkout/${listingId}`}>Pay now</Link>
-          </Button>
+          <Button onClick={payNow}>Pay now</Button>
         </div>
       )}
 

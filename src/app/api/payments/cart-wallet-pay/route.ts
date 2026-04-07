@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   // Fetch all listings
   const { data: listings } = await serviceClient
     .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by')
+    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id, current_bid_cents')
     .in('id', listingIds);
 
   if (!listings || listings.length !== listingIds.length) {
@@ -57,14 +57,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'All items must be from the same seller' }, { status: 400 });
   }
 
+  // Partition into regular and auction items
+  const regularIds: string[] = [];
+
   for (const listing of listings) {
     if (listing.seller_id === user.id) {
       return NextResponse.json({ error: 'You cannot buy your own listing' }, { status: 400 });
     }
-    const canCheckout = listing.status === 'active' ||
-      (listing.status === 'reserved' && listing.reserved_by === user.id);
-    if (!canCheckout) {
-      return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
+
+    if (listing.listing_type === 'auction') {
+      // Auction validation: must be ended and user must be the winner
+      if (listing.status !== 'auction_ended' || listing.highest_bidder_id !== user.id) {
+        return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
+      }
+      // Override client price — use winning bid from DB
+      listing.price_cents = listing.current_bid_cents ?? listing.price_cents;
+    } else {
+      const canCheckout = listing.status === 'active' ||
+        (listing.status === 'reserved' && listing.reserved_by === user.id);
+      if (!canCheckout) {
+        return NextResponse.json({ error: 'Some items are no longer available' }, { status: 400 });
+      }
+      regularIds.push(listing.id);
     }
   }
 
@@ -112,20 +126,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Insufficient wallet balance' }, { status: 400 });
   }
 
-  // Reserve atomically
-  const { data: failedIds, error: rpcError } = await serviceClient
-    .rpc('reserve_listings_atomic', {
-      p_listing_ids: listingIds,
-      p_buyer_id: user.id,
-    });
+  // Reserve regular items atomically (auction items are already locked by auction_ended status)
+  if (regularIds.length > 0) {
+    const { data: failedIds, error: rpcError } = await serviceClient
+      .rpc('reserve_listings_atomic', {
+        p_listing_ids: regularIds,
+        p_buyer_id: user.id,
+      });
 
-  if (rpcError) {
-    console.error('[Cart Wallet] Reservation RPC failed:', rpcError);
-    return NextResponse.json({ error: 'Failed to reserve items. Please try again.' }, { status: 500 });
-  }
+    if (rpcError) {
+      console.error('[Cart Wallet] Reservation RPC failed:', rpcError);
+      return NextResponse.json({ error: 'Failed to reserve items. Please try again.' }, { status: 500 });
+    }
 
-  if (failedIds && failedIds.length > 0) {
-    return NextResponse.json({ error: 'Some items are no longer available', unavailable: failedIds }, { status: 400 });
+    if (failedIds && failedIds.length > 0) {
+      return NextResponse.json({ error: 'Some items are no longer available', unavailable: failedIds }, { status: 400 });
+    }
   }
 
   // Create a cart checkout group for record-keeping
@@ -157,10 +173,12 @@ export async function POST(request: Request) {
     createdOrder = { id: order.id, orderNumber: order.order_number };
   } catch (error) {
     console.error('[Cart Wallet] Order creation failed:', error);
-    await serviceClient.rpc('unreserve_listings', {
-      p_listing_ids: listingIds,
-      p_buyer_id: user.id,
-    });
+    if (regularIds.length > 0) {
+      await serviceClient.rpc('unreserve_listings', {
+        p_listing_ids: regularIds,
+        p_buyer_id: user.id,
+      });
+    }
     return NextResponse.json({ error: 'Failed to create order. Please try again.' }, { status: 500 });
   }
 

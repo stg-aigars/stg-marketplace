@@ -13,6 +13,8 @@ export interface CartItem {
   condition: ListingCondition;
   addedAt: string;
   expansionCount?: number;
+  isAuction?: boolean;
+  auctionDeadlineAt?: string | null;
 }
 
 export const MAX_CART_ITEMS = 10;

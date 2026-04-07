@@ -4,10 +4,12 @@ import Image from 'next/image';
 import { ImageSquare, Gavel } from '@phosphor-icons/react/ssr';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getMyBids } from '@/lib/auctions/actions';
-import { Card, CardBody, Badge, Button, EmptyState } from '@/components/ui';
+import { Card, CardBody, Badge, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
+import { PayAuctionButton } from '@/components/auctions/PayAuctionButton';
+import type { ListingCondition } from '@/lib/listings/types';
 
 export const metadata: Metadata = { title: 'My bids' };
 
@@ -108,9 +110,18 @@ function BidSection({ title, bids, userId }: {
                       <Badge variant="warning">Outbid</Badge>
                     )}
                     {needsPayment && (
-                      <Button size="sm" asChild>
-                        <Link href={`/checkout/${bid.listing_id}`}>Pay now</Link>
-                      </Button>
+                      <PayAuctionButton listing={{
+                        id: bid.listing_id,
+                        gameTitle: bid.game_name,
+                        gameThumbnail: bid.thumbnail,
+                        currentBidCents: bid.current_bid_cents ?? 0,
+                        paymentDeadlineAt: bid.payment_deadline_at,
+                        sellerCountry: bid.seller_country,
+                        sellerId: bid.seller_id,
+                        sellerName: bid.seller_name,
+                        sellerAvatarUrl: bid.seller_avatar_url,
+                        condition: bid.condition as ListingCondition,
+                      }} />
                     )}
                     {!isActive && isWinner && bid.listing_status === 'sold' && (
                       <Badge variant="success">Won</Badge>

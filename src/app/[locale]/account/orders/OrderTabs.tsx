@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { Gavel, Timer } from '@phosphor-icons/react/ssr';
 import { Button, Tabs, Card, CardBody } from '@/components/ui';
 import { ListingIdentity } from '@/components/listings/atoms';
+import { PayAuctionButton } from '@/components/auctions/PayAuctionButton';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
+import type { ListingCondition } from '@/lib/listings/types';
 import type { OrderWithDetails } from '@/lib/orders/types';
 
 interface WonAuction {
@@ -17,6 +19,11 @@ interface WonAuction {
   thumbnail: string | null;
   current_bid_cents: number;
   payment_deadline_at: string | null;
+  condition: string;
+  seller_id: string;
+  seller_country: string;
+  seller_name: string;
+  seller_avatar_url: string | null;
 }
 
 interface OrderTabsProps {
@@ -66,9 +73,18 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
                       </div>
                     }
                     action={
-                      <Button size="sm" asChild>
-                        <Link href={`/checkout/${auction.id}`}>Pay now</Link>
-                      </Button>
+                      <PayAuctionButton listing={{
+                        id: auction.id,
+                        gameTitle: auction.game_name,
+                        gameThumbnail: auction.thumbnail,
+                        currentBidCents: auction.current_bid_cents,
+                        paymentDeadlineAt: auction.payment_deadline_at,
+                        sellerCountry: auction.seller_country,
+                        sellerId: auction.seller_id,
+                        sellerName: auction.seller_name,
+                        sellerAvatarUrl: auction.seller_avatar_url,
+                        condition: auction.condition as ListingCondition,
+                      }} />
                     }
                   />
                   {auction.payment_deadline_at && (

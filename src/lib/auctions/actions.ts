@@ -113,6 +113,11 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
   thumbnail: string | null;
   current_bid_cents: number;
   payment_deadline_at: string | null;
+  condition: string;
+  seller_id: string;
+  seller_country: string;
+  seller_name: string;
+  seller_avatar_url: string | null;
 }>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -122,8 +127,10 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
   const { data } = await supabase
     .from('listings')
     .select(`
-      id, game_name, game_year, current_bid_cents, payment_deadline_at,
-      games:bgg_game_id (thumbnail)
+      id, game_name, game_year, condition, current_bid_cents, payment_deadline_at,
+      seller_id, country,
+      games:bgg_game_id (thumbnail),
+      user_profiles!listings_seller_id_fkey (full_name, avatar_url, country)
     `)
     .eq('listing_type', 'auction')
     .eq('status', 'auction_ended')
@@ -134,6 +141,7 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
 
   return data.map((row) => {
     const games = row.games as unknown as { thumbnail: string | null } | null;
+    const profile = row.user_profiles as unknown as { full_name: string | null; avatar_url: string | null; country: string } | null;
     return {
       id: row.id,
       game_name: row.game_name,
@@ -141,6 +149,11 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
       thumbnail: games?.thumbnail ?? null,
       current_bid_cents: row.current_bid_cents,
       payment_deadline_at: row.payment_deadline_at,
+      condition: row.condition,
+      seller_id: row.seller_id,
+      seller_country: profile?.country ?? row.country,
+      seller_name: profile?.full_name ?? 'Seller',
+      seller_avatar_url: profile?.avatar_url ?? null,
     };
   });
 }
@@ -158,6 +171,12 @@ export async function getMyBids(): Promise<Array<{
   current_bid_cents: number | null;
   highest_bidder_id: string | null;
   auction_end_at: string | null;
+  payment_deadline_at: string | null;
+  condition: string;
+  seller_id: string;
+  seller_country: string;
+  seller_name: string;
+  seller_avatar_url: string | null;
 }>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -170,8 +189,10 @@ export async function getMyBids(): Promise<Array<{
     .select(`
       id, listing_id, amount_cents, created_at,
       listings:listing_id (
-        game_name, game_year, status, current_bid_cents, highest_bidder_id, auction_end_at,
-        games:bgg_game_id (thumbnail)
+        game_name, game_year, condition, status, current_bid_cents, highest_bidder_id,
+        auction_end_at, payment_deadline_at, seller_id, country,
+        games:bgg_game_id (thumbnail),
+        user_profiles!listings_seller_id_fkey (full_name, avatar_url, country)
       )
     `)
     .eq('bidder_id', user.id)
@@ -191,11 +212,16 @@ export async function getMyBids(): Promise<Array<{
       const listing = row.listings as unknown as {
         game_name: string;
         game_year: number | null;
+        condition: string;
         status: string;
         current_bid_cents: number | null;
         highest_bidder_id: string | null;
         auction_end_at: string | null;
+        payment_deadline_at: string | null;
+        seller_id: string;
+        country: string;
         games: { thumbnail: string | null } | null;
+        user_profiles: { full_name: string | null; avatar_url: string | null; country: string } | null;
       } | null;
 
       return {
@@ -210,6 +236,12 @@ export async function getMyBids(): Promise<Array<{
         current_bid_cents: listing?.current_bid_cents ?? null,
         highest_bidder_id: listing?.highest_bidder_id ?? null,
         auction_end_at: listing?.auction_end_at ?? null,
+        payment_deadline_at: listing?.payment_deadline_at ?? null,
+        condition: listing?.condition ?? 'good',
+        seller_id: listing?.seller_id ?? '',
+        seller_country: listing?.user_profiles?.country ?? listing?.country ?? '',
+        seller_name: listing?.user_profiles?.full_name ?? 'Seller',
+        seller_avatar_url: listing?.user_profiles?.avatar_url ?? null,
       };
     });
 }
