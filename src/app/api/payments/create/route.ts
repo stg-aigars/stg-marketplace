@@ -215,11 +215,16 @@ export async function POST(request: Request) {
 
   // 10. Create EveryPay payment with order number as order reference
   try {
+    const COUNTRY_TO_EVERYPAY_LOCALE: Record<string, string> = {
+      LV: 'lv', LT: 'lt', EE: 'et',
+    };
+
     const paymentResponse = await createPayment(
       everypayChargeCents,
       session.order_number,
       callbackUrl,
       {
+        locale: COUNTRY_TO_EVERYPAY_LOCALE[buyerCountryCode] ?? 'en',
         email: user.email,
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }

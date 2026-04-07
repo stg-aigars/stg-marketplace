@@ -15,6 +15,8 @@ import { reserveListingForCheckout } from '@/lib/listings/actions';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
 import { formatDateTime } from '@/lib/date-utils';
+import { LEGAL_ENTITY_NAME } from '@/lib/constants';
+import { PaymentMethodLogos } from '@/components/checkout/PaymentMethodLogos';
 import { CheckoutForm } from './CheckoutForm';
 
 interface CheckoutListingRow {
@@ -395,6 +397,8 @@ export default async function CheckoutPage(
                 </>
               )}
 
+              <p className="text-xs text-semantic-text-muted mt-2">All prices include VAT</p>
+
               <div className="mt-6">
                 <CheckoutForm
                   listingId={listing.id}
@@ -407,6 +411,13 @@ export default async function CheckoutPage(
                   isAuction={isAuction}
                   paymentDeadlineAt={isAuction ? listing.payment_deadline_at : undefined}
                 />
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle space-y-2">
+                <PaymentMethodLogos />
+                <p className="text-xs text-semantic-text-muted text-center">
+                  Payment processed by {LEGAL_ENTITY_NAME}
+                </p>
               </div>
             </CardBody>
           </Card>

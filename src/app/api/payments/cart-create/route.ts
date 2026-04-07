@@ -206,11 +206,16 @@ export async function POST(request: Request) {
   const callbackUrl = `${env.app.url}/api/payments/callback?token=${callbackToken}`;
 
   try {
+    const COUNTRY_TO_EVERYPAY_LOCALE: Record<string, string> = {
+      LV: 'lv', LT: 'lt', EE: 'et',
+    };
+
     const paymentResponse = await createPayment(
       everypayChargeCents,
       orderNumber,
       callbackUrl,
       {
+        locale: COUNTRY_TO_EVERYPAY_LOCALE[buyerProfile.country] ?? 'en',
         email: user.email,
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }
