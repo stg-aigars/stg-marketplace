@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Gavel, Timer } from '@phosphor-icons/react/ssr';
 import { Button, Tabs, Card, CardBody } from '@/components/ui';
-import { GameThumb } from '@/components/listings/atoms';
+import { ListingIdentity } from '@/components/listings/atoms';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
@@ -54,35 +54,29 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
             {wonAuctions.map((auction) => (
               <Card key={auction.id}>
                 <CardBody>
-                  <div className="flex gap-3">
-                    <GameThumb src={auction.thumbnail} alt={auction.game_name} size="lg" />
-
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/listings/${auction.id}`}
-                        className="text-sm font-medium text-semantic-text-heading truncate block active:text-semantic-brand sm:hover:text-semantic-brand"
-                      >
-                        {auction.game_name}
-                        {auction.game_year ? ` (${auction.game_year})` : ''}
-                      </Link>
-                      <div className="flex items-center gap-1.5 mt-1 text-xs text-semantic-text-muted">
+                  <ListingIdentity
+                    listingId={auction.id}
+                    image={auction.thumbnail}
+                    title={auction.game_name + (auction.game_year ? ` (${auction.game_year})` : '')}
+                    size="md"
+                    price={
+                      <div className="flex items-center gap-1.5 text-xs text-semantic-text-muted">
                         <Gavel size={12} weight="bold" />
-                        <span>Won for {formatCentsToCurrency(auction.current_bid_cents)}</span>
+                        <span>{formatCentsToCurrency(auction.current_bid_cents)}</span>
                       </div>
-                      {auction.payment_deadline_at && (
-                        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-aurora-orange">
-                          <Timer size={12} weight="bold" />
-                          <span>Pay by {formatDateTime(auction.payment_deadline_at)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center shrink-0">
+                    }
+                    action={
                       <Button size="sm" asChild>
                         <Link href={`/checkout/${auction.id}`}>Pay now</Link>
                       </Button>
+                    }
+                  />
+                  {auction.payment_deadline_at && (
+                    <div className="flex items-center gap-1.5 mt-1 ml-[68px] text-xs text-aurora-orange">
+                      <Timer size={12} weight="bold" />
+                      <span>Pay by {formatDateTime(auction.payment_deadline_at)}</span>
                     </div>
-                  </div>
+                  )}
                 </CardBody>
               </Card>
             ))}

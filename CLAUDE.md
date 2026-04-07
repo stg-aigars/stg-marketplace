@@ -134,7 +134,8 @@ Always use these — do not write inline equivalents:
 | Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
 | Price display | `Price` (cents, size; always Inter, never display font) | `@/components/listings/atoms` |
 | Game identity row | `GameIdentityRow` (thumbnail + name + edition metadata icons; bare row, caller wraps in Card; size, href, action slot) | `@/components/listings/atoms` |
-| Compact listing row | `ListingRow` (horizontal; uses atoms) | `@/components/listings` |
+| Listing identity | `ListingIdentity` (compact horizontal row: linked thumb + title + expansion count + price slot + action slot; `disableLink` for parent-linked contexts; `disabled` for unavailable items) | `@/components/listings/atoms` |
+| Compact listing row | `ListingRow` (horizontal; wraps `ListingIdentity` in bordered container with condition label) | `@/components/listings` |
 | Mobile listing card | `ListingCardMini` (compressed for 2-col mobile grid) | `@/components/listings` |
 | Listing card grid | `ListingSection` (heading, optional link, responsive grid of `ListingCard`; `emptyState`, `className`, `linkClassName` overrides) | `@/components/listings` |
 | Truncated text | `ShowMoreText` (lines, children, className; line-clamp with "Show more/less" toggle; auto-detects if truncation needed) | `@/components/ui` |
