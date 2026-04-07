@@ -20,7 +20,14 @@ function loadCart(): CartItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(CART_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const items = JSON.parse(raw) as CartItem[];
+    // Normalize old items missing seller fields
+    return items.map((item) => ({
+      ...item,
+      sellerName: item.sellerName ?? 'Seller',
+      sellerAvatarUrl: item.sellerAvatarUrl ?? null,
+    }));
   } catch {
     return [];
   }
@@ -54,7 +61,11 @@ function CartProvider({ children }: { children: React.ReactNode }) {
     function handleStorage(e: StorageEvent) {
       if (e.key === CART_STORAGE_KEY) {
         try {
-          setItems(e.newValue ? JSON.parse(e.newValue) : []);
+          setItems(e.newValue ? (JSON.parse(e.newValue) as CartItem[]).map((item) => ({
+            ...item,
+            sellerName: item.sellerName ?? 'Seller',
+            sellerAvatarUrl: item.sellerAvatarUrl ?? null,
+          })) : []);
         } catch {
           setItems([]);
         }

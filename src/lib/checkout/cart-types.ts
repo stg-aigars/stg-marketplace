@@ -8,6 +8,8 @@ export interface CartItem {
   priceCents: number;
   sellerCountry: string;
   sellerId: string;
+  sellerName: string;
+  sellerAvatarUrl?: string | null;
   condition: ListingCondition;
   addedAt: string;
   expansionCount?: number;

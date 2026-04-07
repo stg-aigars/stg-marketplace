@@ -14,6 +14,8 @@ interface AddToCartButtonProps {
     priceCents: number;
     sellerCountry: string;
     sellerId: string;
+    sellerName: string;
+    sellerAvatarUrl?: string | null;
     condition: ListingCondition;
     expansionCount?: number;
   };
@@ -35,6 +37,8 @@ function AddToCartButton({ listing }: AddToCartButtonProps) {
         priceCents: listing.priceCents,
         sellerCountry: listing.sellerCountry,
         sellerId: listing.sellerId,
+        sellerName: listing.sellerName,
+        sellerAvatarUrl: listing.sellerAvatarUrl,
         condition: listing.condition,
         addedAt: new Date().toISOString(),
         ...(listing.expansionCount ? { expansionCount: listing.expansionCount } : {}),
