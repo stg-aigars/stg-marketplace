@@ -5,11 +5,12 @@ import { useState } from 'react';
 interface AvatarProps {
   name: string;
   src?: string | null;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   className?: string;
 }
 
 const sizeClasses: Record<NonNullable<AvatarProps['size']>, string> = {
+  xs: 'w-5 h-5 text-[10px] rounded',
   sm: 'w-8 h-8 text-xs rounded-md',
   md: 'w-10 h-10 text-sm rounded-lg',
 };

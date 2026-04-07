@@ -4,11 +4,10 @@ import { useState, useEffect, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Gavel, Lightning } from '@phosphor-icons/react/ssr';
-import { Avatar, Button, Input, Alert, TurnstileWidget } from '@/components/ui';
+import { Button, Input, Alert, TurnstileWidget, UserIdentity } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatMessageTime } from '@/lib/date-utils';
-import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { placeBid } from '@/lib/auctions/bid-actions';
 import { getMinimumBid, getQuickBidIncrements } from '@/lib/auctions/types';
@@ -244,19 +243,14 @@ export function BidPanel({
           <ul className="space-y-2">
             {bids.slice(0, 5).map((bid) => (
               <li key={bid.id} className="flex items-center justify-between text-xs gap-2">
-                <span className="text-semantic-text-muted flex items-center gap-1.5 min-w-0">
-                  <Avatar name={bid.bidder_name} src={bid.bidder_avatar_url} size="sm" className="!w-5 !h-5 !text-[10px] !rounded shrink-0" />
-                  <span className="truncate">
-                    {bid.bidder_name}
-                    {bid.bidder_id === currentUserId && ' (you)'}
-                  </span>
-                  {bid.bidder_country && (
-                    <span
-                      className={`${getCountryFlag(bid.bidder_country)} shrink-0`}
-                      title={getCountryName(bid.bidder_country)}
-                    />
-                  )}
-                </span>
+                <UserIdentity
+                  name={bid.bidder_name}
+                  avatarUrl={bid.bidder_avatar_url}
+                  country={bid.bidder_country}
+                  size="xs"
+                >
+                  {bid.bidder_id === currentUserId && <span className="text-semantic-text-muted">(you)</span>}
+                </UserIdentity>
                 <span className="flex items-center gap-2 shrink-0">
                   <span className="text-semantic-text-muted">{formatMessageTime(bid.created_at)}</span>
                   <span className="font-medium text-semantic-text-primary">

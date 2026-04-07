@@ -1,7 +1,7 @@
 'use client';
 
 import { ChatCircleDots } from '@phosphor-icons/react/ssr';
-import { Avatar, Badge } from '@/components/ui';
+import { Badge, UserIdentity } from '@/components/ui';
 import { formatMessageTime } from '@/lib/date-utils';
 import { DeleteOrderMessageButton } from './DeleteOrderMessageButton';
 import type { OrderMessage } from '@/lib/order-messages/types';
@@ -29,13 +29,15 @@ export function OrderMessageList({ messages, isStaff, locale }: OrderMessageList
       {messages.map((message) => (
         <div key={message.id} className="py-3 last:pb-0 first:pt-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <Avatar name={message.author_name ?? '?'} src={message.author_avatar_url} size="sm" />
-            <span className="text-sm font-medium text-semantic-text-heading truncate">
-              {message.author_name ?? '[deleted]'}
-            </span>
-            <Badge variant={message.author_role === 'seller' ? 'trust' : 'default'}>
-              {message.author_role === 'seller' ? 'Seller' : 'Buyer'}
-            </Badge>
+            <UserIdentity
+              name={message.author_name ?? '[deleted]'}
+              avatarUrl={message.author_avatar_url}
+              size="sm"
+            >
+              <Badge variant={message.author_role === 'seller' ? 'trust' : 'default'}>
+                {message.author_role === 'seller' ? 'Seller' : 'Buyer'}
+              </Badge>
+            </UserIdentity>
             <span className="text-xs text-semantic-text-muted ml-auto flex-shrink-0">
               {formatMessageTime(message.created_at, locale)}
             </span>
