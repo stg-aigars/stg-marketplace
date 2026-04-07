@@ -109,7 +109,7 @@ function BidSection({ title, bids, userId }: {
                     )}
                     {needsPayment && (
                       <Button size="sm" asChild>
-                        <Link href={`/checkout/auction/${bid.listing_id}`}>Pay now</Link>
+                        <Link href={`/checkout/${bid.listing_id}`}>Pay now</Link>
                       </Button>
                     )}
                     {!isActive && isWinner && bid.listing_status === 'sold' && (

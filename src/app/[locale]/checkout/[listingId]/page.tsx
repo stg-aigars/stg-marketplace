@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Alert, Badge, Breadcrumb, Card, CardBody, Stepper } from '@/components/ui';
 import { calculateBuyerPricing, calculateCheckoutPricing, formatCentsToCurrency } from '@/lib/services/pricing';
@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { reserveListingForCheckout } from '@/lib/listings/actions';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { GameThumb, GameTitle } from '@/components/listings/atoms';
+import { formatDateTime } from '@/lib/date-utils';
 import { CheckoutForm } from './CheckoutForm';
 
 interface CheckoutListingRow {
@@ -31,6 +32,10 @@ interface CheckoutListingRow {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  listing_type: string;
+  highest_bidder_id: string | null;
+  current_bid_cents: number | null;
+  payment_deadline_at: string | null;
   games: {
     thumbnail: string | null;
     image: string | null;
@@ -74,9 +79,22 @@ export default async function CheckoutPage(
     notFound();
   }
 
-  // Listing must be active or reserved by this buyer
+  // Auction detection
+  const isAuction = listing.listing_type === 'auction' && listing.status === 'auction_ended';
+  const isAuctionWinner = isAuction && listing.highest_bidder_id === user.id;
+
+  // Auction guards
+  if (isAuction && !isAuctionWinner) {
+    redirect(`/${params.locale}/listings/${listingId}`);
+  }
+  if (isAuction && !listing.current_bid_cents) {
+    redirect(`/${params.locale}/listings/${listingId}`);
+  }
+
+  // Listing must be active, reserved by this buyer, or auction_ended for the winner
   const canCheckout = listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === user.id);
+    (listing.status === 'reserved' && listing.reserved_by === user.id) ||
+    isAuctionWinner;
 
   // Cannot buy own listing — check BEFORE reservation to avoid locking seller's own item
   if (listing.seller_id === user.id) {
@@ -117,8 +135,9 @@ export default async function CheckoutPage(
 
   // Reserve the listing on checkout page load (not at payment time).
   // reserved_at is set once and NOT refreshed on revisit (hard 30-min TTL).
+  // Auctions skip reservation — auction_ended status already locks the listing.
   let reservedAt: string | null = null;
-  if (listing.status === 'active') {
+  if (!isAuction && listing.status === 'active') {
     const result = await reserveListingForCheckout(listingId);
     if ('error' in result) {
       const isReservedByOther = result.code === 'reserved_by_other';
@@ -171,7 +190,8 @@ export default async function CheckoutPage(
     );
   }
 
-  const pricing = calculateBuyerPricing(listing.price_cents, shippingCents);
+  const itemPriceCents = isAuction ? listing.current_bid_cents! : listing.price_cents;
+  const pricing = calculateBuyerPricing(itemPriceCents, shippingCents);
 
   // Fetch wallet balance and terminals in parallel (independent operations)
   let terminalsFetchFailed = false;
@@ -192,7 +212,7 @@ export default async function CheckoutPage(
   }
 
   const walletPricing = walletBalanceCents > 0
-    ? calculateCheckoutPricing(listing.price_cents, shippingCents, walletBalanceCents)
+    ? calculateCheckoutPricing(itemPriceCents, shippingCents, walletBalanceCents)
     : null;
 
   const badgeKey = conditionToBadgeKey[listing.condition];
@@ -237,14 +257,20 @@ export default async function CheckoutPage(
       />
 
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
-        Checkout
+        {isAuction ? 'Pay for your winning auction' : 'Checkout'}
       </h1>
 
       {errorMessage && (
         <Alert variant="error" className="mb-6">{errorMessage}</Alert>
       )}
 
-      {reservedAt && (
+      {isAuction && listing.payment_deadline_at && (
+        <Alert variant="warning" className="mb-4">
+          Complete payment by {formatDateTime(listing.payment_deadline_at)} to secure this game.
+        </Alert>
+      )}
+
+      {!isAuction && reservedAt && (
         <div className="mb-4">
           <ReservationCountdown reservedAt={reservedAt} isOwner compact />
         </div>
@@ -325,7 +351,9 @@ export default async function CheckoutPage(
 
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-semantic-text-secondary">Item price</span>
+                  <span className="text-semantic-text-secondary">
+                    {isAuction ? 'Winning bid' : 'Item price'}
+                  </span>
                   <span className="text-semantic-text-primary">
                     {formatCentsToCurrency(pricing.itemsTotalCents)}
                   </span>
@@ -376,6 +404,8 @@ export default async function CheckoutPage(
                   terminalsFetchFailed={terminalsFetchFailed}
                   walletBalanceCents={walletBalanceCents}
                   walletCoversTotal={walletPricing?.everypayChargeCents === 0}
+                  isAuction={isAuction}
+                  paymentDeadlineAt={isAuction ? listing.payment_deadline_at : undefined}
                 />
               </div>
             </CardBody>
