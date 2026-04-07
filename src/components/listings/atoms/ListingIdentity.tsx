@@ -43,7 +43,7 @@ function ListingIdentity({
     <>
       <GameThumb src={image} alt={title} size={thumbSize[size]} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-semantic-text-heading truncate group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+        <p className="text-sm font-semibold font-display tracking-tight text-semantic-text-heading truncate group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
           {title}
         </p>
         {expansionCount != null && expansionCount > 0 && (
@@ -59,7 +59,7 @@ function ListingIdentity({
   return (
     <div className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''} ${className}`}>
       {disableLink ? (
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0 group">
           {content}
         </div>
       ) : (

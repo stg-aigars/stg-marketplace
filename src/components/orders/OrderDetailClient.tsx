@@ -235,7 +235,6 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                       listingId={item.listing_id}
                       image={itemImage}
                       title={itemGameName}
-                      expansionCount={itemExpansions.length}
                       size="md"
                       price={hasMultipleItems ? (
                         <span className="text-sm font-semibold text-semantic-text-heading">

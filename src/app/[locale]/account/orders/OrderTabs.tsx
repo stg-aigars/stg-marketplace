@@ -62,7 +62,7 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
                     price={
                       <div className="flex items-center gap-1.5 text-xs text-semantic-text-muted">
                         <Gavel size={12} weight="bold" />
-                        <span>{formatCentsToCurrency(auction.current_bid_cents)}</span>
+                        <span>Won for {formatCentsToCurrency(auction.current_bid_cents)}</span>
                       </div>
                     }
                     action={
