@@ -124,7 +124,6 @@ export function BidPanel({
       }));
       turnstileRef.current?.reset();
       router.refresh();
-      // Fetch fresh bid history immediately so it appears without waiting for next poll
       void pollState();
     }
   }

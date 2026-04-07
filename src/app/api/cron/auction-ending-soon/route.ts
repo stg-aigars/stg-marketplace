@@ -10,12 +10,12 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
-import { notify, notifyMany } from '@/lib/notifications';
+import { notifyMany } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { sendAuctionEndingSoon } from '@/lib/email';
+import { QUIET_WINDOW_MS } from '@/lib/auctions/types';
 
 const BATCH_LIMIT = 50;
-const ENDING_SOON_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   const errors: string[] = [];
 
   const now = new Date();
-  const windowEnd = new Date(now.getTime() + ENDING_SOON_WINDOW_MS);
+  const windowEnd = new Date(now.getTime() + QUIET_WINDOW_MS);
 
   // Find active auctions ending within 30 minutes that haven't been notified
   const { data: auctions, error: queryError } = await supabase

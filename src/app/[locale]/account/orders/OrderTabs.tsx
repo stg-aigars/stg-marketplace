@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ImageSquare, Gavel, Timer } from '@phosphor-icons/react/ssr';
-import { Button, Tabs, Card, CardBody, Alert } from '@/components/ui';
+import { Gavel, Timer } from '@phosphor-icons/react/ssr';
+import { Button, Tabs, Card, CardBody } from '@/components/ui';
+import { GameThumb } from '@/components/listings/atoms';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
@@ -17,7 +17,6 @@ interface WonAuction {
   thumbnail: string | null;
   current_bid_cents: number;
   payment_deadline_at: string | null;
-  seller_country: string | null;
 }
 
 interface OrderTabsProps {
@@ -56,13 +55,7 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
               <Card key={auction.id}>
                 <CardBody>
                   <div className="flex gap-3">
-                    <div className="relative w-14 h-14 shrink-0 bg-semantic-bg-surface rounded overflow-hidden flex items-center justify-center">
-                      {auction.thumbnail ? (
-                        <Image src={auction.thumbnail} alt={auction.game_name} fill className="object-contain p-1" sizes="56px" />
-                      ) : (
-                        <ImageSquare size={24} className="text-semantic-text-muted" />
-                      )}
-                    </div>
+                    <GameThumb src={auction.thumbnail} alt={auction.game_name} size="lg" />
 
                     <div className="flex-1 min-w-0">
                       <Link

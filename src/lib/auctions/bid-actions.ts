@@ -9,6 +9,7 @@ import {
   sendAuctionBidReceivedToSeller,
   sendAuctionOutbidNotification,
 } from '@/lib/email';
+import { QUIET_WINDOW_MS } from './types';
 import type { PlaceBidResult } from './types';
 
 // ============================================================================
@@ -61,7 +62,7 @@ export async function placeBid(
     // Quiet window: skip per-bid notifications in the final 30 minutes
     const auctionEndAt = result.new_end_at ?? listing.auction_end_at;
     const msUntilEnd = auctionEndAt ? new Date(auctionEndAt).getTime() - Date.now() : Infinity;
-    const isQuietWindow = msUntilEnd > 0 && msUntilEnd <= 30 * 60 * 1000;
+    const isQuietWindow = msUntilEnd > 0 && msUntilEnd <= QUIET_WINDOW_MS;
 
     if (!isQuietWindow) {
       const profileIds = [user.id, listing.seller_id];

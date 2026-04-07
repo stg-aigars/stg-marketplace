@@ -113,7 +113,6 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
   thumbnail: string | null;
   current_bid_cents: number;
   payment_deadline_at: string | null;
-  seller_country: string | null;
 }>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -124,8 +123,7 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
     .from('listings')
     .select(`
       id, game_name, game_year, current_bid_cents, payment_deadline_at,
-      games:bgg_game_id (thumbnail),
-      seller:seller_id (country)
+      games:bgg_game_id (thumbnail)
     `)
     .eq('listing_type', 'auction')
     .eq('status', 'auction_ended')
@@ -136,7 +134,6 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
 
   return data.map((row) => {
     const games = row.games as unknown as { thumbnail: string | null } | null;
-    const seller = row.seller as unknown as { country: string | null } | null;
     return {
       id: row.id,
       game_name: row.game_name,
@@ -144,7 +141,6 @@ export async function getWonAuctionsAwaitingPayment(): Promise<Array<{
       thumbnail: games?.thumbnail ?? null,
       current_bid_cents: row.current_bid_cents,
       payment_deadline_at: row.payment_deadline_at,
-      seller_country: seller?.country ?? null,
     };
   });
 }
