@@ -16,7 +16,6 @@ import {
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
 import type { CartItem, CartValidationResult } from '@/lib/checkout/cart-types';
-import { MAX_CART_ITEMS } from '@/lib/checkout/cart-types';
 
 interface SellerGroup {
   sellerId: string;
@@ -137,7 +136,7 @@ export default function CartPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-          Cart ({count}/{MAX_CART_ITEMS})
+          Cart
         </h1>
         {count > 1 && (
           <Button variant="ghost" size="sm" onClick={clearCart}>
