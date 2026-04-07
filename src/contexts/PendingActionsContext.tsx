@@ -16,6 +16,7 @@ import { getTotalPendingCount } from '@/lib/pending-actions/types';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 
 const STORAGE_KEY = 'stg-pending-actions-dismissed';
+const SELLER_CACHE_KEY = 'stg-is-seller';
 const MIN_FETCH_INTERVAL_MS = 60_000;
 
 function getStoredDismissCount(): number {
@@ -27,6 +28,15 @@ function getStoredDismissCount(): number {
     return typeof parsed.dismissedAtCount === 'number' ? parsed.dismissedAtCount : 0;
   } catch {
     return 0;
+  }
+}
+
+function getCachedIsSeller(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return sessionStorage.getItem(SELLER_CACHE_KEY) === 'true';
+  } catch {
+    return false;
   }
 }
 
@@ -49,6 +59,7 @@ const PendingActionsContext = createContext<PendingActionsContextValue>({
 export function PendingActionsProvider({ children }: { children: ReactNode }) {
   const [actions, setActions] = useState<PendingActions | null>(null);
   const [dismissedAtCount, setDismissedAtCount] = useState(getStoredDismissCount);
+  const [cachedIsSeller, setCachedIsSeller] = useState(getCachedIsSeller);
   const lastFetchedAt = useRef(0);
   const { user } = useAuth();
   const pathname = usePathname();
@@ -56,6 +67,7 @@ export function PendingActionsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       setActions(null);
+      lastFetchedAt.current = 0;
       return;
     }
 
@@ -76,6 +88,14 @@ export function PendingActionsProvider({ children }: { children: ReactNode }) {
         if (data) {
           setActions(data);
           lastFetchedAt.current = Date.now();
+          // Cache isSeller so the next hard load renders the correct menu immediately
+          const sellerFlag = !!data.isSeller;
+          setCachedIsSeller(sellerFlag);
+          try {
+            sessionStorage.setItem(SELLER_CACHE_KEY, String(sellerFlag));
+          } catch {
+            // sessionStorage may be unavailable
+          }
         }
       })
       .catch(() => {
@@ -86,7 +106,9 @@ export function PendingActionsProvider({ children }: { children: ReactNode }) {
   }, [user, pathname]);
 
   const total = actions ? getTotalPendingCount(actions) : 0;
+  // Reset dismiss when new actions appear since dismissal
   const dismissed = total > 0 && total <= dismissedAtCount;
+  // Suppress on the account hub page only — it has its own server-rendered ActionStrip
   const onAccountHub = stripLocalePrefix(pathname) === '/account';
 
   const dismiss = useCallback(() => {
@@ -98,12 +120,15 @@ export function PendingActionsProvider({ children }: { children: ReactNode }) {
     }
   }, [total]);
 
+  // Use cached value until first fetch resolves to avoid seller→buyer flash
+  const isSeller = actions ? actions.isSeller : cachedIsSeller;
+
   const value: PendingActionsContextValue = {
     actions,
     total,
     dismissed: dismissed || onAccountHub,
     dismiss,
-    isSeller: actions?.isSeller ?? false,
+    isSeller,
   };
 
   return (
