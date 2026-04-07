@@ -110,7 +110,7 @@ function SiteHeader() {
                 <span className="text-semantic-primary">a</span>
               </span>
               <span className="text-lg sm:text-xl font-display font-bold text-semantic-primary tracking-wide">
-                second turn
+                Second Turn
               </span>
             </span>
           </Link>
