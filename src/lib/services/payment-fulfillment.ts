@@ -14,24 +14,15 @@ import { createOrder } from '@/lib/services/orders';
 import { debitWallet, creditWallet, refundToWallet } from '@/lib/services/wallet';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
-import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from '@/lib/email';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
-import { notify } from '@/lib/notifications';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
-import type { CheckoutSession } from '@/lib/checkout/types';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
 // Outcome types
 // ---------------------------------------------------------------------------
-
-export type FulfillmentOutcome =
-  | { outcome: 'created'; orderId: string }
-  | { outcome: 'already_exists'; orderId: string }
-  | { outcome: 'unavailable' }
-  | { outcome: 'failed'; error: string };
 
 export type CartFulfillmentOutcome =
   | { outcome: 'created'; orderIds: string[] }
@@ -65,140 +56,6 @@ export async function attemptAutoRefund(
       refundError
     );
     return false;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Single-item fulfillment
-// ---------------------------------------------------------------------------
-
-export async function fulfillSingleItemPayment(
-  session: CheckoutSession,
-  paymentReference: string,
-  paymentState: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>
-): Promise<FulfillmentOutcome> {
-  // Idempotency: check if order already exists
-  const { data: existingOrder } = await serviceClient
-    .from('orders')
-    .select('id')
-    .eq('everypay_payment_reference', paymentReference)
-    .single();
-
-  if (existingOrder) {
-    return { outcome: 'already_exists', orderId: existingOrder.id };
-  }
-
-  const walletDebit = session.wallet_debit_cents ?? 0;
-  const expectedEverypayAmountCents = session.amount_cents - walletDebit;
-
-  // Re-fetch listing to get current data
-  const { data: listing } = await serviceClient
-    .from('listings')
-    .select('id, seller_id, price_cents, status, country, game_name, reserved_by, listing_type, highest_bidder_id')
-    .eq('id', session.listing_id)
-    .single();
-
-  const isAuctionWinnerPayment = listing?.listing_type === 'auction' &&
-    listing.status === 'auction_ended' &&
-    listing.highest_bidder_id === session.buyer_id;
-
-  const isAvailable = listing && (
-    listing.status === 'active' ||
-    (listing.status === 'reserved' && listing.reserved_by === session.buyer_id) ||
-    isAuctionWinnerPayment
-  );
-
-  if (!listing || !isAvailable) {
-    console.error(`[Payments] Payment ${paymentReference} succeeded but listing ${session.listing_id} is no longer available (status: ${listing?.status})`);
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'listing unavailable after payment');
-    return { outcome: 'unavailable' };
-  }
-
-  // Calculate shipping
-  const sellerCountry = listing.country as TerminalCountry;
-  const buyerCountry = session.terminal_country as TerminalCountry;
-  const shippingCents = getShippingPriceCents(sellerCountry, buyerCountry) ?? 0;
-
-  try {
-    const walletDebitCents = session.wallet_debit_cents ?? 0;
-
-    const order = await createOrder({
-      buyerId: session.buyer_id,
-      sellerId: listing.seller_id,
-      items: [{ listingId: listing.id, priceCents: listing.price_cents }],
-      shippingCostCents: shippingCents,
-      sellerCountry: listing.country,
-      paymentReference,
-      paymentState,
-      paymentMethod: 'card',
-      terminalId: session.terminal_id,
-      terminalName: session.terminal_name,
-      terminalAddress: session.terminal_address ?? undefined,
-      terminalCity: session.terminal_city ?? undefined,
-      terminalPostalCode: session.terminal_postal_code ?? undefined,
-      terminalCountry: session.terminal_country,
-      buyerPhone: session.buyer_phone,
-      orderNumber: session.order_number ?? undefined,
-      walletDebitCents,
-    });
-
-    // Fetch expansion data for enriched display (used in wallet debit + emails)
-    const { data: singleItemExpansions } = await serviceClient
-      .from('listing_expansions')
-      .select('game_name')
-      .eq('listing_id', listing.id);
-    const enrichedGameName = formatGameWithExpansions(listing.game_name ?? 'Game', singleItemExpansions ?? []);
-
-    // Debit buyer wallet if they used wallet balance
-    if (walletDebitCents > 0) {
-      try {
-        await debitWallet(
-          session.buyer_id,
-          walletDebitCents,
-          order.id,
-          `Purchase: ${enrichedGameName} — ${order.order_number}`
-        );
-      } catch (walletError) {
-        console.error(`[Payments] Wallet debit failed for order ${order.id}, expected ${walletDebitCents} cents — reconciliation cron will retry:`, walletError);
-        await serviceClient
-          .from('orders')
-          .update({ buyer_wallet_debit_cents: 0 })
-          .eq('id', order.id);
-      }
-    }
-
-    // Mark checkout session as completed
-    await serviceClient
-      .from('checkout_sessions')
-      .update({ status: 'completed' })
-      .eq('id', session.id);
-
-    // Send emails and notifications (non-blocking) — pass pre-fetched game name
-    void sendSingleItemNotifications(session, listing, order, shippingCents, serviceClient, enrichedGameName);
-
-    void logAuditEvent({
-      actorId: session.buyer_id,
-      actorType: 'user',
-      action: 'payment.completed',
-      resourceType: 'order',
-      resourceId: order.id,
-      metadata: {
-        orderNumber: order.order_number,
-        paymentReference,
-        listingId: listing.id,
-        amountCents: session.amount_cents,
-        walletDebitCents: walletDebit,
-        paymentMethod: 'card',
-      },
-    });
-
-    return { outcome: 'created', orderId: order.id };
-  } catch (error) {
-    console.error('[Payments] Failed to create order:', error);
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, `order creation failed: ${error instanceof Error ? error.message : 'unknown'}`);
-    return { outcome: 'failed', error: error instanceof Error ? error.message : 'unknown' };
   }
 }
 
@@ -460,80 +317,4 @@ export async function fulfillCartPayment(
   });
 
   return { outcome: 'created', orderIds: createdOrders.map((o) => o.id) };
-}
-
-// ---------------------------------------------------------------------------
-// Email/notification helper (single-item only — cart uses sendCartOrderEmails)
-// ---------------------------------------------------------------------------
-
-async function sendSingleItemNotifications(
-  session: CheckoutSession,
-  listing: { id: string; seller_id: string; game_name: string | null; price_cents: number },
-  order: { id: string; order_number: string },
-  shippingCents: number,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>,
-  enrichedGameName?: string,
-) {
-  try {
-    const { data: profiles } = await serviceClient
-      .from('user_profiles')
-      .select('id, full_name, email')
-      .in('id', [session.buyer_id, listing.seller_id]);
-
-    const buyerProfile = profiles?.find(p => p.id === session.buyer_id);
-    const sellerProfile = profiles?.find(p => p.id === listing.seller_id);
-
-    if (!buyerProfile?.email || !sellerProfile?.email) {
-      console.error('[Email] Missing profile data for order emails:', {
-        orderId: order.id,
-        hasBuyer: !!buyerProfile?.email,
-        hasSeller: !!sellerProfile?.email,
-      });
-      return;
-    }
-
-    const gameName = enrichedGameName ?? listing.game_name ?? 'Game';
-
-    const emailData = {
-      orderNumber: order.order_number,
-      orderId: order.id,
-      gameName,
-      priceCents: listing.price_cents,
-      shippingCents,
-      terminalName: session.terminal_name,
-    };
-
-    sendNewOrderToSeller({
-      ...emailData,
-      sellerName: sellerProfile.full_name ?? 'Seller',
-      sellerEmail: sellerProfile.email,
-      buyerName: buyerProfile.full_name ?? 'Buyer',
-    }).catch((err) => console.error('[Email] Failed to notify seller:', err));
-
-    void notify(listing.seller_id, 'order.created', {
-      gameName: emailData.gameName,
-      orderNumber: emailData.orderNumber,
-      orderId: emailData.orderId,
-      buyerName: buyerProfile.full_name ?? 'Buyer',
-      role: 'seller',
-    });
-
-    sendOrderConfirmationToBuyer({
-      ...emailData,
-      buyerName: buyerProfile.full_name ?? 'Buyer',
-      buyerEmail: buyerProfile.email,
-      sellerName: sellerProfile.full_name ?? 'Seller',
-    }).catch((err) => console.error('[Email] Failed to confirm buyer:', err));
-
-    void notify(session.buyer_id, 'order.created', {
-      gameName: emailData.gameName,
-      orderNumber: emailData.orderNumber,
-      orderId: emailData.orderId,
-      sellerName: sellerProfile.full_name ?? 'Seller',
-      role: 'buyer',
-    });
-  } catch (err) {
-    console.error('[Email] Background email failed:', err);
-  }
 }

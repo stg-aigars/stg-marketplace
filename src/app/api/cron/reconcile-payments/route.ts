@@ -1,10 +1,10 @@
 /**
  * Payment reconciliation cron.
  *
- * Detects orphaned checkout sessions where EveryPay captured payment but the
+ * Detects orphaned cart checkout groups where EveryPay captured payment but the
  * browser redirect callback never fired (buyer closed browser, network drop).
  * For confirmed payments, creates the missing order. For failed payments,
- * cleans up the session and releases reservations.
+ * cleans up the group and releases reservations.
  *
  * Runs every 5 minutes via Coolify cron.
  */
@@ -14,11 +14,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { getPaymentStatus, SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay';
 import { debitWallet } from '@/lib/services/wallet';
-import {
-  fulfillSingleItemPayment,
-  fulfillCartPayment,
-} from '@/lib/services/payment-fulfillment';
-import type { CheckoutSession } from '@/lib/checkout/types';
+import { fulfillCartPayment } from '@/lib/services/payment-fulfillment';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 
 const BATCH_LIMIT = 50;
@@ -36,83 +32,8 @@ export async function POST(request: Request) {
   const maxCutoff = new Date(Date.now() - MAX_AGE_MS).toISOString();
 
   const summary = {
-    sessions: { processed: 0, created: 0, cleaned: 0, skipped: 0, errors: 0 },
     carts: { processed: 0, created: 0, cleaned: 0, skipped: 0, errors: 0 },
   };
-
-  // ---- Single-item checkout sessions ----
-
-  const { data: staleSessions, error: sessionQueryError } = await serviceClient
-    .from('checkout_sessions')
-    .select('*')
-    .eq('status', 'pending')
-    .lt('created_at', minCutoff)
-    .gt('created_at', maxCutoff)
-    .not('everypay_payment_reference', 'is', null)
-    .limit(BATCH_LIMIT)
-    .returns<CheckoutSession[]>();
-
-  if (sessionQueryError) {
-    console.error('[Reconcile] Failed to query sessions:', sessionQueryError);
-  } else if (staleSessions) {
-    for (const session of staleSessions) {
-      summary.sessions.processed++;
-      try {
-        const paymentStatus = await getPaymentStatus(session.everypay_payment_reference!);
-
-        if (SUCCESSFUL_STATES.has(paymentStatus.payment_state)) {
-          const result = await fulfillSingleItemPayment(
-            session,
-            session.everypay_payment_reference!,
-            paymentStatus.payment_state,
-            serviceClient
-          );
-
-          if (result.outcome === 'created') {
-            summary.sessions.created++;
-            console.log(`[Reconcile] Created order ${result.orderId} for orphaned session ${session.id}`);
-          } else if (result.outcome === 'already_exists') {
-            // Callback beat us — mark session completed
-            await serviceClient
-              .from('checkout_sessions')
-              .update({ status: 'completed' })
-              .eq('id', session.id);
-            summary.sessions.skipped++;
-          } else if (result.outcome === 'unavailable') {
-            // Listing no longer available — refund already triggered by fulfillment
-            await serviceClient
-              .from('checkout_sessions')
-              .update({ status: 'expired' })
-              .eq('id', session.id);
-            summary.sessions.cleaned++;
-            console.log(`[Reconcile] Session ${session.id}: listing unavailable, refunded`);
-          } else {
-            // Fulfillment failed — mark expired to prevent re-processing every run
-            await serviceClient
-              .from('checkout_sessions')
-              .update({ status: 'expired' })
-              .eq('id', session.id);
-            summary.sessions.errors++;
-            console.error(`[Reconcile] Session ${session.id}: fulfillment failed — ${result.error}`);
-          }
-        } else if (FAILED_STATES.has(paymentStatus.payment_state)) {
-          // Payment failed — clean up session
-          await serviceClient
-            .from('checkout_sessions')
-            .update({ status: 'expired' })
-            .eq('id', session.id)
-            .eq('status', 'pending');
-          summary.sessions.cleaned++;
-        } else {
-          // Still processing — skip, check again next run
-          summary.sessions.skipped++;
-        }
-      } catch (error) {
-        summary.sessions.errors++;
-        console.error(`[Reconcile] Error processing session ${session.id}:`, error);
-      }
-    }
-  }
 
   // ---- Cart checkout groups ----
 
@@ -155,7 +76,6 @@ export async function POST(request: Request) {
             summary.carts.cleaned++;
             console.log(`[Reconcile] Cart group ${group.id}: all items unavailable, refunded`);
           } else {
-            // Fulfillment failed — mark expired to prevent re-processing every run
             await serviceClient
               .from('cart_checkout_groups')
               .update({ status: 'expired' })
@@ -187,67 +107,18 @@ export async function POST(request: Request) {
     }
   }
 
-  const totalCreated = summary.sessions.created + summary.carts.created;
+  const totalCreated = summary.carts.created;
   if (totalCreated > 0) {
-    console.log(`[Reconcile] Created ${totalCreated} order(s) from orphaned sessions`);
+    console.log(`[Reconcile] Created ${totalCreated} order(s) from orphaned cart groups`);
   }
 
-  // ---- Wallet debit failure retry (F16) ----
+  // ---- Wallet debit failure retry ----
   // Detect orders where the checkout intended a wallet debit but it failed
-  // (buyer_wallet_debit_cents = 0 but session.wallet_debit_cents > 0)
+  // (buyer_wallet_debit_cents = 0 but cart group had wallet_allocation > 0)
 
   let walletRetries = 0;
   let walletRetryErrors = 0;
 
-  // Single-item: bulk-fetch sessions to avoid N+1 per-order lookups
-  const { data: singleMismatches } = await serviceClient
-    .from('orders')
-    .select('id, buyer_id, order_number')
-    .eq('buyer_wallet_debit_cents', 0)
-    .eq('payment_method', 'card')
-    .is('cart_group_id', null)
-    .gt('created_at', maxCutoff)
-    .limit(BATCH_LIMIT);
-
-  if (singleMismatches && singleMismatches.length > 0) {
-    const orderNumbers = singleMismatches.map((o) => o.order_number).filter(Boolean);
-    const { data: sessions } = await serviceClient
-      .from('checkout_sessions')
-      .select('order_number, wallet_debit_cents')
-      .in('order_number', orderNumbers)
-      .gt('wallet_debit_cents', 0);
-
-    const sessionMap = new Map(sessions?.map((s) => [s.order_number, s.wallet_debit_cents]) ?? []);
-
-    for (const order of singleMismatches) {
-      const intendedDebit = sessionMap.get(order.order_number);
-      if (!intendedDebit) continue; // No mismatch — session had 0 wallet debit
-
-      try {
-        // Same order_id as original callback — debitWallet idempotency prevents double-debit
-        await debitWallet(
-          order.buyer_id,
-          intendedDebit,
-          order.id,
-          `Purchase (retry): ${order.order_number}`
-        );
-
-        await serviceClient
-          .from('orders')
-          .update({ buyer_wallet_debit_cents: intendedDebit })
-          .eq('id', order.id)
-          .eq('buyer_wallet_debit_cents', 0); // Optimistic lock
-
-        walletRetries++;
-        console.log(`[Reconcile] Wallet debit retry succeeded for order ${order.id}: ${intendedDebit} cents`);
-      } catch (error) {
-        walletRetryErrors++;
-        console.error(`[Reconcile] MANUAL ATTENTION: Wallet debit retry failed for order ${order.id}:`, error);
-      }
-    }
-  }
-
-  // Cart: bulk-fetch groups and items to avoid N+1
   const { data: cartMismatches } = await serviceClient
     .from('orders')
     .select('id, buyer_id, order_number, cart_group_id')
