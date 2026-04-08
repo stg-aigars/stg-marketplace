@@ -14,7 +14,6 @@ import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/browser';
 
 import type { UserProfile } from '@/lib/auth/types';
-import { CART_STORAGE_KEY } from '@/lib/checkout/cart-types';
 
 interface AuthContextValue {
   user: User | null;
@@ -88,11 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadProfile(currentUser);
       } else {
         setProfile(null);
-      }
-
-      // Clear cart on sign-out so the next user doesn't see stale items
-      if (event === 'SIGNED_OUT') {
-        try { localStorage.removeItem(CART_STORAGE_KEY); } catch { /* noop */ }
       }
 
       // Re-render Server Components when user signs in or out.
