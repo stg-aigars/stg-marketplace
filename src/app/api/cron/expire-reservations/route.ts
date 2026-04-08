@@ -24,20 +24,8 @@ export async function POST(request: Request) {
   }
 
   const count = expiredIds?.length ?? 0;
-
-  // Also expire associated pending checkout sessions for these listings
   if (count > 0) {
-    const listingIds = expiredIds.map((id: string) => id);
-
-    const { data: expiredSessions } = await serviceClient
-      .from('checkout_sessions')
-      .update({ status: 'expired' })
-      .eq('status', 'pending')
-      .in('listing_id', listingIds)
-      .select('id');
-
-    const sessionCount = expiredSessions?.length ?? 0;
-    console.log(`[Cron] Expired ${count} stale reservations, ${sessionCount} checkout sessions`);
+    console.log(`[Cron] Expired ${count} stale reservations`);
   }
 
   return NextResponse.json({ expired: count });
