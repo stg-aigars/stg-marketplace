@@ -1,13 +1,13 @@
 /**
- * Payment fulfillment — shared order creation logic.
+ * Cart payment fulfillment — order creation after successful EveryPay payment.
  *
- * Used by both:
+ * Called by:
  * - Browser redirect callback (GET /api/payments/callback)
  * - Reconciliation cron (POST /api/cron/reconcile-payments)
  *
- * Both callers verify payment status with EveryPay before calling these functions.
- * These functions handle order creation, wallet debit, emails, and notifications.
- * They return outcome objects — callers map outcomes to redirects (callback) or logs (cron).
+ * Callers verify payment status with EveryPay before calling these functions.
+ * Handles order creation, wallet debit, emails, and notifications.
+ * Returns outcome objects — callers map outcomes to redirects (callback) or logs (cron).
  */
 
 import { createOrder } from '@/lib/services/orders';
