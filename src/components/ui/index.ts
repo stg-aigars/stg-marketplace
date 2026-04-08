@@ -70,3 +70,5 @@ export type { ShowMoreListProps } from './ShowMoreList';
 
 export { DeleteItemButton } from './DeleteItemButton';
 export type { DeleteItemButtonProps } from './DeleteItemButton';
+
+export { CountBadge } from './count-badge';

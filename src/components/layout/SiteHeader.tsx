@@ -4,22 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CaretDown, X, List, ShoppingCart, Bell } from '@phosphor-icons/react/ssr';
-import { Avatar } from '@/components/ui';
+import { Avatar, CountBadge } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
 import { usePendingActions } from '@/hooks/usePendingActions';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-
-function CountBadge({ count, className }: { count: number; className?: string }) {
-  if (count <= 0) return null;
-  return (
-    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-aurora-red text-white ${className ?? ''}`}>
-      {count > 99 ? '99+' : count}
-    </span>
-  );
-}
 
 function SiteHeader() {
   const { user, profile, loading, signOut } = useAuth();
@@ -121,11 +112,11 @@ function SiteHeader() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
+              className="relative min-h-[44px] min-w-[44px] flex items-center justify-center text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
               aria-label={`Cart${cartCount > 0 ? ` (${cartCount} items)` : ''}`}
             >
               <ShoppingCart size={22} />
-              <CountBadge count={cartCount} className="absolute -top-1.5 -right-2" />
+              <CountBadge count={cartCount} className="absolute -top-0.5 -right-0.5" />
             </Link>
 
             {/* Notifications (desktop dropdown) */}

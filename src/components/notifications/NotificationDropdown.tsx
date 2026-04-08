@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell } from '@phosphor-icons/react/ssr';
-import { Button } from '@/components/ui';
+import { Button, CountBadge } from '@/components/ui';
 import { NotificationItem } from './NotificationItem';
 import { getNotifications, markAllNotificationsRead } from '@/lib/notifications/actions';
 import type { NotificationRow } from '@/lib/notifications/types';
@@ -81,11 +81,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell size={22} weight={unreadCount > 0 ? 'fill' : 'regular'} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-aurora-red text-white">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
+        <CountBadge count={unreadCount} className="absolute -top-0.5 -right-0.5" />
       </button>
 
       {open && (
