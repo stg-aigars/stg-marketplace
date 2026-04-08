@@ -47,6 +47,8 @@ function saveCart(items: CartItem[]) {
 function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -56,9 +58,6 @@ function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Clear cart when user signs out or switches to a different user.
   // Declared before the persistence effect so React processes it first.
-  const { user, loading: authLoading } = useAuth();
-  const prevUserIdRef = useRef<string | null | undefined>(undefined);
-
   useEffect(() => {
     if (authLoading) return;
     const userId = user?.id ?? null;
