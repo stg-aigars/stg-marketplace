@@ -141,6 +141,7 @@ Always use these — do not write inline equivalents:
 | Truncated text | `ShowMoreText` (lines, children, className; line-clamp with "Show more/less" toggle; auto-detects if truncation needed) | `@/components/ui` |
 | Truncated list | `ShowMoreList` (maxItems, label, children; shows first N items with "Show all N {label}" toggle) | `@/components/ui` |
 | Staff delete button | `DeleteItemButton` (onDelete callback, title; icon trigger + confirm/cancel flow) | `@/components/ui` |
+| Icon count badge | `CountBadge` (count, className; 0 hides) | `@/components/ui` |
 | Auction bid guard | `isAuctionWithBids(listingType, bidCount)` — use instead of inline `=== 'auction' && > 0` | `@/lib/listings/types` |
 | Enriched game builder | `buildEnrichedGame(bggGameId, gameName, gameYear, games)` — builds `EnrichedGame` from DB row with games join | `@/app/[locale]/sell/_components/GameSearchStep` |
 
