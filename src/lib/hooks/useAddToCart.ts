@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import type { ListingCondition } from '@/lib/listings/types';
 
-export interface BuyNowListing {
+export interface AddToCartListing {
   id: string;
   gameTitle: string;
   gameThumbnail: string | null;
@@ -17,11 +17,11 @@ export interface BuyNowListing {
   expansionCount?: number;
 }
 
-export function useBuyNow(listing: BuyNowListing) {
+export function useAddToCart(listing: AddToCartListing) {
   const router = useRouter();
   const { addItem, isInCart } = useCart();
 
-  function buyNow() {
+  function addToCart() {
     if (!isInCart(listing.id)) {
       addItem({
         listingId: listing.id,
@@ -40,5 +40,5 @@ export function useBuyNow(listing: BuyNowListing) {
     router.push('/cart');
   }
 
-  return { buyNow };
+  return { addToCart };
 }

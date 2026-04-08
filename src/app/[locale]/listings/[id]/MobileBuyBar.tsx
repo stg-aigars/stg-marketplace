@@ -5,18 +5,18 @@ import Link from 'next/link';
 import { ShoppingCart } from '@phosphor-icons/react/ssr';
 import { Button } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { useBuyNow, type BuyNowListing } from '@/lib/hooks/useBuyNow';
+import { useAddToCart, type AddToCartListing } from '@/lib/hooks/useAddToCart';
 
 interface MobileBuyBarProps {
   targetRef: RefObject<HTMLDivElement | null>;
   priceCents: number;
   isReservedByMe: boolean;
-  listing: BuyNowListing;
+  listing: AddToCartListing;
 }
 
 export function MobileBuyBar({ targetRef, priceCents, isReservedByMe, listing }: MobileBuyBarProps) {
   const [visible, setVisible] = useState(false);
-  const { buyNow } = useBuyNow(listing);
+  const { addToCart } = useAddToCart(listing);
 
   useEffect(() => {
     const target = targetRef.current;
@@ -49,7 +49,7 @@ export function MobileBuyBar({ targetRef, priceCents, isReservedByMe, listing }:
             <Link href="/account/orders">View your orders</Link>
           </Button>
         ) : (
-          <Button size="sm" onClick={buyNow}>
+          <Button size="sm" onClick={addToCart}>
             <ShoppingCart size={16} weight="bold" className="mr-1" />
             Buy now
           </Button>

@@ -2,25 +2,14 @@
 
 import { useRef, type ReactNode } from 'react';
 import { MobileBuyBar } from './MobileBuyBar';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { AddToCartListing } from '@/lib/hooks/useAddToCart';
 
 interface PurchaseSectionProps {
   children: ReactNode;
   priceCents: number;
   isReservedByMe: boolean;
   showMobileBuyBar: boolean;
-  listing: {
-    id: string;
-    gameTitle: string;
-    gameThumbnail: string | null;
-    priceCents: number;
-    sellerCountry: string;
-    sellerId: string;
-    sellerName: string;
-    sellerAvatarUrl?: string | null;
-    condition: ListingCondition;
-    expansionCount?: number;
-  };
+  listing: AddToCartListing;
 }
 
 export function PurchaseSection({
