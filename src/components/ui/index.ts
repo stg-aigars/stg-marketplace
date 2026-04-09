@@ -7,6 +7,9 @@ export type { CardProps } from './card';
 export { Badge } from './badge';
 export type { BadgeProps, ConditionKey } from './badge';
 
+export { ConditionBadge } from './condition-badge';
+export type { ConditionBadgeProps } from './condition-badge';
+
 export { Input } from './input';
 export type { InputProps } from './input';
 

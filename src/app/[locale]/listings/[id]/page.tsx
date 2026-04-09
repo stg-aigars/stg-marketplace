@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { Prohibit, Users, Scales, Timer, Baby, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
-import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
+import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, ShareButtons, ShowMoreText, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig, getConditionLabel } from '@/lib/condition-config';
@@ -248,8 +248,7 @@ export default async function ListingDetailPage(
     );
   }
 
-  const badgeKey = conditionToBadgeKey[listing.condition];
-  const conditionInfo = conditionConfig[badgeKey];
+  const conditionInfo = conditionConfig[conditionToBadgeKey[listing.condition]];
   const sellerFlagClass = getCountryFlag(listing.user_profiles?.country);
   const sellerCountryName = getCountryName(listing.user_profiles?.country);
   const gameImage = toBggFullSize(listing.version_thumbnail) ?? toBggFullSize(listing.games?.image) ?? toBggFullSize(listing.games?.thumbnail) ?? null;
@@ -529,7 +528,7 @@ export default async function ListingDetailPage(
                 Condition & notes
               </h2>
               <div className="flex items-center gap-3">
-                <Badge condition={badgeKey}>{conditionInfo.label}</Badge>
+                <ConditionBadge condition={listing.condition} />
                 <span className="text-sm text-semantic-text-muted">
                   {conditionInfo.description}
                 </span>

@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { Warning } from '@phosphor-icons/react/ssr';
-import { Badge, BackLink, Card, CardBody, UserIdentity } from '@/components/ui';
+import { Badge, BackLink, Card, CardBody, ConditionBadge, UserIdentity } from '@/components/ui';
 import { ListingIdentity } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
-import { conditionConfig } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 import { ShippingInfo } from './ShippingInfo';
 import { UnifiedTimeline } from './UnifiedTimeline';
 import type { TrackingEventRow } from '@/lib/services/tracking';
@@ -230,10 +229,6 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                   : item.listings?.game_name ?? 'Unknown game';
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const itemExpansions = ((item.listings as any)?.listing_expansions ?? []) as Array<{ game_name: string }>;
-                const badgeKey = item.listings?.condition
-                  ? conditionToBadgeKey[item.listings.condition as ListingCondition]
-                  : undefined;
-
                 return (
                   <div key={item.id} className={hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}>
                     <ListingIdentity
@@ -247,9 +242,9 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                         </span>
                       ) : undefined}
                     />
-                    {badgeKey && (
+                    {item.listings?.condition && (
                       <div className="mt-1 ml-[68px]">
-                        <Badge condition={badgeKey}>{conditionConfig[badgeKey].label}</Badge>
+                        <ConditionBadge condition={item.listings.condition as ListingCondition} />
                       </div>
                     )}
                     {itemExpansions.length > 0 && (

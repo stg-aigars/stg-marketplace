@@ -5,9 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PencilSimple } from '@phosphor-icons/react/ssr';
 import { GameIdentityRow } from '@/components/listings/atoms';
-import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey, MIN_PRICE_CENTS } from '@/lib/listings/types';
+import { Card, CardBody, ConditionBadge, Button, Input, Select } from '@/components/ui';
+import { MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
@@ -186,8 +185,6 @@ export function ReviewPriceStep({
 }: ReviewPriceStepProps) {
   const effectivePrice = isAuction ? formData.starting_price_cents : formData.price_cents;
   const earnings = effectivePrice > 0 ? calculateSellerEarnings(effectivePrice) : null;
-  const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
-  const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
   const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? null;
 
@@ -264,8 +261,8 @@ export function ReviewPriceStep({
                 <p className="text-sm font-medium text-semantic-text-primary mb-1">
                   Condition
                 </p>
-                {badgeKey && (
-                  <Badge condition={badgeKey}>{conditionLabel}</Badge>
+                {formData.condition && (
+                  <ConditionBadge condition={formData.condition} />
                 )}
                 {formData.description && (
                   <p className="text-sm text-semantic-text-secondary whitespace-pre-line mt-2">

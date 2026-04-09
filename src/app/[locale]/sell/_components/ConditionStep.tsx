@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, Badge, Modal, Button } from '@/components/ui';
+import { Card, CardBody, ConditionBadge, Modal, Button } from '@/components/ui';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -67,7 +67,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
                       : 'bg-transparent hover:bg-semantic-bg-secondary'
                   }`}
                 >
-                  <Badge condition={badgeKey}>{config.label}</Badge>
+                  <ConditionBadge condition={condition} />
                 </button>
               );
             })}
@@ -102,7 +102,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge condition={badgeKey}>{config.label}</Badge>
+                        <ConditionBadge condition={condition} />
                       </div>
                       <p className="text-sm text-semantic-text-secondary">
                         {config.description}
@@ -136,7 +136,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
             return (
               <div key={condition}>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <Badge condition={badgeKey}>{config.label}</Badge>
+                  <ConditionBadge condition={condition} />
                 </div>
                 <p className="text-sm text-semantic-text-primary mb-1">
                   {config.description}

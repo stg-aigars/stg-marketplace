@@ -3,10 +3,8 @@
 'use client';
 
 import Image from 'next/image';
-import { Card, CardBody, Badge, Button } from '@/components/ui';
+import { Card, CardBody, ConditionBadge, Button } from '@/components/ui';
 import { GameIdentityRow } from '@/components/listings/atoms';
-import { conditionConfig } from '@/lib/condition-config';
-import { conditionToBadgeKey } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import type { FormData } from './ListingCreationFlow';
 
@@ -26,8 +24,6 @@ export function ReviewStep({
   const isAuction = formData.starting_price_cents > 0 && formData.auction_duration_days > 0;
   const effectivePrice = isAuction ? formData.starting_price_cents : formData.price_cents;
   const earnings = calculateSellerEarnings(effectivePrice);
-  const badgeKey = formData.condition ? conditionToBadgeKey[formData.condition] : null;
-  const conditionLabel = badgeKey ? conditionConfig[badgeKey].label : '';
 
   return (
     <div className="space-y-6">
@@ -56,8 +52,8 @@ export function ReviewStep({
               <p className="text-sm font-medium text-semantic-text-primary mb-1">
                 Condition
               </p>
-              {badgeKey && (
-                <Badge condition={badgeKey}>{conditionLabel}</Badge>
+              {formData.condition && (
+                <ConditionBadge condition={formData.condition} />
               )}
             </div>
 
