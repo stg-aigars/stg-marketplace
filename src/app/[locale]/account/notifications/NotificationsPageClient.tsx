@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Bell } from '@phosphor-icons/react/ssr';
 import { Button, EmptyState } from '@/components/ui';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
-import { markAllNotificationsRead } from '@/lib/notifications/actions';
+import { markAllNotificationsRead, deleteNotification } from '@/lib/notifications/actions';
 import type { NotificationRow } from '@/lib/notifications/types';
 
 interface NotificationsPageClientProps {
@@ -17,8 +17,10 @@ export function NotificationsPageClient({
   totalCount,
 }: NotificationsPageClientProps) {
   const [notifications, setNotifications] = useState(initialNotifications);
+  const [showAll, setShowAll] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
+  const displayed = showAll ? notifications : notifications.slice(0, 10);
 
   const handleMarkAllRead = async () => {
     await markAllNotificationsRead();
@@ -31,6 +33,13 @@ export function NotificationsPageClient({
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
     );
+  };
+
+  const handleDelete = async (id: string) => {
+    const { success } = await deleteNotification(id);
+    if (success) {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }
   };
 
   if (notifications.length === 0) {
@@ -62,10 +71,18 @@ export function NotificationsPageClient({
       </div>
 
       <div className="rounded-lg border border-semantic-border-subtle overflow-hidden divide-y divide-semantic-border-subtle">
-        {notifications.map((n) => (
-          <NotificationItem key={n.id} notification={n} onRead={handleItemRead} />
+        {displayed.map((n) => (
+          <NotificationItem key={n.id} notification={n} onRead={handleItemRead} onDelete={handleDelete} />
         ))}
       </div>
+      {notifications.length > 10 && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="w-full py-3 text-sm text-semantic-brand-active sm:hover:underline transition-colors duration-250 ease-out-custom"
+        >
+          Show all {notifications.length} notifications
+        </button>
+      )}
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import {
-  Package, ChatCircle, Tag, Gavel, Truck,
+  Package, ChatCircle, Tag, Gavel, Truck, Trash,
 } from '@phosphor-icons/react/ssr';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { formatMessageTime } from '@/lib/date-utils';
@@ -25,9 +25,10 @@ function getIcon(type: string): PhosphorIcon {
 interface NotificationItemProps {
   notification: NotificationRow;
   onRead?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-function NotificationItem({ notification, onRead }: NotificationItemProps) {
+function NotificationItem({ notification, onRead, onDelete }: NotificationItemProps) {
   const Icon = getIcon(notification.type);
   const isUnread = !notification.read_at;
 
@@ -60,11 +61,24 @@ function NotificationItem({ notification, onRead }: NotificationItemProps) {
           {formatMessageTime(notification.created_at)}
         </p>
       </div>
-      {isUnread && (
+      {onDelete ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(notification.id);
+          }}
+          className="shrink-0 mt-0.5 p-1 text-semantic-text-muted hover:text-semantic-error transition-colors duration-250 ease-out-custom"
+          aria-label="Delete notification"
+        >
+          <Trash size={14} />
+        </button>
+      ) : isUnread ? (
         <div className="shrink-0 mt-2">
           <div className="w-2 h-2 rounded-full bg-semantic-brand-active" />
         </div>
-      )}
+      ) : null}
     </div>
   );
 

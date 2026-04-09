@@ -75,3 +75,23 @@ export async function markAllNotificationsRead(): Promise<void> {
     .eq('user_id', user.id)
     .is('read_at', null);
 }
+
+/**
+ * Delete a single notification. Returns success indicator so caller
+ * can decide whether to remove from UI state.
+ */
+export async function deleteNotification(
+  notificationId: string
+): Promise<{ success: boolean }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('user_id', user.id);
+
+  return { success: !error };
+}
