@@ -128,8 +128,10 @@ export async function POST(request: Request) {
 
   let walletRetries = 0;
   let walletRetryErrors = 0;
+  const walletAlertOrders: { orderNumber: string; orderId: string; buyerId: string; debitCents: number; createdAt: string }[] = [];
 
   const walletRetryCutoff = new Date(Date.now() - WALLET_RETRY_MAX_AGE_MS).toISOString();
+  const walletMinAge = new Date(Date.now() - MIN_AGE_MS).toISOString();
 
   const { data: cartMismatches } = await serviceClient
     .from('orders')
@@ -138,6 +140,7 @@ export async function POST(request: Request) {
     .eq('payment_method', 'card')
     .not('cart_group_id', 'is', null)
     .gt('created_at', walletRetryCutoff)
+    .lt('created_at', walletMinAge)
     .limit(BATCH_LIMIT);
 
   if (cartMismatches && cartMismatches.length > 0) {
@@ -190,21 +193,35 @@ export async function POST(request: Request) {
         walletRetryErrors++;
         console.error(`[Reconcile] Cart wallet debit retry failed for order ${order.id}:`, error);
 
-        // After 1h of failures, escalate to staff via email
+        // Collect orders past the alert threshold for a single digest email
         if (orderAge > WALLET_ALERT_AGE_MS) {
-          void sendEmail({
-            to: env.resend.fromEmail,
-            subject: `[ACTION REQUIRED] Wallet debit failed: ${order.order_number}`,
-            react: React.createElement('div', null,
-              React.createElement('p', null, `Order ${order.order_number} (${order.id}) has a failed wallet debit of ${intendedDebit} cents.`),
-              React.createElement('p', null, `Buyer ID: ${order.buyer_id}`),
-              React.createElement('p', null, `Order created: ${order.created_at}`),
-              React.createElement('p', null, 'Retries will stop after 2 hours. Please review and resolve manually.'),
-            ),
-          }).catch((err) => console.error('[Reconcile] Failed to send staff alert email:', err));
+          walletAlertOrders.push({
+            orderNumber: order.order_number,
+            orderId: order.id,
+            buyerId: order.buyer_id,
+            debitCents: intendedDebit,
+            createdAt: order.created_at,
+          });
         }
       }
     }
+  }
+
+  // Send a single digest alert for all failing orders past the 1h threshold
+  if (walletAlertOrders.length > 0) {
+    const staffEmail = env.app.adminEmail ?? env.resend.fromEmail;
+    const lines = walletAlertOrders.map((o) =>
+      `- ${o.orderNumber} (${o.orderId}): ${o.debitCents} cents, buyer ${o.buyerId}, created ${o.createdAt}`
+    );
+    void sendEmail({
+      to: staffEmail,
+      subject: `[ACTION REQUIRED] ${walletAlertOrders.length} wallet debit failure(s)`,
+      react: React.createElement('div', null,
+        React.createElement('p', null, `${walletAlertOrders.length} order(s) have failed wallet debits for over 1 hour. Retries will stop after 2 hours.`),
+        React.createElement('pre', null, lines.join('\n')),
+        React.createElement('p', null, 'Please review and resolve manually.'),
+      ),
+    }).catch((err) => console.error('[Reconcile] Failed to send staff alert email:', err));
   }
 
   return NextResponse.json({

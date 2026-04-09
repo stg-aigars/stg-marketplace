@@ -137,6 +137,7 @@ export const env = {
   app: {
     url: process.env.NEXT_PUBLIC_APP_URL!,
     origin: process.env.APP_ORIGIN,
+    adminEmail: process.env.ADMIN_EMAIL,
   },
   cron: {
     secret: process.env.CRON_SECRET,
