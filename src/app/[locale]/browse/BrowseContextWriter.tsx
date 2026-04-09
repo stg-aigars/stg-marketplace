@@ -9,9 +9,10 @@ interface BrowseContextWriterProps {
 }
 
 export function BrowseContextWriter({ listingIds, searchParams }: BrowseContextWriterProps) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- props are stable (server component parent renders once)
   useEffect(() => {
     writeBrowseContext({ ids: listingIds, searchParams });
-  }, [listingIds, searchParams]);
+  }, [searchParams]);
 
   return null;
 }

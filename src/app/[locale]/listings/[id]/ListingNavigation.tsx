@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CaretLeft, CaretRight, ArrowLeft } from '@phosphor-icons/react/ssr';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react/ssr';
+import { BackLink } from '@/components/ui';
 import { readBrowseContext } from '@/lib/listings/browse-context';
 
 interface ListingNavigationProps {
@@ -50,13 +50,7 @@ export function ListingNavigation({ listingId }: ListingNavigationProps) {
 
   return (
     <div className="flex items-center justify-between mb-4">
-      <Link
-        href={backUrl}
-        className="flex items-center gap-1 text-sm text-semantic-text-muted sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
-      >
-        <ArrowLeft size={14} />
-        Back to results
-      </Link>
+      <BackLink href={backUrl} label="Back to results" className="" />
 
       <div className="flex items-center gap-1">
         <button
