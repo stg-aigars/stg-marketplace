@@ -82,10 +82,10 @@ export async function markAllNotificationsRead(): Promise<void> {
  */
 export async function deleteNotification(
   notificationId: string
-): Promise<{ success: boolean }> {
+): Promise<{ success: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false };
+  if (!user) return { error: 'Not authenticated' };
 
   const { error } = await supabase
     .from('notifications')
@@ -93,5 +93,6 @@ export async function deleteNotification(
     .eq('id', notificationId)
     .eq('user_id', user.id);
 
-  return { success: !error };
+  if (error) return { error: 'Failed to delete notification' };
+  return { success: true };
 }

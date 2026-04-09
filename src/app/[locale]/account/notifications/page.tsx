@@ -10,13 +10,12 @@ export const metadata: Metadata = {
 export default async function NotificationsPage() {
   await requireServerAuth();
 
-  const { notifications, total } = await getNotifications(50);
+  const { notifications } = await getNotifications(50);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <NotificationsPageClient
         initialNotifications={notifications}
-        totalCount={total}
       />
     </div>
   );

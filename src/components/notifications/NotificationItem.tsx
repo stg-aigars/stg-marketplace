@@ -65,11 +65,10 @@ function NotificationItem({ notification, onRead, onDelete }: NotificationItemPr
         <button
           type="button"
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
             onDelete(notification.id);
           }}
-          className="shrink-0 mt-0.5 p-1 text-semantic-text-muted hover:text-semantic-error transition-colors duration-250 ease-out-custom"
+          className="shrink-0 mt-0.5 p-1 text-semantic-text-muted sm:hover:text-semantic-error transition-colors duration-250 ease-out-custom"
           aria-label="Delete notification"
         >
           <Trash size={14} />

@@ -9,12 +9,10 @@ import type { NotificationRow } from '@/lib/notifications/types';
 
 interface NotificationsPageClientProps {
   initialNotifications: NotificationRow[];
-  totalCount: number;
 }
 
 export function NotificationsPageClient({
   initialNotifications,
-  totalCount,
 }: NotificationsPageClientProps) {
   const [notifications, setNotifications] = useState(initialNotifications);
   const [showAll, setShowAll] = useState(false);
@@ -36,8 +34,8 @@ export function NotificationsPageClient({
   };
 
   const handleDelete = async (id: string) => {
-    const { success } = await deleteNotification(id);
-    if (success) {
+    const result = await deleteNotification(id);
+    if (!('error' in result)) {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     }
   };
@@ -57,9 +55,9 @@ export function NotificationsPageClient({
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           Notifications
-          {totalCount > 0 && (
+          {notifications.length > 0 && (
             <span className="ml-2 text-base font-normal text-semantic-text-muted">
-              ({totalCount})
+              ({notifications.length})
             </span>
           )}
         </h1>
