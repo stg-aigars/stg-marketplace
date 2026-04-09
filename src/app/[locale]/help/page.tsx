@@ -81,6 +81,14 @@ export default function HelpPage() {
             Domestic deliveries typically take 1-3 business days. Cross-border shipments may
             take 2-5 business days depending on the route.
           </p>
+          <h3 className="text-base font-semibold text-semantic-text-heading">How should I pack a game?</h3>
+          <p>
+            Good packing protects the game and your reputation as a seller. See our{' '}
+            <Link href="/help/packing" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom">
+              packing guide
+            </Link>
+            {' '}for step-by-step instructions, parcel locker sizes, and Baltic weather tips.
+          </p>
         </section>
 
         <section className="space-y-3">
