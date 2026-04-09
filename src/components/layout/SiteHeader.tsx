@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CaretDown, X, List, ShoppingCart, Bell } from '@phosphor-icons/react/ssr';
+import { CaretDown, X, ShoppingCart, Bell, UserCircle } from '@phosphor-icons/react/ssr';
 import { Avatar, CountBadge } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
@@ -207,8 +207,10 @@ function SiteHeader() {
           >
             {mobileOpen ? (
               <X size={24} />
+            ) : user ? (
+              <Avatar name={displayName} src={profile?.avatar_url} size="nav" />
             ) : (
-              <List size={24} />
+              <UserCircle size={24} />
             )}
           </button>
           </div>
