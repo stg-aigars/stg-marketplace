@@ -12,6 +12,13 @@ import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { notify } from '@/lib/notifications';
 import {
+  sendDac7Approaching,
+  sendDac7DataRequested,
+  sendDac7Reminder,
+  sendDac7Blocked,
+} from '@/lib/email';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
+import {
   DAC7_WARN_TRANSACTIONS,
   DAC7_WARN_CONSIDERATION_CENTS,
   DAC7_REPORT_TRANSACTIONS,
@@ -156,11 +163,11 @@ export async function POST(request: Request) {
       const sellerIds = allStats.map((s) => s.seller_id);
       const { data: profiles } = await supabase
         .from('user_profiles')
-        .select('id, dac7_status, email')
+        .select('id, full_name, dac7_status, email')
         .in('id', sellerIds);
 
       const profileMap = new Map(
-        (profiles ?? []).map((p: { id: string; dac7_status: Dac7SellerStatus; email: string | null }) => [p.id, p])
+        (profiles ?? []).map((p: { id: string; full_name: string | null; dac7_status: Dac7SellerStatus; email: string | null }) => [p.id, p])
       );
 
       for (const stats of allStats) {
@@ -182,6 +189,14 @@ export async function POST(request: Request) {
             .update({ dac7_status: 'approaching', dac7_status_updated_at: now.toISOString() })
             .eq('id', stats.seller_id);
           void notify(stats.seller_id, 'dac7.approaching');
+          if (profile.email) {
+            sendDac7Approaching({
+              sellerName: profile.full_name ?? 'Seller',
+              sellerEmail: profile.email,
+              transactionCount: stats.completed_transaction_count,
+              considerationEuros: formatCentsToCurrency(stats.total_consideration_cents),
+            }).catch((err) => console.error('[DAC7] Email failed:', err));
+          }
           result.escalated++;
         }
 
@@ -196,6 +211,12 @@ export async function POST(request: Request) {
             })
             .eq('id', stats.seller_id);
           void notify(stats.seller_id, 'dac7.data_requested');
+          if (profile.email) {
+            sendDac7DataRequested({
+              sellerName: profile.full_name ?? 'Seller',
+              sellerEmail: profile.email,
+            }).catch((err) => console.error('[DAC7] Email failed:', err));
+          }
           result.escalated++;
         }
       }
@@ -208,7 +229,7 @@ export async function POST(request: Request) {
     // data_requested → reminder_sent (14 days after first reminder)
     const { data: needsReminder } = await supabase
       .from('user_profiles')
-      .select('id')
+      .select('id, full_name, email')
       .eq('dac7_status', 'data_requested')
       .lt('dac7_first_reminder_sent_at', reminderCutoff.toISOString());
 
@@ -224,6 +245,12 @@ export async function POST(request: Request) {
         .in('id', reminderIds);
       for (const seller of needsReminder) {
         void notify(seller.id, 'dac7.reminder');
+        if (seller.email) {
+          sendDac7Reminder({
+            sellerName: seller.full_name ?? 'Seller',
+            sellerEmail: seller.email,
+          }).catch((err) => console.error('[DAC7] Email failed:', err));
+        }
       }
       result.escalated += needsReminder.length;
     }
@@ -231,7 +258,7 @@ export async function POST(request: Request) {
     // reminder_sent → blocked (14 days after second reminder)
     const { data: needsBlock } = await supabase
       .from('user_profiles')
-      .select('id')
+      .select('id, full_name, email')
       .eq('dac7_status', 'reminder_sent')
       .lt('dac7_second_reminder_sent_at', reminderCutoff.toISOString());
 
@@ -246,6 +273,12 @@ export async function POST(request: Request) {
         .in('id', blockIds);
       for (const seller of needsBlock) {
         void notify(seller.id, 'dac7.blocked');
+        if (seller.email) {
+          sendDac7Blocked({
+            sellerName: seller.full_name ?? 'Seller',
+            sellerEmail: seller.email,
+          }).catch((err) => console.error('[DAC7] Email failed:', err));
+        }
       }
       result.blocked += needsBlock.length;
     }

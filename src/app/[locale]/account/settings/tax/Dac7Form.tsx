@@ -116,13 +116,12 @@ export function Dac7Form({ dac7Profile }: Dac7FormProps) {
               { value: 'LV', label: 'Latvia' },
               { value: 'LT', label: 'Lithuania' },
               { value: 'EE', label: 'Estonia' },
-              { value: 'DE', label: 'Germany' },
-              { value: 'PL', label: 'Poland' },
-              { value: 'FI', label: 'Finland' },
-              { value: 'SE', label: 'Sweden' },
             ]}
             required
           />
+          <p className="text-xs text-semantic-text-muted -mt-2">
+            If your country is not listed, please contact support@secondturn.games
+          </p>
 
           <Input
             label="Personal identification number (TIN)"
