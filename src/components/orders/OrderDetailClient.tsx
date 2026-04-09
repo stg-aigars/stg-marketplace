@@ -7,6 +7,8 @@ import { ListingIdentity } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
+import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { conditionConfig } from '@/lib/condition-config';
 import { ShippingInfo } from './ShippingInfo';
 import { UnifiedTimeline } from './UnifiedTimeline';
 import type { TrackingEventRow } from '@/lib/services/tracking';
@@ -228,6 +230,10 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                   : item.listings?.game_name ?? 'Unknown game';
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const itemExpansions = ((item.listings as any)?.listing_expansions ?? []) as Array<{ game_name: string }>;
+                const badgeKey = item.listings?.condition
+                  ? conditionToBadgeKey[item.listings.condition as ListingCondition]
+                  : undefined;
+                const conditionLabel = badgeKey ? conditionConfig[badgeKey]?.label : null;
 
                 return (
                   <div key={item.id} className={hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}>
@@ -242,6 +248,11 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                         </span>
                       ) : undefined}
                     />
+                    {conditionLabel && badgeKey && (
+                      <div className="mt-1 ml-[68px]">
+                        <Badge condition={badgeKey}>{conditionLabel}</Badge>
+                      </div>
+                    )}
                     {itemExpansions.length > 0 && (
                       <p className="text-xs text-semantic-text-muted mt-1 ml-[68px]">
                         {itemExpansions.map((e) => e.game_name).join(', ')}

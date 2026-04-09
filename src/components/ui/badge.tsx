@@ -47,7 +47,7 @@ function Badge({ variant = 'default', condition, dot, className = '', children, 
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold ${classes} ${className}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold ${classes} ${className}`}
       {...props}
     >
       {dot && (
