@@ -53,7 +53,6 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
           <div className="flex flex-wrap gap-2">
             {LISTING_CONDITIONS.map((condition) => {
               const badgeKey = conditionToBadgeKey[condition];
-              const config = conditionConfig[badgeKey];
               const isSelected = selectedCondition === condition;
 
               return (
