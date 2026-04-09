@@ -270,6 +270,11 @@ export function CheckoutForm({
             <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
               Shipping
             </h2>
+            {sellerCountry && (
+              <p className="text-sm text-semantic-text-muted -mt-2 mb-4">
+                Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
+              </p>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -316,7 +321,10 @@ export function CheckoutForm({
                   <Link href="/terms" target="_blank" className="text-semantic-brand underline">
                     Terms &amp; Conditions
                   </Link>
-                  {' '}and acknowledge the refund policy
+                  , including the{' '}
+                  <Link href="/terms#cancellations-refunds" target="_blank" className="text-semantic-brand underline">
+                    cancellation and refund policy
+                  </Link>
                 </span>
               </label>
               <p className="mt-2 ml-7 text-xs text-semantic-text-muted leading-relaxed">
@@ -336,7 +344,7 @@ export function CheckoutForm({
               disabled={!canSubmit || loading}
               loading={loading}
             >
-              {walletCoversTotal ? 'Pay with wallet' : `Pay ${formatCentsToCurrency(cardChargeCents)}`}
+              {walletCoversTotal ? 'Place order' : `Pay ${formatCentsToCurrency(cardChargeCents)}`}
             </Button>
 
             {walletCoversTotal ? (
@@ -392,16 +400,9 @@ export function CheckoutForm({
 
             {/* Price breakdown */}
             <div className="space-y-2 text-sm border-t border-semantic-border-subtle pt-3">
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-semantic-text-secondary">Shipping</span>
-                  <span>{formatCentsToCurrency(shippingCents)}</span>
-                </div>
-                {sellerCountry && (
-                  <p className="text-xs text-semantic-text-muted mt-0.5">
-                    Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
-                  </p>
-                )}
+              <div className="flex justify-between">
+                <span className="text-semantic-text-secondary">Shipping</span>
+                <span>{formatCentsToCurrency(shippingCents)}</span>
               </div>
 
               <div className="border-t border-semantic-border-subtle pt-2 mt-2">
@@ -443,14 +444,12 @@ export function CheckoutForm({
                       <span>-{formatCentsToCurrency(walletDebitCents)}</span>
                     </div>
                   )}
-                  {useWallet && (
+                  {useWallet && !walletCoversTotal && (
                     <div className="border-t border-semantic-border-subtle pt-2 mt-2">
                       <div className="flex justify-between font-semibold text-base">
+                        <span className="text-semantic-text-heading">Remaining payment</span>
                         <span className="text-semantic-text-heading">
-                          {walletCoversTotal ? 'Wallet charge' : 'Card charge'}
-                        </span>
-                        <span className="text-semantic-text-heading">
-                          {formatCentsToCurrency(walletCoversTotal ? walletDebitCents : cardChargeCents)}
+                          {formatCentsToCurrency(cardChargeCents)}
                         </span>
                       </div>
                     </div>
