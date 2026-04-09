@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { type CartItem, MAX_CART_ITEMS, CART_STORAGE_KEY } from '@/lib/checkout/cart-types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CartContextValue {
   items: CartItem[];
@@ -46,12 +47,31 @@ function saveCart(items: CartItem[]) {
 function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
     setItems(loadCart());
     setHydrated(true);
   }, []);
+
+  // Clear cart when user signs out or switches to a different user.
+  // Declared before the persistence effect so React processes it first.
+  useEffect(() => {
+    if (authLoading) return;
+    const userId = user?.id ?? null;
+    const prev = prevUserIdRef.current;
+    prevUserIdRef.current = userId;
+
+    // First resolution after mount — just record, don't clear
+    if (prev === undefined) return;
+
+    // User signed out or switched to a different user
+    if (prev && prev !== userId) {
+      setItems([]);
+    }
+  }, [user, authLoading]);
 
   // Persist to localStorage on change (after initial hydration)
   useEffect(() => {
