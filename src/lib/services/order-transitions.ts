@@ -14,6 +14,7 @@ import {
   sendOrderAcceptedToBuyer,
   sendOrderShippedToBuyer,
   sendOrderDeliveredToBuyer,
+  sendOrderDeliveredToSeller,
   sendOrderCompletedToSeller,
   sendOrderDeclinedToBuyer,
 } from '@/lib/email';
@@ -290,14 +291,23 @@ export async function markDelivered(orderId: string, userId: string): Promise<Or
   const updatedOrder = await transitionOrder(orderId, 'delivered', userId, 'buyer', undefined, order);
 
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
-  sendOrderDeliveredToBuyer({
+  void sendOrderDeliveredToBuyer({
     buyerName: order.buyer_profile?.full_name ?? 'Buyer',
     buyerEmail: order.buyer_profile?.email ?? '',
     orderNumber: order.order_number,
     orderId,
     gameName: gameSummary,
   }).catch((err) => console.error('[Email] Failed to send order-delivered to buyer:', err));
+  void sendOrderDeliveredToSeller({
+    sellerName: order.seller_profile?.full_name ?? 'Seller',
+    sellerEmail: order.seller_profile?.email ?? '',
+    orderNumber: order.order_number,
+    orderId,
+    gameName: gameSummary,
+    buyerName: order.buyer_profile?.full_name ?? 'Buyer',
+  }).catch((err) => console.error('[Email] Failed to send order-delivered to seller:', err));
   void notify(order.buyer_id, 'order.delivered', { gameName: gameSummary, orderNumber: order.order_number, orderId });
+  void notify(order.seller_id, 'order.delivered_seller', { gameName: gameSummary, orderNumber: order.order_number, orderId, buyerName: order.buyer_profile?.full_name ?? undefined });
 
   return updatedOrder;
 }

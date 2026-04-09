@@ -15,11 +15,18 @@ import { env } from '@/lib/env';
 import { getPaymentStatus, SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay';
 import { debitWallet } from '@/lib/services/wallet';
 import { fulfillCartPayment } from '@/lib/services/payment-fulfillment';
+import { sendEmail } from '@/lib/email/service';
+import React from 'react';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 
 const BATCH_LIMIT = 50;
 const MIN_AGE_MS = 5 * 60 * 1000;   // 5 minutes — give the callback time to fire
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours — skip ancient sessions
+
+/** Wallet debit retries stop after 2 hours — limits retries to ~24 attempts */
+const WALLET_RETRY_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+/** After 1 hour of failures, send a staff alert */
+const WALLET_ALERT_AGE_MS = 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -114,18 +121,23 @@ export async function POST(request: Request) {
 
   // ---- Wallet debit failure retry ----
   // Detect orders where the checkout intended a wallet debit but it failed
-  // (buyer_wallet_debit_cents = 0 but cart group had wallet_allocation > 0)
+  // (buyer_wallet_debit_cents = 0 but cart group had wallet_allocation > 0).
+  // Bounded to orders created within WALLET_RETRY_MAX_AGE_MS (2h) to prevent
+  // infinite retries. Orders older than WALLET_ALERT_AGE_MS (1h) trigger a
+  // staff alert email on failure.
 
   let walletRetries = 0;
   let walletRetryErrors = 0;
 
+  const walletRetryCutoff = new Date(Date.now() - WALLET_RETRY_MAX_AGE_MS).toISOString();
+
   const { data: cartMismatches } = await serviceClient
     .from('orders')
-    .select('id, buyer_id, order_number, cart_group_id')
+    .select('id, buyer_id, order_number, cart_group_id, created_at')
     .eq('buyer_wallet_debit_cents', 0)
     .eq('payment_method', 'card')
     .not('cart_group_id', 'is', null)
-    .gt('created_at', maxCutoff)
+    .gt('created_at', walletRetryCutoff)
     .limit(BATCH_LIMIT);
 
   if (cartMismatches && cartMismatches.length > 0) {
@@ -156,6 +168,8 @@ export async function POST(request: Request) {
 
       if (intendedDebit <= 0) continue;
 
+      const orderAge = Date.now() - new Date(order.created_at).getTime();
+
       try {
         await debitWallet(
           order.buyer_id,
@@ -174,7 +188,21 @@ export async function POST(request: Request) {
         console.log(`[Reconcile] Cart wallet debit retry succeeded for order ${order.id}: ${intendedDebit} cents`);
       } catch (error) {
         walletRetryErrors++;
-        console.error(`[Reconcile] MANUAL ATTENTION: Cart wallet debit retry failed for order ${order.id}:`, error);
+        console.error(`[Reconcile] Cart wallet debit retry failed for order ${order.id}:`, error);
+
+        // After 1h of failures, escalate to staff via email
+        if (orderAge > WALLET_ALERT_AGE_MS) {
+          void sendEmail({
+            to: env.resend.fromEmail,
+            subject: `[ACTION REQUIRED] Wallet debit failed: ${order.order_number}`,
+            react: React.createElement('div', null,
+              React.createElement('p', null, `Order ${order.order_number} (${order.id}) has a failed wallet debit of ${intendedDebit} cents.`),
+              React.createElement('p', null, `Buyer ID: ${order.buyer_id}`),
+              React.createElement('p', null, `Order created: ${order.created_at}`),
+              React.createElement('p', null, 'Retries will stop after 2 hours. Please review and resolve manually.'),
+            ),
+          }).catch((err) => console.error('[Reconcile] Failed to send staff alert email:', err));
+        }
       }
     }
   }

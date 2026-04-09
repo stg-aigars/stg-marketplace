@@ -127,15 +127,19 @@ export async function createListing(
   const fieldError = validateListingFields(data, photoUrlPrefix);
   if (fieldError) return { error: fieldError };
 
-  // Fetch seller profile to get country
+  // Fetch seller profile to get country + DAC7 status
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
-    .select('country')
+    .select('country, dac7_status')
     .eq('id', user.id)
     .single();
 
   if (profileError || !profile?.country) {
     return { error: 'Could not load your profile. Please complete your profile first' };
+  }
+
+  if (profile.dac7_status === 'blocked') {
+    return { error: 'Your account is blocked. Please provide the required tax information in your account settings before creating listings' };
   }
 
   // Build insert payload

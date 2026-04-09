@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Dac7BlockedAlert } from '@/components/dac7/Dac7BlockedAlert';
 import { SellPageClient } from './_components/SellPageClient';
+
+export const metadata: Metadata = {
+  title: 'Sell a game',
+};
 
 export default async function SellPage() {
   const { profile } = await requireServerAuth();

@@ -163,6 +163,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
           type="button"
           onClick={openLightbox}
           className="w-full aspect-square max-h-[400px] bg-semantic-bg-secondary rounded-lg overflow-hidden relative cursor-zoom-in"
+          aria-label={`View ${gameTitle} photo ${activeIndex + 1} full size`}
         >
           <Image
             src={activeUrl}
@@ -187,6 +188,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
               <button
                 key={i}
                 onClick={() => setActiveIndex(i)}
+                aria-label={`View photo ${i + 1}`}
                 className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors duration-250 ease-out-custom relative ${
                   i === activeIndex
                     ? 'border-2 border-semantic-brand'
