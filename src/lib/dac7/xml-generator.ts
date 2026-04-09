@@ -80,8 +80,8 @@ export function generateDpiXml(reports: Dac7ReportData[], year: number): string 
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <DPI_OECD version="2.0"
-  xmlns="urn:oecd:ties:dpi:v1"
-  xmlns:stf="urn:oecd:ties:dpistf:v1">
+  xmlns="urn:oecd:ties:dpi:v2"
+  xmlns:stf="urn:oecd:ties:dpistf:v2">
   <MessageSpec>
     <SendingCompanyIN>${escapeXml(platform.registration_number)}</SendingCompanyIN>
     <TransmittingCountry>${escapeXml(platform.country)}</TransmittingCountry>

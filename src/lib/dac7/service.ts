@@ -28,50 +28,20 @@ export async function updateDac7StatsOnCompletion(
   const year = new Date().getFullYear();
   const supabase = createServiceClient();
 
-  // Atomic upsert: increment count and consideration
-  const { data: stats, error: upsertError } = await supabase
-    .rpc('upsert_dac7_stats', {
-      p_seller_id: sellerId,
-      p_year: year,
-      p_consideration_cents: considerationCents,
-    })
-    .single<{ completed_transaction_count: number; total_consideration_cents: number }>();
+  // Atomic upsert via Postgres RPC — ON CONFLICT increments in a single statement,
+  // safe under concurrent order completions for the same seller.
+  const { error: rpcError } = await supabase.rpc('upsert_dac7_seller_stats', {
+    p_seller_id: sellerId,
+    p_calendar_year: year,
+    p_consideration_cents: considerationCents,
+  });
 
-  // Fallback: if RPC doesn't exist yet, use raw upsert
-  if (upsertError) {
-    // Direct upsert — slightly less atomic but functional
-    const { data: existing } = await supabase
-      .from('dac7_seller_annual_stats')
-      .select('completed_transaction_count, total_consideration_cents')
-      .eq('seller_id', sellerId)
-      .eq('calendar_year', year)
-      .single();
-
-    if (existing) {
-      await supabase
-        .from('dac7_seller_annual_stats')
-        .update({
-          completed_transaction_count: existing.completed_transaction_count + 1,
-          total_consideration_cents: existing.total_consideration_cents + considerationCents,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('seller_id', sellerId)
-        .eq('calendar_year', year);
-    } else {
-      await supabase
-        .from('dac7_seller_annual_stats')
-        .insert({
-          seller_id: sellerId,
-          calendar_year: year,
-          completed_transaction_count: 1,
-          total_consideration_cents: considerationCents,
-          updated_at: new Date().toISOString(),
-        });
-    }
+  if (rpcError) {
+    console.error('[DAC7] Failed to upsert stats:', rpcError);
   }
 
   // Check threshold crossing
-  await evaluateAndEscalateStatus(sellerId, stats ?? undefined);
+  await evaluateAndEscalateStatus(sellerId);
 }
 
 /**
@@ -115,8 +85,9 @@ async function evaluateAndEscalateStatus(
 
   const now = new Date().toISOString();
 
-  // Escalate: approaching → data_requested (regulatory threshold crossed)
-  if (crossedRegulatory && profile.dac7_status === 'approaching') {
+  // Check regulatory threshold first — a large order can jump past both thresholds at once.
+  // Must be checked before warning threshold to avoid setting 'approaching' when 'data_requested' is correct.
+  if (crossedRegulatory && (profile.dac7_status === 'not_applicable' || profile.dac7_status === 'approaching')) {
     await supabase
       .from('user_profiles')
       .update({
@@ -129,27 +100,13 @@ async function evaluateAndEscalateStatus(
     return;
   }
 
-  // Escalate: not_applicable → approaching (warning threshold crossed)
+  // Escalate: not_applicable → approaching (warning threshold crossed, no timer)
   if (crossedWarning && profile.dac7_status === 'not_applicable') {
     await supabase
       .from('user_profiles')
       .update({
         dac7_status: 'approaching',
         dac7_status_updated_at: now,
-      })
-      .eq('id', sellerId);
-    return;
-  }
-
-  // Skip not_applicable → data_requested if they jumped past warning
-  // (e.g. large order pushes them past both thresholds at once)
-  if (crossedRegulatory && profile.dac7_status === 'not_applicable') {
-    await supabase
-      .from('user_profiles')
-      .update({
-        dac7_status: 'data_requested',
-        dac7_status_updated_at: now,
-        dac7_first_reminder_sent_at: now,
       })
       .eq('id', sellerId);
     return;

@@ -76,7 +76,27 @@ CREATE POLICY "Users can view own DAC7 reports"
   USING (auth.uid() = seller_id);
 
 -- ============================================================
--- 4. Add dac7.* prefix to notifications type constraint
+-- 4. Atomic upsert RPC for real-time stats increment
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION upsert_dac7_seller_stats(
+  p_seller_id uuid,
+  p_calendar_year smallint,
+  p_consideration_cents integer
+) RETURNS void AS $$
+BEGIN
+  INSERT INTO dac7_seller_annual_stats (seller_id, calendar_year, completed_transaction_count, total_consideration_cents, updated_at)
+  VALUES (p_seller_id, p_calendar_year, 1, p_consideration_cents, now())
+  ON CONFLICT (seller_id, calendar_year)
+  DO UPDATE SET
+    completed_transaction_count = dac7_seller_annual_stats.completed_transaction_count + 1,
+    total_consideration_cents = dac7_seller_annual_stats.total_consideration_cents + p_consideration_cents,
+    updated_at = now();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- 5. Add dac7.* prefix to notifications type constraint
 -- ============================================================
 
 ALTER TABLE notifications
