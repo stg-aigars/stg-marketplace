@@ -95,9 +95,10 @@ export default function PackingGuidePage() {
             </li>
             <li>
               <strong className="text-semantic-text-heading">Attach the shipping label.</strong>{' '}
-              Print the Unisend label and stick it on the largest flat surface. Make sure it&apos;s
-              fully visible and not folded over an edge. If you tape over the label for weather
-              protection, use clear tape.
+              Print the shipping label and stick it on the largest flat surface. Make sure
+              it&apos;s fully visible and not folded over an edge. If you tape over the label
+              for weather protection, use clear tape. Then drop it at any terminal that
+              supports sending (some terminals are receive-only).
             </li>
           </ol>
         </section>
@@ -135,9 +136,10 @@ export default function PackingGuidePage() {
             Locker sizes
           </h2>
           <p>
-            Unisend lockers come in five sizes. Most standard board games (Catan, Ticket to
-            Ride, Carcassonne) fit in M. Larger games like Gloomhaven need L or XL, and some
-            might not fit at all once you add padding.
+            The Unisend network includes Unisend, Latvijas Pasts, and uDrop terminals.
+            Lockers come in five sizes. Most standard board games (Catan, Ticket to Ride,
+            Carcassonne) fit in M. Larger games like Gloomhaven need L or XL, and some might
+            not fit at all once you add padding.
           </p>
           <p>
             If you&apos;re listing a big or unusually shaped game, measure it packed and check the

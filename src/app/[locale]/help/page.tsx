@@ -33,7 +33,8 @@ export default function HelpPage() {
           <h3 className="text-base font-semibold text-semantic-text-heading">How much does shipping cost?</h3>
           <p>
             It depends on the route (which country the seller is in, which country you&apos;re in).
-            All shipments go through Unisend parcel lockers across Latvia, Lithuania, and Estonia.
+            All shipments go through the Unisend parcel network, which includes Unisend,
+            Latvijas Pasts, and uDrop terminals across Latvia, Lithuania, and Estonia.
             You&apos;ll see the exact cost at checkout before you pay.
           </p>
         </section>
@@ -69,14 +70,16 @@ export default function HelpPage() {
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How does shipping work?</h3>
           <p>
-            All shipments use Unisend parcel lockers. When you accept an order as a seller,
+            All shipments go through the Unisend network, which includes Unisend,
+            Latvijas Pasts, and uDrop terminals. When you accept an order as a seller,
             you&apos;ll get shipping instructions with a barcode. Drop the package at any
-            Unisend terminal, and the buyer picks it up from their chosen locker.
+            terminal that supports sending (some are receive-only, which you&apos;ll see
+            during terminal selection at checkout). The buyer picks it up from their
+            chosen locker.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">Which countries?</h3>
           <p>
-            Latvia, Lithuania, and Estonia. You can ship between all three countries through
-            the Unisend network.
+            Latvia, Lithuania, and Estonia. You can ship between all three countries.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How long does delivery take?</h3>
           <p>
