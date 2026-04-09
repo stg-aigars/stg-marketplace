@@ -9,7 +9,7 @@ export default function HelpPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
-        Help Center
+        Help center
       </h1>
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-8">
@@ -19,20 +19,20 @@ export default function HelpPage() {
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I buy a game?</h3>
           <p>
-            Browse the marketplace, find a game you like, and click through to the listing.
-            Select a parcel locker for delivery, then pay with card or your wallet balance.
-            The seller will ship the game to your chosen locker.
+            Browse the marketplace, find a game you like, and open the listing. Pick a parcel
+            locker for delivery, pay with card or wallet balance, and the seller ships it to
+            your locker.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">What payment methods are accepted?</h3>
+          <h3 className="text-base font-semibold text-semantic-text-heading">What payment methods do you accept?</h3>
           <p>
-            We accept card payments (Visa, Mastercard) through EveryPay. If you have a wallet
-            balance from previous sales, you can use that too.
+            Card payments (Visa, Mastercard) through EveryPay. If you&apos;ve sold games before
+            and have wallet balance, you can use that too.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How much does shipping cost?</h3>
           <p>
-            Shipping prices depend on the route (seller country to buyer country). All shipments
-            go through Unisend parcel lockers across Latvia, Lithuania, and Estonia. The shipping
-            cost is shown at checkout before you pay.
+            It depends on the route (which country the seller is in, which country you&apos;re in).
+            All shipments go through Unisend parcel lockers across Latvia, Lithuania, and Estonia.
+            You&apos;ll see the exact cost at checkout before you pay.
           </p>
         </section>
 
@@ -46,18 +46,18 @@ export default function HelpPage() {
             <Link href="/sell" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom">
               List a game
             </Link>
-            {' '}and search for your game. Select the edition, add photos, set the condition and
-            price, and publish. Your listing will be visible to buyers across all three Baltic countries.
+            , search for your game, pick the edition, add photos, set the condition and price,
+            and publish. Buyers across all three Baltic countries can see it right away.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">What are the fees?</h3>
           <p>
-            We charge a 10% commission on the item price (not on shipping). There are no listing
-            fees or monthly charges. You only pay when a game sells.
+            10% commission on the item price (not on shipping). No listing fees, no monthly
+            charges. You only pay when a game sells.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I get paid?</h3>
           <p>
-            When an order is completed, your earnings (90% of the item price) are credited to
-            your wallet. You can withdraw your balance to your bank account at any time.
+            When an order completes, your earnings (90% of the item price) go into your wallet.
+            You can withdraw to your bank account any time.
           </p>
         </section>
 
@@ -68,68 +68,66 @@ export default function HelpPage() {
           <h3 className="text-base font-semibold text-semantic-text-heading">How does shipping work?</h3>
           <p>
             All shipments use Unisend parcel lockers. When you accept an order as a seller,
-            you will receive shipping instructions with a barcode. Drop the package at any
+            you&apos;ll get shipping instructions with a barcode. Drop the package at any
             Unisend terminal, and the buyer picks it up from their chosen locker.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">Which countries are supported?</h3>
+          <h3 className="text-base font-semibold text-semantic-text-heading">Which countries?</h3>
           <p>
-            Latvia, Lithuania, and Estonia. Cross-border shipping between all three countries
-            is supported through the Unisend network.
+            Latvia, Lithuania, and Estonia. You can ship between all three countries through
+            the Unisend network.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How long does delivery take?</h3>
           <p>
-            Domestic deliveries typically take 1-3 business days. Cross-border shipments may
-            take 2-5 business days depending on the route.
+            Domestic deliveries usually take 1–3 business days. Cross-border can take
+            2–5 business days depending on the route.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How should I pack a game?</h3>
           <p>
-            Good packing protects the game and your reputation as a seller. See our{' '}
+            We have a full{' '}
             <Link href="/help/packing" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom">
               packing guide
             </Link>
-            {' '}for step-by-step instructions, parcel locker sizes, and Baltic weather tips.
+            {' '}with step-by-step instructions, locker sizes, and tips for Baltic weather.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Orders and Disputes
+            Orders and disputes
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">What happens after I buy?</h3>
           <p>
-            After payment, the seller has time to accept the order and ship the game. You can
-            track the order status on your{' '}
+            The seller has 48 hours to accept the order, then 5 days to ship it. You can
+            track everything on your{' '}
             <Link href="/account/orders" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom">
               orders page
             </Link>.
-            Once delivered, you have 2 days to confirm everything is in order before the
-            payment is released to the seller.
+            Once delivered, you have 2 days to check the game before payment goes to the seller.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">What if something goes wrong?</h3>
+          <h3 className="text-base font-semibold text-semantic-text-heading">What if the game arrives damaged?</h3>
           <p>
-            If the game arrives damaged or not as described, you can open a dispute within
-            2 days of delivery. Upload photos as evidence and describe the issue. The seller
-            can offer a refund, or you can escalate to our team for resolution.
+            You can open a dispute within 2 days of delivery. Upload photos and describe
+            what&apos;s wrong. The seller can offer a refund, or you can escalate to our
+            team if you can&apos;t reach an agreement.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Your Account
+            Your account
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I change my settings?</h3>
           <p>
-            Visit your{' '}
+            Head to{' '}
             <Link href="/account/settings" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom">
               account settings
             </Link>
-            {' '}to update your display name, email, password, and phone number.
+            {' '}to update your display name, email, password, or phone number.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">Can I export or delete my data?</h3>
           <p>
-            Yes. Under account settings, you can export all your data as a JSON file or
-            permanently delete your account. Account deletion anonymizes your profile and
-            deactivates all active listings.
+            Yes. In account settings you can export your data as JSON or permanently delete
+            your account. Deleting anonymizes your profile and deactivates any active listings.
           </p>
         </section>
 
@@ -138,11 +136,11 @@ export default function HelpPage() {
             About Second Turn Games
           </h2>
           <p>
-            Second Turn Games is a peer-to-peer marketplace for pre-loved board games in
-            the Baltic region. We believe every game deserves a second turn at the table.
+            A marketplace for pre-loved board games in Latvia, Lithuania, and Estonia.
+            Every game deserves a second turn at the table.
           </p>
           <p>
-            Currently serving Latvia, Lithuania, and Estonia. Have a question not covered here?{' '}
+            Question not covered here?{' '}
             <Link href="/contact" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom">
               Get in touch
             </Link>.
