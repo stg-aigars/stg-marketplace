@@ -233,7 +233,6 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                 const badgeKey = item.listings?.condition
                   ? conditionToBadgeKey[item.listings.condition as ListingCondition]
                   : undefined;
-                const conditionLabel = badgeKey ? conditionConfig[badgeKey]?.label : null;
 
                 return (
                   <div key={item.id} className={hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}>
@@ -248,9 +247,9 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                         </span>
                       ) : undefined}
                     />
-                    {conditionLabel && badgeKey && (
+                    {badgeKey && (
                       <div className="mt-1 ml-[68px]">
-                        <Badge condition={badgeKey}>{conditionLabel}</Badge>
+                        <Badge condition={badgeKey}>{conditionConfig[badgeKey].label}</Badge>
                       </div>
                     )}
                     {itemExpansions.length > 0 && (
