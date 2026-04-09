@@ -25,35 +25,33 @@ export function Dac7Approaching({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        Your sales on Second Turn Games are approaching the EU tax reporting threshold.
-        Under EU Directive 2021/514 (DAC7), platforms are required to report seller
-        activity to tax authorities when a seller completes 30 or more transactions or
-        earns more than 2,000 EUR in a calendar year.
+        You're getting close to the EU tax reporting threshold on Second Turn Games.
+        EU rules (DAC7) require us to report seller activity to tax authorities once
+        a seller reaches 30 sales or 2,000 EUR in a calendar year.
       </Text>
 
       <div style={s.orderCard}>
-        <Text style={s.detailLabel}>Completed sales this year</Text>
+        <Text style={s.detailLabel}>Sales this year</Text>
         <Text style={s.detailValue}>{transactionCount}</Text>
 
-        <Text style={s.detailLabel}>Total sales amount</Text>
+        <Text style={s.detailLabel}>Total amount</Text>
         <Text style={s.detailValue}>{considerationEuros}</Text>
       </div>
 
       <Text style={s.body}>
-        If you reach the threshold, we will ask you to provide some additional
-        information (date of birth, tax identification number, and bank account).
-        This does not create new tax obligations — it ensures transparency for
-        income you may already need to declare.
+        If you reach the threshold, we'll ask for a few extra details:
+        date of birth, personal code (TIN), and bank account. This is
+        about reporting, not additional taxes.
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={s.ctaFrost} href={`${appUrl}/account/settings/tax`}>
-          Learn More
+        <Button style={s.ctaFrost} href={`${appUrl}/account/tax`}>
+          Learn more
         </Button>
       </div>
 
       <Text style={s.note}>
-        No action is required right now. We will notify you if you reach the threshold.
+        Nothing to do right now. We'll let you know if you reach the threshold.
       </Text>
     </EmailLayout>
   );

@@ -261,28 +261,28 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
 
   // --- DAC7 tax reporting ---
   'dac7.approaching': {
-    title: () => 'Approaching tax reporting threshold',
-    body: () => 'You are nearing the EU tax reporting threshold. We may need additional information from you soon.',
-    link: () => '/account/settings/tax',
+    title: () => 'Near the tax reporting threshold',
+    body: () => "You're getting close to the EU tax reporting threshold. We'll ask for some extra details if you reach it.",
+    link: () => '/account/tax',
   },
   'dac7.data_requested': {
-    title: () => 'Tax information required',
-    body: () => 'You have reached the EU tax reporting threshold. Please provide your tax information.',
-    link: () => '/account/settings/tax',
+    title: () => 'Tax details needed',
+    body: () => "You've crossed the EU tax reporting threshold. Head to tax settings to fill in your details.",
+    link: () => '/account/tax',
   },
   'dac7.reminder': {
-    title: () => 'Reminder: tax information still needed',
-    body: () => 'We still need your tax information. Your account may be restricted if not provided within 14 days.',
-    link: () => '/account/settings/tax',
+    title: () => 'Tax details still needed',
+    body: () => 'We still need your tax details. Your account will be restricted in 14 days if not provided.',
+    link: () => '/account/tax',
   },
   'dac7.blocked': {
-    title: () => 'Selling paused — tax information needed',
-    body: () => 'Your ability to create new listings and withdraw funds has been paused. Please provide your tax information to restore access.',
-    link: () => '/account/settings/tax',
+    title: () => 'Selling paused',
+    body: () => 'New listings and withdrawals are paused until you provide your tax details.',
+    link: () => '/account/tax',
   },
   'dac7.report_available': {
-    title: () => 'Annual tax report ready',
-    body: () => 'Your annual tax report has been generated and is ready for your review.',
-    link: () => '/account/settings/tax',
+    title: () => 'Tax report ready',
+    body: () => 'Your annual tax report is ready. Review it before we submit to the tax authority.',
+    link: () => '/account/tax',
   },
 };

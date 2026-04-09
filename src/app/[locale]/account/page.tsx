@@ -52,7 +52,7 @@ export default async function AccountPage() {
     { href: '/account/wallet', icon: Wallet, label: 'Wallet', desc: walletBalanceCents > 0 ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}` : 'Earnings and withdrawals', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
     { href: '/account/offers', icon: Handshake, label: 'Offers', desc: 'Price offers and negotiations', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
     { href: '/account/shelf', icon: BookBookmark, label: 'Shelf', desc: 'Your game collection', tint: 'bg-semantic-success-bg border-semantic-success/20 text-semantic-success' },
-    { href: '/account/settings/tax', icon: Receipt, label: 'Tax reporting', desc: dac7Stats ? `${dac7Stats.completed_transaction_count}/${DAC7_REPORT_TRANSACTIONS} sales · ${formatCentsToCurrency(dac7Stats.total_consideration_cents)}/${formatCentsToCurrency(DAC7_REPORT_CONSIDERATION_CENTS)}` : 'EU tax reporting (DAC7)', tint: 'bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted' },
+    { href: '/account/tax', icon: Receipt, label: 'Tax reporting', desc: getDac7LinkDesc(profile?.dac7_status ?? 'not_applicable', dac7Stats), tint: getDac7LinkTint(profile?.dac7_status ?? 'not_applicable') },
   ];
 
   const buyingLinks = [
@@ -128,19 +128,19 @@ function Dac7Alert({ status }: { status: Dac7SellerStatus }) {
   const config: Record<string, { variant: 'info' | 'warning' | 'error'; text: string }> = {
     approaching: {
       variant: 'info',
-      text: 'You are approaching the EU tax reporting threshold. We may need additional information from you soon.',
+      text: "You're getting close to the EU tax reporting threshold. We'll ask for some extra details if you reach it.",
     },
     data_requested: {
       variant: 'warning',
-      text: 'You have reached the EU tax reporting threshold. Please provide your tax information.',
+      text: "You've reached the EU tax reporting threshold. We need your tax details to continue.",
     },
     reminder_sent: {
       variant: 'warning',
-      text: 'Reminder: We still need your tax information. Your account may be restricted if not provided soon.',
+      text: 'We still need your tax details. Your account will be restricted if not provided within 14 days.',
     },
     blocked: {
       variant: 'error',
-      text: 'Your ability to create new listings and withdraw funds has been paused. Please provide your tax information to restore access.',
+      text: 'New listings and withdrawals are paused until you provide your tax details.',
     },
   };
 
@@ -151,12 +151,42 @@ function Dac7Alert({ status }: { status: Dac7SellerStatus }) {
     <div className="mb-4">
       <Alert variant={variant}>
         <p>{text}</p>
-        <Link href="/account/settings/tax" className="text-sm font-medium underline mt-1 inline-block">
+        <Link href="/account/tax" className="text-sm font-medium underline mt-1 inline-block">
           Go to tax settings
         </Link>
       </Alert>
     </div>
   );
+}
+
+function getDac7LinkDesc(status: Dac7SellerStatus, stats: { completed_transaction_count: number; total_consideration_cents: number } | null): string {
+  const statsText = stats
+    ? `${stats.completed_transaction_count}/${DAC7_REPORT_TRANSACTIONS} sales · ${formatCentsToCurrency(stats.total_consideration_cents)}/${formatCentsToCurrency(DAC7_REPORT_CONSIDERATION_CENTS)}`
+    : null;
+
+  switch (status) {
+    case 'data_requested':
+    case 'reminder_sent':
+      return 'Action needed — provide tax details';
+    case 'blocked':
+      return 'Account restricted — provide tax details';
+    case 'data_provided':
+      return statsText ? `On file · ${statsText}` : 'Information on file';
+    default:
+      return statsText ?? 'EU tax reporting (DAC7)';
+  }
+}
+
+function getDac7LinkTint(status: Dac7SellerStatus): string {
+  switch (status) {
+    case 'blocked':
+      return 'bg-semantic-error/10 border-semantic-error/20 text-semantic-error';
+    case 'data_requested':
+    case 'reminder_sent':
+      return 'bg-semantic-warning/10 border-semantic-warning/20 text-semantic-warning';
+    default:
+      return 'bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted';
+  }
 }
 
 function QuickLinkCard({ href, icon: Icon, label, desc, tint }: {

@@ -25,15 +25,14 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
             EU tax reporting (DAC7)
           </h2>
           <p className="text-sm text-semantic-text-muted">
-            As an EU marketplace, Second Turn Games is required to report seller
-            activity to tax authorities when certain thresholds are reached. This
-            does not create new tax obligations — it ensures transparency for
-            income you may already need to declare.
+            EU rules require marketplaces to report seller activity to tax
+            authorities once certain thresholds are reached. This is about
+            reporting, not additional taxes.
           </p>
           <p className="text-sm text-semantic-text-muted mt-2">
-            Reporting applies when a seller completes {DAC7_REPORT_TRANSACTIONS} or
-            more transactions or earns {formatCentsToCurrency(DAC7_REPORT_CONSIDERATION_CENTS)} or
-            more in a calendar year.
+            The threshold is {DAC7_REPORT_TRANSACTIONS} completed
+            sales or {formatCentsToCurrency(DAC7_REPORT_CONSIDERATION_CENTS)} in
+            total sales per calendar year (whichever comes first).
           </p>
           {stats && (stats.completed_transaction_count > 0 || stats.total_consideration_cents > 0) && (
             <StatsDisplay stats={stats} year={year} />
@@ -51,13 +50,13 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
           variant={status === 'approaching' ? 'info' : 'warning'}
           icon={Warning}
           title={status === 'approaching'
-            ? 'Approaching reporting threshold'
-            : 'Additional information required'}
+            ? 'Getting close to the threshold'
+            : 'Tax details needed'}
         >
           <p className="text-sm">
             {status === 'approaching'
-              ? 'You are approaching the DAC7 reporting threshold. We may need some additional information from you soon.'
-              : 'You have reached the EU tax reporting threshold. Please provide your tax information below.'}
+              ? "You're getting close to the reporting threshold. We'll ask for some extra details if you reach it."
+              : "You've crossed the reporting threshold. Fill in your tax details below."}
           </p>
         </Alert>
 
@@ -72,9 +71,9 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
   if (status === 'data_provided') {
     return (
       <div className="space-y-4">
-        <Alert variant="success" icon={CheckCircle} title="Information on file">
+        <Alert variant="success" icon={CheckCircle} title="Tax details saved">
           <p className="text-sm">
-            Your tax reporting information has been saved. You can update it below if anything changes.
+            We have your tax details on file. You can update them below if anything changes.
           </p>
         </Alert>
 
@@ -89,11 +88,10 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
   if (status === 'blocked') {
     return (
       <div className="space-y-4">
-        <Alert variant="error" icon={ShieldWarning} title="Account restricted — information required">
+        <Alert variant="error" icon={ShieldWarning} title="Account restricted">
           <p className="text-sm">
-            Your ability to create new listings and withdraw funds has been paused
-            because we were unable to collect required tax reporting information.
-            Please provide the required details below to restore full access.
+            New listings and withdrawals are paused because we don't have your
+            tax details yet. Fill them in below to restore access.
           </p>
         </Alert>
 

@@ -8,11 +8,10 @@ export function Dac7BlockedAlert() {
   return (
     <Alert variant="error">
       <p>
-        Your ability to create new listings has been paused because required
-        tax reporting information has not been provided.
+        New listings are paused until you provide your tax details.
       </p>
-      <Link href="/account/settings/tax" className="text-sm font-medium underline mt-1 inline-block">
-        Provide tax information to restore access
+      <Link href="/account/tax" className="text-sm font-medium underline mt-1 inline-block">
+        Go to tax settings
       </Link>
     </Alert>
   );

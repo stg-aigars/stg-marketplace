@@ -18,7 +18,7 @@ export default async function TaxSettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/account/settings" label="Back to settings" />
+      <BackLink href="/account" label="Back to account" />
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6 mt-4">
         Tax information
       </h1>

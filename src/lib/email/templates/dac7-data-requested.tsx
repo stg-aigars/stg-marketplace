@@ -21,30 +21,28 @@ export function Dac7DataRequested({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        You have reached the EU tax reporting threshold on Second Turn Games.
-        Under EU Directive 2021/514 (DAC7), we are required to collect some
-        additional information from you.
+        You've reached the EU tax reporting threshold on Second Turn Games.
+        Under EU rules (DAC7), we need to collect a few details from you.
       </Text>
 
       <Text style={s.body}>
-        Please provide the following in your account settings:
+        Head to your account settings and fill in:
       </Text>
 
       <Text style={s.stepList}>
-        {'• Date of birth\n• Tax identification number (personal code)\n• Country of tax residence\n• Address\n• Bank account (IBAN)'}
+        {'• Date of birth\n• Personal code (TIN)\n• Country of tax residence\n• Address\n• Bank account (IBAN)'}
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={s.ctaOrange} href={`${appUrl}/account/settings/tax`}>
-          Provide Tax Information
+        <Button style={s.ctaOrange} href={`${appUrl}/account/tax`}>
+          Fill in tax details
         </Button>
       </div>
 
       <Text style={s.note}>
-        This information will be shared with the State Revenue Service (VID) and may
-        be exchanged with tax authorities in other EU member states. This does not
-        create new tax obligations — it ensures transparency for income you may
-        already need to declare.
+        This data is reported to the State Revenue Service (VID) and may be
+        shared with tax authorities in other EU countries. This is about
+        reporting, not additional taxes.
       </Text>
     </EmailLayout>
   );

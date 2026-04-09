@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   if (profile?.dac7_status === 'blocked') {
     return NextResponse.json(
-      { error: 'Withdrawals are paused until you provide required tax information. Go to Settings > Tax information.' },
+      { error: 'Withdrawals are paused until you provide your tax details. Go to Account > Tax reporting.' },
       { status: 403 }
     );
   }

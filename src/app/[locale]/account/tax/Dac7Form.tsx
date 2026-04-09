@@ -132,7 +132,7 @@ export function Dac7Form({ dac7Profile }: Dac7FormProps) {
             required
           />
           <p className="text-xs text-semantic-text-muted -mt-2">
-            Your national personal code used for tax purposes
+            Your national personal code (e.g. personas kods)
           </p>
 
           <Input
@@ -164,9 +164,9 @@ export function Dac7Form({ dac7Profile }: Dac7FormProps) {
           )}
 
           <div className="rounded-lg bg-semantic-bg-secondary p-3 text-xs text-semantic-text-muted">
-            This information will be shared with the State Revenue Service (VID)
-            and may be exchanged with tax authorities in other EU member states,
-            as required by EU Directive 2021/514 (DAC7). Data is retained for 5 years.
+            This data is reported to the State Revenue Service (VID) under
+            EU Directive 2021/514 (DAC7) and may be shared with tax authorities
+            in other EU countries. Retained for 5 years.
           </div>
 
           <Button

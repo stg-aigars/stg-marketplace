@@ -21,31 +21,27 @@ export function Dac7Blocked({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={styles.alert}>
-        Your ability to create new listings and withdraw funds on Second Turn Games
-        has been paused.
+        New listings and withdrawals on Second Turn Games are paused.
       </Text>
 
       <Text style={s.body}>
-        We were unable to collect the tax reporting information required under
-        EU Directive 2021/514 (DAC7). To restore full access, please provide
-        the required details in your account settings.
+        We need your tax details under EU reporting rules (DAC7) but haven't
+        received them yet. Fill them in to restore full access.
       </Text>
 
       <Text style={s.body}>
-        Your existing listings remain active and your wallet balance is safe.
-        Once you provide the required information, your account will be
-        fully restored.
+        Your existing listings are still active and your wallet balance is safe.
+        Access is restored as soon as you submit the form.
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={s.ctaOrange} href={`${appUrl}/account/settings/tax`}>
-          Provide Tax Information
+        <Button style={s.ctaOrange} href={`${appUrl}/account/tax`}>
+          Fill in tax details
         </Button>
       </div>
 
       <Text style={s.note}>
-        If you believe this is an error or need help, please contact us at
-        support@secondturn.games.
+        Think this is a mistake? Contact support@secondturn.games.
       </Text>
     </EmailLayout>
   );

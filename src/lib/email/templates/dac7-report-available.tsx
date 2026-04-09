@@ -23,27 +23,23 @@ export function Dac7ReportAvailable({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        Your annual tax report for {year} has been generated and is ready for
-        your review. This report summarizes the information that will be submitted
-        to the State Revenue Service (VID) as required by EU Directive 2021/514
-        (DAC7).
+        Your tax report for {year} is ready. It shows what we'll submit to the
+        State Revenue Service (VID) under EU reporting rules (DAC7).
       </Text>
 
       <Text style={s.body}>
-        Please review the report in your account settings. If you notice any
-        inaccuracies, let us know before the report is submitted.
+        Take a look and let us know if anything seems off before we submit.
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={s.ctaFrost} href={`${appUrl}/account/settings/tax`}>
-          Review Your Report
+        <Button style={s.ctaFrost} href={`${appUrl}/account/tax`}>
+          Review report
         </Button>
       </div>
 
       <Text style={s.note}>
-        The report may be shared with tax authorities in other EU member states
-        via automatic exchange of information. Data is retained for 5 years
-        from the end of the reporting period.
+        This report may be shared with tax authorities in other EU countries.
+        Data is kept for 5 years.
       </Text>
     </EmailLayout>
   );

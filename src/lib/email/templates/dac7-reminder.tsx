@@ -21,27 +21,27 @@ export function Dac7Reminder({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        We still need your tax reporting information. This is a final reminder.
+        We still need your tax details. This is the final reminder.
       </Text>
 
       <Text style={styles.warning}>
-        If you do not provide the required information within 14 days,
-        your ability to create new listings and withdraw funds will be paused.
+        If we don't receive your details within 14 days, new listings
+        and withdrawals will be paused.
       </Text>
 
       <Text style={s.body}>
-        Please provide your date of birth, tax identification number, country
-        of tax residence, address, and bank account (IBAN) in your account settings.
+        Go to your account settings and fill in your date of birth,
+        personal code, country, address, and IBAN.
       </Text>
 
       <div style={s.ctaSection}>
-        <Button style={s.ctaOrange} href={`${appUrl}/account/settings/tax`}>
-          Provide Tax Information
+        <Button style={s.ctaOrange} href={`${appUrl}/account/tax`}>
+          Fill in tax details
         </Button>
       </div>
 
       <Text style={s.note}>
-        If you have any questions, please contact us at support@secondturn.games.
+        Questions? Contact support@secondturn.games.
       </Text>
     </EmailLayout>
   );
