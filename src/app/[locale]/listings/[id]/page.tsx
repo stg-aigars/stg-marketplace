@@ -16,6 +16,7 @@ import { formatDate } from '@/lib/date-utils';
 import { decodeHTMLEntities, getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
+import { ListingNavigation } from './ListingNavigation';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
 import { SellerRating } from '@/components/reviews';
 import { BidPanel } from '@/components/auctions/BidPanel';
@@ -291,6 +292,8 @@ export default async function ListingDetailPage(
         { label: 'Browse', href: '/browse' },
         { label: listing.game_name },
       ]} />
+      {/* Browse context navigation (prev/next) */}
+      <ListingNavigation key={id} listingId={id} />
       {/* Owner status banner for non-active listings */}
       {isOwner && listing.status !== 'active' && (
         <Alert variant="info" className="mb-6">

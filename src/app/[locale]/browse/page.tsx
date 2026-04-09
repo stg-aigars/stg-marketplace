@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { EmptyState, Pagination } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
+import { BrowseContextWriter } from './BrowseContextWriter';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 import {
@@ -229,6 +230,11 @@ export default async function BrowsePage(
               />
             ))}
           </div>
+
+          <BrowseContextWriter
+            listingIds={filteredListings.map((l) => l.id)}
+            searchParams={filtersToSearchParams(filters)}
+          />
 
           <Pagination
             currentPage={filters.page}
