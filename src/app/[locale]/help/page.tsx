@@ -20,13 +20,15 @@ export default function HelpPage() {
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I buy a game?</h3>
           <p>
             Browse the marketplace, find a game you like, and open the listing. Pick a parcel
-            locker for delivery, pay with card or wallet balance, and the seller ships it to
-            your locker.
+            locker for delivery, pay with card, bank link, or wallet balance, and the seller
+            ships it to your locker.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">What payment methods do you accept?</h3>
           <p>
-            Card payments (Visa, Mastercard) through EveryPay. If you&apos;ve sold games before
-            and have wallet balance, you can use that too.
+            Cards (Visa, Mastercard), bank payments from major Baltic banks, and mobile
+            wallets like Apple Pay and Google Pay, all through EveryPay. Available methods
+            may vary. If you&apos;ve sold games before and have wallet balance, you can use
+            that too.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How much does shipping cost?</h3>
           <p>
