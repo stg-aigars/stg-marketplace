@@ -14,7 +14,7 @@ export default function ContactPage() {
 
       <div className="max-w-lg space-y-6">
         <p className="text-semantic-text-secondary">
-          Have a question, found a bug, or need help with an order? We are here to help.
+          Question about an order, or something not working right? Get in touch.
         </p>
 
         <div className="border border-semantic-border-subtle rounded-lg p-6 space-y-4">
@@ -32,10 +32,47 @@ export default function ContactPage() {
 
           <div>
             <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+              Phone
+            </h2>
+            <a
+              href="tel:+37126779625"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+            >
+              +371 26779625
+            </a>
+          </div>
+
+          <div>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
               Response time
             </h2>
             <p className="text-semantic-text-secondary">
               We aim to respond within 24 hours on business days.
+            </p>
+          </div>
+        </div>
+
+        <div className="border border-semantic-border-subtle rounded-lg p-6 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+              Business name
+            </h2>
+            <p className="text-semantic-text-secondary">Second Turn Games SIA</p>
+          </div>
+
+          <div>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+              Registration number
+            </h2>
+            <p className="text-semantic-text-secondary">50203665371</p>
+          </div>
+
+          <div>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+              Registered address
+            </h2>
+            <p className="text-semantic-text-secondary">
+              Evalda Valtera 5 - 35, Riga, LV-1021, Latvia
             </p>
           </div>
         </div>
@@ -52,7 +89,7 @@ export default function ContactPage() {
             >
               Privacy Policy
             </Link>{' '}
-            for details on exercising your rights.
+            for data and privacy requests.
           </p>
         </div>
       </div>
