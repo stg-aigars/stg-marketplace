@@ -318,11 +318,11 @@ export function CheckoutForm({
                 />
                 <span className="text-sm text-semantic-text-secondary">
                   I agree to the{' '}
-                  <Link href="/terms" target="_blank" className="text-semantic-brand underline">
+                  <Link href="/terms" target="_blank" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline">
                     Terms &amp; Conditions
                   </Link>
                   , including the{' '}
-                  <Link href="/terms#cancellations-refunds" target="_blank" className="text-semantic-brand underline">
+                  <Link href="/terms#cancellations-refunds" target="_blank" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline">
                     cancellation and refund policy
                   </Link>
                 </span>
