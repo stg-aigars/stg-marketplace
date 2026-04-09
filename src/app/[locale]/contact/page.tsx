@@ -14,7 +14,7 @@ export default function ContactPage() {
 
       <div className="max-w-lg space-y-6">
         <p className="text-semantic-text-secondary">
-          Question about an order, or something not working right? Get in touch.
+          Question or need help with an order? Get in touch.
         </p>
 
         <div className="border border-semantic-border-subtle rounded-lg p-6 space-y-4">
@@ -28,6 +28,9 @@ export default function ContactPage() {
             >
               info@secondturn.games
             </a>
+            <p className="text-sm text-semantic-text-muted mt-1">
+              We aim to respond within 24 hours on business days.
+            </p>
           </div>
 
           <div>
@@ -40,15 +43,6 @@ export default function ContactPage() {
             >
               +371 26779625
             </a>
-          </div>
-
-          <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
-              Response time
-            </h2>
-            <p className="text-semantic-text-secondary">
-              We aim to respond within 24 hours on business days.
-            </p>
           </div>
         </div>
 
