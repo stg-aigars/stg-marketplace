@@ -1,4 +1,5 @@
 import type { CountryCode } from '@/lib/country-utils';
+import type { Dac7SellerStatus } from '@/lib/dac7/types';
 
 export interface UserProfile {
   id: string;
@@ -11,6 +12,7 @@ export interface UserProfile {
   is_staff: boolean;
   avatar_url: string | null;
   onboarding_dismissed_at: string | null;
+  dac7_status: Dac7SellerStatus;
   created_at: string;
   updated_at: string;
 }

@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createWithdrawalRequest, InsufficientBalanceError } from '@/lib/services/wallet';
 import { withdrawalLimiter, applyRateLimit } from '@/lib/rate-limit';
+import { createServiceClient } from '@/lib/supabase';
 
 // Basic IBAN validation for Baltic countries
 const IBAN_REGEX = /^(LV|LT|EE)\d{2}[A-Z0-9]{4,30}$/;
@@ -16,6 +17,21 @@ export async function POST(request: Request) {
 
   const { response, user } = await requireAuth();
   if (response) return response;
+
+  // DAC7 gate: blocked sellers cannot withdraw
+  const supabase = createServiceClient();
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('dac7_status')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.dac7_status === 'blocked') {
+    return NextResponse.json(
+      { error: 'Withdrawals are paused until you provide required tax information. Go to Settings > Tax information.' },
+      { status: 403 }
+    );
+  }
 
   let amountCents: number;
   let bankAccountHolder: string;

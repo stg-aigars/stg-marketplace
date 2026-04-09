@@ -144,6 +144,7 @@ Always use these — do not write inline equivalents:
 | Icon count badge | `CountBadge` (count, className; 0 hides) | `@/components/ui` |
 | Auction bid guard | `isAuctionWithBids(listingType, bidCount)` — use instead of inline `=== 'auction' && > 0` | `@/lib/listings/types` |
 | Enriched game builder | `buildEnrichedGame(bggGameId, gameName, gameYear, games)` — builds `EnrichedGame` from DB row with games join | `@/app/[locale]/sell/_components/GameSearchStep` |
+| DAC7 blocked banner | `Dac7BlockedAlert` (error alert with link to tax settings; used on all sell-flow entry points) | `@/components/dac7` |
 
 ## Design System Rules
 - **Use existing components first.** Before writing any UI element, check if a shared component exists in `@/components/ui`. If it does, use it. If it doesn't and the pattern appears in 2+ places, create a new shared component.
@@ -231,7 +232,7 @@ All `/api/cron/*` routes follow the same pattern:
 - **Coolify command**: `curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/<name>`
 - **Auth check**: `request.headers.get('authorization') !== \`Bearer ${env.cron.secret}\`` → 401
 
-Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, reconciles orphaned cart checkout groups + retries failed wallet debits), `auction-ending-soon` (5min, sends ending-soon notifications to bidders + seller 30min before auction end), `end-auctions` (1min), `cleanup-sessions` (10min, expires orphan cart checkout groups + unreserves their listings), `sync-tracking` (15min), `auction-payment-deadline` (30min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h, handles both shelf + wanted offers), `cleanup-photos` (6h, removes orphaned listing photos from storage), `cleanup-notifications` (weekly), `cleanup-audit-log` (weekly, deletes audit log entries older than 30 days). See `src/app/api/cron/` for implementations.
+Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, reconciles orphaned cart checkout groups + retries failed wallet debits), `auction-ending-soon` (5min, sends ending-soon notifications to bidders + seller 30min before auction end), `end-auctions` (1min), `cleanup-sessions` (10min, expires orphan cart checkout groups + unreserves their listings), `sync-tracking` (15min), `auction-payment-deadline` (30min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h, handles both shelf + wanted offers), `cleanup-photos` (6h, removes orphaned listing photos from storage), `dac7-reconcile` (daily, reconciles seller stats from completed orders + escalates DAC7 reminder/blocked statuses + year-start resets in January), `cleanup-notifications` (weekly), `cleanup-audit-log` (weekly, deletes audit log entries older than 30 days). See `src/app/api/cron/` for implementations.
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main

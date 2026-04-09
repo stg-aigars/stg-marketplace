@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ListingCreationFlow } from '../../_components/ListingCreationFlow';
 import { buildEnrichedGame } from '../../_components/GameSearchStep';
 import { Alert } from '@/components/ui';
+import { Dac7BlockedAlert } from '@/components/dac7/Dac7BlockedAlert';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { LISTING_DEADLINE_DAYS } from '@/lib/shelves/types';
 
@@ -16,7 +17,16 @@ interface Props {
 
 export default async function FromOfferPage({ params }: Props) {
   const { locale, offerId } = await params;
-  const { user } = await requireServerAuth();
+  const { user, profile } = await requireServerAuth();
+
+  if (profile?.dac7_status === 'blocked') {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <Dac7BlockedAlert />
+      </div>
+    );
+  }
+
   const supabase = await createClient();
 
   // Fetch the offer with shelf item + game data

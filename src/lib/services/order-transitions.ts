@@ -18,6 +18,7 @@ import {
   sendOrderDeclinedToBuyer,
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { updateDac7StatsOnCompletion } from '@/lib/dac7/service';
 import { syncShelfOnListingSold } from '@/lib/listings/actions';
 import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
 
@@ -311,6 +312,13 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   // Credit seller wallet with earnings (idempotent — safe to retry)
   await creditSellerWallet(orderId, order);
 
+  // DAC7: track seller stats for tax reporting thresholds (fire-and-forget)
+  void updateDac7StatsOnCompletion(
+    order.seller_id,
+    order.items_total_cents,
+    order.platform_commission_cents ?? 0
+  ).catch((err) => console.error('[DAC7] Failed to update stats:', err));
+
   markSoldAndSyncShelf(order);
 
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
@@ -372,6 +380,13 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
 
   // Credit seller wallet (idempotent)
   await creditSellerWallet(orderId, order);
+
+  // DAC7: track seller stats for tax reporting thresholds (fire-and-forget)
+  void updateDac7StatsOnCompletion(
+    order.seller_id,
+    order.items_total_cents,
+    order.platform_commission_cents ?? 0
+  ).catch((err) => console.error('[DAC7] Failed to update stats:', err));
 
   markSoldAndSyncShelf(order);
 

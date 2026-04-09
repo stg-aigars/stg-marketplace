@@ -1,15 +1,16 @@
 import { requireServerAuth } from '@/lib/auth/helpers';
+import { Dac7BlockedAlert } from '@/components/dac7/Dac7BlockedAlert';
 import { SellPageClient } from './_components/SellPageClient';
 
 export default async function SellPage() {
-  await requireServerAuth();
+  const { profile } = await requireServerAuth();
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
         Create a listing
       </h1>
-      <SellPageClient />
+      {profile?.dac7_status === 'blocked' ? <Dac7BlockedAlert /> : <SellPageClient />}
     </div>
   );
 }

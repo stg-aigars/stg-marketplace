@@ -50,7 +50,13 @@ export type NotificationType =
   | 'wanted.offer_declined'
   | 'wanted.offer_expired'
   | 'wanted.listing_created'
-  | 'wanted.filled';
+  | 'wanted.filled'
+  // DAC7 tax reporting
+  | 'dac7.approaching'
+  | 'dac7.data_requested'
+  | 'dac7.reminder'
+  | 'dac7.blocked'
+  | 'dac7.report_available';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {

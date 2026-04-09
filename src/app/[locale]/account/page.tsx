@@ -3,8 +3,9 @@ import {
   Package, Wallet, Tag, BookBookmark, Gavel,
   MagnifyingGlass, Handshake, Heart, GearSix, CaretRight,
 } from '@phosphor-icons/react/ssr';
-import { Card, CardBody } from '@/components/ui';
+import { Card, CardBody, Alert } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
+import type { Dac7SellerStatus } from '@/lib/dac7/types';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getOnboardingState } from '@/lib/services/onboarding';
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
@@ -72,6 +73,8 @@ export default async function AccountPage() {
 
       <ActionStrip actions={pendingActions} />
 
+      <Dac7Alert status={profile?.dac7_status ?? 'not_applicable'} />
+
       {isSeller && (
         <SellerMetrics
           userId={user.id}
@@ -110,6 +113,43 @@ export default async function AccountPage() {
       <div className="space-y-3">
         <QuickLinkCard {...settingsLink} />
       </div>
+    </div>
+  );
+}
+
+function Dac7Alert({ status }: { status: Dac7SellerStatus }) {
+  if (status === 'not_applicable' || status === 'data_provided') return null;
+
+  const config: Record<string, { variant: 'info' | 'warning' | 'error'; text: string }> = {
+    approaching: {
+      variant: 'info',
+      text: 'You are approaching the EU tax reporting threshold. We may need additional information from you soon.',
+    },
+    data_requested: {
+      variant: 'warning',
+      text: 'You have reached the EU tax reporting threshold. Please provide your tax information.',
+    },
+    reminder_sent: {
+      variant: 'warning',
+      text: 'Reminder: We still need your tax information. Your account may be restricted if not provided soon.',
+    },
+    blocked: {
+      variant: 'error',
+      text: 'Your ability to create new listings and withdraw funds has been paused. Please provide your tax information to restore access.',
+    },
+  };
+
+  const { variant, text } = config[status] ?? { variant: 'info' as const, text: '' };
+  if (!text) return null;
+
+  return (
+    <div className="mb-4">
+      <Alert variant={variant}>
+        <p>{text}</p>
+        <Link href="/account/settings/tax" className="text-sm font-medium underline mt-1 inline-block">
+          Go to tax settings
+        </Link>
+      </Alert>
     </div>
   );
 }

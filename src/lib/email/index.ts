@@ -47,6 +47,11 @@ import { WantedOfferAccepted } from './templates/wanted-offer-accepted';
 import { WantedOfferDeclined } from './templates/wanted-offer-declined';
 import { WantedOfferExpired } from './templates/wanted-offer-expired';
 import { WantedListingCreated } from './templates/wanted-listing-created';
+import { Dac7Approaching } from './templates/dac7-approaching';
+import { Dac7DataRequested } from './templates/dac7-data-requested';
+import { Dac7Reminder } from './templates/dac7-reminder';
+import { Dac7Blocked } from './templates/dac7-blocked';
+import { Dac7ReportAvailable } from './templates/dac7-report-available';
 import { env } from '@/lib/env';
 
 /**
@@ -1045,6 +1050,86 @@ export async function sendAuctionPaymentExpired(params: {
     react: React.createElement(AuctionPaymentExpired, {
       ...params,
       listingsUrl: `${env.app.url}/${params.isSeller ? 'account/listings' : 'browse'}`,
+    }),
+  });
+}
+
+// ============================================================================
+// DAC7 tax reporting emails
+// ============================================================================
+
+export async function sendDac7Approaching(params: {
+  sellerName: string;
+  sellerEmail: string;
+  transactionCount: number;
+  considerationEuros: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: 'Approaching EU tax reporting threshold',
+    react: React.createElement(Dac7Approaching, {
+      sellerName: params.sellerName,
+      transactionCount: params.transactionCount,
+      considerationEuros: params.considerationEuros,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendDac7DataRequested(params: {
+  sellerName: string;
+  sellerEmail: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: 'Action required: Tax reporting information needed',
+    react: React.createElement(Dac7DataRequested, {
+      sellerName: params.sellerName,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendDac7Reminder(params: {
+  sellerName: string;
+  sellerEmail: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: 'Final reminder: Tax reporting information needed — account restriction in 14 days',
+    react: React.createElement(Dac7Reminder, {
+      sellerName: params.sellerName,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendDac7Blocked(params: {
+  sellerName: string;
+  sellerEmail: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: 'Your Second Turn Games account has been restricted',
+    react: React.createElement(Dac7Blocked, {
+      sellerName: params.sellerName,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendDac7ReportAvailable(params: {
+  sellerName: string;
+  sellerEmail: string;
+  year: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Your annual tax report for ${params.year} is ready for review`,
+    react: React.createElement(Dac7ReportAvailable, {
+      sellerName: params.sellerName,
+      year: params.year,
+      appUrl: env.app.url,
     }),
   });
 }

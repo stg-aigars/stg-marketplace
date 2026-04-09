@@ -258,4 +258,31 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Your wanted listing for ${ctx.gameName ?? 'a game'} has been filled`,
     link: () => '/account/wanted',
   },
+
+  // --- DAC7 tax reporting ---
+  'dac7.approaching': {
+    title: () => 'Approaching tax reporting threshold',
+    body: () => 'You are nearing the EU tax reporting threshold. We may need additional information from you soon.',
+    link: () => '/account/settings/tax',
+  },
+  'dac7.data_requested': {
+    title: () => 'Tax information required',
+    body: () => 'You have reached the EU tax reporting threshold. Please provide your tax information.',
+    link: () => '/account/settings/tax',
+  },
+  'dac7.reminder': {
+    title: () => 'Reminder: tax information still needed',
+    body: () => 'We still need your tax information. Your account may be restricted if not provided within 14 days.',
+    link: () => '/account/settings/tax',
+  },
+  'dac7.blocked': {
+    title: () => 'Selling paused — tax information needed',
+    body: () => 'Your ability to create new listings and withdraw funds has been paused. Please provide your tax information to restore access.',
+    link: () => '/account/settings/tax',
+  },
+  'dac7.report_available': {
+    title: () => 'Annual tax report ready',
+    body: () => 'Your annual tax report has been generated and is ready for your review.',
+    link: () => '/account/settings/tax',
+  },
 };
