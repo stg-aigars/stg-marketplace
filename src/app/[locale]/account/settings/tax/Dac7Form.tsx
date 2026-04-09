@@ -154,16 +154,14 @@ export function Dac7Form({ dac7Profile }: Dac7FormProps) {
               </p>
             </div>
           ) : (
-            <>
-              <Input
-                label="Bank account (IBAN)"
-                type="text"
-                value={iban}
-                onChange={(e) => setIban(e.target.value)}
-                error={ibanError ?? undefined}
-                required
-              />
-            </>
+            <Input
+            label="Bank account (IBAN)"
+            type="text"
+            value={iban}
+            onChange={(e) => setIban(e.target.value)}
+            error={ibanError ?? undefined}
+            required
+          />
           )}
 
           <div className="rounded-lg bg-semantic-bg-secondary p-3 text-xs text-semantic-text-muted">

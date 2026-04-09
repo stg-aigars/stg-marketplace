@@ -14,7 +14,7 @@ interface Dac7SectionProps {
 
 export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
   const status = dac7Profile?.dac7_status ?? 'not_applicable';
-  const year = new Date().getFullYear();
+  const year = stats?.calendar_year ?? new Date().getFullYear();
 
   // State A: Below threshold, no action needed
   if (status === 'not_applicable') {

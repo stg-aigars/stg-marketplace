@@ -46,11 +46,26 @@ export default async function Dac7StaffPage() {
   const supabase = createServiceClient();
   const currentYear = new Date().getFullYear();
 
-  // Fetch status counts
-  const { data: allProfiles } = await supabase
-    .from('user_profiles')
-    .select('dac7_status')
-    .neq('dac7_status', 'not_applicable');
+  // Parallel fetch: status counts, action sellers, approaching sellers
+  const [
+    { data: allProfiles },
+    { data: actionSellers },
+    { data: approachingSellers },
+  ] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('dac7_status')
+      .neq('dac7_status', 'not_applicable'),
+    supabase
+      .from('user_profiles')
+      .select('id, full_name, email, dac7_status, dac7_status_updated_at, dac7_date_of_birth, dac7_tax_id, iban')
+      .in('dac7_status', ['data_requested', 'reminder_sent', 'blocked'])
+      .order('dac7_status', { ascending: false }),
+    supabase
+      .from('user_profiles')
+      .select('id, full_name, dac7_status')
+      .eq('dac7_status', 'approaching'),
+  ]);
 
   const statusCounts: Record<string, number> = {
     approaching: 0,
@@ -64,19 +79,6 @@ export default async function Dac7StaffPage() {
       statusCounts[p.dac7_status]++;
     }
   }
-
-  // Fetch sellers needing attention (data_requested, reminder_sent, blocked)
-  const { data: actionSellers } = await supabase
-    .from('user_profiles')
-    .select('id, full_name, email, dac7_status, dac7_status_updated_at, dac7_date_of_birth, dac7_tax_id, iban')
-    .in('dac7_status', ['data_requested', 'reminder_sent', 'blocked'])
-    .order('dac7_status', { ascending: false });
-
-  // Fetch approaching sellers
-  const { data: approachingSellers } = await supabase
-    .from('user_profiles')
-    .select('id, full_name, dac7_status')
-    .eq('dac7_status', 'approaching');
 
   // Fetch stats for all sellers with any status
   const allSellerIds = [

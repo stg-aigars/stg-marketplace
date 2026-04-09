@@ -103,6 +103,7 @@ export async function generateAnnualReports(year: number): Promise<ReportResult>
   }
 
   // Build reports
+  const reportRows: Array<{ seller_id: string; calendar_year: number; report_data: Dac7ReportData; generated_at: string }> = [];
   for (const stat of stats) {
     const profile = profileMap.get(stat.seller_id);
     if (!profile) continue;
@@ -151,15 +152,19 @@ export async function generateAnnualReports(year: number): Promise<ReportResult>
       reportData,
     });
 
-    // Upsert into dac7_annual_reports
+    reportRows.push({
+      seller_id: stat.seller_id,
+      calendar_year: year,
+      report_data: reportData,
+      generated_at: new Date().toISOString(),
+    });
+  }
+
+  // Batch upsert all reports in one query
+  if (reportRows.length > 0) {
     await supabase
       .from('dac7_annual_reports')
-      .upsert({
-        seller_id: stat.seller_id,
-        calendar_year: year,
-        report_data: reportData,
-        generated_at: new Date().toISOString(),
-      }, { onConflict: 'seller_id,calendar_year' });
+      .upsert(reportRows, { onConflict: 'seller_id,calendar_year' });
   }
 
   return result;
@@ -183,13 +188,19 @@ export async function notifyReportableSellers(year: number): Promise<number> {
   const { sendDac7ReportAvailable } = await import('@/lib/email');
   const { notify } = await import('@/lib/notifications');
 
-  let notified = 0;
+  // Batch fetch all seller profiles in one query
+  const sellerIds = reports.map((r) => r.seller_id);
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, full_name, email')
+    .in('id', sellerIds);
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p: { id: string; full_name: string | null; email: string | null }) => [p.id, p])
+  );
+
   for (const report of reports) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('full_name, email')
-      .eq('id', report.seller_id)
-      .single();
+    const profile = profileMap.get(report.seller_id);
 
     if (profile?.email) {
       sendDac7ReportAvailable({
@@ -200,16 +211,16 @@ export async function notifyReportableSellers(year: number): Promise<number> {
     }
 
     void notify(report.seller_id, 'dac7.report_available');
-
-    await supabase
-      .from('dac7_annual_reports')
-      .update({ seller_notified_at: new Date().toISOString() })
-      .eq('id', report.id);
-
-    notified++;
   }
 
-  return notified;
+  // Batch mark all as notified
+  const reportIds = reports.map((r) => r.id);
+  await supabase
+    .from('dac7_annual_reports')
+    .update({ seller_notified_at: new Date().toISOString() })
+    .in('id', reportIds);
+
+  return reports.length;
 }
 
 /**

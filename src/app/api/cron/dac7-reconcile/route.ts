@@ -101,16 +101,23 @@ export async function POST(request: Request) {
         .select('id, dac7_status')
         .in('dac7_status', ['approaching', 'data_requested', 'reminder_sent', 'blocked']);
 
-      if (actionableSellers) {
-        for (const seller of actionableSellers) {
-          // Check prior year stats
-          const { data: priorStats } = await supabase
-            .from('dac7_seller_annual_stats')
-            .select('completed_transaction_count, total_consideration_cents')
-            .eq('seller_id', seller.id)
-            .eq('calendar_year', priorYear)
-            .single();
+      if (actionableSellers && actionableSellers.length > 0) {
+        // Batch fetch prior year stats for all actionable sellers
+        const actionableIds = actionableSellers.map((s) => s.id);
+        const { data: allPriorStats } = await supabase
+          .from('dac7_seller_annual_stats')
+          .select('seller_id, completed_transaction_count, total_consideration_cents')
+          .eq('calendar_year', priorYear)
+          .in('seller_id', actionableIds);
 
+        const priorStatsMap = new Map(
+          (allPriorStats ?? []).map((s) => [s.seller_id, s])
+        );
+
+        // Determine which sellers to reset
+        const idsToReset: string[] = [];
+        for (const seller of actionableSellers) {
+          const priorStats = priorStatsMap.get(seller.id);
           const crossedRegulatory = priorStats &&
             (priorStats.completed_transaction_count >= DAC7_REPORT_TRANSACTIONS ||
              priorStats.total_consideration_cents >= DAC7_REPORT_CONSIDERATION_CENTS);
@@ -118,17 +125,21 @@ export async function POST(request: Request) {
           // If blocked AND crossed regulatory: stay blocked (they owe data for prior year)
           if (seller.dac7_status === 'blocked' && crossedRegulatory) continue;
 
-          // Otherwise: reset to not_applicable for the new year
           if (!crossedRegulatory) {
-            await supabase
-              .from('user_profiles')
-              .update({
-                dac7_status: 'not_applicable',
-                dac7_status_updated_at: now.toISOString(),
-              })
-              .eq('id', seller.id);
-            result.yearResets++;
+            idsToReset.push(seller.id);
           }
+        }
+
+        // Batch reset in one query
+        if (idsToReset.length > 0) {
+          await supabase
+            .from('user_profiles')
+            .update({
+              dac7_status: 'not_applicable',
+              dac7_status_updated_at: now.toISOString(),
+            })
+            .in('id', idsToReset);
+          result.yearResets = idsToReset.length;
         }
       }
     }
@@ -201,7 +212,8 @@ export async function POST(request: Request) {
       .eq('dac7_status', 'data_requested')
       .lt('dac7_first_reminder_sent_at', reminderCutoff.toISOString());
 
-    for (const seller of needsReminder ?? []) {
+    if (needsReminder && needsReminder.length > 0) {
+      const reminderIds = needsReminder.map((s) => s.id);
       await supabase
         .from('user_profiles')
         .update({
@@ -209,9 +221,11 @@ export async function POST(request: Request) {
           dac7_status_updated_at: now.toISOString(),
           dac7_second_reminder_sent_at: now.toISOString(),
         })
-        .eq('id', seller.id);
-      void notify(seller.id, 'dac7.reminder');
-      result.escalated++;
+        .in('id', reminderIds);
+      for (const seller of needsReminder) {
+        void notify(seller.id, 'dac7.reminder');
+      }
+      result.escalated += needsReminder.length;
     }
 
     // reminder_sent → blocked (14 days after second reminder)
@@ -221,16 +235,19 @@ export async function POST(request: Request) {
       .eq('dac7_status', 'reminder_sent')
       .lt('dac7_second_reminder_sent_at', reminderCutoff.toISOString());
 
-    for (const seller of needsBlock ?? []) {
+    if (needsBlock && needsBlock.length > 0) {
+      const blockIds = needsBlock.map((s) => s.id);
       await supabase
         .from('user_profiles')
         .update({
           dac7_status: 'blocked',
           dac7_status_updated_at: now.toISOString(),
         })
-        .eq('id', seller.id);
-      void notify(seller.id, 'dac7.blocked');
-      result.blocked++;
+        .in('id', blockIds);
+      for (const seller of needsBlock) {
+        void notify(seller.id, 'dac7.blocked');
+      }
+      result.blocked += needsBlock.length;
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

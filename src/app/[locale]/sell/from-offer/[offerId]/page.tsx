@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
@@ -6,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ListingCreationFlow } from '../../_components/ListingCreationFlow';
 import { buildEnrichedGame } from '../../_components/GameSearchStep';
 import { Alert } from '@/components/ui';
+import { Dac7BlockedAlert } from '@/components/dac7/Dac7BlockedAlert';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { LISTING_DEADLINE_DAYS } from '@/lib/shelves/types';
 
@@ -22,10 +22,7 @@ export default async function FromOfferPage({ params }: Props) {
   if (profile?.dac7_status === 'blocked') {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <Alert variant="error">
-          <p>Your ability to create new listings has been paused because required tax reporting information has not been provided.</p>
-          <Link href="/account/settings/tax" className="text-sm font-medium underline mt-1 inline-block">Provide tax information to restore access</Link>
-        </Alert>
+        <Dac7BlockedAlert />
       </div>
     );
   }
