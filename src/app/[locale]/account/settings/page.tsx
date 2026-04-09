@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Receipt, CaretRight } from '@phosphor-icons/react/ssr';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody } from '@/components/ui';
 import { ProfileSettingsSection } from './_components/ProfileSettingsSection';
 import { SecuritySection } from './_components/SecuritySection';
 import { DataManagementSection } from './_components/DataManagementSection';
@@ -38,25 +35,6 @@ export default async function AccountSettingsPage(
           authProvider={authProvider}
         />
         <DataManagementSection hasPassword={hasPassword} />
-
-        <Link href="/account/settings/tax">
-          <Card hoverable>
-            <CardBody>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg border-[1.5px] flex items-center justify-center shrink-0 bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted">
-                  <Receipt size={20} weight="regular" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-semantic-text-heading">Tax information</p>
-                  <p className="text-sm text-semantic-text-muted mt-0.5">
-                    EU tax reporting (DAC7) data
-                  </p>
-                </div>
-                <CaretRight size={20} className="text-semantic-text-muted shrink-0" />
-              </div>
-            </CardBody>
-          </Card>
-        </Link>
       </div>
     </div>
   );

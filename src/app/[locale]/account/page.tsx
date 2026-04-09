@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import {
   Package, Wallet, Tag, BookBookmark, Gavel,
-  MagnifyingGlass, Handshake, Heart, GearSix, CaretRight,
+  MagnifyingGlass, Handshake, Heart, GearSix, CaretRight, Receipt,
 } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Alert } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
+import { getDac7Stats } from '@/lib/dac7/service';
+import { DAC7_REPORT_TRANSACTIONS, DAC7_REPORT_CONSIDERATION_CENTS } from '@/lib/dac7/constants';
 import type { Dac7SellerStatus } from '@/lib/dac7/types';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getOnboardingState } from '@/lib/services/onboarding';
@@ -31,6 +33,7 @@ export default async function AccountPage() {
     sellerRating,
     pendingActions,
     onboardingState,
+    dac7Stats,
   ] = await Promise.all([
     getWalletBalance(user.id),
     getSellerCompletedSales(user.id),
@@ -38,6 +41,7 @@ export default async function AccountPage() {
     getSellerRating(user.id),
     getPendingActions(user.id),
     getOnboardingState(user, profile),
+    getDac7Stats(user.id),
   ]);
 
   const isSeller = completedSales > 0 || activeListings > 0;
@@ -48,6 +52,7 @@ export default async function AccountPage() {
     { href: '/account/wallet', icon: Wallet, label: 'Wallet', desc: walletBalanceCents > 0 ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}` : 'Earnings and withdrawals', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
     { href: '/account/offers', icon: Handshake, label: 'Offers', desc: 'Price offers and negotiations', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
     { href: '/account/shelf', icon: BookBookmark, label: 'Shelf', desc: 'Your game collection', tint: 'bg-semantic-success-bg border-semantic-success/20 text-semantic-success' },
+    { href: '/account/settings/tax', icon: Receipt, label: 'Tax reporting', desc: dac7Stats ? `${dac7Stats.completed_transaction_count}/${DAC7_REPORT_TRANSACTIONS} sales · ${formatCentsToCurrency(dac7Stats.total_consideration_cents)}/${formatCentsToCurrency(DAC7_REPORT_CONSIDERATION_CENTS)}` : 'EU tax reporting (DAC7)', tint: 'bg-semantic-bg-secondary border-semantic-border-subtle text-semantic-text-muted' },
   ];
 
   const buyingLinks = [
