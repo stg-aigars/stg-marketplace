@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+
   body {
     @apply bg-semantic-bg-primary text-semantic-text-primary antialiased;
     -webkit-tap-highlight-color: transparent;

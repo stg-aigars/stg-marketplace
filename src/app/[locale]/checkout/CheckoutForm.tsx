@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
+import { Trash } from '@phosphor-icons/react/ssr';
 import { ListingIdentity, Price } from '@/components/listings/atoms';
 import { PaymentMethodLogos } from '@/components/checkout/PaymentMethodLogos';
 import { useCart } from '@/contexts/CartContext';
@@ -392,6 +393,15 @@ export function CheckoutForm({
                           <p className="text-xs text-semantic-text-muted">winning bid</p>
                         )}
                       </div>
+                    }
+                    action={
+                      <button
+                        onClick={() => removeItem(item.listingId)}
+                        className="p-1.5 rounded-md text-semantic-text-muted hover:text-semantic-error hover:bg-semantic-error-bg transition-colors duration-250 ease-out-custom"
+                        aria-label={`Remove ${item.gameTitle} from cart`}
+                      >
+                        <Trash size={18} />
+                      </button>
                     }
                   />
                 );
