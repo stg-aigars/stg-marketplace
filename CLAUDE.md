@@ -110,6 +110,7 @@ Always use these — do not write inline equivalents:
 | Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
 | Condition & status badges | `Badge` (variants: default, success, warning, error, trust, auction; condition keys; `dot` prop for status dots) | `@/components/ui` |
+| Condition badge (from DB) | `ConditionBadge` (takes raw `ListingCondition` string, renders Badge with icon + label; use instead of manual `conditionToBadgeKey` + `conditionConfig` lookup) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
 | Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible; optional icon + title) | `@/components/ui` |
 | User avatars / initials | `Avatar` (sizes: xs, sm, md; optional `src` for image with initials fallback) | `@/components/ui` |
