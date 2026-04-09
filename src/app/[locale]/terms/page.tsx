@@ -133,25 +133,53 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section className="space-y-3">
+        <section id="cancellations-refunds" className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            9. Disputes and refunds
+            9. Cancellations, refunds, and disputes
           </h2>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Order cancellations
+          </h3>
           <p>
-            Buyers have 2 days after delivery to open a dispute if an item arrives damaged, is the
-            wrong item, or does not match its listing description. If an item is not delivered within
-            21 days of shipping, the platform will automatically open a dispute on the buyer&apos;s
-            behalf. Disputes for &ldquo;changed mind&rdquo; or buyer&apos;s remorse are not eligible
-            for refunds.
+            A seller may decline an order within 48 hours. If a seller does not respond within
+            48 hours, or does not ship within 5 days of accepting, the order is cancelled
+            automatically. In both cases you get a full refund. Buyers cannot cancel after
+            payment &mdash; orders are binding once paid.
           </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Returns and replacements
+          </h3>
           <p>
-            Once a dispute is opened, the seller and buyer have 7 days to negotiate a resolution.
-            If no agreement is reached, either party may escalate the dispute to STG staff for review.
+            Returns and replacements are not available. All sellers are private individuals
+            selling personal items, not retailers, so the 14-day EU withdrawal right does not
+            apply (see Section 3). Each listed item is one of a kind, so we cannot offer
+            replacements. If an item arrives damaged or does not match its description, you may
+            open a dispute (see below).
           </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Refunds
+          </h3>
           <p>
-            Refunds, when approved, are returned to the original payment method. Card refunds
-            typically take 3&ndash;5 business days. If you paid partly with wallet balance, each
-            portion is refunded to its source (card to card, wallet to wallet).
+            You receive a refund when a seller cancels or declines an order, when an order is
+            auto-cancelled due to a timeout, or when a dispute is resolved in your favour.
+            &ldquo;Changed mind&rdquo; is not grounds for a refund. Refunds go back to the
+            original payment method. Card refunds typically take 3&ndash;5 business days. If you
+            paid partly with wallet balance, each portion is refunded to its source (card to card,
+            wallet to wallet).
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Disputes
+          </h3>
+          <p>
+            You have 2 days after delivery to open a dispute if an item arrives damaged, is the
+            wrong item, or does not match its listing description. If an item is not delivered
+            within 21 days of shipping, the platform opens a dispute on your behalf. Once a
+            dispute is opened, seller and buyer have 7 days to negotiate. If no agreement is
+            reached, either party may escalate to STG staff for review.
           </p>
         </section>
 

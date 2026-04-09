@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
+import { Trash } from '@phosphor-icons/react/ssr';
 import { ListingIdentity, Price } from '@/components/listings/atoms';
 import { PaymentMethodLogos } from '@/components/checkout/PaymentMethodLogos';
 import { useCart } from '@/contexts/CartContext';
@@ -270,6 +271,11 @@ export function CheckoutForm({
             <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
               Shipping
             </h2>
+            {sellerCountry && (
+              <p className="text-sm text-semantic-text-muted -mt-2 mb-4">
+                Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
+              </p>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -313,10 +319,13 @@ export function CheckoutForm({
                 />
                 <span className="text-sm text-semantic-text-secondary">
                   I agree to the{' '}
-                  <Link href="/terms" target="_blank" className="text-semantic-brand underline">
+                  <Link href="/terms" target="_blank" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline">
                     Terms &amp; Conditions
                   </Link>
-                  {' '}and acknowledge the refund policy
+                  , including the{' '}
+                  <Link href="/terms#cancellations-refunds" target="_blank" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline">
+                    cancellation and refund policy
+                  </Link>
                 </span>
               </label>
               <p className="mt-2 ml-7 text-xs text-semantic-text-muted leading-relaxed">
@@ -336,7 +345,7 @@ export function CheckoutForm({
               disabled={!canSubmit || loading}
               loading={loading}
             >
-              {walletCoversTotal ? 'Pay with wallet' : `Pay ${formatCentsToCurrency(cardChargeCents)}`}
+              {walletCoversTotal ? 'Place order' : `Pay ${formatCentsToCurrency(cardChargeCents)}`}
             </Button>
 
             {walletCoversTotal ? (
@@ -385,6 +394,15 @@ export function CheckoutForm({
                         )}
                       </div>
                     }
+                    action={
+                      <button
+                        onClick={() => removeItem(item.listingId)}
+                        className="p-1.5 rounded-md text-semantic-text-muted hover:text-semantic-error hover:bg-semantic-error-bg transition-colors duration-250 ease-out-custom"
+                        aria-label={`Remove ${item.gameTitle} from cart`}
+                      >
+                        <Trash size={18} />
+                      </button>
+                    }
                   />
                 );
               })}
@@ -392,16 +410,9 @@ export function CheckoutForm({
 
             {/* Price breakdown */}
             <div className="space-y-2 text-sm border-t border-semantic-border-subtle pt-3">
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-semantic-text-secondary">Shipping</span>
-                  <span>{formatCentsToCurrency(shippingCents)}</span>
-                </div>
-                {sellerCountry && (
-                  <p className="text-xs text-semantic-text-muted mt-0.5">
-                    Parcel locker: {getCountryName(sellerCountry)} → {getCountryName(buyerCountry)}
-                  </p>
-                )}
+              <div className="flex justify-between">
+                <span className="text-semantic-text-secondary">Shipping</span>
+                <span>{formatCentsToCurrency(shippingCents)}</span>
               </div>
 
               <div className="border-t border-semantic-border-subtle pt-2 mt-2">
@@ -443,14 +454,12 @@ export function CheckoutForm({
                       <span>-{formatCentsToCurrency(walletDebitCents)}</span>
                     </div>
                   )}
-                  {useWallet && (
+                  {useWallet && !walletCoversTotal && (
                     <div className="border-t border-semantic-border-subtle pt-2 mt-2">
                       <div className="flex justify-between font-semibold text-base">
+                        <span className="text-semantic-text-heading">Remaining payment</span>
                         <span className="text-semantic-text-heading">
-                          {walletCoversTotal ? 'Wallet charge' : 'Card charge'}
-                        </span>
-                        <span className="text-semantic-text-heading">
-                          {formatCentsToCurrency(walletCoversTotal ? walletDebitCents : cardChargeCents)}
+                          {formatCentsToCurrency(cardChargeCents)}
                         </span>
                       </div>
                     </div>
