@@ -27,5 +27,5 @@ function writeBrowseContext(context: BrowseContext): void {
   }
 }
 
-export { BROWSE_CONTEXT_KEY, readBrowseContext, writeBrowseContext };
+export { readBrowseContext, writeBrowseContext };
 export type { BrowseContext };
