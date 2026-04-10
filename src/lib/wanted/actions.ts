@@ -23,6 +23,7 @@ export async function createWantedListing(
     publisher: string | null;
     language: string | null;
     editionYear: number | null;
+    versionThumbnail: string | null;
   } | null,
   notes?: string,
   turnstileToken?: string
@@ -61,6 +62,7 @@ export async function createWantedListing(
       publisher: edition?.publisher ?? null,
       language: edition?.language ?? null,
       edition_year: edition?.editionYear ?? null,
+      version_thumbnail: edition?.versionThumbnail ?? null,
       notes: notes?.trim() || null,
       country: profile.country,
     })

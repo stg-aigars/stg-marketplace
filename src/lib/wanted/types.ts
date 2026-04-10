@@ -20,6 +20,7 @@ export interface WantedListingRow {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  version_thumbnail: string | null;
   notes: string | null;
   country: CountryCode;
   status: WantedListingStatus;
