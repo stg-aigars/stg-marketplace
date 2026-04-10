@@ -9,13 +9,11 @@ import {
   type BrowseFilters as BrowseFiltersType,
   type SortOption,
   type WeightLevel,
-  type GameLanguage,
   filtersToSearchParams,
   countActiveFilters,
   DEFAULT_FILTERS,
   WEIGHT_LEVELS,
   WEIGHT_LEVEL_LABELS,
-  GAME_LANGUAGES,
 } from '@/lib/listings/filters';
 
 interface BrowseFiltersProps {
@@ -74,7 +72,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
   );
 
   const toggleLanguage = useCallback(
-    (lang: GameLanguage) => applyFilters({ ...currentFilters, languages: toggleArrayValue(currentFilters.languages, lang) }),
+    (lang: string) => applyFilters({ ...currentFilters, languages: toggleArrayValue(currentFilters.languages, lang) }),
     [currentFilters, applyFilters]
   );
 
@@ -99,7 +97,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
   const toggleDraftPlayerCount = (count: number) =>
     setDraft((prev) => ({ ...prev, playerCounts: toggleArrayValue(prev.playerCounts, count) }));
 
-  const toggleDraftLanguage = (lang: GameLanguage) =>
+  const toggleDraftLanguage = (lang: string) =>
     setDraft((prev) => ({ ...prev, languages: toggleArrayValue(prev.languages, lang) }));
 
   const toggleDraftWeight = (level: WeightLevel) =>
@@ -146,17 +144,12 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
     </div>
   );
 
-  // Filter to languages that have at least one active listing
-  const visibleLanguages = GAME_LANGUAGES.filter((lang) =>
-    availableLanguages.some((al) => al.toLowerCase().includes(lang.toLowerCase()))
-  );
-
   const renderLanguageChips = (
-    languages: GameLanguage[],
-    onToggle: (l: GameLanguage) => void
+    languages: string[],
+    onToggle: (l: string) => void
   ) => (
     <div className="flex flex-wrap gap-1.5">
-      {visibleLanguages.map((lang) => {
+      {availableLanguages.map((lang) => {
         const isActive = languages.includes(lang);
         return (
           <button
@@ -326,7 +319,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
           </div>
 
           {/* Language */}
-          {visibleLanguages.length > 0 && (
+          {availableLanguages.length > 0 && (
             <div>
               <p className="text-sm font-medium text-semantic-text-primary mb-2">Language</p>
               {renderLanguageChips(draft.languages, toggleDraftLanguage)}
@@ -369,22 +362,15 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
         </div>
       </Modal>
 
-      {/* Desktop: all filters in one row */}
-      <div className="hidden sm:block mb-6">
+      {/* Desktop: structured filter bar */}
+      <div className="hidden sm:block mb-6 space-y-2">
+        {/* Row 1: players, complexity, country, toggles, sort */}
         <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
           {/* Players */}
           <div>
             <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Players</p>
             {renderPlayerCountButtons(currentFilters.playerCounts, togglePlayerCount)}
           </div>
-
-          {/* Language */}
-          {visibleLanguages.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Language</p>
-              {renderLanguageChips(currentFilters.languages, toggleLanguage)}
-            </div>
-          )}
 
           {/* Complexity */}
           <div>
@@ -427,6 +413,14 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             )}
           </div>
         </div>
+
+        {/* Row 2: language (variable length, derived from active listings) */}
+        {availableLanguages.length > 0 && (
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-medium text-semantic-text-muted whitespace-nowrap">Language</p>
+            {renderLanguageChips(currentFilters.languages, toggleLanguage)}
+          </div>
+        )}
       </div>
     </>
   );

@@ -81,9 +81,9 @@ describe('parseFiltersFromParams', () => {
     expect(result.languages).toEqual(['English', 'Latvian']);
   });
 
-  it('drops invalid languages', () => {
+  it('accepts any language values', () => {
     const result = parseFiltersFromParams({ lang: 'English,French,Latvian' });
-    expect(result.languages).toEqual(['English', 'Latvian']);
+    expect(result.languages).toEqual(['English', 'French', 'Latvian']);
   });
 
   it('parses all params together', () => {
@@ -139,7 +139,7 @@ describe('filtersToSearchParams', () => {
     const original = {
       search: 'catan',
       playerCounts: [2, 4],
-      languages: ['English' as const, 'Latvian' as const],
+      languages: ['English', 'Latvian'],
       countries: ['LV' as const, 'EE' as const],
       weightLevels: ['medium' as const],
       showExpansions: false,

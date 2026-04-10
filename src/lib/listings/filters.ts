@@ -23,10 +23,6 @@ export const WEIGHT_LEVEL_RANGES: Record<WeightLevel, { min: number; max: number
   heavy: { min: 4.5, max: 5.01 }, // inclusive upper bound for 5.0
 };
 
-export type GameLanguage = 'English' | 'Latvian' | 'Lithuanian' | 'Estonian' | 'German' | 'Russian';
-
-export const GAME_LANGUAGES: GameLanguage[] = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'German', 'Russian'];
-
 const VALID_SORTS: SortOption[] = ['newest', 'price_asc', 'price_desc'];
 const VALID_COUNTRY_CODES = COUNTRIES.map(c => c.code);
 const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5, 6];
@@ -34,7 +30,7 @@ const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5, 6];
 export interface BrowseFilters {
   search: string;
   playerCounts: number[];
-  languages: GameLanguage[];
+  languages: string[];
   countries: CountryCode[];
   weightLevels: WeightLevel[];
   showExpansions: boolean;
@@ -76,12 +72,10 @@ export function parseFiltersFromParams(
         .filter((n) => VALID_PLAYER_COUNTS.includes(n))
     : [];
 
-  // Languages
+  // Languages (dynamic — validated against available listings server-side)
   const langParam = get('lang');
   const languages = langParam
-    ? langParam
-        .split(',')
-        .filter((l): l is GameLanguage => GAME_LANGUAGES.includes(l as GameLanguage))
+    ? langParam.split(',').map((l) => l.trim()).filter(Boolean)
     : [];
 
   // Countries
