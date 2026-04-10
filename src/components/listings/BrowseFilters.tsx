@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MagnifyingGlass, Sliders } from '@phosphor-icons/react/ssr';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Card, CardBody } from '@/components/ui';
 import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
 import {
   type BrowseFilters as BrowseFiltersType,
@@ -29,6 +29,9 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 const PLAYER_COUNTS = [1, 2, 3, 4, 5, 6] as const;
 
+/** Priority languages shown before "Show all" — Baltic market first */
+const PRIORITY_LANGUAGES = ['English', 'Estonian', 'Latvian', 'Lithuanian', 'German', 'Russian'];
+
 const INACTIVE_CHIP = 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default';
 const ACTIVE_CHIP = 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand';
 
@@ -36,12 +39,22 @@ function toggleArrayValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
+/** Sort languages: priority languages first (in defined order), then the rest alphabetically */
+function sortLanguages(languages: string[]): { priority: string[]; rest: string[] } {
+  const priority = PRIORITY_LANGUAGES.filter((l) => languages.includes(l));
+  const rest = languages.filter((l) => !PRIORITY_LANGUAGES.includes(l)).sort();
+  return { priority, rest };
+}
+
 function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProps) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [draft, setDraft] = useState<BrowseFiltersType>(currentFilters);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
 
   const activeCount = countActiveFilters(currentFilters);
+  const { priority: priorityLangs, rest: restLangs } = sortLanguages(availableLanguages);
+  const hasRestLangs = restLangs.length > 0;
 
   const applyFilters = useCallback(
     (filters: BrowseFiltersType) => {
@@ -146,26 +159,30 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
 
   const renderLanguageChips = (
     languages: string[],
-    onToggle: (l: string) => void
-  ) => (
-    <div className="flex flex-wrap gap-1.5">
-      {availableLanguages.map((lang) => {
-        const isActive = languages.includes(lang);
-        return (
-          <button
-            key={lang}
-            type="button"
-            onClick={() => onToggle(lang)}
-            className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
-              isActive ? ACTIVE_CHIP : INACTIVE_CHIP
-            }`}
-          >
-            {lang}
-          </button>
-        );
-      })}
-    </div>
-  );
+    onToggle: (l: string) => void,
+    showAll: boolean
+  ) => {
+    const visible = showAll ? [...priorityLangs, ...restLangs] : priorityLangs;
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {visible.map((lang) => {
+          const isActive = languages.includes(lang);
+          return (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => onToggle(lang)}
+              className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
+                isActive ? ACTIVE_CHIP : INACTIVE_CHIP
+              }`}
+            >
+              {lang}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderWeightChips = (
     weightLevels: WeightLevel[],
@@ -322,7 +339,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
           {availableLanguages.length > 0 && (
             <div>
               <p className="text-sm font-medium text-semantic-text-primary mb-2">Language</p>
-              {renderLanguageChips(draft.languages, toggleDraftLanguage)}
+              {renderLanguageChips(draft.languages, toggleDraftLanguage, true)}
             </div>
           )}
 
@@ -362,65 +379,87 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
         </div>
       </Modal>
 
-      {/* Desktop: structured filter bar */}
-      <div className="hidden sm:block mb-6 space-y-2">
-        {/* Row 1: players, complexity, country, toggles, sort */}
-        <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
-          {/* Players */}
-          <div>
-            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Players</p>
-            {renderPlayerCountButtons(currentFilters.playerCounts, togglePlayerCount)}
-          </div>
+      {/* Desktop: filters + sort in card containers */}
+      <div className="hidden sm:flex gap-4 mb-6">
+        {/* Filters card */}
+        <Card className="flex-1">
+          <CardBody className="space-y-3">
+            {/* Row 1: players, complexity, country, toggles */}
+            <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
+              {/* Players */}
+              <div>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Players</p>
+                {renderPlayerCountButtons(currentFilters.playerCounts, togglePlayerCount)}
+              </div>
 
-          {/* Complexity */}
-          <div>
-            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Complexity</p>
-            {renderWeightChips(currentFilters.weightLevels, toggleWeight)}
-          </div>
+              {/* Complexity */}
+              <div>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Complexity</p>
+                {renderWeightChips(currentFilters.weightLevels, toggleWeight)}
+              </div>
 
-          {/* Country */}
-          <div>
-            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Country</p>
-            {renderCountryChips(currentFilters.countries, toggleCountry)}
-          </div>
+              {/* Country */}
+              <div>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Country</p>
+                {renderCountryChips(currentFilters.countries, toggleCountry)}
+              </div>
 
-          {/* Toggles */}
-          <div className="flex items-end gap-4">
-            {renderToggle(
-              currentFilters.showExpansions,
-              (checked) => applyFilters({ ...currentFilters, showExpansions: checked }),
-              'Expansions'
+              {/* Toggles */}
+              <div className="flex items-end gap-4">
+                {renderToggle(
+                  currentFilters.showExpansions,
+                  (checked) => applyFilters({ ...currentFilters, showExpansions: checked }),
+                  'Expansions'
+                )}
+                {renderToggle(
+                  currentFilters.showAuctions,
+                  (checked) => applyFilters({ ...currentFilters, showAuctions: checked }),
+                  'Auctions only'
+                )}
+              </div>
+
+              {/* Clear (right-aligned) */}
+              {activeCount > 0 && (
+                <div className="ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="text-sm text-semantic-text-muted hover:text-semantic-text-secondary underline min-h-[32px] px-1"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Row 2: language (variable length) */}
+            {availableLanguages.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Language</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {renderLanguageChips(currentFilters.languages, toggleLanguage, showAllLanguages)}
+                  {hasRestLangs && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllLanguages((prev) => !prev)}
+                      className="text-xs text-semantic-text-muted hover:text-semantic-text-secondary underline min-h-[32px] px-1 transition-colors duration-250 ease-out-custom"
+                    >
+                      {showAllLanguages ? 'Show less' : `Show all (${availableLanguages.length})`}
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
-            {renderToggle(
-              currentFilters.showAuctions,
-              (checked) => applyFilters({ ...currentFilters, showAuctions: checked }),
-              'Auctions only'
-            )}
-          </div>
+          </CardBody>
+        </Card>
 
-          {/* Sort + Clear (right-aligned) */}
-          <div className="flex items-end gap-3 ml-auto">
+        {/* Sort card */}
+        <Card className="flex-shrink-0">
+          <CardBody>
+            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Sort</p>
             {renderSortButtons(currentFilters.sort, handleSortChange)}
-
-            {activeCount > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAll}
-                className="text-sm text-semantic-text-muted hover:text-semantic-text-secondary underline min-h-[32px] px-1"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Row 2: language (variable length, derived from active listings) */}
-        {availableLanguages.length > 0 && (
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-medium text-semantic-text-muted whitespace-nowrap">Language</p>
-            {renderLanguageChips(currentFilters.languages, toggleLanguage)}
-          </div>
-        )}
+          </CardBody>
+        </Card>
       </div>
     </>
   );
