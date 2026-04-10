@@ -112,7 +112,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
           </h2>
 
           <p className="text-sm text-semantic-text-muted mb-3">
-            Download a copy of all your data including your profile, listings, orders, and comments.
+            Download a copy of all your Second Turn data.
           </p>
           <Button
             variant="secondary"
@@ -128,7 +128,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
 
           <div className="border-t border-semantic-border-subtle pt-4 mt-4">
             <p className="text-sm text-semantic-text-muted mb-3">
-              Permanently delete your account and personal data. Your order history will be retained in anonymized form for tax compliance.
+              Permanently delete your account and personal data. We keep anonymized order history for tax compliance.
             </p>
             <Button variant="danger" size="sm" onClick={openDeleteModal}>
               Delete my account
@@ -144,7 +144,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
       >
         <div className="space-y-4">
           <Alert variant="error">
-            This action is permanent and cannot be undone. Your profile will be anonymized, active listings will be deactivated, and you will be signed out.
+            This cannot be undone. We will anonymize your profile, deactivate your listings, and sign you out.
           </Alert>
 
           {hasPassword ? (

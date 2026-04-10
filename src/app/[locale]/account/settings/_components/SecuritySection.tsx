@@ -199,7 +199,7 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
               Set a password
             </h3>
             <p className="text-sm text-semantic-text-muted mb-3">
-              Set a password to also sign in with email
+              Add a password so you can sign in with email too
             </p>
             <form onSubmit={handleSetPassword} className="space-y-3">
               <Input

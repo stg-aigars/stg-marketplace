@@ -212,7 +212,7 @@ export async function updateEmail(
 
   return {
     success:
-      'Confirmation links sent to both your current and new email addresses. You must confirm on both to complete the change.',
+      'We sent confirmation links to both your current and new email. Confirm on both to complete the change.',
   };
 }
 

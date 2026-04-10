@@ -19,7 +19,7 @@ export default async function CompleteProfilePage(
             Almost there
           </h1>
           <p className="mt-2 text-semantic-text-secondary">
-            Confirm your country so we can set up your marketplace experience
+            Confirm your country so we can show you the right games and prices
           </p>
         </div>
 

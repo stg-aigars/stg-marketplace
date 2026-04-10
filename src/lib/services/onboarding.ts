@@ -59,14 +59,14 @@ export async function getOnboardingState(
     {
       id: 'listing',
       label: 'List your first game',
-      description: 'Give a pre-loved game a new home',
+      description: 'Sell a game you are ready to pass on',
       complete: (listingsResult.count ?? 0) > 0,
       href: '/sell',
     },
     {
       id: 'shelf',
       label: 'Add a game to your shelf',
-      description: 'Showcase your collection',
+      description: 'Track your games and get offers from buyers',
       complete: (shelfResult.count ?? 0) > 0,
       href: '/account/shelf',
     },

@@ -40,7 +40,7 @@ export function CountrySelector({ value, onChange }: CountrySelectorProps) {
         })}
       </div>
       <p className="mt-2 text-sm text-semantic-text-muted">
-        Second Turn Games is available in Latvia, Lithuania, and Estonia
+        We currently serve the Baltic states
       </p>
     </div>
   );
