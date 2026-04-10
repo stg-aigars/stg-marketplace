@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge, NavTabs } from '@/components/ui';
+import { Card, CardBody, Badge, NavTabs, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
@@ -74,15 +74,11 @@ export default async function StaffOrdersPage(
       />
 
       {typedOrders.length === 0 ? (
-        <Card>
-          <CardBody>
-            <p className="text-semantic-text-muted text-center py-8">No orders found.</p>
-          </CardBody>
-        </Card>
+        <EmptyState title="No orders found" />
       ) : (
         <div className="space-y-2">
           {typedOrders.map((order) => (
-            <Link key={order.id} href={`/orders/${order.id}`}>
+            <Link key={order.id} href={`/staff/orders/${order.id}`}>
               <Card hoverable>
                 <CardBody className="flex items-center justify-between py-3 px-4">
                   <div className="min-w-0 flex-1">

@@ -162,6 +162,9 @@ function SiteHeader() {
                     )}
                     <DropdownLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setDropdownOpen(false)} />
                     <DropdownLink href="/account" label="Account" onClose={() => setDropdownOpen(false)} />
+                    {profile?.is_staff && (
+                      <DropdownLink href="/staff" label="Staff" onClose={() => setDropdownOpen(false)} />
+                    )}
                     <div className="border-t border-semantic-border-subtle my-1" />
                     <button
                       role="menuitem"
@@ -245,6 +248,9 @@ function SiteHeader() {
                 )}
                 <MobileLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setMobileOpen(false)} />
                 <MobileLink href="/account" label="Account" onClose={() => setMobileOpen(false)} />
+                {profile?.is_staff && (
+                  <MobileLink href="/staff" label="Staff" onClose={() => setMobileOpen(false)} />
+                )}
                 <button
                   onClick={handleSignOut}
                   className="py-2.5 text-left text-semantic-text-secondary active:text-semantic-text-primary font-medium"

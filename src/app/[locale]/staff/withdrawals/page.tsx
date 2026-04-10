@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, NavTabs, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import type { WithdrawalStatus } from '@/lib/wallet/types';
@@ -58,35 +57,21 @@ export default async function StaffWithdrawalsPage(
         Withdrawal requests
       </h1>
 
-      {/* Status filter */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {[
-          { label: 'All', value: '' },
-          { label: 'Pending', value: 'pending' },
-          { label: 'Approved', value: 'approved' },
-          { label: 'Completed', value: 'completed' },
-          { label: 'Rejected', value: 'rejected' },
-        ].map((filter) => (
-          <Link
-            key={filter.value}
-            href={filter.value ? `/staff/withdrawals?status=${filter.value}` : '/staff/withdrawals'}
-            className={`px-3 py-1.5 text-sm rounded-full border transition-colors duration-250 ease-out-custom ${
-              (searchParams.status ?? '') === filter.value
-                ? 'bg-semantic-brand text-semantic-text-inverse border-semantic-brand'
-                : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
-            }`}
-          >
-            {filter.label}
-          </Link>
-        ))}
-      </div>
+      <NavTabs
+        tabs={[
+          { key: '', label: 'All', href: '/staff/withdrawals' },
+          { key: 'pending', label: 'Pending', href: '/staff/withdrawals?status=pending' },
+          { key: 'approved', label: 'Approved', href: '/staff/withdrawals?status=approved' },
+          { key: 'completed', label: 'Completed', href: '/staff/withdrawals?status=completed' },
+          { key: 'rejected', label: 'Rejected', href: '/staff/withdrawals?status=rejected' },
+        ]}
+        activeTab={searchParams.status ?? ''}
+        variant="pill"
+        className="mb-6"
+      />
 
       {typedWithdrawals.length === 0 ? (
-        <Card>
-          <CardBody>
-            <p className="text-semantic-text-muted text-center py-8">No withdrawal requests found.</p>
-          </CardBody>
-        </Card>
+        <EmptyState title="No withdrawal requests found" />
       ) : (
         <div className="space-y-3">
           {typedWithdrawals.map((w) => (
