@@ -105,7 +105,7 @@ Always use these — do not write inline equivalents:
 
 | Pattern | Component | Location |
 |---------|-----------|----------|
-| All buttons | `Button` (variants: primary, secondary, ghost, danger; sizes: sm, md, lg; `asChild` renders styling on child element — use with `<Link>`) | `@/components/ui` |
+| All buttons | `Button` (variants: primary, brand, secondary, ghost, danger; sizes: sm, md, lg; `asChild` renders styling on child element — use with `<Link>`) | `@/components/ui` |
 | Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
 | Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
@@ -154,7 +154,7 @@ Always use these — do not write inline equivalents:
 - **Button + Link:** Never nest `<Link>` inside `<Button>` (invalid `<a>` inside `<button>`). Use `<Button asChild><Link href="...">text</Link></Button>` — `asChild` renders Button styling on the Link element directly.
 - **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold font-display tracking-tight`. Card-subsection H2 = `text-base font-semibold` (Inter, no `font-display`).
 - **Typography:** `font-display` (Fraunces) is for headings and game identity text only. Never for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Inter).
-- **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Sell) use `semantic-primary` (orange).
+- **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Add to Cart) use `semantic-primary` (orange). Platform-action CTAs (Sell a game, seller dashboard entry points) use `Button variant="brand"` (teal, filled).
 - **Badge shape:** `rounded-md` (squared), not pills. Condition badges include a Phosphor tier icon.
 - **Image containers:** Game art uses `aspect-square`, not fixed heights.
 - **Transitions:** All transitions use branded easing — `duration-250 ease-out-custom` or `duration-350 ease-out-custom`.

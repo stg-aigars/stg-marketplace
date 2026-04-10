@@ -1,7 +1,7 @@
 import { forwardRef, isValidElement, cloneElement, type ButtonHTMLAttributes, type ReactElement } from 'react';
 import { Spinner } from './spinner';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'brand' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,6 +16,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-semantic-primary text-semantic-text-inverse shadow-glow-primary active:bg-semantic-primary-active active:shadow-sm sm:hover:bg-semantic-primary-hover',
+  brand:
+    'bg-semantic-brand text-semantic-text-inverse shadow-sm active:bg-semantic-brand-active active:shadow-sm sm:hover:bg-semantic-brand-hover',
   secondary:
     'bg-semantic-bg-elevated text-semantic-text-primary border border-semantic-border-default active:bg-semantic-bg-secondary active:shadow-sm sm:hover:shadow-md sm:hover:border-semantic-brand',
   ghost:

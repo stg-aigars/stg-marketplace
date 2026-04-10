@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CaretDown, X, ShoppingCart, Bell, UserCircle } from '@phosphor-icons/react/ssr';
-import { Avatar, CountBadge } from '@/components/ui';
+import { Avatar, Button, CountBadge } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
@@ -82,9 +82,9 @@ function SiteHeader() {
       <Link href="/browse" className={navLinkClass('/browse')}>
         Browse
       </Link>
-      <Link href="/sell" className={navLinkClass('/sell')}>
-        Sell a game
-      </Link>
+      <Button variant="brand" size="sm" asChild>
+        <Link href="/sell">Sell a game</Link>
+      </Button>
     </>
   );
 
@@ -128,12 +128,9 @@ function SiteHeader() {
             {loading ? (
               <div className="w-20 h-8 rounded-md bg-semantic-bg-secondary animate-pulse" />
             ) : !user ? (
-              <Link
-                href="/auth/signin"
-                className="text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom font-medium"
-              >
-                Sign in
-              </Link>
+              <Button variant="secondary" size="sm" asChild>
+                <Link href="/auth/signin">Sign in</Link>
+              </Button>
             ) : (
               <div className="relative">
                 <button
@@ -228,24 +225,16 @@ function SiteHeader() {
             >
               Browse
             </Link>
-            <Link
-              href="/sell"
-              className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-              onClick={() => setMobileOpen(false)}
-            >
-              Sell a game
-            </Link>
+            <Button variant="brand" size="sm" asChild className="w-full mt-1">
+              <Link href="/sell" onClick={() => setMobileOpen(false)}>Sell a game</Link>
+            </Button>
             <div className="border-t border-semantic-border-subtle my-1" />
             {loading ? (
               <div className="w-24 h-8 rounded-md bg-semantic-bg-secondary animate-pulse my-2" />
             ) : !user ? (
-              <Link
-                href="/auth/signin"
-                className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-                onClick={() => setMobileOpen(false)}
-              >
-                Sign in
-              </Link>
+              <Button variant="secondary" size="sm" asChild className="w-full">
+                <Link href="/auth/signin" onClick={() => setMobileOpen(false)}>Sign in</Link>
+              </Button>
             ) : (
               <>
                 {isSeller && (
