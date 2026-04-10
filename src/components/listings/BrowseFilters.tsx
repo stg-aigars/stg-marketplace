@@ -300,7 +300,17 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-semantic-border-default bg-semantic-bg-elevated text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:border-semantic-border-focus text-sm"
           />
         </div>
-        <div className="hidden sm:flex items-center">
+        <div className="hidden sm:flex items-center gap-4">
+          {renderToggle(
+            currentFilters.showExpansions,
+            (checked) => applyFilters({ ...currentFilters, showExpansions: checked }),
+            'Includes expansions'
+          )}
+          {renderToggle(
+            currentFilters.showAuctions,
+            (checked) => applyFilters({ ...currentFilters, showAuctions: checked }),
+            'Auctions only'
+          )}
           {renderSortButtons(currentFilters.sort, handleSortChange)}
         </div>
       </div>
@@ -404,20 +414,6 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
               <div>
                 <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Seller country</p>
                 {renderCountryChips(currentFilters.countries, toggleCountry)}
-              </div>
-
-              {/* Toggles */}
-              <div className="flex items-end gap-4">
-                {renderToggle(
-                  currentFilters.showExpansions,
-                  (checked) => applyFilters({ ...currentFilters, showExpansions: checked }),
-                  'Includes expansions'
-                )}
-                {renderToggle(
-                  currentFilters.showAuctions,
-                  (checked) => applyFilters({ ...currentFilters, showAuctions: checked }),
-                  'Auctions only'
-                )}
               </div>
 
               {/* Clear (right-aligned) */}
