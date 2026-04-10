@@ -3,11 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
-import { LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import type { WantedListingWithGame, WantedListingWithDetails } from './types';
-import { MAX_NOTE_LENGTH, CONDITION_RANK } from './types';
-import { declineActiveWantedOffers } from './offer-actions';
+import { MAX_NOTE_LENGTH } from './types';
+import type { VersionSource } from '@/lib/listings/types';
 
 // ============================================================================
 // Create wanted listing
@@ -17,8 +16,14 @@ export async function createWantedListing(
   bggGameId: number,
   gameName: string,
   gameYear: number | null,
-  minCondition: ListingCondition,
-  maxPriceCents: number | null,
+  edition: {
+    versionSource: VersionSource | null;
+    bggVersionId: number | null;
+    versionName: string | null;
+    publisher: string | null;
+    language: string | null;
+    editionYear: number | null;
+  } | null,
   notes?: string,
   turnstileToken?: string
 ): Promise<{ id: string } | { error: string }> {
@@ -30,10 +35,6 @@ export async function createWantedListing(
 
   if (!user) return { error: 'You must be signed in' };
   if (!bggGameId || bggGameId <= 0) return { error: 'Invalid game' };
-  if (!LISTING_CONDITIONS.includes(minCondition)) return { error: 'Invalid condition' };
-  if (maxPriceCents != null && (!Number.isInteger(maxPriceCents) || maxPriceCents < 50 || maxPriceCents > 9999999)) {
-    return { error: 'Invalid budget amount' };
-  }
   if (notes && notes.length > MAX_NOTE_LENGTH) {
     return { error: `Notes must be ${MAX_NOTE_LENGTH} characters or fewer` };
   }
@@ -54,8 +55,12 @@ export async function createWantedListing(
       bgg_game_id: bggGameId,
       game_name: gameName,
       game_year: gameYear,
-      min_condition: minCondition,
-      max_price_cents: maxPriceCents,
+      version_source: edition?.versionSource ?? null,
+      bgg_version_id: edition?.bggVersionId ?? null,
+      version_name: edition?.versionName ?? null,
+      publisher: edition?.publisher ?? null,
+      language: edition?.language ?? null,
+      edition_year: edition?.editionYear ?? null,
       notes: notes?.trim() || null,
       country: profile.country,
     })
@@ -66,6 +71,7 @@ export async function createWantedListing(
     if (error.code === '23505') {
       return { error: 'You already have an active wanted listing for this game' };
     }
+    console.error('[Wanted] Failed to create:', error);
     return { error: 'Failed to create wanted listing' };
   }
 
@@ -75,71 +81,7 @@ export async function createWantedListing(
 }
 
 // ============================================================================
-// Update wanted listing
-// ============================================================================
-
-export async function updateWantedListing(
-  id: string,
-  minCondition: ListingCondition,
-  maxPriceCents: number | null,
-  notes?: string | null
-): Promise<{ success: true } | { error: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: 'You must be signed in' };
-  if (!LISTING_CONDITIONS.includes(minCondition)) return { error: 'Invalid condition' };
-  if (maxPriceCents != null && (!Number.isInteger(maxPriceCents) || maxPriceCents < 50 || maxPriceCents > 9999999)) {
-    return { error: 'Invalid budget amount' };
-  }
-  if (notes && notes.length > MAX_NOTE_LENGTH) {
-    return { error: `Notes must be ${MAX_NOTE_LENGTH} characters or fewer` };
-  }
-
-  // If tightening condition, check for active offers that would no longer qualify
-  const { data: current } = await supabase
-    .from('wanted_listings')
-    .select('min_condition')
-    .eq('id', id)
-    .eq('buyer_id', user.id)
-    .eq('status', 'active')
-    .single();
-
-  if (!current) return { error: 'Wanted listing not found' };
-
-  if (CONDITION_RANK[minCondition] > CONDITION_RANK[current.min_condition as ListingCondition]) {
-    // Tightening — check if any active offers would be invalidated
-    const { count } = await supabase
-      .from('wanted_offers')
-      .select('id', { count: 'exact', head: true })
-      .eq('wanted_listing_id', id)
-      .in('status', ['pending', 'countered', 'accepted']);
-
-    if ((count ?? 0) > 0) {
-      return { error: 'Cannot tighten condition while active offers exist. Decline or wait for offers to expire first.' };
-    }
-  }
-
-  const { error } = await supabase
-    .from('wanted_listings')
-    .update({
-      min_condition: minCondition,
-      max_price_cents: maxPriceCents,
-      notes: notes?.trim() || null,
-    })
-    .eq('id', id)
-    .eq('buyer_id', user.id)
-    .eq('status', 'active');
-
-  if (error) return { error: 'Failed to update wanted listing' };
-
-  revalidatePath('/account/wanted');
-  revalidatePath('/wanted');
-  return { success: true };
-}
-
-// ============================================================================
-// Cancel wanted listing (auto-declines active offers)
+// Cancel wanted listing
 // ============================================================================
 
 export async function cancelWantedListing(
@@ -161,12 +103,8 @@ export async function cancelWantedListing(
   if (listing.buyer_id !== user.id) return { error: 'You can only cancel your own wanted listings' };
   if (listing.status !== 'active') return { error: 'Can only cancel active wanted listings' };
 
-  // Decline all active offers on this wanted listing
-  await declineActiveWantedOffers(id);
-
   const service = createServiceClient();
 
-  // Cancel the wanted listing
   const { error } = await service
     .from('wanted_listings')
     .update({ status: 'cancelled' })
@@ -229,14 +167,6 @@ export async function getWantedListingById(
 
   if (!listing) return null;
 
-  // Count active offers on this wanted listing
-  const service = createServiceClient();
-  const { count } = await service
-    .from('wanted_offers')
-    .select('id', { count: 'exact', head: true })
-    .eq('wanted_listing_id', id)
-    .in('status', ['pending', 'countered', 'accepted']);
-
   const games = (listing as Record<string, unknown>).games as { thumbnail: string | null; image: string | null } | null;
   const buyer = (listing as Record<string, unknown>).buyer as { full_name: string | null } | null;
 
@@ -245,6 +175,5 @@ export async function getWantedListingById(
     thumbnail: games?.thumbnail ?? null,
     image: games?.image ?? null,
     buyer_name: buyer?.full_name ?? '',
-    offer_count: count ?? 0,
   } as WantedListingWithDetails;
 }

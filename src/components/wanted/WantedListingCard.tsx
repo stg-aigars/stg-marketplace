@@ -2,19 +2,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
-import { Card, Badge } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { GameTitle, GameMeta } from '@/components/listings/atoms';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
 
 interface WantedListingCardProps {
   id: string;
   gameTitle: string;
   gameYear: number | null;
   gameThumbnail: string | null;
-  minCondition: ListingCondition;
-  maxPriceCents: number | null;
+  language: string | null;
+  publisher: string | null;
   buyerCountry: string;
   notes: string | null;
 }
@@ -24,11 +22,13 @@ export function WantedListingCard({
   gameTitle,
   gameYear,
   gameThumbnail,
-  minCondition,
-  maxPriceCents,
+  language,
+  publisher,
   buyerCountry,
   notes,
 }: WantedListingCardProps) {
+  const hasEdition = language || publisher;
+
   return (
     <Link href={`/wanted/${id}`}>
       <Card hoverable className="h-full flex flex-col">
@@ -51,21 +51,15 @@ export function WantedListingCard({
         {/* Content */}
         <div className="px-3 py-2.5 flex flex-col flex-1">
           <GameTitle name={gameTitle} clamp={2} />
-          <GameMeta year={gameYear} className="mt-0.5" />
+          <GameMeta year={gameYear} publisher={publisher} className="mt-0.5" />
 
-          <div className="mt-2 flex flex-wrap gap-1">
-            <Badge condition={conditionToBadgeKey[minCondition]} />
-            <span className="text-[10px] text-semantic-text-muted self-center">or better</span>
-          </div>
+          {hasEdition && (
+            <p className="text-xs text-semantic-text-muted mt-1 truncate">
+              {[language, publisher].filter(Boolean).join(' · ')}
+            </p>
+          )}
 
           <div className="mt-auto pt-2 flex items-center justify-between">
-            {maxPriceCents ? (
-              <p className="text-sm font-semibold text-semantic-text-heading">
-                Up to {formatCentsToCurrency(maxPriceCents)}
-              </p>
-            ) : (
-              <p className="text-xs text-semantic-text-muted">Any price</p>
-            )}
             <span
               className={`${getCountryFlag(buyerCountry)} text-xs`}
               title={getCountryName(buyerCountry)}

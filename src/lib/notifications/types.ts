@@ -47,13 +47,7 @@ export type NotificationType =
   | 'auction.payment_expired'
   | 'auction.payment_expired_seller'
   // Wanted listings
-  | 'wanted.offer_received'
-  | 'wanted.offer_countered'
-  | 'wanted.offer_accepted'
-  | 'wanted.offer_declined'
-  | 'wanted.offer_expired'
-  | 'wanted.listing_created'
-  | 'wanted.filled'
+  | 'wanted.listing_matched'
   // DAC7 tax reporting
   | 'dac7.approaching'
   | 'dac7.data_requested'

@@ -8,7 +8,6 @@ export const metadata: Metadata = { title: 'Offers' };
 
 const OFFER_TABS = [
   { key: 'shelf', label: 'Shelf offers', href: '/account/offers' },
-  { key: 'wanted', label: 'Wanted offers', href: '/account/offers/wanted' },
 ];
 
 export default async function OffersPage() {

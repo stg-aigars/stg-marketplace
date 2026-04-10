@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server';
 import { EmptyState, Pagination, Button } from '@/components/ui';
 import { WantedListingCard } from '@/components/wanted/WantedListingCard';
 import { WantedBrowseFilters } from '@/components/wanted/WantedBrowseFilters';
-import type { ListingCondition } from '@/lib/listings/types';
 import {
   parseWantedFiltersFromParams,
   wantedFiltersToSearchParams,
@@ -27,8 +26,8 @@ interface WantedRow {
   id: string;
   game_name: string;
   game_year: number | null;
-  min_condition: ListingCondition;
-  max_price_cents: number | null;
+  language: string | null;
+  publisher: string | null;
   country: string;
   notes: string | null;
   bgg_game_id: number;
@@ -49,7 +48,7 @@ export default async function WantedBrowsePage(
   let query = supabase
     .from('wanted_listings')
     .select(
-      'id, game_name, game_year, min_condition, max_price_cents, country, notes, bgg_game_id, games:bgg_game_id(image)',
+      'id, game_name, game_year, language, publisher, country, notes, bgg_game_id, games:bgg_game_id(image)',
       { count: 'exact' }
     )
     .eq('status', 'active');
@@ -57,27 +56,11 @@ export default async function WantedBrowsePage(
   if (filters.search) {
     query = query.ilike('game_name', `%${filters.search}%`);
   }
-  if (filters.minConditions.length > 0) {
-    query = query.in('min_condition', filters.minConditions);
-  }
-  if (filters.budgetMinCents !== null) {
-    query = query.gte('max_price_cents', filters.budgetMinCents);
-  }
-  if (filters.budgetMaxCents !== null) {
-    query = query.lte('max_price_cents', filters.budgetMaxCents);
-  }
   if (filters.countries.length > 0) {
     query = query.in('country', filters.countries);
   }
 
-  if (filters.sort === 'budget_asc') {
-    query = query.order('max_price_cents', { ascending: true, nullsFirst: false });
-  } else if (filters.sort === 'budget_desc') {
-    query = query.order('max_price_cents', { ascending: false, nullsFirst: true });
-  } else {
-    query = query.order('created_at', { ascending: false });
-  }
-
+  query = query.order('created_at', { ascending: false });
   query = query.range(offset, offset + PAGE_SIZE - 1);
 
   const { data: listings, count } = await query.returns<WantedRow[]>();
@@ -132,8 +115,8 @@ export default async function WantedBrowsePage(
                 gameTitle={listing.game_name}
                 gameYear={listing.game_year}
                 gameThumbnail={listing.games?.image ?? null}
-                minCondition={listing.min_condition}
-                maxPriceCents={listing.max_price_cents}
+                language={listing.language}
+                publisher={listing.publisher}
                 buyerCountry={listing.country}
                 notes={listing.notes}
               />

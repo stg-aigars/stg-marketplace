@@ -2,28 +2,35 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Button, Input, Select, Alert, Textarea, TurnstileWidget } from '@/components/ui';
+import { Card, CardBody, Button, Alert, Textarea, TurnstileWidget } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { GameSearchStep, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
-import { LISTING_CONDITIONS, conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
-import { conditionConfig } from '@/lib/condition-config';
+import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { createWantedListing } from '@/lib/wanted/actions';
-
-const CONDITION_OPTIONS = LISTING_CONDITIONS.map((c) => ({
-  value: c,
-  label: conditionConfig[conditionToBadgeKey[c]].label,
-}));
+import { useAuth } from '@/contexts/AuthContext';
+import type { VersionData } from '@/lib/listings/types';
 
 export function CreateWantedForm() {
   const [game, setGame] = useState<EnrichedGame | null>(null);
-  const [minCondition, setMinCondition] = useState<ListingCondition>('acceptable');
-  const [budgetEur, setBudgetEur] = useState('');
+  const [editionAnswer, setEditionAnswer] = useState<'yes' | 'no' | null>(null);
+  const [edition, setEdition] = useState<VersionData | null>(null);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
+  const { profile } = useAuth();
+  const userCountry = profile?.country ?? null;
+
+  function handleGameSelect(selected: EnrichedGame) {
+    setGame(selected);
+    // Reset edition state when game changes
+    if (game && game.id !== selected.id) {
+      setEditionAnswer(null);
+      setEdition(null);
+    }
+  }
 
   function handleSubmit() {
     if (!game) {
@@ -32,20 +39,20 @@ export function CreateWantedForm() {
     }
 
     setError(null);
-    const budgetCents = budgetEur.trim() ? Math.round(parseFloat(budgetEur) * 100) : null;
-
-    if (budgetCents !== null && (isNaN(budgetCents) || budgetCents < 50)) {
-      setError('Budget must be at least 0.50 or left empty');
-      return;
-    }
 
     startTransition(async () => {
       const result = await createWantedListing(
         game.id,
         game.name,
         game.yearpublished,
-        minCondition,
-        budgetCents,
+        edition ? {
+          versionSource: edition.version_source,
+          bggVersionId: edition.bgg_version_id,
+          versionName: edition.version_name,
+          publisher: edition.publisher,
+          language: edition.language,
+          editionYear: edition.edition_year,
+        } : null,
         notes.trim() || undefined,
         turnstileToken ?? undefined
       );
@@ -59,49 +66,69 @@ export function CreateWantedForm() {
     });
   }
 
+  const showEditionGate = game && editionAnswer === null;
+  const showVersionStep = game && editionAnswer === 'yes';
+  const showSubmitSection = game && (editionAnswer === 'no' || (editionAnswer === 'yes' && edition));
+
   return (
     <div className="space-y-6">
       {error && <Alert variant="error">{error}</Alert>}
 
       {/* Step 1: Game search */}
-      <Card>
-        <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
-            Which game are you looking for?
-          </h2>
-          <GameSearchStep
-            selectedGameId={game?.id ?? null}
-            selectedGame={game}
-            onSelect={setGame}
-          />
-        </CardBody>
-      </Card>
+      <GameSearchStep
+        heading="Which game are you looking for?"
+        selectedGameId={game?.id ?? null}
+        selectedGame={game}
+        onSelect={handleGameSelect}
+      />
 
-      {/* Step 2: Preferences */}
-      {game && (
+      {/* Edition gate */}
+      {showEditionGate && (
+        <Card>
+          <CardBody>
+            <p className="text-sm font-medium text-semantic-text-primary mb-3">
+              Do you have a preferred edition?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditionAnswer('no')}
+              >
+                Any edition is fine
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditionAnswer('yes')}
+              >
+                Yes, select edition
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Edition selection */}
+      {showVersionStep && (
+        <VersionStep
+          gameId={game.id}
+          gameName={game.name}
+          selectedGame={game}
+          selectedVersionId={edition?.bgg_version_id ?? null}
+          selectedVersionSource={edition?.version_source ?? null}
+          selectedPublisher={edition?.publisher}
+          selectedLanguage={edition?.language}
+          selectedEditionYear={edition?.edition_year}
+          onSelect={setEdition}
+          userCountry={userCountry}
+        />
+      )}
+
+      {/* Notes + submit */}
+      {showSubmitSection && (
         <Card>
           <CardBody className="space-y-4">
-            <h2 className="text-base font-semibold text-semantic-text-heading">
-              Your preferences
-            </h2>
-
-            <Select
-              label="Minimum acceptable condition"
-              options={CONDITION_OPTIONS}
-              value={minCondition}
-              onChange={(e) => setMinCondition(e.target.value as ListingCondition)}
-            />
-
-            <Input
-              label="Maximum budget (EUR) — optional"
-              type="number"
-              min="0.50"
-              step="0.01"
-              value={budgetEur}
-              onChange={(e) => setBudgetEur(e.target.value)}
-              placeholder="Leave empty for any price"
-            />
-
             <div>
               <Textarea
                 label="Notes (optional)"
@@ -109,9 +136,9 @@ export function CreateWantedForm() {
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={500}
                 rows={3}
-                placeholder="Preferred language, edition, or anything else sellers should know"
+                placeholder="Preferred language, condition, or anything else sellers should know"
               />
-              <p className="text-xs text-semantic-text-muted mt-1">
+              <p className="text-xs text-semantic-text-muted mt-1 text-right">
                 {notes.length}/500
               </p>
             </div>
@@ -122,6 +149,7 @@ export function CreateWantedForm() {
               onClick={handleSubmit}
               loading={isPending}
               size="lg"
+              className="w-full"
             >
               Post wanted listing
             </Button>

@@ -51,9 +51,10 @@ interface GameSearchStepProps {
   selectedGame?: EnrichedGame | null;
   onSelect: (game: EnrichedGame) => void;
   locked?: boolean;
+  heading?: string;
 }
 
-export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked }: GameSearchStepProps) {
+export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked, heading = 'What game are you selling?' }: GameSearchStepProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GameResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -241,7 +242,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
   return (
     <div className="space-y-4">
       <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-        What game are you selling?
+        {heading}
       </h2>
 
       <Input

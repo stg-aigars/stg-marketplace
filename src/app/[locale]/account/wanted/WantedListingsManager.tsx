@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ImageSquare, Trash } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button, Tabs } from '@/components/ui';
-import { conditionToBadgeKey } from '@/lib/listings/types';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { cancelWantedListing } from '@/lib/wanted/actions';
 import type { WantedListingWithGame, WantedListingStatus } from '@/lib/wanted/types';
@@ -16,10 +14,9 @@ interface WantedListingsManagerProps {
   listings: WantedListingWithGame[];
 }
 
-const TAB_KEYS: WantedListingStatus[] = ['active', 'filled', 'cancelled'];
+const TAB_KEYS: WantedListingStatus[] = ['active', 'cancelled'];
 const TAB_LABELS: Record<WantedListingStatus, string> = {
   active: 'Active',
-  filled: 'Filled',
   cancelled: 'Cancelled',
 };
 
@@ -85,15 +82,11 @@ export function WantedListingsManager({ listings }: WantedListingsManagerProps) 
                       {listing.game_name}
                       {listing.game_year ? ` (${listing.game_year})` : ''}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge condition={conditionToBadgeKey[listing.min_condition]} />
-                      <span className="text-xs text-semantic-text-muted">or better</span>
-                      {listing.max_price_cents && (
-                        <span className="text-xs text-semantic-text-muted">
-                          · Up to {formatCentsToCurrency(listing.max_price_cents)}
-                        </span>
-                      )}
-                    </div>
+                    {listing.language && (
+                      <p className="text-xs text-semantic-text-muted mt-0.5">
+                        {[listing.language, listing.publisher].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
                     <p className="text-xs text-semantic-text-muted mt-1">
                       Posted {formatDate(listing.created_at)}
                     </p>

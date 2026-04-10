@@ -5,11 +5,12 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
-import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer, sendWantedListingCreatedToBuyer } from '@/lib/email';
+import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer, sendWantedListingMatchedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
+import { conditionConfig } from '@/lib/condition-config';
 import { notify } from '@/lib/notifications';
 import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
-import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
+import { conditionToBadgeKey, type CreateListingData, type ListingCondition, type UpdateListingData } from './types';
 import { extractStoragePath } from './storage-utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -227,16 +228,21 @@ export async function createListing(
     if (UUID_RE.test(data.offer_id)) {
       await linkOfferToListing(data.offer_id, listing.id, user.id, data.bgg_game_id, data.price_cents);
     }
-  } else if (data.wanted_offer_id) {
-    // Created from an accepted wanted offer: complete the offer + fill the wanted listing
-
-    if (UUID_RE.test(data.wanted_offer_id)) {
-      await linkWantedOfferToListing(data.wanted_offer_id, listing.id, user.id);
-    }
   } else {
     // Regular listing (not from offer): auto-link to shelf + decline stale offers
     await autoLinkListingToShelf(user.id, data.bgg_game_id, listing.id);
   }
+
+  // Notify buyers who have active wanted listings for this game (fire-and-forget)
+  void notifyWantedListingMatches(
+    data.bgg_game_id,
+    user.id,
+    listing.id,
+    data.game_name,
+    data.price_cents,
+    data.condition,
+    [data.language, data.publisher, data.edition_year].filter(Boolean).join(' · ') || null,
+  ).catch((err) => console.error('[Wanted] notifyWantedListingMatches failed:', err));
 
   revalidatePath('/account/shelf');
   revalidatePath('/account');
@@ -643,64 +649,64 @@ async function autoLinkListingToShelf(
 }
 
 /**
- * When a listing is created from an accepted wanted offer:
- * 1. Link the listing to the wanted offer (set wanted_offer_id)
- * 2. Complete the wanted offer (status → completed)
- * 3. Fill the wanted listing (status → filled)
- * 4. Decline other active offers on the wanted listing
- * 5. Notify the buyer
+ * After a listing is created, check for active wanted listings matching the same game.
+ * Notify each buyer via in-app notification + email. Fire-and-forget.
  */
-async function linkWantedOfferToListing(wantedOfferId: string, listingId: string, sellerId: string) {
-  try {
-    const service = createServiceClient();
+async function notifyWantedListingMatches(
+  bggGameId: number,
+  sellerId: string,
+  listingId: string,
+  gameName: string,
+  priceCents: number,
+  condition: ListingCondition,
+  listingEdition: string | null,
+) {
+  const service = createServiceClient();
 
-    // Fetch the wanted offer — verify seller ownership
-    const { data: offer } = await service
-      .from('wanted_offers')
-      .select('id, wanted_listing_id, buyer_id, wanted_listings:wanted_listing_id (game_name)')
-      .eq('id', wantedOfferId)
-      .eq('seller_id', sellerId)
-      .eq('status', 'accepted')
-      .single();
+  // Find active wanted listings for this game (exclude seller's own)
+  const { data: matches } = await service
+    .from('wanted_listings')
+    .select('buyer_id, language, publisher, edition_year')
+    .eq('bgg_game_id', bggGameId)
+    .eq('status', 'active')
+    .neq('buyer_id', sellerId);
 
-    if (!offer) return;
+  if (!matches?.length) return;
 
-    // Run all updates in parallel — no data dependencies between them
-    await Promise.all([
-      service.from('listings').update({ wanted_offer_id: wantedOfferId }).eq('id', listingId),
-      service.from('wanted_offers').update({ status: 'completed' }).eq('id', wantedOfferId),
-      service.from('wanted_listings').update({ status: 'filled' }).eq('id', offer.wanted_listing_id),
-      service.from('wanted_offers').update({ status: 'declined' })
-        .eq('wanted_listing_id', offer.wanted_listing_id)
-        .neq('id', wantedOfferId)
-        .in('status', ['pending', 'countered']),
-    ]);
+  const conditionLabel = conditionConfig[conditionToBadgeKey[condition]].label;
 
-    // Fetch profiles for email (single batch query)
-    const profiles = await fetchProfiles(service, [sellerId, offer.buyer_id]);
-    const sellerProfile = profiles.get(sellerId);
-    const buyerProfile = profiles.get(offer.buyer_id);
-    const gameName = (offer.wanted_listings as unknown as { game_name: string } | null)?.game_name ?? 'a game';
+  // Fetch all buyer profiles + seller profile in one batch
+  const buyerIds = matches.map((m) => m.buyer_id);
+  const profiles = await fetchProfiles(service, [sellerId, ...buyerIds]);
+  const sellerProfile = profiles.get(sellerId);
+  const sellerName = sellerProfile?.full_name ?? 'A seller';
 
-    if (buyerProfile?.email && sellerProfile?.full_name) {
-      sendWantedListingCreatedToBuyer({
-        buyerName: buyerProfile.full_name,
-        buyerEmail: buyerProfile.email,
-        sellerName: sellerProfile.full_name,
-        gameName,
-        listingId,
-      }).catch(() => {});
-    }
+  for (const match of matches) {
+    const buyerProfile = profiles.get(match.buyer_id);
+    const buyerEditionPreference = [match.language, match.publisher, match.edition_year]
+      .filter(Boolean)
+      .join(' · ') || null;
 
-    void notify(offer.buyer_id, 'wanted.listing_created', {
+    // In-app notification
+    void notify(match.buyer_id, 'wanted.listing_matched', {
       gameName,
       listingId,
     });
-    void notify(offer.buyer_id, 'wanted.filled', {
-      gameName,
-    });
-  } catch (err) {
-    console.error('[Wanted] linkWantedOfferToListing failed:', err);
+
+    // Email (non-blocking)
+    if (buyerProfile?.email) {
+      sendWantedListingMatchedToBuyer({
+        buyerName: buyerProfile.full_name,
+        buyerEmail: buyerProfile.email,
+        sellerName,
+        gameName,
+        priceCents,
+        condition: conditionLabel,
+        listingEdition,
+        buyerEditionPreference,
+        listingId,
+      }).catch((err) => console.error('[Wanted] Failed to email matched buyer:', err));
+    }
   }
 }
 

@@ -44,7 +44,6 @@ export interface CreateListingData {
   description: string | null;
   photos: string[];
   offer_id?: string;
-  wanted_offer_id?: string;
   // Auction fields (only when listing_type = 'auction')
   listing_type?: ListingType;
   auction_duration_days?: number;
