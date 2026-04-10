@@ -25,7 +25,7 @@ export const WEIGHT_LEVEL_RANGES: Record<WeightLevel, { min: number; max: number
 
 const VALID_SORTS: SortOption[] = ['newest', 'price_asc', 'price_desc'];
 const VALID_COUNTRY_CODES = COUNTRIES.map(c => c.code);
-const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5];
+const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5, 6];
 
 export interface BrowseFilters {
   search: string;

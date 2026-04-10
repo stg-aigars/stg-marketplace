@@ -28,8 +28,8 @@ describe('parseFiltersFromParams', () => {
   });
 
   it('parses multiple player counts', () => {
-    const result = parseFiltersFromParams({ players: '2,4,5' });
-    expect(result.playerCounts).toEqual([2, 4, 5]);
+    const result = parseFiltersFromParams({ players: '2,4,6' });
+    expect(result.playerCounts).toEqual([2, 4, 6]);
   });
 
   it('drops invalid player counts', () => {

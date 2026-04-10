@@ -84,8 +84,10 @@ export default async function BrowsePage(
     }
 
     if (filters.playerCounts.length > 0) {
-      const playerClauses = filters.playerCounts.map(
-        (n) => `and(min_players.lte.${n},max_players.gte.${n})`
+      const playerClauses = filters.playerCounts.map((n) =>
+        n === 6
+          ? 'max_players.gte.6'
+          : `and(min_players.lte.${n},max_players.gte.${n})`
       );
       gamesQuery = gamesQuery.or(playerClauses.join(','));
     }

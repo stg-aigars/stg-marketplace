@@ -26,7 +26,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'price_desc', label: 'Price ↓' },
 ];
 
-const PLAYER_COUNTS = [1, 2, 3, 4, 5] as const;
+const PLAYER_COUNTS = [1, 2, 3, 4, 5, 6] as const;
 
 const INACTIVE_CHIP = 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default';
 const ACTIVE_CHIP = 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand';
@@ -128,7 +128,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
               isActive ? ACTIVE_CHIP : INACTIVE_CHIP
             }`}
           >
-            {count === 5 ? '5+' : count}
+            {count === 6 ? '6+' : count}
           </button>
         );
       })}
