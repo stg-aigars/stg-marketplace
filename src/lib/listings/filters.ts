@@ -1,4 +1,3 @@
-import { LISTING_CONDITIONS, type ListingCondition } from './types';
 import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
 
 export type SortOption = 'newest' | 'price_asc' | 'price_desc';
@@ -8,11 +7,11 @@ export type WeightLevel = 'light' | 'medium_light' | 'medium' | 'medium_heavy' |
 export const WEIGHT_LEVELS: WeightLevel[] = ['light', 'medium_light', 'medium', 'medium_heavy', 'heavy'];
 
 export const WEIGHT_LEVEL_LABELS: Record<WeightLevel, string> = {
-  light: 'Light',
-  medium_light: 'Medium Light',
-  medium: 'Medium',
-  medium_heavy: 'Medium Heavy',
-  heavy: 'Heavy',
+  light: 'Quick & Easy',
+  medium_light: 'Relaxed',
+  medium: 'Engaging',
+  medium_heavy: 'Challenging',
+  heavy: 'Brain Burner',
 };
 
 /** Maps each weight level to its [min, max) numeric range on the BGG 1-5 scale. */
@@ -26,33 +25,26 @@ export const WEIGHT_LEVEL_RANGES: Record<WeightLevel, { min: number; max: number
 
 const VALID_SORTS: SortOption[] = ['newest', 'price_asc', 'price_desc'];
 const VALID_COUNTRY_CODES = COUNTRIES.map(c => c.code);
+const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5];
 
 export interface BrowseFilters {
   search: string;
-  conditions: ListingCondition[];
-  priceMinCents: number | null;
-  priceMaxCents: number | null;
-  playerCount: number | null;
+  playerCounts: number[];
   countries: CountryCode[];
-  categories: string[];
-  mechanics: string[];
   weightLevels: WeightLevel[];
   showExpansions: boolean;
+  showAuctions: boolean;
   sort: SortOption;
   page: number;
 }
 
 export const DEFAULT_FILTERS: BrowseFilters = {
   search: '',
-  conditions: [],
-  priceMinCents: null,
-  priceMaxCents: null,
-  playerCount: null,
+  playerCounts: [],
   countries: [],
-  categories: [],
-  mechanics: [],
   weightLevels: [],
   showExpansions: false,
+  showAuctions: false,
   sort: 'newest',
   page: 1,
 };
@@ -69,25 +61,14 @@ export function parseFiltersFromParams(
     return Array.isArray(val) ? val[0] : val;
   };
 
-  // Conditions
-  const conditionParam = get('condition');
-  const conditions = conditionParam
-    ? conditionParam
+  // Player counts (comma-separated, 1-5)
+  const playersParam = get('players');
+  const playerCounts = playersParam
+    ? playersParam
         .split(',')
-        .filter((c): c is ListingCondition =>
-          LISTING_CONDITIONS.includes(c as ListingCondition)
-        )
+        .map((s) => parseInt(s, 10))
+        .filter((n) => VALID_PLAYER_COUNTS.includes(n))
     : [];
-
-  // Price range (params are in cents)
-  const rawMin = get('price_min');
-  const rawMax = get('price_max');
-  const priceMinCents = rawMin ? parsePositiveInt(rawMin) : null;
-  const priceMaxCents = rawMax ? parsePositiveInt(rawMax) : null;
-
-  // Player count — single number ("plays with N")
-  const rawPlayers = get('players');
-  const playerCount = rawPlayers ? parsePositiveInt(rawPlayers) : null;
 
   // Countries
   const countryParam = get('country');
@@ -109,18 +90,6 @@ export function parseFiltersFromParams(
   // Search
   const search = (get('q') ?? '').trim().slice(0, 200);
 
-  // Categories
-  const categoryParam = get('categories');
-  const categories = categoryParam
-    ? categoryParam.split(',').map((c) => c.trim()).filter(Boolean)
-    : [];
-
-  // Mechanics
-  const mechanicsParam = get('mechanics');
-  const mechanics = mechanicsParam
-    ? mechanicsParam.split(',').map((m) => m.trim()).filter(Boolean)
-    : [];
-
   // Weight levels
   const weightParam = get('weight');
   const weightLevels = weightParam
@@ -132,11 +101,14 @@ export function parseFiltersFromParams(
   // Show expansion listings
   const showExpansions = get('expansions') === '1';
 
+  // Show auctions only
+  const showAuctions = get('auctions') === '1';
+
   // Page
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, conditions, priceMinCents, priceMaxCents, playerCount, countries, categories, mechanics, weightLevels, showExpansions, sort, page };
+  return { search, playerCounts, countries, weightLevels, showExpansions, showAuctions, sort, page };
 }
 
 /**
@@ -149,32 +121,20 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
   if (filters.search) {
     params.set('q', filters.search);
   }
-  if (filters.conditions.length > 0) {
-    params.set('condition', filters.conditions.join(','));
-  }
-  if (filters.priceMinCents !== null) {
-    params.set('price_min', String(filters.priceMinCents));
-  }
-  if (filters.priceMaxCents !== null) {
-    params.set('price_max', String(filters.priceMaxCents));
-  }
-  if (filters.playerCount !== null) {
-    params.set('players', String(filters.playerCount));
+  if (filters.playerCounts.length > 0) {
+    params.set('players', filters.playerCounts.join(','));
   }
   if (filters.countries.length > 0) {
     params.set('country', filters.countries.join(','));
-  }
-  if (filters.categories.length > 0) {
-    params.set('categories', filters.categories.join(','));
-  }
-  if (filters.mechanics.length > 0) {
-    params.set('mechanics', filters.mechanics.join(','));
   }
   if (filters.weightLevels.length > 0) {
     params.set('weight', filters.weightLevels.join(','));
   }
   if (filters.showExpansions) {
     params.set('expansions', '1');
+  }
+  if (filters.showAuctions) {
+    params.set('auctions', '1');
   }
   if (filters.sort !== 'newest') {
     params.set('sort', filters.sort);
@@ -193,14 +153,11 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
 export function countActiveFilters(filters: BrowseFilters): number {
   let count = 0;
   if (filters.search) count++;
-  if (filters.conditions.length > 0) count++;
-  if (filters.priceMinCents !== null || filters.priceMaxCents !== null) count++;
-  if (filters.playerCount !== null) count++;
+  if (filters.playerCounts.length > 0) count++;
   if (filters.countries.length > 0) count++;
-  if (filters.categories.length > 0) count++;
-  if (filters.mechanics.length > 0) count++;
   if (filters.weightLevels.length > 0) count++;
   if (filters.showExpansions) count++;
+  if (filters.showAuctions) count++;
   return count;
 }
 
@@ -209,9 +166,4 @@ export function countActiveFilters(filters: BrowseFilters): number {
  */
 export function hasActiveFilters(filters: BrowseFilters): boolean {
   return countActiveFilters(filters) > 0;
-}
-
-function parsePositiveInt(val: string): number | null {
-  const n = parseInt(val, 10);
-  return !isNaN(n) && n > 0 ? n : null;
 }

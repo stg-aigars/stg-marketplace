@@ -60,9 +60,7 @@ export default async function BrowsePage(
   // pre-fetch matching game IDs in a single query so the main listings query returns
   // correct counts and pagination works properly.
   const hasGameFilters =
-    filters.playerCount !== null ||
-    filters.categories.length > 0 ||
-    filters.mechanics.length > 0 ||
+    filters.playerCounts.length > 0 ||
     filters.weightLevels.length > 0;
 
   // Pre-fetch expansion game IDs that have active listings, to exclude when toggle is off.
@@ -85,16 +83,15 @@ export default async function BrowsePage(
       gamesQuery = gamesQuery.eq('is_expansion', false);
     }
 
-    if (filters.playerCount !== null) {
+    if (filters.playerCounts.length === 1) {
       gamesQuery = gamesQuery
-        .lte('min_players', filters.playerCount)
-        .gte('max_players', filters.playerCount);
-    }
-    if (filters.categories.length > 0) {
-      gamesQuery = gamesQuery.overlaps('categories', filters.categories);
-    }
-    if (filters.mechanics.length > 0) {
-      gamesQuery = gamesQuery.overlaps('mechanics', filters.mechanics);
+        .lte('min_players', filters.playerCounts[0])
+        .gte('max_players', filters.playerCounts[0]);
+    } else if (filters.playerCounts.length > 1) {
+      const playerClauses = filters.playerCounts.map(
+        (n) => `and(min_players.lte.${n},max_players.gte.${n})`
+      );
+      gamesQuery = gamesQuery.or(playerClauses.join(','));
     }
     if (filters.weightLevels.length > 0) {
       // Build OR condition for weight ranges
@@ -122,17 +119,11 @@ export default async function BrowsePage(
   if (filters.search) {
     query = query.ilike('game_name', `%${filters.search}%`);
   }
-  if (filters.conditions.length > 0) {
-    query = query.in('condition', filters.conditions);
-  }
-  if (filters.priceMinCents !== null) {
-    query = query.gte('price_cents', filters.priceMinCents);
-  }
-  if (filters.priceMaxCents !== null) {
-    query = query.lte('price_cents', filters.priceMaxCents);
-  }
   if (filters.countries.length > 0) {
     query = query.in('country', filters.countries);
+  }
+  if (filters.showAuctions) {
+    query = query.eq('listing_type', 'auction');
   }
 
   // Apply game-level filter (pre-fetched IDs)

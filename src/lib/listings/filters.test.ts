@@ -12,41 +12,34 @@ describe('parseFiltersFromParams', () => {
     expect(parseFiltersFromParams({})).toEqual(DEFAULT_FILTERS);
   });
 
-  it('parses valid conditions', () => {
-    const result = parseFiltersFromParams({ condition: 'like_new,good' });
-    expect(result.conditions).toEqual(['like_new', 'good']);
+  it('ignores removed params (condition, price, categories, mechanics)', () => {
+    const result = parseFiltersFromParams({
+      condition: 'like_new',
+      price_min: '500',
+      categories: 'Strategy',
+      mechanics: 'Trading',
+    });
+    expect(result).toEqual(DEFAULT_FILTERS);
   });
 
-  it('drops invalid conditions', () => {
-    const result = parseFiltersFromParams({ condition: 'like_new,bogus,good' });
-    expect(result.conditions).toEqual(['like_new', 'good']);
-  });
-
-  it('parses price range in cents', () => {
-    const result = parseFiltersFromParams({ price_min: '500', price_max: '5000' });
-    expect(result.priceMinCents).toBe(500);
-    expect(result.priceMaxCents).toBe(5000);
-  });
-
-  it('ignores invalid price values', () => {
-    const result = parseFiltersFromParams({ price_min: 'abc', price_max: '-10' });
-    expect(result.priceMinCents).toBeNull();
-    expect(result.priceMaxCents).toBeNull();
-  });
-
-  it('ignores zero price', () => {
-    const result = parseFiltersFromParams({ price_min: '0' });
-    expect(result.priceMinCents).toBeNull();
-  });
-
-  it('parses player count as single number', () => {
+  it('parses single player count', () => {
     const result = parseFiltersFromParams({ players: '4' });
-    expect(result.playerCount).toBe(4);
+    expect(result.playerCounts).toEqual([4]);
   });
 
-  it('ignores invalid player count', () => {
+  it('parses multiple player counts', () => {
+    const result = parseFiltersFromParams({ players: '2,4,5' });
+    expect(result.playerCounts).toEqual([2, 4, 5]);
+  });
+
+  it('drops invalid player counts', () => {
+    const result = parseFiltersFromParams({ players: '2,7,abc,4' });
+    expect(result.playerCounts).toEqual([2, 4]);
+  });
+
+  it('ignores completely invalid player count', () => {
     const result = parseFiltersFromParams({ players: 'many' });
-    expect(result.playerCount).toBeNull();
+    expect(result.playerCounts).toEqual([]);
   });
 
   it('parses valid countries', () => {
@@ -78,27 +71,27 @@ describe('parseFiltersFromParams', () => {
     expect(parseFiltersFromParams({ page: 'abc' }).page).toBe(1);
   });
 
+  it('parses showAuctions', () => {
+    expect(parseFiltersFromParams({ auctions: '1' }).showAuctions).toBe(true);
+    expect(parseFiltersFromParams({}).showAuctions).toBe(false);
+  });
+
   it('parses all params together', () => {
     const result = parseFiltersFromParams({
-      condition: 'like_new,very_good',
-      price_min: '1000',
-      price_max: '5000',
-      players: '2',
+      players: '2,4',
       country: 'LV,LT',
+      weight: 'medium',
       sort: 'price_asc',
       page: '2',
+      auctions: '1',
     });
     expect(result).toEqual({
       search: '',
-      conditions: ['like_new', 'very_good'],
-      priceMinCents: 1000,
-      priceMaxCents: 5000,
-      playerCount: 2,
+      playerCounts: [2, 4],
       countries: ['LV', 'LT'],
-      categories: [],
-      mechanics: [],
-      weightLevels: [],
+      weightLevels: ['medium'],
       showExpansions: false,
+      showAuctions: true,
       sort: 'price_asc',
       page: 2,
     });
@@ -113,27 +106,31 @@ describe('filtersToSearchParams', () => {
   it('includes only non-default values', () => {
     const result = filtersToSearchParams({
       ...DEFAULT_FILTERS,
-      conditions: ['good'],
+      playerCounts: [3],
       sort: 'price_desc',
     });
-    expect(result).toContain('condition=good');
+    expect(result).toContain('players=3');
     expect(result).toContain('sort=price_desc');
     expect(result).not.toContain('page=');
-    expect(result).not.toContain('players=');
+    expect(result).not.toContain('country=');
+  });
+
+  it('serializes multiple player counts', () => {
+    const result = filtersToSearchParams({
+      ...DEFAULT_FILTERS,
+      playerCounts: [2, 4],
+    });
+    expect(result).toContain('players=2%2C4');
   });
 
   it('round-trips through parse', () => {
     const original = {
       search: 'catan',
-      conditions: ['like_new' as const, 'very_good' as const],
-      priceMinCents: 500,
-      priceMaxCents: 5000,
-      playerCount: 3,
+      playerCounts: [2, 4],
       countries: ['LV' as const, 'EE' as const],
-      categories: ['Economic'],
-      mechanics: ['Trading'],
       weightLevels: ['medium' as const],
       showExpansions: false,
+      showAuctions: true,
       sort: 'price_asc' as const,
       page: 2,
     };
@@ -158,21 +155,15 @@ describe('countActiveFilters', () => {
     expect(countActiveFilters(DEFAULT_FILTERS)).toBe(0);
   });
 
-  it('counts condition as one filter', () => {
+  it('counts playerCounts as one filter', () => {
     expect(
-      countActiveFilters({ ...DEFAULT_FILTERS, conditions: ['like_new', 'good'] })
+      countActiveFilters({ ...DEFAULT_FILTERS, playerCounts: [2, 4] })
     ).toBe(1);
   });
 
-  it('counts price range as one filter', () => {
+  it('counts showAuctions as one filter', () => {
     expect(
-      countActiveFilters({ ...DEFAULT_FILTERS, priceMinCents: 100, priceMaxCents: 5000 })
-    ).toBe(1);
-  });
-
-  it('counts only price_min as one filter', () => {
-    expect(
-      countActiveFilters({ ...DEFAULT_FILTERS, priceMinCents: 100 })
+      countActiveFilters({ ...DEFAULT_FILTERS, showAuctions: true })
     ).toBe(1);
   });
 
@@ -186,10 +177,10 @@ describe('countActiveFilters', () => {
     expect(
       countActiveFilters({
         ...DEFAULT_FILTERS,
-        conditions: ['good'],
-        priceMinCents: 100,
-        playerCount: 4,
+        playerCounts: [4],
         countries: ['LV'],
+        showAuctions: true,
+        weightLevels: ['medium'],
       })
     ).toBe(4);
   });
@@ -201,6 +192,6 @@ describe('hasActiveFilters', () => {
   });
 
   it('returns true when any filter is set', () => {
-    expect(hasActiveFilters({ ...DEFAULT_FILTERS, playerCount: 2 })).toBe(true);
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, playerCounts: [2] })).toBe(true);
   });
 });
