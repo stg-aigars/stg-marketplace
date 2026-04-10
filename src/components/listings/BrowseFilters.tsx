@@ -27,10 +27,13 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 const PLAYER_COUNTS = [1, 2, 3, 4, 5] as const;
-const PLAYER_COUNT_LABELS: Record<number, string> = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5+' };
 
 const INACTIVE_CHIP = 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default';
 const ACTIVE_CHIP = 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand';
+
+function toggleArrayValue<T>(arr: T[], value: T): T[] {
+  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+}
 
 function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   const router = useRouter();
@@ -63,32 +66,17 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
 
   // --- Desktop inline handlers (apply immediately) ---
   const togglePlayerCount = useCallback(
-    (count: number) => {
-      const next = currentFilters.playerCounts.includes(count)
-        ? currentFilters.playerCounts.filter((c) => c !== count)
-        : [...currentFilters.playerCounts, count];
-      applyFilters({ ...currentFilters, playerCounts: next });
-    },
+    (count: number) => applyFilters({ ...currentFilters, playerCounts: toggleArrayValue(currentFilters.playerCounts, count) }),
     [currentFilters, applyFilters]
   );
 
   const toggleWeight = useCallback(
-    (level: WeightLevel) => {
-      const next = currentFilters.weightLevels.includes(level)
-        ? currentFilters.weightLevels.filter((w) => w !== level)
-        : [...currentFilters.weightLevels, level];
-      applyFilters({ ...currentFilters, weightLevels: next });
-    },
+    (level: WeightLevel) => applyFilters({ ...currentFilters, weightLevels: toggleArrayValue(currentFilters.weightLevels, level) }),
     [currentFilters, applyFilters]
   );
 
   const toggleCountry = useCallback(
-    (country: CountryCode) => {
-      const next = currentFilters.countries.includes(country)
-        ? currentFilters.countries.filter((c) => c !== country)
-        : [...currentFilters.countries, country];
-      applyFilters({ ...currentFilters, countries: next });
-    },
+    (country: CountryCode) => applyFilters({ ...currentFilters, countries: toggleArrayValue(currentFilters.countries, country) }),
     [currentFilters, applyFilters]
   );
 
@@ -100,32 +88,14 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   );
 
   // --- Mobile draft handlers ---
-  const toggleDraftPlayerCount = (count: number) => {
-    setDraft((prev) => ({
-      ...prev,
-      playerCounts: prev.playerCounts.includes(count)
-        ? prev.playerCounts.filter((c) => c !== count)
-        : [...prev.playerCounts, count],
-    }));
-  };
+  const toggleDraftPlayerCount = (count: number) =>
+    setDraft((prev) => ({ ...prev, playerCounts: toggleArrayValue(prev.playerCounts, count) }));
 
-  const toggleDraftWeight = (level: WeightLevel) => {
-    setDraft((prev) => ({
-      ...prev,
-      weightLevels: prev.weightLevels.includes(level)
-        ? prev.weightLevels.filter((w) => w !== level)
-        : [...prev.weightLevels, level],
-    }));
-  };
+  const toggleDraftWeight = (level: WeightLevel) =>
+    setDraft((prev) => ({ ...prev, weightLevels: toggleArrayValue(prev.weightLevels, level) }));
 
-  const toggleDraftCountry = (country: CountryCode) => {
-    setDraft((prev) => ({
-      ...prev,
-      countries: prev.countries.includes(country)
-        ? prev.countries.filter((c) => c !== country)
-        : [...prev.countries, country],
-    }));
-  };
+  const toggleDraftCountry = (country: CountryCode) =>
+    setDraft((prev) => ({ ...prev, countries: toggleArrayValue(prev.countries, country) }));
 
   const openMobileFilters = () => {
     setDraft(currentFilters);
@@ -158,7 +128,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
               isActive ? ACTIVE_CHIP : INACTIVE_CHIP
             }`}
           >
-            {PLAYER_COUNT_LABELS[count]}
+            {count === 5 ? '5+' : count}
           </button>
         );
       })}
