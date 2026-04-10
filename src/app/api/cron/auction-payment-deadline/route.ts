@@ -128,7 +128,7 @@ export async function POST(request: Request) {
               recipientEmail: winner.email,
               gameName: auction.game_name,
               isSeller: false,
-            }).catch(() => {});
+            }).catch((err) => console.error('[Cron] Failed to email payment expired to winner:', err));
           }
         }
 
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
             recipientEmail: seller.email,
             gameName: auction.game_name,
             isSeller: true,
-          }).catch(() => {});
+          }).catch((err) => console.error('[Cron] Failed to email payment expired to seller:', err));
         }
       }
     }
