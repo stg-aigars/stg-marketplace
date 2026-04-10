@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireStaffAuth } from '@/lib/auth/helpers';
 import { createServiceClient } from '@/lib/supabase';
+import {
+  calculateBookkeepingSummary,
+  calculateCountryVatBreakdown,
+  type OrderBookkeepingData,
+} from '@/lib/bookkeeping-utils';
 
 const PAGE_SIZE = 20;
 
@@ -52,7 +57,8 @@ export async function GET(request: Request) {
     query = query.lte('created_at', dateTo);
   }
 
-  // Seller name filter: fetch seller IDs first, then filter orders
+  // Seller name filter: resolve seller IDs before applying to queries
+  let sellerIds: string[] | null = null;
   if (seller) {
     const { data: sellerProfiles } = await serviceClient
       .from('user_profiles')
@@ -60,27 +66,46 @@ export async function GET(request: Request) {
       .ilike('full_name', `%${seller}%`);
 
     if (sellerProfiles && sellerProfiles.length > 0) {
-      query = query.in('seller_id', sellerProfiles.map((p) => p.id));
+      sellerIds = sellerProfiles.map((p) => p.id);
+      query = query.in('seller_id', sellerIds);
     } else {
-      // No matching sellers — return empty
       return NextResponse.json({
         orders: [],
+        summary: null,
+        countryBreakdown: [],
         pagination: { page, limit, total: 0, total_pages: 0 },
       });
     }
   }
 
-  const { data: orders, count, error } = await query;
+  // Build a parallel summary query for ALL matching orders (no pagination, financial columns only)
+  let summaryQuery = serviceClient
+    .from('orders')
+    .select(`
+      status, seller_country,
+      items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents,
+      commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents
+    `);
 
-  if (error) {
-    console.error('Bookkeeping query error:', error);
+  // Apply same filters as main query
+  if (status && status !== 'all') summaryQuery = summaryQuery.eq('status', status);
+  if (search) summaryQuery = summaryQuery.ilike('order_number', `%${search}%`);
+  if (dateFrom) summaryQuery = summaryQuery.gte('created_at', dateFrom);
+  if (dateTo) summaryQuery = summaryQuery.lte('created_at', dateTo);
+  if (sellerIds) summaryQuery = summaryQuery.in('seller_id', sellerIds);
+
+  // Execute both queries in parallel
+  const [paginatedResult, summaryResult] = await Promise.all([query, summaryQuery]);
+
+  if (paginatedResult.error) {
+    console.error('Bookkeeping query error:', paginatedResult.error);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 
-  const total = count ?? 0;
+  const total = paginatedResult.count ?? 0;
 
-  // Map to the shape the bookkeeping page expects
-  const mapped = (orders ?? []).map((o) => ({
+  // Map paginated rows for the table
+  const mapped = (paginatedResult.data ?? []).map((o) => ({
     id: o.id,
     order_number: o.order_number,
     status: o.status,
@@ -98,8 +123,29 @@ export async function GET(request: Request) {
     seller_name: extractName(o.seller_profile),
   }));
 
+  // Compute server-side summaries from ALL matching orders
+  const allOrders: OrderBookkeepingData[] = (summaryResult.data ?? []).map((o) => ({
+    id: '',
+    order_number: '',
+    created_at: '',
+    buyer_name: '',
+    seller_name: '',
+    status: o.status,
+    seller_country: o.seller_country,
+    items_total_cents: o.items_total_cents,
+    shipping_cost_cents: o.shipping_cost_cents,
+    platform_commission_cents: o.platform_commission_cents,
+    total_amount_cents: o.total_amount_cents,
+    commission_net_cents: o.commission_net_cents,
+    commission_vat_cents: o.commission_vat_cents,
+    shipping_net_cents: o.shipping_net_cents,
+    shipping_vat_cents: o.shipping_vat_cents,
+  }));
+
   return NextResponse.json({
     orders: mapped,
+    summary: calculateBookkeepingSummary(allOrders),
+    countryBreakdown: calculateCountryVatBreakdown(allOrders),
     pagination: {
       page,
       limit,

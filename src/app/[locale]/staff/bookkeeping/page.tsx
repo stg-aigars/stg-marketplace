@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
 import { Spinner } from '@/components/ui';
@@ -11,19 +11,19 @@ import type { OrderStatus } from '@/lib/orders/types';
 import {
   DATE_RANGE_PRESETS,
   EXCLUDED_FROM_TOTALS,
-  calculateBookkeepingSummary,
-  calculateCountryVatBreakdown,
   resolveVatBreakdownCents,
-  generateBookkeepingCSV,
   downloadCSV,
   formatDateForAPI,
   type OrderBookkeepingData,
   type BookkeepingSummary,
+  type CountryVatBreakdown,
 } from '@/lib/bookkeeping-utils';
 import { DownloadSimple, MagnifyingGlass } from '@phosphor-icons/react/ssr';
 
 interface BookkeepingResponse {
   orders: OrderBookkeepingData[];
+  summary: BookkeepingSummary | null;
+  countryBreakdown: CountryVatBreakdown[];
   pagination: {
     page: number;
     limit: number;
@@ -53,22 +53,45 @@ export default function StaffBookkeepingPage() {
   const [dateRange, setDateRange] = useState('this_month');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const summary = useMemo<BookkeepingSummary | null>(() => {
-    if (!data?.orders) return null;
-    return calculateBookkeepingSummary(data.orders);
-  }, [data?.orders]);
+  // Summaries are computed server-side from ALL matching orders, not just the current page
+  const summary = data?.summary ?? null;
+  const countryBreakdown = data?.countryBreakdown ?? [];
 
-  const countryBreakdown = useMemo(() => {
-    if (!data?.orders) return [];
-    return calculateCountryVatBreakdown(data.orders);
-  }, [data?.orders]);
+  const [exporting, setExporting] = useState(false);
 
-  const handleExportCSV = () => {
-    if (!data?.orders) return;
-    const csv = generateBookkeepingCSV(data.orders);
-    const preset = DATE_RANGE_PRESETS.find((p) => p.key === dateRange);
-    const filename = `stg-bookkeeping-${preset?.label.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().split('T')[0]}.csv`;
-    downloadCSV(csv, filename);
+  const handleExportCSV = async () => {
+    try {
+      setExporting(true);
+
+      // Fetch ALL matching orders (no pagination) for complete export
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (searchQuery) params.set('search', searchQuery);
+      if (sellerFilter) params.set('seller', sellerFilter);
+      params.set('page', '1');
+      params.set('limit', '10000');
+
+      const preset = DATE_RANGE_PRESETS.find((p) => p.key === dateRange);
+      if (preset) {
+        const { start, end } = preset.getRange();
+        params.set('date_from', formatDateForAPI(start));
+        params.set('date_to', formatDateForAPI(end));
+      }
+
+      const res = await fetch(`/api/staff/bookkeeping?${params}`);
+      const result = await res.json();
+
+      if (!res.ok || !result.orders?.length) return;
+
+      const { generateBookkeepingCSV } = await import('@/lib/bookkeeping-utils');
+      const csv = generateBookkeepingCSV(result.orders);
+      const filename = `stg-bookkeeping-${preset?.label.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().split('T')[0]}.csv`;
+      downloadCSV(csv, filename);
+    } catch (err) {
+      console.error('CSV export failed:', err);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const fetchData = useCallback(async () => {
@@ -112,7 +135,6 @@ export default function StaffBookkeepingPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchData();
   };
 
   if (loading && !data) {
@@ -178,10 +200,10 @@ export default function StaffBookkeepingPage() {
           variant="secondary"
           size="sm"
           onClick={handleExportCSV}
-          disabled={!data?.orders?.length}
+          disabled={!data?.orders?.length || exporting}
         >
           <DownloadSimple size={16} className="mr-1.5" />
-          CSV
+          {exporting ? 'Exporting...' : 'CSV'}
         </Button>
       </div>
 
