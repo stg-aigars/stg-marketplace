@@ -51,6 +51,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
   const [mobileOpen, setMobileOpen] = useState(false);
   const [draft, setDraft] = useState<BrowseFiltersType>(currentFilters);
   const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const [showAllMobileLanguages, setShowAllMobileLanguages] = useState(false);
 
   const activeCount = countActiveFilters(currentFilters);
   const { priority: priorityLangs, rest: restLangs } = sortLanguages(availableLanguages);
@@ -160,11 +161,12 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
   const renderLanguageChips = (
     languages: string[],
     onToggle: (l: string) => void,
-    showAll: boolean
+    showAll: boolean,
+    onToggleShowAll?: () => void
   ) => {
     const visible = showAll ? [...priorityLangs, ...restLangs] : priorityLangs;
     return (
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {visible.map((lang) => {
           const isActive = languages.includes(lang);
           return (
@@ -180,6 +182,15 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             </button>
           );
         })}
+        {hasRestLangs && onToggleShowAll && (
+          <button
+            type="button"
+            onClick={onToggleShowAll}
+            className="text-xs text-semantic-text-muted hover:text-semantic-text-secondary underline min-h-[44px] sm:min-h-[32px] px-1 transition-colors duration-250 ease-out-custom"
+          >
+            {showAll ? 'Show less' : `Show all (${availableLanguages.length})`}
+          </button>
+        )}
       </div>
     );
   };
@@ -352,7 +363,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
           {availableLanguages.length > 0 && (
             <div>
               <p className="text-sm font-medium text-semantic-text-primary mb-2">Game language</p>
-              {renderLanguageChips(draft.languages, toggleDraftLanguage, true)}
+              {renderLanguageChips(draft.languages, toggleDraftLanguage, showAllMobileLanguages, () => setShowAllMobileLanguages((prev) => !prev))}
             </div>
           )}
 
@@ -434,18 +445,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             {availableLanguages.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Game language</p>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {renderLanguageChips(currentFilters.languages, toggleLanguage, showAllLanguages)}
-                  {hasRestLangs && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllLanguages((prev) => !prev)}
-                      className="text-xs text-semantic-text-muted hover:text-semantic-text-secondary underline min-h-[32px] px-1 transition-colors duration-250 ease-out-custom"
-                    >
-                      {showAllLanguages ? 'Show less' : `Show all (${availableLanguages.length})`}
-                    </button>
-                  )}
-                </div>
+                {renderLanguageChips(currentFilters.languages, toggleLanguage, showAllLanguages, () => setShowAllLanguages((prev) => !prev))}
               </div>
             )}
           </CardBody>
