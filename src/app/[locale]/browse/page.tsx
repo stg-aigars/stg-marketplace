@@ -64,12 +64,8 @@ export default async function BrowsePage(
     filters.weightLevels.length > 0;
 
   let gameFilterIds: number[] | null = null;
-  const hasExpansionFilter = filters.expansionsOnly;
-  if (hasGameFilters || hasExpansionFilter) {
+  if (hasGameFilters) {
     let gamesQuery = supabase.from('games').select('id');
-    if (hasExpansionFilter) {
-      gamesQuery = gamesQuery.eq('is_expansion', true);
-    }
 
     if (filters.playerCounts.length > 0) {
       const playerClauses = filters.playerCounts.map((n) =>
@@ -114,6 +110,17 @@ export default async function BrowsePage(
   }
   if (filters.showAuctions) {
     query = query.eq('listing_type', 'auction');
+  }
+  if (filters.expansionsOnly) {
+    const { data: expListingIds } = await supabase
+      .from('listing_expansions')
+      .select('listing_id');
+    const uniqueIds = [...new Set((expListingIds ?? []).map((r) => r.listing_id))];
+    if (uniqueIds.length === 0) {
+      query = query.in('id', ['00000000-0000-0000-0000-000000000000']); // no matches
+    } else {
+      query = query.in('id', uniqueIds);
+    }
   }
 
   // Apply game-level filter (pre-fetched IDs)
