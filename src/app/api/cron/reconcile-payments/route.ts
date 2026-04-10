@@ -171,8 +171,6 @@ export async function POST(request: Request) {
 
       if (intendedDebit <= 0) continue;
 
-      const orderAge = Date.now() - new Date(order.created_at).getTime();
-
       try {
         await debitWallet(
           order.buyer_id,
@@ -194,6 +192,7 @@ export async function POST(request: Request) {
         console.error(`[Reconcile] Cart wallet debit retry failed for order ${order.id}:`, error);
 
         // Collect orders past the alert threshold for a single digest email
+        const orderAge = Date.now() - new Date(order.created_at).getTime();
         if (orderAge > WALLET_ALERT_AGE_MS) {
           walletAlertOrders.push({
             orderNumber: order.order_number,
