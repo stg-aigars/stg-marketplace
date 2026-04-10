@@ -82,7 +82,7 @@ export default async function StaffOrdersPage(
       ) : (
         <div className="space-y-2">
           {typedOrders.map((order) => (
-            <Link key={order.id} href={`/orders/${order.id}`}>
+            <Link key={order.id} href={`/staff/orders/${order.id}`}>
               <Card hoverable>
                 <CardBody className="flex items-center justify-between py-3 px-4">
                   <div className="min-w-0 flex-1">

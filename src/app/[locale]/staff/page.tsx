@@ -11,7 +11,7 @@ export default async function StaffDashboardPage() {
   const { serviceClient } = await requireServerAuth();
 
   // Fetch metrics in parallel
-  const [ordersResult, revenueResult, pendingWithdrawalsResult, openDisputesResult, escalatedDisputesResult] = await Promise.all([
+  const [ordersResult, revenueResult, pendingWithdrawalsResult, openDisputesResult, escalatedDisputesResult, walletsResult] = await Promise.all([
     serviceClient
       .from('orders')
       .select('id', { count: 'exact', head: true }),
@@ -32,6 +32,9 @@ export default async function StaffDashboardPage() {
       .select('id', { count: 'exact', head: true })
       .not('escalated_at', 'is', null)
       .is('resolved_at', null),
+    serviceClient
+      .from('wallets')
+      .select('balance_cents'),
   ]);
 
   const totalOrders = ordersResult.count ?? 0;
@@ -43,22 +46,21 @@ export default async function StaffDashboardPage() {
   const pendingWithdrawalAmountCents = pendingWithdrawals.reduce((sum, w) => sum + w.amount_cents, 0);
   const openDisputeCount = openDisputesResult.count ?? 0;
   const escalatedDisputeCount = escalatedDisputesResult.count ?? 0;
+  const wallets = walletsResult.data ?? [];
+  const totalWalletBalanceCents = wallets.reduce((sum, w) => sum + (w.balance_cents ?? 0), 0);
 
   const metrics = [
     { label: 'Total orders', value: totalOrders.toString() },
     { label: 'Total revenue', value: formatCentsToCurrency(totalRevenueCents) },
     { label: 'Total commissions', value: formatCentsToCurrency(totalCommissionCents) },
     { label: 'Pending withdrawals', value: `${pendingWithdrawalCount} (${formatCentsToCurrency(pendingWithdrawalAmountCents)})` },
+    { label: 'Wallet liability', value: formatCentsToCurrency(totalWalletBalanceCents) },
     { label: 'Open disputes', value: openDisputeCount.toString() },
     { label: 'Escalated disputes', value: escalatedDisputeCount.toString() },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
-        Dashboard
-      </h1>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric) => (
           <Card key={metric.label}>
