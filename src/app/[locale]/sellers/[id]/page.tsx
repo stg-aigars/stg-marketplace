@@ -49,7 +49,7 @@ export async function generateMetadata(
 
   const supabase = await createClient();
   const { data: profile } = await supabase
-    .from('user_profiles')
+    .from('public_profiles')
     .select('full_name')
     .eq('id', id)
     .single();
