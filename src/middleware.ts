@@ -64,7 +64,7 @@ export default async function middleware(request: NextRequest) {
   // 3. Skip remaining protection for auth routes
   if (!pathname.startsWith(AUTH_PREFIX)) {
     // 3. Redirect unauthenticated users from protected routes
-    if (!user && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    if (!user && PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'))) {
       const signinUrl = new URL('/auth/signin', request.url);
       signinUrl.searchParams.set('returnUrl', request.nextUrl.pathname);
       const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(signinUrl));
