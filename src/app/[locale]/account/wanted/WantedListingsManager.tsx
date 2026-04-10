@@ -82,7 +82,7 @@ export function WantedListingsManager({ listings }: WantedListingsManagerProps) 
                       {listing.game_name}
                       {listing.game_year ? ` (${listing.game_year})` : ''}
                     </p>
-                    {listing.language && (
+                    {(listing.language || listing.publisher) && (
                       <p className="text-xs text-semantic-text-muted mt-0.5">
                         {[listing.language, listing.publisher].filter(Boolean).join(' · ')}
                       </p>
