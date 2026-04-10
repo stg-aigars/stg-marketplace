@@ -260,3 +260,17 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 - Supabase RLS policies control data access — never skip them
 - Supabase SSR cookies: use `getAll()`/`setAll()`, never `get()`/`set()`
 - VAT rates by seller's country: LV=21%, LT=21%, EE=24%
+- Supabase advisor recommendations are starting points, not blanket fixes. Always cross-check with the unauthenticated route list before applying. We've already had two regressions of this shape — games search and listing detail seller info.
+
+## RLS Policies and Anonymous Access
+Supabase security advisors recommend tightening RLS, but they don't know which routes are public. Every SELECT policy that adds an `auth.uid() IS NOT NULL` predicate must be evaluated against the unauthenticated route list (homepage, browse, listing detail, seller pages, sitemap, JSON-LD, robots). If any anon-reachable route reads the table:
+- **If the table contains any sensitive columns:** create or use a `public_<thing>` view exposing only safe columns, run it in definer mode (`security_invoker = false`), and grant SELECT only to `anon, authenticated`. The `public_profiles` view is the canonical example.
+- **If every column is genuinely public:** add an anon-permissive SELECT policy directly on the table.
+
+Never expose `user_profiles`, `orders`, `wallet_*`, `dac7_*`, or any PII/payout/tax table directly to the `anon` role. Never use the service role from an anon-reachable API route as a workaround for missing RLS.
+
+### Known Advisor False-Positives
+- `public_profiles` view: Supabase advisor will flag this as "defined with SECURITY DEFINER property" and recommend adding `security_invoker = true`. **Do not apply this recommendation.** The view must remain in definer mode to read through `user_profiles` RLS for anonymous visitors. See `COMMENT ON VIEW public.public_profiles` in migration 062 for full rationale.
+
+## Test Infrastructure Gaps
+- **Anon RLS regression tests:** No integration test harness exists to verify that anon-reachable routes (listing detail, browse, seller pages, sitemap) return correct data through RLS-gated views like `public_profiles`. Two regressions of this shape so far (games search, listing detail seller info). Needs: a test Supabase project or local Supabase instance, an anon client fixture, and assertions on returned data shape.
