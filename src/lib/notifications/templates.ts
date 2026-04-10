@@ -211,6 +211,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `You won ${ctx.gameName ?? 'an auction'} — pay within 24 hours to complete the purchase`,
     link: (ctx) => ctx.listingId ? `/checkout/${ctx.listingId}` : null,
   },
+  'auction.won_seller': {
+    title: () => 'Auction sold',
+    body: (ctx) => `${ctx.buyerName ?? 'A buyer'} won your auction for ${ctx.gameName ?? 'a game'} — they have 24 hours to pay`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : '/account/listings',
+  },
   'auction.ended_no_bids': {
     title: () => 'Auction ended with no bids',
     body: (ctx) => `Your auction for ${ctx.gameName ?? 'a game'} ended with no bids`,
@@ -224,6 +229,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
   'auction.payment_expired': {
     title: () => 'Auction payment expired',
     body: (ctx) => `The payment deadline for ${ctx.gameName ?? 'an auction'} has passed`,
+    link: () => '/account/bids',
+  },
+  'auction.payment_expired_seller': {
+    title: () => 'Auction payment expired',
+    body: (ctx) => `The winning bidder did not pay for ${ctx.gameName ?? 'an auction'} in time — the auction has been cancelled`,
     link: () => '/account/listings',
   },
 

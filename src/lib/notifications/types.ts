@@ -40,10 +40,12 @@ export type NotificationType =
   | 'auction.outbid'
   | 'auction.ending_soon'
   | 'auction.won'
+  | 'auction.won_seller'
   | 'auction.lost'
   | 'auction.ended_no_bids'
   | 'auction.payment_reminder'
   | 'auction.payment_expired'
+  | 'auction.payment_expired_seller'
   // Wanted listings
   | 'wanted.offer_received'
   | 'wanted.offer_countered'
