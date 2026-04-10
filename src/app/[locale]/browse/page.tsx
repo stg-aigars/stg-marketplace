@@ -112,14 +112,19 @@ export default async function BrowsePage(
     query = query.eq('listing_type', 'auction');
   }
   if (filters.expansionsOnly) {
-    const { data: expListingIds } = await supabase
-      .from('listing_expansions')
-      .select('listing_id');
-    const uniqueIds = [...new Set((expListingIds ?? []).map((r) => r.listing_id))];
-    if (uniqueIds.length === 0) {
-      query = query.in('id', ['00000000-0000-0000-0000-000000000000']); // no matches
+    // Show listings that include expansions OR are expansion-only listings
+    const [{ data: withExpansions }, { data: isExpansion }] = await Promise.all([
+      supabase.from('listing_expansions').select('listing_id'),
+      supabase.from('listings').select('id, games!inner(is_expansion)').eq('games.is_expansion', true).in('status', ['active', 'reserved']),
+    ]);
+    const expIds = new Set([
+      ...(withExpansions ?? []).map((r) => r.listing_id),
+      ...(isExpansion ?? []).map((r) => r.id),
+    ]);
+    if (expIds.size === 0) {
+      query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
     } else {
-      query = query.in('id', uniqueIds);
+      query = query.in('id', [...expIds]);
     }
   }
 
