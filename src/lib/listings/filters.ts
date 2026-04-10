@@ -33,7 +33,7 @@ export interface BrowseFilters {
   languages: string[];
   countries: CountryCode[];
   weightLevels: WeightLevel[];
-  showExpansions: boolean;
+  expansionsOnly: boolean;
   showAuctions: boolean;
   sort: SortOption;
   page: number;
@@ -45,7 +45,7 @@ export const DEFAULT_FILTERS: BrowseFilters = {
   languages: [],
   countries: [],
   weightLevels: [],
-  showExpansions: false,
+  expansionsOnly: false,
   showAuctions: false,
   sort: 'newest',
   page: 1,
@@ -107,7 +107,7 @@ export function parseFiltersFromParams(
     : [];
 
   // Show expansion listings
-  const showExpansions = get('expansions') === '1';
+  const expansionsOnly = get('expansions') === '1';
 
   // Show auctions only
   const showAuctions = get('auctions') === '1';
@@ -116,7 +116,7 @@ export function parseFiltersFromParams(
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, playerCounts, languages, countries, weightLevels, showExpansions, showAuctions, sort, page };
+  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, sort, page };
 }
 
 /**
@@ -141,7 +141,7 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
   if (filters.weightLevels.length > 0) {
     params.set('weight', filters.weightLevels.join(','));
   }
-  if (filters.showExpansions) {
+  if (filters.expansionsOnly) {
     params.set('expansions', '1');
   }
   if (filters.showAuctions) {
@@ -168,7 +168,7 @@ export function countActiveFilters(filters: BrowseFilters): number {
   if (filters.languages.length > 0) count++;
   if (filters.countries.length > 0) count++;
   if (filters.weightLevels.length > 0) count++;
-  if (filters.showExpansions) count++;
+  if (filters.expansionsOnly) count++;
   if (filters.showAuctions) count++;
   return count;
 }

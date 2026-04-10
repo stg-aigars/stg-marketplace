@@ -63,24 +63,12 @@ export default async function BrowsePage(
     filters.playerCounts.length > 0 ||
     filters.weightLevels.length > 0;
 
-  // Pre-fetch expansion game IDs that have active listings, to exclude when toggle is off.
-  // This is bounded by active listing count (not total games), so it stays small.
-  let excludeExpansionGameIds: number[] = [];
-  if (!filters.showExpansions) {
-    const { data: activeExpListings } = await supabase
-      .from('listings')
-      .select('bgg_game_id, games!inner(is_expansion)')
-      .eq('status', 'active')
-      .eq('games.is_expansion', true);
-    excludeExpansionGameIds = [...new Set((activeExpListings ?? []).map((l) => l.bgg_game_id))];
-  }
-
   let gameFilterIds: number[] | null = null;
-  if (hasGameFilters) {
+  const hasExpansionFilter = filters.expansionsOnly;
+  if (hasGameFilters || hasExpansionFilter) {
     let gamesQuery = supabase.from('games').select('id');
-    // Exclude expansions if toggle is off
-    if (!filters.showExpansions) {
-      gamesQuery = gamesQuery.eq('is_expansion', false);
+    if (hasExpansionFilter) {
+      gamesQuery = gamesQuery.eq('is_expansion', true);
     }
 
     if (filters.playerCounts.length > 0) {
@@ -135,9 +123,6 @@ export default async function BrowsePage(
     } else {
       query = query.in('bgg_game_id', gameFilterIds);
     }
-  } else if (excludeExpansionGameIds.length > 0) {
-    // No game-level filters active, but exclude expansion-primary listings at DB level
-    query = query.not('bgg_game_id', 'in', `(${excludeExpansionGameIds.join(',')})`);
   }
 
   // Sort

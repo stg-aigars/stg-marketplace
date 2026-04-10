@@ -302,14 +302,14 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
         </div>
         <div className="hidden sm:flex items-center gap-4">
           {renderToggle(
-            currentFilters.showExpansions,
-            (checked) => applyFilters({ ...currentFilters, showExpansions: checked }),
-            'Includes expansions'
+            currentFilters.expansionsOnly,
+            (checked) => applyFilters({ ...currentFilters, expansionsOnly: checked }),
+            'Expansions'
           )}
           {renderToggle(
             currentFilters.showAuctions,
             (checked) => applyFilters({ ...currentFilters, showAuctions: checked }),
-            'Auctions only'
+            'Auctions'
           )}
           {renderSortButtons(currentFilters.sort, handleSortChange)}
         </div>
@@ -371,14 +371,14 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
           {/* Toggles */}
           <div className="flex flex-wrap gap-x-6 gap-y-2">
             {renderToggle(
-              draft.showExpansions,
-              (checked) => setDraft((prev) => ({ ...prev, showExpansions: checked })),
-              'Includes expansions'
+              draft.expansionsOnly,
+              (checked) => setDraft((prev) => ({ ...prev, expansionsOnly: checked })),
+              'Expansions'
             )}
             {renderToggle(
               draft.showAuctions,
               (checked) => setDraft((prev) => ({ ...prev, showAuctions: checked })),
-              'Auctions only'
+              'Auctions'
             )}
           </div>
         </div>
