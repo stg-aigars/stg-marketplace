@@ -114,7 +114,7 @@ export default async function BrowsePage(
   if (filters.expansionsOnly) {
     // Show listings that include expansions OR are expansion-only listings
     const [{ data: withExpansions }, { data: isExpansion }] = await Promise.all([
-      supabase.from('listing_expansions').select('listing_id'),
+      supabase.from('listing_expansions').select('listing_id, listings!inner(status)').in('listings.status', ['active', 'reserved']),
       supabase.from('listings').select('id, games!inner(is_expansion)').eq('games.is_expansion', true).in('status', ['active', 'reserved']),
     ]);
     const expIds = new Set([

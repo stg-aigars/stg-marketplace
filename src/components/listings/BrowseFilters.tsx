@@ -14,6 +14,7 @@ import {
   DEFAULT_FILTERS,
   WEIGHT_LEVELS,
   WEIGHT_LEVEL_LABELS,
+  VALID_PLAYER_COUNTS,
 } from '@/lib/listings/filters';
 
 interface BrowseFiltersProps {
@@ -26,8 +27,6 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'price_asc', label: 'Price ↑' },
   { value: 'price_desc', label: 'Price ↓' },
 ];
-
-const PLAYER_COUNTS = [1, 2, 3, 4, 5, 6] as const;
 
 /** Priority languages shown before "Show all" — Baltic market first */
 const PRIORITY_LANGUAGES = ['English', 'Estonian', 'Latvian', 'Lithuanian', 'German', 'Russian'];
@@ -140,7 +139,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
     onToggle: (n: number) => void
   ) => (
     <div className="flex gap-1.5">
-      {PLAYER_COUNTS.map((count) => {
+      {VALID_PLAYER_COUNTS.map((count) => {
         const isActive = playerCounts.includes(count);
         return (
           <button
@@ -182,7 +181,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             </button>
           );
         })}
-        {hasRestLangs && onToggleShowAll && (
+        {onToggleShowAll && hasRestLangs && (
           <button
             type="button"
             onClick={onToggleShowAll}
