@@ -11,6 +11,7 @@ import {
   Body,
   Head,
   Html,
+  Img,
   Link,
   Preview,
   Text,
@@ -73,6 +74,13 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
                     {/* Header */}
                     <tr>
                       <td style={styles.header}>
+                        <Img
+                          src={`${env.app.url}/icons/icon-192.png`}
+                          width="48"
+                          height="48"
+                          alt="Second Turn Games"
+                          style={styles.logoIcon}
+                        />
                         <Text style={styles.logo}>Second Turn Games</Text>
                         <Text style={styles.tagline}>Every game deserves a second turn</Text>
                       </td>
@@ -143,6 +151,10 @@ const styles = {
   header: {
     padding: '32px 32px 16px',
     textAlign: 'center' as const,
+  },
+  logoIcon: {
+    margin: '0 auto 8px',
+    borderRadius: '8px',
   },
   logo: {
     color: theme.textHeading,
