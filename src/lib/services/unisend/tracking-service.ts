@@ -10,7 +10,7 @@
 import { getUnisendClient } from './client';
 import { createServiceClient } from '@/lib/supabase';
 import type { TrackingStateType } from './types';
-import { sendOrderDeliveredToBuyer, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
+import { sendOrderDeliveredToBuyer, sendOrderDeliveredToSeller, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify, notifyMany } from '@/lib/notifications';
 import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from '@/lib/orders/utils';
@@ -92,7 +92,7 @@ export async function syncTrackingForOrder(
         })
         .eq('id', orderId)
         .eq('status', 'shipped') // Optimistic lock
-        .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email)')
+        .select('*, order_items(listing_id, listings(game_name)), listings(game_name), buyer_profile:user_profiles!orders_buyer_id_fkey(full_name, email), seller_profile:user_profiles!orders_seller_id_fkey(full_name, email)')
         .single();
 
       if (delivered && !deliverError) {
@@ -107,9 +107,11 @@ export async function syncTrackingForOrder(
           metadata: { from: 'shipped', to: 'delivered', trigger: 'tracking_parcel_delivered' },
         });
 
-        // Notify buyer — this is their signal that the 2-day dispute window has started
         const buyerProfile = delivered.buyer_profile as { full_name?: string; email?: string } | null;
+        const sellerProfile = delivered.seller_profile as { full_name?: string; email?: string } | null;
         const gameName = getOrderGameSummary(delivered.order_items as OrderItemLike[], delivered.listings as LegacyListingsLike);
+
+        // Notify buyer — this is their signal that the 2-day dispute window has started
         if (buyerProfile?.email) {
           void sendOrderDeliveredToBuyer({
             buyerName: buyerProfile.full_name ?? 'Buyer',
@@ -117,13 +119,32 @@ export async function syncTrackingForOrder(
             orderNumber: delivered.order_number,
             orderId,
             gameName,
-          }).catch((err) => console.error('[Email] Failed to send auto-delivery email:', err));
+          }).catch((err) => console.error('[Email] Failed to send auto-delivery buyer email:', err));
+        }
+
+        // Notify seller — parcel picked up, dispute window started
+        if (sellerProfile?.email) {
+          void sendOrderDeliveredToSeller({
+            sellerName: sellerProfile.full_name ?? 'Seller',
+            sellerEmail: sellerProfile.email,
+            orderNumber: delivered.order_number,
+            orderId,
+            gameName,
+            buyerName: buyerProfile?.full_name ?? 'Buyer',
+          }).catch((err) => console.error('[Email] Failed to send auto-delivery seller email:', err));
         }
 
         void notify(delivered.buyer_id, 'order.delivered', {
           gameName,
           orderNumber: delivered.order_number,
           orderId,
+        });
+
+        void notify(delivered.seller_id, 'order.delivered_seller', {
+          gameName,
+          orderNumber: delivered.order_number,
+          orderId,
+          buyerName: buyerProfile?.full_name,
         });
 
         console.log(`[Tracking] Auto-delivered order ${orderId} via PARCEL_DELIVERED`);

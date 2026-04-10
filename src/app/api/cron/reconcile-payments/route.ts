@@ -15,11 +15,18 @@ import { env } from '@/lib/env';
 import { getPaymentStatus, SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay';
 import { debitWallet } from '@/lib/services/wallet';
 import { fulfillCartPayment } from '@/lib/services/payment-fulfillment';
+import { sendEmail } from '@/lib/email/service';
+import React from 'react';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 
 const BATCH_LIMIT = 50;
 const MIN_AGE_MS = 5 * 60 * 1000;   // 5 minutes — give the callback time to fire
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours — skip ancient sessions
+
+/** Wallet debit retries stop after 2 hours — limits retries to ~24 attempts */
+const WALLET_RETRY_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+/** After 1 hour of failures, send a staff alert */
+const WALLET_ALERT_AGE_MS = 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -114,18 +121,26 @@ export async function POST(request: Request) {
 
   // ---- Wallet debit failure retry ----
   // Detect orders where the checkout intended a wallet debit but it failed
-  // (buyer_wallet_debit_cents = 0 but cart group had wallet_allocation > 0)
+  // (buyer_wallet_debit_cents = 0 but cart group had wallet_allocation > 0).
+  // Bounded to orders created within WALLET_RETRY_MAX_AGE_MS (2h) to prevent
+  // infinite retries. Orders older than WALLET_ALERT_AGE_MS (1h) trigger a
+  // staff alert email on failure.
 
   let walletRetries = 0;
   let walletRetryErrors = 0;
+  const walletAlertOrders: { orderNumber: string; orderId: string; buyerId: string; debitCents: number; createdAt: string }[] = [];
+
+  const walletRetryCutoff = new Date(Date.now() - WALLET_RETRY_MAX_AGE_MS).toISOString();
+  const walletMinAge = new Date(Date.now() - MIN_AGE_MS).toISOString();
 
   const { data: cartMismatches } = await serviceClient
     .from('orders')
-    .select('id, buyer_id, order_number, cart_group_id')
+    .select('id, buyer_id, order_number, cart_group_id, created_at')
     .eq('buyer_wallet_debit_cents', 0)
     .eq('payment_method', 'card')
     .not('cart_group_id', 'is', null)
-    .gt('created_at', maxCutoff)
+    .gt('created_at', walletRetryCutoff)
+    .lt('created_at', walletMinAge)
     .limit(BATCH_LIMIT);
 
   if (cartMismatches && cartMismatches.length > 0) {
@@ -174,9 +189,38 @@ export async function POST(request: Request) {
         console.log(`[Reconcile] Cart wallet debit retry succeeded for order ${order.id}: ${intendedDebit} cents`);
       } catch (error) {
         walletRetryErrors++;
-        console.error(`[Reconcile] MANUAL ATTENTION: Cart wallet debit retry failed for order ${order.id}:`, error);
+        console.error(`[Reconcile] Cart wallet debit retry failed for order ${order.id}:`, error);
+
+        // Collect orders past the alert threshold for a single digest email
+        const orderAge = Date.now() - new Date(order.created_at).getTime();
+        if (orderAge > WALLET_ALERT_AGE_MS) {
+          walletAlertOrders.push({
+            orderNumber: order.order_number,
+            orderId: order.id,
+            buyerId: order.buyer_id,
+            debitCents: intendedDebit,
+            createdAt: order.created_at,
+          });
+        }
       }
     }
+  }
+
+  // Send a single digest alert for all failing orders past the 1h threshold
+  if (walletAlertOrders.length > 0) {
+    const staffEmail = env.app.adminEmail ?? env.resend.fromEmail;
+    const lines = walletAlertOrders.map((o) =>
+      `- ${o.orderNumber} (${o.orderId}): ${o.debitCents} cents, buyer ${o.buyerId}, created ${o.createdAt}`
+    );
+    void sendEmail({
+      to: staffEmail,
+      subject: `[ACTION REQUIRED] ${walletAlertOrders.length} wallet debit failure(s)`,
+      react: React.createElement('div', null,
+        React.createElement('p', null, `${walletAlertOrders.length} order(s) have failed wallet debits for over 1 hour. Retries will stop after 2 hours.`),
+        React.createElement('pre', null, lines.join('\n')),
+        React.createElement('p', null, 'Please review and resolve manually.'),
+      ),
+    }).catch((err) => console.error('[Reconcile] Failed to send staff alert email:', err));
   }
 
   return NextResponse.json({

@@ -5,6 +5,7 @@ export type NotificationType =
   | 'order.accepted'
   | 'order.shipped'
   | 'order.delivered'
+  | 'order.delivered_seller'
   | 'order.completed'
   | 'order.declined'
   | 'order.auto_cancelled'

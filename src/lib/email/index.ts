@@ -13,6 +13,7 @@ import { OrderShippedSeller } from './templates/order-shipped-seller';
 import { ShippingInstructionsSeller } from './templates/shipping-instructions-seller';
 import { OrderAcceptedBuyer } from './templates/order-accepted-buyer';
 import { OrderDeliveredBuyer } from './templates/order-delivered-buyer';
+import { OrderDeliveredSeller } from './templates/order-delivered-seller';
 import { OrderCompletedSeller } from './templates/order-completed-seller';
 import { OrderDeclinedBuyer } from './templates/order-declined-buyer';
 import { OrderDisputedSeller } from './templates/order-disputed-seller';
@@ -252,6 +253,31 @@ export async function sendOrderDeliveredToBuyer(params: {
       orderNumber: params.orderNumber,
       orderId: params.orderId,
       gameName: params.gameName,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+/**
+ * Order delivered notification → seller (buyer picked up parcel)
+ */
+export async function sendOrderDeliveredToSeller(params: {
+  sellerName: string;
+  sellerEmail: string;
+  orderNumber: string;
+  orderId: string;
+  gameName: string;
+  buyerName: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: `Delivered: ${params.gameName} — ${params.orderNumber}`,
+    react: React.createElement(OrderDeliveredSeller, {
+      sellerName: params.sellerName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      gameName: params.gameName,
+      buyerName: params.buyerName,
       appUrl: env.app.url,
     }),
   });

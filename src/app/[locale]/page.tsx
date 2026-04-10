@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GlobeHemisphereWest, Package, ShieldCheck } from '@phosphor-icons/react/ssr';
 import { getTranslations } from 'next-intl/server';
@@ -7,6 +8,17 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import { Button } from '@/components/ui';
 import { ListingSection } from '@/components/listings/ListingSection';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
+
+export const metadata: Metadata = {
+  title: 'Second Turn Games — Pre-loved board games for the Baltic region',
+  description:
+    'Buy and sell pre-loved board games across Latvia, Lithuania, and Estonia. Every game deserves a second turn.',
+  openGraph: {
+    title: 'Second Turn Games — Pre-loved board games for the Baltic region',
+    description:
+      'Buy and sell pre-loved board games across Latvia, Lithuania, and Estonia. Every game deserves a second turn.',
+  },
+};
 
 interface RecentListingRow {
   id: string;

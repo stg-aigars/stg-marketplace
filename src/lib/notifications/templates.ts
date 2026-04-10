@@ -44,6 +44,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: (ctx) => `Your order for ${ctx.gameName ?? 'a game'} has been delivered`,
     link: orderLink,
   },
+  'order.delivered_seller': {
+    title: () => 'Buyer picked up parcel',
+    body: (ctx) => `${ctx.buyerName ?? 'The buyer'} has picked up ${ctx.gameName ?? 'the game'} — awaiting confirmation`,
+    link: orderLink,
+  },
   'order.completed': {
     title: () => 'Order completed',
     body: (ctx) => `Order for ${ctx.gameName ?? 'a game'} is complete — earnings credited to your wallet`,
