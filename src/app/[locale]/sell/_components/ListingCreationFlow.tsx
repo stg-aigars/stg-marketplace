@@ -101,7 +101,6 @@ interface ListingCreationFlowProps {
   initialGame?: EnrichedGame | null;
   lockedFields?: ('game' | 'price')[];
   offerId?: string;
-  wantedOfferId?: string;
   listingType?: ListingType;
 }
 
@@ -110,7 +109,6 @@ export function ListingCreationFlow({
   initialGame,
   lockedFields = [],
   offerId,
-  wantedOfferId,
   listingType = 'fixed_price',
 }: ListingCreationFlowProps = {}) {
   const isAuction = listingType === 'auction';
@@ -355,7 +353,6 @@ export function ListingCreationFlow({
       description: formData.description || null,
       photos: formData.photos,
       offer_id: offerId,
-      wanted_offer_id: wantedOfferId,
       listing_type: listingType,
       ...(isAuction ? {
         starting_price_cents: formData.starting_price_cents,

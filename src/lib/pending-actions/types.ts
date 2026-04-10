@@ -5,7 +5,6 @@ export interface PendingActions {
   sellerOffersPending: number;
   buyerDisputes: number;
   buyerDeliveryConfirm: number;
-  buyerWantedOffers: number;
   buyerAuctionsWon: number;
   isSeller: boolean;
 }
@@ -18,7 +17,6 @@ export function getTotalPendingCount(actions: PendingActions): number {
     actions.sellerOffersPending +
     actions.buyerDisputes +
     actions.buyerDeliveryConfirm +
-    actions.buyerWantedOffers +
     actions.buyerAuctionsWon
   );
 }
@@ -76,13 +74,6 @@ export function buildActionChips(actions: PendingActions): { seller: ActionChip[
       count: actions.buyerDeliveryConfirm,
       label: actions.buyerDeliveryConfirm === 1 ? 'delivery to confirm' : 'deliveries to confirm',
       href: '/account/orders?tab=purchases',
-    });
-  }
-  if (actions.buyerWantedOffers > 0) {
-    buyer.push({
-      count: actions.buyerWantedOffers,
-      label: actions.buyerWantedOffers === 1 ? 'wanted offer' : 'wanted offers',
-      href: '/account/wanted',
     });
   }
   if (actions.buyerAuctionsWon > 0) {

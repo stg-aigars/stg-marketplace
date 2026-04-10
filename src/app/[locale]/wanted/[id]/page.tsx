@@ -1,16 +1,10 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
-import { createClient } from '@/lib/supabase/server';
-import { Card, CardBody, Badge, ShareButtons, BackLink } from '@/components/ui';
-import { conditionToBadgeKey } from '@/lib/listings/types';
-import { conditionConfig } from '@/lib/condition-config';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { Card, CardBody, ShareButtons, BackLink } from '@/components/ui';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getWantedListingById } from '@/lib/wanted/actions';
-import { WantedDetailActions } from './WantedDetailActions';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -21,8 +15,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const listing = await getWantedListingById(params.id);
   if (!listing) return { title: 'Not found' };
 
-  const condition = conditionConfig[conditionToBadgeKey[listing.min_condition]].label;
-  const description = `Looking for ${listing.game_name} in ${condition} condition or better`;
+  const description = listing.language
+    ? `Looking for ${listing.game_name} (${listing.language} edition)`
+    : `Looking for ${listing.game_name}`;
 
   return {
     title: `Wanted: ${listing.game_name}`,
@@ -41,12 +36,8 @@ export default async function WantedDetailPage(props: Props) {
 
   if (!listing) notFound();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const isOwner = user?.id === listing.buyer_id;
-  const isAuthenticated = !!user;
-
-  const conditionKey = conditionToBadgeKey[listing.min_condition];
+  const hasEdition = listing.version_source !== null;
+  const editionParts = [listing.language, listing.publisher, listing.edition_year].filter(Boolean);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -81,20 +72,23 @@ export default async function WantedDetailPage(props: Props) {
 
           <div className="mt-4 space-y-3">
             <div>
-              <p className="text-sm text-semantic-text-muted">Minimum condition</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Badge condition={conditionKey} />
-                <span className="text-sm text-semantic-text-muted">or better</span>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-semantic-text-muted">Budget</p>
-              <p className="text-lg font-semibold text-semantic-text-heading">
-                {listing.max_price_cents
-                  ? `Up to ${formatCentsToCurrency(listing.max_price_cents)}`
-                  : 'Any price'}
-              </p>
+              <p className="text-sm text-semantic-text-muted">Preferred edition</p>
+              {hasEdition ? (
+                <div className="mt-0.5">
+                  {listing.version_name && (
+                    <p className="text-sm font-medium text-semantic-text-heading">
+                      {listing.version_name}
+                    </p>
+                  )}
+                  {editionParts.length > 0 && (
+                    <p className="text-sm text-semantic-text-primary">
+                      {editionParts.join(' · ')}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-semantic-text-primary">Any edition</p>
+              )}
             </div>
 
             <div>
@@ -111,12 +105,6 @@ export default async function WantedDetailPage(props: Props) {
               url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/wanted/${listing.id}`}
               title={`Wanted: ${listing.game_name}`}
             />
-
-            {listing.offer_count > 0 && (
-              <p className="text-xs text-semantic-text-muted">
-                {listing.offer_count} {listing.offer_count === 1 ? 'offer' : 'offers'} received
-              </p>
-            )}
           </div>
         </div>
       </div>
@@ -127,29 +115,6 @@ export default async function WantedDetailPage(props: Props) {
             <p className="text-sm text-semantic-text-muted mb-1">Notes from buyer</p>
             <p className="text-sm text-semantic-text-primary whitespace-pre-line">
               {listing.notes}
-            </p>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* Action area */}
-      {!isOwner && isAuthenticated && listing.status === 'active' && (
-        <WantedDetailActions
-          wantedListingId={listing.id}
-          gameName={listing.game_name}
-          minCondition={listing.min_condition}
-          maxPriceCents={listing.max_price_cents}
-        />
-      )}
-
-      {!isAuthenticated && listing.status === 'active' && (
-        <Card className="mt-6">
-          <CardBody className="text-center">
-            <p className="text-sm text-semantic-text-muted">
-              <Link href="/auth/signin" className="text-semantic-brand font-medium">
-                Sign in
-              </Link>
-              {' '}to make an offer on this wanted game.
             </p>
           </CardBody>
         </Card>
