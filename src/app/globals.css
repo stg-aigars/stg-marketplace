@@ -48,6 +48,16 @@
   }
 }
 
+/* Position page-load progress bar at bottom edge of sticky navbar */
+#nprogress .bar {
+  top: 3.5rem !important;  /* h-14 (56px) mobile */
+}
+@media (min-width: 640px) {
+  #nprogress .bar {
+    top: 4rem !important;  /* h-16 (64px) sm+ */
+  }
+}
+
 @layer utilities {
   .pb-safe {
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
