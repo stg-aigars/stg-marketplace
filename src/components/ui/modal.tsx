@@ -50,7 +50,7 @@ function Modal({ open, onClose, title, children }: ModalProps) {
         if (e.target === dialogRef.current) onClose();
       }}
     >
-      <div className="bg-semantic-bg-elevated rounded-t-xl sm:rounded-xl max-h-[85vh] flex flex-col">
+      <div className="bg-semantic-bg-elevated rounded-t-xl sm:rounded-xl h-dvh sm:h-auto sm:max-h-[85vh] flex flex-col">
         {/* Drag handle - mobile only */}
         <div className="flex justify-center pt-3 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-semantic-border-default" />
