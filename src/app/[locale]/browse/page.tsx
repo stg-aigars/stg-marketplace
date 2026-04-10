@@ -20,10 +20,10 @@ const PAGE_SIZE = 24;
 
 export const metadata: Metadata = {
   title: 'Browse',
-  description: 'Browse pre-loved board games for sale in Latvia, Lithuania, and Estonia.',
+  description: 'Board games for sale in Latvia, Lithuania, and Estonia.',
   openGraph: {
     title: 'Browse | Second Turn Games',
-    description: 'Browse pre-loved board games for sale in Latvia, Lithuania, and Estonia.',
+    description: 'Board games for sale in Latvia, Lithuania, and Estonia.',
   },
 };
 
@@ -184,7 +184,7 @@ export default async function BrowsePage(
       {showWelcome && <WelcomeBanner />}
 
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
-        Browse pre-loved games
+        Browse games
       </h1>
 
       <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} availableLanguages={availableLanguages} />
@@ -194,14 +194,14 @@ export default async function BrowsePage(
           <EmptyState
             icon={MagnifyingGlass}
             title="No games match your filters"
-            description="Try adjusting your filters or clearing them to see all listings."
+            description="Try different filters or clear them to see everything."
             action={{ label: 'Clear filters', href: '/browse', variant: 'secondary' }}
           />
         ) : (
           <EmptyState
             icon={Cube}
             title="No games listed yet"
-            description="Be the first to share a pre-loved game with the community."
+            description="Be the first to list a game."
             action={{ label: 'List a game', href: '/sell', variant: 'primary' }}
           />
         )
