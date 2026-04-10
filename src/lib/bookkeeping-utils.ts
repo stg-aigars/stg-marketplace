@@ -11,7 +11,8 @@ import { formatCentsToCurrency, VAT_RATES, DEFAULT_VAT_RATE, getVatRate } from '
 // CONSTANTS
 // ============================================================================
 
-/** Order statuses to exclude from financial totals (but still show in table) */
+/** Order statuses to exclude from financial totals (but still show in table).
+ *  Must match the WHERE clause in get_bookkeeping_summary RPC. */
 export const EXCLUDED_FROM_TOTALS = ['cancelled', 'refunded'];
 
 // ============================================================================

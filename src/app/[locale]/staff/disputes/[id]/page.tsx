@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, BackLink } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
@@ -57,13 +57,7 @@ export default async function StaffDisputeDetailPage(
 
   return (
     <div className="max-w-4xl">
-      {/* Back link */}
-      <Link
-        href="/staff/disputes"
-        className="text-sm text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom mb-4 inline-block"
-      >
-        &larr; Back to disputes
-      </Link>
+      <BackLink href="/staff/disputes" label="All disputes" />
 
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, NavTabs, EmptyState } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import type { DisputeRow } from '@/lib/orders/types';
@@ -65,29 +65,19 @@ export default async function StaffDisputesPage(
         Disputes
       </h1>
 
-      {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {filters.map((filter) => (
-          <Link
-            key={filter.value}
-            href={filter.value === 'all' ? '/staff/disputes' : `/staff/disputes?filter=${filter.value}`}
-            className={`px-3 py-1.5 text-sm rounded-full border transition-colors duration-250 ease-out-custom ${
-              activeFilter === filter.value
-                ? 'bg-semantic-brand text-semantic-text-inverse border-semantic-brand'
-                : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
-            }`}
-          >
-            {filter.label}
-          </Link>
-        ))}
-      </div>
+      <NavTabs
+        tabs={filters.map((f) => ({
+          key: f.value,
+          label: f.label,
+          href: f.value === 'all' ? '/staff/disputes' : `/staff/disputes?filter=${f.value}`,
+        }))}
+        activeTab={activeFilter}
+        variant="pill"
+        className="mb-6"
+      />
 
       {typedDisputes.length === 0 ? (
-        <Card>
-          <CardBody>
-            <p className="text-semantic-text-muted text-center py-8">No disputes found.</p>
-          </CardBody>
-        </Card>
+        <EmptyState title="No disputes found" />
       ) : (
         <div className="space-y-2">
           {typedDisputes.map((dispute) => {

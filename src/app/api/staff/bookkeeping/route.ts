@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireStaffAuth } from '@/lib/auth/helpers';
 import { createServiceClient } from '@/lib/supabase';
-import {
-  calculateBookkeepingSummary,
-  calculateCountryVatBreakdown,
-  type OrderFinancialData,
-} from '@/lib/bookkeeping-utils';
+import { getVatRate } from '@/lib/services/pricing';
+import type { BookkeepingSummary, CountryVatBreakdown, VatBreakdownCents } from '@/lib/bookkeeping-utils';
 
 const PAGE_SIZE = 20;
 
@@ -78,24 +75,17 @@ export async function GET(request: Request) {
     }
   }
 
-  // Build a parallel summary query for ALL matching orders (no pagination, financial columns only)
-  let summaryQuery = serviceClient
-    .from('orders')
-    .select(`
-      status, seller_country,
-      items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents,
-      commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents
-    `);
-
-  // Apply same filters as main query
-  if (status && status !== 'all') summaryQuery = summaryQuery.eq('status', status);
-  if (search) summaryQuery = summaryQuery.ilike('order_number', `%${search}%`);
-  if (dateFrom) summaryQuery = summaryQuery.gte('created_at', dateFrom);
-  if (dateTo) summaryQuery = summaryQuery.lte('created_at', dateTo);
-  if (sellerIds) summaryQuery = summaryQuery.in('seller_id', sellerIds);
-
-  // Execute both queries in parallel
-  const [paginatedResult, summaryResult] = await Promise.all([query, summaryQuery]);
+  // Execute paginated query and summary RPC in parallel
+  const [paginatedResult, summaryRpcResult] = await Promise.all([
+    query,
+    serviceClient.rpc('get_bookkeeping_summary', {
+      p_status: (status && status !== 'all') ? status : null,
+      p_search: search || null,
+      p_seller_ids: sellerIds,
+      p_date_from: dateFrom || null,
+      p_date_to: dateTo || null,
+    }),
+  ]);
 
   if (paginatedResult.error) {
     console.error('Bookkeeping query error:', paginatedResult.error);
@@ -123,13 +113,62 @@ export async function GET(request: Request) {
     seller_name: extractName(o.seller_profile),
   }));
 
-  // Compute server-side summaries from ALL matching orders (using narrower financial type)
-  const allOrders = (summaryResult.data ?? []) as OrderFinancialData[];
+  // Build summary and country breakdown from RPC result (one row per country)
+  interface SummaryRow {
+    seller_country: string;
+    order_count: number;
+    gmv_cents: number;
+    total_buyer_paid_cents: number;
+    commission_gross_cents: number;
+    commission_net_cents: number;
+    commission_vat_cents: number;
+    shipping_gross_cents: number;
+    shipping_net_cents: number;
+    shipping_vat_cents: number;
+  }
+  const summaryRows = (summaryRpcResult.data ?? []) as SummaryRow[];
+
+  // Aggregate across countries for overall summary
+  const platformRevenue: VatBreakdownCents = { grossCents: 0, netCents: 0, vatCents: 0 };
+  const shippingRevenue: VatBreakdownCents = { grossCents: 0, netCents: 0, vatCents: 0 };
+  let orderCount = 0;
+  let gmvCents = 0;
+  let totalBuyerPaidCents = 0;
+
+  const countryBreakdown: CountryVatBreakdown[] = summaryRows.map((row) => {
+    orderCount += row.order_count;
+    gmvCents += row.gmv_cents;
+    totalBuyerPaidCents += row.total_buyer_paid_cents;
+    platformRevenue.grossCents += row.commission_gross_cents;
+    platformRevenue.netCents += row.commission_net_cents;
+    platformRevenue.vatCents += row.commission_vat_cents;
+    shippingRevenue.grossCents += row.shipping_gross_cents;
+    shippingRevenue.netCents += row.shipping_net_cents;
+    shippingRevenue.vatCents += row.shipping_vat_cents;
+
+    return {
+      country: row.seller_country,
+      vatRate: getVatRate(row.seller_country),
+      commissionVatCents: row.commission_vat_cents,
+      shippingVatCents: row.shipping_vat_cents,
+      totalVatCents: row.commission_vat_cents + row.shipping_vat_cents,
+      orderCount: row.order_count,
+    };
+  });
+
+  const summary: BookkeepingSummary = {
+    orderCount,
+    gmvCents,
+    totalBuyerPaidCents,
+    platformRevenue,
+    shippingRevenue,
+    totalVatCents: platformRevenue.vatCents + shippingRevenue.vatCents,
+  };
 
   return NextResponse.json({
     orders: mapped,
-    summary: calculateBookkeepingSummary(allOrders),
-    countryBreakdown: calculateCountryVatBreakdown(allOrders),
+    summary: summaryRows.length > 0 ? summary : null,
+    countryBreakdown,
     pagination: {
       page,
       limit,

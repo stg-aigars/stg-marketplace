@@ -132,10 +132,11 @@ export default function StaffBookkeepingPage() {
 
   if (error && !data) {
     return (
-      <div className="text-center py-12">
-        <p className="text-semantic-text-muted mb-4">{error}</p>
-        <Button variant="secondary" onClick={fetchData}>Try again</Button>
-      </div>
+      <EmptyState
+        title="Failed to load data"
+        description={error ?? undefined}
+        action={{ label: 'Try again', onClick: fetchData }}
+      />
     );
   }
 
@@ -344,7 +345,7 @@ export default function StaffBookkeepingPage() {
                   })}
                 </tbody>
                 {summary && (
-                  <tfoot className="bg-frost-ice/5 border-t-2 border-frost-ice/30">
+                  <tfoot className="bg-frost-ice/5 border-t border-frost-ice/30">
                     <tr className="font-semibold">
                       <td colSpan={4} className="px-4 py-3 text-sm text-semantic-text-heading">
                         Period totals ({summary.orderCount} orders)
