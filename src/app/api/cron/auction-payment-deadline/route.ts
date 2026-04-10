@@ -132,7 +132,7 @@ export async function POST(request: Request) {
           }
         }
 
-        void notify(auction.seller_id, 'auction.payment_expired', {
+        void notify(auction.seller_id, 'auction.payment_expired_seller', {
           gameName: auction.game_name,
           listingId: auction.id,
         });

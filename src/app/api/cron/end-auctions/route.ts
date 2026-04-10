@@ -99,9 +99,10 @@ export async function POST(request: Request) {
         }
 
         // Notify + email seller that auction ended with a winner
-        void notify(auction.seller_id, 'auction.won', {
+        void notify(auction.seller_id, 'auction.won_seller', {
           gameName: auction.game_name,
           listingId: auction.id,
+          buyerName: winner?.full_name,
         });
         if (seller?.email) {
           sendAuctionWonToSeller({
