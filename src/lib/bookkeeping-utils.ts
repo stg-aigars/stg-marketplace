@@ -5,7 +5,7 @@
  * All monetary values are INTEGER CENTS — format only at display time.
  */
 
-import { formatCentsToCurrency, VAT_RATES, DEFAULT_VAT_RATE } from '@/lib/services/pricing';
+import { formatCentsToCurrency, VAT_RATES, DEFAULT_VAT_RATE, getVatRate } from '@/lib/services/pricing';
 
 // ============================================================================
 // CONSTANTS
@@ -43,6 +43,13 @@ export interface OrderBookkeepingData {
   shipping_net_cents: number | null;
   shipping_vat_cents: number | null;
 }
+
+/** Subset of order data needed for financial aggregation (no display fields) */
+export type OrderFinancialData = Pick<OrderBookkeepingData,
+  'status' | 'seller_country' | 'items_total_cents' | 'shipping_cost_cents' |
+  'platform_commission_cents' | 'total_amount_cents' |
+  'commission_net_cents' | 'commission_vat_cents' | 'shipping_net_cents' | 'shipping_vat_cents'
+>;
 
 /** Aggregated bookkeeping summary */
 export interface BookkeepingSummary {
@@ -182,7 +189,7 @@ export function resolveVatBreakdownCents(
  * Calculate bookkeeping summary from a list of orders.
  * Excludes cancelled/refunded orders from financial calculations.
  */
-export function calculateBookkeepingSummary(orders: OrderBookkeepingData[]): BookkeepingSummary {
+export function calculateBookkeepingSummary(orders: OrderFinancialData[]): BookkeepingSummary {
   const validOrders = orders.filter((o) => !EXCLUDED_FROM_TOTALS.includes(o.status));
 
   let gmvCents = 0;
@@ -194,7 +201,7 @@ export function calculateBookkeepingSummary(orders: OrderBookkeepingData[]): Boo
     gmvCents += order.items_total_cents;
     totalBuyerPaidCents += order.total_amount_cents;
 
-    const vatRate = VAT_RATES[order.seller_country?.toUpperCase()] ?? DEFAULT_VAT_RATE;
+    const vatRate = getVatRate(order.seller_country);
 
     const commission = resolveVatBreakdownCents(
       order.platform_commission_cents, order.commission_net_cents, order.commission_vat_cents, vatRate,
@@ -224,13 +231,13 @@ export function calculateBookkeepingSummary(orders: OrderBookkeepingData[]): Boo
 /**
  * Calculate per-country VAT breakdown for filing.
  */
-export function calculateCountryVatBreakdown(orders: OrderBookkeepingData[]): CountryVatBreakdown[] {
+export function calculateCountryVatBreakdown(orders: OrderFinancialData[]): CountryVatBreakdown[] {
   const validOrders = orders.filter((o) => !EXCLUDED_FROM_TOTALS.includes(o.status));
   const byCountry = new Map<string, CountryVatBreakdown>();
 
   for (const order of validOrders) {
     const country = order.seller_country?.toUpperCase() || 'UNKNOWN';
-    const vatRate = VAT_RATES[country] ?? DEFAULT_VAT_RATE;
+    const vatRate = getVatRate(order.seller_country);
 
     const existing = byCountry.get(country) ?? {
       country,
@@ -279,7 +286,7 @@ export function generateBookkeepingCSV(orders: OrderBookkeepingData[]): string {
   ];
 
   const rows = orders.map((order) => {
-    const vatRate = VAT_RATES[order.seller_country?.toUpperCase()] ?? DEFAULT_VAT_RATE;
+    const vatRate = getVatRate(order.seller_country);
     const commission = resolveVatBreakdownCents(
       order.platform_commission_cents, order.commission_net_cents, order.commission_vat_cents, vatRate,
     );

@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase';
 import {
   calculateBookkeepingSummary,
   calculateCountryVatBreakdown,
-  type OrderBookkeepingData,
+  type OrderFinancialData,
 } from '@/lib/bookkeeping-utils';
 
 const PAGE_SIZE = 20;
@@ -123,24 +123,8 @@ export async function GET(request: Request) {
     seller_name: extractName(o.seller_profile),
   }));
 
-  // Compute server-side summaries from ALL matching orders
-  const allOrders: OrderBookkeepingData[] = (summaryResult.data ?? []).map((o) => ({
-    id: '',
-    order_number: '',
-    created_at: '',
-    buyer_name: '',
-    seller_name: '',
-    status: o.status,
-    seller_country: o.seller_country,
-    items_total_cents: o.items_total_cents,
-    shipping_cost_cents: o.shipping_cost_cents,
-    platform_commission_cents: o.platform_commission_cents,
-    total_amount_cents: o.total_amount_cents,
-    commission_net_cents: o.commission_net_cents,
-    commission_vat_cents: o.commission_vat_cents,
-    shipping_net_cents: o.shipping_net_cents,
-    shipping_vat_cents: o.shipping_vat_cents,
-  }));
+  // Compute server-side summaries from ALL matching orders (using narrower financial type)
+  const allOrders = (summaryResult.data ?? []) as OrderFinancialData[];
 
   return NextResponse.json({
     orders: mapped,

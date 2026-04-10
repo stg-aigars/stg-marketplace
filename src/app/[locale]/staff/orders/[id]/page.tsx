@@ -4,12 +4,13 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getTrackingEvents } from '@/lib/services/tracking';
-import { Card, CardBody, Badge, BackLink } from '@/components/ui';
+import { Card, CardBody, Badge, BackLink, ConditionBadge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import { getOrderGameSummary } from '@/lib/orders/utils';
 import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
+import type { ListingCondition } from '@/lib/listings/types';
 import {
   EnvelopeSimple,
   Phone,
@@ -298,7 +299,7 @@ export default async function StaffOrderDetailPage(
         {/* Main content */}
         <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
           {/* Dispute action card */}
-          {order.status === 'disputed' && (
+          {order.status === 'disputed' && dispute?.id && (
             <Card className="border-semantic-error/30 bg-semantic-error/5">
               <CardBody className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -311,7 +312,7 @@ export default async function StaffOrderDetailPage(
                   </div>
                 </div>
                 <Link
-                  href={`/staff/disputes/${dispute?.id ?? ''}`}
+                  href={`/staff/disputes/${dispute.id}`}
                   className="text-sm font-medium text-semantic-brand sm:hover:underline shrink-0"
                 >
                   Resolve dispute
@@ -360,9 +361,7 @@ export default async function StaffOrderDetailPage(
                         {item.listings?.game_name ?? 'Game'}
                       </p>
                       {item.listings?.condition && (
-                        <p className="text-xs text-semantic-text-muted capitalize">
-                          {item.listings.condition.replace(/_/g, ' ')}
-                        </p>
+                        <ConditionBadge condition={item.listings.condition as ListingCondition} />
                       )}
                     </div>
                     <span className="text-sm font-semibold text-semantic-text-heading shrink-0">

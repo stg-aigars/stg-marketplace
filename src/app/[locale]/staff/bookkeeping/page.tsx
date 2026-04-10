@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Badge, Button, Input, Select } from '@/components/ui';
+import { Card, CardBody, Badge, Button, Input, Select, EmptyState } from '@/components/ui';
 import { Spinner } from '@/components/ui';
-import { formatCentsToCurrency, VAT_RATES } from '@/lib/services/pricing';
+import { formatCentsToCurrency, getVatRate } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus } from '@/lib/orders/types';
@@ -59,25 +59,27 @@ export default function StaffBookkeepingPage() {
 
   const [exporting, setExporting] = useState(false);
 
+  const buildFilterParams = useCallback((overrides?: { page?: number; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (searchQuery) params.set('search', searchQuery);
+    if (sellerFilter) params.set('seller', sellerFilter);
+    params.set('page', String(overrides?.page ?? currentPage));
+    params.set('limit', String(overrides?.limit ?? 20));
+
+    const preset = DATE_RANGE_PRESETS.find((p) => p.key === dateRange);
+    if (preset) {
+      const { start, end } = preset.getRange();
+      params.set('date_from', formatDateForAPI(start));
+      params.set('date_to', formatDateForAPI(end));
+    }
+    return params;
+  }, [statusFilter, searchQuery, sellerFilter, dateRange, currentPage]);
+
   const handleExportCSV = async () => {
     try {
       setExporting(true);
-
-      // Fetch ALL matching orders (no pagination) for complete export
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (searchQuery) params.set('search', searchQuery);
-      if (sellerFilter) params.set('seller', sellerFilter);
-      params.set('page', '1');
-      params.set('limit', '10000');
-
-      const preset = DATE_RANGE_PRESETS.find((p) => p.key === dateRange);
-      if (preset) {
-        const { start, end } = preset.getRange();
-        params.set('date_from', formatDateForAPI(start));
-        params.set('date_to', formatDateForAPI(end));
-      }
-
+      const params = buildFilterParams({ page: 1, limit: 10000 });
       const res = await fetch(`/api/staff/bookkeeping?${params}`);
       const result = await res.json();
 
@@ -85,6 +87,7 @@ export default function StaffBookkeepingPage() {
 
       const { generateBookkeepingCSV } = await import('@/lib/bookkeeping-utils');
       const csv = generateBookkeepingCSV(result.orders);
+      const preset = DATE_RANGE_PRESETS.find((p) => p.key === dateRange);
       const filename = `stg-bookkeeping-${preset?.label.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().split('T')[0]}.csv`;
       downloadCSV(csv, filename);
     } catch (err) {
@@ -99,20 +102,7 @@ export default function StaffBookkeepingPage() {
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (searchQuery) params.set('search', searchQuery);
-      if (sellerFilter) params.set('seller', sellerFilter);
-      params.set('page', currentPage.toString());
-      params.set('limit', '20');
-
-      const preset = DATE_RANGE_PRESETS.find((p) => p.key === dateRange);
-      if (preset) {
-        const { start, end } = preset.getRange();
-        params.set('date_from', formatDateForAPI(start));
-        params.set('date_to', formatDateForAPI(end));
-      }
-
+      const params = buildFilterParams();
       const response = await fetch(`/api/staff/bookkeeping?${params}`);
       const result = await response.json();
 
@@ -126,16 +116,11 @@ export default function StaffBookkeepingPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchQuery, sellerFilter, dateRange, currentPage]);
+  }, [buildFilterParams]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-  };
 
   if (loading && !data) {
     return (
@@ -158,7 +143,7 @@ export default function StaffBookkeepingPage() {
     <div className="space-y-6">
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
-        <form onSubmit={handleSearch} className="flex-1 min-w-[180px] max-w-xs">
+        <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex-1 min-w-[180px] max-w-xs">
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -300,7 +285,7 @@ export default function StaffBookkeepingPage() {
                 </thead>
                 <tbody className="divide-y divide-semantic-border-subtle">
                   {data.orders.map((order) => {
-                    const vatRate = VAT_RATES[order.seller_country?.toUpperCase()] ?? 0.21;
+                    const vatRate = getVatRate(order.seller_country);
                     const commission = resolveVatBreakdownCents(
                       order.platform_commission_cents, order.commission_net_cents, order.commission_vat_cents, vatRate,
                     );
@@ -395,13 +380,10 @@ export default function StaffBookkeepingPage() {
       )}
 
       {data && data.orders.length === 0 && !loading && (
-        <Card>
-          <CardBody>
-            <p className="text-semantic-text-muted text-center py-8">
-              No transactions found for the selected period.
-            </p>
-          </CardBody>
-        </Card>
+        <EmptyState
+          title="No transactions found"
+          description="No transactions match the selected filters and period."
+        />
       )}
 
       {/* Pagination */}
