@@ -228,7 +228,7 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
         }`}
       >
         <span
-          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-250 ease-out-custom mt-0.5 ${
+          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-semantic-bg-elevated shadow-sm transform transition-transform duration-250 ease-out-custom mt-0.5 ${
             checked ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
           }`}
         />

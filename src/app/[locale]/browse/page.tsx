@@ -56,7 +56,7 @@ export default async function BrowsePage(
 
   const supabase = await createClient();
 
-  // When game-level filters are active (player count, categories, mechanics, weight),
+  // When game-level filters are active (player count, weight),
   // pre-fetch matching game IDs in a single query so the main listings query returns
   // correct counts and pagination works properly.
   const hasGameFilters =
