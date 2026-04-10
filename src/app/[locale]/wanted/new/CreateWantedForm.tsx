@@ -12,6 +12,7 @@ import type { VersionData } from '@/lib/listings/types';
 
 export function CreateWantedForm() {
   const [game, setGame] = useState<EnrichedGame | null>(null);
+  const [gameName, setGameName] = useState<string>('');
   const [editionAnswer, setEditionAnswer] = useState<'yes' | 'no' | null>(null);
   const [edition, setEdition] = useState<VersionData | null>(null);
   const [notes, setNotes] = useState('');
@@ -24,7 +25,9 @@ export function CreateWantedForm() {
   const userCountry = profile?.country ?? null;
 
   function handleGameSelect(selected: EnrichedGame) {
+    const defaultName = selected.matchedAlternateName ?? selected.name;
     setGame(selected);
+    setGameName(defaultName);
     // Reset edition state when game changes
     if (game && game.id !== selected.id) {
       setEditionAnswer(null);
@@ -43,7 +46,7 @@ export function CreateWantedForm() {
     startTransition(async () => {
       const result = await createWantedListing(
         game.id,
-        game.name,
+        gameName,
         game.yearpublished,
         edition ? {
           versionSource: edition.version_source,
@@ -113,8 +116,9 @@ export function CreateWantedForm() {
       {showVersionStep && (
         <VersionStep
           gameId={game.id}
-          gameName={game.name}
+          gameName={gameName}
           selectedGame={game}
+          onGameNameChange={setGameName}
           selectedVersionId={edition?.bgg_version_id ?? null}
           selectedVersionSource={edition?.version_source ?? null}
           selectedPublisher={edition?.publisher}

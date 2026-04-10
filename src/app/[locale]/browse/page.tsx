@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { MagnifyingGlass, Cube } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import { EmptyState, Pagination } from '@/components/ui';
+import { EmptyState, Pagination, NavTabs } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
 import { BrowseContextWriter } from './BrowseContextWriter';
@@ -186,6 +186,14 @@ export default async function BrowsePage(
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
         Browse games
       </h1>
+
+      <NavTabs
+        tabs={[
+          { key: 'for-sale', label: 'For sale', href: '/browse' },
+          { key: 'wanted', label: 'Wanted', href: '/wanted' },
+        ]}
+        className="mb-4"
+      />
 
       <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} availableLanguages={availableLanguages} />
 

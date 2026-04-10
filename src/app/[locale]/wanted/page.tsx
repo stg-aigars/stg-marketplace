@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MagnifyingGlass, Cube, Plus } from '@phosphor-icons/react/ssr';
 import { createClient } from '@/lib/supabase/server';
-import { EmptyState, Pagination, Button } from '@/components/ui';
+import { EmptyState, Pagination, Button, NavTabs } from '@/components/ui';
 import { WantedListingCard } from '@/components/wanted/WantedListingCard';
 import { WantedBrowseFilters } from '@/components/wanted/WantedBrowseFilters';
 import {
@@ -86,6 +86,14 @@ export default async function WantedBrowsePage(
           </Link>
         </Button>
       </div>
+
+      <NavTabs
+        tabs={[
+          { key: 'for-sale', label: 'For sale', href: '/browse' },
+          { key: 'wanted', label: 'Wanted', href: '/wanted' },
+        ]}
+        className="mb-4"
+      />
 
       <WantedBrowseFilters key={wantedFiltersToSearchParams(filters)} currentFilters={filters} />
 
