@@ -105,17 +105,6 @@ export const SAMPLE_STEPPER_STEPS = [
   { id: 'review', label: 'Review' },
 ];
 
-// -- Filter options --
-
-export const SAMPLE_FILTER_OPTIONS = [
-  'Strategy',
-  'Family',
-  'Party',
-  'Cooperative',
-  'Deck Building',
-  'Worker Placement',
-];
-
 // -- Game names for atom demos --
 
 export const SAMPLE_GAME_NAMES = [
@@ -181,7 +170,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
       { id: 'listing-row', label: 'ListingRow' },
       { id: 'listing-card-skeleton', label: 'ListingCardSkeleton' },
       { id: 'favorite-button', label: 'FavoriteButton' },
-      { id: 'filter-multi-select', label: 'FilterMultiSelect' },
       { id: 'reservation-countdown', label: 'ReservationCountdown' },
     ],
   },

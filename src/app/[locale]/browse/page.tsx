@@ -152,7 +152,7 @@ export default async function BrowsePage(
   const [{ data: listings, count }, { user, favoriteIds }, { data: langRows }] = await Promise.all([
     query.returns<ListingRow[]>(),
     getUserWithFavorites(),
-    supabase.from('listings').select('language').in('status', ['active', 'reserved']).not('language', 'is', null),
+    supabase.from('listings').select('language').in('status', ['active', 'reserved']).not('language', 'is', null).limit(500),
   ]);
   // Extract individual languages from comma-separated values (e.g., "English, German" → ["English", "German"])
   const langSet = new Set<string>();

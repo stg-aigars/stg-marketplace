@@ -35,7 +35,6 @@ import { ListingCardMini } from '@/components/listings/ListingCardMini';
 import { ListingRow } from '@/components/listings/ListingRow';
 import { ListingCardSkeleton } from '@/components/listings/ListingCardSkeleton';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
-import { FilterMultiSelect } from '@/components/listings/FilterMultiSelect';
 import { ReservationCountdown } from '@/components/listings/ReservationCountdown';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
@@ -58,7 +57,6 @@ import {
   SAMPLE_NAV_TABS_UNDERLINE,
   SAMPLE_NAV_TABS_PILL,
   SAMPLE_STEPPER_STEPS,
-  SAMPLE_FILTER_OPTIONS,
   SAMPLE_GAME_NAMES,
   SAMPLE_PRICES,
   SAMPLE_TAB_ITEMS,
@@ -137,25 +135,6 @@ function TabsDemo() {
       <p className="text-sm text-semantic-text-muted mt-3">
         Active: <span className="font-medium text-semantic-text-primary">{activeTab}</span>
       </p>
-    </div>
-  );
-}
-
-function FilterMultiSelectDemo() {
-  const [selectedDropdown, setSelectedDropdown] = useState<string[]>([]);
-  const [selectedInline, setSelectedInline] = useState<string[]>(['Strategy']);
-  return (
-    <div className="space-y-6">
-      <div>
-        <SubHeading>Dropdown mode</SubHeading>
-        <FilterMultiSelect label="Category" options={SAMPLE_FILTER_OPTIONS} selected={selectedDropdown} onChange={setSelectedDropdown} />
-      </div>
-      <div>
-        <SubHeading>Inline mode (for mobile modals)</SubHeading>
-        <div className="max-w-xs border border-semantic-border-subtle rounded-lg p-2">
-          <FilterMultiSelect label="Category" options={SAMPLE_FILTER_OPTIONS} selected={selectedInline} onChange={setSelectedInline} inline />
-        </div>
-      </div>
     </div>
   );
 }
@@ -539,10 +518,6 @@ export function ShowcaseContent() {
                 <p className="text-xs text-semantic-text-muted mt-1">Favorited</p>
               </div>
             </div>
-          </ShowcaseSection>
-
-          <ShowcaseSection id="filter-multi-select" title="FilterMultiSelect" description="Multi-select filter in dropdown and inline modes.">
-            <FilterMultiSelectDemo />
           </ShowcaseSection>
 
           <ShowcaseSection id="reservation-countdown" title="ReservationCountdown" description="Live countdown timer for listing reservations.">

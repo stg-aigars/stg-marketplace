@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MagnifyingGlass, Sliders } from '@phosphor-icons/react/ssr';
-import { Modal, Button, Card, CardBody } from '@/components/ui';
+import { Modal, Button, Card, CardBody, Toggle } from '@/components/ui';
 import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
 import {
   type BrowseFilters as BrowseFiltersType,
@@ -241,31 +241,6 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
     </div>
   );
 
-  const renderToggle = (
-    checked: boolean,
-    onChange: (checked: boolean) => void,
-    label: string
-  ) => (
-    <label className="flex items-center gap-2 cursor-pointer min-h-[44px] sm:min-h-[32px]">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-250 ease-out-custom ${
-          checked ? 'bg-semantic-brand' : 'bg-semantic-border-default'
-        }`}
-      >
-        <span
-          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-semantic-bg-elevated shadow-sm transform transition-transform duration-250 ease-out-custom mt-0.5 ${
-            checked ? 'translate-x-4 ml-0.5' : 'translate-x-0.5'
-          }`}
-        />
-      </button>
-      <span className="text-xs text-semantic-text-secondary whitespace-nowrap">{label}</span>
-    </label>
-  );
-
   const renderSortButtons = (
     currentSort: SortOption,
     onSort: (sort: SortOption) => void
@@ -311,16 +286,16 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
           />
         </div>
         <div className="hidden sm:flex items-center gap-4">
-          {renderToggle(
-            currentFilters.expansionsOnly,
-            (checked) => applyFilters({ ...currentFilters, expansionsOnly: checked }),
-            'Expansions'
-          )}
-          {renderToggle(
-            currentFilters.showAuctions,
-            (checked) => applyFilters({ ...currentFilters, showAuctions: checked }),
-            'Auctions'
-          )}
+          <Toggle
+            checked={currentFilters.expansionsOnly}
+            onChange={(checked) => applyFilters({ ...currentFilters, expansionsOnly: checked })}
+            label="Expansions"
+          />
+          <Toggle
+            checked={currentFilters.showAuctions}
+            onChange={(checked) => applyFilters({ ...currentFilters, showAuctions: checked })}
+            label="Auctions"
+          />
           {renderSortButtons(currentFilters.sort, handleSortChange)}
         </div>
       </div>
@@ -380,16 +355,16 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
 
           {/* Toggles */}
           <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {renderToggle(
-              draft.expansionsOnly,
-              (checked) => setDraft((prev) => ({ ...prev, expansionsOnly: checked })),
-              'Expansions'
-            )}
-            {renderToggle(
-              draft.showAuctions,
-              (checked) => setDraft((prev) => ({ ...prev, showAuctions: checked })),
-              'Auctions'
-            )}
+            <Toggle
+              checked={draft.expansionsOnly}
+              onChange={(checked) => setDraft((prev) => ({ ...prev, expansionsOnly: checked }))}
+              label="Expansions"
+            />
+            <Toggle
+              checked={draft.showAuctions}
+              onChange={(checked) => setDraft((prev) => ({ ...prev, showAuctions: checked }))}
+              label="Auctions"
+            />
           </div>
         </div>
         <div className="flex gap-3 mt-6 pt-4 border-t border-semantic-border-subtle">

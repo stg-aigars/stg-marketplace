@@ -75,3 +75,6 @@ export { DeleteItemButton } from './DeleteItemButton';
 export type { DeleteItemButtonProps } from './DeleteItemButton';
 
 export { CountBadge } from './count-badge';
+
+export { Toggle } from './toggle';
+export type { ToggleProps } from './toggle';

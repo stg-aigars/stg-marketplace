@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity } from '@/components/ui';
+import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity, Toggle } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { Trash } from '@phosphor-icons/react/ssr';
 import { ListingIdentity, Price } from '@/components/listings/atoms';
@@ -427,26 +427,12 @@ export function CheckoutForm({
               {walletBalanceCents > 0 && (
                 <>
                   <div className="border-t border-semantic-border-subtle pt-2 mt-2">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={useWallet}
-                        onClick={() => setUseWallet(!useWallet)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ease-out-custom ${
-                          useWallet ? 'bg-semantic-brand' : 'bg-semantic-border-default'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-250 ease-out-custom ${
-                            useWallet ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                      <span className="text-sm text-semantic-text-secondary">
-                        Use wallet ({formatCentsToCurrency(walletBalanceCents)})
-                      </span>
-                    </label>
+                    <Toggle
+                      checked={useWallet}
+                      onChange={setUseWallet}
+                      label={`Use wallet (${formatCentsToCurrency(walletBalanceCents)})`}
+                      size="sm"
+                    />
                   </div>
                   {useWallet && walletDebitCents > 0 && (
                     <div className="flex justify-between text-semantic-brand-active">

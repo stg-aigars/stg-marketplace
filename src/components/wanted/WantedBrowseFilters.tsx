@@ -7,7 +7,7 @@ import { Modal, Button, Input, Select } from '@/components/ui';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { conditionConfig } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS, type ListingCondition } from '@/lib/listings/types';
-import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
+import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
 import {
   type WantedBrowseFilters as WantedBrowseFiltersType,
   type WantedSortOption,
@@ -23,11 +23,6 @@ const SORT_OPTIONS = [
   { value: 'budget_asc', label: 'Budget: low to high' },
   { value: 'budget_desc', label: 'Budget: high to low' },
 ];
-
-const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({
-  value: c.code,
-  label: c.name,
-}));
 
 const conditionChipClasses: Record<string, { active: string; inactive: string }> = {
   likeNew: {
@@ -146,7 +141,7 @@ export function WantedBrowseFilters({ currentFilters }: WantedBrowseFiltersProps
                     key={c}
                     type="button"
                     onClick={() => toggleCondition(c)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-350 ease-out-custom min-h-[36px] ${isActive ? classes.active : classes.inactive}`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] ${isActive ? classes.active : classes.inactive}`}
                   >
                     {conditionConfig[key].label}
                   </button>
@@ -175,24 +170,25 @@ export function WantedBrowseFilters({ currentFilters }: WantedBrowseFiltersProps
             />
           </div>
 
-          {/* Country */}
+          {/* Seller country */}
           <div>
-            <p className="text-sm font-medium text-semantic-text-primary mb-2">Country</p>
-            <div className="flex gap-2">
-              {COUNTRY_OPTIONS.map((c) => {
-                const isActive = countries.includes(c.value as CountryCode);
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Seller country</p>
+            <div className="flex gap-1.5">
+              {COUNTRIES.map((country) => {
+                const isActive = countries.includes(country.code);
                 return (
                   <button
-                    key={c.value}
+                    key={country.code}
                     type="button"
-                    onClick={() => toggleCountry(c.value as CountryCode)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-350 ease-out-custom min-h-[36px] ${
+                    onClick={() => toggleCountry(country.code)}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] ${
                       isActive
-                        ? 'bg-semantic-brand text-semantic-text-inverse border-2 border-semantic-brand'
+                        ? 'bg-semantic-brand/10 text-semantic-brand-active border-2 border-semantic-brand'
                         : 'bg-semantic-bg-elevated text-semantic-text-secondary border border-semantic-border-default'
                     }`}
                   >
-                    {c.label}
+                    <span className={getCountryFlag(country.code)} aria-hidden="true" />
+                    {country.code}
                   </button>
                 );
               })}
