@@ -76,9 +76,20 @@ describe('parseFiltersFromParams', () => {
     expect(parseFiltersFromParams({}).showAuctions).toBe(false);
   });
 
+  it('parses languages', () => {
+    const result = parseFiltersFromParams({ lang: 'English,Latvian' });
+    expect(result.languages).toEqual(['English', 'Latvian']);
+  });
+
+  it('drops invalid languages', () => {
+    const result = parseFiltersFromParams({ lang: 'English,French,Latvian' });
+    expect(result.languages).toEqual(['English', 'Latvian']);
+  });
+
   it('parses all params together', () => {
     const result = parseFiltersFromParams({
       players: '2,4',
+      lang: 'English',
       country: 'LV,LT',
       weight: 'medium',
       sort: 'price_asc',
@@ -88,6 +99,7 @@ describe('parseFiltersFromParams', () => {
     expect(result).toEqual({
       search: '',
       playerCounts: [2, 4],
+      languages: ['English'],
       countries: ['LV', 'LT'],
       weightLevels: ['medium'],
       showExpansions: false,
@@ -127,6 +139,7 @@ describe('filtersToSearchParams', () => {
     const original = {
       search: 'catan',
       playerCounts: [2, 4],
+      languages: ['English' as const, 'Latvian' as const],
       countries: ['LV' as const, 'EE' as const],
       weightLevels: ['medium' as const],
       showExpansions: false,

@@ -117,6 +117,10 @@ export default async function BrowsePage(
   if (filters.search) {
     query = query.ilike('game_name', `%${filters.search}%`);
   }
+  if (filters.languages.length > 0) {
+    const langClauses = filters.languages.map((lang) => `language.ilike.%${lang}%`);
+    query = query.or(langClauses.join(','));
+  }
   if (filters.countries.length > 0) {
     query = query.in('country', filters.countries);
   }

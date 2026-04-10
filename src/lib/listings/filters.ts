@@ -23,6 +23,10 @@ export const WEIGHT_LEVEL_RANGES: Record<WeightLevel, { min: number; max: number
   heavy: { min: 4.5, max: 5.01 }, // inclusive upper bound for 5.0
 };
 
+export type GameLanguage = 'English' | 'Latvian' | 'Lithuanian' | 'Estonian' | 'German' | 'Russian';
+
+export const GAME_LANGUAGES: GameLanguage[] = ['English', 'Latvian', 'Lithuanian', 'Estonian', 'German', 'Russian'];
+
 const VALID_SORTS: SortOption[] = ['newest', 'price_asc', 'price_desc'];
 const VALID_COUNTRY_CODES = COUNTRIES.map(c => c.code);
 const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5, 6];
@@ -30,6 +34,7 @@ const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5, 6];
 export interface BrowseFilters {
   search: string;
   playerCounts: number[];
+  languages: GameLanguage[];
   countries: CountryCode[];
   weightLevels: WeightLevel[];
   showExpansions: boolean;
@@ -41,6 +46,7 @@ export interface BrowseFilters {
 export const DEFAULT_FILTERS: BrowseFilters = {
   search: '',
   playerCounts: [],
+  languages: [],
   countries: [],
   weightLevels: [],
   showExpansions: false,
@@ -68,6 +74,14 @@ export function parseFiltersFromParams(
         .split(',')
         .map((s) => parseInt(s, 10))
         .filter((n) => VALID_PLAYER_COUNTS.includes(n))
+    : [];
+
+  // Languages
+  const langParam = get('lang');
+  const languages = langParam
+    ? langParam
+        .split(',')
+        .filter((l): l is GameLanguage => GAME_LANGUAGES.includes(l as GameLanguage))
     : [];
 
   // Countries
@@ -108,7 +122,7 @@ export function parseFiltersFromParams(
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, playerCounts, countries, weightLevels, showExpansions, showAuctions, sort, page };
+  return { search, playerCounts, languages, countries, weightLevels, showExpansions, showAuctions, sort, page };
 }
 
 /**
@@ -123,6 +137,9 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
   }
   if (filters.playerCounts.length > 0) {
     params.set('players', filters.playerCounts.join(','));
+  }
+  if (filters.languages.length > 0) {
+    params.set('lang', filters.languages.join(','));
   }
   if (filters.countries.length > 0) {
     params.set('country', filters.countries.join(','));
@@ -154,6 +171,7 @@ export function countActiveFilters(filters: BrowseFilters): number {
   let count = 0;
   if (filters.search) count++;
   if (filters.playerCounts.length > 0) count++;
+  if (filters.languages.length > 0) count++;
   if (filters.countries.length > 0) count++;
   if (filters.weightLevels.length > 0) count++;
   if (filters.showExpansions) count++;

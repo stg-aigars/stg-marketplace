@@ -9,11 +9,13 @@ import {
   type BrowseFilters as BrowseFiltersType,
   type SortOption,
   type WeightLevel,
+  type GameLanguage,
   filtersToSearchParams,
   countActiveFilters,
   DEFAULT_FILTERS,
   WEIGHT_LEVELS,
   WEIGHT_LEVEL_LABELS,
+  GAME_LANGUAGES,
 } from '@/lib/listings/filters';
 
 interface BrowseFiltersProps {
@@ -70,6 +72,11 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
     [currentFilters, applyFilters]
   );
 
+  const toggleLanguage = useCallback(
+    (lang: GameLanguage) => applyFilters({ ...currentFilters, languages: toggleArrayValue(currentFilters.languages, lang) }),
+    [currentFilters, applyFilters]
+  );
+
   const toggleWeight = useCallback(
     (level: WeightLevel) => applyFilters({ ...currentFilters, weightLevels: toggleArrayValue(currentFilters.weightLevels, level) }),
     [currentFilters, applyFilters]
@@ -90,6 +97,9 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
   // --- Mobile draft handlers ---
   const toggleDraftPlayerCount = (count: number) =>
     setDraft((prev) => ({ ...prev, playerCounts: toggleArrayValue(prev.playerCounts, count) }));
+
+  const toggleDraftLanguage = (lang: GameLanguage) =>
+    setDraft((prev) => ({ ...prev, languages: toggleArrayValue(prev.languages, lang) }));
 
   const toggleDraftWeight = (level: WeightLevel) =>
     setDraft((prev) => ({ ...prev, weightLevels: toggleArrayValue(prev.weightLevels, level) }));
@@ -129,6 +139,29 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             }`}
           >
             {count === 6 ? '6+' : count}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderLanguageChips = (
+    languages: GameLanguage[],
+    onToggle: (l: GameLanguage) => void
+  ) => (
+    <div className="flex flex-wrap gap-1.5">
+      {GAME_LANGUAGES.map((lang) => {
+        const isActive = languages.includes(lang);
+        return (
+          <button
+            key={lang}
+            type="button"
+            onClick={() => onToggle(lang)}
+            className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
+              isActive ? ACTIVE_CHIP : INACTIVE_CHIP
+            }`}
+          >
+            {lang}
           </button>
         );
       })}
@@ -286,6 +319,12 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
             {renderPlayerCountButtons(draft.playerCounts, toggleDraftPlayerCount)}
           </div>
 
+          {/* Language */}
+          <div>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Language</p>
+            {renderLanguageChips(draft.languages, toggleDraftLanguage)}
+          </div>
+
           {/* Complexity */}
           <div>
             <p className="text-sm font-medium text-semantic-text-primary mb-2">Complexity</p>
@@ -329,6 +368,12 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
           <div>
             <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Players</p>
             {renderPlayerCountButtons(currentFilters.playerCounts, togglePlayerCount)}
+          </div>
+
+          {/* Language */}
+          <div>
+            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Language</p>
+            {renderLanguageChips(currentFilters.languages, toggleLanguage)}
           </div>
 
           {/* Complexity */}
