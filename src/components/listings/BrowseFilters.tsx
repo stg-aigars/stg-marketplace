@@ -281,9 +281,9 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
 
   return (
     <>
-      {/* Search bar (always visible) */}
-      <div className="mb-4">
-        <div className="relative">
+      {/* Search bar + sort (desktop: inline, mobile: search only) */}
+      <div className="mb-4 flex gap-2">
+        <div className="relative flex-1">
           <MagnifyingGlass
             size={18}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-semantic-text-muted pointer-events-none"
@@ -299,6 +299,9 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             }}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-semantic-border-default bg-semantic-bg-elevated text-semantic-text-primary placeholder:text-semantic-text-muted focus:outline-none focus:border-semantic-border-focus text-sm"
           />
+        </div>
+        <div className="hidden sm:flex items-center">
+          {renderSortButtons(currentFilters.sort, handleSortChange)}
         </div>
       </div>
 
@@ -329,16 +332,16 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
         title="Filter games"
       >
         <div className="space-y-5">
-          {/* Players */}
+          {/* Player count */}
           <div>
-            <p className="text-sm font-medium text-semantic-text-primary mb-2">Players</p>
+            <p className="text-sm font-medium text-semantic-text-primary mb-2">Player count</p>
             {renderPlayerCountButtons(draft.playerCounts, toggleDraftPlayerCount)}
           </div>
 
-          {/* Language */}
+          {/* Game language */}
           {availableLanguages.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-semantic-text-primary mb-2">Language</p>
+              <p className="text-sm font-medium text-semantic-text-primary mb-2">Game language</p>
               {renderLanguageChips(draft.languages, toggleDraftLanguage, true)}
             </div>
           )}
@@ -349,7 +352,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             {renderWeightChips(draft.weightLevels, toggleDraftWeight)}
           </div>
 
-          {/* Country */}
+          {/* Seller country */}
           <div>
             <p className="text-sm font-medium text-semantic-text-primary mb-2">Seller country</p>
             {renderCountryChips(draft.countries, toggleDraftCountry)}
@@ -360,7 +363,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             {renderToggle(
               draft.showExpansions,
               (checked) => setDraft((prev) => ({ ...prev, showExpansions: checked })),
-              'Expansions'
+              'Includes expansions'
             )}
             {renderToggle(
               draft.showAuctions,
@@ -379,16 +382,15 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
         </div>
       </Modal>
 
-      {/* Desktop: filters + sort in card containers */}
-      <div className="hidden sm:flex gap-4 mb-6">
-        {/* Filters card */}
-        <Card className="flex-1">
+      {/* Desktop: filters in card */}
+      <div className="hidden sm:block mb-6">
+        <Card>
           <CardBody className="space-y-3">
-            {/* Row 1: players, complexity, country, toggles */}
+            {/* Row 1: player count, complexity, seller country, toggles */}
             <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
-              {/* Players */}
+              {/* Player count */}
               <div>
-                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Players</p>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Player count</p>
                 {renderPlayerCountButtons(currentFilters.playerCounts, togglePlayerCount)}
               </div>
 
@@ -398,9 +400,9 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
                 {renderWeightChips(currentFilters.weightLevels, toggleWeight)}
               </div>
 
-              {/* Country */}
+              {/* Seller country */}
               <div>
-                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Country</p>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Seller country</p>
                 {renderCountryChips(currentFilters.countries, toggleCountry)}
               </div>
 
@@ -409,7 +411,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
                 {renderToggle(
                   currentFilters.showExpansions,
                   (checked) => applyFilters({ ...currentFilters, showExpansions: checked }),
-                  'Expansions'
+                  'Includes expansions'
                 )}
                 {renderToggle(
                   currentFilters.showAuctions,
@@ -432,10 +434,10 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
               )}
             </div>
 
-            {/* Row 2: language (variable length) */}
+            {/* Row 2: game language (variable length) */}
             {availableLanguages.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Language</p>
+                <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Game language</p>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {renderLanguageChips(currentFilters.languages, toggleLanguage, showAllLanguages)}
                   {hasRestLangs && (
@@ -450,14 +452,6 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
                 </div>
               </div>
             )}
-          </CardBody>
-        </Card>
-
-        {/* Sort card */}
-        <Card className="flex-shrink-0">
-          <CardBody>
-            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Sort</p>
-            {renderSortButtons(currentFilters.sort, handleSortChange)}
           </CardBody>
         </Card>
       </div>
