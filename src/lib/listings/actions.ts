@@ -231,18 +231,18 @@ export async function createListing(
   } else {
     // Regular listing (not from offer): auto-link to shelf + decline stale offers
     await autoLinkListingToShelf(user.id, data.bgg_game_id, listing.id);
-  }
 
-  // Notify buyers who have active wanted listings for this game (fire-and-forget)
-  void notifyWantedListingMatches(
-    data.bgg_game_id,
-    user.id,
-    listing.id,
-    data.game_name,
-    data.price_cents,
-    data.condition,
-    [data.language, data.publisher, data.edition_year].filter(Boolean).join(' · ') || null,
-  ).catch((err) => console.error('[Wanted] notifyWantedListingMatches failed:', err));
+    // Notify buyers who have active wanted listings for this game (fire-and-forget)
+    void notifyWantedListingMatches(
+      data.bgg_game_id,
+      user.id,
+      listing.id,
+      data.game_name,
+      data.price_cents,
+      data.condition,
+      [data.language, data.publisher, data.edition_year].filter(Boolean).join(' · ') || null,
+    ).catch((err) => console.error('[Wanted] notifyWantedListingMatches failed:', err));
+  }
 
   revalidatePath('/account/shelf');
   revalidatePath('/account');

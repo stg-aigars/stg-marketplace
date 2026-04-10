@@ -51,7 +51,7 @@ export function WantedListingCard({
         {/* Content */}
         <div className="px-3 py-2.5 flex flex-col flex-1">
           <GameTitle name={gameTitle} clamp={2} />
-          <GameMeta year={gameYear} publisher={publisher} className="mt-0.5" />
+          <GameMeta year={gameYear} className="mt-0.5" />
 
           {hasEdition && (
             <p className="text-xs text-semantic-text-muted mt-1 truncate">
