@@ -152,10 +152,12 @@ export default async function BrowsePage(
   // Paginate
   query = query.range(offset, offset + PAGE_SIZE - 1);
 
-  const [{ data: listings, count }, { user, favoriteIds }] = await Promise.all([
+  const [{ data: listings, count }, { user, favoriteIds }, { data: langRows }] = await Promise.all([
     query.returns<ListingRow[]>(),
     getUserWithFavorites(),
+    supabase.from('listings').select('language').in('status', ['active', 'reserved']).not('language', 'is', null),
   ]);
+  const availableLanguages = [...new Set((langRows ?? []).map((r) => r.language as string))];
   const isAuthenticated = !!user;
 
   const { expansionCounts, commentCounts } = await getListingCardCounts(
@@ -180,7 +182,7 @@ export default async function BrowsePage(
         Browse pre-loved games
       </h1>
 
-      <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} />
+      <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} availableLanguages={availableLanguages} />
 
       {filteredListings.length === 0 ? (
         filtersActive ? (

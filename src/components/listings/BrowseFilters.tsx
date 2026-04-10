@@ -20,6 +20,7 @@ import {
 
 interface BrowseFiltersProps {
   currentFilters: BrowseFiltersType;
+  availableLanguages: string[];
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -37,7 +38,7 @@ function toggleArrayValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
-function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
+function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProps) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [draft, setDraft] = useState<BrowseFiltersType>(currentFilters);
@@ -145,12 +146,17 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
     </div>
   );
 
+  // Filter to languages that have at least one active listing
+  const visibleLanguages = GAME_LANGUAGES.filter((lang) =>
+    availableLanguages.some((al) => al.toLowerCase().includes(lang.toLowerCase()))
+  );
+
   const renderLanguageChips = (
     languages: GameLanguage[],
     onToggle: (l: GameLanguage) => void
   ) => (
     <div className="flex flex-wrap gap-1.5">
-      {GAME_LANGUAGES.map((lang) => {
+      {visibleLanguages.map((lang) => {
         const isActive = languages.includes(lang);
         return (
           <button
@@ -320,10 +326,12 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
           </div>
 
           {/* Language */}
-          <div>
-            <p className="text-sm font-medium text-semantic-text-primary mb-2">Language</p>
-            {renderLanguageChips(draft.languages, toggleDraftLanguage)}
-          </div>
+          {visibleLanguages.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-semantic-text-primary mb-2">Language</p>
+              {renderLanguageChips(draft.languages, toggleDraftLanguage)}
+            </div>
+          )}
 
           {/* Complexity */}
           <div>
@@ -371,10 +379,12 @@ function BrowseFilters({ currentFilters }: BrowseFiltersProps) {
           </div>
 
           {/* Language */}
-          <div>
-            <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Language</p>
-            {renderLanguageChips(currentFilters.languages, toggleLanguage)}
-          </div>
+          {visibleLanguages.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-semantic-text-muted mb-1.5">Language</p>
+              {renderLanguageChips(currentFilters.languages, toggleLanguage)}
+            </div>
+          )}
 
           {/* Complexity */}
           <div>
