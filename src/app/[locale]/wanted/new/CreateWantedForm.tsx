@@ -55,6 +55,7 @@ export function CreateWantedForm() {
           publisher: edition.publisher,
           language: edition.language,
           editionYear: edition.edition_year,
+          versionThumbnail: edition.version_thumbnail,
         } : null,
         notes.trim() || undefined,
         turnstileToken ?? undefined

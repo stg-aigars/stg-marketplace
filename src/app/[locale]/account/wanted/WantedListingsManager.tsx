@@ -63,9 +63,9 @@ export function WantedListingsManager({ listings }: WantedListingsManagerProps) 
                 <div className="flex gap-3">
                   {/* Thumbnail */}
                   <div className="relative w-14 h-14 shrink-0 bg-semantic-bg-surface rounded overflow-hidden flex items-center justify-center">
-                    {listing.thumbnail ? (
+                    {(listing.version_thumbnail ?? listing.thumbnail) ? (
                       <Image
-                        src={listing.thumbnail}
+                        src={listing.version_thumbnail ?? listing.thumbnail!}
                         alt={listing.game_name}
                         fill
                         className="object-contain p-1"

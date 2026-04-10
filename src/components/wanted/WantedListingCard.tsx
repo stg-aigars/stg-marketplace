@@ -11,6 +11,7 @@ interface WantedListingCardProps {
   gameTitle: string;
   gameYear: number | null;
   gameThumbnail: string | null;
+  versionThumbnail: string | null;
   language: string | null;
   publisher: string | null;
   buyerCountry: string;
@@ -22,26 +23,28 @@ export function WantedListingCard({
   gameTitle,
   gameYear,
   gameThumbnail,
+  versionThumbnail,
   language,
   publisher,
   buyerCountry,
   notes,
 }: WantedListingCardProps) {
   const hasEdition = language || publisher;
+  const displayThumbnail = versionThumbnail ?? gameThumbnail;
 
   return (
     <Link href={`/wanted/${id}`}>
       <Card hoverable className="h-full flex flex-col">
         {/* Image area */}
         <div className="relative aspect-square bg-semantic-bg-surface flex items-center justify-center overflow-hidden rounded-t-lg">
-          {gameThumbnail ? (
+          {displayThumbnail ? (
             <Image
-              src={toBggFullSize(gameThumbnail) ?? gameThumbnail}
+              src={toBggFullSize(displayThumbnail) ?? displayThumbnail}
               alt={gameTitle}
               fill
               className="object-contain p-2"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized={isBggImage(gameThumbnail)}
+              unoptimized={isBggImage(displayThumbnail)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />
