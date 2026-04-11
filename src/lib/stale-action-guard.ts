@@ -12,7 +12,19 @@ export function isStaleActionError(error: unknown): boolean {
   if (name === 'UnrecognizedActionError') return true;
 
   const message = (error as { message?: unknown }).message;
-  if (typeof message === 'string' && message.includes('was not found on the server')) return true;
+  if (
+    typeof message === 'string' &&
+    message.includes('Server Action') &&
+    message.includes('was not found on the server')
+  ) {
+    return true;
+  }
+
+  // Defensive: Next.js attaches framework error digests prefixed with NEXT_ on
+  // errors that bubble out of server action RSC responses. Catch them so a
+  // renamed / restructured error class still trips the reload path.
+  const digest = (error as { digest?: unknown }).digest;
+  if (typeof digest === 'string' && digest.startsWith('NEXT_')) return true;
 
   return false;
 }
