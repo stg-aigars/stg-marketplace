@@ -7,7 +7,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { createServiceClient } from '@/lib/supabase';
 import { loadOrder, creditSellerWallet, markSoldAndSyncShelf } from '@/lib/services/order-transitions';
-import { refundOrder, RefundInitiationError } from '@/lib/services/order-refund';
+import { refundOrder, markRefundFailed, RefundInitiationError } from '@/lib/services/order-refund';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { OrderRow, DisputeRow } from '@/lib/orders/types';
 import {
@@ -229,11 +229,9 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   if (dispute.resolved_at) throw new Error('Dispute is already resolved');
   if (dispute.escalated_at) throw new Error('Cannot accept refund after escalation — staff will resolve this dispute');
 
-  // Claim dispute resolution atomically. `.select('id').single()` raises
-  // PGRST116 when the UPDATE matches zero rows, which is how we detect that
-  // a concurrent retry already won the `resolved_at IS NULL` race. Without
-  // this, supabase-js silently reports success on zero-row updates and a
-  // losing caller would fall through to refundOrder with a stale snapshot.
+  // Claim the dispute atomically. `.select().single()` turns a zero-row
+  // update into PGRST116 — without it, a concurrent loser would fall
+  // through to refundOrder with a stale `refund_status` snapshot.
   const { data: claimedDispute, error: resolveError } = await supabase
     .from('disputes')
     .update({
@@ -251,40 +249,12 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     throw new Error('Dispute is already resolved');
   }
 
-  // Refund to original source (card via EveryPay + wallet for the wallet-funded portion).
-  // refundOrder is idempotent and never throws on refund-leg failure — it returns
-  // {0, 0} on total failure and a non-zero pair on full or partial success.
   const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
 
   if (cardRefunded + walletRefunded === 0) {
-    // Make the failure visible in the staff "Refund issues" queue. refundOrder
-    // deliberately skips writing refund_status on total failure so the cron
-    // can retry non-dispute refunds; dispute callers have no retry cron, so
-    // we write 'failed' explicitly here to surface it for manual resolution.
-    await supabase
-      .from('orders')
-      .update({ refund_status: 'failed' })
-      .eq('id', orderId);
-
-    await rollbackDisputeResolution(supabase, dispute.id, userId, orderId, order.order_number);
-    const err = new RefundInitiationError(
-      'Refund could not be processed — support has been notified',
-      orderId,
-      order.order_number
-    );
-    Sentry.captureException(err, {
-      tags: {
-        orderId,
-        orderNumber: order.order_number,
-        buyerId: order.buyer_id,
-        phase: 'dispute.seller_accepted_refund',
-      },
-    });
-    throw err;
+    await handleRefundInitiationFailure(supabase, dispute.id, userId, orderId, order, 'dispute.seller_accepted_refund');
   }
 
-  // Refund succeeded (fully or partially). Promote the order to `refunded`.
-  // refundOrder already wrote refund_status, refund_amount_cents, and refunded_at.
   const { data: updatedOrder, error: orderError } = await supabase
     .from('orders')
     .update({ status: 'refunded' })
@@ -334,28 +304,30 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
 }
 
 /**
- * Roll back a dispute resolution claim after a refund initiation failure.
- * Used by sellerAcceptRefund and staffResolveDispute when refundOrder returns
- * {0, 0}. Rolling back (rather than documenting a manual runbook) means a
- * retry-via-UI works naturally — otherwise the `resolved_at IS NULL` guard
- * on the next attempt would report "already resolved" misleadingly.
+ * Handle a total-failure return from refundOrder inside a dispute resolution
+ * flow. Writes `refund_status='failed'` for staff visibility, rolls back the
+ * caller's dispute claim so retry-via-UI works, captures Sentry with tagged
+ * context, and throws RefundInitiationError. Never returns (marked `never`)
+ * so callers can use it as a terminator without unreachable-code warnings.
  *
- * Gated on `resolved_by = claimedBy` as defense in depth: if the caller's
- * own claim was lost to a concurrent winner (which shouldn't reach here
- * now that the claim step uses `.select().single()`), this ensures a
- * losing caller can only ever roll back its own row, never the winner's.
- *
- * If the rollback itself fails, capture separately and let the caller throw
- * the primary RefundInitiationError — never mask the original failure.
+ * The claim is rolled back rather than documented as a manual runbook: the
+ * alternative would be a subsequent retry hitting the `resolved_at IS NULL`
+ * guard and reporting "already resolved" misleadingly.
  */
-async function rollbackDisputeResolution(
+async function handleRefundInitiationFailure(
   supabase: ReturnType<typeof createServiceClient>,
   disputeId: string,
   claimedBy: string,
   orderId: string,
-  orderNumber: string
-): Promise<void> {
-  const { error } = await supabase
+  order: Pick<OrderRow, 'buyer_id' | 'order_number'>,
+  phase: string
+): Promise<never> {
+  await markRefundFailed(orderId);
+
+  // Rollback is gated on `resolved_by = claimedBy` as defense in depth: a
+  // losing caller (shouldn't reach here now that the claim uses .select().single(),
+  // but belt-and-braces) can only ever roll back its own row.
+  const { error: rollbackError } = await supabase
     .from('disputes')
     .update({
       resolution: null,
@@ -367,11 +339,21 @@ async function rollbackDisputeResolution(
     .eq('id', disputeId)
     .eq('resolved_by', claimedBy);
 
-  if (error) {
-    Sentry.captureException(error, {
-      tags: { orderId, orderNumber, phase: 'dispute.rollback_failed' },
+  if (rollbackError) {
+    Sentry.captureException(rollbackError, {
+      tags: { orderId, orderNumber: order.order_number, phase: 'dispute.rollback_failed' },
     });
   }
+
+  const err = new RefundInitiationError(
+    'Refund could not be processed — support has been notified',
+    orderId,
+    order.order_number
+  );
+  Sentry.captureException(err, {
+    tags: { orderId, orderNumber: order.order_number, buyerId: order.buyer_id, phase },
+  });
+  throw err;
 }
 
 /**
@@ -467,32 +449,10 @@ export async function staffResolveDispute(
       throw new Error('Dispute is already resolved');
     }
 
-    // Refund to original source — see sellerAcceptRefund for ordering rationale.
     const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
 
     if (cardRefunded + walletRefunded === 0) {
-      // Make the failure visible in the staff "Refund issues" queue.
-      // See sellerAcceptRefund for rationale.
-      await supabase
-        .from('orders')
-        .update({ refund_status: 'failed' })
-        .eq('id', orderId);
-
-      await rollbackDisputeResolution(supabase, dispute.id, staffUserId, orderId, order.order_number);
-      const err = new RefundInitiationError(
-        'Refund could not be processed — support has been notified',
-        orderId,
-        order.order_number
-      );
-      Sentry.captureException(err, {
-        tags: {
-          orderId,
-          orderNumber: order.order_number,
-          buyerId: order.buyer_id,
-          phase: 'dispute.staff_resolved',
-        },
-      });
-      throw err;
+      await handleRefundInitiationFailure(supabase, dispute.id, staffUserId, orderId, order, 'dispute.staff_resolved');
     }
 
     const { data: updatedOrder, error: orderError } = await supabase

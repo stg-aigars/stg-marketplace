@@ -35,8 +35,6 @@ export default async function StaffDashboardPage() {
       .is('resolved_at', null),
     serviceClient
       .rpc('get_total_wallet_balance'),
-    // Refund issues: any order whose refund is failed or partial — support
-    // queue for the new refund-to-source failure mode (Step 1b).
     serviceClient
       .from('orders')
       .select('id', { count: 'exact', head: true })
@@ -70,19 +68,22 @@ export default async function StaffDashboardPage() {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric) => {
-          const card = (
-            <Card key={metric.label} hoverable={!!metric.href}>
-              <CardBody className="text-center py-6">
-                <p className="text-sm text-semantic-text-muted">{metric.label}</p>
-                <p className="text-2xl font-bold text-semantic-text-heading mt-1">
-                  {metric.value}
-                </p>
-              </CardBody>
-            </Card>
+          const body = (
+            <CardBody className="text-center py-6">
+              <p className="text-sm text-semantic-text-muted">{metric.label}</p>
+              <p className="text-2xl font-bold text-semantic-text-heading mt-1">
+                {metric.value}
+              </p>
+            </CardBody>
           );
-          return metric.href ? (
-            <Link key={metric.label} href={metric.href}>{card}</Link>
-          ) : card;
+          if (metric.href) {
+            return (
+              <Link key={metric.label} href={metric.href}>
+                <Card hoverable>{body}</Card>
+              </Link>
+            );
+          }
+          return <Card key={metric.label}>{body}</Card>;
         })}
       </div>
     </div>

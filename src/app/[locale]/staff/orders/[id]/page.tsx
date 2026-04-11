@@ -23,6 +23,18 @@ export const metadata: Metadata = {
   title: 'Order Detail — Staff',
 };
 
+interface RefundAuditEntry {
+  created_at: string;
+  actor_type: string;
+  metadata: {
+    cardRefunded?: number;
+    walletRefunded?: number;
+    totalRefunded?: number;
+    refundStatus?: string;
+    expectedTotal?: number;
+  } | null;
+}
+
 export default async function StaffOrderDetailPage(
   props: {
     params: Promise<{ id: string }>;
@@ -51,7 +63,6 @@ export default async function StaffOrderDetailPage(
     notFound();
   }
 
-  // Fetch dispute, tracking events, and refund audit log in parallel
   const [disputeResult, trackingEvents, refundAuditResult] = await Promise.all([
     serviceClient
       .from('disputes')
@@ -70,11 +81,7 @@ export default async function StaffOrderDetailPage(
   ]);
 
   const dispute = disputeResult.data;
-  const refundAuditEntries = (refundAuditResult.data ?? []) as Array<{
-    created_at: string;
-    actor_type: string;
-    metadata: { cardRefunded?: number; walletRefunded?: number; totalRefunded?: number; refundStatus?: string; expectedTotal?: number } | null;
-  }>;
+  const refundAuditEntries = (refundAuditResult.data ?? []) as RefundAuditEntry[];
   const statusConfig = ORDER_STATUS_CONFIG[order.status as OrderStatus];
 
   return (
@@ -371,12 +378,12 @@ export default async function StaffOrderDetailPage(
                           Refund attempts ({refundAuditEntries.length})
                         </p>
                         <div className="space-y-1.5 text-xs">
-                          {refundAuditEntries.map((entry, i) => {
+                          {refundAuditEntries.map((entry) => {
                             const m = entry.metadata ?? {};
                             const card = m.cardRefunded ?? 0;
                             const wallet = m.walletRefunded ?? 0;
                             return (
-                              <div key={i} className="font-mono">
+                              <div key={entry.created_at} className="font-mono">
                                 <span className="text-semantic-text-muted">
                                   {formatDateTime(entry.created_at)}
                                 </span>

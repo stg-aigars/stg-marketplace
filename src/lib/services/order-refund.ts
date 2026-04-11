@@ -48,6 +48,22 @@ interface RefundableOrder {
  * Partial failure: if one leg fails, logs for manual resolution. The order's
  * refund_amount_cents records what was actually refunded.
  */
+/**
+ * Mark an order's refund as failed. `refundOrder()` deliberately skips
+ * writing `refund_status` on total failure so the deadline-enforcement
+ * cron can retry non-dispute refunds, but that retry path doesn't apply
+ * to dispute resolutions (which are triggered synchronously by staff or
+ * seller action). Callers without a retry loop use this helper to make
+ * the failure visible in the staff "Refund issues" queue.
+ */
+export async function markRefundFailed(orderId: string): Promise<void> {
+  const serviceClient = createServiceClient();
+  await serviceClient
+    .from('orders')
+    .update({ refund_status: 'failed' })
+    .eq('id', orderId);
+}
+
 export async function refundOrder(
   orderId: string,
   order: RefundableOrder
