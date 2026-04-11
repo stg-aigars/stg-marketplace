@@ -23,7 +23,7 @@ export function Dac7ReportAvailable({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        Your tax report for {year} is ready. It shows what we'll submit to the
+        Your tax report for {year} is ready. It shows what we&apos;ll submit to the
         State Revenue Service (VID) under EU reporting rules (DAC7).
       </Text>
 

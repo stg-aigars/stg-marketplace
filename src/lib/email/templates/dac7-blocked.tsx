@@ -25,7 +25,7 @@ export function Dac7Blocked({
       </Text>
 
       <Text style={s.body}>
-        We need your tax details under EU reporting rules (DAC7) but haven't
+        We need your tax details under EU reporting rules (DAC7) but haven&apos;t
         received them yet. Fill them in to restore full access.
       </Text>
 

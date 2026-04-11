@@ -21,7 +21,7 @@ export function Dac7DataRequested({
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        You've reached the EU tax reporting threshold on Second Turn Games.
+        You&apos;ve reached the EU tax reporting threshold on Second Turn Games.
         Under EU rules (DAC7), we need to collect a few details from you.
       </Text>
 

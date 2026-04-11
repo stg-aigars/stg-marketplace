@@ -26,7 +26,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
             className="text-semantic-brand mx-auto mb-3"
           />
           <p className="text-lg font-semibold text-semantic-text-heading mb-1">
-            You're all set
+            You&apos;re all set
           </p>
           <p className="text-sm text-semantic-text-muted mb-4">
             Welcome to Second Turn Games.

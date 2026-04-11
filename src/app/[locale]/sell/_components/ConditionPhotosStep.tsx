@@ -117,7 +117,7 @@ export function ConditionPhotosStep({
             <div className="flex justify-between mt-1">
               {descriptionRequired && (
                 <p className="text-xs text-semantic-text-muted">
-                  Help buyers understand exactly what they're getting
+                  Help buyers understand exactly what they&apos;re getting
                 </p>
               )}
               <p className="text-xs text-semantic-text-muted text-right ml-auto">

@@ -24,6 +24,7 @@ export function Avatar({ name, src, size = 'md', className = '' }: AvatarProps) 
 
   if (src && !imgError) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element -- small user-uploaded avatar with onError → initials fallback; next/image overhead not worth it
       <img
         src={src}
         alt={name}

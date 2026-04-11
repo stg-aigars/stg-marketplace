@@ -90,7 +90,7 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
       <div className="space-y-4">
         <Alert variant="error" icon={ShieldWarning} title="Account restricted">
           <p className="text-sm">
-            New listings and withdrawals are paused because we don't have your
+            New listings and withdrawals are paused because we don&apos;t have your
             tax details yet. Fill them in below to restore access.
           </p>
         </Alert>

@@ -21,11 +21,11 @@ export function Dac7Approaching({
   appUrl,
 }: Dac7ApproachingProps) {
   return (
-    <EmailLayout preview="You're approaching the EU tax reporting threshold">
+    <EmailLayout preview="You&apos;re approaching the EU tax reporting threshold">
       <Text style={s.greeting}>Hi {sellerName},</Text>
 
       <Text style={s.body}>
-        You're getting close to the EU tax reporting threshold on Second Turn Games.
+        You&apos;re getting close to the EU tax reporting threshold on Second Turn Games.
         EU rules (DAC7) require us to report seller activity to tax authorities once
         a seller reaches 30 sales or 2,000 EUR in a calendar year.
       </Text>
@@ -39,7 +39,7 @@ export function Dac7Approaching({
       </div>
 
       <Text style={s.body}>
-        If you reach the threshold, we'll ask for a few extra details:
+        If you reach the threshold, we&apos;ll ask for a few extra details:
         date of birth, personal code (TIN), and bank account. This is
         about reporting, not additional taxes.
       </Text>
@@ -51,7 +51,7 @@ export function Dac7Approaching({
       </div>
 
       <Text style={s.note}>
-        Nothing to do right now. We'll let you know if you reach the threshold.
+        Nothing to do right now. We&apos;ll let you know if you reach the threshold.
       </Text>
     </EmailLayout>
   );
