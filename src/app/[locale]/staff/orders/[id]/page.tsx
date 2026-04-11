@@ -6,9 +6,8 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getTrackingEvents } from '@/lib/services/tracking';
 import { Card, CardBody, Badge, BackLink, ConditionBadge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { formatDate, formatDateTime } from '@/lib/date-utils';
+import { formatDateTime } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
-import { getOrderGameSummary } from '@/lib/orders/utils';
 import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
 import type { ListingCondition } from '@/lib/listings/types';
 import {
@@ -64,7 +63,6 @@ export default async function StaffOrderDetailPage(
 
   const dispute = disputeResult.data;
   const statusConfig = ORDER_STATUS_CONFIG[order.status as OrderStatus];
-  const gameSummary = getOrderGameSummary(order.order_items, order.listings);
 
   return (
     <div>

@@ -89,7 +89,7 @@ export function TerminalMap({
 
   // Handle point click from cluster layer
   const handlePointClick = useCallback(
-    (feature: GeoJSON.Feature<GeoJSON.Point>, _coordinates: [number, number]) => {
+    (feature: GeoJSON.Feature<GeoJSON.Point>) => {
       const terminalId = feature.properties?.id;
       if (terminalId) {
         const terminal = findTerminalById(terminals, terminalId);

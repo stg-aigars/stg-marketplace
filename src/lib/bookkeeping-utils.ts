@@ -5,7 +5,7 @@
  * All monetary values are INTEGER CENTS — format only at display time.
  */
 
-import { formatCentsToCurrency, VAT_RATES, DEFAULT_VAT_RATE, getVatRate } from '@/lib/services/pricing';
+import { DEFAULT_VAT_RATE, getVatRate } from '@/lib/services/pricing';
 
 // ============================================================================
 // CONSTANTS

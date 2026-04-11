@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import type { AuthActionResult, SignInFormData, SignUpFormData } from './types';
+import type { AuthActionResult, SignUpFormData } from './types';
 import type { CountryCode } from '@/lib/country-utils';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { loginLimiter, signupLimiter, passwordResetLimiter } from '@/lib/rate-limit';
