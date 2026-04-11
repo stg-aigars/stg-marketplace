@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ImageSquare, Tag, Translate, Buildings, CalendarBlank } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, ShareButtons, Breadcrumb, Avatar } from '@/components/ui';
+import { ImageSquare, Tag, Translate, Buildings, CalendarBlank, MagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { Card, CardBody, ShareButtons, Breadcrumb, Avatar, Alert, Badge, Button } from '@/components/ui';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { toBggFullSize, isBggImage, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { formatDate } from '@/lib/date-utils';
+import { createClient } from '@/lib/supabase/server';
 import { getWantedListingById } from '@/lib/wanted/actions';
 import { RelatedWants } from './RelatedWants';
 
@@ -19,9 +21,8 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const listing = await getWantedListingById(params.id);
   if (!listing) return { title: 'Not found' };
 
-  const description = listing.language
-    ? `Looking for ${listing.game_name} (${listing.language} edition)`
-    : `Looking for ${listing.game_name}`;
+  const edition = listing.language ? ` (${listing.language} edition)` : '';
+  const description = `Someone is looking for ${listing.game_name}${edition}. If you have a copy, you can list it for sale on Second Turn Games.`;
 
   return {
     title: `Wanted: ${listing.game_name}`,
@@ -39,6 +40,10 @@ export default async function WantedDetailPage(props: Props) {
   const listing = await getWantedListingById(params.id);
 
   if (!listing) notFound();
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user?.id === listing.buyer_id;
 
   const hasEdition = listing.version_source !== null;
   const gameImage =
@@ -118,9 +123,27 @@ export default async function WantedDetailPage(props: Props) {
 
         {/* Right column: About this want */}
         <div className="space-y-6">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-            {listing.game_name}
-          </h1>
+          {!isOwner && (
+            <Alert variant="info" icon={MagnifyingGlass} title="Someone is looking for this game">
+              <p>If you have a copy, you can list it for sale.</p>
+              <div className="mt-3">
+                <Button asChild variant="primary" size="sm">
+                  {user ? (
+                    <Link href="/sell">List this game for sale</Link>
+                  ) : (
+                    <Link href="/auth/signin?returnUrl=/sell">Sign in to list it</Link>
+                  )}
+                </Button>
+              </div>
+            </Alert>
+          )}
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+              {listing.game_name}
+            </h1>
+            <Badge variant="wanted">Wanted</Badge>
+          </div>
 
           {/* Edition details — compact icon row */}
           {hasEdition && (listing.version_name || listing.language || listing.publisher || listing.edition_year) ? (
