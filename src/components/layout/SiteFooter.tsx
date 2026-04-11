@@ -32,6 +32,7 @@ function SiteFooter() {
             {/* Branding & countries */}
             <div className="flex flex-col gap-4">
               <Link href="/" className="inline-flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
                 <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
                 <span className="flex flex-col leading-none">
                   <span className="text-[10px] sm:text-[11px] font-bold tracking-wide text-semantic-brand">
@@ -63,6 +64,7 @@ function SiteFooter() {
                 Our partners
               </p>
               <div className="flex flex-col gap-3 items-start sm:items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
                 <img
                   src="/images/powered-by-bgg.svg"
                   alt="BoardGameGeek"
@@ -70,6 +72,7 @@ function SiteFooter() {
                   height={27}
                   className="h-6 w-auto"
                 />
+                {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
                 <img
                   src="/everypay_logo.svg"
                   alt="EveryPay"
@@ -77,6 +80,7 @@ function SiteFooter() {
                   height={52}
                   className="h-9 w-auto"
                 />
+                {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
                 <img
                   src="/unisend_logo.svg"
                   alt="Unisend"

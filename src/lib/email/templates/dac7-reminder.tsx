@@ -25,7 +25,7 @@ export function Dac7Reminder({
       </Text>
 
       <Text style={styles.warning}>
-        If we don't receive your details within 14 days, new listings
+        If we don&apos;t receive your details within 14 days, new listings
         and withdrawals will be paused.
       </Text>
 
