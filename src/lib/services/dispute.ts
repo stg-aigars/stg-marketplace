@@ -229,9 +229,12 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   if (dispute.resolved_at) throw new Error('Dispute is already resolved');
   if (dispute.escalated_at) throw new Error('Cannot accept refund after escalation — staff will resolve this dispute');
 
-  // Claim dispute resolution atomically. Must happen before the refund so a
-  // concurrent retry loses the `resolved_at IS NULL` race and doesn't double-refund.
-  const { error: resolveError } = await supabase
+  // Claim dispute resolution atomically. `.select('id').single()` raises
+  // PGRST116 when the UPDATE matches zero rows, which is how we detect that
+  // a concurrent retry already won the `resolved_at IS NULL` race. Without
+  // this, supabase-js silently reports success on zero-row updates and a
+  // losing caller would fall through to refundOrder with a stale snapshot.
+  const { data: claimedDispute, error: resolveError } = await supabase
     .from('disputes')
     .update({
       resolution: 'refunded',
@@ -240,9 +243,13 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
       refund_amount_cents: order.total_amount_cents,
     })
     .eq('id', dispute.id)
-    .is('resolved_at', null);
+    .is('resolved_at', null)
+    .select('id')
+    .single();
 
-  if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
+  if (resolveError || !claimedDispute) {
+    throw new Error('Dispute is already resolved');
+  }
 
   // Refund to original source (card via EveryPay + wallet for the wallet-funded portion).
   // refundOrder is idempotent and never throws on refund-leg failure — it returns
@@ -250,7 +257,16 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
 
   if (cardRefunded + walletRefunded === 0) {
-    await rollbackDisputeResolution(supabase, dispute.id, orderId, order.order_number);
+    // Make the failure visible in the staff "Refund issues" queue. refundOrder
+    // deliberately skips writing refund_status on total failure so the cron
+    // can retry non-dispute refunds; dispute callers have no retry cron, so
+    // we write 'failed' explicitly here to surface it for manual resolution.
+    await supabase
+      .from('orders')
+      .update({ refund_status: 'failed' })
+      .eq('id', orderId);
+
+    await rollbackDisputeResolution(supabase, dispute.id, userId, orderId, order.order_number);
     const err = new RefundInitiationError(
       'Refund could not be processed — support has been notified',
       orderId,
@@ -324,10 +340,10 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
  * retry-via-UI works naturally — otherwise the `resolved_at IS NULL` guard
  * on the next attempt would report "already resolved" misleadingly.
  *
- * Narrow race window: a concurrent observer that polled between the claim
- * and the rollback could see the dispute as briefly resolved. Not a real
- * concern for staff workflows; the claim + rollback round-trip is well
- * under a second.
+ * Gated on `resolved_by = claimedBy` as defense in depth: if the caller's
+ * own claim was lost to a concurrent winner (which shouldn't reach here
+ * now that the claim step uses `.select().single()`), this ensures a
+ * losing caller can only ever roll back its own row, never the winner's.
  *
  * If the rollback itself fails, capture separately and let the caller throw
  * the primary RefundInitiationError — never mask the original failure.
@@ -335,6 +351,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
 async function rollbackDisputeResolution(
   supabase: ReturnType<typeof createServiceClient>,
   disputeId: string,
+  claimedBy: string,
   orderId: string,
   orderNumber: string
 ): Promise<void> {
@@ -347,7 +364,8 @@ async function rollbackDisputeResolution(
       resolution_notes: null,
       refund_amount_cents: null,
     })
-    .eq('id', disputeId);
+    .eq('id', disputeId)
+    .eq('resolved_by', claimedBy);
 
   if (error) {
     Sentry.captureException(error, {
@@ -431,7 +449,7 @@ export async function staffResolveDispute(
 
   if (decision === 'refund') {
     // Claim dispute resolution atomically (see sellerAcceptRefund for rationale).
-    const { error: resolveError } = await supabase
+    const { data: claimedDispute, error: resolveError } = await supabase
       .from('disputes')
       .update({
         resolution: 'refunded',
@@ -441,15 +459,26 @@ export async function staffResolveDispute(
         refund_amount_cents: order.total_amount_cents,
       })
       .eq('id', dispute.id)
-      .is('resolved_at', null);
+      .is('resolved_at', null)
+      .select('id')
+      .single();
 
-    if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
+    if (resolveError || !claimedDispute) {
+      throw new Error('Dispute is already resolved');
+    }
 
     // Refund to original source — see sellerAcceptRefund for ordering rationale.
     const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
 
     if (cardRefunded + walletRefunded === 0) {
-      await rollbackDisputeResolution(supabase, dispute.id, orderId, order.order_number);
+      // Make the failure visible in the staff "Refund issues" queue.
+      // See sellerAcceptRefund for rationale.
+      await supabase
+        .from('orders')
+        .update({ refund_status: 'failed' })
+        .eq('id', orderId);
+
+      await rollbackDisputeResolution(supabase, dispute.id, staffUserId, orderId, order.order_number);
       const err = new RefundInitiationError(
         'Refund could not be processed — support has been notified',
         orderId,
