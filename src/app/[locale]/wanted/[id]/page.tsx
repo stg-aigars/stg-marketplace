@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Card, CardBody, ShareButtons, BackLink } from '@/components/ui';
 import { GameIdentityRow } from '@/components/listings/atoms';
+import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getWantedListingById } from '@/lib/wanted/actions';
+import { RelatedWants } from './RelatedWants';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -37,6 +39,26 @@ export default async function WantedDetailPage(props: Props) {
 
   const hasEdition = listing.version_source !== null;
   const displayImage = listing.version_thumbnail ?? listing.image ?? listing.thumbnail;
+
+  // Player count display — same logic as listings detail page
+  const playerCountDisplay = listing.min_players
+    ? listing.max_players && listing.max_players !== listing.min_players
+      ? `${listing.min_players}–${listing.max_players}`
+      : `${listing.min_players}`
+    : listing.player_count ?? null;
+
+  const playingTime = listing.playing_time && listing.playing_time !== '0' ? listing.playing_time : null;
+
+  const gamesForCard = {
+    name: listing.game_display_name ?? listing.game_name,
+    yearpublished: listing.game_year_published,
+    thumbnail: listing.thumbnail,
+    min_age: listing.min_age,
+    description: listing.description,
+    weight: listing.weight,
+    categories: listing.categories,
+    mechanics: listing.mechanics,
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -86,6 +108,24 @@ export default async function WantedDetailPage(props: Props) {
           </CardBody>
         </Card>
       )}
+
+      <div className="mt-6">
+        <GameDetailsCard
+          games={gamesForCard}
+          bggGameId={listing.bgg_game_id}
+          listingGameName={listing.game_name}
+          playerCountDisplay={playerCountDisplay}
+          playingTime={playingTime}
+        />
+      </div>
+
+      <RelatedWants
+        listingId={listing.id}
+        bggGameId={listing.bgg_game_id}
+        buyerId={listing.buyer_id}
+        gameName={listing.game_name}
+        buyerName={listing.buyer_name || 'this buyer'}
+      />
     </div>
   );
 }

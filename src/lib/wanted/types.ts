@@ -33,7 +33,21 @@ export interface WantedListingWithGame extends WantedListingRow {
   image: string | null;
 }
 
-export interface WantedListingWithDetails extends WantedListingWithGame {
+export interface WantedListingGameMetadata {
+  game_display_name: string | null;
+  game_year_published: number | null;
+  player_count: string | null;
+  min_players: number | null;
+  max_players: number | null;
+  min_age: number | null;
+  playing_time: string | null;
+  description: string | null;
+  weight: number | null;
+  categories: string[] | null;
+  mechanics: string[] | null;
+}
+
+export interface WantedListingWithDetails extends WantedListingWithGame, WantedListingGameMetadata {
   buyer_name: string;
 }
 

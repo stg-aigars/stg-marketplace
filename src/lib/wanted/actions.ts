@@ -152,7 +152,7 @@ export async function getMyWantedListings(): Promise<WantedListingWithGame[]> {
   return (data ?? []).map(mapWantedListingRow);
 }
 
-/** Single wanted listing with game details (for detail page) */
+/** Single wanted listing with full game metadata (for detail page) */
 export async function getWantedListingById(
   id: string
 ): Promise<WantedListingWithDetails | null> {
@@ -161,7 +161,8 @@ export async function getWantedListingById(
   const { data: listing } = await supabase
     .from('wanted_listings')
     .select(`
-      ${WANTED_LISTING_SELECT},
+      *,
+      games:bgg_game_id (name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics),
       buyer:buyer_id (full_name)
     `)
     .eq('id', id)
@@ -169,13 +170,38 @@ export async function getWantedListingById(
 
   if (!listing) return null;
 
-  const games = (listing as Record<string, unknown>).games as { thumbnail: string | null; image: string | null } | null;
+  const games = (listing as Record<string, unknown>).games as {
+    name: string | null;
+    yearpublished: number | null;
+    thumbnail: string | null;
+    image: string | null;
+    player_count: string | null;
+    min_players: number | null;
+    max_players: number | null;
+    min_age: number | null;
+    playing_time: string | null;
+    description: string | null;
+    weight: number | null;
+    categories: string[] | null;
+    mechanics: string[] | null;
+  } | null;
   const buyer = (listing as Record<string, unknown>).buyer as { full_name: string | null } | null;
 
   return {
     ...listing,
     thumbnail: games?.thumbnail ?? null,
     image: games?.image ?? null,
+    game_display_name: games?.name ?? null,
+    game_year_published: games?.yearpublished ?? null,
+    player_count: games?.player_count ?? null,
+    min_players: games?.min_players ?? null,
+    max_players: games?.max_players ?? null,
+    min_age: games?.min_age ?? null,
+    playing_time: games?.playing_time ?? null,
+    description: games?.description ?? null,
+    weight: games?.weight ?? null,
+    categories: games?.categories ?? null,
+    mechanics: games?.mechanics ?? null,
     buyer_name: buyer?.full_name ?? '',
   } as WantedListingWithDetails;
 }
