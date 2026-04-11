@@ -1,4 +1,5 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
+import { useLatestRef } from './useLatestRef';
 
 /**
  * Fires `onOutside` when a mousedown occurs outside all supplied refs — i.e.
@@ -7,23 +8,17 @@ import { useEffect, useRef, type RefObject } from 'react';
  * parts, e.g. a dropdown menu plus its trigger button that sits outside the
  * menu's DOM subtree.
  *
- * Implementation note: the latest callback and refs are stashed in refs and
- * synced inside an effect, so the subscription effect only re-runs when
- * `enabled` toggles — not on every render. Callers can pass inline arrow
- * callbacks without paying listener churn.
+ * Callback and refs are stored via useLatestRef, so the subscription effect
+ * only re-runs when `enabled` toggles — not on every render. Callers can pass
+ * inline arrow callbacks without paying listener churn.
  */
 export function useClickOutside(
   onOutside: () => void,
   enabled: boolean,
   ...refs: RefObject<HTMLElement | null>[]
 ) {
-  const onOutsideRef = useRef(onOutside);
-  const refsRef = useRef(refs);
-
-  useEffect(() => {
-    onOutsideRef.current = onOutside;
-    refsRef.current = refs;
-  });
+  const onOutsideRef = useLatestRef(onOutside);
+  const refsRef = useLatestRef(refs);
 
   useEffect(() => {
     if (!enabled) return;
@@ -34,5 +29,5 @@ export function useClickOutside(
     }
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
-  }, [enabled]);
+  }, [enabled, onOutsideRef, refsRef]);
 }

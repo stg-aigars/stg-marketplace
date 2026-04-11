@@ -1,25 +1,21 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
+import { useLatestRef } from './useLatestRef';
 
 /**
  * Fires `onEscape` on the Escape keydown. Optionally returns focus to a
  * specified element after the callback runs, which is useful for closing a
  * popover and restoring focus to its trigger button.
  *
- * Stable-ref pattern matches `useClickOutside`: the effect only re-subscribes
- * when `enabled` toggles, not on every render.
+ * Same stable-ref pattern as `useClickOutside` via useLatestRef — the effect
+ * only re-subscribes when `enabled` toggles, not on every render.
  */
 export function useEscapeKey(
   onEscape: () => void,
   enabled: boolean,
   restoreFocusTo?: RefObject<HTMLElement | null>,
 ) {
-  const onEscapeRef = useRef(onEscape);
-  const restoreFocusRef = useRef(restoreFocusTo);
-
-  useEffect(() => {
-    onEscapeRef.current = onEscape;
-    restoreFocusRef.current = restoreFocusTo;
-  });
+  const onEscapeRef = useLatestRef(onEscape);
+  const restoreFocusRef = useLatestRef(restoreFocusTo);
 
   useEffect(() => {
     if (!enabled) return;
@@ -30,5 +26,5 @@ export function useEscapeKey(
     }
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [enabled]);
+  }, [enabled, onEscapeRef, restoreFocusRef]);
 }

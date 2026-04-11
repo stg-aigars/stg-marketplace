@@ -46,8 +46,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
     }
   }, [pathname, loaded]);
 
-  const closeDropdown = useCallback(() => setOpen(false), []);
-  useClickOutside(closeDropdown, open, containerRef);
+  useClickOutside(() => setOpen(false), open, containerRef);
 
   // Close on route change
   useEffect(() => {

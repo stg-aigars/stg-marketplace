@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
@@ -21,8 +21,7 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
   const menuRef = useRef<HTMLDivElement>(null);
   const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
 
-  const closeMenu = useCallback(() => setOpen(false), []);
-  useClickOutside(closeMenu, open, menuRef);
+  useClickOutside(() => setOpen(false), open, menuRef);
 
   if (hasAuctionBids) return null;
 

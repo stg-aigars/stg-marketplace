@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { DotsThreeVertical, PencilSimple, Trash, ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
@@ -28,8 +28,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
   const badgeVariant = SHELF_VISIBILITY_BADGE_VARIANT[item.visibility];
   const badgeLabel = SHELF_VISIBILITY_LABELS[item.visibility];
 
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
-  useClickOutside(closeMenu, menuOpen, menuRef);
+  useClickOutside(() => setMenuOpen(false), menuOpen, menuRef);
 
   async function handleRemove() {
     setRemoving(true);

@@ -43,9 +43,8 @@ function SiteHeader() {
     setDropdownOpen(false);
   }, [pathname]);
 
-  const closeDropdown = useCallback(() => setDropdownOpen(false), []);
-  useClickOutside(closeDropdown, dropdownOpen, dropdownRef, dropdownButtonRef);
-  useEscapeKey(closeDropdown, dropdownOpen, dropdownButtonRef);
+  useClickOutside(() => setDropdownOpen(false), dropdownOpen, dropdownRef, dropdownButtonRef);
+  useEscapeKey(() => setDropdownOpen(false), dropdownOpen, dropdownButtonRef);
 
   const handleSignOut = useCallback(async () => {
     setDropdownOpen(false);
