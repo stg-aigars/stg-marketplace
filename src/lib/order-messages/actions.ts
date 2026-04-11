@@ -122,15 +122,23 @@ export async function deleteOrderMessage(
   if (!profile?.is_staff) return { error: 'Not authorized' };
 
   const serviceClient = createServiceClient();
-  const { error: updateError } = await serviceClient
+  const { data: claimed, error: updateError } = await serviceClient
     .from('order_messages')
     .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
     .eq('id', messageId)
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .select('id')
+    .single();
 
   if (updateError) {
+    if (updateError.code === 'PGRST116') {
+      return { error: 'Message already deleted' };
+    }
     console.error('[OrderMessages] Delete failed:', updateError.message);
     return { error: 'Failed to delete message' };
+  }
+  if (!claimed) {
+    return { error: 'Message already deleted' };
   }
 
   void logAuditEvent({

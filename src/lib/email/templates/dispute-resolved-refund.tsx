@@ -38,11 +38,11 @@ export function DisputeResolvedRefund({
 
       {recipientRole === 'buyer' ? (
         <Text style={s.body}>
-          Your dispute has been resolved. {formattedAmount} has been credited to your wallet.
+          Your dispute has been resolved. A refund of {formattedAmount} is being processed.
         </Text>
       ) : (
         <Text style={s.body}>
-          The dispute on your order has been resolved with a refund to the buyer.
+          The dispute on your order has been resolved with a refund to the buyer. Your listing has been restored and can be re-sold.
         </Text>
       )}
 
@@ -75,12 +75,6 @@ export function DisputeResolvedRefund({
           View Order
         </Button>
       </div>
-
-      {recipientRole === 'buyer' && (
-        <Text style={s.note}>
-          You can use your wallet balance for future purchases or request a withdrawal.
-        </Text>
-      )}
     </EmailLayout>
   );
 }
