@@ -167,24 +167,15 @@ function SiteHeader() {
                     role="menu"
                     className="absolute right-0 mt-1 w-72 rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg py-1 overflow-hidden"
                   >
-                    <Link
-                      href="/account/settings"
+                    <ProfileHeaderRow
+                      displayName={displayName}
+                      avatarUrl={profile?.avatar_url}
+                      fullName={profile?.full_name}
+                      email={user.email}
                       role="menuitem"
-                      onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 border-b border-semantic-border-subtle sm:hover:bg-semantic-bg-secondary transition-colors duration-250 ease-out-custom"
-                    >
-                      <Avatar name={displayName} src={profile?.avatar_url} size="md" className="shrink-0" />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-sm font-medium text-semantic-text-primary truncate">
-                          {profile?.full_name || user.email || 'Your account'}
-                        </span>
-                        {profile?.full_name && user.email && (
-                          <span className="text-xs text-semantic-text-tertiary truncate">
-                            {user.email}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
+                      onClose={() => setDropdownOpen(false)}
+                    />
                     {isSeller && (
                       <>
                         <DropdownLink href="/account/orders?tab=sales" label="Sales" icon={Storefront} onClose={() => setDropdownOpen(false)} />
@@ -276,27 +267,19 @@ function SiteHeader() {
               </Button>
             ) : (
               <>
-                <Link
-                  href="/account/settings"
-                  onClick={() => setMobileOpen(false)}
+                <ProfileHeaderRow
+                  displayName={displayName}
+                  avatarUrl={profile?.avatar_url}
+                  fullName={profile?.full_name}
+                  email={user.email}
                   className="flex items-center gap-3 py-3 border-b border-semantic-border-subtle active:bg-semantic-bg-secondary transition-colors duration-250 ease-out-custom"
-                >
-                  <Avatar name={displayName} src={profile?.avatar_url} size="md" className="shrink-0" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-medium text-semantic-text-primary truncate">
-                      {profile?.full_name || user.email || 'Your account'}
-                    </span>
-                    {profile?.full_name && user.email && (
-                      <span className="text-xs text-semantic-text-tertiary truncate">
-                        {user.email}
-                      </span>
-                    )}
-                  </div>
-                </Link>
+                  onClose={() => setMobileOpen(false)}
+                />
                 {isSeller && (
                   <>
                     <MobileLink href="/account/orders?tab=sales" label="Sales" icon={Storefront} onClose={() => setMobileOpen(false)} />
                     <MobileLink href="/account/wallet" label="Wallet" icon={Wallet} onClose={() => setMobileOpen(false)} />
+                    <div className="border-t border-semantic-border-subtle my-1" />
                   </>
                 )}
                 <MobileLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setMobileOpen(false)} />
@@ -321,6 +304,38 @@ function SiteHeader() {
         </nav>
       )}
     </header>
+  );
+}
+
+function ProfileHeaderRow({
+  displayName,
+  avatarUrl,
+  fullName,
+  email,
+  role,
+  className,
+  onClose,
+}: {
+  displayName: string;
+  avatarUrl?: string | null;
+  fullName?: string | null;
+  email?: string;
+  role?: string;
+  className: string;
+  onClose: () => void;
+}) {
+  return (
+    <Link href="/account/settings" role={role} onClick={onClose} className={className}>
+      <Avatar name={displayName} src={avatarUrl} size="md" className="shrink-0" />
+      <div className="flex flex-col min-w-0 flex-1">
+        <span className="text-sm font-medium text-semantic-text-primary truncate">
+          {fullName || email || 'Your account'}
+        </span>
+        {fullName && email && (
+          <span className="text-xs text-semantic-text-tertiary truncate">{email}</span>
+        )}
+      </div>
+    </Link>
   );
 }
 
