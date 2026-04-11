@@ -6,7 +6,7 @@ Second Turn Games - Nordic-minimalist peer-to-peer board game marketplace for th
 Launch philosophy: Start with basics across all three markets. Users grow with the platform. The marketplace is only as good as its community, and the community builds alongside the product.
 
 ## Tech Stack
-- Next.js 14 App Router with TypeScript
+- Next.js 16 (App Router, Turbopack build) with TypeScript, React 19
 - Supabase for database, auth, and storage
 - EveryPay (Swedbank) for payments + platform wallet system
 - BoardGameGeek (BGG) XML API for game search, metadata, and images (day-zero cornerstone)
