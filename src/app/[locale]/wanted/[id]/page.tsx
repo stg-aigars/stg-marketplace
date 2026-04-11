@@ -37,11 +37,14 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function WantedDetailPage(props: Props) {
   const params = await props.params;
-  const listing = await getWantedListingById(params.id);
+
+  const [listing, supabase] = await Promise.all([
+    getWantedListingById(params.id),
+    createClient(),
+  ]);
 
   if (!listing) notFound();
 
-  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const isOwner = user?.id === listing.buyer_id;
 
@@ -138,7 +141,7 @@ export default async function WantedDetailPage(props: Props) {
             </Alert>
           )}
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-baseline gap-3 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
               {listing.game_name}
             </h1>
