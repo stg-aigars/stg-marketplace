@@ -17,6 +17,8 @@ export function StaleActionGuard() {
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
     function handler(event: PromiseRejectionEvent) {
       if (!isStaleActionError(event.reason)) return;
 
@@ -29,14 +31,20 @@ export function StaleActionGuard() {
 
       markReloadAttempt();
       toast(t('updating'));
-      window.setTimeout(() => {
+      timerId = setTimeout(() => {
         window.location.reload();
       }, RELOAD_DELAY_MS);
     }
 
     window.addEventListener('unhandledrejection', handler, true);
-    return () => window.removeEventListener('unhandledrejection', handler, true);
-  }, [t]);
+    return () => {
+      if (timerId !== undefined) clearTimeout(timerId);
+      window.removeEventListener('unhandledrejection', handler, true);
+    };
+    // `t` is stable across a locale's lifetime; re-registering on every parent
+    // render would leak handlers without a stable-identity guarantee.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!showBanner) return null;
 

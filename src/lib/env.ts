@@ -37,8 +37,8 @@ const serverEnvSchema = {
 
   // Stable key for Next.js Server Action ID encryption. MUST be identical across
   // deploys — rotating it invalidates every in-flight client bundle and surfaces
-  // as UnrecognizedActionError (Sentry STG-MARKETPLACE-D). Set in Coolify as a
-  // buildtime env var; treat rotation as a coordinated, forced-reload event.
+  // as UnrecognizedActionError on old tabs. Set in Coolify as a buildtime env
+  // var; treat rotation as a coordinated, forced-reload event.
   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: process.env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
 } as const;
 

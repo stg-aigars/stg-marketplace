@@ -54,15 +54,3 @@ export function markReloadAttempt(): void {
     // sessionStorage unavailable (e.g. private browsing quota exceeded)
   }
 }
-
-/**
- * Convenience for non-render contexts (event handlers).
- * Checks the loop guard, marks the attempt, and reloads.
- * No-op if a recent reload was already attempted.
- */
-export function attemptStaleActionReload(): boolean {
-  if (hasRecentReloadAttempt()) return false;
-  markReloadAttempt();
-  window.location.reload();
-  return true;
-}

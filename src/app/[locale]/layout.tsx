@@ -94,7 +94,7 @@ export default async function LocaleLayout(
   const messages = await getMessages();
 
   return (
-    // translate="no" prevents browser auto-translate from mutating DOM mid-hydration (Sentry STG-MARKETPLACE-E)
+    // translate="no" prevents browser auto-translate from mutating the DOM mid-hydration.
     <html lang={locale} translate="no">
       <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
         <NextTopLoader color={colors.semantic.brand} showSpinner={false} shadow={false} />
