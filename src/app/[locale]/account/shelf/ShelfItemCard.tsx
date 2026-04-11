@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { DotsThreeVertical, PencilSimple, Trash, ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage } from '@/lib/bgg/utils';
@@ -9,6 +9,7 @@ import { GameTitle, GameMeta } from '@/components/listings/atoms';
 import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
 import { removeFromShelf } from '@/lib/shelves/actions';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface ShelfItemCardProps {
   item: ShelfItemWithGame;
@@ -27,16 +28,8 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
   const badgeVariant = SHELF_VISIBILITY_BADGE_VARIANT[item.visibility];
   const badgeLabel = SHELF_VISIBILITY_LABELS[item.visibility];
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [menuOpen]);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useClickOutside(closeMenu, menuOpen, menuRef);
 
   async function handleRemove() {
     setRemoving(true);

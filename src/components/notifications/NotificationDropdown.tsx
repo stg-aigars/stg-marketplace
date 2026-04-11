@@ -8,6 +8,7 @@ import { Button, CountBadge } from '@/components/ui';
 import { NotificationItem } from './NotificationItem';
 import { getNotifications, markAllNotificationsRead } from '@/lib/notifications/actions';
 import type { NotificationRow } from '@/lib/notifications/types';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface NotificationDropdownProps {
   unreadCount: number;
@@ -45,17 +46,8 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
     }
   }, [pathname, loaded]);
 
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
+  const closeDropdown = useCallback(() => setOpen(false), []);
+  useClickOutside(closeDropdown, open, containerRef);
 
   // Close on route change
   useEffect(() => {

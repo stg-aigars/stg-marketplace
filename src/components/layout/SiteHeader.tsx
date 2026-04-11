@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -41,35 +43,9 @@ function SiteHeader() {
     setDropdownOpen(false);
   }, [pathname]);
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    if (!dropdownOpen) return;
-
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        dropdownButtonRef.current &&
-        !dropdownButtonRef.current.contains(e.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    }
-
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setDropdownOpen(false);
-        dropdownButtonRef.current?.focus();
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [dropdownOpen]);
+  const closeDropdown = useCallback(() => setDropdownOpen(false), []);
+  useClickOutside(closeDropdown, dropdownOpen, dropdownRef, dropdownButtonRef);
+  useEscapeKey(closeDropdown, dropdownOpen, dropdownButtonRef);
 
   const handleSignOut = useCallback(async () => {
     setDropdownOpen(false);
