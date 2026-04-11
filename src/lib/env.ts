@@ -34,6 +34,12 @@ const serverEnvSchema = {
 
   CLOUDFLARE_ZONE_ID: process.env.CLOUDFLARE_ZONE_ID,
   CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
+
+  // Stable key for Next.js Server Action ID encryption. MUST be identical across
+  // deploys — rotating it invalidates every in-flight client bundle and surfaces
+  // as UnrecognizedActionError (Sentry STG-MARKETPLACE-D). Set in Coolify as a
+  // buildtime env var; treat rotation as a coordinated, forced-reload event.
+  NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: process.env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
 } as const;
 
 type EnvKey = keyof typeof serverEnvSchema;
@@ -75,6 +81,7 @@ export function validateEnv(): ValidationResult {
     'SENTRY_PROJECT',
     'CLOUDFLARE_ZONE_ID',
     'CLOUDFLARE_API_TOKEN',
+    'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY',
   ];
 
   const isProduction = process.env.NODE_ENV === 'production';
