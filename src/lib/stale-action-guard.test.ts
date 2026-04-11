@@ -17,9 +17,13 @@ describe('isStaleActionError', () => {
     expect(isStaleActionError(new Error('resource was not found on the server'))).toBe(false);
   });
 
-  it('matches errors whose digest starts with NEXT_', () => {
-    const err = Object.assign(new Error('wrapped'), { digest: 'NEXT_REDIRECT;foo' });
-    expect(isStaleActionError(err)).toBe(true);
+  it('does NOT match Next.js framework control-flow digests', () => {
+    // Critical: NEXT_REDIRECT / NEXT_NOT_FOUND are thrown by redirect() and
+    // notFound() during normal navigation. A broad prefix match here would
+    // turn every aborted navigation into a full-page reload.
+    expect(isStaleActionError(Object.assign(new Error(), { digest: 'NEXT_REDIRECT;replace;/foo;307' }))).toBe(false);
+    expect(isStaleActionError(Object.assign(new Error(), { digest: 'NEXT_NOT_FOUND' }))).toBe(false);
+    expect(isStaleActionError(Object.assign(new Error(), { digest: 'NEXT_HTTP_ERROR_FALLBACK;404' }))).toBe(false);
   });
 
   it('does not match unrelated errors', () => {

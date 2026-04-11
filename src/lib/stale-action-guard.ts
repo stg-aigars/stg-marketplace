@@ -20,12 +20,12 @@ export function isStaleActionError(error: unknown): boolean {
     return true;
   }
 
-  // Defensive: Next.js attaches framework error digests prefixed with NEXT_ on
-  // errors that bubble out of server action RSC responses. Catch them so a
-  // renamed / restructured error class still trips the reload path.
-  const digest = (error as { digest?: unknown }).digest;
-  if (typeof digest === 'string' && digest.startsWith('NEXT_')) return true;
-
+  // NOTE: we intentionally do NOT match on error.digest prefixes. NEXT_REDIRECT
+  // and NEXT_NOT_FOUND are normal control-flow digests thrown by redirect() and
+  // notFound() from server actions — a prefix match on 'NEXT_' would turn every
+  // aborted navigation into a full-page reload. If a future Next.js release
+  // renames UnrecognizedActionError, add the concrete digest value here —
+  // never a prefix.
   return false;
 }
 

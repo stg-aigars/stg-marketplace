@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
+import { toast } from 'sonner';
 import { StaleActionGuard } from './StaleActionGuard';
 
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  // Prefix the returned string so tests can prove the i18n key was resolved
+  // (a missed key would surface as the raw key or as empty text).
+  useTranslations: () => (key: string) => `t:${key}`,
 }));
 
 vi.mock('sonner', () => ({
@@ -31,6 +34,7 @@ describe('StaleActionGuard', () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.mocked(toast).mockClear();
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: originalLocation,
@@ -45,9 +49,12 @@ describe('StaleActionGuard', () => {
     });
   }
 
-  it('reloads the page when a stale Server Action error is rejected', () => {
+  it('reloads the page and shows the updating toast when a stale Server Action error is rejected', () => {
     render(<StaleActionGuard />);
     dispatchRejection(new Error('Server Action "abc" was not found on the server'));
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledWith('t:updating');
+    expect(reloadMock).not.toHaveBeenCalled();
     act(() => {
       vi.advanceTimersByTime(500);
     });
@@ -55,7 +62,7 @@ describe('StaleActionGuard', () => {
     expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
   });
 
-  it('renders the alert instead of reloading when a recent reload was attempted', () => {
+  it('renders the new-version alert instead of reloading when a recent reload was attempted', () => {
     sessionStorage.setItem(STORAGE_KEY, String(Date.now()));
     render(<StaleActionGuard />);
     dispatchRejection(new Error('Server Action "abc" was not found on the server'));
@@ -63,7 +70,8 @@ describe('StaleActionGuard', () => {
       vi.advanceTimersByTime(500);
     });
     expect(reloadMock).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(toast).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toContain('t:newVersionAvailable');
   });
 
   it('ignores unrelated rejection reasons', () => {
@@ -73,6 +81,7 @@ describe('StaleActionGuard', () => {
       vi.advanceTimersByTime(500);
     });
     expect(reloadMock).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });
