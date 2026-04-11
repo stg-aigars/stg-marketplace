@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/cn';
+
 interface TabItem {
   key: string;
   label: string;
@@ -13,9 +15,9 @@ interface TabsProps {
   className?: string;
 }
 
-function Tabs({ tabs, activeTab, onTabChange, className = '' }: TabsProps) {
+function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
   return (
-    <div className={`flex gap-1 border-b border-semantic-border-subtle ${className}`} role="tablist">
+    <div className={cn('flex gap-1 border-b border-semantic-border-subtle', className)} role="tablist">
       {tabs.map((tab) => {
         const isActive = tab.key === activeTab;
         return (
@@ -24,11 +26,12 @@ function Tabs({ tabs, activeTab, onTabChange, className = '' }: TabsProps) {
             role="tab"
             aria-selected={isActive}
             onClick={() => onTabChange(tab.key)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors duration-250 ease-out-custom relative ${
+            className={cn(
+              'px-4 py-2.5 text-sm font-medium transition-colors duration-250 ease-out-custom relative',
               isActive
                 ? 'text-semantic-brand'
-                : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'
-            }`}
+                : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary',
+            )}
           >
             {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
             {isActive && (

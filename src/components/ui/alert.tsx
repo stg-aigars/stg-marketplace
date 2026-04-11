@@ -2,6 +2,7 @@
 
 import type { ComponentType, ReactNode } from 'react';
 import { X } from '@phosphor-icons/react/ssr';
+import { cn } from '@/lib/cn';
 
 interface AlertProps {
   variant: 'error' | 'success' | 'warning' | 'info';
@@ -20,7 +21,7 @@ const variantClasses: Record<AlertProps['variant'], string> = {
   info: 'bg-semantic-brand/10 border-semantic-brand/30 text-semantic-text-primary',
 };
 
-export function Alert({ variant, children, icon: Icon, title, dismissible, onDismiss, className = '' }: AlertProps) {
+export function Alert({ variant, children, icon: Icon, title, dismissible, onDismiss, className }: AlertProps) {
   const content = Icon || title ? (
     <div className="flex gap-3">
       {Icon && (
@@ -42,7 +43,7 @@ export function Alert({ variant, children, icon: Icon, title, dismissible, onDis
   return (
     <div
       role="alert"
-      className={`rounded-lg border p-4 sm:p-5 text-sm ${variantClasses[variant]} ${className}`}
+      className={cn('rounded-lg border p-4 sm:p-5 text-sm', variantClasses[variant], className)}
     >
       {dismissible ? (
         <div className="flex items-start justify-between gap-3">

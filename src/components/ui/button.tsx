@@ -1,4 +1,5 @@
 import { forwardRef, isValidElement, cloneElement, type ButtonHTMLAttributes, type ReactElement } from 'react';
+import { cn } from '@/lib/cn';
 import { Spinner } from './spinner';
 
 type ButtonVariant = 'primary' | 'brand' | 'secondary' | 'ghost' | 'danger';
@@ -35,12 +36,12 @@ const sizeClasses: Record<ButtonSize, string> = {
 const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-250 ease-out-custom active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50';
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', loading, disabled, className = '', children, asChild, ...props }, ref) => {
-    const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  ({ variant = 'primary', size = 'md', loading, disabled, className, children, asChild, ...props }, ref) => {
+    const classes = cn(baseClasses, variantClasses[variant], sizeClasses[size], className);
 
     if (asChild && isValidElement(children)) {
       return cloneElement(children as ReactElement<Record<string, unknown>>, {
-        className: `${classes} ${(children.props as { className?: string }).className ?? ''}`.trim(),
+        className: cn(classes, (children.props as { className?: string }).className),
       });
     }
 

@@ -1,13 +1,14 @@
 import { type HTMLAttributes } from 'react';
+import { cn } from '@/lib/cn';
 
 interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-function Skeleton({ className = '', ...props }: SkeletonProps) {
+function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-semantic-bg-secondary ${className}`}
+      className={cn('animate-pulse rounded-md bg-semantic-bg-secondary', className)}
       {...props}
     />
   );

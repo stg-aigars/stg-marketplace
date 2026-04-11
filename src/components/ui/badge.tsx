@@ -1,5 +1,6 @@
 import { type HTMLAttributes } from 'react';
 import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { cn } from '@/lib/cn';
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted';
 type ConditionKey = 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts';
@@ -43,13 +44,17 @@ const conditionClasses: Record<ConditionKey, string> = {
   forParts: 'bg-condition-for-parts-bg text-condition-for-parts-text border-condition-for-parts',
 };
 
-function Badge({ variant = 'default', condition, dot, className = '', children, ...props }: BadgeProps) {
-  const classes = condition ? conditionClasses[condition] : variantClasses[variant];
+function Badge({ variant = 'default', condition, dot, className, children, ...props }: BadgeProps) {
+  const variantClass = condition ? conditionClasses[condition] : variantClasses[variant];
   const ConditionIcon = condition ? conditionIcons[condition] : (variantIcons[variant] ?? null);
 
   return (
     <span
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold ${classes} ${className}`}
+      className={cn(
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-md border-[1.5px] px-2.5 py-0.5 text-xs font-semibold',
+        variantClass,
+        className,
+      )}
       {...props}
     >
       {dot && (

@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import Link from 'next/link';
 import { Button } from './button';
+import { cn } from '@/lib/cn';
 
 interface EmptyStateLinkAction {
   label: string;
@@ -26,9 +27,9 @@ interface EmptyStateProps {
   className?: string;
 }
 
-function EmptyState({ icon: Icon, title, description, action, secondaryAction, className = '' }: EmptyStateProps) {
+function EmptyState({ icon: Icon, title, description, action, secondaryAction, className }: EmptyStateProps) {
   return (
-    <div className={`text-center py-16 ${className}`}>
+    <div className={cn('text-center py-16', className)}>
       {Icon && (
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl border-[1.5px] border-dashed border-semantic-border-default mb-4">
           <Icon size={36} className="text-semantic-brand" weight="regular" />

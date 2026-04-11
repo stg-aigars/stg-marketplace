@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { stripLocalePrefix } from '@/lib/locale-utils';
+import { cn } from '@/lib/cn';
 
 interface NavTabItem {
   key: string;
@@ -19,7 +20,7 @@ interface NavTabsProps {
   className?: string;
 }
 
-function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: NavTabsProps) {
+function NavTabs({ tabs, activeTab, variant = 'underline', className }: NavTabsProps) {
   const pathname = usePathname();
 
   const isActive = (tab: NavTabItem) => {
@@ -30,7 +31,7 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
 
   if (variant === 'pill') {
     return (
-      <div className={`flex flex-wrap gap-2 ${className}`}>
+      <div className={cn('flex flex-wrap gap-2', className)}>
         {tabs.map((tab) => {
           const active = isActive(tab);
           return (
@@ -38,11 +39,12 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
               key={tab.key}
               href={tab.href}
               aria-current={active ? 'page' : undefined}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-colors duration-250 ease-out-custom ${
+              className={cn(
+                'px-3 py-1.5 text-sm rounded-lg border transition-colors duration-250 ease-out-custom',
                 active
                   ? 'bg-semantic-brand text-semantic-text-inverse border-semantic-brand'
-                  : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle'
-              }`}
+                  : 'border-semantic-border-subtle text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle',
+              )}
             >
               {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
             </Link>
@@ -53,7 +55,7 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
   }
 
   return (
-    <nav aria-label="Navigation" className={`flex gap-1 border-b border-semantic-border-subtle ${className}`}>
+    <nav aria-label="Navigation" className={cn('flex gap-1 border-b border-semantic-border-subtle', className)}>
       {tabs.map((tab) => {
         const active = isActive(tab);
         return (
@@ -61,11 +63,10 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className = '' }: Nav
             key={tab.key}
             href={tab.href}
             aria-current={active ? 'page' : undefined}
-            className={`px-4 py-2 text-sm font-medium transition-colors duration-250 ease-out-custom relative sm:hover:text-semantic-text-secondary ${
-              active
-                ? 'text-semantic-brand'
-                : 'text-semantic-text-muted'
-            }`}
+            className={cn(
+              'px-4 py-2 text-sm font-medium transition-colors duration-250 ease-out-custom relative sm:hover:text-semantic-text-secondary',
+              active ? 'text-semantic-brand' : 'text-semantic-text-muted',
+            )}
           >
             {tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}
             {active && (

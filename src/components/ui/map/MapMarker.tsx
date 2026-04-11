@@ -4,7 +4,7 @@ import MapLibreGL, { type MarkerOptions } from "maplibre-gl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { cn } from "./utils";
+import { cn } from "@/lib/cn";
 import { MarkerContext, useMap, useMarkerContext } from "./context";
 
 export type MapMarkerProps = {

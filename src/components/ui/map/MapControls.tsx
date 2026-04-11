@@ -9,7 +9,7 @@ import {
   SpinnerGap,
 } from "@phosphor-icons/react/ssr";
 
-import { cn } from "./utils";
+import { cn } from "@/lib/cn";
 import { useMap } from "./context";
 
 export type MapControlsProps = {
