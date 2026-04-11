@@ -22,7 +22,7 @@ interface WantedRelatedRow {
   games: { image: string | null } | null;
 }
 
-const RELATED_SELECT = 'id, game_name, game_year, edition_year, language, publisher, version_thumbnail, country, notes, bgg_game_id, games:bgg_game_id(image)';
+const RELATED_SELECT = 'id, game_name, game_year, edition_year, language, publisher, version_thumbnail, country, notes, games:bgg_game_id(image)';
 const LIMIT = 4;
 
 export async function RelatedWants({ listingId, bggGameId, buyerId, gameName, buyerName }: RelatedWantsProps) {
@@ -60,54 +60,38 @@ export async function RelatedWants({ listingId, bggGameId, buyerId, gameName, bu
   return (
     <div className="mt-8 space-y-8">
       {otherWants.length > 0 && (
-        <section>
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
-            Other people looking for {gameName}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {otherWants.map((want) => (
-              <WantedListingCard
-                key={want.id}
-                id={want.id}
-                gameTitle={want.game_name}
-                gameYear={want.game_year}
-                editionYear={want.edition_year}
-                gameThumbnail={want.games?.image ?? null}
-                versionThumbnail={want.version_thumbnail}
-                language={want.language}
-                publisher={want.publisher}
-                buyerCountry={want.country}
-                notes={want.notes}
-              />
-            ))}
-          </div>
-        </section>
+        <WantsSection title={`Other people looking for ${gameName}`} wants={otherWants} />
       )}
-
       {buyerWants.length > 0 && (
-        <section>
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
-            More wants from {buyerName}
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {buyerWants.map((want) => (
-              <WantedListingCard
-                key={want.id}
-                id={want.id}
-                gameTitle={want.game_name}
-                gameYear={want.game_year}
-                editionYear={want.edition_year}
-                gameThumbnail={want.games?.image ?? null}
-                versionThumbnail={want.version_thumbnail}
-                language={want.language}
-                publisher={want.publisher}
-                buyerCountry={want.country}
-                notes={want.notes}
-              />
-            ))}
-          </div>
-        </section>
+        <WantsSection title={`More wants from ${buyerName}`} wants={buyerWants} />
       )}
     </div>
+  );
+}
+
+function WantsSection({ title, wants }: { title: string; wants: WantedRelatedRow[] }) {
+  return (
+    <section>
+      <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
+        {title}
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {wants.map((want) => (
+          <WantedListingCard
+            key={want.id}
+            id={want.id}
+            gameTitle={want.game_name}
+            gameYear={want.game_year}
+            editionYear={want.edition_year}
+            gameThumbnail={want.games?.image ?? null}
+            versionThumbnail={want.version_thumbnail}
+            language={want.language}
+            publisher={want.publisher}
+            buyerCountry={want.country}
+            notes={want.notes}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

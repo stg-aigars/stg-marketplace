@@ -5,7 +5,7 @@ import { ImageSquare, Tag, Translate, Buildings, CalendarBlank } from '@phosphor
 import { Card, CardBody, ShareButtons, Breadcrumb, Avatar } from '@/components/ui';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { toBggFullSize, isBggImage } from '@/lib/bgg/utils';
+import { toBggFullSize, isBggImage, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { formatDate } from '@/lib/date-utils';
 import { getWantedListingById } from '@/lib/wanted/actions';
 import { RelatedWants } from './RelatedWants';
@@ -47,14 +47,8 @@ export default async function WantedDetailPage(props: Props) {
     toBggFullSize(listing.thumbnail) ??
     null;
 
-  // Player count display — same logic as listings detail page
-  const playerCountDisplay = listing.min_players
-    ? listing.max_players && listing.max_players !== listing.min_players
-      ? `${listing.min_players}–${listing.max_players}`
-      : `${listing.min_players}`
-    : listing.player_count ?? null;
-
-  const playingTime = listing.playing_time && listing.playing_time !== '0' ? listing.playing_time : null;
+  const playerCountDisplay = formatPlayerCount(listing.min_players, listing.max_players, listing.player_count);
+  const playingTime = formatPlayingTime(listing.playing_time);
 
   const hasGameDetails =
     playerCountDisplay ||
@@ -203,13 +197,10 @@ export default async function WantedDetailPage(props: Props) {
             </Card>
           )}
 
-          {/* Share */}
-          <div className="flex items-center gap-3">
-            <ShareButtons
-              url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/wanted/${listing.id}`}
-              title={`Wanted: ${listing.game_name}`}
-            />
-          </div>
+          <ShareButtons
+            url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/wanted/${listing.id}`}
+            title={`Wanted: ${listing.game_name}`}
+          />
 
           {/* Game details — mobile only (desktop copy is in the left column) */}
           {hasGameDetails && (

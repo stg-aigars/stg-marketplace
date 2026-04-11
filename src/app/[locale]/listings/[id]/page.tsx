@@ -13,7 +13,7 @@ import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
 import { formatDate } from '@/lib/date-utils';
-import { decodeHTMLEntities, getWeightLabel, toBggFullSize } from '@/lib/bgg/utils';
+import { toBggFullSize, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
 import { ListingNavigation } from './ListingNavigation';
@@ -269,16 +269,9 @@ export default async function ListingDetailPage(
     shippingFromCents = getMinShippingPriceCents(sellerCountry);
   }
 
-  // Player count display
   const games = listing.games;
-  const playerCountDisplay = games?.min_players
-    ? games.max_players && games.max_players !== games.min_players
-      ? `${games.min_players}–${games.max_players}`
-      : `${games.min_players}`
-    : games?.player_count ?? null;
-
-  // Playing time display
-  const playingTime = games?.playing_time && games.playing_time !== '0' ? games.playing_time : null;
+  const playerCountDisplay = formatPlayerCount(games?.min_players, games?.max_players, games?.player_count);
+  const playingTime = formatPlayingTime(games?.playing_time);
 
   // Expansion count for header
   const expansionCount = listingExpansions?.length ?? 0;

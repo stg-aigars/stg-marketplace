@@ -58,6 +58,32 @@ export function toBggFullSize(url: string | null | undefined): string | null {
 }
 
 /**
+ * Format a BGG player count range for display. Prefers the numeric min/max
+ * from the metadata; falls back to the raw player_count string if those are
+ * missing (legacy data path).
+ */
+export function formatPlayerCount(
+  minPlayers: number | null | undefined,
+  maxPlayers: number | null | undefined,
+  fallback: string | null | undefined,
+): string | null {
+  if (minPlayers) {
+    return maxPlayers && maxPlayers !== minPlayers
+      ? `${minPlayers}–${maxPlayers}`
+      : `${minPlayers}`;
+  }
+  return fallback ?? null;
+}
+
+/**
+ * Normalize BGG playing_time for display. BGG sometimes returns '0' for
+ * unknown, which should render as no value.
+ */
+export function formatPlayingTime(playingTime: string | null | undefined): string | null {
+  return playingTime && playingTime !== '0' ? playingTime : null;
+}
+
+/**
  * Map BGG weight (1-5 scale) to a human-readable complexity label.
  */
 export function getWeightLabel(weight: number): string {
