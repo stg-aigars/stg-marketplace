@@ -65,6 +65,20 @@ describe('calculateOrderPricing', () => {
     expect(result.commissionCents).toBe(200);
     expect(result.walletCreditCents).toBe(1800);
   });
+
+  // Refund invariant: refundOrder() refunds total_amount_cents (split between card
+  // and wallet). Dispute paths used to compute this as items + shipping. If a future
+  // platform fee gets added to totalChargeCents without updating refundOrder's split
+  // logic, disputes would silently over-refund. This assertion trips CI instead.
+  it.each([
+    [2000, 350],
+    [1500, 0],
+    [9999, 500],
+    [1, 1],
+  ])('total_amount_cents equals items_total + shipping (items=%i, shipping=%i)', (items, shipping) => {
+    const result = calculateOrderPricing(items, shipping);
+    expect(result.totalChargeCents).toBe(items + shipping);
+  });
 });
 
 describe('calculateCheckoutPricing', () => {

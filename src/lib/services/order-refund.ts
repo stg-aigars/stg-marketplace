@@ -10,6 +10,23 @@ import { refundToWallet } from '@/lib/services/wallet';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { PaymentMethod } from '@/lib/orders/types';
 
+/**
+ * Thrown when a refund could not be initiated at all — neither the card leg
+ * nor the wallet leg moved any money. Callers that have already claimed
+ * upstream state (e.g. dispute resolution) should roll that state back before
+ * propagating this error.
+ */
+export class RefundInitiationError extends Error {
+  constructor(
+    message: string,
+    public readonly orderId: string,
+    public readonly orderNumber: string
+  ) {
+    super(message);
+    this.name = 'RefundInitiationError';
+  }
+}
+
 interface RefundableOrder {
   buyer_id: string;
   total_amount_cents: number;

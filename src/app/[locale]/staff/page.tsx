@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -11,7 +12,7 @@ export default async function StaffDashboardPage() {
   const { serviceClient } = await requireServerAuth();
 
   // Fetch metrics in parallel
-  const [ordersResult, revenueResult, pendingWithdrawalsResult, openDisputesResult, escalatedDisputesResult, walletBalanceResult] = await Promise.all([
+  const [ordersResult, revenueResult, pendingWithdrawalsResult, openDisputesResult, escalatedDisputesResult, walletBalanceResult, refundIssuesResult] = await Promise.all([
     serviceClient
       .from('orders')
       .select('id', { count: 'exact', head: true }),
@@ -34,6 +35,12 @@ export default async function StaffDashboardPage() {
       .is('resolved_at', null),
     serviceClient
       .rpc('get_total_wallet_balance'),
+    // Refund issues: any order whose refund is failed or partial — support
+    // queue for the new refund-to-source failure mode (Step 1b).
+    serviceClient
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .in('refund_status', ['failed', 'partial']),
   ]);
 
   const totalOrders = ordersResult.count ?? 0;
@@ -46,8 +53,9 @@ export default async function StaffDashboardPage() {
   const openDisputeCount = openDisputesResult.count ?? 0;
   const escalatedDisputeCount = escalatedDisputesResult.count ?? 0;
   const totalWalletBalanceCents = (walletBalanceResult.data as number) ?? 0;
+  const refundIssueCount = refundIssuesResult.count ?? 0;
 
-  const metrics = [
+  const metrics: Array<{ label: string; value: string; href?: string }> = [
     { label: 'Total orders', value: totalOrders.toString() },
     { label: 'Total revenue', value: formatCentsToCurrency(totalRevenueCents) },
     { label: 'Total commissions', value: formatCentsToCurrency(totalCommissionCents) },
@@ -55,21 +63,27 @@ export default async function StaffDashboardPage() {
     { label: 'Wallet liability', value: formatCentsToCurrency(totalWalletBalanceCents) },
     { label: 'Open disputes', value: openDisputeCount.toString() },
     { label: 'Escalated disputes', value: escalatedDisputeCount.toString() },
+    { label: 'Refund issues', value: refundIssueCount.toString(), href: '/staff/orders?refund_status=issues' },
   ];
 
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric) => (
-          <Card key={metric.label}>
-            <CardBody className="text-center py-6">
-              <p className="text-sm text-semantic-text-muted">{metric.label}</p>
-              <p className="text-2xl font-bold text-semantic-text-heading mt-1">
-                {metric.value}
-              </p>
-            </CardBody>
-          </Card>
-        ))}
+        {metrics.map((metric) => {
+          const card = (
+            <Card key={metric.label} hoverable={!!metric.href}>
+              <CardBody className="text-center py-6">
+                <p className="text-sm text-semantic-text-muted">{metric.label}</p>
+                <p className="text-2xl font-bold text-semantic-text-heading mt-1">
+                  {metric.value}
+                </p>
+              </CardBody>
+            </Card>
+          );
+          return metric.href ? (
+            <Link key={metric.label} href={metric.href}>{card}</Link>
+          ) : card;
+        })}
       </div>
     </div>
   );

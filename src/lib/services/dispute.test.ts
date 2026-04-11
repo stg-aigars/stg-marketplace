@@ -3,7 +3,6 @@ import {
   canOpenDispute,
   canEscalateDispute,
   canWithdrawDispute,
-  calculateRefundAmount,
 } from './dispute-validation';
 
 describe('canOpenDispute', () => {
@@ -197,28 +196,3 @@ describe('canWithdrawDispute', () => {
   });
 });
 
-describe('calculateRefundAmount', () => {
-  it('returns items + shipping total', () => {
-    const result = calculateRefundAmount({
-      items_total_cents: 2000,
-      shipping_cost_cents: 350,
-    });
-    expect(result).toBe(2350);
-  });
-
-  it('handles zero shipping', () => {
-    const result = calculateRefundAmount({
-      items_total_cents: 1500,
-      shipping_cost_cents: 0,
-    });
-    expect(result).toBe(1500);
-  });
-
-  it('handles large amounts', () => {
-    const result = calculateRefundAmount({
-      items_total_cents: 9999,
-      shipping_cost_cents: 500,
-    });
-    expect(result).toBe(10499);
-  });
-});

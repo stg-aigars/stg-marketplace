@@ -82,13 +82,3 @@ export function canWithdrawDispute(
   }
   return { allowed: true };
 }
-
-/**
- * Calculate the full refund amount for a dispute.
- * Returns item price + shipping (everything the buyer paid).
- */
-export function calculateRefundAmount(
-  order: Pick<OrderRow, 'items_total_cents' | 'shipping_cost_cents'>
-): number {
-  return order.items_total_cents + order.shipping_cost_cents;
-}

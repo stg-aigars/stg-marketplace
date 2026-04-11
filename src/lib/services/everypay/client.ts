@@ -213,6 +213,20 @@ export async function refundPayment(
   paymentReference: string,
   amountCents: number
 ): Promise<EveryPayRefundResponse> {
+  // Staging-only test hook: allows forcing a refund failure to exercise the
+  // "EveryPay rejected the refund" branch in dispute resolution and cron flows
+  // without having to corrupt real payment references. Set STG_FORCE_REFUND_FAILURE
+  // to a payment reference (or "*" for any) to make this call throw. Guarded to
+  // non-production so it can't accidentally brick a live refund.
+  if (process.env.NODE_ENV !== 'production' && process.env.STG_FORCE_REFUND_FAILURE) {
+    const match = process.env.STG_FORCE_REFUND_FAILURE;
+    if (match === '*' || match === paymentReference) {
+      throw new EveryPayError(
+        `[STG_FORCE_REFUND_FAILURE] Simulated refund failure for ${paymentReference}`
+      );
+    }
+  }
+
   const config = getConfig();
 
   const body: RefundPaymentRequest = {

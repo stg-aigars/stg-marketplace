@@ -19,6 +19,8 @@ interface StaffOrderRow {
   total_amount_cents: number;
   item_count: number;
   payment_method: string | null;
+  refund_status: string | null;
+  refund_amount_cents: number | null;
   created_at: string;
   order_items: Array<{ listing_id: string; listings: { game_name: string } | null }>;
   listings: { game_name: string } | null;
@@ -28,7 +30,7 @@ interface StaffOrderRow {
 
 export default async function StaffOrdersPage(
   props: {
-    searchParams: Promise<{ status?: string }>;
+    searchParams: Promise<{ status?: string; refund_status?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -37,7 +39,8 @@ export default async function StaffOrdersPage(
   let query = serviceClient
     .from('orders')
     .select(`
-      id, order_number, status, total_amount_cents, item_count, payment_method, created_at,
+      id, order_number, status, total_amount_cents, item_count, payment_method,
+      refund_status, refund_amount_cents, created_at,
       order_items(listing_id, listings(game_name)),
       listings(game_name),
       buyer_profile:user_profiles!orders_buyer_id_fkey(full_name),
@@ -46,7 +49,9 @@ export default async function StaffOrdersPage(
     .order('created_at', { ascending: false })
     .limit(100);
 
-  if (searchParams.status) {
+  if (searchParams.refund_status === 'issues') {
+    query = query.in('refund_status', ['failed', 'partial']);
+  } else if (searchParams.status) {
     query = query.eq('status', searchParams.status);
   }
 
@@ -67,8 +72,9 @@ export default async function StaffOrdersPage(
             label: ORDER_STATUS_CONFIG[s]?.label ?? s,
             href: `/staff/orders?status=${s}`,
           })),
+          { key: 'refund_issues', label: 'Refund issues', href: '/staff/orders?refund_status=issues' },
         ]}
-        activeTab={searchParams.status ?? 'all'}
+        activeTab={searchParams.refund_status === 'issues' ? 'refund_issues' : (searchParams.status ?? 'all')}
         variant="pill"
         className="mb-6"
       />
@@ -82,7 +88,7 @@ export default async function StaffOrdersPage(
               <Card hoverable>
                 <CardBody className="flex items-center justify-between py-3 px-4">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-sm text-semantic-text-heading">
                         {order.order_number}
                       </span>
@@ -91,6 +97,12 @@ export default async function StaffOrdersPage(
                       </Badge>
                       {order.payment_method === 'wallet' && (
                         <Badge variant="default">wallet</Badge>
+                      )}
+                      {order.refund_status === 'failed' && (
+                        <Badge variant="error">refund failed</Badge>
+                      )}
+                      {order.refund_status === 'partial' && (
+                        <Badge variant="warning">refund partial</Badge>
                       )}
                     </div>
                     <p className="text-sm text-semantic-text-secondary mt-0.5 truncate">
