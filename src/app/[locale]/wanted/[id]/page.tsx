@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Card, CardBody, ShareButtons, BackLink } from '@/components/ui';
-import { GameIdentityRow } from '@/components/listings/atoms';
+import { ImageSquare, Tag, Translate, Buildings, CalendarBlank } from '@phosphor-icons/react/ssr';
+import { Card, CardBody, ShareButtons, Breadcrumb, Avatar } from '@/components/ui';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
+import { toBggFullSize, isBggImage } from '@/lib/bgg/utils';
+import { formatDate } from '@/lib/date-utils';
 import { getWantedListingById } from '@/lib/wanted/actions';
 import { RelatedWants } from './RelatedWants';
 
@@ -38,7 +41,11 @@ export default async function WantedDetailPage(props: Props) {
   if (!listing) notFound();
 
   const hasEdition = listing.version_source !== null;
-  const displayImage = listing.version_thumbnail ?? listing.image ?? listing.thumbnail;
+  const gameImage =
+    toBggFullSize(listing.version_thumbnail) ??
+    toBggFullSize(listing.image) ??
+    toBggFullSize(listing.thumbnail) ??
+    null;
 
   // Player count display — same logic as listings detail page
   const playerCountDisplay = listing.min_players
@@ -48,6 +55,15 @@ export default async function WantedDetailPage(props: Props) {
     : listing.player_count ?? null;
 
   const playingTime = listing.playing_time && listing.playing_time !== '0' ? listing.playing_time : null;
+
+  const hasGameDetails =
+    playerCountDisplay ||
+    playingTime ||
+    (listing.weight != null && listing.weight > 0) ||
+    (listing.min_age != null && listing.min_age > 0) ||
+    (listing.categories?.length ?? 0) > 0 ||
+    (listing.mechanics?.length ?? 0) > 0 ||
+    listing.description;
 
   const gamesForCard = {
     name: listing.game_display_name ?? listing.game_name,
@@ -60,63 +76,154 @@ export default async function WantedDetailPage(props: Props) {
     mechanics: listing.mechanics,
   };
 
+  const buyerCountryName = getCountryName(listing.country);
+  const buyerFlagClass = getCountryFlag(listing.country);
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/wanted" label="Back to wanted games" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <Breadcrumb
+        items={[
+          { label: 'Wanted', href: '/wanted' },
+          { label: listing.game_name },
+        ]}
+      />
 
-      <div className="space-y-6">
-        {/* Game identity */}
-        <GameIdentityRow
-          thumbnail={displayImage}
-          name={listing.game_name}
-          versionName={hasEdition ? listing.version_name : null}
-          language={hasEdition ? listing.language : null}
-          publisher={hasEdition ? listing.publisher : null}
-          year={hasEdition ? listing.edition_year : null}
-          size="xl"
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left column: Game image hero + Game details (desktop only) */}
+        <div className="space-y-6">
+          <Card>
+            <div className="relative aspect-square bg-semantic-bg-surface rounded-lg overflow-hidden flex items-center justify-center">
+              {gameImage ? (
+                <Image
+                  src={gameImage}
+                  alt={listing.game_name}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  unoptimized={isBggImage(gameImage)}
+                  priority
+                />
+              ) : (
+                <ImageSquare size={96} className="text-semantic-text-muted" />
+              )}
+            </div>
+          </Card>
 
-        {!hasEdition && (
-          <p className="text-sm text-semantic-text-muted">Any edition</p>
-        )}
+          {hasGameDetails && (
+            <div className="hidden lg:block">
+              <GameDetailsCard
+                games={gamesForCard}
+                bggGameId={listing.bgg_game_id}
+                listingGameName={listing.game_name}
+                playerCountDisplay={playerCountDisplay}
+                playingTime={playingTime}
+              />
+            </div>
+          )}
+        </div>
 
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm text-semantic-text-muted">Buyer</p>
-            <p className="text-sm text-semantic-text-primary">
-              <span className={`${getCountryFlag(listing.country)} mr-1.5`} />
-              {listing.buyer_name || 'Anonymous'}
-              {' in '}
-              {getCountryName(listing.country)}
-            </p>
+        {/* Right column: About this want */}
+        <div className="space-y-6">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+            {listing.game_name}
+          </h1>
+
+          {/* Edition details — compact icon row */}
+          {hasEdition && (listing.version_name || listing.language || listing.publisher || listing.edition_year) ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
+              {listing.version_name && (
+                <div className="flex items-center gap-1.5">
+                  <Tag size={15} className="flex-shrink-0" />
+                  <span>{listing.version_name}</span>
+                </div>
+              )}
+              {listing.language && (
+                <div className="flex items-center gap-1.5">
+                  <Translate size={15} className="flex-shrink-0" />
+                  <span>{listing.language}</span>
+                </div>
+              )}
+              {listing.publisher && (
+                <div className="flex items-center gap-1.5">
+                  <Buildings size={15} className="flex-shrink-0" />
+                  <span>{listing.publisher}</span>
+                </div>
+              )}
+              {listing.edition_year && (
+                <div className="flex items-center gap-1.5">
+                  <CalendarBlank size={15} className="flex-shrink-0" />
+                  <span>{listing.edition_year}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-semantic-text-muted">Any edition</p>
+          )}
+
+          {/* Buyer info */}
+          <Card>
+            <CardBody>
+              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                Buyer
+              </h2>
+              <div className="flex items-center gap-3">
+                <Avatar name={listing.buyer_name || '?'} src={listing.buyer_avatar_url} />
+                <div>
+                  <p className="font-medium text-semantic-text-heading">
+                    {listing.buyer_name || 'Anonymous'}
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
+                    {buyerFlagClass && (
+                      <span className={`${buyerFlagClass}`} title={buyerCountryName} />
+                    )}
+                    <span>{buyerCountryName}</span>
+                    {listing.buyer_created_at && (
+                      <>
+                        <span className="mx-1">&middot;</span>
+                        <span>Member since {formatDate(listing.buyer_created_at)}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Notes from buyer */}
+          {listing.notes && (
+            <Card>
+              <CardBody>
+                <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+                  Notes from buyer
+                </h2>
+                <p className="text-semantic-text-secondary whitespace-pre-line">
+                  {listing.notes}
+                </p>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Share */}
+          <div className="flex items-center gap-3">
+            <ShareButtons
+              url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/wanted/${listing.id}`}
+              title={`Wanted: ${listing.game_name}`}
+            />
           </div>
 
-          <ShareButtons
-            url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/wanted/${listing.id}`}
-            title={`Wanted: ${listing.game_name}`}
-          />
+          {/* Game details — mobile only (desktop copy is in the left column) */}
+          {hasGameDetails && (
+            <div className="lg:hidden">
+              <GameDetailsCard
+                games={gamesForCard}
+                bggGameId={listing.bgg_game_id}
+                listingGameName={listing.game_name}
+                playerCountDisplay={playerCountDisplay}
+                playingTime={playingTime}
+              />
+            </div>
+          )}
         </div>
-      </div>
-
-      {listing.notes && (
-        <Card className="mt-6">
-          <CardBody>
-            <p className="text-sm text-semantic-text-muted mb-1">Notes from buyer</p>
-            <p className="text-sm text-semantic-text-primary whitespace-pre-line">
-              {listing.notes}
-            </p>
-          </CardBody>
-        </Card>
-      )}
-
-      <div className="mt-6">
-        <GameDetailsCard
-          games={gamesForCard}
-          bggGameId={listing.bgg_game_id}
-          listingGameName={listing.game_name}
-          playerCountDisplay={playerCountDisplay}
-          playingTime={playingTime}
-        />
       </div>
 
       <RelatedWants

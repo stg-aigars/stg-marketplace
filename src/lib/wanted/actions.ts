@@ -162,13 +162,19 @@ export async function getWantedListingById(
     .from('wanted_listings')
     .select(`
       *,
-      games:bgg_game_id (name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics),
-      buyer:buyer_id (full_name)
+      games:bgg_game_id (name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics)
     `)
     .eq('id', id)
     .single();
 
   if (!listing) return null;
+
+  // Fetch buyer profile separately (public_profiles view — safe for anonymous access)
+  const { data: buyerProfile } = await supabase
+    .from('public_profiles')
+    .select('full_name, avatar_url, created_at')
+    .eq('id', (listing as { buyer_id: string }).buyer_id)
+    .single<{ full_name: string | null; avatar_url: string | null; created_at: string | null }>();
 
   const games = (listing as Record<string, unknown>).games as {
     name: string | null;
@@ -185,7 +191,6 @@ export async function getWantedListingById(
     categories: string[] | null;
     mechanics: string[] | null;
   } | null;
-  const buyer = (listing as Record<string, unknown>).buyer as { full_name: string | null } | null;
 
   return {
     ...listing,
@@ -202,6 +207,8 @@ export async function getWantedListingById(
     weight: games?.weight ?? null,
     categories: games?.categories ?? null,
     mechanics: games?.mechanics ?? null,
-    buyer_name: buyer?.full_name ?? '',
+    buyer_name: buyerProfile?.full_name ?? '',
+    buyer_avatar_url: buyerProfile?.avatar_url ?? null,
+    buyer_created_at: buyerProfile?.created_at ?? null,
   } as WantedListingWithDetails;
 }

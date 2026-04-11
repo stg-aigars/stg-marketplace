@@ -49,6 +49,8 @@ export interface WantedListingGameMetadata {
 
 export interface WantedListingWithDetails extends WantedListingWithGame, WantedListingGameMetadata {
   buyer_name: string;
+  buyer_avatar_url: string | null;
+  buyer_created_at: string | null;
 }
 
 export const MAX_NOTE_LENGTH = 500;
