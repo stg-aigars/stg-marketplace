@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
 import { isAuctionWithBids, type ListingType } from '@/lib/listings/types';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface ListingOverflowMenuProps {
   listingId: string;
@@ -20,19 +21,7 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
   const menuRef = useRef<HTMLDivElement>(null);
   const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
 
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
+  useClickOutside(() => setOpen(false), open, menuRef);
 
   if (hasAuctionBids) return null;
 

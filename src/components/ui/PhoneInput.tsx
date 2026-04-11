@@ -43,6 +43,10 @@ function PhoneInput({ label, value, onChange, defaultCountry, error, id }: Phone
   const config = PHONE_COUNTRY_CONFIGS.find(c => c.code === selectedCountry);
   const flagClass = getCountryFlag(selectedCountry);
 
+  // Note: kept as an inline effect rather than using useClickOutside / useEscapeKey
+  // because of the focusout listener below — closing the country dropdown when
+  // keyboard focus leaves the widget is essential for tab-through accessibility,
+  // and the shared hooks don't (yet) cover that case.
   useEffect(() => {
     if (!open) return;
 
