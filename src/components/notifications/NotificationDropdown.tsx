@@ -38,14 +38,15 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
   }, [open, loaded, fetchNotifications]);
 
   // On route change: close the dropdown and invalidate the cache so the next
-  // open refetches. Merged from two separate pathname effects that were
-  // previously doing these side-effects independently.
+  // open refetches. `setLoaded(false)` is unconditional — React deduplicates
+  // setState calls that don't change the value, so when `loaded` is already
+  // false this is a no-op, and we keep `loaded` out of the dep array.
   useEffect(() => {
     if (pathname === lastPathRef.current) return;
     lastPathRef.current = pathname;
     setOpen(false);
-    if (loaded) setLoaded(false);
-  }, [pathname, loaded]);
+    setLoaded(false);
+  }, [pathname]);
 
   useClickOutside(() => setOpen(false), open, containerRef);
   useEscapeKey(() => setOpen(false), open);
