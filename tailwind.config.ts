@@ -103,8 +103,10 @@ const config: Config = {
         ...shadows,
       },
       transitionTimingFunction: {
-        'ease-out-custom': 'cubic-bezier(0.2, 0, 0, 1)',
-        'ease-in-custom': 'cubic-bezier(0.4, 0, 1, 0.8)',
+        // Keys are Tailwind suffixes: 'out-custom' → class 'ease-out-custom'.
+        // Do NOT prefix with 'ease-' here; that would generate 'ease-ease-*'.
+        'out-custom': 'cubic-bezier(0.2, 0, 0, 1)',
+        'in-custom': 'cubic-bezier(0.4, 0, 1, 0.8)',
       },
       transitionDuration: {
         '250': '250ms',

@@ -7,6 +7,7 @@ import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ss
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
 import { isAuctionWithBids, type ListingType } from '@/lib/listings/types';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface ListingOverflowMenuProps {
   listingId: string;
@@ -22,6 +23,7 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
   const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
 
   useClickOutside(() => setOpen(false), open, menuRef);
+  useEscapeKey(() => setOpen(false), open);
 
   if (hasAuctionBids) return null;
 

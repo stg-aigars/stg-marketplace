@@ -9,6 +9,7 @@ import { NotificationItem } from './NotificationItem';
 import { getNotifications, markAllNotificationsRead } from '@/lib/notifications/actions';
 import type { NotificationRow } from '@/lib/notifications/types';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface NotificationDropdownProps {
   unreadCount: number;
@@ -36,22 +37,19 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
     }
   }, [open, loaded, fetchNotifications]);
 
-  // Refetch when pathname changes (only if already loaded)
+  // On route change: close the dropdown and invalidate the cache so the next
+  // open refetches. `setLoaded(false)` is unconditional — React deduplicates
+  // setState calls that don't change the value, so when `loaded` is already
+  // false this is a no-op, and we keep `loaded` out of the dep array.
   useEffect(() => {
-    if (pathname !== lastPathRef.current) {
-      lastPathRef.current = pathname;
-      if (loaded) {
-        setLoaded(false); // Will refetch on next open
-      }
-    }
-  }, [pathname, loaded]);
+    if (pathname === lastPathRef.current) return;
+    lastPathRef.current = pathname;
+    setOpen(false);
+    setLoaded(false);
+  }, [pathname]);
 
   useClickOutside(() => setOpen(false), open, containerRef);
-
-  // Close on route change
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  useEscapeKey(() => setOpen(false), open);
 
   const handleMarkAllRead = async () => {
     await markAllNotificationsRead();
