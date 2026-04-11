@@ -3,7 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CaretDown, X, ShoppingCart, Bell, UserCircle } from '@phosphor-icons/react/ssr';
+import {
+  CaretDown,
+  X,
+  ShoppingCart,
+  Bell,
+  UserCircle,
+  Storefront,
+  Wallet,
+  Package,
+  ShieldStar,
+  SignOut,
+} from '@phosphor-icons/react/ssr';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Avatar, Button, CountBadge } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
@@ -82,7 +94,7 @@ function SiteHeader() {
       <Link href="/browse" className={navLinkClass('/browse')}>
         Browse
       </Link>
-      <Button variant="brand" size="sm" asChild className="min-h-0 py-1.5 text-base">
+      <Button variant="brand" size="sm" asChild className="!min-h-0 !py-1.5 !text-base">
         <Link href="/sell">Sell a game</Link>
       </Button>
     </>
@@ -129,7 +141,7 @@ function SiteHeader() {
             {loading ? (
               <div className="w-20 h-8 rounded-md bg-semantic-bg-secondary animate-pulse" />
             ) : !user ? (
-              <Button variant="secondary" size="sm" asChild className="min-h-0 py-1.5 text-base">
+              <Button variant="secondary" size="sm" asChild className="!min-h-0 !py-1.5 !text-base">
                 <Link href="/auth/signin">Sign in</Link>
               </Button>
             ) : (
@@ -153,25 +165,48 @@ function SiteHeader() {
                   <div
                     ref={dropdownRef}
                     role="menu"
-                    className="absolute right-0 mt-1 w-48 rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg py-1"
+                    className="absolute right-0 mt-1 w-72 rounded-lg bg-semantic-bg-elevated border border-semantic-border-subtle shadow-lg py-1 overflow-hidden"
                   >
+                    <Link
+                      href="/account/settings"
+                      role="menuitem"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 border-b border-semantic-border-subtle sm:hover:bg-semantic-bg-secondary transition-colors duration-250 ease-out-custom"
+                    >
+                      <Avatar name={displayName} src={profile?.avatar_url} size="md" className="shrink-0" />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-medium text-semantic-text-primary truncate">
+                          {profile?.full_name || user.email || 'Your account'}
+                        </span>
+                        {profile?.full_name && user.email && (
+                          <span className="text-xs text-semantic-text-tertiary truncate">
+                            {user.email}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
                     {isSeller && (
                       <>
-                        <DropdownLink href="/account/orders?tab=sales" label="Sales" onClose={() => setDropdownOpen(false)} />
-                        <DropdownLink href="/account/wallet" label="Wallet" onClose={() => setDropdownOpen(false)} />
+                        <DropdownLink href="/account/orders?tab=sales" label="Sales" icon={Storefront} onClose={() => setDropdownOpen(false)} />
+                        <DropdownLink href="/account/wallet" label="Wallet" icon={Wallet} onClose={() => setDropdownOpen(false)} />
+                        <div className="border-t border-semantic-border-subtle my-1" />
                       </>
                     )}
-                    <DropdownLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setDropdownOpen(false)} />
-                    <DropdownLink href="/account" label="Account" onClose={() => setDropdownOpen(false)} />
+                    <DropdownLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setDropdownOpen(false)} />
+                    <DropdownLink href="/account" label="Account" icon={UserCircle} onClose={() => setDropdownOpen(false)} />
                     {profile?.is_staff && (
-                      <DropdownLink href="/staff" label="Staff" onClose={() => setDropdownOpen(false)} />
+                      <>
+                        <div className="border-t border-semantic-border-subtle my-1" />
+                        <DropdownLink href="/staff" label="Staff" icon={ShieldStar} onClose={() => setDropdownOpen(false)} />
+                      </>
                     )}
                     <div className="border-t border-semantic-border-subtle my-1" />
                     <button
                       role="menuitem"
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
+                      className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
                     >
+                      <SignOut size={18} className="shrink-0" />
                       Sign out
                     </button>
                   </div>
@@ -241,21 +276,43 @@ function SiteHeader() {
               </Button>
             ) : (
               <>
+                <Link
+                  href="/account/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 py-3 border-b border-semantic-border-subtle active:bg-semantic-bg-secondary transition-colors duration-250 ease-out-custom"
+                >
+                  <Avatar name={displayName} src={profile?.avatar_url} size="md" className="shrink-0" />
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-sm font-medium text-semantic-text-primary truncate">
+                      {profile?.full_name || user.email || 'Your account'}
+                    </span>
+                    {profile?.full_name && user.email && (
+                      <span className="text-xs text-semantic-text-tertiary truncate">
+                        {user.email}
+                      </span>
+                    )}
+                  </div>
+                </Link>
                 {isSeller && (
                   <>
-                    <MobileLink href="/account/orders?tab=sales" label="Sales" onClose={() => setMobileOpen(false)} />
-                    <MobileLink href="/account/wallet" label="Wallet" onClose={() => setMobileOpen(false)} />
+                    <MobileLink href="/account/orders?tab=sales" label="Sales" icon={Storefront} onClose={() => setMobileOpen(false)} />
+                    <MobileLink href="/account/wallet" label="Wallet" icon={Wallet} onClose={() => setMobileOpen(false)} />
                   </>
                 )}
-                <MobileLink href="/account/orders?tab=purchases" label="Purchases" onClose={() => setMobileOpen(false)} />
-                <MobileLink href="/account" label="Account" onClose={() => setMobileOpen(false)} />
+                <MobileLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setMobileOpen(false)} />
+                <MobileLink href="/account" label="Account" icon={UserCircle} onClose={() => setMobileOpen(false)} />
                 {profile?.is_staff && (
-                  <MobileLink href="/staff" label="Staff" onClose={() => setMobileOpen(false)} />
+                  <>
+                    <div className="border-t border-semantic-border-subtle my-1" />
+                    <MobileLink href="/staff" label="Staff" icon={ShieldStar} onClose={() => setMobileOpen(false)} />
+                  </>
                 )}
+                <div className="border-t border-semantic-border-subtle my-1" />
                 <button
                   onClick={handleSignOut}
-                  className="py-2.5 text-left text-semantic-text-secondary active:text-semantic-text-primary font-medium"
+                  className="flex items-center gap-3 py-3 text-left text-semantic-text-secondary active:text-semantic-text-primary font-medium"
                 >
+                  <SignOut size={20} className="shrink-0" />
                   Sign out
                 </button>
               </>
@@ -267,26 +324,48 @@ function SiteHeader() {
   );
 }
 
-function DropdownLink({ href, label, onClose }: { href: string; label: string; onClose: () => void }) {
+function DropdownLink({
+  href,
+  label,
+  icon: Icon,
+  onClose,
+}: {
+  href: string;
+  label: string;
+  icon?: PhosphorIcon;
+  onClose: () => void;
+}) {
   return (
     <Link
       href={href}
       role="menuitem"
-      className="block px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary"
+      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-semantic-text-secondary sm:hover:bg-semantic-bg-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
       onClick={onClose}
     >
+      {Icon && <Icon size={18} className="shrink-0" />}
       {label}
     </Link>
   );
 }
 
-function MobileLink({ href, label, onClose }: { href: string; label: string; onClose: () => void }) {
+function MobileLink({
+  href,
+  label,
+  icon: Icon,
+  onClose,
+}: {
+  href: string;
+  label: string;
+  icon?: PhosphorIcon;
+  onClose: () => void;
+}) {
   return (
     <Link
       href={href}
-      className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
+      className="flex items-center gap-3 py-3 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
       onClick={onClose}
     >
+      {Icon && <Icon size={20} className="shrink-0" />}
       {label}
     </Link>
   );
