@@ -80,7 +80,7 @@ export function WantedListingsManager({ listings }: WantedListingsManagerProps) 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-semantic-text-heading truncate">
                       {listing.game_name}
-                      {listing.game_year ? ` (${listing.game_year})` : ''}
+                      {(listing.edition_year ?? listing.game_year) ? ` (${listing.edition_year ?? listing.game_year})` : ''}
                     </p>
                     {(listing.language || listing.publisher) && (
                       <p className="text-xs text-semantic-text-muted mt-0.5">

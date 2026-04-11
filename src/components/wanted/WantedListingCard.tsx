@@ -10,6 +10,7 @@ interface WantedListingCardProps {
   id: string;
   gameTitle: string;
   gameYear: number | null;
+  editionYear: number | null;
   gameThumbnail: string | null;
   versionThumbnail: string | null;
   language: string | null;
@@ -22,6 +23,7 @@ export function WantedListingCard({
   id,
   gameTitle,
   gameYear,
+  editionYear,
   gameThumbnail,
   versionThumbnail,
   language,
@@ -29,6 +31,7 @@ export function WantedListingCard({
   buyerCountry,
   notes,
 }: WantedListingCardProps) {
+  const displayYear = editionYear ?? gameYear;
   const hasEdition = language || publisher;
   const displayThumbnail = versionThumbnail ?? gameThumbnail;
 
@@ -54,7 +57,7 @@ export function WantedListingCard({
         {/* Content */}
         <div className="px-3 py-2.5 flex flex-col flex-1">
           <GameTitle name={gameTitle} clamp={2} />
-          <GameMeta year={gameYear} className="mt-0.5" />
+          <GameMeta year={displayYear} className="mt-0.5" />
 
           {hasEdition && (
             <p className="text-xs text-semantic-text-muted mt-1 truncate">

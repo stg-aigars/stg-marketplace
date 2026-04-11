@@ -109,7 +109,7 @@ Always use these — do not write inline equivalents:
 | Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
 | Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
-| Condition & status badges | `Badge` (variants: default, success, warning, error, trust, auction; condition keys; `dot` prop for status dots) | `@/components/ui` |
+| Condition & status badges | `Badge` (variants: default, success, warning, error, trust, auction, wanted; condition keys; `dot` prop for status dots) | `@/components/ui` |
 | Condition badge (from DB) | `ConditionBadge` (takes raw `ListingCondition` string, renders Badge with icon + label; use instead of manual `conditionToBadgeKey` + `conditionConfig` lookup) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
 | Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible; optional icon + title) | `@/components/ui` |

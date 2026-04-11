@@ -1,7 +1,7 @@
 import { type HTMLAttributes } from 'react';
-import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel } from '@phosphor-icons/react/ssr';
+import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass } from '@phosphor-icons/react/ssr';
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction';
+type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted';
 type ConditionKey = 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,6 +16,7 @@ const conditionIcons: Record<ConditionKey, React.FC<any>> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const variantIcons: Partial<Record<BadgeVariant, React.FC<any>>> = {
   auction: Gavel,
+  wanted: MagnifyingGlass,
 };
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -31,6 +32,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   error: 'bg-condition-for-parts-bg text-condition-for-parts-text border-condition-for-parts',
   trust: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
   auction: 'bg-aurora-purple/15 text-aurora-purple border-aurora-purple/30',
+  wanted: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
 };
 
 const conditionClasses: Record<ConditionKey, string> = {

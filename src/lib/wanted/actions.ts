@@ -152,7 +152,7 @@ export async function getMyWantedListings(): Promise<WantedListingWithGame[]> {
   return (data ?? []).map(mapWantedListingRow);
 }
 
-/** Single wanted listing with game details (for detail page) */
+/** Single wanted listing with full game metadata (for detail page) */
 export async function getWantedListingById(
   id: string
 ): Promise<WantedListingWithDetails | null> {
@@ -161,21 +161,54 @@ export async function getWantedListingById(
   const { data: listing } = await supabase
     .from('wanted_listings')
     .select(`
-      ${WANTED_LISTING_SELECT},
-      buyer:buyer_id (full_name)
+      *,
+      games:bgg_game_id (name, yearpublished, thumbnail, image, player_count, min_players, max_players, min_age, playing_time, description, weight, categories, mechanics)
     `)
     .eq('id', id)
     .single();
 
   if (!listing) return null;
 
-  const games = (listing as Record<string, unknown>).games as { thumbnail: string | null; image: string | null } | null;
-  const buyer = (listing as Record<string, unknown>).buyer as { full_name: string | null } | null;
+  // Fetch buyer profile separately (public_profiles view — safe for anonymous access)
+  const { data: buyerProfile } = await supabase
+    .from('public_profiles')
+    .select('full_name, avatar_url, created_at')
+    .eq('id', (listing as { buyer_id: string }).buyer_id)
+    .single<{ full_name: string | null; avatar_url: string | null; created_at: string | null }>();
+
+  const games = (listing as Record<string, unknown>).games as {
+    name: string | null;
+    yearpublished: number | null;
+    thumbnail: string | null;
+    image: string | null;
+    player_count: string | null;
+    min_players: number | null;
+    max_players: number | null;
+    min_age: number | null;
+    playing_time: string | null;
+    description: string | null;
+    weight: number | null;
+    categories: string[] | null;
+    mechanics: string[] | null;
+  } | null;
 
   return {
     ...listing,
     thumbnail: games?.thumbnail ?? null,
     image: games?.image ?? null,
-    buyer_name: buyer?.full_name ?? '',
+    game_display_name: games?.name ?? null,
+    game_year_published: games?.yearpublished ?? null,
+    player_count: games?.player_count ?? null,
+    min_players: games?.min_players ?? null,
+    max_players: games?.max_players ?? null,
+    min_age: games?.min_age ?? null,
+    playing_time: games?.playing_time ?? null,
+    description: games?.description ?? null,
+    weight: games?.weight ?? null,
+    categories: games?.categories ?? null,
+    mechanics: games?.mechanics ?? null,
+    buyer_name: buyerProfile?.full_name ?? '',
+    buyer_avatar_url: buyerProfile?.avatar_url ?? null,
+    buyer_created_at: buyerProfile?.created_at ?? null,
   } as WantedListingWithDetails;
 }
