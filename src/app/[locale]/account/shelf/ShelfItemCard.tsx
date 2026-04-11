@@ -10,6 +10,7 @@ import type { ShelfItemWithGame } from '@/lib/shelves/types';
 import { SHELF_VISIBILITY_LABELS, SHELF_VISIBILITY_BADGE_VARIANT } from '@/lib/shelves/types';
 import { removeFromShelf } from '@/lib/shelves/actions';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface ShelfItemCardProps {
   item: ShelfItemWithGame;
@@ -29,6 +30,7 @@ export function ShelfItemCard({ item, onEdit, onRemoved }: ShelfItemCardProps) {
   const badgeLabel = SHELF_VISIBILITY_LABELS[item.visibility];
 
   useClickOutside(() => setMenuOpen(false), menuOpen, menuRef);
+  useEscapeKey(() => setMenuOpen(false), menuOpen);
 
   async function handleRemove() {
     setRemoving(true);
