@@ -1,13 +1,18 @@
 import { type HTMLAttributes } from 'react';
+import { cn } from '@/lib/cn';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   hoverable?: boolean;
 }
 
-function Card({ hoverable, className = '', children, ...props }: CardProps) {
+function Card({ hoverable, className, children, ...props }: CardProps) {
   return (
     <div
-      className={`bg-semantic-bg-elevated rounded-lg border border-semantic-border-subtle shadow-sm ${hoverable ? 'transition-shadow duration-250 ease-out-custom active:shadow-md sm:hover:shadow-md' : ''} ${className}`}
+      className={cn(
+        'bg-semantic-bg-elevated rounded-lg border border-semantic-border-subtle shadow-sm',
+        hoverable && 'transition-shadow duration-250 ease-out-custom active:shadow-md sm:hover:shadow-md',
+        className,
+      )}
       {...props}
     >
       {children}
@@ -15,25 +20,25 @@ function Card({ hoverable, className = '', children, ...props }: CardProps) {
   );
 }
 
-function CardHeader({ className = '', children, ...props }: HTMLAttributes<HTMLDivElement>) {
+function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`px-4 py-3 border-b border-semantic-border-subtle ${className}`} {...props}>
+    <div className={cn('px-4 py-3 border-b border-semantic-border-subtle', className)} {...props}>
       {children}
     </div>
   );
 }
 
-function CardBody({ className = '', children, ...props }: HTMLAttributes<HTMLDivElement>) {
+function CardBody({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`px-4 py-4 ${className}`} {...props}>
+    <div className={cn('px-4 py-4', className)} {...props}>
       {children}
     </div>
   );
 }
 
-function CardFooter({ className = '', children, ...props }: HTMLAttributes<HTMLDivElement>) {
+function CardFooter({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`px-4 py-3 border-t border-semantic-border-subtle ${className}`} {...props}>
+    <div className={cn('px-4 py-3 border-t border-semantic-border-subtle', className)} {...props}>
       {children}
     </div>
   );

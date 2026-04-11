@@ -1,4 +1,5 @@
 import { CircleNotch } from '@phosphor-icons/react/ssr';
+import { cn } from '@/lib/cn';
 
 type SpinnerSize = 'sm' | 'md' | 'lg';
 
@@ -13,11 +14,11 @@ const sizeMap: Record<SpinnerSize, number> = {
   lg: 24,
 };
 
-function Spinner({ size = 'md', className = '' }: SpinnerProps) {
+function Spinner({ size = 'md', className }: SpinnerProps) {
   return (
     <CircleNotch
       size={sizeMap[size]}
-      className={`animate-spin ${className}`}
+      className={cn('animate-spin', className)}
     />
   );
 }

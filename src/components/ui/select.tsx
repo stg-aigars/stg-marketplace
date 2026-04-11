@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { cn } from '@/lib/cn';
 
 interface SelectOption {
   value: string;
@@ -15,7 +16,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, id, options, placeholder, className = '', ...props }, ref) => {
+  ({ label, error, id, options, placeholder, className, ...props }, ref) => {
     return (
       <div>
         {label && (
@@ -26,7 +27,11 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           id={id}
-          className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-input transition-all duration-250 ease-out-custom focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand ${error ? 'border-semantic-error shadow-glow-error' : 'border-semantic-border-default'} ${className}`}
+          className={cn(
+            'block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-input transition-all duration-250 ease-out-custom focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand',
+            error ? 'border-semantic-error shadow-glow-error' : 'border-semantic-border-default',
+            className,
+          )}
           {...props}
         >
           {placeholder && (

@@ -2,6 +2,7 @@
 
 import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Eye, EyeSlash } from '@phosphor-icons/react/ssr';
+import { cn } from '@/lib/cn';
 
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
   label?: string;
@@ -11,7 +12,7 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, id, className = '', type, prefix, suffix, ...props }, ref) => {
+  ({ label, error, id, className, type, prefix, suffix, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === 'password';
     const inputType = isPassword && showPassword ? 'text' : type;
@@ -36,7 +37,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={id}
             type={inputType}
-            className={`block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-input placeholder:text-semantic-text-muted placeholder:opacity-50 transition-all duration-250 ease-out-custom focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand ${hasLeft ? 'pl-8' : ''} ${hasRight ? 'pr-11' : ''} ${error ? 'border-semantic-error shadow-glow-error' : 'border-semantic-border-default'} ${className}`}
+            className={cn(
+              'block w-full min-h-[44px] rounded-lg border px-3 py-2.5 text-base sm:text-sm text-semantic-text-primary bg-semantic-bg-input placeholder:text-semantic-text-muted placeholder:opacity-50 transition-all duration-250 ease-out-custom focus:outline-none focus:ring-2 focus:ring-semantic-brand/20 focus:border-semantic-brand',
+              hasLeft && 'pl-8',
+              hasRight && 'pr-11',
+              error ? 'border-semantic-error shadow-glow-error' : 'border-semantic-border-default',
+              className,
+            )}
             {...props}
           />
           {isPassword && (

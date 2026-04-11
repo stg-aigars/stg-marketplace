@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "@phosphor-icons/react/ssr";
 
-import { cn } from "./utils";
+import { cn } from "@/lib/cn";
 import { useMap, useMarkerContext } from "./context";
 
 export type MarkerPopupProps = {

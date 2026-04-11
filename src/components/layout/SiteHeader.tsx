@@ -94,7 +94,7 @@ function SiteHeader() {
       <Link href="/browse" className={navLinkClass('/browse')}>
         Browse
       </Link>
-      <Button variant="brand" size="sm" asChild className="!min-h-0 !py-1.5 !text-base">
+      <Button variant="brand" size="sm" asChild className="min-h-0 py-1.5 text-base">
         <Link href="/sell">Sell a game</Link>
       </Button>
     </>
@@ -141,7 +141,7 @@ function SiteHeader() {
             {loading ? (
               <div className="w-20 h-8 rounded-md bg-semantic-bg-secondary animate-pulse" />
             ) : !user ? (
-              <Button variant="secondary" size="sm" asChild className="!min-h-0 !py-1.5 !text-base">
+              <Button variant="secondary" size="sm" asChild className="min-h-0 py-1.5 text-base">
                 <Link href="/auth/signin">Sign in</Link>
               </Button>
             ) : (

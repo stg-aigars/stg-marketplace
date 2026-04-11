@@ -11,7 +11,7 @@ interface StepperProps {
   className?: string;
 }
 
-function Stepper({ steps, currentStep, className = '' }: StepperProps) {
+function Stepper({ steps, currentStep, className }: StepperProps) {
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
   if (currentIndex === -1) return null;

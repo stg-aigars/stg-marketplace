@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/cn';
 
 interface AvatarProps {
   name: string;
@@ -17,10 +18,10 @@ const sizeClasses: Record<NonNullable<AvatarProps['size']>, string> = {
   lg: 'w-16 h-16 text-xl rounded-xl',
 };
 
-export function Avatar({ name, src, size = 'md', className = '' }: AvatarProps) {
+export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
   const initial = (name || '?').charAt(0).toUpperCase();
-  const classes = sizeClasses[size];
+  const sizeClass = sizeClasses[size];
 
   if (src && !imgError) {
     return (
@@ -29,14 +30,14 @@ export function Avatar({ name, src, size = 'md', className = '' }: AvatarProps) 
         src={src}
         alt={name}
         onError={() => setImgError(true)}
-        className={`${classes} object-cover ${className}`}
+        className={cn(sizeClass, 'object-cover', className)}
       />
     );
   }
 
   return (
     <div
-      className={`bg-semantic-bg-secondary flex items-center justify-center text-semantic-text-muted font-medium ${classes} ${className}`}
+      className={cn('bg-semantic-bg-secondary flex items-center justify-center text-semantic-text-muted font-medium', sizeClass, className)}
       aria-hidden="true"
     >
       {initial}

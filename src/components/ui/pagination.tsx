@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from './button';
+import { cn } from '@/lib/cn';
 
 interface PaginationProps {
   currentPage: number;
@@ -37,7 +38,7 @@ function getPageNumbers(current: number, total: number): (number | 'ellipsis')[]
   return pages;
 }
 
-function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, className = '' }: PaginationProps) {
+function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, className }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const showingFrom = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -45,7 +46,7 @@ function Pagination({ currentPage, totalPages, totalItems, pageSize, buildUrl, c
   const pages = getPageNumbers(currentPage, totalPages);
 
   return (
-    <nav aria-label="Pagination" className={`flex items-center justify-between mt-8 ${className}`}>
+    <nav aria-label="Pagination" className={cn('flex items-center justify-between mt-8', className)}>
       <p className="text-sm text-semantic-text-secondary">
         Showing {showingFrom}–{showingTo} of {totalItems}
       </p>
