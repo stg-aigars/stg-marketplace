@@ -12,8 +12,20 @@ export function isStaleActionError(error: unknown): boolean {
   if (name === 'UnrecognizedActionError') return true;
 
   const message = (error as { message?: unknown }).message;
-  if (typeof message === 'string' && message.includes('was not found on the server')) return true;
+  if (
+    typeof message === 'string' &&
+    message.includes('Server Action') &&
+    message.includes('was not found on the server')
+  ) {
+    return true;
+  }
 
+  // NOTE: we intentionally do NOT match on error.digest prefixes. NEXT_REDIRECT
+  // and NEXT_NOT_FOUND are normal control-flow digests thrown by redirect() and
+  // notFound() from server actions — a prefix match on 'NEXT_' would turn every
+  // aborted navigation into a full-page reload. If a future Next.js release
+  // renames UnrecognizedActionError, add the concrete digest value here —
+  // never a prefix.
   return false;
 }
 
@@ -41,16 +53,4 @@ export function markReloadAttempt(): void {
   } catch {
     // sessionStorage unavailable (e.g. private browsing quota exceeded)
   }
-}
-
-/**
- * Convenience for non-render contexts (event handlers).
- * Checks the loop guard, marks the attempt, and reloads.
- * No-op if a recent reload was already attempted.
- */
-export function attemptStaleActionReload(): boolean {
-  if (hasRecentReloadAttempt()) return false;
-  markReloadAttempt();
-  window.location.reload();
-  return true;
 }

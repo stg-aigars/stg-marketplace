@@ -35,5 +35,9 @@
     "seller": "Seller",
     "buyNow": "Buy now",
     "preLovedGames": "Pre-loved games"
+  },
+  "staleAction": {
+    "updating": "Updating to the latest version…",
+    "newVersionAvailable": "A newer version is available. Please refresh the page."
   }
 }
