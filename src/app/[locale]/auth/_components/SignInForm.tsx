@@ -10,9 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
 
-// createBrowserClient returns a module-level singleton — safe to call at top level
-const supabase = createClient();
-
 /** Prevent open redirects — only allow relative paths. */
 function safeReturnUrl(url?: string): string {
   if (!url || !url.startsWith('/') || url.startsWith('//')) {

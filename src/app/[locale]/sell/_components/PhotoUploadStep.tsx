@@ -232,7 +232,6 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
 
       {/* Upload area — custom styled button needed for dropzone layout; Button component doesn't support this */}
       {photos.length < MAX_PHOTOS && (
-        // eslint-disable-next-line jsx-a11y/prefer-tag-over-role
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
