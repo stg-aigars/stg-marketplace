@@ -158,6 +158,7 @@ Always use these — do not write inline equivalents:
 - **Badge shape:** `rounded-md` (squared), not pills. Condition badges include a Phosphor tier icon.
 - **Image containers:** Game art uses `aspect-square`, not fixed heights.
 - **Transitions:** All transitions use branded easing — `duration-250 ease-out-custom` or `duration-350 ease-out-custom`.
+- **Class merging:** Shared UI components that accept `className` must merge classes via `cn()` from `@/lib/cn` — never via plain template literals (`` `${base} ${className}` ``). `cn()` wraps `tailwind-merge` + `clsx`, so caller overrides correctly win against component defaults regardless of CSS cascade order. Without it, `className` props silently lose to internal size/variant classes, and the only workaround is `!important` prefixes. Accepts strings, conditionals (`cond && 'class'`), arrays, and objects.
 - **When adding a new UI component:** Add it to `@/components/ui/index.ts`, update the Shared Components table above, and flag in PR description that a new design system component was introduced.
 
 ## BGG Integration
