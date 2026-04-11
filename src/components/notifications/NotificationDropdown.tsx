@@ -38,8 +38,8 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
   }, [open, loaded, fetchNotifications]);
 
   // On route change: close the dropdown and invalidate the cache so the next
-  // open refetches. Merged from two effects so both side-effects run in one
-  // render pass.
+  // open refetches. Merged from two separate pathname effects that were
+  // previously doing these side-effects independently.
   useEffect(() => {
     if (pathname === lastPathRef.current) return;
     lastPathRef.current = pathname;
