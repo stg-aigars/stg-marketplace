@@ -4,9 +4,10 @@
  * Pure validation functions live in dispute-validation.ts (safe to import in tests).
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { createServiceClient } from '@/lib/supabase';
-import { refundToWallet } from '@/lib/services/wallet';
 import { loadOrder, creditSellerWallet, markSoldAndSyncShelf } from '@/lib/services/order-transitions';
+import { refundOrder, markRefundFailed, RefundInitiationError } from '@/lib/services/order-refund';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { OrderRow, DisputeRow } from '@/lib/orders/types';
 import {
@@ -25,14 +26,12 @@ export {
   canOpenDispute,
   canEscalateDispute,
   canWithdrawDispute,
-  calculateRefundAmount,
 } from './dispute-validation';
 
 import {
   canOpenDispute,
   canEscalateDispute,
   canWithdrawDispute,
-  calculateRefundAmount,
 } from './dispute-validation';
 
 /** Fetch the dispute for an order. Returns null if none exists. */
@@ -230,28 +229,35 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   if (dispute.resolved_at) throw new Error('Dispute is already resolved');
   if (dispute.escalated_at) throw new Error('Cannot accept refund after escalation — staff will resolve this dispute');
 
-  const refundAmountCents = calculateRefundAmount(order);
-
-  const { error: resolveError } = await supabase
+  // Claim the dispute atomically. `.select().single()` turns a zero-row
+  // update into PGRST116 — without it, a concurrent loser would fall
+  // through to refundOrder with a stale `refund_status` snapshot.
+  const { data: claimedDispute, error: resolveError } = await supabase
     .from('disputes')
     .update({
       resolution: 'refunded',
       resolved_at: new Date().toISOString(),
       resolved_by: userId,
-      refund_amount_cents: refundAmountCents,
+      refund_amount_cents: order.total_amount_cents,
     })
     .eq('id', dispute.id)
-    .is('resolved_at', null);
+    .is('resolved_at', null)
+    .select('id')
+    .single();
 
-  if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
+  if (resolveError || !claimedDispute) {
+    throw new Error('Dispute is already resolved');
+  }
+
+  const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
+
+  if (cardRefunded + walletRefunded === 0) {
+    await handleRefundInitiationFailure(supabase, dispute.id, userId, orderId, order, 'dispute.seller_accepted_refund');
+  }
+
   const { data: updatedOrder, error: orderError } = await supabase
     .from('orders')
-    .update({
-      status: 'refunded',
-      refunded_at: new Date().toISOString(),
-      refund_status: 'completed',
-      refund_amount_cents: refundAmountCents,
-    })
+    .update({ status: 'refunded' })
     .eq('id', orderId)
     .eq('status', 'disputed')
     .select()
@@ -261,27 +267,20 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     throw new Error('Failed to refund order');
   }
 
-  // Credit buyer wallet with full refund (idempotent)
-  await refundToWallet(
-    order.buyer_id,
-    refundAmountCents,
-    orderId,
-    `Refund: ${getOrderGameSummary(order.order_items, order.listings)} — ${order.order_number}`
-  );
-
   // Mark order_items as inactive (frees partial unique index for re-listing)
   await supabase
     .from('order_items')
     .update({ active: false })
     .eq('order_id', orderId);
 
+  const totalRefunded = cardRefunded + walletRefunded;
   void logAuditEvent({
     actorId: userId,
     actorType: 'user',
     action: 'dispute.seller_accepted_refund',
     resourceType: 'dispute',
     resourceId: dispute.id,
-    metadata: { orderId, refundAmountCents },
+    metadata: { orderId, refundAmountCents: totalRefunded, cardRefunded, walletRefunded },
   });
 
   // Email both parties (non-blocking)
@@ -293,7 +292,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     orderNumber: order.order_number,
     orderId,
     gameName: getOrderGameSummary(order.order_items, order.listings),
-    refundAmountCents,
+    refundAmountCents: totalRefunded,
   }).catch((err) => console.error('[Email] Failed to send refund emails:', err));
 
   void notifyMany([
@@ -302,6 +301,59 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   ]);
 
   return updatedOrder;
+}
+
+/**
+ * Handle a total-failure return from refundOrder inside a dispute resolution
+ * flow. Writes `refund_status='failed'` for staff visibility, rolls back the
+ * caller's dispute claim so retry-via-UI works, captures Sentry with tagged
+ * context, and throws RefundInitiationError. Never returns (marked `never`)
+ * so callers can use it as a terminator without unreachable-code warnings.
+ *
+ * The claim is rolled back rather than documented as a manual runbook: the
+ * alternative would be a subsequent retry hitting the `resolved_at IS NULL`
+ * guard and reporting "already resolved" misleadingly.
+ */
+async function handleRefundInitiationFailure(
+  supabase: ReturnType<typeof createServiceClient>,
+  disputeId: string,
+  claimedBy: string,
+  orderId: string,
+  order: Pick<OrderRow, 'buyer_id' | 'order_number'>,
+  phase: string
+): Promise<never> {
+  await markRefundFailed(orderId);
+
+  // Rollback is gated on `resolved_by = claimedBy` as defense in depth: a
+  // losing caller (shouldn't reach here now that the claim uses .select().single(),
+  // but belt-and-braces) can only ever roll back its own row.
+  const { error: rollbackError } = await supabase
+    .from('disputes')
+    .update({
+      resolution: null,
+      resolved_at: null,
+      resolved_by: null,
+      resolution_notes: null,
+      refund_amount_cents: null,
+    })
+    .eq('id', disputeId)
+    .eq('resolved_by', claimedBy);
+
+  if (rollbackError) {
+    Sentry.captureException(rollbackError, {
+      tags: { orderId, orderNumber: order.order_number, phase: 'dispute.rollback_failed' },
+    });
+  }
+
+  const err = new RefundInitiationError(
+    'Refund could not be processed — support has been notified',
+    orderId,
+    order.order_number
+  );
+  Sentry.captureException(err, {
+    tags: { orderId, orderNumber: order.order_number, buyerId: order.buyer_id, phase },
+  });
+  throw err;
 }
 
 /**
@@ -378,42 +430,40 @@ export async function staffResolveDispute(
   if (dispute.resolved_at) throw new Error('Dispute is already resolved');
 
   if (decision === 'refund') {
-    const refundAmountCents = calculateRefundAmount(order);
-    const { error: resolveError } = await supabase
+    // Claim dispute resolution atomically (see sellerAcceptRefund for rationale).
+    const { data: claimedDispute, error: resolveError } = await supabase
       .from('disputes')
       .update({
         resolution: 'refunded',
         resolved_at: new Date().toISOString(),
         resolved_by: staffUserId,
         resolution_notes: notes ?? null,
-        refund_amount_cents: refundAmountCents,
+        refund_amount_cents: order.total_amount_cents,
       })
       .eq('id', dispute.id)
-      .is('resolved_at', null);
+      .is('resolved_at', null)
+      .select('id')
+      .single();
 
-    if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
+    if (resolveError || !claimedDispute) {
+      throw new Error('Dispute is already resolved');
+    }
+
+    const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
+
+    if (cardRefunded + walletRefunded === 0) {
+      await handleRefundInitiationFailure(supabase, dispute.id, staffUserId, orderId, order, 'dispute.staff_resolved');
+    }
+
     const { data: updatedOrder, error: orderError } = await supabase
       .from('orders')
-      .update({
-        status: 'refunded',
-        refunded_at: new Date().toISOString(),
-        refund_status: 'completed',
-        refund_amount_cents: refundAmountCents,
-      })
+      .update({ status: 'refunded' })
       .eq('id', orderId)
       .eq('status', 'disputed')
       .select()
       .single<OrderRow>();
 
     if (orderError || !updatedOrder) throw new Error('Failed to refund order');
-
-    // Credit buyer wallet
-    await refundToWallet(
-      order.buyer_id,
-      refundAmountCents,
-      orderId,
-      `Refund: ${getOrderGameSummary(order.order_items, order.listings)} — ${order.order_number}`
-    );
 
     // Mark order_items as inactive (frees partial unique index for re-listing)
     await supabase
@@ -437,13 +487,14 @@ export async function staffResolveDispute(
       }
     }
 
+    const totalRefunded = cardRefunded + walletRefunded;
     void logAuditEvent({
       actorId: staffUserId,
       actorType: 'user',
       action: 'dispute.staff_resolved',
       resourceType: 'dispute',
       resourceId: dispute.id,
-      metadata: { orderId, decision: 'refund', refundAmountCents, notes },
+      metadata: { orderId, decision: 'refund', refundAmountCents: totalRefunded, cardRefunded, walletRefunded, notes },
     });
 
     sendDisputeResolvedRefund({
@@ -454,7 +505,7 @@ export async function staffResolveDispute(
       orderNumber: order.order_number,
       orderId,
       gameName: getOrderGameSummary(order.order_items, order.listings),
-      refundAmountCents,
+      refundAmountCents: totalRefunded,
       staffNotes: notes,
     }).catch((err) => console.error('[Email] Failed to send staff refund emails:', err));
 

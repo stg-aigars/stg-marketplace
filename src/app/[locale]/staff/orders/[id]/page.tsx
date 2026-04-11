@@ -23,6 +23,18 @@ export const metadata: Metadata = {
   title: 'Order Detail — Staff',
 };
 
+interface RefundAuditEntry {
+  created_at: string;
+  actor_type: string;
+  metadata: {
+    cardRefunded?: number;
+    walletRefunded?: number;
+    totalRefunded?: number;
+    refundStatus?: string;
+    expectedTotal?: number;
+  } | null;
+}
+
 export default async function StaffOrderDetailPage(
   props: {
     params: Promise<{ id: string }>;
@@ -51,17 +63,25 @@ export default async function StaffOrderDetailPage(
     notFound();
   }
 
-  // Fetch dispute and tracking events in parallel
-  const [disputeResult, trackingEvents] = await Promise.all([
+  const [disputeResult, trackingEvents, refundAuditResult] = await Promise.all([
     serviceClient
       .from('disputes')
       .select('*')
       .eq('order_id', order.id)
       .maybeSingle<DisputeRow>(),
     order.barcode ? getTrackingEvents(order.id) : Promise.resolve([]),
+    serviceClient
+      .from('audit_log')
+      .select('created_at, actor_type, metadata')
+      .eq('resource_type', 'order')
+      .eq('resource_id', order.id)
+      .eq('action', 'order.refunded')
+      .order('created_at', { ascending: false })
+      .limit(5),
   ]);
 
   const dispute = disputeResult.data;
+  const refundAuditEntries = (refundAuditResult.data ?? []) as RefundAuditEntry[];
   const statusConfig = ORDER_STATUS_CONFIG[order.status as OrderStatus];
 
   return (
@@ -296,6 +316,97 @@ export default async function StaffOrderDetailPage(
 
         {/* Main content */}
         <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
+          {/* Refund status panel — prominent when refund is failed or partial */}
+          {order.refund_status && order.refund_status !== 'completed' && (
+            <Card className={
+              order.refund_status === 'failed'
+                ? 'border-semantic-error/30 bg-semantic-error/5'
+                : 'border-semantic-warning/30 bg-semantic-warning/5'
+            }>
+              <CardBody>
+                <div className="flex items-start gap-3">
+                  <Warning size={20} className={
+                    order.refund_status === 'failed'
+                      ? 'text-semantic-error shrink-0 mt-0.5'
+                      : 'text-semantic-warning shrink-0 mt-0.5'
+                  } />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-semantic-text-heading">
+                        Refund {order.refund_status}
+                      </p>
+                      <Badge variant={order.refund_status === 'failed' ? 'error' : 'warning'}>
+                        {order.refund_status}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-semantic-text-secondary">
+                      {order.refund_status === 'failed'
+                        ? 'No refund was processed. Resolve manually via EveryPay merchant portal (card) or direct wallet credit, then update refund_status in SQL.'
+                        : 'Refund was partially processed. Reconcile the shortfall manually.'}
+                    </p>
+
+                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                      <dt className="text-semantic-text-muted">Expected total</dt>
+                      <dd className="text-semantic-text-primary font-medium">
+                        {formatCentsToCurrency(order.total_amount_cents)}
+                      </dd>
+                      <dt className="text-semantic-text-muted">Refunded</dt>
+                      <dd className="text-semantic-text-primary font-medium">
+                        {formatCentsToCurrency(order.refund_amount_cents ?? 0)}
+                      </dd>
+                      {order.refund_amount_cents != null && order.refund_amount_cents < order.total_amount_cents && (
+                        <>
+                          <dt className="text-semantic-text-muted">Shortfall</dt>
+                          <dd className="text-semantic-error font-semibold">
+                            {formatCentsToCurrency(order.total_amount_cents - order.refund_amount_cents)}
+                          </dd>
+                        </>
+                      )}
+                      {order.refunded_at && (
+                        <>
+                          <dt className="text-semantic-text-muted">Last attempt</dt>
+                          <dd className="text-semantic-text-primary">
+                            {formatDateTime(order.refunded_at)}
+                          </dd>
+                        </>
+                      )}
+                    </dl>
+
+                    {refundAuditEntries.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-semantic-border-subtle">
+                        <p className="text-xs font-medium text-semantic-text-muted mb-2">
+                          Refund attempts ({refundAuditEntries.length})
+                        </p>
+                        <div className="space-y-1.5 text-xs">
+                          {refundAuditEntries.map((entry) => {
+                            const m = entry.metadata ?? {};
+                            const card = m.cardRefunded ?? 0;
+                            const wallet = m.walletRefunded ?? 0;
+                            return (
+                              <div key={entry.created_at} className="font-mono">
+                                <span className="text-semantic-text-muted">
+                                  {formatDateTime(entry.created_at)}
+                                </span>
+                                <span className="text-semantic-text-secondary ml-2">
+                                  card: {formatCentsToCurrency(card)} · wallet: {formatCentsToCurrency(wallet)}
+                                  {m.refundStatus && (
+                                    <span className="ml-2 text-semantic-text-muted">
+                                      → {m.refundStatus}
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
           {/* Dispute action card */}
           {order.status === 'disputed' && dispute?.id && (
             <Card className="border-semantic-error/30 bg-semantic-error/5">

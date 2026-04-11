@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { sellerAcceptRefund } from '@/lib/services/dispute';
+import { RefundInitiationError } from '@/lib/services/order-refund';
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -19,6 +20,13 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
       order: { id: order.id, status: order.status },
     });
   } catch (error) {
+    // Refund initiation failures are upstream/infrastructure — return 503 so
+    // monitoring distinguishes them from user-error 400s. The user-facing
+    // message is already set on the error itself.
+    if (error instanceof RefundInitiationError) {
+      console.error('[Orders] Refund initiation failed:', error.message);
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     const message = error instanceof Error ? error.message : 'Failed to accept refund';
     console.error('[Orders] Accept refund failed:', message);
     return NextResponse.json({ error: message }, { status: 400 });

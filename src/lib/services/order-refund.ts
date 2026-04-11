@@ -10,6 +10,23 @@ import { refundToWallet } from '@/lib/services/wallet';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { PaymentMethod } from '@/lib/orders/types';
 
+/**
+ * Thrown when a refund could not be initiated at all — neither the card leg
+ * nor the wallet leg moved any money. Callers that have already claimed
+ * upstream state (e.g. dispute resolution) should roll that state back before
+ * propagating this error.
+ */
+export class RefundInitiationError extends Error {
+  constructor(
+    message: string,
+    public readonly orderId: string,
+    public readonly orderNumber: string
+  ) {
+    super(message);
+    this.name = 'RefundInitiationError';
+  }
+}
+
 interface RefundableOrder {
   buyer_id: string;
   total_amount_cents: number;
@@ -31,6 +48,22 @@ interface RefundableOrder {
  * Partial failure: if one leg fails, logs for manual resolution. The order's
  * refund_amount_cents records what was actually refunded.
  */
+/**
+ * Mark an order's refund as failed. `refundOrder()` deliberately skips
+ * writing `refund_status` on total failure so the deadline-enforcement
+ * cron can retry non-dispute refunds, but that retry path doesn't apply
+ * to dispute resolutions (which are triggered synchronously by staff or
+ * seller action). Callers without a retry loop use this helper to make
+ * the failure visible in the staff "Refund issues" queue.
+ */
+export async function markRefundFailed(orderId: string): Promise<void> {
+  const serviceClient = createServiceClient();
+  await serviceClient
+    .from('orders')
+    .update({ refund_status: 'failed' })
+    .eq('id', orderId);
+}
+
 export async function refundOrder(
   orderId: string,
   order: RefundableOrder
