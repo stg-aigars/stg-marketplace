@@ -314,6 +314,7 @@ export async function sendOrderDeclinedToBuyer(params: {
   orderNumber: string;
   orderId: string;
   gameName: string;
+  paymentMethod?: string | null;
 }): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
@@ -323,6 +324,7 @@ export async function sendOrderDeclinedToBuyer(params: {
       orderNumber: params.orderNumber,
       orderId: params.orderId,
       gameName: params.gameName,
+      paymentMethod: params.paymentMethod,
       appUrl: env.app.url,
     }),
   });
@@ -367,6 +369,7 @@ export async function sendDisputeResolvedRefund(params: {
   orderId: string;
   gameName: string;
   refundAmountCents: number;
+  paymentMethod?: string | null;
   staffNotes?: string;
 }): Promise<void> {
   const shared = {
@@ -374,6 +377,7 @@ export async function sendDisputeResolvedRefund(params: {
     orderId: params.orderId,
     gameName: params.gameName,
     refundAmountCents: params.refundAmountCents,
+    paymentMethod: params.paymentMethod,
     staffNotes: params.staffNotes,
     appUrl: env.app.url,
   };
@@ -736,6 +740,7 @@ export async function sendOrderAutoCancelledToBuyer(params: {
   orderId: string;
   gameName: string;
   reason: 'response_timeout' | 'shipping_timeout';
+  paymentMethod?: string | null;
 }): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
@@ -743,7 +748,7 @@ export async function sendOrderAutoCancelledToBuyer(params: {
     react: React.createElement(OrderAutoCancelled, {
       recipientName: params.buyerName, orderNumber: params.orderNumber,
       orderId: params.orderId, gameName: params.gameName,
-      reason: params.reason, variant: 'buyer', appUrl: env.app.url,
+      reason: params.reason, variant: 'buyer', paymentMethod: params.paymentMethod, appUrl: env.app.url,
     }),
   });
 }

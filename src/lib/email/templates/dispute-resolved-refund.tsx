@@ -15,6 +15,7 @@ interface DisputeResolvedRefundProps {
   orderId: string;
   gameName: string;
   refundAmountCents: number;
+  paymentMethod?: string | null;
   staffNotes?: string;
   appUrl: string;
 }
@@ -26,6 +27,7 @@ export function DisputeResolvedRefund({
   orderId,
   gameName,
   refundAmountCents,
+  paymentMethod,
   staffNotes,
   appUrl,
 }: DisputeResolvedRefundProps) {
@@ -38,7 +40,12 @@ export function DisputeResolvedRefund({
 
       {recipientRole === 'buyer' ? (
         <Text style={s.body}>
-          Your dispute has been resolved. A refund of {formattedAmount} is being processed.
+          Your dispute has been resolved. A refund of {formattedAmount}{' '}
+          {paymentMethod === 'bank_link'
+            ? 'has been initiated. Bank transfers typically take 1–3 business days.'
+            : paymentMethod === 'card'
+              ? 'has been processed and should appear on your card shortly.'
+              : 'is being processed.'}
         </Text>
       ) : (
         <Text style={s.body}>
