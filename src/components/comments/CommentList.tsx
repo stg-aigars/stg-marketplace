@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatCircleDots } from '@phosphor-icons/react/ssr';
 import { Badge, UserIdentity } from '@/components/ui';
 import { formatMessageTime } from '@/lib/date-utils';
 import { DeleteCommentButton } from './DeleteCommentButton';
@@ -19,14 +18,7 @@ export function CommentList({ comments, isStaff, locale }: CommentListProps) {
   const [expanded, setExpanded] = useState(false);
 
   if (comments.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <ChatCircleDots size={36} className="mx-auto text-semantic-text-muted mb-2" />
-        <p className="text-sm text-semantic-text-muted">
-          No comments yet. Ask the seller a question
-        </p>
-      </div>
-    );
+    return null;
   }
 
   const hasMore = comments.length > INITIAL_VISIBLE;

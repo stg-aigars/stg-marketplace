@@ -12,7 +12,7 @@ import { conditionToBadgeKey, formatExpansionCount, type ListingCondition, type 
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
-import { formatDate } from '@/lib/date-utils';
+import { formatDate, formatRelativeTime } from '@/lib/date-utils';
 import { toBggFullSize, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
@@ -333,53 +333,63 @@ export default async function ListingDetailPage(
 
         {/* Right column: About this copy */}
         <div className="space-y-6">
-          {/* Title */}
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-            {listing.game_name}
-          </h1>
+          {/* Title & edition identity */}
+          <Card>
+            <CardBody className="space-y-3">
+              <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+                {listing.game_name}
+              </h1>
 
-          {expansionCount > 0 && (
-            <p className="text-sm text-semantic-text-muted flex items-center gap-1.5">
-              <PuzzlePiece size={15} />
-              {formatExpansionCount(expansionCount)}
-            </p>
-          )}
+              <hr className="border-semantic-border-subtle" />
 
-          {games?.is_expansion && (
-            <Alert variant="info">
-              This is an expansion — it requires a base game to play.
-            </Alert>
-          )}
+              {expansionCount > 0 && (
+                <p className="text-sm text-semantic-text-muted flex items-center gap-1.5">
+                  <PuzzlePiece size={15} />
+                  {formatExpansionCount(expansionCount)}
+                </p>
+              )}
 
-          {/* Edition details — compact icon row */}
-          {(listing.version_name || listing.language || listing.publisher || listing.edition_year) && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
-              {listing.version_name && (
-                <div className="flex items-center gap-1.5">
-                  <Tag size={15} className="flex-shrink-0" />
-                  <span>{listing.version_name}</span>
+              {games?.is_expansion && (
+                <Alert variant="info">
+                  This is an expansion — it requires a base game to play.
+                </Alert>
+              )}
+
+              {/* Edition details — compact icon row */}
+              {(listing.version_name || listing.language || listing.publisher || listing.edition_year) && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
+                  {listing.version_name && (
+                    <div className="flex items-center gap-1.5">
+                      <Tag size={15} className="flex-shrink-0" />
+                      <span>{listing.version_name}</span>
+                    </div>
+                  )}
+                  {listing.language && (
+                    <div className="flex items-center gap-1.5">
+                      <Translate size={15} className="flex-shrink-0" />
+                      <span>{listing.language}</span>
+                    </div>
+                  )}
+                  {listing.publisher && (
+                    <div className="flex items-center gap-1.5">
+                      <Buildings size={15} className="flex-shrink-0" />
+                      <span>{listing.publisher}</span>
+                    </div>
+                  )}
+                  {listing.edition_year && (
+                    <div className="flex items-center gap-1.5">
+                      <CalendarBlank size={15} className="flex-shrink-0" />
+                      <span>{listing.edition_year}</span>
+                    </div>
+                  )}
                 </div>
               )}
-              {listing.language && (
-                <div className="flex items-center gap-1.5">
-                  <Translate size={15} className="flex-shrink-0" />
-                  <span>{listing.language}</span>
-                </div>
-              )}
-              {listing.publisher && (
-                <div className="flex items-center gap-1.5">
-                  <Buildings size={15} className="flex-shrink-0" />
-                  <span>{listing.publisher}</span>
-                </div>
-              )}
-              {listing.edition_year && (
-                <div className="flex items-center gap-1.5">
-                  <CalendarBlank size={15} className="flex-shrink-0" />
-                  <span>{listing.edition_year}</span>
-                </div>
-              )}
-            </div>
-          )}
+
+              <p className="text-sm text-semantic-text-muted" title={formatDate(listing.created_at)}>
+                Listed {formatRelativeTime(listing.created_at)}
+              </p>
+            </CardBody>
+          </Card>
 
           {/* Price & action */}
           <PurchaseSection
@@ -608,9 +618,11 @@ export default async function ListingDetailPage(
                 Comments{comments.length > 0 ? ` (${comments.length})` : ''}
               </h2>
               <Card>
-                <CardBody>
-                  <CommentList comments={comments} isStaff={isStaff} locale={locale} />
-                </CardBody>
+                {comments.length > 0 && (
+                  <CardBody>
+                    <CommentList comments={comments} isStaff={isStaff} locale={locale} />
+                  </CardBody>
+                )}
                 {user && (
                   <div className="border-t border-semantic-border-subtle px-4 py-3 sm:px-5">
                     <CommentForm listingId={id} />
