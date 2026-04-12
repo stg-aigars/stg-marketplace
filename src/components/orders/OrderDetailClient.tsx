@@ -80,20 +80,11 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancell
 }
 
 function getAlertVariant(status: OrderStatus): 'error' | 'success' | 'warning' | 'info' {
-  switch (status) {
-    case 'pending_seller':
-      return 'warning';
-    case 'accepted':
-    case 'shipped':
-    case 'delivered':
-      return 'info';
-    case 'completed':
-      return 'success';
-    case 'cancelled':
-    case 'disputed':
-    case 'refunded':
-      return 'error';
-  }
+  // Derived from ORDER_STATUS_CONFIG.badgeVariant, with 'default' → 'info'
+  // and 'delivered' overridden to 'info' (action-required: buyer must confirm receipt)
+  const v = ORDER_STATUS_CONFIG[status].badgeVariant;
+  if (status === 'delivered') return 'info';
+  return v === 'default' ? 'info' : v;
 }
 
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff }: OrderDetailClientProps) {

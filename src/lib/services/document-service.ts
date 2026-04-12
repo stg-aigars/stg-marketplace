@@ -11,7 +11,7 @@
 import { getOrder } from '@/lib/services/orders';
 import type { OrderWithDetails } from '@/lib/orders/types';
 
-interface InvoiceData {
+interface SellerDocumentData {
   order: OrderWithDetails;
   sellerName: string;
   sellerCountry: string;
@@ -23,12 +23,6 @@ interface ConfirmationData {
   sellerName: string;
 }
 
-interface CreditNoteData {
-  order: OrderWithDetails;
-  sellerName: string;
-  sellerCountry: string;
-}
-
 /**
  * Commission invoice data (seller + staff).
  * Requires order status: completed or refunded.
@@ -37,7 +31,7 @@ export async function getCommissionInvoiceData(
   orderId: string,
   userId: string,
   isStaff: boolean,
-): Promise<InvoiceData | null> {
+): Promise<SellerDocumentData | null> {
   const order = await getOrder(orderId);
   if (!order) return null;
 
@@ -87,7 +81,7 @@ export async function getCreditNoteData(
   orderId: string,
   userId: string,
   isStaff: boolean,
-): Promise<CreditNoteData | null> {
+): Promise<SellerDocumentData | null> {
   const order = await getOrder(orderId);
   if (!order) return null;
 

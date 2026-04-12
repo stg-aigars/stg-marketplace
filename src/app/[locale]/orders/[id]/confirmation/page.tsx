@@ -3,6 +3,8 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getOrderConfirmationData } from '@/lib/services/document-service';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
+import { getConditionLabel } from '@/lib/condition-config';
+import type { ListingCondition } from '@/lib/listings/types';
 import { DocumentLayout } from '@/components/documents/DocumentLayout';
 import { DocumentTotals } from '@/components/documents/DocumentTotals';
 
@@ -50,8 +52,8 @@ export default async function OrderConfirmationPage(
                 <td className="py-3 pr-4 text-semantic-text-primary">
                   {item.listings?.game_name ?? 'Unknown game'}
                 </td>
-                <td className="py-3 pr-4 text-semantic-text-secondary capitalize">
-                  {(item.listings?.condition ?? '').replace(/_/g, ' ')}
+                <td className="py-3 pr-4 text-semantic-text-secondary">
+                  {item.listings?.condition ? getConditionLabel(item.listings.condition as ListingCondition) : ''}
                 </td>
                 <td className="py-3 text-right text-semantic-text-primary">
                   {formatCentsToCurrency(item.price_cents)}
