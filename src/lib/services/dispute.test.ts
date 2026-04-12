@@ -1,9 +1,45 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   canOpenDispute,
   canEscalateDispute,
   canWithdrawDispute,
 } from './dispute-validation';
+
+// Mocks for sellerAcceptRefund behavioural test below.
+// vi.mock calls are hoisted by vitest and don't affect the pure validation
+// tests above (they import from './dispute-validation', not './dispute').
+const mockSyncShelfOnListingRemoved = vi.fn(() => Promise.resolve());
+
+vi.mock('@/lib/supabase', () => ({
+  createServiceClient: vi.fn(),
+}));
+vi.mock('./order-transitions', () => ({
+  loadOrder: vi.fn(),
+  creditSellerWallet: vi.fn(),
+  markSoldAndSyncShelf: vi.fn(),
+}));
+vi.mock('./order-refund', () => ({
+  refundOrder: vi.fn(),
+  markRefundFailed: vi.fn(),
+  RefundInitiationError: class RefundInitiationError extends Error {},
+}));
+vi.mock('./audit', () => ({
+  logAuditEvent: vi.fn(),
+}));
+vi.mock('@/lib/email', () => ({
+  sendOrderDisputedToSeller: vi.fn(),
+  sendDisputeResolvedRefund: vi.fn(() => ({ catch: vi.fn() })),
+  sendDisputeResolvedNoRefund: vi.fn(() => ({ catch: vi.fn() })),
+  sendDisputeEscalated: vi.fn(() => ({ catch: vi.fn() })),
+  sendDisputeWithdrawn: vi.fn(() => ({ catch: vi.fn() })),
+}));
+vi.mock('@/lib/notifications', () => ({
+  notify: vi.fn(),
+  notifyMany: vi.fn(),
+}));
+vi.mock('@/lib/listings/actions', () => ({
+  syncShelfOnListingRemoved: mockSyncShelfOnListingRemoved,
+}));
 
 describe('canOpenDispute', () => {
   const baseOrder = {
@@ -196,3 +232,87 @@ describe('canWithdrawDispute', () => {
   });
 });
 
+describe('sellerAcceptRefund', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Regression guard for the listing restore bug: before this fix, sellerAcceptRefund
+  // marked order_items inactive but left listings stuck in 'reserved' status and
+  // shelf items in 'listed' — meaning a seller who voluntarily accepted a refund
+  // couldn't re-list the game afterward. staffResolveDispute had the restore block;
+  // sellerAcceptRefund was silently missing it.
+  it('restores listings and syncs shelves after a successful refund', async () => {
+    const { sellerAcceptRefund } = await import('./dispute');
+    const { loadOrder } = await import('./order-transitions');
+    const { refundOrder } = await import('./order-refund');
+    const { createServiceClient } = await import('@/lib/supabase');
+
+    const mockOrder = {
+      id: 'order-1',
+      buyer_id: 'buyer-1',
+      seller_id: 'seller-1',
+      status: 'disputed' as const,
+      total_amount_cents: 1000,
+      items_total_cents: 800,
+      shipping_cost_cents: 200,
+      order_number: 'STG-20260410-TEST',
+      order_items: [
+        { listing_id: 'L1', price_cents: 400, listings: null },
+        { listing_id: 'L2', price_cents: 400, listings: null },
+      ],
+      listing_id: null,
+      buyer_profile: null,
+      seller_profile: null,
+      listings: null,
+    };
+
+    let listingsTableAccessed = false;
+    const makeBuilder = (table: string) => {
+      const builder: Record<string, unknown> = {
+        update: vi.fn(() => builder),
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => builder),
+        is: vi.fn(() => builder),
+        in: vi.fn(() => builder),
+        single: vi.fn(() => {
+          if (table === 'disputes') return Promise.resolve({ data: { id: 'dispute-1' }, error: null });
+          if (table === 'orders') return Promise.resolve({ data: { ...mockOrder, status: 'refunded' }, error: null });
+          return Promise.resolve({ data: null, error: null });
+        }),
+        maybeSingle: vi.fn(() => {
+          if (table === 'disputes') {
+            return Promise.resolve({
+              data: { id: 'dispute-1', resolved_at: null, escalated_at: null },
+              error: null,
+            });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+        then: (resolve: (v: unknown) => void) => resolve({ data: null, error: null }),
+      };
+      return builder;
+    };
+
+    const mockSupabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'listings') listingsTableAccessed = true;
+        return makeBuilder(table);
+      }),
+    };
+
+    (createServiceClient as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
+    (loadOrder as ReturnType<typeof vi.fn>).mockResolvedValue(mockOrder);
+    (refundOrder as ReturnType<typeof vi.fn>).mockResolvedValue({ cardRefunded: 1000, walletRefunded: 0 });
+
+    await sellerAcceptRefund('order-1', 'seller-1');
+
+    // Listings table must be updated (proves the restore block ran)
+    expect(listingsTableAccessed).toBe(true);
+
+    // Shelf sync must fire once per listing with the right args
+    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledTimes(2);
+    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledWith('seller-1', 'L1');
+    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledWith('seller-1', 'L2');
+  });
+});

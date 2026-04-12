@@ -155,7 +155,7 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
   const validation = canWithdrawDispute(dispute, userId);
   if (!validation.allowed) throw new Error(validation.reason!);
 
-  const { error: resolveError } = await supabase
+  const { data: claimedDispute, error: resolveError } = await supabase
     .from('disputes')
     .update({
       resolution: 'resolved_no_refund',
@@ -163,9 +163,13 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
       resolved_by: userId,
     })
     .eq('id', dispute.id)
-    .is('resolved_at', null);
+    .is('resolved_at', null)
+    .select('id')
+    .single();
 
-  if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
+  if (resolveError || !claimedDispute) {
+    throw new Error('Dispute is already resolved');
+  }
   const { data: updatedOrder, error: orderError } = await supabase
     .from('orders')
     .update({
@@ -273,6 +277,8 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     .update({ active: false })
     .eq('order_id', orderId);
 
+  await restoreListingsAfterRefund(supabase, order);
+
   const totalRefunded = cardRefunded + walletRefunded;
   void logAuditEvent({
     actorId: userId,
@@ -354,6 +360,29 @@ async function handleRefundInitiationFailure(
     tags: { orderId, orderNumber: order.order_number, buyerId: order.buyer_id, phase },
   });
   throw err;
+}
+
+/**
+ * Restore listings to active and revert shelf items after a dispute refund.
+ * Shared by sellerAcceptRefund and staffResolveDispute (refund branch).
+ */
+async function restoreListingsAfterRefund(
+  supabase: ReturnType<typeof createServiceClient>,
+  order: Pick<OrderRow, 'seller_id' | 'listing_id'> & { order_items: Array<{ listing_id: string }> }
+): Promise<void> {
+  const listingIds = getOrderListingIds(order.order_items, order.listing_id);
+  if (listingIds.length === 0) return;
+
+  await supabase
+    .from('listings')
+    .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
+    .in('id', listingIds)
+    .eq('status', 'reserved');
+
+  for (const listingId of listingIds) {
+    void syncShelfOnListingRemoved(order.seller_id, listingId)
+      .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
+  }
 }
 
 /**
@@ -471,21 +500,7 @@ export async function staffResolveDispute(
       .update({ active: false })
       .eq('order_id', orderId);
 
-    // Restore listings to active so seller can re-list after refund
-    const listingIds = getOrderListingIds(order.order_items, order.listing_id);
-    if (listingIds.length > 0) {
-      await supabase
-        .from('listings')
-        .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
-        .in('id', listingIds)
-        .eq('status', 'reserved');
-
-      // Shelf sync: revert items to open_to_offers (inverse of syncShelfOnListingSold)
-      for (const listingId of listingIds) {
-        void syncShelfOnListingRemoved(order.seller_id, listingId)
-          .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
-      }
-    }
+    await restoreListingsAfterRefund(supabase, order);
 
     const totalRefunded = cardRefunded + walletRefunded;
     void logAuditEvent({
@@ -517,7 +532,7 @@ export async function staffResolveDispute(
     return updatedOrder;
   }
 
-  const { error: resolveError } = await supabase
+  const { data: claimedDispute, error: resolveError } = await supabase
     .from('disputes')
     .update({
       resolution: 'resolved_no_refund',
@@ -526,9 +541,13 @@ export async function staffResolveDispute(
       resolution_notes: notes ?? null,
     })
     .eq('id', dispute.id)
-    .is('resolved_at', null);
+    .is('resolved_at', null)
+    .select('id')
+    .single();
 
-  if (resolveError) throw new Error(`Failed to resolve dispute: ${resolveError.message}`);
+  if (resolveError || !claimedDispute) {
+    throw new Error('Dispute is already resolved');
+  }
 
   // Transition order to completed
   const { data: updatedOrder, error: orderError } = await supabase

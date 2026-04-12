@@ -190,15 +190,23 @@ export async function deleteComment(
   if (!profile?.is_staff) return { error: 'Not authorized' };
 
   const serviceClient = createServiceClient();
-  const { error: updateError } = await serviceClient
+  const { data: claimed, error: updateError } = await serviceClient
     .from('listing_comments')
     .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
     .eq('id', commentId)
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .select('id')
+    .single();
 
   if (updateError) {
+    if (updateError.code === 'PGRST116') {
+      return { error: 'Comment already deleted' };
+    }
     console.error('[Comments] Delete failed:', updateError.message);
     return { error: 'Failed to delete comment' };
+  }
+  if (!claimed) {
+    return { error: 'Comment already deleted' };
   }
 
   void logAuditEvent({
