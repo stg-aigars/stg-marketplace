@@ -99,7 +99,7 @@ export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinatio
           ))}
         </div>
 
-        {trackingUrl && (
+        {trackingUrl && order.shipped_at && (
           <div className="mt-3 pt-3 border-t border-semantic-border-subtle">
             <a
               href={trackingUrl}

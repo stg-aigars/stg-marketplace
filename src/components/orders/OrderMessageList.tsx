@@ -1,6 +1,5 @@
 'use client';
 
-import { ChatCircleDots } from '@phosphor-icons/react/ssr';
 import { Badge, UserIdentity } from '@/components/ui';
 import { formatMessageTime } from '@/lib/date-utils';
 import { DeleteOrderMessageButton } from './DeleteOrderMessageButton';
@@ -14,14 +13,7 @@ interface OrderMessageListProps {
 
 export function OrderMessageList({ messages, isStaff, locale }: OrderMessageListProps) {
   if (messages.length === 0) {
-    return (
-      <div className="text-center py-6">
-        <ChatCircleDots size={36} className="mx-auto text-semantic-text-muted mb-2" />
-        <p className="text-sm text-semantic-text-muted">
-          No messages yet
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
