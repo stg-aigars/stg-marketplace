@@ -12,6 +12,7 @@ interface OrderDeclinedBuyerProps {
   orderNumber: string;
   orderId: string;
   gameName: string;
+  paymentMethod?: string | null;
   appUrl: string;
 }
 
@@ -19,6 +20,7 @@ export function OrderDeclinedBuyer({
   buyerName,
   orderNumber,
   gameName,
+  paymentMethod,
   appUrl,
 }: OrderDeclinedBuyerProps) {
   const browseUrl = `${appUrl}/browse`;
@@ -40,7 +42,11 @@ export function OrderDeclinedBuyer({
       </div>
 
       <Text style={s.body}>
-        Your payment will be refunded automatically. Refunds typically appear within 3–5 business days depending on your bank.
+        {paymentMethod === 'bank_link'
+          ? 'Your refund has been initiated. Bank transfers typically take 1–3 business days.'
+          : paymentMethod === 'card'
+            ? 'Your refund has been processed and should appear on your card shortly.'
+            : 'Your payment will be refunded automatically.'}
       </Text>
 
       <div style={s.ctaSection}>

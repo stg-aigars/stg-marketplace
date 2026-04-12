@@ -299,6 +299,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     orderId,
     gameName: getOrderGameSummary(order.order_items, order.listings),
     refundAmountCents: totalRefunded,
+    paymentMethod: order.payment_method,
   }).catch((err) => console.error('[Email] Failed to send refund emails:', err));
 
   void notifyMany([
@@ -521,6 +522,7 @@ export async function staffResolveDispute(
       orderId,
       gameName: getOrderGameSummary(order.order_items, order.listings),
       refundAmountCents: totalRefunded,
+      paymentMethod: order.payment_method,
       staffNotes: notes,
     }).catch((err) => console.error('[Email] Failed to send staff refund emails:', err));
 

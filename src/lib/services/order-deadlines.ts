@@ -285,6 +285,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
           buyerName: order.buyer_profile?.full_name ?? 'Buyer',
           buyerEmail, orderNumber: order.order_number,
           orderId: order.id, gameName: order.game_name, reason,
+          paymentMethod: order.payment_method,
         });
       }
       if (sellerEmail) {

@@ -252,6 +252,7 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
     orderNumber: order.order_number,
     orderId,
     gameName: gameSummary,
+    paymentMethod: order.payment_method,
   }).catch((err) => console.error('[Email] Failed to send order-declined to buyer:', err));
   void notify(order.buyer_id, 'order.declined', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 

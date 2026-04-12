@@ -18,23 +18,30 @@ interface OrderAutoCancelledProps {
   gameName: string;
   reason: CancelReason;
   variant: Variant;
+  paymentMethod?: string | null;
   appUrl: string;
 }
 
-const REASON_TEXT: Record<CancelReason, Record<Variant, string>> = {
+const REASON_BASE: Record<CancelReason, Record<Variant, string>> = {
   response_timeout: {
     buyer:
-      'Your order was automatically cancelled because the seller did not respond within 48 hours. Your payment will be refunded.',
+      'Your order was automatically cancelled because the seller did not respond within 48 hours.',
     seller:
       'You did not respond to this order within 48 hours, so it was automatically cancelled. The buyer has been refunded.',
   },
   shipping_timeout: {
     buyer:
-      'Your order was automatically cancelled because the seller did not ship it within the required timeframe. Your payment will be refunded.',
+      'Your order was automatically cancelled because the seller did not ship it within the required timeframe.',
     seller:
       'You did not ship this order within 5 days of accepting it, so it was automatically cancelled. The buyer has been refunded.',
   },
 };
+
+function getRefundNote(paymentMethod?: string | null): string {
+  if (paymentMethod === 'bank_link') return ' Your refund has been initiated. Bank transfers typically take 1–3 business days.';
+  if (paymentMethod === 'card') return ' Your refund has been processed and should appear on your card shortly.';
+  return ' Your payment will be refunded.';
+}
 
 export function OrderAutoCancelled({
   recipientName,
@@ -43,9 +50,11 @@ export function OrderAutoCancelled({
   gameName,
   reason,
   variant,
+  paymentMethod,
   appUrl,
 }: OrderAutoCancelledProps) {
-  const message = REASON_TEXT[reason][variant];
+  const base = REASON_BASE[reason][variant];
+  const message = variant === 'buyer' ? base + getRefundNote(paymentMethod) : base;
 
   return (
     <EmailLayout preview={`Order cancelled: ${gameName} — ${orderNumber}`}>
