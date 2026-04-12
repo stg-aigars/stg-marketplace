@@ -14,6 +14,7 @@ function makeInput(overrides: Partial<ListingJsonLdInput> = {}): ListingJsonLdIn
     imageUrls: [],
     publisher: null,
     sellerName: 'Jane',
+    sellerCountry: 'LV',
     isAuction: false,
     currentBidCents: null,
     ...overrides,
@@ -119,5 +120,93 @@ describe('buildListingJsonLd', () => {
     const result = buildListingJsonLd(makeInput({ priceCents: 3500 }), BASE_URL);
     const offers = result!.offers as Record<string, unknown>;
     expect(offers.price).toBe('35.00');
+  });
+
+  it('includes shippingDetails for Baltic seller', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: 'LV' }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    const shipping = offers.shippingDetails as Record<string, unknown>[];
+    expect(shipping).toHaveLength(3);
+
+    // Verify rates match SHIPPING_PRICES_CENTS for LV origin
+    const byDest = Object.fromEntries(
+      shipping.map((s) => {
+        const dest = (s.shippingDestination as Record<string, unknown>).addressCountry;
+        const rate = (s.shippingRate as Record<string, unknown>).value;
+        return [dest, rate];
+      })
+    );
+    expect(byDest.LV).toBe('1.90');
+    expect(byDest.LT).toBe('2.10');
+    expect(byDest.EE).toBe('2.10');
+  });
+
+  it('uses correct transit times for domestic vs cross-border', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: 'LV' }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    const shipping = offers.shippingDetails as Record<string, unknown>[];
+
+    const findDest = (country: string) =>
+      shipping.find((s) => (s.shippingDestination as Record<string, unknown>).addressCountry === country)!;
+
+    // Domestic: 1-3 days
+    const domestic = (findDest('LV').deliveryTime as Record<string, unknown>).transitTime as Record<string, unknown>;
+    expect(domestic.minValue).toBe(1);
+    expect(domestic.maxValue).toBe(3);
+
+    // Cross-border: 2-5 days
+    const crossBorder = (findDest('LT').deliveryTime as Record<string, unknown>).transitTime as Record<string, unknown>;
+    expect(crossBorder.minValue).toBe(2);
+    expect(crossBorder.maxValue).toBe(5);
+  });
+
+  it('includes handlingTime 0-5 days on shipping details', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: 'LV' }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    const shipping = offers.shippingDetails as Record<string, unknown>[];
+
+    for (const entry of shipping) {
+      const handling = (entry.deliveryTime as Record<string, unknown>).handlingTime as Record<string, unknown>;
+      expect(handling['@type']).toBe('QuantitativeValue');
+      expect(handling.minValue).toBe(0);
+      expect(handling.maxValue).toBe(5);
+      expect(handling.unitCode).toBe('DAY');
+    }
+  });
+
+  it('includes hasMerchantReturnPolicy with 2-day window', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: 'LV' }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    const policy = offers.hasMerchantReturnPolicy as Record<string, unknown>;
+    expect(policy['@type']).toBe('MerchantReturnPolicy');
+    expect(policy.returnPolicyCategory).toBe('https://schema.org/MerchantReturnFiniteReturnWindow');
+    expect(policy.merchantReturnDays).toBe(2);
+    expect(policy.applicableCountry).toBe('LV');
+  });
+
+  it('omits shipping and return policy when sellerCountry is null', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: null }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    expect(offers.shippingDetails).toBeUndefined();
+    expect(offers.hasMerchantReturnPolicy).toBeUndefined();
+  });
+
+  it('omits shipping and return policy when sellerCountry is non-Baltic', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: 'DE' }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    expect(offers.shippingDetails).toBeUndefined();
+    expect(offers.hasMerchantReturnPolicy).toBeUndefined();
+  });
+
+  it('includes all three destination countries in shippingDetails', () => {
+    const result = buildListingJsonLd(makeInput({ sellerCountry: 'EE' }), BASE_URL);
+    const offers = result!.offers as Record<string, unknown>;
+    const shipping = offers.shippingDetails as Record<string, unknown>[];
+    const destinations = shipping.map(
+      (s) => (s.shippingDestination as Record<string, unknown>).addressCountry
+    );
+    expect(destinations).toContain('LT');
+    expect(destinations).toContain('LV');
+    expect(destinations).toContain('EE');
   });
 });

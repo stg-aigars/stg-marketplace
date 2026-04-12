@@ -190,6 +190,7 @@ export default async function ListingDetailPage(
     ],
     publisher: listing.publisher,
     sellerName: sellerProfile?.full_name ?? 'Seller',
+    sellerCountry: listing.country,
     isAuction: listing.listing_type === 'auction',
     currentBidCents: listing.current_bid_cents,
   }, baseUrl);
