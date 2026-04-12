@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { REFUND_STATUS } from '@/lib/services/order-refund';
 
 export const metadata: Metadata = {
   title: 'Staff Dashboard',
@@ -38,7 +39,7 @@ export default async function StaffDashboardPage() {
     serviceClient
       .from('orders')
       .select('id', { count: 'exact', head: true })
-      .in('refund_status', ['failed', 'partial']),
+      .in('refund_status', [REFUND_STATUS.FAILED, REFUND_STATUS.PARTIAL]),
   ]);
 
   const totalOrders = ordersResult.count ?? 0;

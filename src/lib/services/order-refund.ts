@@ -10,6 +10,15 @@ import { refundToWallet } from '@/lib/services/wallet';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { PaymentMethod } from '@/lib/orders/types';
 
+/** Refund status values written to orders.refund_status. */
+export const REFUND_STATUS = {
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  PARTIAL: 'partial',
+} as const;
+
+export type RefundStatus = typeof REFUND_STATUS[keyof typeof REFUND_STATUS];
+
 /**
  * Thrown when a refund could not be initiated at all — neither the card leg
  * nor the wallet leg moved any money. Callers that have already claimed
@@ -60,7 +69,7 @@ export async function markRefundFailed(orderId: string): Promise<void> {
   const serviceClient = createServiceClient();
   await serviceClient
     .from('orders')
-    .update({ refund_status: 'failed' })
+    .update({ refund_status: REFUND_STATUS.FAILED })
     .eq('id', orderId);
 }
 
@@ -69,7 +78,7 @@ export async function refundOrder(
   order: RefundableOrder
 ): Promise<{ cardRefunded: number; walletRefunded: number }> {
   // Idempotency: already refunded
-  if (order.refund_status === 'completed') {
+  if (order.refund_status === REFUND_STATUS.COMPLETED) {
     return { cardRefunded: 0, walletRefunded: 0 };
   }
 
@@ -115,8 +124,8 @@ export async function refundOrder(
   const totalRefunded = cardRefunded + walletRefunded;
   const expectedTotal = order.total_amount_cents;
   const refundStatus =
-    totalRefunded === 0 ? 'failed' :
-    totalRefunded >= expectedTotal ? 'completed' : 'partial';
+    totalRefunded === 0 ? REFUND_STATUS.FAILED :
+    totalRefunded >= expectedTotal ? REFUND_STATUS.COMPLETED : REFUND_STATUS.PARTIAL;
 
   // Don't write refund status if nothing was refunded — allows retry on next cron run
   if (totalRefunded === 0) {

@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus } from '@/lib/orders/types';
 import { getOrderGameSummary } from '@/lib/orders/utils';
+import { REFUND_STATUS } from '@/lib/services/order-refund';
 
 export const metadata: Metadata = {
   title: 'All Orders — Staff',
@@ -50,7 +51,7 @@ export default async function StaffOrdersPage(
     .limit(100);
 
   if (searchParams.refund_status === 'issues') {
-    query = query.in('refund_status', ['failed', 'partial']);
+    query = query.in('refund_status', [REFUND_STATUS.FAILED, REFUND_STATUS.PARTIAL]);
   } else if (searchParams.status) {
     query = query.eq('status', searchParams.status);
   }
@@ -101,10 +102,10 @@ export default async function StaffOrdersPage(
                       {order.payment_method === 'bank_link' && (
                         <Badge variant="default">bank link</Badge>
                       )}
-                      {order.refund_status === 'failed' && (
+                      {order.refund_status === REFUND_STATUS.FAILED && (
                         <Badge variant="error">refund failed</Badge>
                       )}
-                      {order.refund_status === 'partial' && (
+                      {order.refund_status === REFUND_STATUS.PARTIAL && (
                         <Badge variant="warning">refund partial</Badge>
                       )}
                     </div>

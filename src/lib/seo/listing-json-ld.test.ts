@@ -85,7 +85,7 @@ describe('buildListingJsonLd', () => {
   it('includes seller notes in description, capped at 200 chars', () => {
     const longNotes = 'A'.repeat(300);
     const result = buildListingJsonLd(makeInput({ sellerNotes: longNotes }), BASE_URL);
-    expect(result!.description!.length).toBeLessThanOrEqual(200);
+    expect((result!.description as string).length).toBeLessThanOrEqual(200);
     expect(result!.description).toContain('Pre-loved board game in Very Good condition');
   });
 
