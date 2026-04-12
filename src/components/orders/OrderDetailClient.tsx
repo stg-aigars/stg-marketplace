@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Warning } from '@phosphor-icons/react/ssr';
-import { Badge, BackLink, Card, CardBody, ConditionBadge, UserIdentity } from '@/components/ui';
+import { Warning, FileText } from '@phosphor-icons/react/ssr';
+import { Alert, Badge, BackLink, Card, CardBody, UserIdentity } from '@/components/ui';
 import { ListingIdentity } from '@/components/listings/atoms';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { formatCentsToCurrency, calculateSellerEarnings } from '@/lib/services/pricing';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
-import type { ListingCondition } from '@/lib/listings/types';
 import { ShippingInfo } from './ShippingInfo';
 import { UnifiedTimeline } from './UnifiedTimeline';
 import type { TrackingEventRow } from '@/lib/services/tracking';
@@ -80,6 +79,23 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancell
   return messages[role]?.[status] ?? null;
 }
 
+function getAlertVariant(status: OrderStatus): 'error' | 'success' | 'warning' | 'info' {
+  switch (status) {
+    case 'pending_seller':
+      return 'warning';
+    case 'accepted':
+    case 'shipped':
+      return 'info';
+    case 'delivered':
+    case 'completed':
+      return 'success';
+    case 'cancelled':
+    case 'disputed':
+    case 'refunded':
+      return 'error';
+  }
+}
+
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
@@ -104,9 +120,9 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
 
       {/* Status message */}
       {statusMessage && (
-        <div className="mb-6 p-4 rounded-lg bg-semantic-bg-subtle border border-semantic-border-subtle">
-          <p className="text-sm text-semantic-text-secondary">{statusMessage}</p>
-        </div>
+        <Alert variant={getAlertVariant(status)} className="mb-6">
+          <p className="text-sm">{statusMessage}</p>
+        </Alert>
       )}
 
       {/* Shipping error (seller only) */}
@@ -213,82 +229,201 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           userRole={userRole}
         />
 
-        {/* Items */}
+        {/* Order summary */}
         <Card>
           <CardBody>
-            {hasMultipleItems && (
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
-                Items ({items.length})
-              </h2>
-            )}
-            <div className={hasMultipleItems ? 'space-y-3' : ''}>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+              Order summary
+            </h2>
+
+            {/* Item rows */}
+            <div className="space-y-3 mb-4">
               {items.map((item) => {
                 const itemImage = item.listings?.games?.thumbnail ?? null;
-                const itemGameName = item.listings?.game_year
-                  ? `${item.listings.game_name ?? 'Unknown game'} (${item.listings.game_year})`
-                  : item.listings?.game_name ?? 'Unknown game';
+                const itemGameName = item.listings?.game_name ?? 'Unknown game';
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const itemExpansions = ((item.listings as any)?.listing_expansions ?? []) as Array<{ game_name: string }>;
+                const itemExpansionCount = ((item.listings as any)?.listing_expansions ?? []).length as number;
                 return (
-                  <div key={item.id} className={hasMultipleItems ? 'pb-3 border-b border-semantic-border-subtle last:border-0 last:pb-0' : ''}>
-                    <ListingIdentity
-                      listingId={item.listing_id}
-                      image={itemImage}
-                      title={itemGameName}
-                      size="md"
-                      price={hasMultipleItems ? (
-                        <span className="text-sm font-semibold text-semantic-text-heading">
-                          {formatCentsToCurrency(item.price_cents)}
-                        </span>
-                      ) : undefined}
-                    />
-                    {item.listings?.condition && (
-                      <div className="mt-1 ml-[68px]">
-                        <ConditionBadge condition={item.listings.condition as ListingCondition} />
-                      </div>
-                    )}
-                    {itemExpansions.length > 0 && (
-                      <p className="text-xs text-semantic-text-muted mt-1 ml-[68px]">
-                        {itemExpansions.map((e) => e.game_name).join(', ')}
-                      </p>
-                    )}
-                  </div>
+                  <ListingIdentity
+                    key={item.id}
+                    listingId={item.listing_id}
+                    image={itemImage}
+                    title={itemGameName}
+                    expansionCount={itemExpansionCount}
+                    price={
+                      <span className="text-sm font-semibold text-semantic-text-heading">
+                        {formatCentsToCurrency(item.price_cents)}
+                      </span>
+                    }
+                  />
                 );
               })}
             </div>
-          </CardBody>
-        </Card>
 
-        {/* Price breakdown */}
-        <Card>
-          <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
-              Price breakdown
-            </h2>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-semantic-text-secondary">
-                  {hasMultipleItems ? `Items (${items.length})` : 'Item price'}
-                </span>
-                <span className="text-semantic-text-primary">
-                  {formatCentsToCurrency(order.items_total_cents)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-semantic-text-secondary">Shipping</span>
-                <span className="text-semantic-text-primary">
-                  {formatCentsToCurrency(order.shipping_cost_cents)}
-                </span>
-              </div>
-              <div className="border-t border-semantic-border-subtle pt-2">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-semantic-text-heading">Total paid</span>
-                  <span className="text-semantic-text-heading">
-                    {formatCentsToCurrency(order.total_amount_cents)}
-                  </span>
+            {/* Price breakdown — buyer view */}
+            {userRole === 'buyer' && (() => {
+              const isCancelled = status === 'cancelled';
+              const isRefunded = status === 'refunded';
+
+              return (
+                <div className="space-y-2 text-sm border-t border-semantic-border-subtle pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-semantic-text-secondary">Shipping</span>
+                    <span>{formatCentsToCurrency(order.shipping_cost_cents)}</span>
+                  </div>
+
+                  <div className="border-t border-semantic-border-subtle pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-semantic-text-heading">
+                        {isCancelled ? 'Total' : 'Total paid'}
+                      </span>
+                      <span className={isCancelled ? 'text-semantic-text-muted line-through' : 'text-semantic-text-heading'}>
+                        {formatCentsToCurrency(order.total_amount_cents)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Refund line — cancelled or refunded */}
+                  {(isCancelled || isRefunded) && (
+                    <div className="flex justify-between font-medium text-semantic-success">
+                      <span>Refunded</span>
+                      <span>{formatCentsToCurrency(order.refund_amount_cents ?? order.total_amount_cents)}</span>
+                    </div>
+                  )}
+
+                  {/* Payment method — only for active/completed orders (not cancelled) */}
+                  {!isCancelled && (
+                    <>
+                      {order.payment_method === 'wallet' ? (
+                        <div className="flex justify-between">
+                          <span className="text-semantic-text-secondary">Paid from wallet</span>
+                        </div>
+                      ) : order.buyer_wallet_debit_cents > 0 ? (
+                        <>
+                          <div className="flex justify-between text-semantic-brand-active">
+                            <span>Wallet</span>
+                            <span>-{formatCentsToCurrency(order.buyer_wallet_debit_cents)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-semantic-text-secondary">
+                              Paid by {order.payment_method === 'card' ? 'card' : 'bank link'}
+                            </span>
+                            <span>
+                              {formatCentsToCurrency(order.total_amount_cents - order.buyer_wallet_debit_cents)}
+                            </span>
+                          </div>
+                        </>
+                      ) : order.payment_method ? (
+                        <div className="flex justify-between">
+                          <span className="text-semantic-text-secondary">
+                            Paid by {order.payment_method === 'card' ? 'card' : 'bank link'}
+                          </span>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
+              );
+            })()}
+
+            {/* Price breakdown — seller view */}
+            {userRole === 'seller' && (() => {
+              const isCancelled = status === 'cancelled';
+              const isRefunded = status === 'refunded';
+
+              // Cancelled orders: no transaction occurred — skip financial breakdown
+              if (isCancelled) {
+                return (
+                  <div className="text-sm border-t border-semantic-border-subtle pt-3">
+                    <p className="text-semantic-text-muted">No charges applied</p>
+                  </div>
+                );
+              }
+
+              const hasActualAmounts = order.platform_commission_cents != null && order.seller_wallet_credit_cents != null;
+              const estimated = calculateSellerEarnings(order.items_total_cents);
+
+              const displayCommission = hasActualAmounts
+                ? formatCentsToCurrency(order.platform_commission_cents!)
+                : formatCentsToCurrency(estimated.commissionCents);
+
+              const displayEarnings = hasActualAmounts
+                ? formatCentsToCurrency(order.seller_wallet_credit_cents!)
+                : `~${formatCentsToCurrency(estimated.walletCreditCents)}`;
+
+              return (
+                <div className="space-y-2 text-sm border-t border-semantic-border-subtle pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-semantic-text-secondary">Items</span>
+                    <span>{formatCentsToCurrency(order.items_total_cents)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-semantic-text-secondary">Commission (10%)</span>
+                    <span className="text-semantic-error">-{displayCommission}</span>
+                  </div>
+
+                  <div className="border-t border-semantic-border-subtle pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-semantic-text-heading">
+                        {hasActualAmounts ? (isRefunded ? 'You received' : 'You receive') : 'You receive (est.)'}
+                      </span>
+                      <span className="text-semantic-brand-active">
+                        {displayEarnings}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Clawback line for refunded orders */}
+                  {isRefunded && hasActualAmounts && (
+                    <div className="flex justify-between font-medium text-semantic-error">
+                      <span>Clawback</span>
+                      <span>-{displayEarnings}</span>
+                    </div>
+                  )}
+
+                  {/* Shipping note — reference appropriate document */}
+                  <p className="text-xs text-semantic-text-muted">
+                    Shipping ({formatCentsToCurrency(order.shipping_cost_cents)}) billed separately
+                    {isRefunded ? ' — see credit note' : ' — see commission invoice'}
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Document links */}
+            {['completed', 'refunded'].includes(status) && (
+              <div className="flex flex-wrap gap-3 border-t border-semantic-border-subtle pt-3 mt-3">
+                {userRole === 'buyer' && (
+                  <Link
+                    href={`/orders/${order.id}/confirmation`}
+                    className="flex items-center gap-1.5 text-sm text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
+                  >
+                    <FileText size={16} />
+                    Order confirmation
+                  </Link>
+                )}
+                {userRole === 'seller' && (
+                  <>
+                    <Link
+                      href={`/orders/${order.id}/invoice`}
+                      className="flex items-center gap-1.5 text-sm text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
+                    >
+                      <FileText size={16} />
+                      Commission invoice
+                    </Link>
+                    {status === 'refunded' && (
+                      <Link
+                        href={`/orders/${order.id}/credit-note`}
+                        className="flex items-center gap-1.5 text-sm text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
+                      >
+                        <FileText size={16} />
+                        Credit note
+                      </Link>
+                    )}
+                  </>
+                )}
               </div>
-            </div>
+            )}
           </CardBody>
         </Card>
 

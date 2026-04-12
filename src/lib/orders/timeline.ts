@@ -31,7 +31,7 @@ export interface TimelineEntry {
 const CANCELLATION_LABELS: Record<CancellationReason, string> = {
   declined: 'The seller declined this order',
   response_timeout: "The seller didn't respond in time",
-  shipping_timeout: 'Shipping could not be completed',
+  shipping_timeout: "The seller didn't ship in time",
   system: 'Cancelled automatically',
 };
 
