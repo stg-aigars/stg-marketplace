@@ -12,7 +12,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
-import { getPaymentStatus, SUCCESSFUL_STATES, FAILED_STATES } from '@/lib/services/everypay';
+import { getPaymentStatus, SUCCESSFUL_STATES, FAILED_STATES, mapEveryPayMethod } from '@/lib/services/everypay';
 import { debitWallet } from '@/lib/services/wallet';
 import { fulfillCartPayment } from '@/lib/services/payment-fulfillment';
 import { sendEmail } from '@/lib/email/service';
@@ -63,11 +63,13 @@ export async function POST(request: Request) {
         const paymentStatus = await getPaymentStatus(group.everypay_payment_reference!);
 
         if (SUCCESSFUL_STATES.has(paymentStatus.payment_state)) {
+          const paymentMethod = mapEveryPayMethod(paymentStatus.payment_method, paymentStatus.order_reference);
           const result = await fulfillCartPayment(
             group,
             group.everypay_payment_reference!,
             paymentStatus.payment_state,
-            serviceClient
+            serviceClient,
+            paymentMethod
           );
 
           if (result.outcome === 'created') {
@@ -137,7 +139,7 @@ export async function POST(request: Request) {
     .from('orders')
     .select('id, buyer_id, order_number, cart_group_id, created_at')
     .eq('buyer_wallet_debit_cents', 0)
-    .eq('payment_method', 'card')
+    .neq('payment_method', 'wallet')
     .not('cart_group_id', 'is', null)
     .gt('created_at', walletRetryCutoff)
     .lt('created_at', walletMinAge)

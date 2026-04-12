@@ -12,7 +12,9 @@
  * @see https://support.every-pay.com/api-documentation/
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { env } from '@/lib/env';
+import type { PaymentMethod } from '@/lib/orders/types';
 import type {
   CapturePaymentRequest,
   CreatePaymentRequest,
@@ -131,6 +133,44 @@ async function request<T>(
   }
 
   return data as T;
+}
+
+// ---------------------------------------------------------------------------
+// Payment method mapping
+// ---------------------------------------------------------------------------
+
+/** Known open-banking method prefixes from Baltic EveryPay providers. */
+const KNOWN_OB_PREFIXES = ['ob_', 'swed_ob_', 'seb_ob_', 'lhv_ob_', 'luminor_ob_', 'citadele_ob_'];
+
+/**
+ * Map an EveryPay `payment_method` string to our PaymentMethod enum.
+ * Warns via Sentry on unknown values so new EveryPay methods (Apple Pay,
+ * Google Pay, BNPL) are surfaced before they silently accumulate under
+ * a wrong category.
+ */
+export function mapEveryPayMethod(raw: string | undefined, orderReference?: string): PaymentMethod {
+  if (raw === 'card') return 'card';
+
+  if (raw) {
+    const isKnownOb = KNOWN_OB_PREFIXES.some(p => raw.startsWith(p));
+    if (!isKnownOb) {
+      console.warn(`[EveryPay] Unknown payment method "${raw}" for ${orderReference ?? 'unknown order'} — mapped to bank_link`);
+      Sentry.captureMessage(`Unknown EveryPay payment_method: ${raw}`, {
+        level: 'warning',
+        tags: { rawPaymentMethod: raw },
+        extra: { orderReference: orderReference ?? 'unknown' },
+      });
+    }
+    return 'bank_link';
+  }
+
+  console.warn(`[EveryPay] Missing payment_method for ${orderReference ?? 'unknown order'} — defaulting to bank_link`);
+  Sentry.captureMessage('Missing EveryPay payment_method field', {
+    level: 'warning',
+    tags: { rawPaymentMethod: 'undefined' },
+    extra: { orderReference: orderReference ?? 'unknown' },
+  });
+  return 'bank_link';
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
+import type { PaymentMethod } from '@/lib/orders/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // ---------------------------------------------------------------------------
@@ -68,7 +69,8 @@ export async function fulfillCartPayment(
   paymentReference: string,
   paymentState: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>
+  serviceClient: SupabaseClient<any, any, any>,
+  paymentMethod: PaymentMethod = 'card'
 ): Promise<CartFulfillmentOutcome> {
   // Idempotency: check if orders already exist for this group
   const { data: existingOrders } = await serviceClient
@@ -195,7 +197,7 @@ export async function fulfillCartPayment(
         sellerCountry: sellerItems[0].country,
         paymentReference,
         paymentState,
-        paymentMethod: 'card',
+        paymentMethod,
         walletDebitCents: orderWalletDebit,
         terminalId: group.terminal_id,
         terminalName: group.terminal_name,

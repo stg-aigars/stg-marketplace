@@ -96,6 +96,10 @@ export interface EveryPayPaymentResponse {
   transaction_time?: string;
   /** Processing account name */
   account_name?: string;
+  /** Payment method chosen by the buyer. Raw EveryPay value: "card" for cards,
+   *  provider-specific string for open banking (e.g. "swed_ob_ep_baltics_lv").
+   *  Map to our PaymentMethod enum via mapEveryPayMethod(). */
+  payment_method: string;
   /** Card details (if card payment) */
   cc_details?: {
     token?: string;

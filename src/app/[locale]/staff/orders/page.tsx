@@ -98,6 +98,9 @@ export default async function StaffOrdersPage(
                       {order.payment_method === 'wallet' && (
                         <Badge variant="default">wallet</Badge>
                       )}
+                      {order.payment_method === 'bank_link' && (
+                        <Badge variant="default">bank link</Badge>
+                      )}
                       {order.refund_status === 'failed' && (
                         <Badge variant="error">refund failed</Badge>
                       )}

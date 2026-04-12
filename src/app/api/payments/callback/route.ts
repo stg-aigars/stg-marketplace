@@ -10,7 +10,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getPaymentStatus, SUCCESSFUL_STATES } from '@/lib/services/everypay';
+import { getPaymentStatus, SUCCESSFUL_STATES, mapEveryPayMethod } from '@/lib/services/everypay';
 import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
@@ -149,11 +149,13 @@ async function handleCartCallback(
   }
 
   // Fulfill the cart payment — create orders, debit wallet, send notifications
+  const paymentMethod = mapEveryPayMethod(paymentStatus.payment_method, paymentStatus.order_reference);
   const result = await fulfillCartPayment(
     group,
     paymentReference,
     paymentStatus.payment_state,
-    serviceClient
+    serviceClient,
+    paymentMethod
   );
 
   switch (result.outcome) {
