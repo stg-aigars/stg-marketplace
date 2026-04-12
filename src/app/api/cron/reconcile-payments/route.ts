@@ -139,7 +139,7 @@ export async function POST(request: Request) {
     .from('orders')
     .select('id, buyer_id, order_number, cart_group_id, created_at')
     .eq('buyer_wallet_debit_cents', 0)
-    .eq('payment_method', 'card')
+    .neq('payment_method', 'wallet')
     .not('cart_group_id', 'is', null)
     .gt('created_at', walletRetryCutoff)
     .lt('created_at', walletMinAge)
