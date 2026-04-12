@@ -10,6 +10,7 @@ import { formatDateTime } from '@/lib/date-utils';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, DisputeRow } from '@/lib/orders/types';
 import type { ListingCondition } from '@/lib/listings/types';
+import { REFUND_STATUS } from '@/lib/services/order-refund';
 import {
   EnvelopeSimple,
   Phone,
@@ -317,16 +318,16 @@ export default async function StaffOrderDetailPage(
         {/* Main content */}
         <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
           {/* Refund status panel — prominent when refund is failed or partial */}
-          {order.refund_status && order.refund_status !== 'completed' && (
+          {order.refund_status && order.refund_status !== REFUND_STATUS.COMPLETED && (
             <Card className={
-              order.refund_status === 'failed'
+              order.refund_status === REFUND_STATUS.FAILED
                 ? 'border-semantic-error/30 bg-semantic-error/5'
                 : 'border-semantic-warning/30 bg-semantic-warning/5'
             }>
               <CardBody>
                 <div className="flex items-start gap-3">
                   <Warning size={20} className={
-                    order.refund_status === 'failed'
+                    order.refund_status === REFUND_STATUS.FAILED
                       ? 'text-semantic-error shrink-0 mt-0.5'
                       : 'text-semantic-warning shrink-0 mt-0.5'
                   } />
@@ -335,12 +336,12 @@ export default async function StaffOrderDetailPage(
                       <p className="font-semibold text-semantic-text-heading">
                         Refund {order.refund_status}
                       </p>
-                      <Badge variant={order.refund_status === 'failed' ? 'error' : 'warning'}>
+                      <Badge variant={order.refund_status === REFUND_STATUS.FAILED ? 'error' : 'warning'}>
                         {order.refund_status}
                       </Badge>
                     </div>
                     <p className="text-sm text-semantic-text-secondary">
-                      {order.refund_status === 'failed'
+                      {order.refund_status === REFUND_STATUS.FAILED
                         ? 'No refund was processed. Resolve manually via EveryPay merchant portal (card) or direct wallet credit, then update refund_status in SQL.'
                         : 'Refund was partially processed. Reconcile the shortfall manually.'}
                     </p>
