@@ -277,21 +277,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     .update({ active: false })
     .eq('order_id', orderId);
 
-  // Restore listings to active so seller can re-list after refund
-  const listingIds = getOrderListingIds(order.order_items, order.listing_id);
-  if (listingIds.length > 0) {
-    await supabase
-      .from('listings')
-      .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
-      .in('id', listingIds)
-      .eq('status', 'reserved');
-
-    // Shelf sync: revert items to open_to_offers (inverse of syncShelfOnListingSold)
-    for (const listingId of listingIds) {
-      void syncShelfOnListingRemoved(order.seller_id, listingId)
-        .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
-    }
-  }
+  await restoreListingsAfterRefund(supabase, order);
 
   const totalRefunded = cardRefunded + walletRefunded;
   void logAuditEvent({
@@ -374,6 +360,29 @@ async function handleRefundInitiationFailure(
     tags: { orderId, orderNumber: order.order_number, buyerId: order.buyer_id, phase },
   });
   throw err;
+}
+
+/**
+ * Restore listings to active and revert shelf items after a dispute refund.
+ * Shared by sellerAcceptRefund and staffResolveDispute (refund branch).
+ */
+async function restoreListingsAfterRefund(
+  supabase: ReturnType<typeof createServiceClient>,
+  order: Pick<OrderRow, 'seller_id' | 'listing_id'> & { order_items: Array<{ listing_id: string }> }
+): Promise<void> {
+  const listingIds = getOrderListingIds(order.order_items, order.listing_id);
+  if (listingIds.length === 0) return;
+
+  await supabase
+    .from('listings')
+    .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
+    .in('id', listingIds)
+    .eq('status', 'reserved');
+
+  for (const listingId of listingIds) {
+    void syncShelfOnListingRemoved(order.seller_id, listingId)
+      .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
+  }
 }
 
 /**
@@ -491,21 +500,7 @@ export async function staffResolveDispute(
       .update({ active: false })
       .eq('order_id', orderId);
 
-    // Restore listings to active so seller can re-list after refund
-    const listingIds = getOrderListingIds(order.order_items, order.listing_id);
-    if (listingIds.length > 0) {
-      await supabase
-        .from('listings')
-        .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
-        .in('id', listingIds)
-        .eq('status', 'reserved');
-
-      // Shelf sync: revert items to open_to_offers (inverse of syncShelfOnListingSold)
-      for (const listingId of listingIds) {
-        void syncShelfOnListingRemoved(order.seller_id, listingId)
-          .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
-      }
-    }
+    await restoreListingsAfterRefund(supabase, order);
 
     const totalRefunded = cardRefunded + walletRefunded;
     void logAuditEvent({
