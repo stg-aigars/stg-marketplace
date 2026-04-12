@@ -1,6 +1,5 @@
 import type { WithContext, Product, ItemAvailability } from 'schema-dts';
-import { SHIPPING_PRICES_CENTS, TERMINAL_COUNTRIES, isTerminalCountry } from '@/lib/services/unisend/types';
-import type { TerminalCountry } from '@/lib/services/unisend/types';
+import { SHIPPING_PRICES_CENTS, TERMINAL_COUNTRIES, isTerminalCountry, type TerminalCountry } from '@/lib/services/unisend/types';
 
 const SCHEMA_ITEM_CONDITION = 'https://schema.org/UsedCondition' as const;
 
@@ -34,52 +33,47 @@ function getSchemaAvailability(status: string): ItemAvailability | null {
   }
 }
 
-function buildShippingDetails(sellerCountry: TerminalCountry) {
-  return TERMINAL_COUNTRIES.map((dest) => {
-    const isDomestic = sellerCountry === dest;
-    const priceCents = SHIPPING_PRICES_CENTS[sellerCountry][dest];
-    return {
-      '@type': 'OfferShippingDetails' as const,
-      shippingRate: {
-        '@type': 'MonetaryAmount' as const,
-        value: (priceCents / 100).toFixed(2),
-        currency: 'EUR',
-      },
-      shippingDestination: {
-        '@type': 'DefinedRegion' as const,
-        addressCountry: dest,
-      },
-      shippingOrigin: {
-        '@type': 'DefinedRegion' as const,
-        addressCountry: sellerCountry,
-      },
-      deliveryTime: {
-        '@type': 'ShippingDeliveryTime' as const,
-        handlingTime: {
-          '@type': 'QuantitativeValue' as const,
-          minValue: 0,
-          maxValue: 5,
-          unitCode: 'DAY',
+// Precomputed at module load — all inputs are static (3 origins × 3 destinations)
+const SHIPPING_DETAILS = Object.fromEntries(
+  TERMINAL_COUNTRIES.map((origin) => [
+    origin,
+    TERMINAL_COUNTRIES.map((dest) => {
+      const isDomestic = origin === dest;
+      return {
+        '@type': 'OfferShippingDetails' as const,
+        shippingRate: {
+          '@type': 'MonetaryAmount' as const,
+          value: (SHIPPING_PRICES_CENTS[origin][dest] / 100).toFixed(2),
+          currency: 'EUR',
         },
-        transitTime: {
-          '@type': 'QuantitativeValue' as const,
-          minValue: isDomestic ? 1 : 2,
-          maxValue: isDomestic ? 3 : 5,
-          unitCode: 'DAY',
+        shippingDestination: { '@type': 'DefinedRegion' as const, addressCountry: dest },
+        shippingOrigin: { '@type': 'DefinedRegion' as const, addressCountry: origin },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime' as const,
+          handlingTime: { '@type': 'QuantitativeValue' as const, minValue: 0, maxValue: 5, unitCode: 'DAY' },
+          transitTime: {
+            '@type': 'QuantitativeValue' as const,
+            minValue: isDomestic ? 1 : 2,
+            maxValue: isDomestic ? 3 : 5,
+            unitCode: 'DAY',
+          },
         },
-      },
-    };
-  });
-}
+      };
+    }),
+  ])
+) as unknown as Record<TerminalCountry, readonly object[]>;
 
-function buildReturnPolicy(sellerCountry: string) {
-  return {
-    '@type': 'MerchantReturnPolicy' as const,
-    applicableCountry: sellerCountry,
-    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow' as const,
-    merchantReturnDays: 2,
-  };
-}
+const RETURN_POLICY = Object.fromEntries(
+  TERMINAL_COUNTRIES.map((country) => [
+    country,
+    {
+      '@type': 'MerchantReturnPolicy' as const,
+      applicableCountry: country,
+      returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow' as const,
+      merchantReturnDays: 2,
+    },
+  ])
+) as unknown as Record<TerminalCountry, object>;
 
 export function buildListingJsonLd(
   input: ListingJsonLdInput,
@@ -116,8 +110,8 @@ export function buildListingJsonLd(
       ...(input.sellerName ? { seller: { '@type': 'Person', name: input.sellerName } } : {}),
       ...(input.sellerCountry && isTerminalCountry(input.sellerCountry)
         ? {
-            shippingDetails: buildShippingDetails(input.sellerCountry),
-            hasMerchantReturnPolicy: buildReturnPolicy(input.sellerCountry),
+            shippingDetails: SHIPPING_DETAILS[input.sellerCountry],
+            hasMerchantReturnPolicy: RETURN_POLICY[input.sellerCountry],
           }
         : {}),
     } as WithContext<Product>['offers'],
