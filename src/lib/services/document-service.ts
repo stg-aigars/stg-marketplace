@@ -56,7 +56,7 @@ export async function getCommissionInvoiceData(
 
 /**
  * Order confirmation data (buyer + staff).
- * Available for any paid order.
+ * Only for completed or refunded orders (orders that were paid and fulfilled).
  */
 export async function getOrderConfirmationData(
   orderId: string,
@@ -68,6 +68,9 @@ export async function getOrderConfirmationData(
 
   // Access: buyer or staff
   if (order.buyer_id !== userId && !isStaff) return null;
+
+  // Only completed or refunded orders have confirmations
+  if (!['completed', 'refunded'].includes(order.status)) return null;
 
   return {
     order,

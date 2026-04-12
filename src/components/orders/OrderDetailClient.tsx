@@ -85,8 +85,8 @@ function getAlertVariant(status: OrderStatus): 'error' | 'success' | 'warning' |
       return 'warning';
     case 'accepted':
     case 'shipped':
-      return 'info';
     case 'delivered':
+      return 'info';
     case 'completed':
       return 'success';
     case 'cancelled':
@@ -267,6 +267,12 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
 
               return (
                 <div className="space-y-2 text-sm border-t border-semantic-border-subtle pt-3">
+                  {hasMultipleItems && (
+                    <div className="flex justify-between">
+                      <span className="text-semantic-text-secondary">Items ({items.length})</span>
+                      <span>{formatCentsToCurrency(order.items_total_cents)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-semantic-text-secondary">Shipping</span>
                     <span>{formatCentsToCurrency(order.shipping_cost_cents)}</span>
@@ -381,10 +387,11 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
                     </div>
                   )}
 
-                  {/* Shipping note — reference appropriate document */}
+                  {/* Shipping note — only reference documents when they're accessible */}
                   <p className="text-xs text-semantic-text-muted">
                     Shipping ({formatCentsToCurrency(order.shipping_cost_cents)}) billed separately
-                    {isRefunded ? ' — see credit note' : ' — see commission invoice'}
+                    {isRefunded && ' — see credit note'}
+                    {status === 'completed' && ' — see commission invoice'}
                   </p>
                 </div>
               );

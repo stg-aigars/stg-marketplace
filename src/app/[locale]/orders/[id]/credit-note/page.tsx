@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getCreditNoteData } from '@/lib/services/document-service';
 import { resolveVatBreakdownCents } from '@/lib/bookkeeping-utils';
-import { getVatRate, formatPrice, formatCentsToCurrency } from '@/lib/services/pricing';
+import { getVatRate, formatCentsToCurrency } from '@/lib/services/pricing';
 import { DocumentLayout } from '@/components/documents/DocumentLayout';
 import { DocumentLineItems, type LineItem } from '@/components/documents/DocumentLineItems';
 import { DocumentTotals } from '@/components/documents/DocumentTotals';
@@ -19,7 +19,6 @@ export default async function CreditNotePage(
   const { order, sellerName, sellerCountry } = data;
   const vatRate = getVatRate(sellerCountry);
 
-  // Resolve VAT breakdowns for the original charge (then negate for credit note)
   const commission = resolveVatBreakdownCents(
     order.platform_commission_cents ?? 0,
     order.commission_net_cents,
@@ -33,33 +32,27 @@ export default async function CreditNotePage(
     vatRate,
   );
 
-  const toEuros = (cents: number) => cents / 100;
-
   // Credit note line items are negative (reversals)
   const lineItems: LineItem[] = [
     {
       description: 'Reversal: commission on sale',
-      grossEuros: -toEuros(commission.grossCents),
-      netEuros: -toEuros(commission.netCents),
+      grossCents: -commission.grossCents,
+      netCents: -commission.netCents,
       vatRate,
-      vatEuros: -toEuros(commission.vatCents),
+      vatCents: -commission.vatCents,
     },
     {
       description: 'Reversal: shipping management',
-      grossEuros: -toEuros(shipping.grossCents),
-      netEuros: -toEuros(shipping.netCents),
+      grossCents: -shipping.grossCents,
+      netCents: -shipping.netCents,
       vatRate,
-      vatEuros: -toEuros(shipping.vatCents),
+      vatCents: -shipping.vatCents,
     },
   ];
 
-  const totalGrossEuros = -toEuros(commission.grossCents + shipping.grossCents);
-  const totalNetEuros = -toEuros(commission.netCents + shipping.netCents);
-  const totalVatEuros = -toEuros(commission.vatCents + shipping.vatCents);
-
-  const sellerWalletClawbackEuros = toEuros(order.seller_wallet_credit_cents ?? 0);
-  const commissionReversedEuros = toEuros(commission.grossCents);
-  const buyerRefundEuros = toEuros(order.refund_amount_cents ?? order.total_amount_cents);
+  const totalGrossCents = -(commission.grossCents + shipping.grossCents);
+  const totalNetCents = -(commission.netCents + shipping.netCents);
+  const totalVatCents = -(commission.vatCents + shipping.vatCents);
 
   return (
     <DocumentLayout
@@ -73,35 +66,31 @@ export default async function CreditNotePage(
         </div>
       }
     >
-      {/* References */}
       <div className="mb-6 text-sm text-semantic-text-secondary">
         <p>Order {order.order_number}</p>
         <p>Original invoice: INV-{order.order_number}</p>
       </div>
 
-      {/* Line items (negative amounts) */}
       <DocumentLineItems items={lineItems} />
 
-      {/* Totals (negative) */}
       <DocumentTotals
         rows={[
-          { label: 'Total net', amount: totalNetEuros },
-          { label: `VAT (${(vatRate * 100).toFixed(0)}%)`, amount: totalVatEuros },
-          { label: 'Credit note total', amount: totalGrossEuros, bold: true },
+          { label: 'Total net', amountCents: totalNetCents },
+          { label: `VAT (${(vatRate * 100).toFixed(0)}%)`, amountCents: totalVatCents },
+          { label: 'Credit note total', amountCents: totalGrossCents, bold: true },
         ]}
       />
 
-      {/* Refund summary */}
-      <div className="mt-8 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-gray-50">
+      <div className="mt-8 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-white">
         <p className="font-medium text-semantic-text-heading">Refund summary</p>
         <div className="mt-2 space-y-1 text-semantic-text-secondary">
           <div className="flex justify-between">
             <span>Seller wallet clawback</span>
-            <span>{formatPrice(sellerWalletClawbackEuros)}</span>
+            <span>{formatCentsToCurrency(order.seller_wallet_credit_cents ?? 0)}</span>
           </div>
           <div className="flex justify-between">
             <span>Commission reversed</span>
-            <span>{formatPrice(commissionReversedEuros)}</span>
+            <span>{formatCentsToCurrency(commission.grossCents)}</span>
           </div>
           <div className="flex justify-between font-medium text-semantic-text-heading">
             <span>Buyer refund</span>

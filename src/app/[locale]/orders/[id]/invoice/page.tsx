@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getCommissionInvoiceData } from '@/lib/services/document-service';
 import { resolveVatBreakdownCents } from '@/lib/bookkeeping-utils';
-import { getVatRate, formatPrice, formatCentsToCurrency } from '@/lib/services/pricing';
+import { getVatRate, formatCentsToCurrency } from '@/lib/services/pricing';
 import { DocumentLayout } from '@/components/documents/DocumentLayout';
 import { DocumentLineItems, type LineItem } from '@/components/documents/DocumentLineItems';
 import { DocumentTotals } from '@/components/documents/DocumentTotals';
@@ -19,7 +19,6 @@ export default async function InvoicePage(
   const { order, sellerName, sellerCountry } = data;
   const vatRate = getVatRate(sellerCountry);
 
-  // Resolve VAT breakdowns (uses stored values when available, falls back to rate calculation)
   const commission = resolveVatBreakdownCents(
     order.platform_commission_cents ?? 0,
     order.commission_net_cents,
@@ -33,30 +32,26 @@ export default async function InvoicePage(
     vatRate,
   );
 
-  // Convert cents to euros for display
-  const toEuros = (cents: number) => cents / 100;
-
   const lineItems: LineItem[] = [
     {
       description: `Commission on sale of ${formatCentsToCurrency(order.items_total_cents)} (10%)`,
-      grossEuros: toEuros(commission.grossCents),
-      netEuros: toEuros(commission.netCents),
+      grossCents: commission.grossCents,
+      netCents: commission.netCents,
       vatRate,
-      vatEuros: toEuros(commission.vatCents),
+      vatCents: commission.vatCents,
     },
     {
       description: 'Shipping management',
-      grossEuros: toEuros(shipping.grossCents),
-      netEuros: toEuros(shipping.netCents),
+      grossCents: shipping.grossCents,
+      netCents: shipping.netCents,
       vatRate,
-      vatEuros: toEuros(shipping.vatCents),
+      vatCents: shipping.vatCents,
     },
   ];
 
-  const totalGrossEuros = toEuros(commission.grossCents + shipping.grossCents);
-  const totalNetEuros = toEuros(commission.netCents + shipping.netCents);
-  const totalVatEuros = toEuros(commission.vatCents + shipping.vatCents);
-  const sellerCreditEuros = toEuros(order.seller_wallet_credit_cents ?? 0);
+  const totalGrossCents = commission.grossCents + shipping.grossCents;
+  const totalNetCents = commission.netCents + shipping.netCents;
+  const totalVatCents = commission.vatCents + shipping.vatCents;
 
   return (
     <DocumentLayout
@@ -70,38 +65,34 @@ export default async function InvoicePage(
         </div>
       }
     >
-      {/* Order reference */}
       <p className="mb-6 text-sm text-semantic-text-secondary">
         Order {order.order_number}
       </p>
 
-      {/* Line items */}
       <DocumentLineItems items={lineItems} />
 
-      {/* Totals */}
       <DocumentTotals
         rows={[
-          { label: 'Total net', amount: totalNetEuros },
-          { label: `VAT (${(vatRate * 100).toFixed(0)}%)`, amount: totalVatEuros },
-          { label: 'Invoice total', amount: totalGrossEuros, bold: true },
+          { label: 'Total net', amountCents: totalNetCents },
+          { label: `VAT (${(vatRate * 100).toFixed(0)}%)`, amountCents: totalVatCents },
+          { label: 'Invoice total', amountCents: totalGrossCents, bold: true },
         ]}
       />
 
-      {/* Payment summary */}
-      <div className="mt-8 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-gray-50">
+      <div className="mt-8 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-white">
         <p className="font-medium text-semantic-text-heading">Payment summary</p>
         <div className="mt-2 space-y-1 text-semantic-text-secondary">
           <div className="flex justify-between">
             <span>Total collected from buyer</span>
-            <span>{formatPrice(toEuros(order.total_amount_cents))}</span>
+            <span>{formatCentsToCurrency(order.total_amount_cents)}</span>
           </div>
           <div className="flex justify-between">
             <span>Platform services</span>
-            <span>-{formatPrice(totalGrossEuros)}</span>
+            <span>-{formatCentsToCurrency(totalGrossCents)}</span>
           </div>
           <div className="flex justify-between font-medium text-semantic-text-heading">
             <span>Credited to seller wallet</span>
-            <span>{formatPrice(sellerCreditEuros)}</span>
+            <span>{formatCentsToCurrency(order.seller_wallet_credit_cents ?? 0)}</span>
           </div>
         </div>
       </div>

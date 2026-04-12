@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getOrderConfirmationData } from '@/lib/services/document-service';
-import { formatPrice, formatCentsToCurrency } from '@/lib/services/pricing';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import { DocumentLayout } from '@/components/documents/DocumentLayout';
 import { DocumentTotals } from '@/components/documents/DocumentTotals';
@@ -17,7 +17,6 @@ export default async function OrderConfirmationPage(
 
   const { order, buyerName, sellerName } = data;
 
-  const toEuros = (cents: number) => cents / 100;
   const walletAppliedCents = order.buyer_wallet_debit_cents ?? 0;
   const cardPaymentCents = order.total_amount_cents - walletAppliedCents;
 
@@ -32,12 +31,10 @@ export default async function OrderConfirmationPage(
         <p className="font-medium">{buyerName}</p>
       }
     >
-      {/* Seller reference */}
       <p className="mb-6 text-sm text-semantic-text-secondary">
         Seller: {sellerName}
       </p>
 
-      {/* Items table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -65,17 +62,15 @@ export default async function OrderConfirmationPage(
         </table>
       </div>
 
-      {/* Totals */}
       <DocumentTotals
         rows={[
-          { label: 'Items', amount: toEuros(order.items_total_cents) },
-          { label: 'Shipping', amount: toEuros(order.shipping_cost_cents) },
-          { label: 'Total paid', amount: toEuros(order.total_amount_cents), bold: true },
+          { label: 'Items', amountCents: order.items_total_cents },
+          { label: 'Shipping', amountCents: order.shipping_cost_cents },
+          { label: 'Total paid', amountCents: order.total_amount_cents, bold: true },
         ]}
       />
 
-      {/* Payment details */}
-      <div className="mt-8 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-gray-50">
+      <div className="mt-8 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-white">
         <p className="font-medium text-semantic-text-heading">Payment details</p>
         <div className="mt-2 space-y-1 text-semantic-text-secondary">
           {cardPaymentCents > 0 && (
@@ -99,9 +94,8 @@ export default async function OrderConfirmationPage(
         </div>
       </div>
 
-      {/* Delivery info */}
       {order.terminal_name && (
-        <div className="mt-6 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-gray-50">
+        <div className="mt-6 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-white">
           <p className="font-medium text-semantic-text-heading">Delivery</p>
           <div className="mt-2 space-y-1 text-semantic-text-secondary">
             <p>Parcel locker: {order.terminal_name}</p>

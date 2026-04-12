@@ -1,11 +1,11 @@
-import { formatPrice } from '@/lib/services/pricing';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 
 export interface LineItem {
   description: string;
-  grossEuros: number;
-  netEuros: number;
+  grossCents: number;
+  netCents: number;
   vatRate: number;
-  vatEuros: number;
+  vatCents: number;
 }
 
 interface DocumentLineItemsProps {
@@ -29,10 +29,10 @@ export function DocumentLineItems({ items }: DocumentLineItemsProps) {
           {items.map((item, i) => (
             <tr key={i} className="border-b border-semantic-border-subtle">
               <td className="py-3 pr-4 text-semantic-text-primary">{item.description}</td>
-              <td className="py-3 pr-4 text-right text-semantic-text-primary">{formatPrice(item.grossEuros)}</td>
-              <td className="py-3 pr-4 text-right text-semantic-text-secondary">{formatPrice(item.netEuros)}</td>
+              <td className="py-3 pr-4 text-right text-semantic-text-primary">{formatCentsToCurrency(item.grossCents)}</td>
+              <td className="py-3 pr-4 text-right text-semantic-text-secondary">{formatCentsToCurrency(item.netCents)}</td>
               <td className="py-3 pr-4 text-right text-semantic-text-secondary">{(item.vatRate * 100).toFixed(0)}%</td>
-              <td className="py-3 text-right text-semantic-text-secondary">{formatPrice(item.vatEuros)}</td>
+              <td className="py-3 text-right text-semantic-text-secondary">{formatCentsToCurrency(item.vatCents)}</td>
             </tr>
           ))}
         </tbody>
