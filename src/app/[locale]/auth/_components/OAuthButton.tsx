@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui';
 import { createClient } from '@/lib/supabase/browser';
-
-type OAuthProvider = 'google' | 'facebook';
+import type { OAuthProvider } from '@/lib/auth/oauth-providers';
 
 interface OAuthButtonProps {
   provider?: OAuthProvider;
@@ -48,12 +47,10 @@ function FacebookIcon() {
 
 export function OAuthButton({ provider = 'google', returnUrl, label }: OAuthButtonProps) {
   const [loading, setLoading] = useState(false);
-
-  const defaultLabel = provider === 'google' ? 'Continue with Google' : 'Continue with Facebook';
+  const supabase = useMemo(() => createClient(), []);
 
   async function handleOAuthSignIn() {
     setLoading(true);
-    const supabase = createClient();
     const appUrl = window.location.origin;
 
     const destination = returnUrl || '/';
@@ -76,7 +73,7 @@ export function OAuthButton({ provider = 'google', returnUrl, label }: OAuthButt
       type="button"
     >
       {provider === 'google' ? <GoogleIcon /> : <FacebookIcon />}
-      {label || defaultLabel}
+      {label ?? (provider === 'google' ? 'Continue with Google' : 'Continue with Facebook')}
     </Button>
   );
 }

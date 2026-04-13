@@ -1,4 +1,5 @@
-const OAUTH_PROVIDERS = ['google', 'facebook'] as const;
+export const OAUTH_PROVIDERS = ['google', 'facebook'] as const;
+export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 
 export function isOAuthUser(appMetadata: { provider?: string; providers?: string[] }): boolean {
   const { provider, providers } = appMetadata;

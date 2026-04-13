@@ -69,7 +69,7 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
       <div className="space-y-3">
         <OAuthButton returnUrl={returnUrl} />
         {env.facebook.loginEnabled && (
-          <OAuthButton provider="facebook" returnUrl={returnUrl} label="Continue with Facebook" />
+          <OAuthButton provider="facebook" returnUrl={returnUrl} />
         )}
       </div>
 
