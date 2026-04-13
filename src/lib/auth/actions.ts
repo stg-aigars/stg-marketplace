@@ -7,6 +7,7 @@ import type { AuthActionResult, SignUpFormData } from './types';
 import type { CountryCode } from '@/lib/country-utils';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { loginLimiter, signupLimiter, passwordResetLimiter } from '@/lib/rate-limit';
+import { TERMS_VERSION } from '@/lib/legal/constants';
 
 /** Prevent open redirects — only allow relative paths. */
 function safeReturnUrl(url?: string): string {
@@ -36,7 +37,8 @@ export async function validateSignIn(
 
 export async function signUpWithEmail(
   formData: SignUpFormData,
-  turnstileToken?: string
+  turnstileToken?: string,
+  returnUrl?: string
 ): Promise<AuthActionResult> {
   const ip = await getServerActionIp();
   const limitResult = signupLimiter.check(ip ?? 'unknown');
@@ -54,6 +56,8 @@ export async function signUpWithEmail(
       data: {
         full_name: formData.displayName,
         country: formData.country,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
       },
     },
   });
@@ -68,7 +72,7 @@ export async function signUpWithEmail(
     return { error: 'Something went wrong. Please try again' };
   }
 
-  redirect('/browse?welcome=true');
+  redirect(returnUrl ? safeReturnUrl(returnUrl) : '/browse?welcome=true');
 }
 
 export async function signOut(): Promise<void> {
@@ -120,6 +124,7 @@ export async function updateProfile(data: {
   country: CountryCode;
   displayName?: string;
   returnUrl?: string;
+  termsAccepted?: boolean;
 }): Promise<AuthActionResult> {
   const supabase = await createClient();
 
@@ -146,6 +151,19 @@ export async function updateProfile(data: {
 
   if (error) {
     return { error: 'Something went wrong. Please try again' };
+  }
+
+  // Write terms acceptance atomically — only if not already set (first-time only).
+  // The .is('terms_accepted_at', null) clause prevents overwriting an existing timestamp.
+  if (data.termsAccepted) {
+    await supabase
+      .from('user_profiles')
+      .update({
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
+      })
+      .eq('id', user.id)
+      .is('terms_accepted_at', null);
   }
 
   redirect(safeReturnUrl(data.returnUrl));
