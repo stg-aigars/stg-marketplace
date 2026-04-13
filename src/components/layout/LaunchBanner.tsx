@@ -21,11 +21,9 @@ export function LaunchBanner() {
     setMounted(true);
   }, []);
 
-  // Don't render until mounted (avoids hydration mismatch from localStorage read)
+  // Wait for mount to avoid hydration mismatch from localStorage read
   if (!mounted || loading) return null;
-  // Hide for authenticated users
   if (user) return null;
-  // Hide if dismissed or already subscribed
   if (dismissed) return null;
 
   function hide() {
