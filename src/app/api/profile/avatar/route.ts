@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { detectImageType, EXTENSION_MAP, stripExifMetadata } from '@/lib/images/process';
+import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
 const AVATAR_DIMENSION = 256; // px — cap uploaded images to 256x256
@@ -18,6 +19,9 @@ function extractStoragePath(avatarUrl: string): string | null {
 }
 
 export async function POST(request: Request) {
+  const rateLimitError = applyRateLimit(photoUploadLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

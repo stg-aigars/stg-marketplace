@@ -65,11 +65,12 @@ export async function getUserWithFavorites(): Promise<{
 
   if (!user) return { user: null, favoriteIds: new Set() };
 
-  // TODO: paginate or cap — unbounded for users with hundreds of favorites
+  // TODO: paginate — safety cap of 500 added, but full pagination needed for heavy users
   const { data } = await supabase
     .from('favorites')
     .select('listing_id')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .limit(500);
 
   return { user, favoriteIds: new Set(data?.map((f) => f.listing_id) ?? []) };
 }

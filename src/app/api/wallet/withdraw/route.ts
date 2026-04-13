@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     bankAccountHolder = body.bankAccountHolder?.trim();
     bankIban = body.bankIban?.trim().toUpperCase().replace(/\s/g, '');
 
-    if (!amountCents || amountCents <= 0) {
+    if (!amountCents || typeof amountCents !== 'number' || !Number.isInteger(amountCents) || amountCents <= 0 || amountCents > 1_000_000_00) {
       return NextResponse.json({ error: 'Please enter a valid withdrawal amount' }, { status: 400 });
     }
     if (!bankAccountHolder) {

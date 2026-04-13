@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { UnavailableItem } from '@/lib/checkout/cart-types';
+import { cartValidateLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/cart/validate
@@ -8,6 +9,9 @@ import type { UnavailableItem } from '@/lib/checkout/cart-types';
  * and returns enriched unavailability reasons for non-active ones.
  */
 export async function POST(request: Request) {
+  const rateLimitError = applyRateLimit(cartValidateLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   let listingIds: string[];
   try {
     const body = await request.json();

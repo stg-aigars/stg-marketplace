@@ -3,9 +3,13 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { sellerAcceptRefund } from '@/lib/services/dispute';
 import { RefundInitiationError } from '@/lib/services/order-refund';
+import { orderActionLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
+  const rateLimitError = applyRateLimit(orderActionLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

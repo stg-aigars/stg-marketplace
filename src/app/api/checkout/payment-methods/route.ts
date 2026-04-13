@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaymentMethods } from '@/lib/services/everypay/client';
+import { requireAuth } from '@/lib/auth/helpers';
+import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 /**
  * GET /api/checkout/payment-methods?country=LV
@@ -7,6 +9,12 @@ import { getPaymentMethods } from '@/lib/services/everypay/client';
  * Cards (country_code === null) are always included.
  */
 export async function GET(request: NextRequest) {
+  const rateLimitError = applyRateLimit(paymentLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
+  const { response } = await requireAuth();
+  if (response) return response;
+
   try {
     const country = request.nextUrl.searchParams.get('country');
 

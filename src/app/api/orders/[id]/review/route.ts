@@ -3,9 +3,13 @@ import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { submitReview } from '@/lib/reviews/service';
 import { REVIEW_MAX_COMMENT_LENGTH } from '@/lib/reviews/constants';
+import { orderActionLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
+  const rateLimitError = applyRateLimit(orderActionLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

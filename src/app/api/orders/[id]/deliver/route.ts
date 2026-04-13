@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { markDelivered } from '@/lib/services/order-transitions';
+import { orderActionLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
+  const rateLimitError = applyRateLimit(orderActionLimiter, request);
+  if (rateLimitError) return rateLimitError;
+
   const csrfError = requireBrowserOrigin(request);
   if (csrfError) return csrfError;
 

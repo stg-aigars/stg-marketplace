@@ -223,7 +223,7 @@ export async function POST(request: Request) {
       }
     );
 
-    // Store payment reference for reconciliation cron
+    // Store payment reference for reconciliation cron (fire-and-forget — don't block checkout response)
     void serviceClient
       .from('cart_checkout_groups')
       .update({ everypay_payment_reference: paymentResponse.payment_reference })

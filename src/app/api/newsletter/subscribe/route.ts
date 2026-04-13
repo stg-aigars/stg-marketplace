@@ -46,15 +46,18 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('[Newsletter] Contact created:', data?.id, email);
+    console.log('[Newsletter] Contact created:', data?.id);
 
     // Notify admin of new signup (fire-and-forget)
-    void resend.emails.send({
-      from: `Second Turn Games <${env.resend.fromEmail}>`,
-      to: 'aigars@secondturn.games',
-      subject: 'New launch notification signup',
-      text: `${email} signed up for launch notifications.`,
-    }).catch((err) => console.error('[Newsletter] Admin notify failed:', err));
+    const adminEmail = env.app.adminEmail;
+    if (adminEmail) {
+      void resend.emails.send({
+        from: `Second Turn Games <${env.resend.fromEmail}>`,
+        to: adminEmail,
+        subject: 'New launch notification signup',
+        text: `${email} signed up for launch notifications.`,
+      }).catch((err) => console.error('[Newsletter] Admin notify failed:', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
