@@ -82,6 +82,7 @@ export default async function HomePage() {
               <span className="flex items-center gap-2"><GlobeHemisphereWest size={16} className="text-white/50" />{t('home.statBaltics')}</span>
               <span className="flex items-center gap-2"><Package size={16} className="text-white/50" />{t('home.statShipping')}</span>
               <span className="flex items-center gap-2"><ShieldCheck size={16} className="text-white/50" />{t('home.statPayments')}</span>
+              <Link href="/help" className="flex items-center gap-2 mt-1 sm:hover:text-white transition-colors duration-250 ease-out-custom">How it works <span aria-hidden="true">&rarr;</span></Link>
             </div>
           </div>
         </div>
