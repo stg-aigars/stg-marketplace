@@ -92,7 +92,7 @@ export function LaunchBanner() {
           size="sm"
           onClick={hide}
           aria-label="Dismiss"
-          className="shrink-0 !p-1 hidden sm:flex"
+          className="shrink-0 !p-1"
         >
           <X size={16} weight="bold" />
         </Button>
