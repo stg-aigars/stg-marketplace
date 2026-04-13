@@ -394,7 +394,8 @@ export async function getMyOffers(): Promise<OfferWithDetails[]> {
     .from('offers')
     .select(OFFER_SELECT)
     .eq('buyer_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   return (data ?? []).map(mapOfferRow);
 }
@@ -412,7 +413,8 @@ export async function getSellerOffers(): Promise<OfferWithDetails[]> {
     .from('offers')
     .select(OFFER_SELECT)
     .eq('seller_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   return (data ?? []).map(mapOfferRow);
 }

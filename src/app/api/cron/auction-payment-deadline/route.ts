@@ -51,10 +51,16 @@ export async function POST(request: Request) {
       for (const auction of reminderAuctions) {
         if (!auction.highest_bidder_id) continue;
 
-        await supabase
+        // Optimistic lock: only update if still false (prevents duplicate notifications on re-run)
+        const { data: updated } = await supabase
           .from('listings')
           .update({ auction_payment_reminder_sent: true })
-          .eq('id', auction.id);
+          .eq('id', auction.id)
+          .eq('auction_payment_reminder_sent', false)
+          .select('id');
+
+        // If 0 rows affected, another run already handled this listing — skip
+        if (!updated?.length) continue;
 
         void notify(auction.highest_bidder_id, 'auction.payment_reminder', {
           gameName: auction.game_name,
@@ -95,22 +101,25 @@ export async function POST(request: Request) {
     } else if (expiredAuctions?.length) {
       const ids = expiredAuctions.map((a) => a.id);
 
-      const { error: updateError } = await supabase
+      const { data: cancelledRows, error: updateError } = await supabase
         .from('listings')
         .update({ status: 'cancelled' })
         .in('id', ids)
-        .eq('status', 'auction_ended');
+        .eq('status', 'auction_ended')
+        .select('id');
 
       if (updateError) {
         console.error('[Cron] Auction deadline update failed:', updateError);
         errors.push('Deadline update failed');
       }
 
-      expired = ids.length;
+      const cancelledIds = new Set((cancelledRows ?? []).map((r) => r.id));
+      expired = cancelledIds.size;
       console.log(`[Cron] Cancelled ${expired} auctions (payment deadline expired)`);
 
-      // Notify + email both parties
+      // Notify + email both parties (only for actually-cancelled rows)
       for (const auction of expiredAuctions) {
+        if (!cancelledIds.has(auction.id)) continue;
         const profileIds = [auction.seller_id];
         if (auction.highest_bidder_id) profileIds.push(auction.highest_bidder_id);
         const profiles = await fetchProfiles(supabase, profileIds);

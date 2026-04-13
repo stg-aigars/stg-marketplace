@@ -61,7 +61,7 @@ export function detectImageType(buffer: Buffer): string | null {
  * Uses format-specific encoding to avoid silent quality degradation.
  */
 export async function stripExifMetadata(buffer: Buffer, mimeType: string): Promise<Buffer> {
-  const pipeline = sharp(buffer).rotate();
+  const pipeline = sharp(buffer, { limitInputPixels: 25_000_000 }).rotate();
 
   switch (mimeType) {
     case 'image/jpeg': return pipeline.jpeg({ quality: 90 }).toBuffer();

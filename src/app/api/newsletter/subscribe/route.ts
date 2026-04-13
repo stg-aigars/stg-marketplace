@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, newsletterLimiter } from '@/lib/rate-limit';
+import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 
 const resend = new Resend(env.resend.apiKey);
 
@@ -14,6 +15,19 @@ export async function POST(request: Request) {
 
   const rateLimitError = applyRateLimit(newsletterLimiter, request);
   if (rateLimitError) return rateLimitError;
+
+  // Verify Turnstile token
+  let turnstileToken: string | undefined;
+  try {
+    const body = await request.clone().json();
+    turnstileToken = body.turnstileToken;
+  } catch {
+    // body parsing handled below
+  }
+  const turnstileResult = await verifyTurnstileToken(turnstileToken, getClientIp(request));
+  if (!turnstileResult.success) {
+    return NextResponse.json({ error: turnstileResult.error }, { status: 400 });
+  }
 
   if (!env.resend.audienceId) {
     return NextResponse.json(

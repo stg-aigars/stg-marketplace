@@ -21,6 +21,7 @@ const scriptSrc = [
   .join(' ');
 
 const CSP_TEMPLATE = [
+  'upgrade-insecure-requests',
   "default-src 'self'",
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",

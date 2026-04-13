@@ -196,7 +196,8 @@ export async function getMyBids(): Promise<Array<{
       )
     `)
     .eq('bidder_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   if (!data) return [];
 

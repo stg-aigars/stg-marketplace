@@ -20,6 +20,7 @@ export async function sendEmail({ to, subject, react }: SendEmailParams): Promis
   try {
     const { data, error } = await resend.emails.send({
       from: `${FROM_NAME} <${env.resend.fromEmail}>`,
+      replyTo: 'support@secondturngames.com',
       to,
       subject,
       react,

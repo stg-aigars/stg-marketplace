@@ -54,6 +54,48 @@ export async function POST(request: Request) {
     return NextResponse.json({ endedWithBids: 0, endedNoBids: 0 });
   }
 
+  // Pre-fetch all losing bidders so we can batch profile lookups
+  const auctionsWithBids = expiredAuctions.filter(
+    (a) => a.bid_count > 0 && a.highest_bidder_id
+  );
+  const losingBiddersMap = new Map<string, string[]>(); // listingId → unique bidder IDs
+
+  if (auctionsWithBids.length) {
+    const auctionIds = auctionsWithBids.map((a) => a.id);
+    const winnerIds = new Set(auctionsWithBids.map((a) => a.highest_bidder_id!));
+
+    const { data: allOtherBids } = await supabase
+      .from('bids')
+      .select('listing_id, bidder_id')
+      .in('listing_id', auctionIds);
+
+    if (allOtherBids?.length) {
+      for (const bid of allOtherBids) {
+        if (winnerIds.has(bid.bidder_id) && auctionsWithBids.find(
+          (a) => a.id === bid.listing_id && a.highest_bidder_id === bid.bidder_id
+        )) continue; // skip winner for their own auction
+        const existing = losingBiddersMap.get(bid.listing_id);
+        if (existing) {
+          if (!existing.includes(bid.bidder_id)) existing.push(bid.bidder_id);
+        } else {
+          losingBiddersMap.set(bid.listing_id, [bid.bidder_id]);
+        }
+      }
+    }
+  }
+
+  // Collect ALL unique user IDs across all auctions and fetch profiles in one call
+  const allUserIds = new Set<string>();
+  for (const auction of expiredAuctions) {
+    allUserIds.add(auction.seller_id);
+    if (auction.highest_bidder_id) allUserIds.add(auction.highest_bidder_id);
+  }
+  for (const bidderIds of losingBiddersMap.values()) {
+    for (const id of bidderIds) allUserIds.add(id);
+  }
+
+  const allProfiles = await fetchProfiles(supabase, Array.from(allUserIds));
+
   for (const auction of expiredAuctions) {
     try {
       if (auction.bid_count > 0 && auction.highest_bidder_id) {
@@ -77,10 +119,8 @@ export async function POST(request: Request) {
 
         endedWithBids++;
 
-        // Fetch winner + seller profiles in one call
-        const profiles = await fetchProfiles(supabase, [auction.highest_bidder_id, auction.seller_id]);
-        const winner = profiles.get(auction.highest_bidder_id);
-        const seller = profiles.get(auction.seller_id);
+        const winner = allProfiles.get(auction.highest_bidder_id);
+        const seller = allProfiles.get(auction.seller_id);
 
         // Notify + email winner
         void notify(auction.highest_bidder_id, 'auction.won', {
@@ -115,14 +155,8 @@ export async function POST(request: Request) {
         }
 
         // Notify + email all other bidders that they lost
-        const { data: otherBids } = await supabase
-          .from('bids')
-          .select('bidder_id')
-          .eq('listing_id', auction.id)
-          .neq('bidder_id', auction.highest_bidder_id);
-
-        if (otherBids?.length) {
-          const uniqueBidders = Array.from(new Set(otherBids.map((b) => b.bidder_id)));
+        const uniqueBidders = losingBiddersMap.get(auction.id);
+        if (uniqueBidders?.length) {
           const notifications = uniqueBidders.map((bidderId) => ({
             userId: bidderId,
             type: 'auction.lost' as const,
@@ -134,16 +168,16 @@ export async function POST(request: Request) {
           void notifyMany(notifications);
 
           // Email losing bidders (fire-and-forget)
-          const bidderProfiles = await fetchProfiles(supabase, uniqueBidders);
-          bidderProfiles.forEach((bidder) => {
-            if (bidder.email) {
+          for (const bidderId of uniqueBidders) {
+            const bidder = allProfiles.get(bidderId);
+            if (bidder?.email) {
               sendAuctionLostNotification({
                 bidderName: bidder.full_name,
                 bidderEmail: bidder.email,
                 gameName: auction.game_name,
               }).catch((err) => console.error('[Cron] Failed to email losing bidder:', err));
             }
-          });
+          }
         }
       } else {
         // No bids → cancelled
@@ -166,8 +200,7 @@ export async function POST(request: Request) {
           gameName: auction.game_name,
         });
 
-        const sellerProfiles = await fetchProfiles(supabase, [auction.seller_id]);
-        const seller = sellerProfiles.get(auction.seller_id);
+        const seller = allProfiles.get(auction.seller_id);
         if (seller?.email) {
           sendAuctionEndedNoBidsToSeller({
             sellerName: seller.full_name,
