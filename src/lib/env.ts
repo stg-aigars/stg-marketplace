@@ -15,6 +15,8 @@ const serverEnvSchema = {
 
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+  RESEND_AUDIENCE_ID: process.env.RESEND_AUDIENCE_ID,
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL,
 
   UNISEND_API_URL: process.env.UNISEND_API_URL,
   UNISEND_USERNAME: process.env.UNISEND_USERNAME,
@@ -75,6 +77,8 @@ export function validateEnv(): ValidationResult {
   const requiredInProduction: EnvKey[] = ['CRON_SECRET'];
   const optional: EnvKey[] = [
     'APP_ORIGIN',
+    'RESEND_AUDIENCE_ID',
+    'ADMIN_EMAIL',
     'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
     'TURNSTILE_SECRET_KEY',
     'NEXT_PUBLIC_SENTRY_DSN',

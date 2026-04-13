@@ -276,13 +276,13 @@ export async function getAllTerminals(): Promise<Terminal[]> {
 
 /** Create a parcel for shipping */
 export async function createParcel(data: CreateParcelRequest): Promise<ParcelResponse> {
-  console.log('[Unisend] POST /api/v2/parcel payload:', JSON.stringify(data, null, 2));
+  console.log('[Unisend] POST /api/v2/parcel payload: plan=%s', data.plan?.code ?? 'unknown');
   try {
     const result = await apiRequest<ParcelResponse>('/api/v2/parcel', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    console.log('[Unisend] POST /api/v2/parcel success:', JSON.stringify(result));
+    console.log('[Unisend] POST /api/v2/parcel success');
     return result;
   } catch (error) {
     console.error('[Unisend] POST /api/v2/parcel error:', error instanceof Error ? error.message : error);

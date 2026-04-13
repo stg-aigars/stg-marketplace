@@ -184,6 +184,58 @@ Total recovery time: ~1 hour. Nothing is lost because the server is stateless.
 
 ---
 
+## Pre-launch checklist
+
+Manual verification items from the April 2026 pre-launch audit. These can't be checked from code — they require logging into service dashboards and SSH.
+
+### Hetzner VPS
+
+```bash
+ssh root@37.27.24.207
+```
+
+- [ ] **SSH key-only auth** — `grep PasswordAuthentication /etc/ssh/sshd_config` should show `no`
+- [ ] **Root login disabled** — `grep PermitRootLogin /etc/ssh/sshd_config` should show `no` (or use a non-root user for SSH)
+- [ ] **Firewall** — `ufw status` should show only 22/tcp, 80/tcp, 443/tcp
+- [ ] **fail2ban** — `systemctl status fail2ban` should be active (SSH brute-force protection)
+- [ ] **Swap** — `free -h` should show 1-2GB swap (sharp image processing spikes memory)
+- [ ] **Docker log rotation** — `cat /etc/docker/daemon.json` should include `"log-opts": { "max-size": "10m", "max-file": "3" }`. Without this, container logs can fill the disk. If missing:
+  ```json
+  {
+    "log-driver": "json-file",
+    "log-opts": { "max-size": "10m", "max-file": "3" }
+  }
+  ```
+  Then `systemctl restart docker`.
+
+### Coolify
+
+- [ ] **Admin 2FA** — Settings > Security in Coolify dashboard. Enable two-factor authentication (Coolify has full deployment control)
+
+### Supabase
+
+- [ ] **PITR backups** — Dashboard > Settings > Database > Backups > verify Point-in-Time Recovery is enabled (allows restoring to any point in the last 7 days)
+
+### Resend
+
+- [ ] **Domain verification** — Dashboard > Domains > your sending domain should show green checkmarks for SPF, DKIM, and DMARC
+- [ ] **From address** — verify `RESEND_FROM_EMAIL` in Coolify env is set to a custom domain address (e.g., `noreply@secondturngames.com`), NOT `@resend.dev`
+- [ ] **DMARC policy** — run `dig TXT secondturngames.com` locally and look for a `_dmarc` record with at least `p=quarantine` (ideally `p=reject`)
+
+### Cloudflare
+
+- [ ] **SSL mode** — SSL/TLS > Overview > must be "Full (strict)". "Flexible" causes redirect loops with the app's HSTS header
+- [ ] **HSTS** — SSL/TLS > Edge Certificates > check if Cloudflare HSTS is enabled. If yes, consider removing the app-level HSTS header in `next.config.mjs` to avoid duplication. If no, the app-level header handles it
+- [ ] **HSTS preload** — if keeping the `preload` directive, submit the domain at hstspreload.org. This is a one-way commitment (hard to undo). If not ready, remove `; preload` from the HSTS header value
+
+### Post-launch (first week)
+
+- [ ] **Email bounce webhook** — set up a Resend webhook endpoint for `email.bounced` and `email.complained` events. Flag users with unreachable emails so they get in-app notifications instead
+- [ ] **Cache-Control tuning** — review whether Cloudflare cache rules override the app's `no-store` header on public pages. If not, narrow the header to authenticated routes only and allow edge caching for browse/listing pages
+- [ ] **Invoice numbering** — implement sequential invoice numbers before significant transaction volume or VAT audit (currently uses order_number with prefix)
+
+---
+
 ## Security basics
 
 ### What's already in place
