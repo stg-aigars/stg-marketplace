@@ -64,6 +64,7 @@ export async function getOrCreateWallet(userId: string): Promise<WalletRow> {
 /**
  * Credit a wallet (e.g. seller earnings on order completion).
  * Idempotent: if a credit transaction already exists for the same order, returns it.
+ * Uses atomic Postgres RPC — balance update + transaction insert in one SQL transaction.
  */
 export async function creditWallet(
   userId: string,
@@ -75,50 +76,16 @@ export async function creditWallet(
 
   const supabase = createServiceClient();
 
-  // Idempotency check: prevent double-credit for the same order
-  const { data: existing } = await supabase
-    .from('wallet_transactions')
-    .select('*')
-    .eq('order_id', orderId)
-    .eq('type', 'credit')
-    .single<WalletTransactionRow>();
+  const { data, error } = await supabase.rpc('wallet_credit', {
+    p_user_id: userId,
+    p_amount_cents: amountCents,
+    p_order_id: orderId,
+    p_description: description,
+  });
 
-  if (existing) return existing;
+  if (error) throw new Error(`Failed to credit wallet: ${error.message}`);
 
-  const wallet = await getOrCreateWallet(userId);
-
-  // Atomic increment with optimistic lock (matches debitWallet pattern)
-  const { data: updated, error: updateError } = await supabase
-    .from('wallets')
-    .update({ balance_cents: wallet.balance_cents + amountCents })
-    .eq('id', wallet.id)
-    .eq('balance_cents', wallet.balance_cents) // Optimistic lock
-    .select('balance_cents')
-    .single<{ balance_cents: number }>();
-
-  if (updateError || !updated) {
-    // Optimistic lock failed — balance changed between read and write (concurrent operation)
-    throw new Error(`Failed to credit wallet: concurrent balance change detected`);
-  }
-
-  // Record transaction
-  const { data: txn, error: txnError } = await supabase
-    .from('wallet_transactions')
-    .insert({
-      wallet_id: wallet.id,
-      user_id: userId,
-      type: 'credit' as const,
-      amount_cents: amountCents,
-      balance_after_cents: updated.balance_cents,
-      order_id: orderId,
-      description,
-    })
-    .select('*')
-    .single<WalletTransactionRow>();
-
-  if (txnError || !txn) {
-    throw new Error(`Failed to record credit transaction: ${txnError?.message}`);
-  }
+  const txn = data as unknown as WalletTransactionRow;
 
   void logAuditEvent({
     actorId: userId,
@@ -126,7 +93,7 @@ export async function creditWallet(
     action: 'wallet.credit',
     resourceType: 'wallet_transaction',
     resourceId: txn.id,
-    metadata: { amountCents, orderId, balanceAfterCents: updated.balance_cents },
+    metadata: { amountCents, orderId, balanceAfterCents: txn.balance_after_cents },
   });
 
   return txn;
@@ -137,6 +104,7 @@ export async function creditWallet(
  * Uses type='refund' to avoid idempotency collision with seller type='credit'
  * on the same order_id.
  * Idempotent: if a refund transaction already exists for the same order, returns it.
+ * Uses atomic Postgres RPC — balance update + transaction insert in one SQL transaction.
  */
 export async function refundToWallet(
   userId: string,
@@ -148,49 +116,16 @@ export async function refundToWallet(
 
   const supabase = createServiceClient();
 
-  // Idempotency check: prevent double-refund for the same order
-  const { data: existing } = await supabase
-    .from('wallet_transactions')
-    .select('*')
-    .eq('order_id', orderId)
-    .eq('type', 'refund')
-    .maybeSingle<WalletTransactionRow>();
+  const { data, error } = await supabase.rpc('wallet_refund', {
+    p_user_id: userId,
+    p_amount_cents: amountCents,
+    p_order_id: orderId,
+    p_description: description,
+  });
 
-  if (existing) return existing;
+  if (error) throw new Error(`Failed to refund wallet: ${error.message}`);
 
-  const wallet = await getOrCreateWallet(userId);
-
-  // Atomic increment with optimistic lock
-  const { data: updated, error: updateError } = await supabase
-    .from('wallets')
-    .update({ balance_cents: wallet.balance_cents + amountCents })
-    .eq('id', wallet.id)
-    .eq('balance_cents', wallet.balance_cents)
-    .select('balance_cents')
-    .single<{ balance_cents: number }>();
-
-  if (updateError || !updated) {
-    throw new Error('Failed to refund wallet: concurrent balance change detected');
-  }
-
-  // Record transaction
-  const { data: txn, error: txnError } = await supabase
-    .from('wallet_transactions')
-    .insert({
-      wallet_id: wallet.id,
-      user_id: userId,
-      type: 'refund' as const,
-      amount_cents: amountCents,
-      balance_after_cents: updated.balance_cents,
-      order_id: orderId,
-      description,
-    })
-    .select('*')
-    .single<WalletTransactionRow>();
-
-  if (txnError || !txn) {
-    throw new Error(`Failed to record refund transaction: ${txnError?.message}`);
-  }
+  const txn = data as unknown as WalletTransactionRow;
 
   void logAuditEvent({
     actorId: userId,
@@ -198,7 +133,7 @@ export async function refundToWallet(
     action: 'wallet.refund',
     resourceType: 'wallet_transaction',
     resourceId: txn.id,
-    metadata: { amountCents, orderId, balanceAfterCents: updated.balance_cents },
+    metadata: { amountCents, orderId, balanceAfterCents: txn.balance_after_cents },
   });
 
   return txn;
@@ -206,8 +141,9 @@ export async function refundToWallet(
 
 /**
  * Debit a wallet (e.g. buyer spending wallet balance at checkout).
- * Atomic: uses WHERE balance_cents >= amount to prevent overdraft.
  * Idempotent on order_id + type='debit'.
+ * Uses atomic Postgres RPC — balance check + update + transaction insert in one SQL transaction.
+ * Throws InsufficientBalanceError if balance is too low.
  */
 export async function debitWallet(
   userId: string,
@@ -219,56 +155,23 @@ export async function debitWallet(
 
   const supabase = createServiceClient();
 
-  // Idempotency check: prevent double-debit for the same order
-  const { data: existing } = await supabase
-    .from('wallet_transactions')
-    .select('*')
-    .eq('order_id', orderId)
-    .eq('type', 'debit')
-    .single<WalletTransactionRow>();
+  const { data, error } = await supabase.rpc('wallet_debit', {
+    p_user_id: userId,
+    p_amount_cents: amountCents,
+    p_order_id: orderId,
+    p_description: description,
+  });
 
-  if (existing) return existing;
-
-  const wallet = await getOrCreateWallet(userId);
-
-  // Atomic decrement with balance guard
-  // The DB CHECK (balance_cents >= 0) is the ultimate safety net
-  const newBalance = wallet.balance_cents - amountCents;
-  if (newBalance < 0) {
-    throw new InsufficientBalanceError(amountCents, wallet.balance_cents);
+  if (error) {
+    // Parse INSUFFICIENT_BALANCE errors from the RPC
+    const match = error.message.match(/INSUFFICIENT_BALANCE:(\d+) (\d+)/);
+    if (match) {
+      throw new InsufficientBalanceError(Number(match[1]), Number(match[2]));
+    }
+    throw new Error(`Failed to debit wallet: ${error.message}`);
   }
 
-  const { data: updated, error: updateError } = await supabase
-    .from('wallets')
-    .update({ balance_cents: newBalance })
-    .eq('id', wallet.id)
-    .eq('balance_cents', wallet.balance_cents) // Optimistic lock
-    .select('balance_cents')
-    .single<{ balance_cents: number }>();
-
-  if (updateError || !updated) {
-    // Optimistic lock failed — balance changed between read and write
-    throw new InsufficientBalanceError(amountCents, wallet.balance_cents);
-  }
-
-  // Record transaction
-  const { data: txn, error: txnError } = await supabase
-    .from('wallet_transactions')
-    .insert({
-      wallet_id: wallet.id,
-      user_id: userId,
-      type: 'debit' as const,
-      amount_cents: amountCents,
-      balance_after_cents: updated.balance_cents,
-      order_id: orderId,
-      description,
-    })
-    .select('*')
-    .single<WalletTransactionRow>();
-
-  if (txnError || !txn) {
-    throw new Error(`Failed to record debit transaction: ${txnError?.message}`);
-  }
+  const txn = data as unknown as WalletTransactionRow;
 
   void logAuditEvent({
     actorId: userId,
@@ -276,7 +179,7 @@ export async function debitWallet(
     action: 'wallet.debit',
     resourceType: 'wallet_transaction',
     resourceId: txn.id,
-    metadata: { amountCents, orderId, balanceAfterCents: updated.balance_cents },
+    metadata: { amountCents, orderId, balanceAfterCents: txn.balance_after_cents },
   });
 
   return txn;
