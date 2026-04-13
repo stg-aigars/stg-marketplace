@@ -1,14 +1,14 @@
 # Production Dockerfile for STG marketplace (Hetzner + Coolify)
 
 # Stage 1: Install dependencies
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 RUN corepack enable pnpm
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 RUN corepack enable pnpm
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -18,12 +18,12 @@ RUN pnpm build
 
 # Stage 3: Install platform-specific sharp in isolation (avoids npm resolution
 # issues with standalone's complex node_modules tree)
-FROM node:20-alpine AS sharp
+FROM node:22-alpine AS sharp
 WORKDIR /sharp
 RUN npm init -y && npm install --os=linux --libc=musl sharp@0.34.5
 
 # Stage 4: Production runner
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -45,5 +45,8 @@ COPY --from=sharp --chown=nextjs:nodejs /sharp/node_modules ./node_modules
 
 USER nextjs
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 CMD ["node", "server.js"]

@@ -15,7 +15,12 @@ export async function GET() {
       return Response.json({ status: 'degraded', db: 'error' }, { status: 503 });
     }
 
-    return Response.json({ status: 'ok', db: 'connected' });
+    return Response.json({
+      status: 'ok',
+      db: 'connected',
+      uptime: Math.floor(process.uptime()),
+      version: process.env.BUILD_ID ?? 'dev',
+    });
   } catch {
     return Response.json({ status: 'degraded', db: 'error' }, { status: 503 });
   }

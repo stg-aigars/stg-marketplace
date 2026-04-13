@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('[Newsletter] Contact created:', data?.id, email);
+    console.log('[Newsletter] Contact created:', data?.id);
 
     // Notify admin of new signup (fire-and-forget)
     void resend.emails.send({

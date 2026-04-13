@@ -18,14 +18,22 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 
 const PAGE_SIZE = 24;
 
-export const metadata: Metadata = {
-  title: 'Browse',
-  description: 'Board games for sale in Latvia, Lithuania, and Estonia.',
-  openGraph: {
-    title: 'Browse | Second Turn Games',
-    description: 'Board games for sale in Latvia, Lithuania, and Estonia.',
-  },
-};
+export async function generateMetadata(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const q = typeof searchParams.q === 'string' ? searchParams.q.trim() : '';
+  const title = q ? `Search: ${q}` : 'Browse';
+  const description = q
+    ? `Results for "${q}" — pre-loved board games in Latvia, Lithuania, and Estonia.`
+    : 'Board games for sale in Latvia, Lithuania, and Estonia.';
+
+  return {
+    title,
+    description,
+    openGraph: { title: `${title} | Second Turn Games`, description },
+  };
+}
 
 interface ListingRow {
   id: string;
