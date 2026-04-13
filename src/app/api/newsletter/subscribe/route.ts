@@ -3,7 +3,6 @@ import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, newsletterLimiter } from '@/lib/rate-limit';
-import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 
 const resend = new Resend(env.resend.apiKey);
 
@@ -15,19 +14,6 @@ export async function POST(request: Request) {
 
   const rateLimitError = applyRateLimit(newsletterLimiter, request);
   if (rateLimitError) return rateLimitError;
-
-  // Verify Turnstile token
-  let turnstileToken: string | undefined;
-  try {
-    const body = await request.clone().json();
-    turnstileToken = body.turnstileToken;
-  } catch {
-    // body parsing handled below
-  }
-  const turnstileResult = await verifyTurnstileToken(turnstileToken, getClientIp(request));
-  if (!turnstileResult.success) {
-    return NextResponse.json({ error: turnstileResult.error }, { status: 400 });
-  }
 
   if (!env.resend.audienceId) {
     return NextResponse.json(
@@ -60,15 +46,18 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('[Newsletter] Contact created:', data?.id, email);
+    console.log('[Newsletter] Contact created:', data?.id);
 
     // Notify admin of new signup (fire-and-forget)
-    void resend.emails.send({
-      from: `Second Turn Games <${env.resend.fromEmail}>`,
-      to: 'aigars@secondturn.games',
-      subject: 'New launch notification signup',
-      text: `${email} signed up for launch notifications.`,
-    }).catch((err) => console.error('[Newsletter] Admin notify failed:', err));
+    const adminEmail = env.app.adminEmail;
+    if (adminEmail) {
+      void resend.emails.send({
+        from: `Second Turn Games <${env.resend.fromEmail}>`,
+        to: adminEmail,
+        subject: 'New launch notification signup',
+        text: `${email} signed up for launch notifications.`,
+      }).catch((err) => console.error('[Newsletter] Admin notify failed:', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

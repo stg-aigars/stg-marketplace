@@ -58,11 +58,10 @@ export async function POST(request: Request) {
   const auctionsWithBids = expiredAuctions.filter(
     (a) => a.bid_count > 0 && a.highest_bidder_id
   );
-  const losingBiddersMap = new Map<string, string[]>(); // listingId → unique bidder IDs
+  const losingBiddersMap = new Map<string, Set<string>>(); // listingId → unique bidder IDs
 
   if (auctionsWithBids.length) {
     const auctionIds = auctionsWithBids.map((a) => a.id);
-    const winnerIds = new Set(auctionsWithBids.map((a) => a.highest_bidder_id!));
 
     const { data: allOtherBids } = await supabase
       .from('bids')
@@ -71,14 +70,15 @@ export async function POST(request: Request) {
 
     if (allOtherBids?.length) {
       for (const bid of allOtherBids) {
-        if (winnerIds.has(bid.bidder_id) && auctionsWithBids.find(
+        // Skip winner for their own auction
+        if (auctionsWithBids.find(
           (a) => a.id === bid.listing_id && a.highest_bidder_id === bid.bidder_id
-        )) continue; // skip winner for their own auction
+        )) continue;
         const existing = losingBiddersMap.get(bid.listing_id);
         if (existing) {
-          if (!existing.includes(bid.bidder_id)) existing.push(bid.bidder_id);
+          existing.add(bid.bidder_id);
         } else {
-          losingBiddersMap.set(bid.listing_id, [bid.bidder_id]);
+          losingBiddersMap.set(bid.listing_id, new Set([bid.bidder_id]));
         }
       }
     }
@@ -156,8 +156,8 @@ export async function POST(request: Request) {
 
         // Notify + email all other bidders that they lost
         const uniqueBidders = losingBiddersMap.get(auction.id);
-        if (uniqueBidders?.length) {
-          const notifications = uniqueBidders.map((bidderId) => ({
+        if (uniqueBidders?.size) {
+          const notifications = Array.from(uniqueBidders).map((bidderId) => ({
             userId: bidderId,
             type: 'auction.lost' as const,
             context: {
