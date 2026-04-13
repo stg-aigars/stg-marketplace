@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity, Toggle } from '@/components/ui';
+import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity, Toggle, Checkbox } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { Trash } from '@phosphor-icons/react/ssr';
 import { ListingIdentity, Price } from '@/components/listings/atoms';
@@ -310,24 +310,16 @@ export function CheckoutForm({
 
             {/* Terms & refund consent */}
             <div className="mb-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-brand"
-                />
-                <span className="text-sm text-semantic-text-secondary">
-                  I agree to the{' '}
-                  <Link href="/terms" target="_blank" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline">
-                    Terms &amp; Conditions
-                  </Link>
-                  , including the{' '}
-                  <Link href="/terms#cancellations-refunds" target="_blank" className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline">
-                    cancellation and refund policy
-                  </Link>
-                </span>
-              </label>
+              <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
+                I agree to the{' '}
+                <Link href="/terms" target="_blank" className="link-brand">
+                  Terms &amp; Conditions
+                </Link>
+                , including the{' '}
+                <Link href="/terms#cancellations-refunds" target="_blank" className="link-brand">
+                  cancellation and refund policy
+                </Link>
+              </Checkbox>
               <p className="mt-2 ml-7 text-xs text-semantic-text-muted leading-relaxed">
                 All sellers are private persons — EU consumer protection rights do not apply.
                 Disputes may be raised within 2 days of delivery.

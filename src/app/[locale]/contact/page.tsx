@@ -79,7 +79,7 @@ export default function ContactPage() {
             For GDPR data requests, see our{' '}
             <Link
               href="/privacy"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              className="link-brand"
             >
               Privacy Policy
             </Link>{' '}

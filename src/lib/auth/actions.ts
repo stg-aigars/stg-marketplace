@@ -8,14 +8,7 @@ import type { CountryCode } from '@/lib/country-utils';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { loginLimiter, signupLimiter, passwordResetLimiter } from '@/lib/rate-limit';
 import { TERMS_VERSION } from '@/lib/legal/constants';
-
-/** Prevent open redirects — only allow relative paths. */
-function safeReturnUrl(url?: string): string {
-  if (!url || !url.startsWith('/') || url.startsWith('//')) {
-    return '/';
-  }
-  return url;
-}
+import { safeReturnUrl } from './safe-return-url';
 
 /**
  * Validate rate-limit and Turnstile before the client signs in.

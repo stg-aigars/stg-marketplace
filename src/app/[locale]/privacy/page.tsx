@@ -32,7 +32,7 @@ export default function PrivacyPage() {
             Contact:{' '}
             <a
               href="mailto:info@secondturn.games"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              className="link-brand"
             >
               info@secondturn.games
             </a>
@@ -221,14 +221,14 @@ export default function PrivacyPage() {
             data, visit your{' '}
             <Link
               href="/account/settings"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              className="link-brand"
             >
               account settings
             </Link>
             . For other requests, contact us at{' '}
             <a
               href="mailto:info@secondturn.games"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              className="link-brand"
             >
               info@secondturn.games
             </a>
@@ -308,7 +308,7 @@ export default function PrivacyPage() {
             with the Latvian Data State Inspectorate (DVI) at{' '}
             <a
               href="https://www.dvi.gov.lv"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              className="link-brand"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -332,14 +332,14 @@ export default function PrivacyPage() {
           See also our{' '}
           <Link
             href="/terms"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+            className="link-brand"
           >
             Terms of Service
           </Link>{' '}
           and{' '}
           <Link
             href="/seller-terms"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+            className="link-brand"
           >
             Seller Agreement
           </Link>

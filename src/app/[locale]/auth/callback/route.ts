@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getOrigin } from '@/lib/utils/request';
-
-/** Prevent open redirects — only allow relative paths. */
-function safeReturnUrl(url: string | null): string {
-  if (!url || !url.startsWith('/') || url.startsWith('//')) {
-    return '/';
-  }
-  return url;
-}
+import { safeReturnUrl } from '@/lib/auth/safe-return-url';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
