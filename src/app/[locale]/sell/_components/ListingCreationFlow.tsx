@@ -289,12 +289,14 @@ export function ListingCreationFlow({
   const handleNext = () => {
     if (canProceed() && currentStepIndex < totalSteps - 1) {
       setCurrentStepId(steps[currentStepIndex + 1].id);
+      window.scrollTo(0, 0);
     }
   };
 
   const handleBack = () => {
     if (currentStepIndex > 0) {
       setCurrentStepId(steps[currentStepIndex - 1].id);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -304,6 +306,7 @@ export function ListingCreationFlow({
     const targetId = stepMap[targetStepIndex];
     if (targetId && steps.some((s) => s.id === targetId)) {
       setCurrentStepId(targetId);
+      window.scrollTo(0, 0);
     }
   };
 
