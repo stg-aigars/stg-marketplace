@@ -5,22 +5,27 @@ export const metadata = {
   title: 'Create account',
 };
 
-export default function SignUpPage() {
+export default async function SignUpPage(
+  props: {
+    searchParams: Promise<{ returnUrl?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-            Join the community
+            Create your account
           </h1>
           <p className="mt-2 text-semantic-text-secondary">
-            Start buying and selling pre-loved board games in the Baltics
+            Buy and sell pre-loved board games across the Baltics
           </p>
         </div>
 
         <Card>
           <CardBody>
-            <SignUpForm />
+            <SignUpForm returnUrl={searchParams.returnUrl} />
           </CardBody>
         </Card>
       </div>

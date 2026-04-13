@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -14,7 +15,7 @@ export default function PrivacyPage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Last updated: 6 April 2026
+          Last updated: {TERMS_VERSION_DISPLAY}
         </p>
 
         <section className="space-y-3">

@@ -9,20 +9,33 @@ import { CountrySelector } from './CountrySelector';
 import { Link } from '@/i18n/navigation';
 import type { CountryCode } from '@/lib/country-utils';
 
-export function SignUpForm() {
+interface SignUpFormProps {
+  returnUrl?: string;
+}
+
+export function SignUpForm({ returnUrl }: SignUpFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [country, setCountry] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
+  const canSubmit =
+    displayName.trim() &&
+    email.trim() &&
+    password.length >= 8 &&
+    country &&
+    acceptedTerms;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
+    // Defense-in-depth: disabled button can be bypassed via devtools
     if (!country) {
       setError('Please select your country');
       return;
@@ -33,6 +46,11 @@ export function SignUpForm() {
       return;
     }
 
+    if (!acceptedTerms) {
+      setError('Please accept the Terms of Service and Privacy Policy');
+      return;
+    }
+
     setLoading(true);
 
     const result = await signUpWithEmail({
@@ -40,7 +58,7 @@ export function SignUpForm() {
       password,
       displayName,
       country: country as CountryCode,
-    }, turnstileToken);
+    }, turnstileToken, returnUrl);
 
     if (result?.error) {
       setError(result.error);
@@ -49,9 +67,13 @@ export function SignUpForm() {
     }
   }
 
+  const signInHref = returnUrl
+    ? `/auth/signin?returnUrl=${encodeURIComponent(returnUrl)}`
+    : '/auth/signin';
+
   return (
     <div className="space-y-6">
-      <OAuthButton />
+      <OAuthButton returnUrl={returnUrl} label="Sign up with Google" />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
@@ -65,15 +87,20 @@ export function SignUpForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          id="displayName"
-          type="text"
-          label="Display name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          required
-          autoComplete="name"
-        />
+        <div>
+          <Input
+            id="displayName"
+            type="text"
+            label="Display name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            required
+            autoComplete="name"
+          />
+          <p className="mt-1.5 text-sm text-semantic-text-muted">
+            Shown on your public profile
+          </p>
+        </div>
 
         <Input
           id="email"
@@ -85,21 +112,55 @@ export function SignUpForm() {
           autoComplete="email"
         />
 
-        <Input
-          id="password"
-          type="password"
-          label="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-          minLength={8}
-        />
+        <div>
+          <Input
+            id="password"
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+            minLength={8}
+          />
+          <p className="mt-1.5 text-sm text-semantic-text-muted">
+            At least 8 characters with letters, numbers, and symbols
+          </p>
+        </div>
 
         <CountrySelector
           value={country as CountryCode | ''}
           onChange={(code) => setCountry(code)}
         />
+
+        <div className="border-t border-semantic-border-subtle pt-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-brand"
+            />
+            <span className="text-sm text-semantic-text-secondary">
+              I agree to the{' '}
+              <Link
+                href="/terms"
+                target="_blank"
+                className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              >
+                Terms of Service
+              </Link>
+              {' '}and{' '}
+              <Link
+                href="/privacy"
+                target="_blank"
+                className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+              >
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+        </div>
 
         {error && (
           <p className="text-sm text-semantic-error">{error}</p>
@@ -107,7 +168,13 @@ export function SignUpForm() {
 
         <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
-        <Button type="submit" size="lg" loading={loading} className="w-full">
+        <Button
+          type="submit"
+          size="lg"
+          loading={loading}
+          disabled={!canSubmit || loading}
+          className="w-full"
+        >
           {loading ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
@@ -115,7 +182,7 @@ export function SignUpForm() {
       <p className="text-center text-sm text-semantic-text-secondary">
         Already have an account?{' '}
         <Link
-          href="/auth/signin"
+          href={signInHref}
           className="font-medium text-semantic-brand sm:hover:underline"
         >
           Sign in

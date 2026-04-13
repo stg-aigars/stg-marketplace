@@ -1,17 +1,11 @@
 'use client';
 
-import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
+import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
 
 interface CountrySelectorProps {
   value: CountryCode | '';
   onChange: (code: CountryCode) => void;
 }
-
-const FLAG_EMOJI: Record<CountryCode, string> = {
-  LV: '🇱🇻',
-  EE: '🇪🇪',
-  LT: '🇱🇹',
-};
 
 export function CountrySelector({ value, onChange }: CountrySelectorProps) {
   return (
@@ -33,15 +27,12 @@ export function CountrySelector({ value, onChange }: CountrySelectorProps) {
                   : 'border border-semantic-border-subtle bg-semantic-bg-elevated text-semantic-text-secondary sm:hover:border-semantic-border-default'
               }`}
             >
-              <span className="text-xl leading-none">{FLAG_EMOJI[country.code]}</span>
+              <span className={`${getCountryFlag(country.code)} text-xl`} aria-hidden="true" />
               <span>{country.name}</span>
             </button>
           );
         })}
       </div>
-      <p className="mt-2 text-sm text-semantic-text-muted">
-        We currently serve the Baltic states
-      </p>
     </div>
   );
 }
