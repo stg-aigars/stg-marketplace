@@ -33,10 +33,20 @@ export async function POST(request: Request) {
       );
     }
 
-    await resend.contacts.create({
+    const { data, error: contactError } = await resend.contacts.create({
       email,
       audienceId: env.resend.audienceId,
     });
+
+    if (contactError) {
+      console.error('[Newsletter] Contact create failed:', contactError);
+      return NextResponse.json(
+        { error: 'Failed to subscribe. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    console.log('[Newsletter] Contact created:', data?.id, email);
 
     // Notify admin of new signup (fire-and-forget)
     void resend.emails.send({
