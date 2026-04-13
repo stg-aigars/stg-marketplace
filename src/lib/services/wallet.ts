@@ -235,6 +235,7 @@ export async function getTransactionHistory(
 /**
  * Create a withdrawal request. Debits wallet immediately (funds held for withdrawal).
  * If staff later rejects, funds are credited back.
+ * Uses atomic Postgres RPC for the wallet debit.
  */
 export async function createWithdrawalRequest(
   userId: string,
@@ -245,11 +246,6 @@ export async function createWithdrawalRequest(
   if (amountCents <= 0) throw new Error('Withdrawal amount must be positive');
 
   const supabase = createServiceClient();
-  const wallet = await getOrCreateWallet(userId);
-
-  if (wallet.balance_cents < amountCents) {
-    throw new InsufficientBalanceError(amountCents, wallet.balance_cents);
-  }
 
   // Create withdrawal request first to get the ID
   const { data: withdrawal, error: withdrawalError } = await supabase
@@ -267,35 +263,21 @@ export async function createWithdrawalRequest(
     throw new Error(`Failed to create withdrawal request: ${withdrawalError?.message}`);
   }
 
-  // Debit wallet — hold funds for withdrawal
-  const newBalance = wallet.balance_cents - amountCents;
+  // Atomic wallet debit via RPC — balance check + update + transaction in one SQL transaction
+  const { error: debitError } = await supabase.rpc('wallet_withdrawal_debit', {
+    p_user_id: userId,
+    p_amount_cents: amountCents,
+    p_withdrawal_id: withdrawal.id,
+    p_description: `Withdrawal request — ${bankIban}`,
+  });
 
-  const { data: updated, error: updateError } = await supabase
-    .from('wallets')
-    .update({ balance_cents: newBalance })
-    .eq('id', wallet.id)
-    .eq('balance_cents', wallet.balance_cents) // Optimistic lock
-    .select('balance_cents')
-    .single<{ balance_cents: number }>();
-
-  if (updateError || !updated) {
+  if (debitError) {
     // Rollback: delete the withdrawal request
     await supabase.from('withdrawal_requests').delete().eq('id', withdrawal.id);
-    throw new InsufficientBalanceError(amountCents, wallet.balance_cents);
+    const match = debitError.message.match(/INSUFFICIENT_BALANCE:(\d+) (\d+)/);
+    if (match) throw new InsufficientBalanceError(Number(match[1]), Number(match[2]));
+    throw new Error(`Failed to debit wallet for withdrawal: ${debitError.message}`);
   }
-
-  // Record withdrawal transaction
-  await supabase
-    .from('wallet_transactions')
-    .insert({
-      wallet_id: wallet.id,
-      user_id: userId,
-      type: 'withdrawal' as const,
-      amount_cents: amountCents,
-      balance_after_cents: updated.balance_cents,
-      withdrawal_id: withdrawal.id,
-      description: `Withdrawal request — ${bankIban}`,
-    });
 
   void logAuditEvent({
     actorId: userId,
@@ -311,6 +293,7 @@ export async function createWithdrawalRequest(
 
 /**
  * Credit back a rejected withdrawal. Called by staff when rejecting a request.
+ * Uses atomic Postgres RPC for the wallet credit-back.
  */
 export async function creditBackRejectedWithdrawal(
   withdrawalId: string
@@ -332,31 +315,14 @@ export async function creditBackRejectedWithdrawal(
     throw new Error(`Cannot credit back withdrawal in status: ${withdrawal.status}`);
   }
 
-  const wallet = await getOrCreateWallet(withdrawal.user_id);
+  const { error: creditError } = await supabase.rpc('wallet_withdrawal_credit_back', {
+    p_user_id: withdrawal.user_id,
+    p_amount_cents: withdrawal.amount_cents,
+    p_withdrawal_id: withdrawalId,
+    p_description: 'Withdrawal rejected — funds returned',
+  });
 
-  // Credit back the held amount with optimistic lock
-  const { data: updated, error: updateError } = await supabase
-    .from('wallets')
-    .update({ balance_cents: wallet.balance_cents + withdrawal.amount_cents })
-    .eq('id', wallet.id)
-    .eq('balance_cents', wallet.balance_cents) // Optimistic lock
-    .select('balance_cents')
-    .single<{ balance_cents: number }>();
-
-  if (updateError || !updated) {
-    throw new Error(`Failed to credit back withdrawal: concurrent balance change detected`);
+  if (creditError) {
+    throw new Error(`Failed to credit back withdrawal: ${creditError.message}`);
   }
-
-  // Record the credit-back transaction
-  await supabase
-    .from('wallet_transactions')
-    .insert({
-      wallet_id: wallet.id,
-      user_id: withdrawal.user_id,
-      type: 'credit' as const,
-      amount_cents: withdrawal.amount_cents,
-      balance_after_cents: updated.balance_cents,
-      withdrawal_id: withdrawalId,
-      description: `Withdrawal rejected — funds returned`,
-    });
 }
