@@ -156,7 +156,7 @@ export async function updateProfile(data: {
   // Write terms acceptance atomically — only if not already set (first-time only).
   // The .is('terms_accepted_at', null) clause prevents overwriting an existing timestamp.
   if (data.termsAccepted) {
-    await supabase
+    const { error: termsError } = await supabase
       .from('user_profiles')
       .update({
         terms_accepted_at: new Date().toISOString(),
@@ -164,6 +164,11 @@ export async function updateProfile(data: {
       })
       .eq('id', user.id)
       .is('terms_accepted_at', null);
+
+    if (termsError) {
+      console.error('[updateProfile] Terms write failed:', termsError);
+      return { error: 'Something went wrong. Please try again' };
+    }
   }
 
   redirect(safeReturnUrl(data.returnUrl));

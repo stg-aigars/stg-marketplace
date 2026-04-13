@@ -27,7 +27,7 @@ export function CountrySelector({ value, onChange }: CountrySelectorProps) {
                   : 'border border-semantic-border-subtle bg-semantic-bg-elevated text-semantic-text-secondary sm:hover:border-semantic-border-default'
               }`}
             >
-              <span className={`${getCountryFlag(country.code)} text-xl`} />
+              <span className={`${getCountryFlag(country.code)} text-xl`} aria-hidden="true" />
               <span>{country.name}</span>
             </button>
           );
