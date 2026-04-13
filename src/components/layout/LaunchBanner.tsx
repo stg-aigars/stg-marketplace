@@ -13,7 +13,7 @@ export function LaunchBanner() {
   const [mounted, setMounted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -48,7 +48,9 @@ export function LaunchBanner() {
         throw new Error(data.error || 'Something went wrong');
       }
 
-      hide();
+      setStatus('success');
+      localStorage.setItem(STORAGE_KEY, '1');
+      setTimeout(hide, 3000);
     } catch (err) {
       setStatus('idle');
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -58,33 +60,41 @@ export function LaunchBanner() {
   return (
     <div className="bg-semantic-brand/10 border-b border-semantic-brand/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-        <p className="text-sm font-medium text-semantic-text-heading flex-1 min-w-0">
-          We&rsquo;re launching soon. Leave your email to be the first to know.
-        </p>
-        <form onSubmit={handleSubmit} className="flex gap-2 items-start shrink-0">
-          <div className="w-56 min-w-0">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError('');
-              }}
-              placeholder="Your email"
-              required
-              error={error}
-              className="min-h-[36px] py-1.5 text-sm"
-            />
-          </div>
-          <Button
-            variant="brand"
-            size="sm"
-            loading={status === 'loading'}
-            className="min-h-[36px] shrink-0"
-          >
-            Notify me
-          </Button>
-        </form>
+        {status === 'success' ? (
+          <p className="text-sm font-medium text-semantic-success flex-1">
+            You&rsquo;re on the list. We&rsquo;ll let you know when we launch.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-semantic-text-heading flex-1 min-w-0">
+              We&rsquo;re launching soon. Leave your email to be the first to know.
+            </p>
+            <form onSubmit={handleSubmit} className="flex gap-2 items-start shrink-0">
+              <div className="w-56 min-w-0">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
+                  placeholder="Your email"
+                  required
+                  error={error}
+                  className="min-h-[36px] py-1.5 text-sm"
+                />
+              </div>
+              <Button
+                variant="brand"
+                size="sm"
+                loading={status === 'loading'}
+                className="min-h-[36px] shrink-0"
+              >
+                Notify me
+              </Button>
+            </form>
+          </>
+        )}
         <Button
           variant="ghost"
           size="sm"
