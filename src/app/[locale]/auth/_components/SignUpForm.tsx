@@ -73,7 +73,7 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
 
   return (
     <div className="space-y-6">
-      <OAuthButton returnUrl={returnUrl} />
+      <OAuthButton returnUrl={returnUrl} label="Sign up with Google" />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

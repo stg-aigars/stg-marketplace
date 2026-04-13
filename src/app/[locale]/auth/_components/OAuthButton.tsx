@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/browser';
 
 interface OAuthButtonProps {
   returnUrl?: string;
+  label?: string;
 }
 
-export function OAuthButton({ returnUrl }: OAuthButtonProps) {
+export function OAuthButton({ returnUrl, label = 'Continue with Google' }: OAuthButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleGoogleSignIn() {
@@ -53,7 +54,7 @@ export function OAuthButton({ returnUrl }: OAuthButtonProps) {
           fill="#EA4335"
         />
       </svg>
-      Continue with Google
+      {label}
     </Button>
   );
 }

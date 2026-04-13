@@ -33,9 +33,6 @@ export function CountrySelector({ value, onChange }: CountrySelectorProps) {
           );
         })}
       </div>
-      <p className="mt-2 text-sm text-semantic-text-muted">
-        We use this for shipping
-      </p>
     </div>
   );
 }
