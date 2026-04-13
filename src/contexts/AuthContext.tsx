@@ -14,6 +14,7 @@ import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/browser';
 
 import type { UserProfile } from '@/lib/auth/types';
+import { isOAuthUser } from '@/lib/auth/oauth-providers';
 
 interface AuthContextValue {
   user: User | null;
@@ -115,11 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const needsCountrySelection = useMemo(() => {
     if (!user || !profile) return false;
-    const providers = user.app_metadata?.providers as string[] | undefined;
-    const isGoogleUser =
-      user.app_metadata?.provider === 'google' ||
-      (Array.isArray(providers) && providers.includes('google'));
-    return isGoogleUser && !profile.country_confirmed;
+    return isOAuthUser(user.app_metadata) && !profile.country_confirmed;
   }, [user, profile]);
 
   const handleSignOut = useCallback(async () => {

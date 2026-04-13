@@ -35,6 +35,8 @@ const serverEnvSchema = {
   CLOUDFLARE_ZONE_ID: process.env.CLOUDFLARE_ZONE_ID,
   CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
 
+  NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED: process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED,
+
   // Stable key for Next.js Server Action ID encryption. MUST be identical across
   // deploys — rotating it invalidates every in-flight client bundle and surfaces
   // as UnrecognizedActionError on old tabs. Set in Coolify as a buildtime env
@@ -82,6 +84,7 @@ export function validateEnv(): ValidationResult {
     'CLOUDFLARE_ZONE_ID',
     'CLOUDFLARE_API_TOKEN',
     'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY',
+    'NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED',
   ];
 
   const isProduction = process.env.NODE_ENV === 'production';
@@ -162,5 +165,8 @@ export const env = {
   cloudflare: {
     zoneId: process.env.CLOUDFLARE_ZONE_ID,
     apiToken: process.env.CLOUDFLARE_API_TOKEN,
+  },
+  facebook: {
+    loginEnabled: process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED === 'true',
   },
 } as const;
