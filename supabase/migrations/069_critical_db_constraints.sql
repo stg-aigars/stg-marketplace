@@ -50,6 +50,8 @@ ALTER TABLE orders
     CHECK (shipping_cost_cents >= 0),
   ADD CONSTRAINT orders_commission_check
     CHECK (platform_commission_cents IS NULL OR platform_commission_cents >= 0),
+  ADD CONSTRAINT orders_seller_credit_check
+    CHECK (seller_wallet_credit_cents IS NULL OR seller_wallet_credit_cents >= 0),
   ADD CONSTRAINT orders_buyer_debit_check
     CHECK (buyer_wallet_debit_cents IS NULL OR buyer_wallet_debit_cents >= 0),
   ADD CONSTRAINT orders_refund_check
