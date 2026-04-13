@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
 import { safeReturnUrl } from '@/lib/auth/safe-return-url';
+import { env } from '@/lib/env';
 
 interface SignInFormProps {
   returnUrl?: string;
@@ -65,7 +66,12 @@ export function SignInForm({ returnUrl, errorMessage }: SignInFormProps) {
 
   return (
     <div className="space-y-6">
-      <OAuthButton returnUrl={returnUrl} />
+      <div className="space-y-3">
+        <OAuthButton returnUrl={returnUrl} />
+        {env.facebook.loginEnabled && (
+          <OAuthButton provider="facebook" returnUrl={returnUrl} />
+        )}
+      </div>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

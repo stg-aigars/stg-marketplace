@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { routing } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/middleware';
 import { buildCspHeader } from '@/lib/csp';
+import { isOAuthUser } from '@/lib/auth/oauth-providers';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -74,13 +75,7 @@ export default async function middleware(request: NextRequest) {
 
     // 4. Redirect OAuth users who haven't confirmed their country
     if (user) {
-      const provider = user.app_metadata?.provider;
-      const providers = user.app_metadata?.providers as string[] | undefined;
-      const isOAuthUser =
-        provider === 'google' ||
-        (Array.isArray(providers) && providers.includes('google'));
-
-      if (isOAuthUser) {
+      if (isOAuthUser(user.app_metadata)) {
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('country_confirmed')

@@ -115,9 +115,11 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
           Email and security
         </h2>
 
-        {authProvider === 'google' && (
+        {(authProvider === 'google' || authProvider === 'facebook') && (
           <div className="mb-3">
-            <Badge variant="default">Signed in with Google</Badge>
+            <Badge variant="default">
+              Signed in with {authProvider === 'google' ? 'Google' : 'Facebook'}
+            </Badge>
           </div>
         )}
         <p className="text-sm text-semantic-text-secondary mb-4">
