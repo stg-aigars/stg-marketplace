@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Input, Button } from '@/components/ui';
+import { Input, Button, Checkbox } from '@/components/ui';
 import { updateProfile } from '@/lib/auth/actions';
 import { CountrySelector } from './CountrySelector';
 import { Link } from '@/i18n/navigation';
@@ -66,32 +66,24 @@ export function CompleteProfileForm({ returnUrl }: CompleteProfileFormProps) {
       />
 
       <div className="border-t border-semantic-border-subtle pt-4">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-semantic-border-default text-semantic-brand focus:ring-semantic-brand"
-          />
-          <span className="text-sm text-semantic-text-secondary">
-            I agree to the{' '}
-            <Link
-              href="/terms"
-              target="_blank"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
-            >
-              Terms of Service
-            </Link>
-            {' '}and{' '}
-            <Link
-              href="/privacy"
-              target="_blank"
-              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
-            >
-              Privacy Policy
-            </Link>
-          </span>
-        </label>
+        <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
+          I agree to the{' '}
+          <Link
+            href="/terms"
+            target="_blank"
+            className="link-brand"
+          >
+            Terms of Service
+          </Link>
+          {' '}and{' '}
+          <Link
+            href="/privacy"
+            target="_blank"
+            className="link-brand"
+          >
+            Privacy Policy
+          </Link>
+        </Checkbox>
       </div>
 
       {error && (

@@ -78,3 +78,6 @@ export { CountBadge } from './count-badge';
 
 export { Toggle } from './toggle';
 export type { ToggleProps } from './toggle';
+
+export { Checkbox } from './checkbox';
+export type { CheckboxProps } from './checkbox';

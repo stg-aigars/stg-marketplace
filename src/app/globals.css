@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .link-brand {
+    @apply text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline;
+  }
+}
+
 @layer base {
   html {
     scroll-padding-top: 4.5rem;

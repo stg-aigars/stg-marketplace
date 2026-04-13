@@ -9,14 +9,7 @@ import { createClient } from '@/lib/supabase/browser';
 import { useAuth } from '@/contexts/AuthContext';
 import { OAuthButton } from './OAuthButton';
 import { Link } from '@/i18n/navigation';
-
-/** Prevent open redirects — only allow relative paths. */
-function safeReturnUrl(url?: string): string {
-  if (!url || !url.startsWith('/') || url.startsWith('//')) {
-    return '/';
-  }
-  return url;
-}
+import { safeReturnUrl } from '@/lib/auth/safe-return-url';
 
 interface SignInFormProps {
   returnUrl?: string;

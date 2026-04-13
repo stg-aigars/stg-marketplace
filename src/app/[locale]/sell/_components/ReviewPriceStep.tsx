@@ -361,7 +361,7 @@ export function ReviewPriceStep({
         By publishing, you confirm you are at least 18 and agree to our{' '}
         <Link
           href="/seller-terms"
-          className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+          className="link-brand"
         >
           Seller Terms
         </Link>

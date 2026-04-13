@@ -22,7 +22,7 @@ export default function SellerTermsPage() {
           This Seller Agreement supplements the general{' '}
           <Link
             href="/terms"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+            className="link-brand"
           >
             Terms of Service
           </Link>
@@ -159,14 +159,14 @@ export default function SellerTermsPage() {
           See also our{' '}
           <Link
             href="/terms"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+            className="link-brand"
           >
             Terms of Service
           </Link>{' '}
           and{' '}
           <Link
             href="/privacy"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom underline"
+            className="link-brand"
           >
             Privacy Policy
           </Link>
