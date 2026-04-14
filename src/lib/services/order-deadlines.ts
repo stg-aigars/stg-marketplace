@@ -267,6 +267,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         everypay_payment_reference: order.everypay_payment_reference,
         order_number: order.order_number,
         refund_status: order.refund_status,
+        invoice_number: null, // Deadline cancellations never had an invoice
       });
 
       void logAuditEvent({

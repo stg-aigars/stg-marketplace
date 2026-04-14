@@ -35,8 +35,8 @@ export async function issueInvoice(orderId: string, issuedAt?: Date): Promise<st
 export async function issueCreditNote(orderId: string, issuedAt?: Date): Promise<string> {
   const supabase = createServiceClient();
 
-  // Find the invoice for this order (must exist before credit note)
-  let { data: invoice } = await supabase
+  // Find the invoice for this order (must exist — issued at order completion)
+  const { data: invoice } = await supabase
     .from('invoices')
     .select('id')
     .eq('order_id', orderId)
@@ -44,17 +44,8 @@ export async function issueCreditNote(orderId: string, issuedAt?: Date): Promise
     .maybeSingle();
 
   if (!invoice) {
-    // Defensive: issue invoice first if missing (shouldn't happen in normal flow)
-    await issueInvoice(orderId, issuedAt);
-    const { data: retryInvoice } = await supabase
-      .from('invoices')
-      .select('id')
-      .eq('order_id', orderId)
-      .eq('type', 'invoice')
-      .single();
-
-    if (!retryInvoice) throw new Error(`Cannot find invoice for order ${orderId}`);
-    invoice = retryInvoice;
+    // No invoice means the order was cancelled before completion — no credit note needed
+    throw new Error(`No invoice found for order ${orderId} — credit note not applicable`);
   }
 
   const { data, error } = await supabase.rpc('issue_document_number', {
