@@ -184,6 +184,30 @@ Total recovery time: ~1 hour. Nothing is lost because the server is stateless.
 
 ---
 
+## Invoice data corrections
+
+Invoices (`invoices` table) are immutable — a database trigger blocks all UPDATE and DELETE operations. This is intentional: invoices are legal documents under Latvian VAT law.
+
+**To correct an invoice error** (rare, requires SSH + DB access):
+```sql
+-- 1. Disable the immutability trigger
+ALTER TABLE invoices DISABLE TRIGGER prevent_invoice_mutation;
+
+-- 2. Make the correction
+UPDATE invoices SET ... WHERE id = '...';
+
+-- 3. Re-enable immediately
+ALTER TABLE invoices ENABLE TRIGGER prevent_invoice_mutation;
+```
+
+Document any correction with the reason, who authorized it, and the date. If a prior-year invoice number is missing (e.g., reconciliation of a completed order from a previous calendar year), use the `p_issued_at` parameter of the `issue_document_number` RPC to assign the correct year:
+
+```sql
+SELECT issue_document_number('order-uuid', 'invoice', NULL, '2026-12-31T23:00:00Z');
+```
+
+---
+
 ## Pre-launch checklist
 
 Manual verification items from the April 2026 pre-launch audit. These can't be checked from code — they require logging into service dashboards and SSH.

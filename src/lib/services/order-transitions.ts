@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { createOrderShipping } from '@/lib/services/unisend/shipping';
 import { creditWallet } from '@/lib/services/wallet';
 import { refundOrder } from '@/lib/services/order-refund';
+import { issueInvoice } from '@/lib/services/invoicing';
 import { notify } from '@/lib/notifications';
 import { VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_TIMESTAMP_COLUMN } from '@/lib/orders/constants';
 import type { OrderStatus, OrderRow, OrderWithRelations } from '@/lib/orders/types';
@@ -330,6 +331,10 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   // Credit seller wallet with earnings (idempotent — safe to retry)
   await creditSellerWallet(orderId, order);
 
+  // Issue invoice — after wallet credit so the financial operation isn't blocked.
+  // If this fails, the order is complete with wallet credited; reconciliation cron retries.
+  void issueInvoice(orderId).catch((err) => console.error('[Invoicing] Failed to issue invoice:', err));
+
   // DAC7: track seller stats for tax reporting thresholds (fire-and-forget)
   void updateDac7StatsOnCompletion(
     order.seller_id,
@@ -398,6 +403,9 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
 
   // Credit seller wallet (idempotent)
   await creditSellerWallet(orderId, order);
+
+  // Issue invoice (fire-and-forget — reconciliation cron retries if this fails)
+  void issueInvoice(orderId).catch((err) => console.error('[Invoicing] Failed to issue invoice:', err));
 
   // DAC7: track seller stats for tax reporting thresholds (fire-and-forget)
   void updateDac7StatsOnCompletion(

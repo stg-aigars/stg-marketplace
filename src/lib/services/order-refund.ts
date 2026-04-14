@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { refundToWallet } from '@/lib/services/wallet';
 import { logAuditEvent } from '@/lib/services/audit';
+import { issueCreditNote } from '@/lib/services/invoicing';
 import type { PaymentMethod } from '@/lib/orders/types';
 
 /** Refund status values written to orders.refund_status. */
@@ -141,6 +142,9 @@ export async function refundOrder(
       refunded_at: new Date().toISOString(),
     })
     .eq('id', orderId);
+
+  // Issue credit note (fire-and-forget — recoverable if this fails)
+  void issueCreditNote(orderId).catch((err) => console.error('[Invoicing] Failed to issue credit note:', err));
 
   void logAuditEvent({
     actorType: 'system',
