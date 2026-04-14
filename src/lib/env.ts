@@ -16,6 +16,7 @@ const serverEnvSchema = {
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
   RESEND_AUDIENCE_ID: process.env.RESEND_AUDIENCE_ID,
+  RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET,
   ADMIN_EMAIL: process.env.ADMIN_EMAIL,
 
   UNISEND_API_URL: process.env.UNISEND_API_URL,
@@ -78,6 +79,7 @@ export function validateEnv(): ValidationResult {
   const optional: EnvKey[] = [
     'APP_ORIGIN',
     'RESEND_AUDIENCE_ID',
+    'RESEND_WEBHOOK_SECRET',
     'ADMIN_EMAIL',
     'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
     'TURNSTILE_SECRET_KEY',
@@ -142,6 +144,7 @@ export const env = {
     apiKey: process.env.RESEND_API_KEY!,
     fromEmail: process.env.RESEND_FROM_EMAIL!,
     audienceId: process.env.RESEND_AUDIENCE_ID ?? '',
+    webhookSecret: process.env.RESEND_WEBHOOK_SECRET,
   },
   unisend: {
     apiUrl: process.env.UNISEND_API_URL!,

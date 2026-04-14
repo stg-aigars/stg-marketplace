@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, newsletterLimiter } from '@/lib/rate-limit';
+import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 
 const resend = new Resend(env.resend.apiKey);
 
@@ -25,6 +26,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const email = (body.email as string)?.trim().toLowerCase();
+    const turnstileToken = body.turnstileToken as string | undefined;
+
+    const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
+    if (!turnstile.success) {
+      return NextResponse.json({ error: turnstile.error }, { status: 400 });
+    }
 
     if (!email || !EMAIL_REGEX.test(email)) {
       return NextResponse.json(
