@@ -56,8 +56,7 @@ export function BidPanel({
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
-  const [now] = useState(() => Date.now());
-  const msRemaining = new Date(state.auctionEndAt).getTime() - now;
+  const msRemaining = new Date(state.auctionEndAt).getTime() - Date.now();
   const isWithinOneHour = !isEnded && msRemaining > 0 && msRemaining <= 3600000;
 
   const [inc1, inc2] = getQuickBidIncrements(minBid);

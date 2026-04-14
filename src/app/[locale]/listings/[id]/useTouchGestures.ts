@@ -75,7 +75,7 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
   useEffect(() => {
     onSwipeLeftRef.current = onSwipeLeft;
     onSwipeRightRef.current = onSwipeRight;
-  });
+  }, [onSwipeLeft, onSwipeRight]);
 
   const applyTransform = useCallback((animate = false) => {
     const el = containerRef.current;
