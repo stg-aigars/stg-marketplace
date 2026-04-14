@@ -46,6 +46,7 @@ export function ImportFromBGG({
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when modal closes
       setStep('username');
       setUsername(savedUsername ?? '');
       setItems([]);
@@ -72,6 +73,8 @@ export function ImportFromBGG({
     };
   }, []);
 
+  const fetchCollectionRef = useRef<(isPoll: boolean) => Promise<void>>(undefined);
+
   const fetchCollection = useCallback(
     async (isPoll: boolean) => {
       const url = `/api/bgg/collection?username=${encodeURIComponent(username.trim())}${isPoll ? '&poll=1' : ''}`;
@@ -92,7 +95,7 @@ export function ImportFromBGG({
             return;
           }
           retryCountRef.current += 1;
-          pollTimeoutRef.current = setTimeout(() => fetchCollection(true), POLL_INTERVAL);
+          pollTimeoutRef.current = setTimeout(() => fetchCollectionRef.current?.(true), POLL_INTERVAL);
           return;
         }
 
@@ -117,6 +120,10 @@ export function ImportFromBGG({
     },
     [username]
   );
+
+  useEffect(() => {
+    fetchCollectionRef.current = fetchCollection;
+  }, [fetchCollection]);
 
   function handleFetch() {
     if (!username.trim()) return;

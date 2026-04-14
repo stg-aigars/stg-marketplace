@@ -21,6 +21,7 @@ export function EditShelfItemModal({ item, open, onClose, onUpdated }: EditShelf
 
   // Sync when item changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when modal item changes
     setVisibility(item.visibility === 'listed' ? 'open_to_offers' : item.visibility);
     setNotes(item.notes ?? '');
     setError('');

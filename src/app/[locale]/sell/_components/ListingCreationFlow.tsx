@@ -163,6 +163,7 @@ export function ListingCreationFlow({
   // Fetch expansions and check duplicates after game selection
   useEffect(() => {
     if (!formData.bgg_game_id || formData.is_expansion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing state when game changes
       setAvailableExpansions([]);
       setDuplicateListings([]);
       return;

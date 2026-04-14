@@ -39,6 +39,7 @@ function SiteHeader() {
 
   // Close menus on route change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- closing menus on route change
     setMobileOpen(false);
     setDropdownOpen(false);
   }, [pathname]);

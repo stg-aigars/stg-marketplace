@@ -522,6 +522,7 @@ describe('auction price tamper-proof (G5)', () => {
       group,
       'ep-ref-1',
       'settled',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockServiceClient as any,
       'card'
     );

@@ -14,7 +14,7 @@ import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 
 const mockGetPaymentStatus = vi.fn();
 const mockMapEveryPayMethod = vi.fn(() => 'card' as const);
-const mockFulfillCartPayment = vi.fn();
+// mockFulfillCartPayment reserved for future reconcile-payments integration tests
 const mockDebitWallet = vi.fn();
 const mockCreditWallet = vi.fn();
 const mockRefundToWallet = vi.fn();
@@ -165,7 +165,7 @@ describe('reconcile-payments cron (I2)', () => {
 
     const cartGroupsBuilder = makeQueryBuilder([staleGroup]);
     // Wallet retry query returns nothing
-    const ordersBuilder = makeQueryBuilder([]);
+    // Wallet retry query returns nothing (via default makeQueryBuilder)
 
     // For fulfillCartPayment: mock its internal supabase queries
     const existingOrdersBuilder = makeQueryBuilder([]); // no existing orders
@@ -281,6 +281,7 @@ describe('fulfillCartPayment', () => {
       }),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await fulfillCartPayment(group, 'ep-ref-1', 'settled', mockClient as any, 'card');
 
     expect(result.outcome).toBe('created');
@@ -323,6 +324,7 @@ describe('fulfillCartPayment', () => {
       }),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await fulfillCartPayment(group, 'ep-ref-1', 'settled', mockClient as any, 'card');
 
     expect(result.outcome).toBe('unavailable');
@@ -379,6 +381,7 @@ describe('fulfillCartPayment', () => {
       }),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await fulfillCartPayment(group, 'ep-ref-1', 'settled', mockClient as any, 'card');
 
     expect(result.outcome).toBe('created');
@@ -406,6 +409,7 @@ describe('fulfillCartPayment', () => {
       }),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await fulfillCartPayment(group, 'ep-ref-1', 'settled', mockClient as any, 'card');
 
     expect(result.outcome).toBe('already_exists');

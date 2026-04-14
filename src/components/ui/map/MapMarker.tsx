@@ -158,13 +158,14 @@ export type MarkerContentProps = {
 export function MarkerContent({ children, className }: MarkerContentProps) {
   const { markerElementRef, isReady } = useMarkerContext();
 
+  // eslint-disable-next-line react-hooks/refs -- reading ref during render is required for React portal target
   if (!isReady || !markerElementRef.current) return null;
 
   return createPortal(
     <div className={cn("relative cursor-pointer", className)}>
       {children || <DefaultMarkerIcon />}
     </div>,
-    markerElementRef.current
+    markerElementRef.current // eslint-disable-line react-hooks/refs -- portal target must be read during render
   );
 }
 

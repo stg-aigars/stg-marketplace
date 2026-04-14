@@ -17,9 +17,8 @@ const TYPE_ICONS: Record<string, PhosphorIcon> = {
   shipping: Truck,
 };
 
-function getIcon(type: string): PhosphorIcon {
-  const prefix = type.split('.')[0];
-  return TYPE_ICONS[prefix] ?? Package;
+function getIconPrefix(type: string): string {
+  return type.split('.')[0];
 }
 
 interface NotificationItemProps {
@@ -29,7 +28,7 @@ interface NotificationItemProps {
 }
 
 function NotificationItem({ notification, onRead, onDelete }: NotificationItemProps) {
-  const Icon = getIcon(notification.type);
+  const Icon = TYPE_ICONS[getIconPrefix(notification.type)] ?? Package;
   const isUnread = !notification.read_at;
 
   const handleClick = () => {

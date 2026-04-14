@@ -56,7 +56,8 @@ export function BidPanel({
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
-  const msRemaining = new Date(state.auctionEndAt).getTime() - Date.now();
+  const [now] = useState(() => Date.now());
+  const msRemaining = new Date(state.auctionEndAt).getTime() - now;
   const isWithinOneHour = !isEnded && msRemaining > 0 && msRemaining <= 3600000;
 
   const [inc1, inc2] = getQuickBidIncrements(minBid);
@@ -93,6 +94,7 @@ export function BidPanel({
     if (isEnded) return;
     const interval = setInterval(pollState, 10000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pollState uses refs for latest state, intentionally excluded
   }, [listingId, isEnded]);
 
   // Proactively warn when custom input value becomes stale.

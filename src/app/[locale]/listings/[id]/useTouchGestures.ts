@@ -72,8 +72,10 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
   // Store swipe callbacks in refs so the touch listener effect doesn't re-run on callback identity changes
   const onSwipeLeftRef = useRef(onSwipeLeft);
   const onSwipeRightRef = useRef(onSwipeRight);
-  onSwipeLeftRef.current = onSwipeLeft;
-  onSwipeRightRef.current = onSwipeRight;
+  useEffect(() => {
+    onSwipeLeftRef.current = onSwipeLeft;
+    onSwipeRightRef.current = onSwipeRight;
+  });
 
   const applyTransform = useCallback((animate = false) => {
     const el = containerRef.current;
@@ -114,6 +116,7 @@ export function useTouchGestures({ onSwipeLeft, onSwipeRight, imageIndex }: UseT
 
   // Reset zoom when image changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting zoom state on image change
     resetZoom(true);
   }, [imageIndex, resetZoom]);
 

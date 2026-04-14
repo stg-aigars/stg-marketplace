@@ -248,7 +248,7 @@ describe('B2: 24h no response → reminder', () => {
       from: vi.fn((table: string) => {
         let hasIsNull = false;
         let hasGte = false;
-        let isUpdate = false;
+        // isUpdate tracked by the update mock below
 
         const builder: Record<string, unknown> = {};
         builder.select = vi.fn(() => builder);
@@ -265,7 +265,6 @@ describe('B2: 24h no response → reminder', () => {
         builder.in = vi.fn(() => builder);
         builder.limit = vi.fn(() => builder);
         builder.update = vi.fn((payload: Record<string, unknown>) => {
-          isUpdate = true;
           if (table === 'orders' && payload.deadline_reminder_sent_at) {
             reminderUpdateCalled = true;
           }

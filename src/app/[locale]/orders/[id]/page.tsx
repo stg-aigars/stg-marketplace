@@ -66,6 +66,7 @@ export default async function OrderDetailPage(
     !existingReview &&
     REVIEW_ELIGIBLE_STATUSES.includes(order.status as typeof REVIEW_ELIGIBLE_STATUSES[number]) &&
     reviewWindowStart != null &&
+    // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is safe at request time
     (Date.now() - new Date(reviewWindowStart).getTime()) < REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
   return (

@@ -52,6 +52,7 @@ function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Hydrate from localStorage on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from localStorage
     setItems(loadCart());
     setHydrated(true);
   }, []);
@@ -69,6 +70,7 @@ function CartProvider({ children }: { children: React.ReactNode }) {
 
     // User signed out or switched to a different user
     if (prev && prev !== userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing cart on user change
       setItems([]);
     }
   }, [user, authLoading]);
