@@ -93,6 +93,7 @@ export function BidPanel({
     if (isEnded) return;
     const interval = setInterval(pollState, 10000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pollState uses refs for latest state, intentionally excluded
   }, [listingId, isEnded]);
 
   // Proactively warn when custom input value becomes stale.

@@ -371,7 +371,7 @@ describe('D6: 21d auto-escalate (creates dispute)', () => {
       from: vi.fn((table: string) => {
         let hasIsNull = false;
         let hasGte = false;
-        let isUpdate = false;
+        // isUpdate tracked by the update mock below
 
         const builder: Record<string, unknown> = {};
         builder.select = vi.fn(() => builder);
@@ -388,7 +388,6 @@ describe('D6: 21d auto-escalate (creates dispute)', () => {
         builder.in = vi.fn(() => builder);
         builder.limit = vi.fn(() => builder);
         builder.update = vi.fn((payload: Record<string, unknown>) => {
-          isUpdate = true;
           if (table === 'orders' && payload.status === 'disputed') {
             disputeStatusUpdate = payload;
           }

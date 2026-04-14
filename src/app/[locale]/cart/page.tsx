@@ -38,6 +38,7 @@ export default function CartPage() {
 
     const listingIds = items.map((i) => i.listingId);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async validation on mount
     setValidating(true);
     fetch('/api/cart/validate', {
       method: 'POST',
@@ -89,7 +90,10 @@ export default function CartPage() {
   }, [items, buyerCountry, sellerProfiles]);
 
   // Totals (informational)
-  const availableItems = items.filter((i) => !unavailableMap.has(i.listingId));
+  const availableItems = useMemo(
+    () => items.filter((i) => !unavailableMap.has(i.listingId)),
+    [items, unavailableMap],
+  );
   const itemsTotal = availableItems.reduce((sum, i) => sum + i.priceCents, 0);
 
   const shippingTotal = useMemo(() => {

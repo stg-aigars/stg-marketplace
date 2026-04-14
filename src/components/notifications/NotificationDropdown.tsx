@@ -33,6 +33,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
 
   useEffect(() => {
     if (open && !loaded) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching
       void fetchNotifications();
     }
   }, [open, loaded, fetchNotifications]);
@@ -44,6 +45,7 @@ function NotificationDropdown({ unreadCount, onCountChange }: NotificationDropdo
   useEffect(() => {
     if (pathname === lastPathRef.current) return;
     lastPathRef.current = pathname;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close dropdown on route change
     setOpen(false);
     setLoaded(false);
   }, [pathname]);

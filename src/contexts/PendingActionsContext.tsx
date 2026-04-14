@@ -66,6 +66,7 @@ export function PendingActionsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing state on sign-out
       setActions(null);
       lastFetchedAt.current = 0;
       return;

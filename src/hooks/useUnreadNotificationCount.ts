@@ -24,6 +24,7 @@ export function useUnreadNotificationCount(): [number, () => void] {
   }, [user]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching on pathname change
     fetchCount();
   }, [fetchCount, pathname]);
 

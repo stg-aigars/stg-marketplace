@@ -74,8 +74,8 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   const { profile } = useAuth();
   const userCountry = profile?.country ?? null;
 
-  // Snapshot initial values for dirty detection
-  const initial = useRef({
+  // Snapshot initial values for dirty detection (useState, not useRef, so the compiler allows render-time reads)
+  const [initial] = useState(() => ({
     game_name: listing.game_name,
     condition: listing.condition,
     price_cents: listing.price_cents,
@@ -83,7 +83,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     photos: JSON.stringify(listing.photos),
     version: JSON.stringify(initialVersion(listing)),
     expansionIds: JSON.stringify(existingExpansions.map((e) => e.bgg_game_id).sort()),
-  });
+  }));
 
   // Editable state
   const [gameName, setGameName] = useState(listing.game_name);
@@ -120,6 +120,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
 
   // Fetch available expansions for this base game
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching
     setLoadingExpansions(true);
     apiFetch(`/api/games/${listing.bgg_game_id}/expansions`)
       .then((res) => res.ok ? res.json() : null)
@@ -195,13 +196,13 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
 
   // Dirty detection
   const isDirty =
-    gameName !== initial.current.game_name ||
-    condition !== initial.current.condition ||
-    priceCents !== initial.current.price_cents ||
-    description !== initial.current.description ||
-    JSON.stringify(photos) !== initial.current.photos ||
-    JSON.stringify(version) !== initial.current.version ||
-    JSON.stringify([...selectedExpansionIds].sort()) !== initial.current.expansionIds;
+    gameName !== initial.game_name ||
+    condition !== initial.condition ||
+    priceCents !== initial.price_cents ||
+    description !== initial.description ||
+    JSON.stringify(photos) !== initial.photos ||
+    JSON.stringify(version) !== initial.version ||
+    JSON.stringify([...selectedExpansionIds].sort()) !== initial.expansionIds;
 
   // Validation
   const isValid = condition !== null &&

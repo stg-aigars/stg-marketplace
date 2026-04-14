@@ -23,6 +23,7 @@ export function ListingNavigation({ listingId }: ListingNavigationProps) {
     const index = ctx.ids.indexOf(listingId);
     if (index === -1) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing state from sessionStorage browse context
     setPrevId(index > 0 ? ctx.ids[index - 1] : null);
     setNextId(index < ctx.ids.length - 1 ? ctx.ids[index + 1] : null);
     setBackUrl(`/browse${ctx.searchParams}`);

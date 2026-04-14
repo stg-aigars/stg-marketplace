@@ -22,6 +22,7 @@ export function MakeOfferModal({ open, onClose, item }: MakeOfferModalProps) {
 
   // Reset state when item changes (modal reopened for a different game)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when modal item changes
     setPriceStr('');
     setNote('');
     setError(null);

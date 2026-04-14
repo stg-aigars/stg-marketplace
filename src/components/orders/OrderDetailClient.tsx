@@ -178,6 +178,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           && !isReviewEligible
           && ['delivered', 'completed'].includes(status)
           && order.delivered_at
+          // eslint-disable-next-line react-hooks/purity -- one-time render check for review window
           && (Date.now() - new Date(order.delivered_at).getTime()) >= REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000
           && (
           <Card>

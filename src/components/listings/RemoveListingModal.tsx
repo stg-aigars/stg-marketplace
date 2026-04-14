@@ -21,6 +21,7 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
   // Reset stale state when modal opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when modal opens
       setError(null);
       setRemoving(false);
     }

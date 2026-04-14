@@ -24,6 +24,7 @@ export function PaymentMethodLogos({ country }: PaymentMethodLogosProps) {
 
   useEffect(() => {
     if (methodsCache.has(country)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from module-level cache
       setMethods(methodsCache.get(country)!);
       setLoading(false);
       return;

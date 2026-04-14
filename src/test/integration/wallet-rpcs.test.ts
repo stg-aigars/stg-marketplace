@@ -220,7 +220,7 @@ describe('wallet RPCs', () => {
     // At least one should succeed, the idempotency check means both may succeed
     // (second call finds existing transaction and returns it)
     const successes = settled.filter((r) => !r.value.error);
-    const failures = settled.filter((r) => r.value.error);
+    // Failures are implicitly validated by the successes count assertion below
 
     // With the idempotency check in the RPC, both calls may succeed
     // (second one just returns the existing transaction).
