@@ -11,6 +11,7 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Security headers for all routes
         source: '/(.*)',
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
@@ -19,8 +20,35 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), interest-cohort=(), usb=(), bluetooth=()' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
           { key: 'X-DNS-Prefetch-Control', value: 'off' },
-          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
           // CSP for pages is set dynamically in middleware.ts with per-request nonce
+        ],
+      },
+      {
+        // Authenticated routes: no caching (user-specific content)
+        source: '/:locale(en|lv)/(account|sell|orders|checkout|cart|staff)(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
+      {
+        // Public pages: allow Cloudflare edge caching, revalidate every 60s
+        source: '/:locale(en|lv)/(browse|listings|sellers|wanted|privacy|terms|seller-terms|help|contact)(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
+        ],
+      },
+      {
+        // Homepage: short edge cache
+        source: '/:locale(en|lv)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
+        ],
+      },
+      {
+        // Auth pages: no caching
+        source: '/:locale(en|lv)/auth(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
         ],
       },
       {
