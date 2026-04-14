@@ -87,6 +87,8 @@ export interface OrderRow {
   item_count: number;
   cancellation_reason: CancellationReason | null;
   deadline_reminder_sent_at: string | null;
+  invoice_number: string | null;
+  credit_note_number: string | null;
   created_at: string;
   updated_at: string;
 }

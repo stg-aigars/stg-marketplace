@@ -56,7 +56,7 @@ export default async function InvoicePage(
   return (
     <DocumentLayout
       title="Platform Services Invoice"
-      documentNumber={`INV-${order.order_number}`}
+      documentNumber={order.invoice_number ?? `INV-${order.order_number}`}
       date={order.completed_at ?? order.created_at}
       recipient={
         <div>

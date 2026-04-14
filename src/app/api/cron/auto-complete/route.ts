@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase';
 import { autoCompleteOrder } from '@/lib/services/order-transitions';
+import { issueInvoice, issueCreditNote } from '@/lib/services/invoicing';
 import { DISPUTE_WINDOW_DAYS } from '@/lib/pricing/constants';
 import { env } from '@/lib/env';
 
@@ -63,5 +64,40 @@ export async function POST(request: Request) {
   const processed = results.filter((r) => r.success).length;
   const errors = results.filter((r) => !r.success).map((r) => `${r.orderNumber}: ${r.error}`);
 
-  return NextResponse.json({ processed, errors, total: eligibleOrders.length });
+  // Reconcile missing invoices/credit notes (idempotent — safe to retry)
+  let invoicesReconciled = 0;
+  const { data: missingInvoices } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('status', 'completed')
+    .is('invoice_number', null)
+    .limit(20);
+
+  for (const order of missingInvoices ?? []) {
+    try {
+      await issueInvoice(order.id);
+      invoicesReconciled++;
+    } catch (err) {
+      console.error(`[Cron] Failed to reconcile invoice for order ${order.id}:`, err);
+    }
+  }
+
+  const { data: missingCreditNotes } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('status', 'refunded')
+    .is('credit_note_number', null)
+    .not('refund_status', 'is', null)
+    .limit(20);
+
+  for (const order of missingCreditNotes ?? []) {
+    try {
+      await issueCreditNote(order.id);
+      invoicesReconciled++;
+    } catch (err) {
+      console.error(`[Cron] Failed to reconcile credit note for order ${order.id}:`, err);
+    }
+  }
+
+  return NextResponse.json({ processed, errors, total: eligibleOrders.length, invoicesReconciled });
 }

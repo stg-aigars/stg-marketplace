@@ -57,7 +57,7 @@ export default async function CreditNotePage(
   return (
     <DocumentLayout
       title="Credit Note"
-      documentNumber={`CN-${order.order_number}`}
+      documentNumber={order.credit_note_number ?? `CN-${order.order_number}`}
       date={order.refunded_at ?? order.created_at}
       recipient={
         <div>
@@ -68,7 +68,7 @@ export default async function CreditNotePage(
     >
       <div className="mb-6 text-sm text-semantic-text-secondary">
         <p>Order {order.order_number}</p>
-        <p>Original invoice: INV-{order.order_number}</p>
+        <p>Original invoice: {order.invoice_number ?? `INV-${order.order_number}`}</p>
       </div>
 
       <DocumentLineItems items={lineItems} />

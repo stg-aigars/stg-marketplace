@@ -2,10 +2,9 @@
  * Document data service — fetches and validates order data for document pages.
  * Access control: each function checks role (buyer/seller/staff) and order status.
  *
- * TODO(invoicing): Currently uses order_number as document reference (prefixed for
- * visual distinction: INV-, CN-). Latvian VID expects credit notes to reference
- * the original invoice number AND have their own unique sequential number. Add
- * proper sequential document numbering when invoice volume justifies it.
+ * Sequential invoice numbering: INV-2026-00001, CN-2026-00001
+ * Assigned at order completion (invoices) and refund (credit notes).
+ * See src/lib/services/invoicing.ts and supabase/migrations/073_sequential_invoicing.sql.
  */
 
 import { getOrder } from '@/lib/services/orders';

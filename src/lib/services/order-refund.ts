@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { refundToWallet } from '@/lib/services/wallet';
 import { logAuditEvent } from '@/lib/services/audit';
+import { issueCreditNote } from '@/lib/services/invoicing';
 import type { PaymentMethod } from '@/lib/orders/types';
 
 /** Refund status values written to orders.refund_status. */
@@ -44,6 +45,7 @@ interface RefundableOrder {
   everypay_payment_reference: string | null;
   order_number: string;
   refund_status: string | null;
+  invoice_number: string | null;
 }
 
 /**
@@ -141,6 +143,12 @@ export async function refundOrder(
       refunded_at: new Date().toISOString(),
     })
     .eq('id', orderId);
+
+  // Issue credit note only if an invoice exists (completed orders refunded via dispute).
+  // Cancelled orders (declined, timeout) never had an invoice — no credit note needed.
+  if (order.invoice_number) {
+    void issueCreditNote(orderId).catch((err) => console.error('[Invoicing] Failed to issue credit note:', err));
+  }
 
   void logAuditEvent({
     actorType: 'system',
