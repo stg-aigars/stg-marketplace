@@ -54,7 +54,7 @@ export function getTrackingUrl(barcode: string | undefined): string | undefined 
   if (!barcode || barcode.trim() === '') {
     return undefined;
   }
-  return `https://www.post.lt/siuntu-sekimas/?parcels=${encodeURIComponent(barcode)}`;
+  return `https://unisend.lv/en/tracking/?code=${encodeURIComponent(barcode)}`;
 }
 
 /**
