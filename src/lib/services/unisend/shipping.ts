@@ -161,7 +161,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
           locality: 'Rīga',
           postalCode: 'LV-1021',
         },
-        contacts: { phone: normalizedSellerPhone },
+        contacts: { phone: '+37126779625' },
       },
       receiver: {
         name: receiver.name,
