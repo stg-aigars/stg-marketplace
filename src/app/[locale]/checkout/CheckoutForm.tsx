@@ -279,6 +279,14 @@ export function CheckoutForm({
             )}
 
             <div className="space-y-4">
+              <TerminalSelectorWithMap
+                terminals={terminals}
+                defaultCountry={buyerCountry as TerminalCountry}
+                selectedTerminal={selectedTerminal}
+                onSelect={setSelectedTerminal}
+                error={terminalsFetchFailed ? 'Failed to load terminals. Please refresh the page.' : undefined}
+              />
+
               <div>
                 <PhoneInput
                   label="Phone number"
@@ -290,14 +298,6 @@ export function CheckoutForm({
                   Required for parcel pickup notifications
                 </p>
               </div>
-
-              <TerminalSelectorWithMap
-                terminals={terminals}
-                defaultCountry={buyerCountry as TerminalCountry}
-                selectedTerminal={selectedTerminal}
-                onSelect={setSelectedTerminal}
-                error={terminalsFetchFailed ? 'Failed to load terminals. Please refresh the page.' : undefined}
-              />
             </div>
           </CardBody>
         </Card>
