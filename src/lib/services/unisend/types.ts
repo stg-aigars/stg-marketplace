@@ -81,10 +81,11 @@ export interface CreateParcelRequest {
     code: string;
     value?: string;
   }>;
-  // Sender is optional — for T2T (TERMINAL plan), the authenticated API user is the sender.
-  // Sending an explicit sender block may route through H2H/H2P validation paths.
+  // Sender is optional — omitting it uses the authenticated API user's account profile.
+  // We send it explicitly to show the seller's name + platform branding on the label.
   sender?: {
     name: string;
+    companyName?: string;
     address?: {
       countryCode: TerminalCountry;
     };

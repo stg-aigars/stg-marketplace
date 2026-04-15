@@ -145,15 +145,20 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
   console.log(`${logPrefix} Terminal: ${destination.terminalId || '(empty)'}, Parcel Size: ${effectiveSize}, Items: ${items.length}`);
 
   try {
-    // T2T payload — no sender block (authenticated API user is the sender per Unisend docs).
-    // Sending an explicit sender routes through H2H/H2P validation where partCount is required,
-    // causing "Failed to get partCount ranges" errors.
+    const senderCountry = (seller.country ?? 'LV') as TerminalCountry;
+
     const parcelRequest: CreateParcelRequest = {
       plan: { code: 'TERMINAL' },
       parcel: {
         type: 'T2T',
         size: effectiveSize as ParcelSize,
         // weight omitted — optional for TERMINAL plan, and unit is grams not kg
+      },
+      sender: {
+        name: `Seller ${seller.fullName}`,
+        companyName: 'Second Turn Games',
+        address: { countryCode: senderCountry },
+        contacts: { phone: normalizedSellerPhone },
       },
       receiver: {
         name: receiver.name,
