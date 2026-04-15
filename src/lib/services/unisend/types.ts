@@ -216,9 +216,9 @@ export const PHONE_FORMATS: Record<TerminalCountry, PhoneFormat> = {
     placeholder: '+3712XXXXXXX',
   },
   EE: {
-    regex: /^\+3725\d{6,7}$/,
+    regex: /^\+372[58]\d{6,7}$/,
     example: '+3725012345',
-    placeholder: '+3725XXXXXX',
+    placeholder: '+372XXXXXXX',
   },
 };
 
