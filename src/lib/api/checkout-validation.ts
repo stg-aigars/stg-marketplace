@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { isTerminalCountry } from '@/lib/services/unisend/types';
-import { isBalticPhoneNumber } from '@/lib/phone-utils';
+import { isTerminalCountry, type TerminalCountry } from '@/lib/services/unisend/types';
+import { validatePhone } from '@/lib/phone-utils';
 import { MAX_CART_ITEMS } from '@/lib/checkout/cart-types';
 
 interface TerminalInput {
@@ -70,8 +70,8 @@ export async function parseCartCheckoutBody(
     }
     const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
     if (terminalCheck instanceof NextResponse) return terminalCheck;
-    if (!buyerPhone || !isBalticPhoneNumber(buyerPhone)) {
-      return NextResponse.json({ error: 'Please enter a valid Baltic phone number' }, { status: 400 });
+    if (!buyerPhone || !validatePhone(buyerPhone, terminalCountry as TerminalCountry)) {
+      return NextResponse.json({ error: `Please enter a valid ${terminalCountry} mobile number for parcel pickup` }, { status: 400 });
     }
 
     return {

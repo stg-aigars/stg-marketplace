@@ -4,14 +4,13 @@
  */
 
 import { createAndShipParcel } from './client';
-import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE } from './types';
+import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE, PHONE_FORMATS } from './types';
 import type { CreateParcelRequest, ParcelSize, TerminalCountry } from './types';
 import { formatShippingError } from './format-shipping-error';
 import { createServiceClient } from '@/lib/supabase';
 import {
   detectPhoneCountry,
   composePhoneNumber,
-  isBalticPhoneNumber,
   isValidPhoneNumber,
   getPhonePrefix,
   type PhoneCountryCode,
@@ -94,22 +93,23 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
   const receiverPhoneParsed = detectPhoneCountry(receiver.phone);
   const normalizedReceiverPhone = composePhoneNumber(receiverPhoneParsed.country, receiverPhoneParsed.localNumber, receiverPhoneParsed.prefix);
 
-  // 2. Validate receiver phone is a valid Baltic number (any Baltic country accepted —
-  //    Unisend delivers SMS pickup codes cross-border within the Baltics)
+  // 2. Validate receiver phone against destination country (Unisend requires matching prefix)
   const destCountry = destination.country as TerminalCountry;
+  const destFormat = PHONE_FORMATS[destCountry];
 
   const prefixOnly = getPhonePrefix(receiverPhoneParsed.country as PhoneCountryCode);
   const receiverPhoneEmpty = !normalizedReceiverPhone || normalizedReceiverPhone === prefixOnly;
 
   if (receiverPhoneEmpty) {
-    const errorMsg = 'Buyer phone number is missing. A valid Baltic mobile number is required for parcel pickup notifications.';
+    const example = destFormat?.example ?? '+3706XXXXXXX';
+    const errorMsg = `Buyer phone number is missing. For ${destCountry} deliveries, a ${destCountry} mobile number is required (e.g. ${example}).`;
     console.error(`${logPrefix} ${errorMsg}`);
     await updateOrderShippingError(orderId, errorMsg);
     return { success: false, error: errorMsg };
   }
 
-  if (!isBalticPhoneNumber(normalizedReceiverPhone)) {
-    const errorMsg = `Buyer phone must be a valid Baltic mobile number (LV, LT, or EE). Current number: ${normalizedReceiverPhone}`;
+  if (destFormat && !destFormat.regex.test(normalizedReceiverPhone)) {
+    const errorMsg = `Buyer phone must be a valid ${destCountry} mobile number (e.g. ${destFormat.example}). Current number: ${normalizedReceiverPhone}`;
     console.error(`${logPrefix} ${errorMsg}`);
     await updateOrderShippingError(orderId, errorMsg);
     return { success: false, error: errorMsg };
