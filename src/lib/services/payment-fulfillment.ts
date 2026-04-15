@@ -207,6 +207,8 @@ export async function fulfillCartPayment(
         terminalCountry: group.terminal_country,
         buyerPhone: group.buyer_phone,
         cartGroupId: group.id,
+        // Reuse cart group order number when there's only one seller (matches EveryPay reference)
+        orderNumber: sellerGroups.size === 1 ? group.order_number : undefined,
       });
 
       // Debit wallet for this order
