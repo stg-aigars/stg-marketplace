@@ -59,6 +59,7 @@ export function CheckoutForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
 
@@ -134,7 +135,7 @@ export function CheckoutForm({
   const walletCoversTotal = walletDebitCents >= grandTotalCents;
 
   const allExpired = availableItems.length === 0 && expiredAuctionIds.size > 0;
-  const canSubmit = phone.trim() && selectedTerminal && availableItems.length > 0 && unavailableIds.size === 0 && acceptedTerms;
+  const canSubmit = phone.trim() && selectedTerminal && availableItems.length > 0 && unavailableIds.size === 0 && acceptedTerms && !!turnstileToken;
 
   async function handleCheckout() {
     if (!canSubmit) return;
@@ -327,7 +328,17 @@ export function CheckoutForm({
               </p>
             </div>
 
-            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
+            <TurnstileWidget
+              ref={turnstileRef}
+              onVerify={(token) => { setTurnstileToken(token); setTurnstileError(false); }}
+              onError={() => { setTurnstileToken(''); setTurnstileError(true); }}
+            />
+
+            {turnstileError && (
+              <Alert variant="error">
+                Verification failed. Please reload the page and try again.
+              </Alert>
+            )}
 
             <Button
               variant="primary"

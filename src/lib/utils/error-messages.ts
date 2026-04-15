@@ -56,6 +56,8 @@ const KNOWN_USER_MESSAGES = new Set([
   'Please enter a valid Baltic IBAN (LV, LT, or EE)',
   'Failed to create order. Please try again.',
   'Withdrawal status has already changed',
+  'Verification failed. Please try again.',
+  'Verification service unavailable. Please try again.',
 ]);
 
 export function sanitizeApiError(raw: string | undefined | null): string {
