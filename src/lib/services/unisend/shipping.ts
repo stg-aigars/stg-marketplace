@@ -145,8 +145,6 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
   console.log(`${logPrefix} Terminal: ${destination.terminalId || '(empty)'}, Parcel Size: ${effectiveSize}, Items: ${items.length}`);
 
   try {
-    const senderCountry = (seller.country ?? 'LV') as TerminalCountry;
-
     const parcelRequest: CreateParcelRequest = {
       plan: { code: 'TERMINAL' },
       parcel: {
@@ -157,7 +155,12 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       sender: {
         name: `Seller ${seller.fullName}`,
         companyName: 'Second Turn Games',
-        address: { countryCode: senderCountry },
+        address: {
+          countryCode: 'LV',
+          street: 'Ēvalda Valtera iela 5/35',
+          locality: 'Rīga',
+          postalCode: 'LV-1021',
+        },
         contacts: { phone: normalizedSellerPhone },
       },
       receiver: {

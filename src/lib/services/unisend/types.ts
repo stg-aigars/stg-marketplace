@@ -86,8 +86,11 @@ export interface CreateParcelRequest {
   sender?: {
     name: string;
     companyName?: string;
-    address?: {
+    address: {
       countryCode: TerminalCountry;
+      street?: string;
+      locality?: string;
+      postalCode?: string;
     };
     contacts: {
       phone: string;
