@@ -335,16 +335,57 @@ export async function getBarcodes(parcelIds: number[]): Promise<BarcodeInfo[]> {
   }
 }
 
-/** Get tracking events for a barcode */
+/**
+ * Unisend returns naive datetimes in Europe/Vilnius. Append offset for Postgres TIMESTAMPTZ.
+ *
+ * Trade-off: parses the naive string as UTC to look up the Vilnius offset at that instant.
+ * The 2–3h difference between "wrong UTC" and "real Vilnius" means the offset lookup uses
+ * a slightly wrong instant — but since DST transitions are hours apart, the computed offset
+ * is correct except during the ~1h spring-forward gap (wall-clock times that don't exist in
+ * Vilnius). In that edge case the timestamp may be off by 1 hour — cosmetic for shipping
+ * tracking, not a data-integrity issue. Unisend rarely emits events during the skipped hour.
+ */
+function normalizeEventDate(eventDate: string): string {
+  if (eventDate.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(eventDate)) {
+    return eventDate;
+  }
+  const date = new Date(`${eventDate}Z`);
+  const vilniusTime = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Vilnius' }));
+  const utcTime = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetMinutes = (vilniusTime.getTime() - utcTime.getTime()) / 60000;
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const abs = Math.abs(offsetMinutes);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `${eventDate}${sign}${hh}:${mm}`;
+}
+
+/** Get tracking events for a barcode, normalized and validated at boundary */
 export async function getTrackingEvents(
   barcode: string,
   lang: 'en' | 'lt' = 'en'
 ): Promise<TrackingEvent[]> {
-  return apiRequest<TrackingEvent[]>(`/api/v2/tracking/${barcode}/events`, {
+  const result = await apiRequest<TrackingEvent[]>(`/api/v2/tracking/${barcode}/events`, {
     headers: {
       'Accept-Language': lang,
     },
   });
+  if (!Array.isArray(result)) return [];
+  return result.filter(e => {
+    if (!e.publicStateType || !e.eventDate) {
+      console.warn('[Tracking] Skipping event with missing fields:', {
+        barcode,
+        publicStateType: e.publicStateType,
+        eventDate: e.eventDate,
+        publicEventType: e.publicEventType,
+      });
+      return false;
+    }
+    return true;
+  }).map(e => ({
+    ...e,
+    eventDate: normalizeEventDate(e.eventDate),
+  }));
 }
 
 // ============================================

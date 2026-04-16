@@ -9,7 +9,6 @@
 
 import { getUnisendClient } from './client';
 import { createServiceClient } from '@/lib/supabase';
-import type { TrackingStateType } from './types';
 import { sendOrderDeliveredToBuyer, sendOrderDeliveredToSeller, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify, notifyMany } from '@/lib/notifications';
@@ -21,6 +20,7 @@ const AUTO_SHIP_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 interface SyncResult {
   success: boolean;
   newEventsCount: number;
+  eventErrors: number;
   statusChanged: boolean;
   oldStatus?: string;
   newStatus?: string;
@@ -41,7 +41,7 @@ export async function syncTrackingForOrder(
     const trackingEvents = await unisend.getTrackingEvents(barcode);
 
     if (!trackingEvents || trackingEvents.length === 0) {
-      return { success: true, newEventsCount: 0, statusChanged: false };
+      return { success: true, newEventsCount: 0, eventErrors: 0, statusChanged: false };
     }
 
     const { data: order } = await supabase
@@ -51,25 +51,33 @@ export async function syncTrackingForOrder(
       .single();
 
     if (!order) {
-      return { success: false, error: 'Order not found', newEventsCount: 0, statusChanged: false };
+      return { success: false, error: 'Order not found', newEventsCount: 0, eventErrors: 0, statusChanged: false };
     }
 
     const oldStatus = order.status;
     let newEventsCount = 0;
+    let eventErrors = 0;
 
     for (const event of trackingEvents) {
       const { data: wasInserted, error } = await supabase.rpc('add_tracking_event', {
         p_order_id: orderId,
-        p_event_type: event.eventType,
-        p_state_type: event.stateType,
-        p_state_text: event.stateText,
+        p_event_type: event.publicEventType,
+        p_state_type: event.publicStateType,
+        p_state_text: event.publicStateText,
         p_location: event.location || null,
-        p_description: event.description || event.stateText,
-        p_event_timestamp: event.timestamp,
+        p_description: event.publicEventText || event.publicStateText,
+        p_event_timestamp: event.eventDate,
       });
 
       if (error) {
-        console.error('[Tracking] Error inserting event:', error);
+        eventErrors++;
+        console.error('[Tracking] Error inserting event:', {
+          orderId,
+          stateType: event.publicStateType,
+          eventDate: event.eventDate,
+          error: error.message,
+          code: error.code,
+        });
       } else if (wasInserted) {
         newEventsCount++;
       }
@@ -77,7 +85,7 @@ export async function syncTrackingForOrder(
 
     // Auto-transition: if PARCEL_DELIVERED detected and order is shipped → delivered
     const hasDeliveryEvent = trackingEvents.some(
-      (e) => (e.stateType as TrackingStateType) === 'PARCEL_DELIVERED'
+      (e) => e.publicStateType === 'PARCEL_DELIVERED'
     );
 
     let statusChanged = false;
@@ -155,8 +163,8 @@ export async function syncTrackingForOrder(
     // Guard: only act on recent events to prevent stale transitions after deploy
     const receivedEvent = trackingEvents.find(
       (e) =>
-        (e.stateType as TrackingStateType) === 'PARCEL_RECEIVED' &&
-        Date.now() - new Date(e.timestamp).getTime() < AUTO_SHIP_MAX_AGE_MS
+        e.publicStateType === 'PARCEL_RECEIVED' &&
+        Date.now() - new Date(e.eventDate).getTime() < AUTO_SHIP_MAX_AGE_MS
     );
 
     if (receivedEvent && (statusChanged ? newStatus : oldStatus) === 'accepted') {
@@ -237,8 +245,8 @@ export async function syncTrackingForOrder(
     // Guard: only act on recent events (same rationale as PARCEL_RECEIVED age guard)
     const returningEvent = trackingEvents.find(
       (e) =>
-        (e.stateType as TrackingStateType) === 'RETURNING' &&
-        Date.now() - new Date(e.timestamp).getTime() < AUTO_SHIP_MAX_AGE_MS
+        e.publicStateType === 'RETURNING' &&
+        Date.now() - new Date(e.eventDate).getTime() < AUTO_SHIP_MAX_AGE_MS
     );
     const currentStatus = statusChanged ? newStatus : oldStatus;
 
@@ -310,6 +318,7 @@ export async function syncTrackingForOrder(
     return {
       success: true,
       newEventsCount,
+      eventErrors,
       statusChanged,
       oldStatus: statusChanged ? oldStatus : undefined,
       newStatus: statusChanged ? newStatus : undefined,
@@ -320,6 +329,7 @@ export async function syncTrackingForOrder(
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
       newEventsCount: 0,
+      eventErrors: 0,
       statusChanged: false,
     };
   }
@@ -333,6 +343,8 @@ export async function syncAllActiveOrders(): Promise<{
   totalProcessed: number;
   successCount: number;
   errorCount: number;
+  newEventsTotal: number;
+  eventErrorsTotal: number;
   statusChanges: Array<{ orderId: string; orderNumber: string; oldStatus: string; newStatus: string }>;
 }> {
   const supabase = createServiceClient();
@@ -346,15 +358,19 @@ export async function syncAllActiveOrders(): Promise<{
 
   if (error || !orders) {
     console.error('[Tracking] Error fetching orders:', error);
-    return { totalProcessed: 0, successCount: 0, errorCount: 0, statusChanges: [] };
+    return { totalProcessed: 0, successCount: 0, errorCount: 0, newEventsTotal: 0, eventErrorsTotal: 0, statusChanges: [] };
   }
 
   let successCount = 0;
   let errorCount = 0;
+  let newEventsTotal = 0;
+  let eventErrorsTotal = 0;
   const statusChanges: Array<{ orderId: string; orderNumber: string; oldStatus: string; newStatus: string }> = [];
 
   for (const order of orders) {
     const result = await syncTrackingForOrder(order.id, order.barcode!);
+    newEventsTotal += result.newEventsCount;
+    eventErrorsTotal += result.eventErrors;
 
     if (result.success) {
       successCount++;
@@ -379,6 +395,8 @@ export async function syncAllActiveOrders(): Promise<{
     totalProcessed: orders.length,
     successCount,
     errorCount,
+    newEventsTotal,
+    eventErrorsTotal,
     statusChanges,
   };
 }
