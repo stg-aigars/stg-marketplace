@@ -62,6 +62,8 @@ export type ParcelType = 'T2T' | 'H2H' | 'P2H' | 'H2F';
 export type PlanCode = 'TERMINAL' | 'HANDS' | 'SIGNED' | 'TRACKED' | 'UNTRACKED';
 
 export interface CreateParcelRequest {
+  /** Custom reference ID for Unisend dashboard lookup. We use order_number. */
+  idRef?: string;
   plan: {
     code: PlanCode;
   };

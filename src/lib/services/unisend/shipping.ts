@@ -146,6 +146,9 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
 
   try {
     const parcelRequest: CreateParcelRequest = {
+      // idRef allows lookup by order number in Unisend dashboard.
+      // Safe to use order_number: it's unique and cancelled is a terminal state (no re-acceptance).
+      idRef: orderNumber,
       plan: { code: 'TERMINAL' },
       parcel: {
         type: 'T2T',
@@ -184,7 +187,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       };
     }
 
-    const { parcelId, barcode, trackingUrl: rawTrackingUrl } = await createAndShipParcel(parcelRequest);
+    const { parcelId, barcode, trackingUrl: rawTrackingUrl, requestId } = await createAndShipParcel(parcelRequest);
 
     const trackingUrl = rawTrackingUrl || getTrackingUrl(barcode);
     console.log(`${logPrefix} Parcel created: parcelId=${parcelId}, barcode=${barcode}`);
@@ -195,6 +198,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       .from('orders')
       .update({
         unisend_parcel_id: parcelId,
+        unisend_request_id: requestId,
         barcode,
         tracking_url: trackingUrl,
         shipping_error: null,

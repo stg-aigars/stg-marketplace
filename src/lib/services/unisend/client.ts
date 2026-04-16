@@ -428,6 +428,14 @@ export async function getTrackingEventsBulk(
 // Convenience Methods
 // ============================================
 
+/** Cancel a Unisend shipment before pickup */
+export async function cancelShipment(parcelIds: number[]): Promise<void> {
+  await apiRequest('/api/v2/shipping/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ parcelIds }),
+  });
+}
+
 /** Create parcel and initiate shipping in one call */
 export async function createAndShipParcel(
   data: CreateParcelRequest
@@ -435,6 +443,7 @@ export async function createAndShipParcel(
   parcelId: number;
   barcode: string;
   trackingUrl?: string;
+  requestId: string;
 }> {
   const parcelResponse = await createParcel(data);
 
@@ -446,6 +455,7 @@ export async function createAndShipParcel(
       parcelId: parcelResponse.parcelId,
       barcode: parcelFromShipping.barcode || parcelFromShipping.trackingNumber || '',
       trackingUrl: parcelFromShipping.trackingUrl,
+      requestId: shippingResponse.requestId,
     };
   }
 
@@ -455,6 +465,7 @@ export async function createAndShipParcel(
     parcelId: parcelResponse.parcelId,
     barcode: barcodes[0]?.barcode || '',
     trackingUrl: barcodes[0]?.trackingUrl,
+    requestId: shippingResponse.requestId,
   };
 }
 
@@ -484,6 +495,7 @@ const unisendClient = {
   getBarcodes,
   getTrackingEvents,
   getTrackingEventsBulk,
+  cancelShipment,
   createAndShipParcel,
   clearTerminalCache,
   clearTokenCache,
