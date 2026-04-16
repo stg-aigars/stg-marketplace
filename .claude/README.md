@@ -7,8 +7,9 @@ Claude Code reads hooks from `settings.json` in this directory. `settings.json` 
 To set up hooks on a new machine:
 1. Copy `settings.example.json` to `settings.json`
 2. Hooks will load on next Claude Code session start
+3. The `enabledPlugins` section is user-specific — remove plugins you don't have access to
 
-`hooks.json` was previously used but Claude Code does not read it. It was removed in commit 2ea0300.
+`hooks.json` was previously used but Claude Code does not read it. It was removed in commit ce53138.
 
 ## Hook scripts
 

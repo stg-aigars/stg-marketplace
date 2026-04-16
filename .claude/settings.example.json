@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'INPUT=$(cat); if echo \"$INPUT\" | grep -qE \"(rm -rf|DROP TABLE|git reset --hard|git push.*--force)\"; then echo \"DESTRUCTIVE OPERATION DETECTED - please confirm with user first\" >&2; exit 1; fi'"
+            "command": "bash -c 'INPUT=$(cat); if echo \"$INPUT\" | grep -qE \"(rm -rf|DROP TABLE|git reset --hard|git push[^|]*--force[^-]|git push[^|]*--force\\\")\"; then echo \"DESTRUCTIVE OPERATION DETECTED - please confirm with user first\" >&2; exit 1; fi'"
           }
         ]
       }

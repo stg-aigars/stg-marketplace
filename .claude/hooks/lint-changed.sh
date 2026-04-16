@@ -16,6 +16,7 @@ fi
 [[ -z "$FILE_PATH" ]] && exit 0
 [[ "$FILE_PATH" != *.ts && "$FILE_PATH" != *.tsx ]] && exit 0
 [[ "$FILE_PATH" != *src/* ]] && exit 0
+[[ ! -f "$FILE_PATH" ]] && exit 0
 
 # Run ESLint on the single file — pnpm exec avoids npx resolution overhead
 pnpm exec eslint --no-warn-ignored "$FILE_PATH" 2>&1 | head -20
