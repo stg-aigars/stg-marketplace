@@ -49,7 +49,7 @@ const LABELS: Record<string, string> = {
   refunded: 'Refunded',
   LABEL_CREATED: 'Shipment prepared',
   ON_THE_WAY: 'In transit',
-  PARCEL_RECEIVED: 'Arrived at pickup terminal',
+  PARCEL_RECEIVED: 'Dropped off at terminal',
   PARCEL_DELIVERED: 'Picked up',
   PARCEL_CANCELED: 'Shipment cancelled',
   RETURNING: 'Returning to sender',
@@ -69,7 +69,7 @@ const MILESTONE_ICONS: Record<string, PhosphorIcon> = {
 const TRACKING_ICONS: Record<string, PhosphorIcon> = {
   LABEL_CREATED: Tag,
   ON_THE_WAY: Truck,
-  PARCEL_RECEIVED: MapPin,
+  PARCEL_RECEIVED: Package,
   PARCEL_DELIVERED: CheckCircle,
   PARCEL_CANCELED: XCircle,
   RETURNING: ArrowUUpLeft,
@@ -129,8 +129,15 @@ function TimelineRow({
 }) {
   const isError = ERROR_KEYS.has(entry.key);
   const isMilestone = entry.type === 'order_milestone';
-  const Icon = isMilestone ? MILESTONE_ICONS[entry.key] : TRACKING_ICONS[entry.key];
-  const label = LABELS[entry.key] ?? entry.key;
+  let Icon = isMilestone ? MILESTONE_ICONS[entry.key] : TRACKING_ICONS[entry.key];
+  let label = LABELS[entry.key] ?? entry.key;
+
+  if (entry.eventType === 'NOTIFICATIONS_INFORMED') {
+    label = destinationTerminal
+      ? `Ready for pickup at ${destinationTerminal}`
+      : 'Ready for pickup';
+    Icon = MapPin;
+  }
 
   const dotSize = isMilestone ? 'w-5 h-5' : 'w-4 h-4';
   const iconSize = isMilestone ? 12 : 10;

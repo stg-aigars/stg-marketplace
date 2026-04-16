@@ -21,6 +21,7 @@ export type OrderMilestone =
 export interface TimelineEntry {
   type: TimelineEntryType;
   key: OrderMilestone | TrackingStateType;
+  eventType?: string;
   timestamp: string | null;
   location?: string;
   detail?: string;
@@ -55,6 +56,7 @@ export interface OrderForTimeline {
 
 /** Structural type — satisfied by TrackingEventRow */
 export interface TrackingEventForTimeline {
+  event_type: string;
   state_type: string;
   event_timestamp: string;
   location?: string | null;
@@ -80,6 +82,7 @@ export function buildOrderTimeline(
       const entry: TimelineEntry = {
         type: 'tracking_event',
         key: event.state_type as TrackingStateType,
+        eventType: event.event_type,
         timestamp: event.event_timestamp,
         location: event.location ?? undefined,
         isCurrent: false,
