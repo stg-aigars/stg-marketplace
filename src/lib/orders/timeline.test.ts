@@ -18,9 +18,10 @@ function makeOrder(overrides: Partial<OrderForTimeline> = {}): OrderForTimeline 
 function trackingEvent(
   state_type: string,
   event_timestamp: string,
-  location?: string
+  location?: string,
+  event_type?: string
 ): TrackingEventForTimeline {
-  return { state_type, event_timestamp, location };
+  return { event_type: event_type ?? state_type, state_type, event_timestamp, location };
 }
 
 describe('buildOrderTimeline', () => {
@@ -55,7 +56,6 @@ describe('buildOrderTimeline', () => {
     expect(keys).toEqual([
       'ordered',
       'accepted',
-      'LABEL_CREATED',
       'ON_THE_WAY',
       'PARCEL_RECEIVED',
       'PARCEL_DELIVERED',
@@ -90,7 +90,7 @@ describe('buildOrderTimeline', () => {
     });
   });
 
-  it('accepted with LABEL_CREATED only: shows it inline, no extra futures', () => {
+  it('accepted with LABEL_CREATED only: treated as no tracking, shows shipped future', () => {
     const order = makeOrder({
       status: 'accepted',
       accepted_at: '2026-04-01T12:00:00Z',
@@ -100,10 +100,11 @@ describe('buildOrderTimeline', () => {
     const result = buildOrderTimeline(order, events);
 
     const keys = result.map((e) => e.key);
-    expect(keys).toEqual(['ordered', 'accepted', 'LABEL_CREATED']);
-    // No future step — next real event appears when it happens
-    expect(result.every((e) => !e.isFuture)).toBe(true);
-    expect(result[2]).toMatchObject({ key: 'LABEL_CREATED', isCurrent: true });
+    // LABEL_CREATED is filtered out (redundant with "Seller accepted" in T2T)
+    // Falls back to milestone path: accepted is current, shipped is future
+    expect(keys).toEqual(['ordered', 'accepted', 'shipped']);
+    expect(result[1]).toMatchObject({ key: 'accepted', isCurrent: true });
+    expect(result[2]).toMatchObject({ key: 'shipped', isFuture: true });
   });
 
   it('no tracking events: falls back to shipped/delivered milestones', () => {

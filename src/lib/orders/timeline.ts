@@ -67,7 +67,7 @@ export function buildOrderTimeline(
   trackingEvents: TrackingEventForTimeline[]
 ): TimelineEntry[] {
   const entries: TimelineEntry[] = [];
-  const hasTracking = trackingEvents.length > 0;
+  const hasTracking = trackingEvents.some(e => e.state_type !== 'LABEL_CREATED');
   const isTerminal = TERMINAL_STATUSES.has(order.status);
 
   entries.push(milestone('ordered', order.created_at));
@@ -79,6 +79,9 @@ export function buildOrderTimeline(
   // When tracking events exist, they replace shipped/delivered milestones with more granular data
   if (hasTracking) {
     for (const event of trackingEvents) {
+      // LABEL_CREATED is redundant with "Seller accepted" in T2T — both fire at the same moment
+      if (event.state_type === 'LABEL_CREATED') continue;
+
       const entry: TimelineEntry = {
         type: 'tracking_event',
         key: event.state_type as TrackingStateType,
