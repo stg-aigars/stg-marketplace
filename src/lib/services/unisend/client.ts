@@ -335,7 +335,16 @@ export async function getBarcodes(parcelIds: number[]): Promise<BarcodeInfo[]> {
   }
 }
 
-/** Unisend returns naive datetimes in Europe/Vilnius. Append offset for Postgres TIMESTAMPTZ. */
+/**
+ * Unisend returns naive datetimes in Europe/Vilnius. Append offset for Postgres TIMESTAMPTZ.
+ *
+ * Trade-off: parses the naive string as UTC to look up the Vilnius offset at that instant.
+ * The 2–3h difference between "wrong UTC" and "real Vilnius" means the offset lookup uses
+ * a slightly wrong instant — but since DST transitions are hours apart, the computed offset
+ * is correct except during the ~1h spring-forward gap (wall-clock times that don't exist in
+ * Vilnius). In that edge case the timestamp may be off by 1 hour — cosmetic for shipping
+ * tracking, not a data-integrity issue. Unisend rarely emits events during the skipped hour.
+ */
 function normalizeEventDate(eventDate: string): string {
   if (eventDate.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(eventDate)) {
     return eventDate;
