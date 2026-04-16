@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Warning, FileText, Copy, Check } from '@phosphor-icons/react/ssr';
+import { Warning, FileText } from '@phosphor-icons/react/ssr';
 import { Alert, Badge, BackLink, Card, CardBody, UserIdentity } from '@/components/ui';
 import { ListingIdentity } from '@/components/listings/atoms';
 import { formatCentsToCurrency, calculateSellerEarnings } from '@/lib/services/pricing';
@@ -87,32 +86,14 @@ function getAlertVariant(status: OrderStatus): 'error' | 'success' | 'warning' |
 }
 
 function BarcodeCard({ barcode }: { barcode: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(barcode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard API may not be available */ }
-  }
-
   return (
     <div className="mb-6 p-4 rounded-lg bg-semantic-brand/10 border border-semantic-brand/30">
       <p className="text-sm text-semantic-text-secondary mb-2">
         Enter this barcode at the parcel locker kiosk to print your shipping label
       </p>
-      <div className="flex items-center gap-2">
-        <code className="font-mono text-lg font-semibold tracking-wider text-semantic-text-heading">
-          {barcode}
-        </code>
-        <button
-          onClick={handleCopy}
-          className="inline-flex items-center gap-1 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-        >
-          {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
-        </button>
-      </div>
+      <code className="font-mono text-lg font-semibold tracking-wider text-semantic-text-heading">
+        {barcode}
+      </code>
     </div>
   );
 }
@@ -167,7 +148,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
       )}
 
       {/* Barcode card (seller only, accepted/shipped) */}
-      {userRole === 'seller' && order.barcode && ['accepted', 'shipped'].includes(status) && (
+      {userRole === 'seller' && order.barcode && status === 'accepted' && (
         <BarcodeCard barcode={order.barcode} />
       )}
 
