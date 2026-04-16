@@ -9,7 +9,6 @@
 
 import { getUnisendClient } from './client';
 import { createServiceClient } from '@/lib/supabase';
-import type { TrackingStateType } from './types';
 import { sendOrderDeliveredToBuyer, sendOrderDeliveredToSeller, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { notify, notifyMany } from '@/lib/notifications';
