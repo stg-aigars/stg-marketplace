@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Warning, FileText } from '@phosphor-icons/react/ssr';
+import { Warning, FileText, Copy, Check } from '@phosphor-icons/react/ssr';
 import { Alert, Badge, BackLink, Card, CardBody, UserIdentity } from '@/components/ui';
 import { ListingIdentity } from '@/components/listings/atoms';
 import { formatCentsToCurrency, calculateSellerEarnings } from '@/lib/services/pricing';
@@ -48,7 +49,7 @@ function getCancelledMessage(role: 'buyer' | 'seller', reason: CancellationReaso
 }
 
 /** Contextual status message for the current user */
-function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: CancellationReason | null, parcelId?: number | null): string | null {
+function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: CancellationReason | null): string | null {
   if (status === 'cancelled') {
     return getCancelledMessage(role, cancellationReason ?? null);
   }
@@ -56,9 +57,7 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancell
   const messages: Record<string, Partial<Record<OrderStatus, string>>> = {
     seller: {
       pending_seller: 'Waiting for you to accept this order',
-      accepted: parcelId
-        ? `Drop your parcel at any Unisend terminal. Use parcel ID: ${parcelId}`
-        : 'Drop your parcel at any Unisend terminal',
+      accepted: 'Drop your parcel at any compatible parcel locker',
       shipped: 'Waiting for the buyer to pick up the parcel',
       delivered: 'Buyer has picked up the parcel',
       completed: 'Order complete',
@@ -87,10 +86,41 @@ function getAlertVariant(status: OrderStatus): 'error' | 'success' | 'warning' |
   return v === 'default' ? 'info' : v;
 }
 
+function BarcodeCard({ barcode }: { barcode: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(barcode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard API may not be available */ }
+  }
+
+  return (
+    <div className="mb-6 p-4 rounded-lg bg-semantic-brand/10 border border-semantic-brand/30">
+      <p className="text-sm text-semantic-text-secondary mb-2">
+        Enter this barcode at the parcel locker kiosk to print your shipping label
+      </p>
+      <div className="flex items-center gap-2">
+        <code className="font-mono text-lg font-semibold tracking-wider text-semantic-text-heading">
+          {barcode}
+        </code>
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+        >
+          {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
-  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason, order.unisend_parcel_id);
+  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason);
 
   // Derive items from order_items (preferred) or legacy listings join
   const items = order.order_items ?? [];
@@ -134,6 +164,11 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             </div>
           </div>
         </div>
+      )}
+
+      {/* Barcode card (seller only, accepted/shipped) */}
+      {userRole === 'seller' && order.barcode && ['accepted', 'shipped'].includes(status) && (
+        <BarcodeCard barcode={order.barcode} />
       )}
 
       <div className="space-y-6">
