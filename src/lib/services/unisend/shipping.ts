@@ -329,17 +329,17 @@ export async function retryOrderShipping(
  * No-ops if order has no parcel (cancelled before acceptance).
  */
 export async function cancelOrderShipment(orderId: string): Promise<void> {
-  const supabase = createServiceClient();
-
-  const { data: order } = await supabase
-    .from('orders')
-    .select('unisend_parcel_id')
-    .eq('id', orderId)
-    .single();
-
-  if (!order?.unisend_parcel_id) return;
-
   try {
+    const supabase = createServiceClient();
+
+    const { data: order } = await supabase
+      .from('orders')
+      .select('unisend_parcel_id')
+      .eq('id', orderId)
+      .single();
+
+    if (!order?.unisend_parcel_id) return;
+
     const unisend = getUnisendClient();
     await unisend.cancelShipment([order.unisend_parcel_id]);
 
@@ -351,17 +351,7 @@ export async function cancelOrderShipment(orderId: string): Promise<void> {
       metadata: { parcelId: order.unisend_parcel_id },
     });
   } catch (error) {
-    // Parcel already dropped off or Unisend rejected. Don't block cancellation flow.
-    console.error(`[Unisend] cancelShipment failed for order ${orderId}:`, error);
-    void logAuditEvent({
-      actorType: 'system',
-      action: 'shipment.cancel_failed',
-      resourceType: 'order',
-      resourceId: orderId,
-      metadata: {
-        parcelId: order.unisend_parcel_id,
-        error: error instanceof Error ? error.message : String(error),
-      },
-    });
+    // Parcel already dropped off, Unisend rejected, or DB error. Don't block cancellation flow.
+    console.error(`[Unisend] cancelOrderShipment failed for order ${orderId}:`, error);
   }
 }

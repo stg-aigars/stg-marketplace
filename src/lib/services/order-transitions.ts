@@ -243,7 +243,7 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
   }
 
   // Cancel Unisend shipment if one was created (helper no-ops if no parcel, never throws)
-  void cancelOrderShipment(orderId);
+  void cancelOrderShipment(orderId).catch(() => {});
 
   // Refund buyer (card, wallet, or both)
   await refundOrder(orderId, order);

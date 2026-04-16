@@ -245,7 +245,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
       if (!cancelled) continue; // Race: already transitioned
 
       // Cancel Unisend shipment if one was created (helper no-ops if no parcel, never throws)
-      void cancelOrderShipment(order.id);
+      void cancelOrderShipment(order.id).catch(() => {});
 
       // Restore all listings in this order
       if (order.listing_ids.length > 0) {
