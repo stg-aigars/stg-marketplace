@@ -388,6 +388,42 @@ export async function getTrackingEvents(
   }));
 }
 
+/**
+ * Fetch tracking events for multiple barcodes in a single request.
+ * Uses POST /api/v2/tracking/events with optional dateFrom filter.
+ */
+export async function getTrackingEventsBulk(
+  barcodes: string[],
+  dateFrom?: string,
+  lang: 'en' | 'lt' = 'en'
+): Promise<TrackingEvent[]> {
+  if (barcodes.length === 0) return [];
+  const queryParams = dateFrom ? `?dateFrom=${encodeURIComponent(dateFrom)}` : '';
+  const result = await apiRequest<TrackingEvent[]>(
+    `/api/v2/tracking/events${queryParams}`,
+    {
+      method: 'POST',
+      headers: { 'Accept-Language': lang },
+      body: JSON.stringify(barcodes),
+    }
+  );
+  if (!Array.isArray(result)) return [];
+  return result
+    .filter(e => {
+      if (!e.publicStateType || !e.eventDate || !e.mailBarcode) {
+        console.warn('[Tracking] Skipping event with missing fields:', {
+          mailBarcode: e.mailBarcode,
+          publicStateType: e.publicStateType,
+          eventDate: e.eventDate,
+          publicEventType: e.publicEventType,
+        });
+        return false;
+      }
+      return true;
+    })
+    .map(e => ({ ...e, eventDate: normalizeEventDate(e.eventDate) }));
+}
+
 // ============================================
 // Convenience Methods
 // ============================================
@@ -447,6 +483,7 @@ const unisendClient = {
   initiateShipping,
   getBarcodes,
   getTrackingEvents,
+  getTrackingEventsBulk,
   createAndShipParcel,
   clearTerminalCache,
   clearTokenCache,
