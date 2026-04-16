@@ -8,6 +8,7 @@
  */
 
 import { getUnisendClient } from './client';
+import type { TrackingEvent } from './types';
 import { createServiceClient } from '@/lib/supabase';
 import { sendOrderDeliveredToBuyer, sendOrderDeliveredToSeller, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
@@ -16,6 +17,11 @@ import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from
 
 /** Max age for PARCEL_RECEIVED events to trigger auto-ship (prevents stale transitions) */
 const AUTO_SHIP_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+/** Safety margin: re-fetch the last hour of events to let the idempotent RPC
+ *  catch anything that failed to insert on the previous tick. Prevents silent
+ *  event loss on transient errors without stalling the sync on persistent ones. */
+const SYNC_SAFETY_MARGIN_MS = 60 * 60 * 1000; // 1 hour
 
 interface SyncResult {
   success: boolean;
@@ -27,33 +33,28 @@ interface SyncResult {
   error?: string;
 }
 
+interface OrderForTracking {
+  id: string;
+  order_number: string;
+  barcode: string;
+  status: string;
+}
+
 /**
- * Sync tracking events for a single order
+ * Process pre-fetched tracking events for a single order.
+ * Inserts events via RPC and handles auto-transitions.
  */
-export async function syncTrackingForOrder(
-  orderId: string,
-  barcode: string
+async function processOrderEvents(
+  order: OrderForTracking,
+  trackingEvents: TrackingEvent[]
 ): Promise<SyncResult> {
+  if (!trackingEvents.length) {
+    return { success: true, newEventsCount: 0, eventErrors: 0, statusChanged: false };
+  }
+
   try {
-    const unisend = getUnisendClient();
     const supabase = createServiceClient();
-
-    const trackingEvents = await unisend.getTrackingEvents(barcode);
-
-    if (!trackingEvents || trackingEvents.length === 0) {
-      return { success: true, newEventsCount: 0, eventErrors: 0, statusChanged: false };
-    }
-
-    const { data: order } = await supabase
-      .from('orders')
-      .select('id, status')
-      .eq('id', orderId)
-      .single();
-
-    if (!order) {
-      return { success: false, error: 'Order not found', newEventsCount: 0, eventErrors: 0, statusChanged: false };
-    }
-
+    const orderId = order.id;
     const oldStatus = order.status;
     let newEventsCount = 0;
     let eventErrors = 0;
@@ -336,7 +337,8 @@ export async function syncTrackingForOrder(
 }
 
 /**
- * Sync tracking for all active T2T orders.
+ * Sync tracking for all active T2T orders via bulk fetch.
+ * Single POST to Unisend for all barcodes, then per-order processing.
  * Called by cron job.
  */
 export async function syncAllActiveOrders(): Promise<{
@@ -345,22 +347,65 @@ export async function syncAllActiveOrders(): Promise<{
   errorCount: number;
   newEventsTotal: number;
   eventErrorsTotal: number;
+  dateFrom: string | null;
   statusChanges: Array<{ orderId: string; orderNumber: string; oldStatus: string; newStatus: string }>;
 }> {
   const supabase = createServiceClient();
 
-  const { data: orders, error } = await supabase
+  // 1. Load active orders
+  const { data: orders, error: ordersError } = await supabase
     .from('orders')
     .select('id, order_number, barcode, status')
     .eq('shipping_method', 'unisend_t2t')
     .not('barcode', 'is', null)
     .in('status', ['accepted', 'shipped']);
 
-  if (error || !orders) {
-    console.error('[Tracking] Error fetching orders:', error);
-    return { totalProcessed: 0, successCount: 0, errorCount: 0, newEventsTotal: 0, eventErrorsTotal: 0, statusChanges: [] };
+  if (ordersError || !orders || orders.length === 0) {
+    if (ordersError) console.error('[Tracking] Error fetching orders:', ordersError);
+    return { totalProcessed: 0, successCount: 0, errorCount: 0,
+             newEventsTotal: 0, eventErrorsTotal: 0, dateFrom: null, statusChanges: [] };
   }
 
+  // 2. Load last sync timestamp
+  const { data: syncState } = await supabase
+    .from('tracking_sync_state')
+    .select('last_synced_at')
+    .eq('id', 1)
+    .single();
+  const dateFrom = syncState?.last_synced_at ?? null;
+
+  // 3. Capture sync start BEFORE API call (high-water mark pattern)
+  const thisSyncStartedAt = new Date().toISOString();
+
+  // 4. Bulk fetch all events
+  const unisend = getUnisendClient();
+  const barcodes = orders.map(o => o.barcode!);
+  let allEvents: TrackingEvent[];
+  try {
+    allEvents = await unisend.getTrackingEventsBulk(barcodes, dateFrom ?? undefined);
+  } catch (err) {
+    console.error('[Tracking] Bulk fetch failed:', err);
+    // Do NOT advance last_synced_at — next tick retries from same dateFrom
+    return { totalProcessed: orders.length, successCount: 0, errorCount: orders.length,
+             newEventsTotal: 0, eventErrorsTotal: 0, dateFrom, statusChanges: [] };
+  }
+
+  // 5. Group events by barcode
+  const orderBarcodes = new Set(barcodes);
+  const eventsByBarcode = new Map<string, TrackingEvent[]>();
+  for (const event of allEvents) {
+    if (!orderBarcodes.has(event.mailBarcode)) continue;
+    const list = eventsByBarcode.get(event.mailBarcode) ?? [];
+    list.push(event);
+    eventsByBarcode.set(event.mailBarcode, list);
+  }
+
+  const unknownCount = allEvents.filter(e => !orderBarcodes.has(e.mailBarcode)).length;
+  if (unknownCount > 0) {
+    console.warn(`[Tracking] Bulk fetch returned ${unknownCount} events for unknown barcodes`);
+  }
+
+  // 6. Process each order (DB-only, no more API calls or delays)
   let successCount = 0;
   let errorCount = 0;
   let newEventsTotal = 0;
@@ -368,13 +413,16 @@ export async function syncAllActiveOrders(): Promise<{
   const statusChanges: Array<{ orderId: string; orderNumber: string; oldStatus: string; newStatus: string }> = [];
 
   for (const order of orders) {
-    const result = await syncTrackingForOrder(order.id, order.barcode!);
+    const orderEvents = eventsByBarcode.get(order.barcode!) ?? [];
+    const result = await processOrderEvents(
+      { id: order.id, order_number: order.order_number, barcode: order.barcode!, status: order.status },
+      orderEvents
+    );
     newEventsTotal += result.newEventsCount;
     eventErrorsTotal += result.eventErrors;
 
     if (result.success) {
       successCount++;
-
       if (result.statusChanged && result.oldStatus && result.newStatus) {
         statusChanges.push({
           orderId: order.id,
@@ -386,10 +434,16 @@ export async function syncAllActiveOrders(): Promise<{
     } else {
       errorCount++;
     }
-
-    // Small delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 200));
   }
+
+  // 7. Advance last_synced_at with safety margin.
+  // Subtracting 1 hour means next tick re-fetches recent events, letting the
+  // idempotent RPC retry any that failed to insert on this tick.
+  const advanceTo = new Date(Date.parse(thisSyncStartedAt) - SYNC_SAFETY_MARGIN_MS).toISOString();
+  await supabase
+    .from('tracking_sync_state')
+    .update({ last_synced_at: advanceTo })
+    .eq('id', 1);
 
   return {
     totalProcessed: orders.length,
@@ -397,6 +451,7 @@ export async function syncAllActiveOrders(): Promise<{
     errorCount,
     newEventsTotal,
     eventErrorsTotal,
+    dateFrom,
     statusChanges,
   };
 }

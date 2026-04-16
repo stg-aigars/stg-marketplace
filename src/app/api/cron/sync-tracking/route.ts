@@ -24,7 +24,8 @@ export async function POST(request: Request) {
     `[Cron] Tracking sync: ${result.totalProcessed} processed, ` +
     `${result.successCount} ok, ${result.errorCount} errors, ` +
     `${result.newEventsTotal} events inserted, ${result.eventErrorsTotal} event errors, ` +
-    `${result.statusChanges.length} transitions`
+    `${result.statusChanges.length} transitions` +
+    (result.dateFrom ? ` (since ${result.dateFrom})` : ' (full history)')
   );
 
   if (result.statusChanges.length > 0) {
@@ -41,5 +42,6 @@ export async function POST(request: Request) {
     eventsInserted: result.newEventsTotal,
     eventErrors: result.eventErrorsTotal,
     statusChanges: result.statusChanges.length,
+    dateFrom: result.dateFrom,
   });
 }
