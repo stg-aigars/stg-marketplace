@@ -8,6 +8,7 @@
 
 import { createServiceClient } from '@/lib/supabase';
 import { refundOrder } from '@/lib/services/order-refund';
+import { cancelOrderShipment } from '@/lib/services/unisend/shipping';
 import { logAuditEvent } from '@/lib/services/audit';
 import {
   SELLER_RESPONSE_DEADLINE_HOURS,
@@ -242,6 +243,9 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         .single();
 
       if (!cancelled) continue; // Race: already transitioned
+
+      // Cancel Unisend shipment if one was created (helper no-ops if no parcel, never throws)
+      void cancelOrderShipment(order.id);
 
       // Restore all listings in this order
       if (order.listing_ids.length > 0) {

@@ -4,7 +4,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase';
-import { createOrderShipping } from '@/lib/services/unisend/shipping';
+import { createOrderShipping, cancelOrderShipment } from '@/lib/services/unisend/shipping';
 import { creditWallet } from '@/lib/services/wallet';
 import { refundOrder } from '@/lib/services/order-refund';
 import { issueInvoice } from '@/lib/services/invoicing';
@@ -241,6 +241,9 @@ export async function declineOrder(orderId: string, userId: string): Promise<Ord
       .update({ active: false })
       .eq('order_id', orderId);
   }
+
+  // Cancel Unisend shipment if one was created (helper no-ops if no parcel, never throws)
+  void cancelOrderShipment(orderId);
 
   // Refund buyer (card, wallet, or both)
   await refundOrder(orderId, order);

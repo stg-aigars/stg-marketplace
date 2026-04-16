@@ -3,7 +3,7 @@
  * Handles parcel creation, order updates, and seller notification.
  */
 
-import { createAndShipParcel } from './client';
+import { createAndShipParcel, getUnisendClient } from './client';
 import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE, PHONE_FORMATS } from './types';
 import type { CreateParcelRequest, ParcelSize, TerminalCountry } from './types';
 import { formatShippingError } from './format-shipping-error';
@@ -16,6 +16,7 @@ import {
   type PhoneCountryCode,
 } from '@/lib/phone-utils';
 import { sendShippingInstructionsToSeller } from '@/lib/email';
+import { logAuditEvent } from '@/lib/services/audit';
 import { notify } from '@/lib/notifications';
 import { orderGameSummary } from '@/lib/orders/utils';
 
@@ -320,4 +321,47 @@ export async function retryOrderShipping(
     parcelSize: null,
     items,
   });
+}
+
+/**
+ * Cancel a Unisend shipment for a cancelled order.
+ * Fire-and-forget — never throws. Logs success/failure via audit.
+ * No-ops if order has no parcel (cancelled before acceptance).
+ */
+export async function cancelOrderShipment(orderId: string): Promise<void> {
+  const supabase = createServiceClient();
+
+  const { data: order } = await supabase
+    .from('orders')
+    .select('unisend_parcel_id')
+    .eq('id', orderId)
+    .single();
+
+  if (!order?.unisend_parcel_id) return;
+
+  try {
+    const unisend = getUnisendClient();
+    await unisend.cancelShipment([order.unisend_parcel_id]);
+
+    void logAuditEvent({
+      actorType: 'system',
+      action: 'shipment.cancelled',
+      resourceType: 'order',
+      resourceId: orderId,
+      metadata: { parcelId: order.unisend_parcel_id },
+    });
+  } catch (error) {
+    // Parcel already dropped off or Unisend rejected. Don't block cancellation flow.
+    console.error(`[Unisend] cancelShipment failed for order ${orderId}:`, error);
+    void logAuditEvent({
+      actorType: 'system',
+      action: 'shipment.cancel_failed',
+      resourceType: 'order',
+      resourceId: orderId,
+      metadata: {
+        parcelId: order.unisend_parcel_id,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+  }
 }
