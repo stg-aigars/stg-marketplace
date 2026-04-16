@@ -29,6 +29,24 @@
             "command": ".claude/hooks/stg-standards-check.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/lint-changed.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/lint-changed.sh"
+          }
+        ]
       }
     ]
   }

@@ -23,6 +23,11 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 - `pnpm lint` - Run ESLint
 - `pnpm type-check` - TypeScript validation (not sufficient alone for deploy)
 
+## Safety
+- Before executing any database migration, SQL command, or deployment operation, verify you are operating on the correct environment (correct Supabase project, correct database, correct branch)
+- If changes were made to files, commit and push to the current branch before reporting the task complete. Never report "done" with uncommitted or unpushed changes in the working tree
+- For any change spanning 3+ files, state the approach and the files you've read before writing code. For changes touching database schema, auth flows, or payment flows, additionally wait for confirmation before implementing
+
 ## Code Style
 - Use ES modules (import/export)
 - Prefer Server Components; use 'use client' only when needed (interactivity, hooks, browser APIs)
@@ -30,6 +35,8 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 - Phosphor Icons: always import **runtime values** (icon components like `Package`, `Wallet`) from `@phosphor-icons/react/ssr` (even in client components). The base path has a double-barrel import that defeats tree-shaking. **Type-only imports** are exempt: `import type { Icon } from '@phosphor-icons/react'` is fine — type imports are erased at compile time, so tree-shaking doesn't apply, and `Icon` / `IconProps` / `IconWeight` are only exported from the base path anyway.
 - Follow existing patterns in codebase
 - All monetary values as INTEGER CENTS (never floats). 1299 not 12.99
+- Be careful with Server Component / Client Component boundaries. Never pass React component functions as props from Server Components to Client Components. Never call hooks unconditionally where refs may be null
+- When refactoring or simplifying code, do not remove imports, guards, or behavioral logic without verifying they are truly unused. Run `pnpm build` after any simplification pass
 
 ## Date & Time Formatting
 Always use centralized utilities from `@/lib/date-utils`:
@@ -265,6 +272,8 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 - Supabase SSR cookies: use `getAll()`/`setAll()`, never `get()`/`set()`
 - VAT rates by seller's country: LV=21%, LT=21%, EE=24%
 - Supabase advisor recommendations are starting points, not blanket fixes. Always cross-check with the unauthenticated route list before applying. We've already had two regressions of this shape — games search and listing detail seller info.
+- Check existing database columns and schema before suggesting joins or workarounds — the column may already exist
+- In RPC functions using raw SQL ILIKE: use `!` as the ESCAPE character, not backslash (`standard_conforming_strings` makes `\` literal). See `046_alternate_name_search.sql` for the canonical escape pattern. For PostgREST `.ilike()` calls: the wildcard is `%` (standard SQL) and user input containing literal `%` or `_` should be escaped before interpolation
 
 ## RLS Policies and Anonymous Access
 Supabase security advisors recommend tightening RLS, but they don't know which routes are public. Every SELECT policy that adds an `auth.uid() IS NOT NULL` predicate must be evaluated against the unauthenticated route list (homepage, browse, listing detail, seller pages, sitemap, JSON-LD, robots). If any anon-reachable route reads the table:
