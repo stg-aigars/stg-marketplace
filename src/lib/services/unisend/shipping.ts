@@ -3,7 +3,7 @@
  * Handles parcel creation, order updates, and seller notification.
  */
 
-import { createAndShipParcel } from './client';
+import { createAndShipParcel, getUnisendClient } from './client';
 import { UnisendValidationError, UNISEND_DEFAULT_PARCEL_SIZE, PHONE_FORMATS } from './types';
 import type { CreateParcelRequest, ParcelSize, TerminalCountry } from './types';
 import { formatShippingError } from './format-shipping-error';
@@ -16,6 +16,7 @@ import {
   type PhoneCountryCode,
 } from '@/lib/phone-utils';
 import { sendShippingInstructionsToSeller } from '@/lib/email';
+import { logAuditEvent } from '@/lib/services/audit';
 import { notify } from '@/lib/notifications';
 import { orderGameSummary } from '@/lib/orders/utils';
 
@@ -146,6 +147,9 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
 
   try {
     const parcelRequest: CreateParcelRequest = {
+      // idRef allows lookup by order number in Unisend dashboard.
+      // Safe to use order_number: it's unique and cancelled is a terminal state (no re-acceptance).
+      idRef: orderNumber,
       plan: { code: 'TERMINAL' },
       parcel: {
         type: 'T2T',
@@ -184,7 +188,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       };
     }
 
-    const { parcelId, barcode, trackingUrl: rawTrackingUrl } = await createAndShipParcel(parcelRequest);
+    const { parcelId, barcode, trackingUrl: rawTrackingUrl, requestId } = await createAndShipParcel(parcelRequest);
 
     const trackingUrl = rawTrackingUrl || getTrackingUrl(barcode);
     console.log(`${logPrefix} Parcel created: parcelId=${parcelId}, barcode=${barcode}`);
@@ -195,6 +199,7 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       .from('orders')
       .update({
         unisend_parcel_id: parcelId,
+        unisend_request_id: requestId,
         barcode,
         tracking_url: trackingUrl,
         shipping_error: null,
@@ -316,4 +321,37 @@ export async function retryOrderShipping(
     parcelSize: null,
     items,
   });
+}
+
+/**
+ * Cancel a Unisend shipment for a cancelled order.
+ * Fire-and-forget — never throws. Logs success/failure via audit.
+ * No-ops if order has no parcel (cancelled before acceptance).
+ */
+export async function cancelOrderShipment(orderId: string): Promise<void> {
+  try {
+    const supabase = createServiceClient();
+
+    const { data: order } = await supabase
+      .from('orders')
+      .select('unisend_parcel_id')
+      .eq('id', orderId)
+      .single();
+
+    if (!order?.unisend_parcel_id) return;
+
+    const unisend = getUnisendClient();
+    await unisend.cancelShipment([order.unisend_parcel_id]);
+
+    void logAuditEvent({
+      actorType: 'system',
+      action: 'shipment.cancelled',
+      resourceType: 'order',
+      resourceId: orderId,
+      metadata: { parcelId: order.unisend_parcel_id },
+    });
+  } catch (error) {
+    // Parcel already dropped off, Unisend rejected, or DB error. Don't block cancellation flow.
+    console.error(`[Unisend] cancelOrderShipment failed for order ${orderId}:`, error);
+  }
 }

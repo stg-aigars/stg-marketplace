@@ -34,6 +34,14 @@ let tokenCache: {
   expiresAt: number;
 } | null = null;
 
+// Auth circuit breaker — prevents hitting Unisend's 5-attempt lockout (15 min block).
+// Threshold of 2 consecutive failures × 2 auth attempts per failure = 4 attempts,
+// safely under the 5-attempt cap. Resets on successful API call or server restart.
+let consecutiveAuthFailures = 0;
+const AUTH_FAILURE_THRESHOLD = 2;
+const LOCKOUT_DURATION_MS = 16 * 60 * 1000; // 16 min (slightly > Unisend's 15 min lockout)
+let authLockoutUntil: number | null = null;
+
 const TERMINAL_CACHE_TTL_SECONDS = 60 * 60; // 1 hour
 
 // ============================================
@@ -154,6 +162,14 @@ async function apiRequest<T>(
   options: RequestInit = {},
   retryCount = 0
 ): Promise<T> {
+  // Circuit breaker: fail fast if we've hit too many consecutive auth failures
+  if (authLockoutUntil && Date.now() < authLockoutUntil) {
+    throw new UnisendApiError(
+      `Unisend auth circuit open until ${new Date(authLockoutUntil).toISOString()}. Check credentials.`,
+      503
+    );
+  }
+
   const accessToken = await getAccessToken();
   const { apiUrl } = env.unisend;
 
@@ -166,15 +182,30 @@ async function apiRequest<T>(
     },
   });
 
-  // Handle 401 - token might be expired
+  // Handle 401 - token might be expired, retry once
   if (response.status === 401 && retryCount < 1) {
     tokenCache = null;
     return apiRequest<T>(endpoint, options, retryCount + 1);
   }
 
+  // Second 401 after retry — track consecutive failures and potentially trip circuit
+  if (response.status === 401) {
+    consecutiveAuthFailures++;
+    if (consecutiveAuthFailures >= AUTH_FAILURE_THRESHOLD) {
+      authLockoutUntil = Date.now() + LOCKOUT_DURATION_MS;
+      console.error(
+        `[Unisend] Auth circuit opened — ${consecutiveAuthFailures} consecutive failures. Locked out for 16 minutes.`
+      );
+    }
+  }
+
   if (!response.ok) {
     await handleApiError(response);
   }
+
+  // Successful response — reset circuit breaker
+  consecutiveAuthFailures = 0;
+  authLockoutUntil = null;
 
   // Handle empty responses
   const text = await response.text();
@@ -428,6 +459,14 @@ export async function getTrackingEventsBulk(
 // Convenience Methods
 // ============================================
 
+/** Cancel a Unisend shipment before pickup */
+export async function cancelShipment(parcelIds: number[]): Promise<void> {
+  await apiRequest('/api/v2/shipping/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ parcelIds }),
+  });
+}
+
 /** Create parcel and initiate shipping in one call */
 export async function createAndShipParcel(
   data: CreateParcelRequest
@@ -435,6 +474,7 @@ export async function createAndShipParcel(
   parcelId: number;
   barcode: string;
   trackingUrl?: string;
+  requestId: string;
 }> {
   const parcelResponse = await createParcel(data);
 
@@ -446,6 +486,7 @@ export async function createAndShipParcel(
       parcelId: parcelResponse.parcelId,
       barcode: parcelFromShipping.barcode || parcelFromShipping.trackingNumber || '',
       trackingUrl: parcelFromShipping.trackingUrl,
+      requestId: shippingResponse.requestId,
     };
   }
 
@@ -455,6 +496,7 @@ export async function createAndShipParcel(
     parcelId: parcelResponse.parcelId,
     barcode: barcodes[0]?.barcode || '',
     trackingUrl: barcodes[0]?.trackingUrl,
+    requestId: shippingResponse.requestId,
   };
 }
 
@@ -484,6 +526,7 @@ const unisendClient = {
   getBarcodes,
   getTrackingEvents,
   getTrackingEventsBulk,
+  cancelShipment,
   createAndShipParcel,
   clearTerminalCache,
   clearTokenCache,
