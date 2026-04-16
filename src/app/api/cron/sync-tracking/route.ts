@@ -20,9 +20,16 @@ export async function POST(request: Request) {
 
   const result = await syncAllActiveOrders();
 
+  console.log(
+    `[Cron] Tracking sync: ${result.totalProcessed} processed, ` +
+    `${result.successCount} ok, ${result.errorCount} errors, ` +
+    `${result.newEventsTotal} events inserted, ${result.eventErrorsTotal} event errors, ` +
+    `${result.statusChanges.length} transitions`
+  );
+
   if (result.statusChanges.length > 0) {
     console.log(
-      `[Cron] Tracking sync: ${result.totalProcessed} orders, ${result.statusChanges.length} status changes`,
+      '[Cron] Status changes:',
       result.statusChanges.map((c) => `${c.orderNumber}: ${c.oldStatus} → ${c.newStatus}`)
     );
   }
@@ -31,6 +38,8 @@ export async function POST(request: Request) {
     processed: result.totalProcessed,
     success: result.successCount,
     errors: result.errorCount,
+    eventsInserted: result.newEventsTotal,
+    eventErrors: result.eventErrorsTotal,
     statusChanges: result.statusChanges.length,
   });
 }

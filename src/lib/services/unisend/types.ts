@@ -154,12 +154,15 @@ export type TrackingStateType =
   | 'RETURNING';
 
 export interface TrackingEvent {
-  eventType: string;
-  stateType: TrackingStateType;
-  stateText: string;
-  timestamp: string;
+  id: string;
+  mailBarcode: string;
+  countryCode?: string;
+  eventDate: string;
+  publicEventType: string;
+  publicEventText?: string;
+  publicStateType: TrackingStateType;
+  publicStateText: string;
   location?: string;
-  description?: string;
 }
 
 // ============================================
