@@ -175,7 +175,7 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     link: orderLink,
   },
   'shipping.scanned_seller': {
-    title: () => 'Parcel dropped off',
+    title: () => 'Parcel on its way',
     body: (ctx) => `Your parcel for ${ctx.gameName ?? 'a game'} has been dropped off and is on its way to the buyer`,
     link: orderLink,
   },
