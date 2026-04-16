@@ -170,13 +170,20 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     link: orderLink,
   },
   'shipping.scanned': {
-    title: () => 'Parcel scanned at terminal',
-    body: (ctx) => `Your parcel for ${ctx.gameName ?? 'a game'} was scanned at ${ctx.terminalName ?? 'the terminal'} — it's on its way`,
+    title: () => 'Parcel dropped off',
+    body: (ctx) => `The seller has dropped off ${ctx.gameName ?? 'your parcel'} — you'll be notified when it arrives at your pickup terminal`,
     link: orderLink,
   },
   'shipping.scanned_seller': {
-    title: () => 'Parcel picked up',
-    body: (ctx) => `Your parcel for ${ctx.gameName ?? 'a game'} has been picked up and is on its way to the buyer`,
+    title: () => 'Parcel dropped off',
+    body: (ctx) => `Your parcel for ${ctx.gameName ?? 'a game'} has been dropped off and is on its way to the buyer`,
+    link: orderLink,
+  },
+  'shipping.ready_for_pickup': {
+    title: () => 'Parcel ready for pickup',
+    body: (ctx) => ctx.terminalName
+      ? `Your parcel for ${ctx.gameName ?? 'a game'} is ready at ${ctx.terminalName}`
+      : `Your parcel for ${ctx.gameName ?? 'a game'} is ready for pickup`,
     link: orderLink,
   },
   'shipping.returning': {
