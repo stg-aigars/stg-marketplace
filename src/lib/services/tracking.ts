@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase';
 
 /** DB row shape for tracking events displayed in the order timeline */
 export interface TrackingEventRow {
+  event_type: string;
   state_type: string;
   state_text: string | null;
   location: string | null;
@@ -14,7 +15,7 @@ export async function getTrackingEvents(orderId: string): Promise<TrackingEventR
 
   const { data, error } = await supabase
     .from('tracking_events')
-    .select('state_type, state_text, location, event_timestamp')
+    .select('event_type, state_type, state_text, location, event_timestamp')
     .eq('order_id', orderId)
     .order('event_timestamp', { ascending: true });
 

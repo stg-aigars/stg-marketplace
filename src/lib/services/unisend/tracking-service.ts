@@ -58,6 +58,7 @@ async function processOrderEvents(
     const oldStatus = order.status;
     let newEventsCount = 0;
     let eventErrors = 0;
+    const insertedEventTypes = new Set<string>();
 
     for (const event of trackingEvents) {
       const { data: wasInserted, error } = await supabase.rpc('add_tracking_event', {
@@ -81,6 +82,26 @@ async function processOrderEvents(
         });
       } else if (wasInserted) {
         newEventsCount++;
+        insertedEventTypes.add(event.publicEventType);
+      }
+    }
+
+    // Notify buyer when parcel is ready for pickup (NOTIFICATIONS_INFORMED = Unisend sent pickup SMS)
+    if (insertedEventTypes.has('NOTIFICATIONS_INFORMED')) {
+      const { data: orderForNotif } = await supabase
+        .from('orders')
+        .select('*, order_items(listing_id, listings(game_name)), listings(game_name)')
+        .eq('id', orderId)
+        .single();
+
+      if (orderForNotif) {
+        const gameName = getOrderGameSummary(orderForNotif.order_items as OrderItemLike[], orderForNotif.listings as LegacyListingsLike);
+        void notify(orderForNotif.buyer_id, 'shipping.ready_for_pickup', {
+          gameName,
+          orderNumber: orderForNotif.order_number,
+          orderId,
+          terminalName: orderForNotif.terminal_name ?? undefined,
+        });
       }
     }
 
