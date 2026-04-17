@@ -120,7 +120,7 @@ export function Dac7Form({ dac7Profile }: Dac7FormProps) {
             required
           />
           <p className="text-xs text-semantic-text-muted -mt-2">
-            If your country is not listed, please contact support@secondturn.games
+            If your country is not listed, please contact info@secondturn.games
           </p>
 
           <Input

@@ -41,7 +41,7 @@ export function Dac7Reminder({
       </div>
 
       <Text style={s.note}>
-        Questions? Contact support@secondturn.games.
+        Questions? Contact info@secondturn.games.
       </Text>
     </EmailLayout>
   );
