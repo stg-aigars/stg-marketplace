@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import {
+  LEGAL_ENTITY_NAME,
+  LEGAL_ENTITY_ADDRESS,
+  LEGAL_ENTITY_REG_NUMBER,
+} from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -23,9 +28,9 @@ export default function TermsPage() {
             1. About Second Turn Games
           </h2>
           <p>
-            Second Turn Games SIA (&ldquo;STG&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;),
-            registration number 50203665371, registered at Evalda Valtera iela 5 - 35, Riga, LV-1021,
-            Latvia, operates a peer-to-peer marketplace for pre-loved board games in Latvia, Lithuania,
+            {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;),
+            registration number {LEGAL_ENTITY_REG_NUMBER}, registered at {LEGAL_ENTITY_ADDRESS},
+            operates a peer-to-peer marketplace for pre-loved board games in Latvia, Lithuania,
             and Estonia. We act as a commercial agent under PSD2 Article 3(b), connecting buyers and
             sellers and handling payments on their behalf.
           </p>
