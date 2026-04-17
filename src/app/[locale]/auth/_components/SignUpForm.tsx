@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Input, Button, TurnstileWidget, Checkbox } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { signUpWithEmail } from '@/lib/auth/actions';
+import { PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth/password-validation';
 import { OAuthButton } from './OAuthButton';
 import { CountrySelector } from './CountrySelector';
 import { env } from '@/lib/env';
@@ -130,7 +131,7 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
             minLength={8}
           />
           <p className="mt-1.5 text-sm text-semantic-text-muted">
-            At least 8 characters with letters, numbers, and symbols
+            {PASSWORD_REQUIREMENT_MESSAGE}
           </p>
         </div>
 

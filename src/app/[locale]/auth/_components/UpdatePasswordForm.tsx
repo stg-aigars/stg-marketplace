@@ -52,7 +52,7 @@ export function UpdatePasswordForm() {
           autoComplete="new-password"
           minLength={8}
         />
-        <p className="mt-1.5 text-xs text-semantic-text-muted">
+        <p className="mt-1.5 text-sm text-semantic-text-muted">
           {PASSWORD_REQUIREMENT_MESSAGE}
         </p>
       </div>

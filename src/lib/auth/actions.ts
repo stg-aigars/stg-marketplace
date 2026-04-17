@@ -123,6 +123,14 @@ export async function updatePassword(
     if (error.code === 'weak_password') {
       return { error: 'Password does not meet security requirements' };
     }
+    // Recovery session expired between clicking the email link and submitting.
+    // Supabase returns session_not_found or a 401 status depending on version.
+    if (error.code === 'session_not_found' || error.status === 401) {
+      return { error: 'Your reset link has expired. Please request a new one.' };
+    }
+    if (error.status === 429) {
+      return { error: 'Too many attempts. Please wait a moment and try again.' };
+    }
     return { error: 'Something went wrong. Please try again' };
   }
 
