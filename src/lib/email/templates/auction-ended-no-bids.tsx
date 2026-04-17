@@ -16,7 +16,7 @@ export function AuctionEndedNoBids({
       <Text style={templateStyles.greeting}>Hi {sellerName},</Text>
       <Text style={templateStyles.body}>
         Your auction for <strong>{gameName}</strong> has ended with no bids.
-        You can create a new listing with a different starting price or try a fixed-price listing.
+        If you want to try again, lower the starting price or switch to a fixed-price listing.
       </Text>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} border={0}>
         <tbody><tr><td style={templateStyles.ctaSection}>

@@ -23,8 +23,7 @@ export function OfferListingCreated({
       <Text style={templateStyles.greeting}>Hi {buyerName},</Text>
 
       <Text style={templateStyles.body}>
-        Great news — <strong>{gameName}</strong> is now listed and ready for you
-        to purchase at the agreed price.
+        <strong>{gameName}</strong> is now listed. You can buy it at the agreed price.
       </Text>
 
       <table

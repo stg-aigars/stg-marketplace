@@ -81,8 +81,7 @@ export function OrderAutoCancelled({
 
       {variant === 'seller' && (
         <Text style={styles.note}>
-          Responding promptly helps build trust with buyers and keeps the
-          marketplace running smoothly.
+          Responding within 48 hours keeps orders from auto-cancelling.
         </Text>
       )}
     </EmailLayout>
