@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import {
+  LEGAL_ENTITY_NAME,
+  LEGAL_ENTITY_ADDRESS,
+  LEGAL_ENTITY_REG_NUMBER,
+  LEGAL_ENTITY_PHONE,
+} from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -38,10 +44,10 @@ export default function ContactPage() {
               Phone
             </h2>
             <a
-              href="tel:+37126779625"
+              href={`tel:${LEGAL_ENTITY_PHONE.replace(/\s/g, '')}`}
               className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
             >
-              +371 26779625
+              {LEGAL_ENTITY_PHONE}
             </a>
           </div>
         </div>
@@ -51,23 +57,21 @@ export default function ContactPage() {
             <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
               Business name
             </h2>
-            <p className="text-semantic-text-secondary">Second Turn Games SIA</p>
+            <p className="text-semantic-text-secondary">{LEGAL_ENTITY_NAME}</p>
           </div>
 
           <div>
             <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
               Registration number
             </h2>
-            <p className="text-semantic-text-secondary">50203665371</p>
+            <p className="text-semantic-text-secondary">{LEGAL_ENTITY_REG_NUMBER}</p>
           </div>
 
           <div>
             <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
               Registered address
             </h2>
-            <p className="text-semantic-text-secondary">
-              Evalda Valtera 5 - 35, Riga, LV-1021, Latvia
-            </p>
+            <p className="text-semantic-text-secondary">{LEGAL_ENTITY_ADDRESS}</p>
           </div>
         </div>
 

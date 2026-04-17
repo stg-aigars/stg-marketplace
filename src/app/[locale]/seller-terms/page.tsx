@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { LEGAL_ENTITY_NAME } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Seller Agreement',
@@ -45,7 +46,7 @@ export default function SellerTermsPage() {
             2. Payment authorization
           </h2>
           <p>
-            By listing an item, you authorize Second Turn Games SIA to receive payments from buyers
+            By listing an item, you authorize {LEGAL_ENTITY_NAME} to receive payments from buyers
             on your behalf, acting as your commercial agent under PSD2 Article 3(b). Funds are held
             by the platform until the transaction is completed.
           </p>
