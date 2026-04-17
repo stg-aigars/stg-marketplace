@@ -18,9 +18,13 @@ export async function GET(request: Request) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
+      console.error('[Auth] exchangeCodeForSession failed:', { type, message: error.message, status: error.status });
       return NextResponse.redirect(
         `${origin}/auth/signin?error=auth_error`
       );
+    }
+    if (type === 'recovery') {
+      return NextResponse.redirect(`${origin}/auth/update-password`);
     }
     return NextResponse.redirect(`${origin}${returnUrl}`);
   }
@@ -33,6 +37,7 @@ export async function GET(request: Request) {
     });
 
     if (error) {
+      console.error('[Auth] verifyOtp failed:', { type, message: error.message, status: error.status });
       return NextResponse.redirect(
         `${origin}/auth/signin?error=auth_error`
       );
