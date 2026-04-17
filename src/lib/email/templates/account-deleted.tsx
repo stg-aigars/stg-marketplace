@@ -26,7 +26,7 @@ export function AccountDeleted({ userName }: AccountDeletedProps) {
       </Text>
 
       <Text style={s.note}>
-        If you did not request this deletion, please contact us immediately at support@secondturngames.com.
+        If you did not request this deletion, please contact us immediately at info@secondturn.games.
       </Text>
     </EmailLayout>
   );

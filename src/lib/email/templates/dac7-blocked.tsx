@@ -41,7 +41,7 @@ export function Dac7Blocked({
       </div>
 
       <Text style={s.note}>
-        Think this is a mistake? Contact support@secondturn.games.
+        Think this is a mistake? Contact info@secondturn.games.
       </Text>
     </EmailLayout>
   );
