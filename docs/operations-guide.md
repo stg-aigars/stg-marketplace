@@ -243,8 +243,8 @@ ssh root@37.27.24.207
 ### Resend
 
 - [ ] **Domain verification** — Dashboard > Domains > your sending domain should show green checkmarks for SPF, DKIM, and DMARC
-- [ ] **From address** — verify `RESEND_FROM_EMAIL` in Coolify env is set to a custom domain address (e.g., `noreply@secondturngames.com`), NOT `@resend.dev`
-- [ ] **DMARC policy** — run `dig TXT secondturngames.com` locally and look for a `_dmarc` record with at least `p=quarantine` (ideally `p=reject`)
+- [ ] **From address** — verify `RESEND_FROM_EMAIL` in Coolify env is set to a custom domain address (e.g., `noreply@secondturn.games`), NOT `@resend.dev`
+- [ ] **DMARC policy** — run `dig TXT secondturn.games` locally and look for a `_dmarc` record with at least `p=quarantine` (ideally `p=reject`)
 
 ### Cloudflare
 
