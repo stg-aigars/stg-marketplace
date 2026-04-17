@@ -46,7 +46,7 @@ export function OrderDeclinedBuyer({
           ? 'Your refund has been initiated. Bank transfers typically take 1–3 business days.'
           : paymentMethod === 'card'
             ? 'Your refund has been processed and should appear on your card shortly.'
-            : 'Your payment will be refunded automatically.'}
+            : 'Your refund is being processed.'}
       </Text>
 
       <div style={s.ctaSection}>

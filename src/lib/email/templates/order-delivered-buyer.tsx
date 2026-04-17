@@ -30,7 +30,7 @@ export function OrderDeliveredBuyer({
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        You have picked up your game. Two minutes of your time finishes the order:
+        You have picked up your game. Two minutes of your time finishes the order.
       </Text>
 
       <div style={s.orderCard}>
