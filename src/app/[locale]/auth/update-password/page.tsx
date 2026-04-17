@@ -1,5 +1,6 @@
 import { Card, CardBody } from '@/components/ui';
 import { UpdatePasswordForm } from '../_components/UpdatePasswordForm';
+import { PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth/password-validation';
 
 export const metadata = {
   title: 'Update password',
@@ -14,7 +15,7 @@ export default function UpdatePasswordPage() {
             Set a new password
           </h1>
           <p className="mt-2 text-semantic-text-secondary">
-            Choose a strong password with at least 8 characters
+            {PASSWORD_REQUIREMENT_MESSAGE}
           </p>
         </div>
 

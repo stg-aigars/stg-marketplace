@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { Input, Button } from '@/components/ui';
 import { updatePassword } from '@/lib/auth/actions';
+import {
+  PASSWORD_REQUIREMENT_MESSAGE,
+  validatePasswordStrength,
+} from '@/lib/auth/password-validation';
 
 export function UpdatePasswordForm() {
   const [password, setPassword] = useState('');
@@ -14,8 +18,9 @@ export function UpdatePasswordForm() {
     e.preventDefault();
     setError('');
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    const strengthError = validatePasswordStrength(password);
+    if (strengthError) {
+      setError(strengthError);
       return;
     }
 
@@ -36,16 +41,21 @@ export function UpdatePasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        id="password"
-        type="password"
-        label="New password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        autoComplete="new-password"
-        minLength={8}
-      />
+      <div>
+        <Input
+          id="password"
+          type="password"
+          label="New password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="new-password"
+          minLength={8}
+        />
+        <p className="mt-1.5 text-xs text-semantic-text-muted">
+          {PASSWORD_REQUIREMENT_MESSAGE}
+        </p>
+      </div>
 
       <Input
         id="confirmPassword"

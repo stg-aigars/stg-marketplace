@@ -9,6 +9,7 @@ import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { loginLimiter, signupLimiter, passwordResetLimiter } from '@/lib/rate-limit';
 import { TERMS_VERSION } from '@/lib/legal/constants';
 import { safeReturnUrl } from '@/lib/auth/safe-return-url';
+import { validatePasswordStrength } from '@/lib/auth/password-validation';
 
 /**
  * Validate rate-limit and Turnstile before the client signs in.
@@ -102,11 +103,26 @@ export async function resetPassword(
 export async function updatePassword(
   password: string
 ): Promise<AuthActionResult> {
+  const strengthError = validatePasswordStrength(password);
+  if (strengthError) return { error: strengthError };
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
+    console.error('[Auth] updateUser failed:', {
+      code: error.code,
+      message: error.message,
+      status: error.status,
+    });
+
+    if (error.code === 'same_password') {
+      return { error: 'Your new password must be different from your current password' };
+    }
+    if (error.code === 'weak_password') {
+      return { error: 'Password does not meet security requirements' };
+    }
     return { error: 'Something went wrong. Please try again' };
   }
 
