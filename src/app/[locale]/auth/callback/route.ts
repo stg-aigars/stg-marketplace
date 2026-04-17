@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { EmailOtpType } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getOrigin } from '@/lib/utils/request';
 import { safeReturnUrl } from '@/lib/auth/safe-return-url';
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: type as 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email',
+      type: type as EmailOtpType,
     });
 
     if (error) {
