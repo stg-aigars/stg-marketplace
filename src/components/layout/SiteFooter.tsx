@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LEGAL_ENTITY_NAME } from '@/lib/constants';
 
 const LINK_CLASS =
   'sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom';
@@ -129,7 +130,7 @@ function SiteFooter() {
       {/* Bottom row — dark */}
       <div className="bg-[#363e4b]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-white/50">
-          <p>&copy; 2025&ndash;{new Date().getFullYear()} SIA Second Turn Games</p>
+          <p>&copy; 2025&ndash;{new Date().getFullYear()} {LEGAL_ENTITY_NAME}</p>
           <p>Riga, Latvia</p>
         </div>
       </div>

@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import {
+  LEGAL_ENTITY_NAME,
+  LEGAL_ENTITY_ADDRESS,
+  LEGAL_ENTITY_REG_NUMBER,
+} from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -23,10 +28,10 @@ export default function PrivacyPage() {
             1. Who we are
           </h2>
           <p>
-            Second Turn Games SIA (&ldquo;STG&rdquo;), registration number 50203665371, registered at
-            Evalda Valtera iela 5 - 35, Riga, LV-1021, Latvia, is the data controller. This policy
-            explains how we collect, use, and protect your personal data under the General Data
-            Protection Regulation (GDPR, EU 2016/679) and Latvian data protection law.
+            {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;), registration number {LEGAL_ENTITY_REG_NUMBER},
+            registered at {LEGAL_ENTITY_ADDRESS}, is the data controller. This policy explains how
+            we collect, use, and protect your personal data under the General Data Protection
+            Regulation (GDPR, EU 2016/679) and Latvian data protection law.
           </p>
           <p>
             Contact:{' '}
