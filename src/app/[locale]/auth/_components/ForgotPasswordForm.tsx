@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Input, Button, TurnstileWidget } from '@/components/ui';
+import { Input, Button, TurnstileWidget, Alert } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { resetPassword } from '@/lib/auth/actions';
 import { Link } from '@/i18n/navigation';
@@ -33,16 +33,19 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="space-y-4 text-center">
-        <p className="text-semantic-text-primary">
-          Check your email for a reset link. It may take a minute to arrive.
+      <div className="space-y-6">
+        <Alert variant="success" title="Check your email">
+          We&apos;ve sent a reset link to <strong>{email}</strong>. It may take a minute
+          to arrive. If you don&apos;t see it, check your spam folder.
+        </Alert>
+        <p className="text-center text-sm">
+          <Link
+            href="/auth/signin"
+            className="font-medium text-semantic-brand sm:hover:underline"
+          >
+            Back to sign in
+          </Link>
         </p>
-        <Link
-          href="/auth/signin"
-          className="text-sm font-medium text-semantic-brand sm:hover:underline"
-        >
-          Back to sign in
-        </Link>
       </div>
     );
   }
