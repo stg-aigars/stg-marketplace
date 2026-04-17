@@ -4,6 +4,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase';
+import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_REG_NUMBER } from '@/lib/constants';
 import {
   DAC7_REPORT_TRANSACTIONS,
   DAC7_REPORT_CONSIDERATION_CENTS,
@@ -29,8 +30,8 @@ export interface ReportResult {
 
 const PLATFORM_INFO = {
   name: 'Second Turn Games',
-  registered_name: 'SIA Second Turn Games',
-  registration_number: '40203544396',
+  registered_name: LEGAL_ENTITY_NAME,
+  registration_number: LEGAL_ENTITY_REG_NUMBER,
   address: 'Riga, Latvia',
   country: 'LV',
 };
