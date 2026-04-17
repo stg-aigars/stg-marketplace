@@ -19,6 +19,13 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 import { env } from '@/lib/env';
+import {
+  LEGAL_ENTITY_NAME,
+  LEGAL_ENTITY_ADDRESS,
+  LEGAL_ENTITY_VAT_NUMBER,
+  LEGAL_ENTITY_PHONE,
+  LEGAL_ENTITY_WEBSITE,
+} from '@/lib/constants';
 
 // Nordic design tokens for email (inline styles, no Tailwind in email)
 const theme = {
@@ -123,6 +130,21 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
                         <Text style={styles.footerText}>
                           Latvia · Lithuania · Estonia
                         </Text>
+
+                        {/* Legal identification — Latvia Commercial Law §8 + GDPR Art. 13 */}
+                        <Text style={styles.legalContactLine}>
+                          {LEGAL_ENTITY_PHONE}
+                          {' · '}
+                          <Link href={`mailto:info@secondturn.games`} style={styles.footerLink}>info@secondturn.games</Link>
+                          {' · '}
+                          <Link href={`https://${LEGAL_ENTITY_WEBSITE}`} style={styles.footerLink}>{LEGAL_ENTITY_WEBSITE}</Link>
+                        </Text>
+                        <Text style={styles.footerText}>
+                          {LEGAL_ENTITY_NAME} · VAT Registration No. {LEGAL_ENTITY_VAT_NUMBER}
+                        </Text>
+                        <Text style={styles.footerText}>
+                          {LEGAL_ENTITY_ADDRESS}
+                        </Text>
                       </td>
                     </tr>
                   </tbody>
@@ -195,6 +217,12 @@ const styles = {
     fontSize: '12px',
     lineHeight: '18px',
     margin: '0',
+  },
+  legalContactLine: {
+    color: theme.textMuted,
+    fontSize: '12px',
+    lineHeight: '18px',
+    margin: '12px 0 0',
   },
 } as const;
 
