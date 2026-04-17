@@ -60,7 +60,7 @@ export function OrderDisputedSeller({
       <Text style={s.stepList}>
         1. Review the order details{'\n'}
         2. Contact the buyer if needed{'\n'}
-        3. We will help resolve the issue
+        3. If you can&apos;t agree, escalate from the order page
       </Text>
 
       <div style={s.ctaSection}>

@@ -17,7 +17,7 @@ export function AccountDeleted({ userName }: AccountDeletedProps) {
       <Text style={s.greeting}>Hi {userName},</Text>
 
       <Text style={s.body}>
-        Your Second Turn Games account has been deleted as requested. We are sorry to see you go.
+        Your Second Turn Games account has been deleted as requested.
       </Text>
 
       <Text style={s.body}>

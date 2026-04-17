@@ -39,8 +39,7 @@ export function OrderConfirmationBuyer({
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        Your order has been placed. The seller has been notified and will review
-        your order shortly.
+        Your order is placed. The seller has been notified and will review it shortly.
       </Text>
 
       <div style={s.orderCard}>

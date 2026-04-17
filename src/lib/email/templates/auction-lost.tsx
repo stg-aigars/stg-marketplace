@@ -15,8 +15,7 @@ export function AuctionLost({
     <EmailLayout preview={`The auction for ${gameName} has ended`}>
       <Text style={templateStyles.greeting}>Hi {bidderName},</Text>
       <Text style={templateStyles.body}>
-        The auction for <strong>{gameName}</strong> has ended. Unfortunately, your bid was not the
-        winning bid.
+        The auction for <strong>{gameName}</strong> has ended. Someone else placed a higher bid.
       </Text>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} border={0}>
         <tbody><tr><td style={templateStyles.ctaSection}>

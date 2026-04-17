@@ -30,7 +30,7 @@ export function OrderDeliveredBuyer({
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        You have picked up your game. Please take a moment to check that everything is in order.
+        You have picked up your game. Two minutes of your time finishes the order.
       </Text>
 
       <div style={s.orderCard}>
@@ -40,15 +40,6 @@ export function OrderDeliveredBuyer({
         <Text style={s.detailLabel}>Game</Text>
         <Text style={s.detailValue}>{gameName}</Text>
       </div>
-
-      <Text style={s.body}>
-        <strong>What to do now</strong>
-      </Text>
-      <Text style={s.stepList}>
-        1. Check the game condition matches the listing description{'\n'}
-        2. Confirm everything is good to complete the order{'\n'}
-        3. If something is wrong, report an issue from the order page
-      </Text>
 
       <div style={s.ctaSection}>
         <Button style={s.ctaOrange} href={orderUrl}>

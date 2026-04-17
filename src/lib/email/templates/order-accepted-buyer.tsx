@@ -31,7 +31,7 @@ export function OrderAcceptedBuyer({
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        Good news — {sellerName} has accepted your order and is preparing to ship your game.
+        {sellerName} accepted your order and is preparing the parcel.
       </Text>
 
       <div style={s.orderCard}>

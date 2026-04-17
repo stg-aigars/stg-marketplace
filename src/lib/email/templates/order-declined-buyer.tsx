@@ -30,7 +30,7 @@ export function OrderDeclinedBuyer({
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        Unfortunately, the seller was unable to fulfill your order. We are sorry for the inconvenience.
+        The seller couldn&apos;t fulfil your order. We&apos;ve refunded your payment in full.
       </Text>
 
       <div style={s.orderCard}>
@@ -46,7 +46,7 @@ export function OrderDeclinedBuyer({
           ? 'Your refund has been initiated. Bank transfers typically take 1–3 business days.'
           : paymentMethod === 'card'
             ? 'Your refund has been processed and should appear on your card shortly.'
-            : 'Your payment will be refunded automatically.'}
+            : 'Your refund is being processed.'}
       </Text>
 
       <div style={s.ctaSection}>
@@ -54,10 +54,6 @@ export function OrderDeclinedBuyer({
           Browse other games
         </Button>
       </div>
-
-      <Text style={s.note}>
-        New games are listed every day — your next find might already be waiting.
-      </Text>
     </EmailLayout>
   );
 }
