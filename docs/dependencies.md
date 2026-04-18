@@ -54,7 +54,7 @@
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
 | **Sentry** | Error tracking (live — used by `global-error.tsx`, EveryPay client, dispute service; PII scrubbing in `src/lib/sentry/strip-pii.ts`) | — | DSN, auth token, dashboard login |
-| **Cloudflare Turnstile** | Bot protection (planned, Week 4) | Free | Site key, secret key |
+| **Cloudflare Turnstile** | Bot protection, invisible mode (live — wraps signup, password reset, newsletter, comments, checkout, bids, listing create/edit/remove via `TurnstileWidget` in `src/components/ui`) | Free | Site key, secret key |
 
 ## Analytics
 

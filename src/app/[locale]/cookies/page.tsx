@@ -114,6 +114,33 @@ export default function CookiesPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+            Third-party tools on form submissions
+          </h2>
+          <p>
+            On forms that are a common target for bots (sign-up, password reset, newsletter,
+            comments, checkout, bidding, listing edits), we use{' '}
+            <strong>Cloudflare Turnstile</strong> in invisible mode. Turnstile loads a script
+            from <span className="font-mono">challenges.cloudflare.com</span> and may set
+            transient cookies on the <span className="font-mono">cloudflare.com</span> domain
+            while verifying that the submission is not automated. These cookies are set by
+            Cloudflare, not by us, and they are scoped to Cloudflare&apos;s own domain — they
+            are not readable by Second Turn Games and do not persist a user identifier across
+            sessions. Turnstile is strictly necessary to keep bot submissions out of the
+            marketplace. See{' '}
+            <a
+              href="https://www.cloudflare.com/privacypolicy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-brand"
+            >
+              Cloudflare&apos;s privacy policy
+            </a>{' '}
+            for details.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
             What we do <em>not</em> set
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -136,18 +163,6 @@ export default function CookiesPage() {
               rather than a cookie.
             </li>
           </ul>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Planned additions
-          </h2>
-          <p>
-            We plan to deploy Cloudflare Turnstile for bot protection on sign-up and contact
-            forms. Turnstile may set a short-lived challenge cookie when it is active. This page
-            will be updated with the exact cookie name, purpose, and duration before the change
-            goes live.
-          </p>
         </section>
 
         <section className="space-y-3">
