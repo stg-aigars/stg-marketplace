@@ -13,6 +13,9 @@ export const LEGAL_ENTITY_VAT_NUMBER = 'LV50203665371';
 /** Contact phone number — displayed in email footers and on legal pages */
 export const LEGAL_ENTITY_PHONE = '+371 26779625';
 
+/** General contact email — imprint, email footers, legal pages */
+export const LEGAL_ENTITY_EMAIL = 'info@secondturn.games';
+
 /** Public-facing website — displayed in email footers */
 export const LEGAL_ENTITY_WEBSITE = 'secondturn.games';
 
