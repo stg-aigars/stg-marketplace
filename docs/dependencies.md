@@ -56,6 +56,12 @@
 | **Sentry** | Error tracking (Week 2) | — | DSN, auth token, dashboard login |
 | **Cloudflare Turnstile** | Bot protection (Week 4) | Free | Site key, secret key |
 
+## Analytics
+
+| Service | Purpose | Tier | Credentials to store |
+|---------|---------|------|---------------------|
+| **PostHog** (Cloud EU) | Product analytics: funnels, pageviews, custom events. Frankfurt region. | Free up to 1M events/month | Project API key (`phc_*`), project ID, dashboard login, region = EU |
+
 ## Dev Tools
 
 | Service | Purpose | Credentials to store |
@@ -95,6 +101,10 @@ All env vars live in Coolify (all marked "Available at Buildtime") and are defin
 
 **BGG**
 - `BGG_API_TOKEN`
+
+**PostHog** (Analytics, optional — feature no-ops if unset)
+- `NEXT_PUBLIC_POSTHOG_KEY`
+- `POSTHOG_HOST` (server-only, defaults to `https://eu.i.posthog.com`)
 
 ---
 
