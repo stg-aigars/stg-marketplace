@@ -27,7 +27,7 @@ const CSP_TEMPLATE = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' ${SUPABASE_URL} https://cf.geekdo-images.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://*.every-pay.com https://*.every-pay.eu data: blob:`,
   "font-src 'self'",
-  `connect-src 'self' ${SUPABASE_URL} https://*.everypay.co https://*.unisend.com https://*.sentry.io https://challenges.cloudflare.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com`,
+  `connect-src 'self' ${SUPABASE_URL} https://*.everypay.co https://*.unisend.com https://*.sentry.io https://challenges.cloudflare.com https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://eu.i.posthog.com https://eu-assets.i.posthog.com`,
   "frame-src 'self' https://*.everypay.co https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",

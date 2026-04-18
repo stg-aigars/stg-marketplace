@@ -8,6 +8,20 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
   output: 'standalone',
+  // Required so /ingest/decide (no trailing slash) resolves cleanly through the
+  // PostHog reverse-proxy rewrite below instead of redirecting.
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    // PostHog reverse proxy (EU / Frankfurt). Client SDK is configured with
+    // api_host: '/ingest', so all analytics traffic originates same-origin and
+    // is not blocked by ad blockers. Order matters: specific routes before the
+    // catch-all.
+    return [
+      { source: '/ingest/static/:path*', destination: 'https://eu-assets.i.posthog.com/static/:path*' },
+      { source: '/ingest/decide', destination: 'https://eu.i.posthog.com/decide' },
+      { source: '/ingest/:path*', destination: 'https://eu.i.posthog.com/:path*' },
+    ];
+  },
   async headers() {
     return [
       {

@@ -105,6 +105,10 @@ export default async function middleware(request: NextRequest) {
   return intlResponse;
 }
 
+// /ingest/ is excluded because it reverse-proxies PostHog via next.config rewrites.
+// Removing it from this negative lookahead will silently break analytics — intl
+// middleware would rewrite the request and the CSP nonce would collide with
+// PostHog's response.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|ingest/|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };
