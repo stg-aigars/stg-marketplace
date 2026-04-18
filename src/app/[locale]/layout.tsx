@@ -18,11 +18,15 @@ import type { SearchAction } from 'schema-dts';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import NextTopLoader from 'nextjs-toploader';
 import { colors } from '@/styles/tokens';
+import { Suspense } from 'react';
+import { PostHogProvider } from '@/components/analytics/PostHogProvider';
+import { PostHogPageView } from '@/components/analytics/PostHogPageView';
 import '../globals.css';
 
-// Cookie consent: not required. Only browser cookies are Supabase auth session
-// cookies (strictly necessary, exempt under GDPR/ePrivacy). Sentry is server-side
-// only. Revisit if client-side analytics or tracking is added.
+// Cookie consent: not required. Browser cookies are Supabase auth session
+// cookies (strictly necessary, exempt under GDPR/ePrivacy). PostHog runs in
+// cookieless_mode: 'always', so no analytics cookies are set. Sentry is
+// server-side only. Revisit if any cookie-based tracking is introduced.
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin', 'latin-ext'],
@@ -129,22 +133,27 @@ export default async function LocaleLayout(
           },
         ]} />
         <NextIntlClientProvider messages={messages}>
-          <AuthProvider>
-            <CartProvider>
-              <PendingActionsProvider>
-                <SiteHeader />
-                <PendingActionsBanner />
-                <LaunchBanner />
-                <main className="min-h-[calc(100vh-theme(spacing.16))]">
-                  {children}
-                </main>
-                <SiteFooter />
-                <Toaster />
-                <StaleActionGuard />
-                <ServiceWorkerRegistration />
-              </PendingActionsProvider>
-            </CartProvider>
-          </AuthProvider>
+          <PostHogProvider>
+            <Suspense fallback={null}>
+              <PostHogPageView />
+            </Suspense>
+            <AuthProvider>
+              <CartProvider>
+                <PendingActionsProvider>
+                  <SiteHeader />
+                  <PendingActionsBanner />
+                  <LaunchBanner />
+                  <main className="min-h-[calc(100vh-theme(spacing.16))]">
+                    {children}
+                  </main>
+                  <SiteFooter />
+                  <Toaster />
+                  <StaleActionGuard />
+                  <ServiceWorkerRegistration />
+                </PendingActionsProvider>
+              </CartProvider>
+            </AuthProvider>
+          </PostHogProvider>
         </NextIntlClientProvider>
       </body>
     </html>
