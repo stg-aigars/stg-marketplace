@@ -35,6 +35,9 @@ const serverEnvSchema = {
   SENTRY_ORG: process.env.SENTRY_ORG,
   SENTRY_PROJECT: process.env.SENTRY_PROJECT,
 
+  NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  POSTHOG_HOST: process.env.POSTHOG_HOST,
+
   CLOUDFLARE_ZONE_ID: process.env.CLOUDFLARE_ZONE_ID,
   CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
 
@@ -91,6 +94,8 @@ export function validateEnv(): ValidationResult {
     'CLOUDFLARE_API_TOKEN',
     'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY',
     'NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED',
+    'NEXT_PUBLIC_POSTHOG_KEY',
+    'POSTHOG_HOST',
   ];
 
   const isProduction = process.env.NODE_ENV === 'production';
@@ -168,6 +173,10 @@ export const env = {
     authToken: process.env.SENTRY_AUTH_TOKEN,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
+  },
+  posthog: {
+    key: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    host: process.env.POSTHOG_HOST ?? 'https://eu.i.posthog.com',
   },
   cloudflare: {
     zoneId: process.env.CLOUDFLARE_ZONE_ID,
