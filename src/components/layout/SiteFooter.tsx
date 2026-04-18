@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LEGAL_ENTITY_NAME } from '@/lib/constants';
+import { LEGAL_ENTITY_EMAIL, LEGAL_ENTITY_NAME } from '@/lib/constants';
 
 const LINK_CLASS =
   'sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom';
@@ -15,6 +15,7 @@ const SUPPORT_LINKS = [
   { href: '/terms', label: 'Terms of Service' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/seller-terms', label: 'Seller Terms' },
+  { href: '/accessibility', label: 'Accessibility' },
 ] as const;
 
 const BALTIC_COUNTRIES = [
@@ -127,11 +128,23 @@ function SiteFooter() {
         </div>
       </div>
 
-      {/* Bottom row — dark */}
+      {/* Bottom row — dark, legal imprint per Directive 2000/31/EC Art. 5 + Latvia Commercial Law §8 */}
       <div className="bg-[#363e4b]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-white/50">
-          <p>&copy; 2025&ndash;{new Date().getFullYear()} {LEGAL_ENTITY_NAME}</p>
-          <p>Riga, Latvia</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-2 text-xs text-white/50">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+            <p>
+              &copy; 2025&ndash;{new Date().getFullYear()} {LEGAL_ENTITY_NAME}
+            </p>
+            <p>
+              Contact:{' '}
+            <a
+              href={`mailto:${LEGAL_ENTITY_EMAIL}`}
+              className="hover:text-white transition-colors duration-250 ease-out-custom"
+            >
+              {LEGAL_ENTITY_EMAIL}
+            </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
