@@ -14,7 +14,6 @@ import { trackServer } from '@/lib/analytics/track-server';
 //   an existing user does not false-fire.
 async function maybeFireSignupCompleted(
   request: Request,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: Awaited<ReturnType<typeof createClient>>,
   flow: 'oauth' | 'email_otp',
 ): Promise<void> {
