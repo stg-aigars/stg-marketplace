@@ -34,6 +34,8 @@
     "next": "^16.2.1",
     "next-intl": "^4.9.1",
     "nextjs-toploader": "^3.9.17",
+    "posthog-js": "^1.369.3",
+    "posthog-node": "^5.29.2",
     "react": "^19",
     "react-dom": "^19",
     "resend": "^6.9.3",

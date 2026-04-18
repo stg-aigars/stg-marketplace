@@ -105,6 +105,10 @@ export default async function middleware(request: NextRequest) {
   return intlResponse;
 }
 
+// /ingest/ is excluded because it's the PostHog reverse-proxy Route Handler
+// (src/app/ingest/[...path]/route.ts). Removing it from this negative lookahead
+// would run intl middleware and CSP nonce injection on analytics traffic,
+// breaking the proxy and throwing locale redirects into the capture pipeline.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|ingest/|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };

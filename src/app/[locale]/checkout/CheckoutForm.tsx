@@ -10,6 +10,7 @@ import { Trash } from '@phosphor-icons/react/ssr';
 import { ListingIdentity, Price } from '@/components/listings/atoms';
 import { PaymentMethodLogos } from '@/components/checkout/PaymentMethodLogos';
 import { useCart } from '@/contexts/CartContext';
+import { trackClient } from '@/lib/analytics';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -119,6 +120,24 @@ export function CheckoutForm({
       })
       .catch(() => {});
   }, [sellerItems]);
+
+  // Fire checkout_started once on mount with the buyer's full payable
+  // (items + shipping) so the analytics semantics match order_completed.
+  const analyticsRef = useRef(false);
+  useEffect(() => {
+    if (analyticsRef.current || sellerItems.length === 0) return;
+    const sc = sellerItems[0]?.sellerCountry;
+    const itemsTotal = sellerItems.reduce((sum, i) => sum + i.priceCents, 0);
+    const shipping = sc
+      ? (getShippingPriceCents(sc as TerminalCountry, buyerCountry as TerminalCountry) ?? 0)
+      : 0;
+    analyticsRef.current = true;
+    trackClient('checkout_started', {
+      seller_id: sellerFilter,
+      total_cents: itemsTotal + shipping,
+      item_count: sellerItems.length,
+    });
+  }, [sellerItems, buyerCountry, sellerFilter]);
 
   const availableItems = sellerItems.filter(
     (i) => !unavailableIds.has(i.listingId) && !expiredAuctionIds.has(i.listingId)

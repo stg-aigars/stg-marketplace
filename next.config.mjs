@@ -8,6 +8,10 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
   output: 'standalone',
+  // PostHog reverse proxy is implemented as a Route Handler at
+  // src/app/ingest/[...path]/route.ts. External `rewrites()` to PostHog drop
+  // gzipped POST bodies silently under Turbopack (200 OK, event dropped).
+  skipTrailingSlashRedirect: true,
   async headers() {
     return [
       {
