@@ -6,6 +6,6 @@ import { getPostHogClient } from '@/lib/analytics/posthog-client';
 
 export function PostHogProvider({ children }: { children: ReactNode }) {
   const client = getPostHogClient();
-  if (!client) return <>{children}</>;
+  if (!client) return children;
   return <PHProvider client={client}>{children}</PHProvider>;
 }

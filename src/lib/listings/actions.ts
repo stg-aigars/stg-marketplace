@@ -195,7 +195,7 @@ export async function createListing(
   void trackServer('listing_created', user.id, {
     listing_id: listing.id,
     bgg_game_id: data.bgg_game_id,
-    price_cents: (insertPayload.price_cents as number),
+    price_cents: isAuction ? data.starting_price_cents! : data.price_cents,
     listing_type: data.listing_type ?? 'fixed_price',
   });
 
