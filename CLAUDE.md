@@ -259,6 +259,20 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 - Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
 - Polling on pathname change for unread count
 
+## Analytics
+- PostHog Cloud **EU** (Frankfurt), cookieless-always mode, reverse-proxied via `/ingest` to defeat ad blockers. Client config in `src/lib/analytics/posthog-client.ts`; server client in `src/lib/analytics/posthog-server.ts`
+- Event types live in `src/lib/analytics/types.ts`. Extend `AnalyticsEventMap` to add a new event — never pass raw strings to the track wrappers
+- Import: `import { trackClient } from '@/lib/analytics'` (client-safe barrel). Server callers import `trackServer` directly from `@/lib/analytics/track-server` — that file is marked `'server-only'` and pulls in `next/headers`, so it would poison any client bundle it touched
+- Contract: fire-and-forget only. `trackServer` is called via `void trackServer(...)` and never blocks the main operation (same pattern as `logAuditEvent`). The wrapper awaits `client.shutdown()` internally so events flush before the request returns
+- `identify()` is not available in cookieless mode. For authenticated flows pass Supabase `user.id` as `distinctId` on server-side captures
+- Cookieless mode rotates its internal salt daily — weekly/monthly unique counts are inflated until ~60 days of baseline accrues. Do not compare uniques across weeks in the first two months
+- `$pageview` captures locale-prefixed URLs (`/en/browse`). When Latvian lands, either strip the locale prefix before capture in `PostHogPageView` or group by a separate `$locale` property in dashboards
+- `listing_viewed` and `search_performed` fire client-side; `checkout_started`, `order_completed`, `listing_created`, `signup_completed` fire server-side. Server events rely on dynamic rendering — if a future PPR/ISR migration touches checkout, listing creation, or the auth callback, event firing needs re-verification
+- `signup_completed` uses a hybrid detection split by provider: email relies on `?signup=true` threaded through `emailRedirectTo` in `signUpWithEmail`; OAuth (Google, Facebook) relies on a 30s `created_at` freshness check in the auth callback. If you add a new auth provider, decide which pattern applies and wire it explicitly
+- **If account-linking UX is added** (signed-in user links a second provider from account settings), revisit the auth-callback detection. Link events also land on `/auth/callback` and can update `app_metadata.provider` on an existing user — the freshness check correctly won't false-fire (ancient `created_at`), but link flows become a separate analytics question worth its own event (`identity_linked`) rather than being conflated with signup
+- CSP: PostHog origins (`eu.i.posthog.com`, `eu-assets.i.posthog.com`) are in `connect-src` in `src/lib/csp.ts` defensively. The middleware `config.matcher` excludes `/ingest/` — there's a protective comment there explaining why; do not remove it
+- Session replay, feature flags, A/B testing, surveys: deferred until post-launch baseline accrues
+
 ## Server Action Error Handling
 - Server actions return `{ success: true }` or `{ error: string }` — never throw to the client
 - API routes return `NextResponse.json({ error: string }, { status: 4xx/5xx })`
