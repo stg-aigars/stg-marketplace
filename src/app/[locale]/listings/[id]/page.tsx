@@ -33,6 +33,7 @@ import { CommentList } from '@/components/comments/CommentList';
 import { CommentForm } from '@/components/comments/CommentForm';
 import { PurchaseSection } from './PurchaseSection';
 import { RelatedListings } from './RelatedListings';
+import { ListingViewAnalytics } from '@/components/analytics/ListingViewAnalytics';
 
 interface ListingDetailRow {
   id: string;
@@ -281,6 +282,13 @@ export default async function ListingDetailPage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <ListingViewAnalytics
+        listingId={listing.id}
+        bggGameId={listing.bgg_game_id}
+        priceCents={isAuction ? (listing.starting_price_cents ?? listing.price_cents) : listing.price_cents}
+        condition={listing.condition}
+        listingType={listing.listing_type}
+      />
       <JsonLd data={[listingJsonLd, breadcrumbJsonLd].filter((d): d is NonNullable<typeof d> => d != null)} />
       {/* Breadcrumb */}
       <Breadcrumb items={[

@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
 import { calculateOrderPricing, getVatRate, calculateVatSplit } from '@/lib/services/pricing';
 import { ORDER_NUMBER_PREFIX } from '@/lib/orders/constants';
+import { trackServer } from '@/lib/analytics/track-server';
 import type { CreateOrderParams, OrderRow, OrderWithDetails } from '@/lib/orders/types';
 
 /**
@@ -146,6 +147,12 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
       }
       throw new Error('One or more listings are no longer available');
     }
+
+    void trackServer('order_completed', order.buyer_id, {
+      order_id: order.id,
+      seller_id: order.seller_id,
+      total_cents: order.total_amount_cents,
+    });
 
     return order;
   }

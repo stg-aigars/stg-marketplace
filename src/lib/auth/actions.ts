@@ -43,10 +43,17 @@ export async function signUpWithEmail(
 
   const supabase = await createClient();
 
+  // ?signup=true survives the email confirmation round-trip and is read by the
+  // auth callback to fire analytics.signup_completed. OAuth paths use a
+  // created_at freshness check instead and do not need this param.
+  const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const emailRedirectTo = `${appUrl}/auth/callback?signup=true`;
+
   const { error } = await supabase.auth.signUp({
     email: formData.email,
     password: formData.password,
     options: {
+      emailRedirectTo,
       data: {
         full_name: formData.displayName,
         country: formData.country,

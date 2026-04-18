@@ -10,7 +10,7 @@ export interface AnalyticsEventMap {
     listing_type: 'fixed_price' | 'auction';
   };
   checkout_started: {
-    checkout_group_id: string;
+    seller_id: string;
     total_cents: number;
     item_count: number;
   };

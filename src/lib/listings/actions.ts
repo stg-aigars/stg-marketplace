@@ -9,6 +9,7 @@ import { sendOfferListingCreatedToBuyer, sendOfferSupersededToBuyer, sendWantedL
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
 import { notify } from '@/lib/notifications';
+import { trackServer } from '@/lib/analytics/track-server';
 import { ACTIVE_OFFER_STATUSES } from '@/lib/shelves/types';
 import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
 import { extractStoragePath } from './storage-utils';
@@ -190,6 +191,13 @@ export async function createListing(
   if (insertError) {
     return { error: 'Something went wrong. Please try again' };
   }
+
+  void trackServer('listing_created', user.id, {
+    listing_id: listing.id,
+    bgg_game_id: data.bgg_game_id,
+    price_cents: (insertPayload.price_cents as number),
+    listing_type: data.listing_type ?? 'fixed_price',
+  });
 
   // Insert expansion rows (non-blocking — listing exists even if this fails)
   if (data.expansions && data.expansions.length > 0) {

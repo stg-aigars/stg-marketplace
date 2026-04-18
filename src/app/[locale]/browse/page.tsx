@@ -5,6 +5,7 @@ import { EmptyState, Pagination, NavTabs } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
 import { BrowseContextWriter } from './BrowseContextWriter';
+import { BrowseSearchAnalytics } from '@/components/analytics/BrowseSearchAnalytics';
 import { WelcomeBanner } from '@/components/WelcomeBanner';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 import {
@@ -204,6 +205,8 @@ export default async function BrowsePage(
       />
 
       <BrowseFilters key={filtersToSearchParams(filters)} currentFilters={filters} availableLanguages={availableLanguages} />
+
+      {filters.search && <BrowseSearchAnalytics query={filters.search} resultCount={totalCount} />}
 
       {filteredListings.length === 0 ? (
         filtersActive ? (
