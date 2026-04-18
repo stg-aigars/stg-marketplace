@@ -1,11 +1,5 @@
 import Link from 'next/link';
-import {
-  LEGAL_ENTITY_ADDRESS,
-  LEGAL_ENTITY_EMAIL,
-  LEGAL_ENTITY_NAME,
-  LEGAL_ENTITY_REG_NUMBER,
-  LEGAL_ENTITY_VAT_NUMBER,
-} from '@/lib/constants';
+import { LEGAL_ENTITY_EMAIL, LEGAL_ENTITY_NAME } from '@/lib/constants';
 
 const LINK_CLASS =
   'sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom';
@@ -142,21 +136,15 @@ function SiteFooter() {
               &copy; 2025&ndash;{new Date().getFullYear()} {LEGAL_ENTITY_NAME}
             </p>
             <p>
-              Reg. {LEGAL_ENTITY_REG_NUMBER} &middot; VAT {LEGAL_ENTITY_VAT_NUMBER} &middot;{' '}
-              {LEGAL_ENTITY_ADDRESS}
-            </p>
-          </div>
-          <p>
-            Contact:{' '}
+              Contact:{' '}
             <a
               href={`mailto:${LEGAL_ENTITY_EMAIL}`}
               className="hover:text-white transition-colors duration-250 ease-out-custom"
             >
               {LEGAL_ENTITY_EMAIL}
             </a>
-            <span className="mx-2">&middot;</span>
-            Consumer rights (LV): PTAC, Brīvības 55, Riga
-          </p>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
