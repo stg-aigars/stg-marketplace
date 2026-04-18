@@ -12,12 +12,19 @@ const STATIC_HOST = 'https://eu-assets.i.posthog.com';
 
 // Headers that should not be forwarded to PostHog or streamed back to the
 // browser. `host` would break the TLS handshake; hop-by-hop and encoding
-// headers are managed by fetch.
+// headers are managed by fetch. The client-IP headers are stripped so
+// PostHog never sees real user IPs through this proxy — the "cookieless"
+// privacy posture in the Privacy Policy is load-bearing on this.
 const STRIP_REQUEST_HEADERS = new Set([
   'host',
   'connection',
   'content-length',
   'cookie',
+  'x-forwarded-for',
+  'x-real-ip',
+  'forwarded',
+  'cf-connecting-ip',
+  'true-client-ip',
 ]);
 
 const STRIP_RESPONSE_HEADERS = new Set([
