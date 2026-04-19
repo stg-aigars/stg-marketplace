@@ -2,7 +2,6 @@ export interface PendingActions {
   sellerOrdersPending: number;
   sellerOrdersToShip: number;
   sellerDisputes: number;
-  sellerOffersPending: number;
   buyerDisputes: number;
   buyerDeliveryConfirm: number;
   buyerAuctionsWon: number;
@@ -14,7 +13,6 @@ export function getTotalPendingCount(actions: PendingActions): number {
     actions.sellerOrdersPending +
     actions.sellerOrdersToShip +
     actions.sellerDisputes +
-    actions.sellerOffersPending +
     actions.buyerDisputes +
     actions.buyerDeliveryConfirm +
     actions.buyerAuctionsWon
@@ -54,14 +52,6 @@ export function buildActionChips(actions: PendingActions): { seller: ActionChip[
       href: '/account/orders?tab=sales',
     });
   }
-  if (actions.sellerOffersPending > 0) {
-    seller.push({
-      count: actions.sellerOffersPending,
-      label: actions.sellerOffersPending === 1 ? 'offer pending' : 'offers pending',
-      href: '/account/offers',
-    });
-  }
-
   if (actions.buyerDisputes > 0) {
     buyer.push({
       count: actions.buyerDisputes,

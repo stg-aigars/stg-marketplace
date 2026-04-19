@@ -8,7 +8,6 @@ import {
 // Mocks for sellerAcceptRefund behavioural test below.
 // vi.mock calls are hoisted by vitest and don't affect the pure validation
 // tests above (they import from './dispute-validation', not './dispute').
-const mockSyncShelfOnListingRemoved = vi.fn(() => Promise.resolve());
 
 vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(),
@@ -16,7 +15,7 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('./order-transitions', () => ({
   loadOrder: vi.fn(),
   creditSellerWallet: vi.fn(),
-  markSoldAndSyncShelf: vi.fn(),
+  markOrderListingsSold: vi.fn(),
 }));
 vi.mock('./order-refund', () => ({
   refundOrder: vi.fn(),
@@ -36,9 +35,6 @@ vi.mock('@/lib/email', () => ({
 vi.mock('@/lib/notifications', () => ({
   notify: vi.fn(),
   notifyMany: vi.fn(),
-}));
-vi.mock('@/lib/listings/actions', () => ({
-  syncShelfOnListingRemoved: mockSyncShelfOnListingRemoved,
 }));
 
 describe('canOpenDispute', () => {
@@ -309,11 +305,6 @@ describe('sellerAcceptRefund', () => {
 
     // Listings table must be updated (proves the restore block ran)
     expect(listingsTableAccessed).toBe(true);
-
-    // Shelf sync must fire once per listing with the right args
-    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledTimes(2);
-    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledWith('seller-1', 'L1');
-    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledWith('seller-1', 'L2');
   });
 });
 
@@ -388,8 +379,5 @@ describe('staffResolveDispute', () => {
     await staffResolveDispute('order-1', 'staff-1', 'refund', 'Test notes');
 
     expect(listingsTableAccessed).toBe(true);
-    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledTimes(2);
-    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledWith('seller-1', 'L1');
-    expect(mockSyncShelfOnListingRemoved).toHaveBeenCalledWith('seller-1', 'L2');
   });
 });

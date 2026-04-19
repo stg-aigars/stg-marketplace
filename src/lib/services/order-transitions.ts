@@ -21,7 +21,6 @@ import {
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { updateDac7StatsOnCompletion } from '@/lib/dac7/service';
-import { syncShelfOnListingSold } from '@/lib/listings/actions';
 import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
 
 /**
@@ -154,7 +153,7 @@ export async function acceptOrder(
   }, order);
 
   // Mark listings as sold early — also called at completeOrder, idempotent
-  markSoldAndSyncShelf(order);
+  markOrderListingsSold(order);
 
   // 2. Attempt shipping — failure won't roll back the accept
   const items = order.order_items && order.order_items.length > 0
@@ -345,7 +344,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
     order.platform_commission_cents ?? 0
   ).catch((err) => console.error('[DAC7] Failed to update stats:', err));
 
-  markSoldAndSyncShelf(order);
+  markOrderListingsSold(order);
 
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
   sendOrderCompletedToSeller({
@@ -417,7 +416,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     order.platform_commission_cents ?? 0
   ).catch((err) => console.error('[DAC7] Failed to update stats:', err));
 
-  markSoldAndSyncShelf(order);
+  markOrderListingsSold(order);
 
   // Email seller about completion (non-blocking)
   const gameSummary = getOrderGameSummary(order.order_items, order.listings);
@@ -460,13 +459,9 @@ async function markListingsAsSold(
  * Shared by acceptOrder, completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
  * Called early at acceptance and again at completion — idempotent (.in('status', ['reserved', 'active']) guard).
  */
-export function markSoldAndSyncShelf(order: Pick<OrderWithRelations, 'order_items' | 'listing_id' | 'seller_id'>): void {
+export function markOrderListingsSold(order: Pick<OrderWithRelations, 'order_items' | 'listing_id' | 'seller_id'>): void {
   void markListingsAsSold(order.order_items, order.listing_id)
     .catch((err) => console.error('[Listings] Failed to mark as sold:', err));
-  for (const listingId of getOrderListingIds(order.order_items, order.listing_id)) {
-    void syncShelfOnListingSold(order.seller_id, listingId)
-      .catch((err) => console.error('[Shelf] Failed to sync on sold:', err));
-  }
 }
 
 /**

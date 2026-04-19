@@ -16,10 +16,6 @@ function orderLink(ctx: NotificationContext) {
   return ctx.orderId ? `/orders/${ctx.orderId}` : null;
 }
 
-function offerLink() {
-  return '/account/offers';
-}
-
 export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTemplate> = {
   // --- Order lifecycle ---
   'order.created': {
@@ -97,48 +93,6 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: () => 'New comment',
     body: (ctx) => `${ctx.commenterName ?? 'Someone'} commented on ${ctx.gameName ?? 'your listing'}`,
     link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}#comments` : null,
-  },
-
-  // --- Offers ---
-  'offer.received': {
-    title: () => 'New offer',
-    body: (ctx) => `${ctx.buyerName ?? 'A buyer'} made an offer on ${ctx.gameName ?? 'your game'}`,
-    link: offerLink,
-  },
-  'offer.countered': {
-    title: () => 'Offer countered',
-    body: (ctx) => `${ctx.sellerName ?? 'The seller'} countered your offer for ${ctx.gameName ?? 'a game'}`,
-    link: offerLink,
-  },
-  'offer.accepted': {
-    title: () => 'Offer accepted',
-    body: (ctx) => `Your offer for ${ctx.gameName ?? 'a game'} has been accepted`,
-    link: offerLink,
-  },
-  'offer.declined': {
-    title: () => 'Offer declined',
-    body: (ctx) => `Your offer for ${ctx.gameName ?? 'a game'} was declined`,
-    link: offerLink,
-  },
-  'offer.expired': {
-    title: () => 'Offer expired',
-    body: (ctx) => `Your offer for ${ctx.gameName ?? 'a game'} has expired`,
-    link: offerLink,
-  },
-  'offer.deadline_expired': {
-    title: () => 'Listing deadline expired',
-    body: (ctx) => `The seller did not list ${ctx.gameName ?? 'the game'} within the deadline`,
-    link: offerLink,
-  },
-  'offer.superseded': {
-    title: () => 'Offer superseded',
-    body: (ctx) => `${ctx.gameName ?? 'The game'} has been listed independently — your offer is no longer active`,
-    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : offerLink(),
-  },
-  'offer.listing_created': {
-    title: () => 'Game listed from your offer',
-    body: (ctx) => `${ctx.gameName ?? 'The game'} is now listed and ready to buy at your agreed price`,
-    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : offerLink(),
   },
 
   // --- Disputes ---

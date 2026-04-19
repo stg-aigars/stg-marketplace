@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
-  Package, Wallet, Tag, BookBookmark, Gavel,
-  MagnifyingGlass, Handshake, Heart, GearSix, CaretRight, Receipt,
+  Package, Wallet, Tag, Gavel,
+  MagnifyingGlass, Heart, GearSix, CaretRight, Receipt,
 } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Alert } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
@@ -50,8 +50,6 @@ export default async function AccountPage() {
     { href: '/account/orders?tab=sales', icon: Package, label: 'Sales', desc: "Orders you're fulfilling", tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
     { href: '/account/listings', icon: Tag, label: 'Listings', desc: 'Active and past listings', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
     { href: '/account/wallet', icon: Wallet, label: 'Wallet', desc: walletBalanceCents > 0 ? `Balance: ${formatCentsToCurrency(walletBalanceCents)}` : 'Earnings and withdrawals', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
-    { href: '/account/offers', icon: Handshake, label: 'Offers', desc: 'Price offers and negotiations', tint: 'bg-semantic-accent-bg border-semantic-accent/20 text-semantic-accent' },
-    { href: '/account/shelf', icon: BookBookmark, label: 'Shelf', desc: 'Your game collection', tint: 'bg-semantic-success-bg border-semantic-success/20 text-semantic-success' },
     { href: '/account/tax', icon: Receipt, label: 'Tax reporting', desc: getDac7LinkDesc(profile?.dac7_status ?? 'not_applicable', dac7Stats), tint: getDac7LinkTint(profile?.dac7_status ?? 'not_applicable') },
   ];
 

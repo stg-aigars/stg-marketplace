@@ -16,15 +16,6 @@ export type NotificationType =
   | 'order.message_received'
   // Comments
   | 'comment.received'
-  // Offers
-  | 'offer.received'
-  | 'offer.countered'
-  | 'offer.accepted'
-  | 'offer.declined'
-  | 'offer.expired'
-  | 'offer.deadline_expired'
-  | 'offer.superseded'
-  | 'offer.listing_created'
   // Disputes
   | 'dispute.opened'
   | 'dispute.withdrawn'
@@ -74,7 +65,6 @@ export interface NotificationContext {
   gameName?: string;
   orderNumber?: string;
   orderId?: string;
-  offerId?: string;
   listingId?: string;
   commenterName?: string;
   senderName?: string;

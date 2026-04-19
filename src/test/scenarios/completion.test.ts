@@ -32,11 +32,6 @@ vi.mock('@/lib/notifications', () => ({
 vi.mock('@/lib/services/unisend/shipping', () => ({
   createOrderShipping: vi.fn(() => Promise.resolve({ success: true, parcelId: 1, barcode: 'BC123' })),
 }));
-vi.mock('@/lib/listings/actions', () => ({
-  syncShelfOnListingSold: vi.fn(() => Promise.resolve()),
-  syncShelfOnListingRemoved: vi.fn(() => Promise.resolve()),
-}));
-
 const mockCreditWallet = vi.fn(() => Promise.resolve());
 vi.mock('@/lib/services/wallet', () => ({
   creditWallet: mockCreditWallet,

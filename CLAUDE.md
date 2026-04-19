@@ -196,27 +196,6 @@ Always use these — do not write inline equivalents:
 - `language` field is critical — determines which edition the buyer receives (essential for Baltic market)
 - Types: `ManualVersion` (id: 0 sentinel, isManual: true), `VersionSelection` union, `isManualVersion()` guard
 
-## Seller Shelves
-Sellers showcase their board game collection publicly. Each shelf item can be:
-- **not_for_sale** — display only
-- **open_to_offers** — buyers propose prices via structured offers
-- **listed** — linked to an active listing
-
-### Offer Flow
-Buyer makes offer → seller accepts/counters/declines → if accepted, seller creates listing (game + price locked) → standard checkout. Single-round counters (no ping-pong). 7-day offer expiry, 3-day listing deadline after acceptance.
-
-### Key Files
-- `src/lib/shelves/` — types, constants (visibility, offer status badges, TTLs)
-- `src/lib/shelves/actions.ts` — shelf CRUD (add/remove/update items, BGG import)
-- `src/lib/offers/actions.ts` — offer lifecycle (make, counter, accept, decline, cancel)
-- `src/components/offers/` — OfferCard, MakeOfferModal
-
-### Shelf ↔ Listing Sync
-- Regular listing created → auto-links to shelf item, declines stale offers, emails buyers
-- Listing from offer → completes offer, links shelf item, emails buyer
-- Listing cancelled → shelf item reverts to open_to_offers
-- Order completed → shelf item set to not_for_sale
-
 ## Listing Comments
 Public Q&A on listing detail pages. Flat thread, oldest first, no editing, max 1000 chars.
 - `listing_comments` table: `user_id` FK `ON DELETE SET NULL` (anonymize, don't cascade)
@@ -244,7 +223,7 @@ All `/api/cron/*` routes follow the same pattern:
 - **Coolify command**: `curl -s -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://localhost:3000/api/cron/<name>`
 - **Auth check**: `request.headers.get('authorization') !== \`Bearer ${env.cron.secret}\`` → 401
 
-Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, reconciles orphaned cart checkout groups + retries failed wallet debits), `auction-ending-soon` (5min, sends ending-soon notifications to bidders + seller 30min before auction end), `end-auctions` (1min), `cleanup-sessions` (10min, expires orphan cart checkout groups + unreserves their listings), `sync-tracking` (15min), `auction-payment-deadline` (30min), `enforce-deadlines` (2h), `auto-complete` (6h), `expire-offers` (6h, handles shelf offers), `cleanup-photos` (6h, removes orphaned listing photos from storage), `dac7-reconcile` (daily, reconciles seller stats from completed orders + escalates DAC7 reminder/blocked statuses + year-start resets in January), `cleanup-notifications` (weekly), `cleanup-audit-log` (weekly, deletes audit log entries older than 30 days). See `src/app/api/cron/` for implementations.
+Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, reconciles orphaned cart checkout groups + retries failed wallet debits), `auction-ending-soon` (5min, sends ending-soon notifications to bidders + seller 30min before auction end), `end-auctions` (1min), `cleanup-sessions` (10min, expires orphan cart checkout groups + unreserves their listings), `sync-tracking` (15min), `auction-payment-deadline` (30min), `enforce-deadlines` (2h), `auto-complete` (6h), `cleanup-photos` (6h, removes orphaned listing photos from storage), `dac7-reconcile` (daily, reconciles seller stats from completed orders + escalates DAC7 reminder/blocked statuses + year-start resets in January), `cleanup-notifications` (weekly), `cleanup-audit-log` (weekly, deletes audit log entries older than 30 days). See `src/app/api/cron/` for implementations.
 
 ## Branching Workflow
 - Multi-file features: always use `feature/<name>` branch + PR to main
@@ -254,7 +233,7 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 ## In-App Notifications
 - Every email event also creates an in-app notification via `notify(userId, type, context)` from `@/lib/notifications`
 - Fire-and-forget pattern (same as `logAuditEvent`) — never blocks the main operation
-- 47 notification types with prefixes: `order.`, `comment.`, `offer.`, `dispute.`, `shipping.`, `auction.`, `wanted.`, `dac7.`
+- 39 notification types with prefixes: `order.`, `comment.`, `dispute.`, `shipping.`, `auction.`, `wanted.`, `dac7.`
 - Copy centralized in `src/lib/notifications/templates.ts` — integration sites pass type + context, not strings
 - Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
 - Polling on pathname change for unread count

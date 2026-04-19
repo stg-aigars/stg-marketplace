@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import {
-  Package, ChatCircle, Tag, Gavel, Truck, Trash,
+  Package, ChatCircle, Gavel, Truck, Trash,
 } from '@phosphor-icons/react/ssr';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { formatMessageTime } from '@/lib/date-utils';
@@ -12,7 +12,6 @@ import type { NotificationRow } from '@/lib/notifications/types';
 const TYPE_ICONS: Record<string, PhosphorIcon> = {
   order: Package,
   comment: ChatCircle,
-  offer: Tag,
   dispute: Gavel,
   shipping: Truck,
 };

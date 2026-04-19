@@ -6,7 +6,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { createServiceClient } from '@/lib/supabase';
-import { loadOrder, creditSellerWallet, markSoldAndSyncShelf } from '@/lib/services/order-transitions';
+import { loadOrder, creditSellerWallet, markOrderListingsSold } from '@/lib/services/order-transitions';
 import { refundOrder, markRefundFailed, RefundInitiationError } from '@/lib/services/order-refund';
 import { logAuditEvent } from '@/lib/services/audit';
 import type { OrderRow, DisputeRow } from '@/lib/orders/types';
@@ -19,7 +19,6 @@ import {
 } from '@/lib/email';
 import { notify, notifyMany } from '@/lib/notifications';
 import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
-import { syncShelfOnListingRemoved } from '@/lib/listings/actions';
 
 // Re-export pure validation functions for external use
 export {
@@ -188,7 +187,7 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
   // Credit seller wallet (same as normal completion — shared helper)
   await creditSellerWallet(orderId, order);
 
-  markSoldAndSyncShelf(order);
+  markOrderListingsSold(order);
 
   void logAuditEvent({
     actorId: userId,
@@ -379,11 +378,6 @@ async function restoreListingsAfterRefund(
     .update({ status: 'active' as const, reserved_at: null, reserved_by: null })
     .in('id', listingIds)
     .eq('status', 'reserved');
-
-  for (const listingId of listingIds) {
-    void syncShelfOnListingRemoved(order.seller_id, listingId)
-      .catch((err) => console.error('[Shelf] Failed to sync on refund:', err));
-  }
 }
 
 /**
@@ -568,7 +562,7 @@ export async function staffResolveDispute(
   // Credit seller wallet (shared helper)
   await creditSellerWallet(orderId, order);
 
-  markSoldAndSyncShelf(order);
+  markOrderListingsSold(order);
 
   void logAuditEvent({
     actorId: staffUserId,
