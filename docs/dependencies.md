@@ -41,7 +41,7 @@
 
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
-| **Cloudflare** | DNS for secondturn.games (DNS only mode, grey cloud) | Free | Account login, domain config |
+| **Cloudflare** | DNS + proxy for secondturn.games (full proxy / orange cloud since 2026-03-31 — edge bot management sets `cf_clearance` on user browsers; cache rules configured in dashboard, post-deploy purge script `scripts/purge-cloudflare-cache.sh`) | Free | Account login, domain config |
 
 ## Auth
 

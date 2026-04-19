@@ -29,7 +29,7 @@ export default function CookiesPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Cookies we set
+            Cookies on our domain
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -43,30 +43,44 @@ export default function CookiesPage() {
               </thead>
               <tbody>
                 <tr className="border-b border-semantic-border-subtle">
-                  <td className="py-2 pr-4 align-top font-mono text-xs">sb-*-auth-token</td>
+                  <td className="py-2 pr-4 align-top font-mono text-xs">sb-*-auth-token.0/.1/.2</td>
                   <td className="py-2 pr-4 align-top">
                     Keeps you signed in. Set by our authentication provider (Supabase) when you
-                    log in or register.
+                    log in or register. A single session is split across numbered chunks
+                    because browsers cap individual cookies at around 4 KB and OAuth sessions
+                    exceed that.
                   </td>
                   <td className="py-2 pr-4 align-top">Session / until sign-out</td>
+                  <td className="py-2 align-top">First-party, strictly necessary</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">cf_clearance</td>
+                  <td className="py-2 pr-4 align-top">
+                    Set by Cloudflare, which hosts our DNS and CDN, to mark that your browser
+                    has passed Cloudflare&apos;s bot-management check for our domain. Prevents
+                    you from being re-challenged on every page load.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Up to 30 days (Cloudflare default)</td>
                   <td className="py-2 align-top">First-party, strictly necessary</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p className="text-xs text-semantic-text-muted">
-            Exact cookie names vary by Supabase project reference (for example,{' '}
-            <span className="font-mono">sb-tfxqbtcdkzdwfgsivvet-auth-token</span>).
+            Exact Supabase cookie names vary by project reference (for example,{' '}
+            <span className="font-mono">sb-tfxqbtcdkzdwfgsivvet-auth-token.0</span>).
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            Local-storage items we set
+            Items stored in your browser&apos;s local or session storage
           </h2>
           <p>
-            Local storage is not technically a cookie, but the ePrivacy Directive covers any
-            information stored on your device. We disclose these for the same reason.
+            Local and session storage are not technically cookies, but the ePrivacy Directive
+            covers any information stored on your device. We disclose these for the same reason.
+            Session storage clears automatically when you close the tab; local storage persists
+            until you clear it.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -74,6 +88,7 @@ export default function CookiesPage() {
                 <tr className="border-b border-semantic-border-subtle text-left">
                   <th className="py-2 pr-4 font-semibold text-semantic-text-heading">Key</th>
                   <th className="py-2 pr-4 font-semibold text-semantic-text-heading">Purpose</th>
+                  <th className="py-2 pr-4 font-semibold text-semantic-text-heading">Storage</th>
                   <th className="py-2 font-semibold text-semantic-text-heading">Type</th>
                 </tr>
               </thead>
@@ -83,6 +98,7 @@ export default function CookiesPage() {
                   <td className="py-2 pr-4 align-top">
                     Holds the items currently in your cart so they persist across page reloads.
                   </td>
+                  <td className="py-2 pr-4 align-top">Local</td>
                   <td className="py-2 align-top">Strictly necessary</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
@@ -91,6 +107,7 @@ export default function CookiesPage() {
                     Session-integrity signal that tells the site to reload when your session has
                     gone stale after background auth changes.
                   </td>
+                  <td className="py-2 pr-4 align-top">Local</td>
                   <td className="py-2 align-top">Strictly necessary</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
@@ -98,14 +115,37 @@ export default function CookiesPage() {
                   <td className="py-2 pr-4 align-top">
                     Remembers that you dismissed the launch banner so it does not reappear.
                   </td>
+                  <td className="py-2 pr-4 align-top">Local</td>
                   <td className="py-2 align-top">Preference</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg-is-seller</td>
+                  <td className="py-2 pr-4 align-top">
+                    Caches whether your account currently has seller role, so the UI can render
+                    seller-specific controls without a round-trip.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Session</td>
+                  <td className="py-2 align-top">Strictly necessary</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">stg-pending-actions-dismissed</td>
                   <td className="py-2 pr-4 align-top">
-                    Remembers which pending-action notices you have dismissed.
+                    Remembers which pending-action notices you have dismissed during this tab
+                    session.
                   </td>
+                  <td className="py-2 pr-4 align-top">Session</td>
                   <td className="py-2 align-top">Preference</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">cf.turnstile.*</td>
+                  <td className="py-2 pr-4 align-top">
+                    Written by the Cloudflare Turnstile widget when bot-protected forms load
+                    (sign-up, password reset, newsletter, comments, checkout, bids, listing
+                    edits). Used by Turnstile itself to avoid redundant challenges. Not
+                    readable by our application code.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Local</td>
+                  <td className="py-2 align-top">Strictly necessary</td>
                 </tr>
               </tbody>
             </table>
@@ -122,11 +162,11 @@ export default function CookiesPage() {
             <strong>Cloudflare Turnstile</strong> in invisible mode. Turnstile loads a script
             from <span className="font-mono">challenges.cloudflare.com</span> and may set
             transient cookies on the <span className="font-mono">cloudflare.com</span> domain
-            while verifying that the submission is not automated. These cookies are set by
-            Cloudflare, not by us, and they are scoped to Cloudflare&apos;s own domain — they
-            are not readable by Second Turn Games and do not persist a user identifier across
-            sessions. Turnstile is strictly necessary to keep bot submissions out of the
-            marketplace. See{' '}
+            while verifying that the submission is not automated. Turnstile also writes small
+            items to your browser&apos;s local storage on our domain (prefixed{' '}
+            <span className="font-mono">cf.turnstile.</span>) to avoid re-challenging you on
+            every form — these are listed in the local-storage table above. Turnstile is
+            strictly necessary to keep bot submissions out of the marketplace. See{' '}
             <a
               href="https://www.cloudflare.com/privacypolicy/"
               target="_blank"
@@ -136,6 +176,11 @@ export default function CookiesPage() {
               Cloudflare&apos;s privacy policy
             </a>{' '}
             for details.
+          </p>
+          <p>
+            Cloudflare also proxies traffic to our domain and runs edge-level bot management,
+            which is what sets the <span className="font-mono">cf_clearance</span> cookie
+            listed in the cookies table above.
           </p>
         </section>
 
