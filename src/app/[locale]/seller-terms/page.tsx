@@ -73,12 +73,30 @@ export default function SellerTermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            1. Eligibility
+            1. Eligibility and private-sellers-only rule
           </h2>
-          <p>To sell on Second Turn Games you must be at least 18, reside in Latvia, Lithuania, or
-            Estonia, and be a private individual (not a business). The platform is for selling
-            personal items, not for buying and reselling for profit. By creating a listing you
-            confirm you meet these requirements.
+          <p>
+            To sell on Second Turn Games you must be at least 18 years old and reside in Latvia,
+            Lithuania, or Estonia.
+          </p>
+          <p>
+            Second Turn Games is a platform for private individuals selling their personal board
+            game collections. You may not list items on the platform in the course of a business,
+            trade, or profession, including as a retailer, reseller, distributor, wholesaler, or
+            auction house. You must not list items that you acquired primarily for resale. We
+            may, at our discretion and without notice, require you to confirm the private nature
+            of your activity and may suspend or terminate your account if we have reasonable
+            grounds to believe you are acting as a trader.
+          </p>
+          <p>
+            If you believe you are or have become a trader for the purposes of Directive
+            2011/83/EU (the Consumer Rights Directive), you must notify us immediately at{' '}
+            <a href="mailto:info@secondturn.games" className="link-brand">
+              info@secondturn.games
+            </a>
+            , cease new listings, and complete any outstanding orders in accordance with the
+            trader obligations in that Directive (including the 14-day withdrawal right for
+            buyers).
           </p>
         </section>
 
@@ -166,6 +184,23 @@ export default function SellerTermsPage() {
           <p>
             On suspension or termination, pending payouts may be held for up to 180 days to cover
             chargebacks, refunds, or unresolved disputes.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Anti-money-laundering, sanctions, and fraud
+          </h3>
+          <p>
+            We reserve the right, at our discretion and without prior notice, to (a) screen
+            transactions, accounts, IBANs, and identifying information against EU and
+            international sanctions lists, politically exposed person lists, and fraud databases;
+            (b) suspend your account, freeze your wallet balance, or refuse a payout if we have
+            reasonable grounds to suspect money laundering, terrorist financing, sanctions
+            evasion, or fraud; (c) request additional identification, source-of-funds, or
+            beneficial-ownership information; and (d) share information with competent
+            authorities, including the Latvian State Security Service, the Financial
+            Intelligence Unit (FID), the State Revenue Service (VID), and our payment processor.
+            Funds frozen under this provision remain your property and will be released once the
+            matter is resolved, subject to any order of a competent authority.
           </p>
         </section>
 
