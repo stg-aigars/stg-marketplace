@@ -44,8 +44,8 @@ export function NotificationsPageClient({
     return (
       <EmptyState
         icon={Bell}
-        title="No notifications"
-        description="You will see notifications here when you have order updates, comments, or offers."
+        title="All quiet"
+        description="We'll ping you here when there's order news, comments, or other activity."
       />
     );
   }

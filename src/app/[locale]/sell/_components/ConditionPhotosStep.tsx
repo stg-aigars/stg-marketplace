@@ -41,8 +41,8 @@ export function ConditionPhotosStep({
   const photosRequired = condition ? conditionRequiresPhotos(condition) : false;
   const descriptionRequired = condition ? conditionRequiresDescription(condition) : false;
 
-  const photoLabel = photosRequired ? 'Photos (required)' : 'Photos (optional)';
-  const notesLabel = descriptionRequired ? 'Notes for buyer' : 'Notes for buyer (optional)';
+  const photoLabel = 'Photos';
+  const notesLabel = 'Anything else a buyer should know?';
 
   return (
     <div className="space-y-6">

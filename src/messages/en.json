@@ -21,12 +21,12 @@
   },
   "home": {
     "hero": "Every game deserves a Second Turn",
-    "heroSub": "Buy and sell board games from fellow enthusiasts",
+    "heroSub": "Pre-loved board games, passed between fellow gamers across Latvia, Lithuania, and Estonia.",
     "browseCta": "Browse games",
     "sellCta": "Sell a game",
-    "statBaltics": "Available in the Baltics",
-    "statShipping": "Cross-border shipping via parcel lockers",
-    "statPayments": "Secure payments"
+    "statBaltics": "Latvia, Lithuania, Estonia",
+    "statShipping": "Parcel lockers across the Baltics",
+    "statPayments": "Safe payments, dispute support"
   },
   "listing": {
     "condition": "Condition",

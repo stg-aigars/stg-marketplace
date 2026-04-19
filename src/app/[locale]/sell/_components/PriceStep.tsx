@@ -168,9 +168,7 @@ export function PriceStep({
           Description{' '}
           {condition && conditionRequiresDescription(condition) ? (
             <span className="text-semantic-error">*</span>
-          ) : (
-            <span className="font-normal text-semantic-text-muted">(optional)</span>
-          )}
+          ) : null}
         </label>
         <Textarea
           id="listing-description"

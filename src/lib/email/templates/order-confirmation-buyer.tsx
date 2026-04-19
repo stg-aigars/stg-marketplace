@@ -85,7 +85,11 @@ export function OrderConfirmationBuyer({
       </div>
 
       <Text style={s.note}>
-        You will receive an email when the seller ships your game.
+        We'll email you as soon as the seller ships your game.
+      </Text>
+
+      <Text style={s.body}>
+        See you at the table.
       </Text>
     </EmailLayout>
   );

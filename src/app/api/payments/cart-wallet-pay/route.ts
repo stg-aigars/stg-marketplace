@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     .single();
 
   if (!buyerProfile?.country) {
-    return NextResponse.json({ error: 'Please set your country in your profile first' }, { status: 400 });
+    return NextResponse.json({ error: 'Add your country to your profile first — we need it for shipping.' }, { status: 400 });
   }
 
   // Calculate totals — single-seller guard above guarantees one seller
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
         p_buyer_id: user.id,
       });
     }
-    return NextResponse.json({ error: 'Failed to create order. Please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Order didn\'t go through — mind trying again?' }, { status: 500 });
   }
 
   // Step 2: Debit wallet

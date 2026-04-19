@@ -66,7 +66,7 @@ export async function parseCartCheckoutBody(
       return NextResponse.json({ error: 'Duplicate items in cart' }, { status: 400 });
     }
     if (!terminalId || !terminalName || !terminalCountry) {
-      return NextResponse.json({ error: 'Please select a pickup terminal' }, { status: 400 });
+      return NextResponse.json({ error: 'Pick a parcel locker to ship to.' }, { status: 400 });
     }
     const terminalCheck = validateTerminalInput({ terminalId, terminalName, terminalCountry });
     if (terminalCheck instanceof NextResponse) return terminalCheck;

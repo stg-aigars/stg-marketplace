@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   if (!buyerProfile?.country) {
-    return NextResponse.json({ error: 'Please set your country in your profile first' }, { status: 400 });
+    return NextResponse.json({ error: 'Add your country to your profile first — we need it for shipping.' }, { status: 400 });
   }
 
   // Verify all listings belong to same seller
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
 
   if (groupError || !group) {
     console.error('[Cart] Failed to create checkout group:', groupError);
-    return NextResponse.json({ error: 'Failed to start checkout. Please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Checkout didn\'t start — mind trying again?' }, { status: 500 });
   }
 
   // Reserve regular items atomically (auction items are already locked by auction_ended status)
@@ -259,6 +259,6 @@ export async function POST(request: Request) {
     }
     await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
 
-    return NextResponse.json({ error: 'Failed to initiate payment. Please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Payment couldn\'t start — mind trying again?' }, { status: 500 });
   }
 }
