@@ -258,17 +258,54 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            12. Account suspension and termination
+            12. Ending your account or our services
           </h2>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            You ending your account
+          </h3>
           <p>
-            STG may suspend or terminate accounts for violations of these terms, including fraud,
-            misrepresenting items, failing to ship orders, excessive chargebacks, or suspected
-            commercial activity. On termination, pending payouts may be held for up to 180 days to
-            cover chargebacks or disputes.
+            You may close your account at any time from your account settings. Closure is
+            immediate. Before your account can be closed, you must (a) cancel or complete any
+            active listings and in-progress orders, (b) withdraw any positive wallet balance,
+            and (c) resolve any pending disputes. On closure, we anonymise your profile, your
+            public comments, and your order messages so that they no longer identify you; we
+            cancel any residual listings; we remove your listing photos from storage within
+            6 hours; and we delete your account in our authentication system. Information we
+            are required by law to retain (completed-order records, invoices, DAC7 reporting
+            data, and security logs) is retained for the periods set out in Section 9 of our{' '}
+            <Link href="/privacy" className="link-brand">
+              Privacy Policy
+            </Link>
+            , in a form that does not link to your anonymised account except where the retention
+            obligation requires it.
           </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Us ending your account
+          </h3>
           <p>
-            You may delete your account at any time through your account settings, subject to
-            completing any open orders and withdrawing your wallet balance.
+            We may suspend or terminate your account, remove listings, or freeze your wallet
+            balance if we have reasonable grounds to believe you have (a) breached these Terms
+            or the Seller Agreement, (b) engaged in fraud, misrepresentation, or commercial
+            reselling, (c) failed to ship or respond to orders repeatedly, (d) accumulated
+            excessive chargebacks, (e) triggered our anti-money-laundering, sanctions, or
+            fraud controls, or (f) caused us or another user harm. Where we take such action,
+            we notify you of the reasons and of your right to dispute the decision, in
+            accordance with Article 17 of Regulation (EU) 2022/2065 (the Digital Services Act).
+            Where your account is terminated for cause, any positive wallet balance is payable
+            to you after deduction of any amounts you owe us, and may be held for up to
+            180 days to cover potential chargebacks or claims before being released.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Effect of termination
+          </h3>
+          <p>
+            Termination does not affect any rights or obligations that have accrued up to the
+            date of termination. The clauses on liability (Section 13), governing law and
+            jurisdiction (Section 14), and reporting obligations under applicable tax law
+            survive termination indefinitely.
           </p>
         </section>
 
@@ -282,10 +319,24 @@ export default function TermsPage() {
             the condition, authenticity, or quality of listed items.
           </p>
           <p>
-            To the maximum extent permitted by law, STG&apos;s total liability to any user is limited
-            to &euro;100 or the total service fees paid by that user in the preceding 12 months,
-            whichever is greater.
+            To the maximum extent permitted by applicable law, our total liability to you in
+            connection with the platform or these Terms is limited to the greater of (a)
+            &euro;500 and (b) the fees and commissions paid by you in the twelve months
+            preceding the event giving rise to the claim.
           </p>
+          <p>The following are not limited or excluded:</p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>liability for death or personal injury caused by our negligence,</li>
+            <li>liability for fraud or fraudulent misrepresentation,</li>
+            <li>
+              any liability that cannot lawfully be limited or excluded under the consumer
+              protection law of your country of habitual residence, and
+            </li>
+            <li>
+              any statutory liability we have as an intermediary service provider under
+              Regulation (EU) 2022/2065 or equivalent national law.
+            </li>
+          </ul>
         </section>
 
         <section className="space-y-3">
@@ -293,9 +344,12 @@ export default function TermsPage() {
             14. Governing law and disputes
           </h2>
           <p>
-            These terms are governed by the laws of the Republic of Latvia. Disputes arising from
-            these terms or use of the platform fall under the jurisdiction of the courts of Riga,
-            Latvia.
+            These Terms are governed by the laws of the Republic of Latvia. The courts of Riga,
+            Latvia, have jurisdiction over disputes arising from these Terms or use of the
+            platform, without prejudice to (a) the mandatory consumer protection rules of your
+            country of habitual residence under Article 6 of Regulation (EC) 593/2008, and
+            (b) your right as a consumer to bring proceedings in the courts of your country of
+            habitual residence under Article 18 of Regulation (EU) 1215/2012.
           </p>
           <p>
             If you have a complaint, please contact us first at{' '}
@@ -346,6 +400,19 @@ export default function TermsPage() {
           <p className="text-xs text-semantic-text-muted">
             The EU Online Dispute Resolution platform was discontinued on 20 July 2025 under
             Regulation (EU) 2024/3228 and is no longer available.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Trader-status disputes
+          </h3>
+          <p>
+            If a dispute between a buyer and a seller concerns whether the seller is a trader
+            within the meaning of Directive 2011/83/EU, we will (a) review the seller&apos;s
+            activity against our internal criteria, (b) provide the buyer with the outcome of
+            our review, and (c) where we conclude the seller is likely a trader, support the
+            buyer in exercising their statutory rights, including facilitating a refund where a
+            withdrawal right would apply. Our review does not bind the courts or consumer
+            protection authorities.
           </p>
         </section>
 

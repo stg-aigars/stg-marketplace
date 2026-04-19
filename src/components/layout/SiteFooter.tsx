@@ -16,6 +16,7 @@ const SUPPORT_LINKS = [
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/cookies', label: 'Cookie Policy' },
   { href: '/seller-terms', label: 'Seller Terms' },
+  { href: '/imprint', label: 'Imprint' },
   { href: '/accessibility', label: 'Accessibility' },
 ] as const;
 
