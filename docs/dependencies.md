@@ -49,12 +49,12 @@
 |---------|---------|------|---------------------|
 | **Google Cloud** | OAuth provider for "Continue with Google" sign-in | Free | Client ID, client secret, project name, console login |
 
-## Monitoring (planned)
+## Monitoring
 
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
-| **Sentry** | Error tracking (Week 2) | — | DSN, auth token, dashboard login |
-| **Cloudflare Turnstile** | Bot protection (Week 4) | Free | Site key, secret key |
+| **Sentry** | Error tracking (live — used by `global-error.tsx`, EveryPay client, dispute service; PII scrubbing in `src/lib/sentry/strip-pii.ts`) | — | DSN, auth token, dashboard login |
+| **Cloudflare Turnstile** | Bot protection (planned, Week 4) | Free | Site key, secret key |
 
 ## Analytics
 
