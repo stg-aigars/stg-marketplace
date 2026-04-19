@@ -10,6 +10,7 @@ import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
 import { notify } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
+import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { extractStoragePath } from './storage-utils';
 import {
   LISTING_CONDITIONS,
@@ -128,10 +129,10 @@ export async function createListing(
   const fieldError = validateListingFields(data, photoUrlPrefix);
   if (fieldError) return { error: fieldError };
 
-  // Fetch seller profile to get country + DAC7 status
+  // Fetch seller profile to get country + DAC7 status + seller-terms acceptance
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
-    .select('country, dac7_status')
+    .select('country, dac7_status, seller_terms_accepted_at, seller_terms_version')
     .eq('id', user.id)
     .single();
 
@@ -141,6 +142,16 @@ export async function createListing(
 
   if (profile.dac7_status === 'blocked') {
     return { error: 'Your account is blocked. Please provide the required tax information in your account settings before creating listings' };
+  }
+
+  // Seller Terms gate — mirrors the page-level gate in app/[locale]/sell/page.tsx.
+  // Fails closed if a tampered or bypassed client hits createListing without
+  // first going through the SellerTermsAcceptanceGate.
+  if (
+    !profile.seller_terms_accepted_at ||
+    profile.seller_terms_version !== SELLER_TERMS_VERSION
+  ) {
+    return { error: 'Please accept the Seller Agreement before creating a listing' };
   }
 
   // Build insert payload
