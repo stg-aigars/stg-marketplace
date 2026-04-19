@@ -116,7 +116,7 @@ export function ModerationStatementOfReasons({
         this email within 30 days. A different member of our team from the one who took the
         original decision will review your appeal. You also retain the right to pursue the
         matter through the consumer protection authority in your country of residence (listed
-        in Section 14 of our Terms of Service) or through the courts.
+        in Section 15 of our Terms of Service) or through the courts.
       </Text>
 
       <Text style={s.note}>

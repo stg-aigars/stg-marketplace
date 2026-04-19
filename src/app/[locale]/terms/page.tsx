@@ -270,7 +270,74 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            12. Ending your account or our services
+            12. Marketplace features
+          </h2>
+          <p>
+            Beyond a standard listing, you can ask a public question on someone&apos;s
+            listing, run or bid in an auction, or post a wanted listing. This section
+            describes how each works and what it means.
+          </p>
+
+          <h3 className={subHeadingClass}>
+            Listing questions
+          </h3>
+          <p>
+            Each listing has a public comment thread for questions to the seller.
+            Comments are flat (oldest first), limited to 1,000 characters, and cannot
+            be edited once posted. The seller is notified when a new question is
+            posted; if the seller replies, everyone who has commented previously on
+            that listing is also notified. Comments are public and visible to anyone
+            viewing the listing. We may remove comments that violate these Terms or
+            are flagged through the process in Section 18 (Reporting illegal content),
+            and we will tell you why if we do.
+          </p>
+
+          <h3 className={subHeadingClass}>
+            Auctions
+          </h3>
+          <p>
+            When you list a game in auction format, you accept a binding sale to the
+            highest bidder at close. You can withdraw an auction listing only while it
+            has no bids; once any bid has been placed you cannot withdraw the listing
+            and you must honour the winning bid at close. There is no admin override,
+            dispute carve-out, or &ldquo;damaged before shipment&rdquo; exception for
+            withdrawing an auction with live bids.
+          </p>
+          <p>
+            When you place a bid, you commit to buying the game at your bid price if
+            you win. All bids are binding. If a bid is placed in the final 5 minutes,
+            the auction end time extends by 5 minutes to prevent last-second sniping.
+            Thirty minutes before an auction ends, we notify the seller and everyone
+            who has bid.
+          </p>
+          <p>
+            When you win, you have 24 hours to pay. We send a reminder 12 hours before
+            the deadline. If you do not pay in time, the listing is cancelled by the
+            platform and the seller is free to re-list the game &mdash; no order is
+            created until payment completes.
+          </p>
+
+          <h3 className={subHeadingClass}>
+            Wanted listings
+          </h3>
+          <p>
+            A wanted listing is a notification trigger, not a purchase commitment.
+            When you post a wanted listing, we email you when a matching game is
+            listed. You are not reserving any game, not committing to buy, and not
+            binding any seller.
+          </p>
+          <p>
+            Wanted listings stay active until you cancel them. When you receive a
+            match notification, you decide whether to buy the game like any other
+            listing &mdash; the standard rules on payment, shipping, and disputes
+            apply at that point. Wanted listings are visible publicly but are only
+            used on the platform to trigger notifications to the buyer.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+            13. Ending your account or our services
           </h2>
 
           <h3 className={subHeadingClass}>
@@ -314,15 +381,15 @@ export default function TermsPage() {
           </h3>
           <p>
             Termination does not affect any rights or obligations that have accrued up to the
-            date of termination. The clauses on liability (Section 13), governing law and
-            jurisdiction (Section 14), and reporting obligations under applicable tax law
+            date of termination. The clauses on liability (Section 14), governing law and
+            jurisdiction (Section 15), and reporting obligations under applicable tax law
             survive termination indefinitely.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            13. Limitation of liability
+            14. Limitation of liability
           </h2>
           <p>
             The platform is provided &ldquo;as is&rdquo; without warranties of any kind. STG
@@ -352,7 +419,7 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            14. Governing law and disputes
+            15. Governing law and disputes
           </h2>
           <p>
             These Terms are governed by the laws of the Republic of Latvia. The courts of Riga,
@@ -428,7 +495,7 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            15. Changes to these terms
+            16. Changes to these terms
           </h2>
           <p>
             We may update these terms from time to time. Continued use of the platform after changes
@@ -439,7 +506,7 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            16. Contact
+            17. Contact
           </h2>
           <p>
             Questions about these terms? Reach us at{' '}
@@ -475,7 +542,7 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            17. Reporting illegal content
+            18. Reporting illegal content
           </h2>
           <p>
             Anyone can tell us about content on Second Turn Games they think is illegal. Use
