@@ -30,16 +30,10 @@ export async function getOnboardingState(
 
   const supabase = await createClient();
 
-  const [listingsResult, shelfResult] = await Promise.all([
-    supabase
-      .from('listings')
-      .select('id', { count: 'exact', head: true })
-      .eq('seller_id', user.id),
-    supabase
-      .from('shelf_items')
-      .select('id', { count: 'exact', head: true })
-      .eq('seller_id', user.id),
-  ]);
+  const listingsResult = await supabase
+    .from('listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', user.id);
 
   const items: OnboardingItem[] = [
     {
@@ -62,13 +56,6 @@ export async function getOnboardingState(
       description: 'Sell a game you are ready to pass on',
       complete: (listingsResult.count ?? 0) > 0,
       href: '/sell',
-    },
-    {
-      id: 'shelf',
-      label: 'Add a game to your shelf',
-      description: 'Track your games and get offers from buyers',
-      complete: (shelfResult.count ?? 0) > 0,
-      href: '/account/shelf',
     },
   ];
 

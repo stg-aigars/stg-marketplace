@@ -100,7 +100,6 @@ interface ListingCreationFlowProps {
   initialData?: Partial<FormData>;
   initialGame?: EnrichedGame | null;
   lockedFields?: ('game' | 'price')[];
-  offerId?: string;
   listingType?: ListingType;
 }
 
@@ -108,7 +107,6 @@ export function ListingCreationFlow({
   initialData,
   initialGame,
   lockedFields = [],
-  offerId,
   listingType = 'fixed_price',
 }: ListingCreationFlowProps = {}) {
   const isAuction = listingType === 'auction';
@@ -356,7 +354,6 @@ export function ListingCreationFlow({
       price_cents: isAuction ? formData.starting_price_cents : formData.price_cents,
       description: formData.description || null,
       photos: formData.photos,
-      offer_id: offerId,
       listing_type: listingType,
       ...(isAuction ? {
         starting_price_cents: formData.starting_price_cents,

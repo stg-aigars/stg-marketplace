@@ -43,7 +43,6 @@ export interface CreateListingData {
   price_cents: number;
   description: string | null;
   photos: string[];
-  offer_id?: string;
   // Auction fields (only when listing_type = 'auction')
   listing_type?: ListingType;
   auction_duration_days?: number;
