@@ -13,7 +13,7 @@
  *   (e) scope and duration            → `scopeAndDuration`
  *   (f) redress options               → rendered inline; user has 30 days to dispute by
  *                                        replying to the email, plus ADR + court routes
- *                                        already covered in Terms §14
+ *                                        already covered in Terms §15
  *
  * The EU Commission DSA Transparency Database ingests these statements and checks for
  * completeness. Do not ship without all six fields populated.
@@ -116,7 +116,7 @@ export function ModerationStatementOfReasons({
         this email within 30 days. A different member of our team from the one who took the
         original decision will review your appeal. You also retain the right to pursue the
         matter through the consumer protection authority in your country of residence (listed
-        in Section 14 of our Terms of Service) or through the courts.
+        in Section 15 of our Terms of Service) or through the courts.
       </Text>
 
       <Text style={s.note}>
