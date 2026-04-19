@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 
 export const metadata: Metadata = {
   title: 'Cookie Policy',
@@ -14,6 +15,10 @@ export default function CookiesPage() {
       </h1>
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
+        <p className="text-semantic-text-secondary">
+          Last updated: {TERMS_VERSION_DISPLAY}
+        </p>
+
         <Card className="not-prose">
           <CardHeader>
             <h2 className="text-base font-semibold text-semantic-text-heading">

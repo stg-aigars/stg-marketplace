@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 
 export const metadata: Metadata = {
   title: 'Accessibility Statement',
@@ -13,6 +14,10 @@ export default function AccessibilityPage() {
       </h1>
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
+        <p className="text-semantic-text-secondary">
+          Last updated: {TERMS_VERSION_DISPLAY}
+        </p>
+
         <p>
           Second Turn Games is committed to making the marketplace usable for everyone, in line
           with the European Accessibility Act (EAA, Directive (EU) 2019/882) which applies to

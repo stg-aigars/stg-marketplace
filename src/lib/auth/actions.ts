@@ -12,6 +12,19 @@ import { safeReturnUrl } from '@/lib/auth/safe-return-url';
 import { validatePasswordStrength } from '@/lib/auth/password-validation';
 import { logAuditEvent } from '@/lib/services/audit';
 
+type TermsAcceptanceSource = 'signup' | 'oauth_onboarding';
+
+function logTermsAccepted(actorId: string, source: TermsAcceptanceSource): void {
+  void logAuditEvent({
+    actorId,
+    actorType: 'user',
+    action: 'terms.accepted',
+    resourceType: 'terms',
+    resourceId: TERMS_VERSION,
+    metadata: { source },
+  });
+}
+
 /**
  * Validate rate-limit and Turnstile before the client signs in.
  * The actual `signInWithPassword` must happen on the browser client
@@ -75,14 +88,7 @@ export async function signUpWithEmail(
   }
 
   if (data.user) {
-    void logAuditEvent({
-      actorId: data.user.id,
-      actorType: 'user',
-      action: 'terms.accepted',
-      resourceType: 'terms',
-      resourceId: TERMS_VERSION,
-      metadata: { source: 'signup' },
-    });
+    logTermsAccepted(data.user.id, 'signup');
   }
 
   redirect(returnUrl ? safeReturnUrl(returnUrl) : '/browse?welcome=true');
@@ -190,9 +196,8 @@ export async function updateProfile(data: {
   }
 
   // Write terms acceptance atomically — only if not already set (first-time only).
-  // The .is('terms_accepted_at', null) clause prevents overwriting an existing timestamp.
-  // .select('id') returns the updated rows so we can tell whether the stamp actually wrote,
-  // which is what gates the audit-log emission below (no duplicate events on repeat calls).
+  // The .is('terms_accepted_at', null) clause prevents overwriting an existing timestamp;
+  // .select('id') then gates the audit emission so repeat calls don't duplicate events.
   if (data.termsAccepted) {
     const { data: updated, error: termsError } = await supabase
       .from('user_profiles')
@@ -210,14 +215,7 @@ export async function updateProfile(data: {
     }
 
     if (updated && updated.length > 0) {
-      void logAuditEvent({
-        actorId: user.id,
-        actorType: 'user',
-        action: 'terms.accepted',
-        resourceType: 'terms',
-        resourceId: TERMS_VERSION,
-        metadata: { source: 'oauth_onboarding' },
-      });
+      logTermsAccepted(user.id, 'oauth_onboarding');
     }
   }
 
