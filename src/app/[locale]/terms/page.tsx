@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Card, CardBody, CardHeader } from '@/components/ui';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 import {
   LEGAL_ENTITY_NAME,
@@ -22,6 +23,49 @@ export default function TermsPage() {
         <p className="text-semantic-text-secondary">
           Last updated: {TERMS_VERSION_DISPLAY}
         </p>
+
+        <Card className="not-prose">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-semantic-text-heading">
+              Quick Start
+            </h2>
+            <p className="text-xs text-semantic-text-muted mt-0.5">
+              The plain-English version. For the full rulebook, read on.
+            </p>
+          </CardHeader>
+          <CardBody>
+            <ul className="list-disc pl-5 space-y-2 text-sm text-semantic-text-secondary">
+              <li>
+                We&apos;re a marketplace for pre-loved board games in Latvia, Lithuania, and
+                Estonia. We never sell anything ourselves — the sellers are other gamers.
+              </li>
+              <li>
+                You need to be at least 16 to buy, and at least 18 and a private individual to
+                sell. No businesses disguised as private sellers.
+              </li>
+              <li>
+                Sellers describe their games honestly and ship them on time. We handle payments
+                through EveryPay and shipping through Unisend.
+              </li>
+              <li>
+                We charge sellers 10% commission on the item price only. Buyers just pay the
+                game price plus shipping — no hidden fees, no service charge.
+              </li>
+              <li>
+                If an order goes wrong, we mediate disputes and can refund you from the funds we
+                hold on the seller&apos;s behalf.
+              </li>
+              <li>
+                Because you&apos;re buying from a private individual, the usual 14-day EU right
+                of withdrawal doesn&apos;t apply. Our dispute process is your safety net.
+              </li>
+              <li>
+                You can delete your account anytime. See the Privacy Policy for what we keep, why,
+                and for how long.
+              </li>
+            </ul>
+          </CardBody>
+        </Card>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
