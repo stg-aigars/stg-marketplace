@@ -273,6 +273,15 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 - CSP: PostHog origins (`eu.i.posthog.com`, `eu-assets.i.posthog.com`) are in `connect-src` in `src/lib/csp.ts` defensively. The middleware `config.matcher` excludes `/ingest/` — there's a protective comment there explaining why; do not remove it
 - Session replay, feature flags, A/B testing, surveys: deferred until post-launch baseline accrues
 
+## Audit Events
+- Persistent audit trail for compliance-relevant and financial actions. Table: `audit_log` (migration `020_audit_log.sql`). Helper: `logAuditEvent({ actorId, actorType, action, resourceType, resourceId, metadata })` in `src/lib/services/audit.ts`
+- Fire-and-forget: `void logAuditEvent(...)` — never blocks the main operation, errors logged but never thrown
+- `action` is freeform TEXT (no CHECK constraint); convention is `resource.verb_past_tense` (e.g. `order.status_changed`, `dispute.opened`, `shipment.cancelled`, `terms.accepted`). `actor_type` has a CHECK — must be `'user' | 'system' | 'cron'`
+- `resourceType` + `resourceId` feed the `idx_audit_log_resource` index; prefer a shape that makes future compliance queries cheap (e.g. `resourceType: 'terms', resourceId: TERMS_VERSION` lets you ask "who accepted version X?" with an index scan)
+- **Registered events:**
+  - `terms.accepted` — fires at email signup (`source: 'signup'` in metadata) and at OAuth onboarding when the user completes `CompleteProfileForm` (`source: 'oauth_onboarding'`). The OAuth path is gated by `.select('id')` on the profile update so the event only fires when `terms_accepted_at` actually flips from null — no duplicate events on repeat calls. `resourceId` is `TERMS_VERSION` captured at the moment of acceptance; the constant import resolves to a literal at call time, so the historical version is preserved even if we later bump `TERMS_VERSION`
+  - Additional events fire from order, dispute, shipment, and comment flows — grep `logAuditEvent` for the current list
+
 ## Server Action Error Handling
 - Server actions return `{ success: true }` or `{ error: string }` — never throw to the client
 - API routes return `NextResponse.json({ error: string }, { status: 4xx/5xx })`

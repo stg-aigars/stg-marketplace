@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   title: 'Privacy Policy',
 };
 
+const subHeadingClass = 'text-base font-semibold pt-2';
+
 export default function PrivacyPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -240,7 +242,7 @@ export default function PrivacyPage() {
             personal data. We are not in the business of advertising.
           </p>
 
-          <h3 className="text-base font-semibold pt-2">Payments, shipping, and messaging</h3>
+          <h3 className={subHeadingClass}>Payments, shipping, and messaging</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>EveryPay (Maksekeskus AS, part of Swedbank).</strong> Payment processing.
@@ -259,7 +261,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className="text-base font-semibold pt-2">Authentication</h3>
+          <h3 className={subHeadingClass}>Authentication</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Google (Google Ireland Ltd).</strong> Optional &ldquo;Continue with
@@ -275,7 +277,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className="text-base font-semibold pt-2">Infrastructure</h3>
+          <h3 className={subHeadingClass}>Infrastructure</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Supabase (Supabase Inc., EU region).</strong> Our database, authentication
@@ -300,7 +302,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className="text-base font-semibold pt-2">Observability</h3>
+          <h3 className={subHeadingClass}>Observability</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Sentry (Functional Software, Inc.).</strong> Error monitoring. Receives
@@ -317,7 +319,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className="text-base font-semibold pt-2">Outgoing connections your browser makes</h3>
+          <h3 className={subHeadingClass}>Outgoing connections your browser makes</h3>
           <p>
             When you view a listing, your browser loads the game&apos;s cover image directly
             from BoardGameGeek&apos;s CDN (<span className="font-mono">cf.geekdo-images.com</span>).
