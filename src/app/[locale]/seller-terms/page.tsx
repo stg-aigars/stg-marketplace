@@ -105,9 +105,19 @@ export default function SellerTermsPage() {
             2. Payment authorization
           </h2>
           <p>
-            By listing an item, you authorize {LEGAL_ENTITY_NAME} to receive payments from buyers
-            on your behalf, acting as your commercial agent under PSD2 Article 3(b). Funds are held
-            by the platform until the transaction is completed.
+            By listing an item on Second Turn Games, you authorise {LEGAL_ENTITY_NAME} to
+            receive payments from buyers on your behalf. Payments are processed through
+            EveryPay (Maksekeskus AS), a licensed Estonian payment institution. Funds are held
+            in an account designated for marketplace transactions and released to you after
+            the order is confirmed delivered and the dispute window has closed.
+          </p>
+          <p>
+            {LEGAL_ENTITY_NAME} is not itself a payment institution and does not hold a payment
+            services licence. We refer to our role in this flow as that of a commercial agent
+            acting on your behalf, and we rely on the exemption in Article 3(b) of Directive
+            (EU) 2015/2366 (PSD2). If that exemption is determined not to apply in any
+            particular case, we will restructure the flow through a licensed payment
+            institution.
           </p>
         </section>
 

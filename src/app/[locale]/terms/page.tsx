@@ -75,8 +75,19 @@ export default function TermsPage() {
             {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;),
             registration number {LEGAL_ENTITY_REG_NUMBER}, registered at {LEGAL_ENTITY_ADDRESS},
             operates a peer-to-peer marketplace for pre-loved board games in Latvia, Lithuania,
-            and Estonia. We act as a commercial agent under PSD2 Article 3(b), connecting buyers and
-            sellers and handling payments on their behalf.
+            and Estonia. We connect private buyers and private sellers; the sale contract is
+            concluded directly between them.
+          </p>
+          <p>
+            Payments are processed through EveryPay (Maksekeskus AS), a licensed Estonian
+            payment institution. Funds received from buyers are held in an account designated
+            for marketplace transactions and are released to sellers after the order is
+            confirmed delivered and the dispute window has closed. Second Turn Games is not
+            itself a payment institution and does not hold a payment services licence. We
+            refer to our role in the flow as that of a commercial agent acting on behalf of
+            sellers, and we rely on the exemption in Article 3(b) of Directive (EU) 2015/2366
+            (PSD2). If that exemption is determined not to apply in any particular case, we
+            will restructure the flow through a licensed payment institution.
           </p>
         </section>
 
