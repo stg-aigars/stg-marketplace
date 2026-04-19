@@ -7,8 +7,8 @@ export const TERMS_VERSION_DISPLAY = '26 April 2026';
 
 /** Governs the Privacy Policy (/privacy). Update when Privacy content changes
  *  — processor list, legal bases, retention periods, data-subject rights. */
-export const PRIVACY_VERSION = '2026-04-19';
-export const PRIVACY_VERSION_DISPLAY = '19 April 2026';
+export const PRIVACY_VERSION = '2026-04-26';
+export const PRIVACY_VERSION_DISPLAY = '26 April 2026';
 
 /** Governs the Seller Agreement (/seller-terms). Update when Seller content
  *  changes — commission rates, operational requirements, wallet mechanics,

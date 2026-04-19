@@ -238,11 +238,15 @@ export default function PrivacyPage() {
           </h2>
           <p>
             We share your personal data only with the third parties listed below, and only to the
-            extent each of them needs to deliver a part of the service. We do not sell your
-            personal data. We are not in the business of advertising.
+            extent each of them needs to deliver a part of the service. Our partners fall into
+            two groups: <strong>processors</strong>, who act on our documented instructions under
+            a data processing agreement, and <strong>independent controllers</strong>, who have
+            their own direct relationship with you and handle your data under their own privacy
+            policy — primarily the sign-in providers. Each section below notes which relationship
+            applies. We do not sell your personal data. We are not in the business of advertising.
           </p>
 
-          <h3 className={subHeadingClass}>Payments, shipping, and messaging</h3>
+          <h3 className={subHeadingClass}>Payments, shipping, and messaging (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>EveryPay (Maksekeskus AS, part of Swedbank).</strong> Payment processing.
@@ -261,23 +265,29 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Authentication</h3>
+          <h3 className={subHeadingClass}>Sign-in providers (independent controllers)</h3>
+          <p>
+            If you choose to sign in with Google or Facebook, the provider authenticates you
+            against their own account system and returns a verified email address and basic
+            profile identifier to us. The provider is an <strong>independent controller</strong>{' '}
+            of your account data with them under its own privacy policy; we do not instruct the
+            provider on how to process its users&apos; data. The transfer from the provider to
+            us happens under your own authorisation at the &ldquo;Continue with &hellip;&rdquo;
+            prompt. These are not processor relationships, and no data processing agreement is
+            needed for them.
+          </p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>Google (Google Ireland Ltd).</strong> Optional &ldquo;Continue with
-              Google&rdquo; sign-in. If you use it, Google receives a sign-in request and
-              returns your verified email and basic profile to us. Governed by Google&apos;s
-              own privacy policy.
+              <strong>Google Ireland Limited</strong> &mdash; &ldquo;Continue with Google&rdquo;
+              sign-in. Governed by Google&apos;s own privacy policy.
             </li>
             <li>
-              <strong>Meta Platforms Ireland Ltd.</strong> Optional &ldquo;Continue with
-              Facebook&rdquo; sign-in. If you use it, Meta receives a sign-in request and
-              returns your verified email and basic profile to us. Governed by Meta&apos;s own
-              privacy policy.
+              <strong>Meta Platforms Ireland Limited</strong> &mdash; &ldquo;Continue with
+              Facebook&rdquo; sign-in. Governed by Meta&apos;s own privacy policy.
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Infrastructure</h3>
+          <h3 className={subHeadingClass}>Infrastructure (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Supabase (Supabase Inc., EU region).</strong> Our database, authentication
@@ -302,7 +312,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Observability</h3>
+          <h3 className={subHeadingClass}>Observability (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Sentry (Functional Software, Inc.).</strong> Error monitoring. Receives
