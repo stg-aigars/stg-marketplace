@@ -76,20 +76,19 @@ export default function TermsPage() {
           <p>
             {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;),
             registration number {LEGAL_ENTITY_REG_NUMBER}, registered at {LEGAL_ENTITY_ADDRESS},
-            operates a peer-to-peer marketplace for pre-loved board games in Latvia, Lithuania,
-            and Estonia. We connect private buyers and private sellers; the sale contract is
-            concluded directly between them.
+            runs a peer-to-peer marketplace for pre-loved board games in Latvia, Lithuania, and
+            Estonia. We connect private buyers and private sellers; the sale itself is a
+            contract between them, not with us.
           </p>
           <p>
-            Payments are processed through EveryPay (Maksekeskus AS), a licensed Estonian
-            payment institution. Funds received from buyers are held in an account designated
-            for marketplace transactions and are released to sellers after the order is
-            confirmed delivered and the dispute window has closed. Second Turn Games is not
-            itself a payment institution and does not hold a payment services licence. We
-            refer to our role in the flow as that of a commercial agent acting on behalf of
-            sellers, and we rely on the exemption in Article 3(b) of Directive (EU) 2015/2366
-            (PSD2). If that exemption is determined not to apply in any particular case, we
-            will restructure the flow through a licensed payment institution.
+            Payments go through EveryPay (Maksekeskus AS), a licensed Estonian payment
+            institution. Buyer funds are held in a marketplace account and released to the
+            seller once delivery is confirmed and the dispute window has closed. We are not a
+            payment institution ourselves and do not hold a payment services licence. Our role
+            in the payment flow is that of a commercial agent acting for sellers, relying on
+            the exemption in Article 3(b) of Directive (EU) 2015/2366 (PSD2). If that
+            exemption turns out not to apply, we will move the flow to a licensed payment
+            institution.
           </p>
         </section>
 
@@ -109,14 +108,14 @@ export default function TermsPage() {
             3. Consumer protection notice
           </h2>
           <p>
-            All sellers on Second Turn Games are private individuals selling personal items, not
-            businesses or professional traders. EU consumer protection rules that apply to
-            business-to-consumer sales (the 14-day withdrawal right, the 2-year legal guarantee of
-            conformity) do not apply to transactions on this platform.
+            Everyone selling on Second Turn Games is a private individual with a personal
+            collection, not a business or professional trader. The EU consumer-protection rules
+            that apply to business-to-consumer sales — the 14-day withdrawal right and the
+            2-year guarantee of conformity — do not apply here.
           </p>
           <p>
-            What we do instead: buyer payments are held until delivery is confirmed, and buyers have
-            2 days after delivery to report issues with their order.
+            What you get instead: buyer funds are held until delivery, and buyers have 2 days
+            after delivery to open a dispute if something&apos;s wrong.
           </p>
         </section>
 
@@ -278,37 +277,36 @@ export default function TermsPage() {
             You ending your account
           </h3>
           <p>
-            You may close your account at any time from your account settings. Closure is
-            immediate. Before your account can be closed, you must (a) cancel or complete any
-            active listings and in-progress orders, (b) withdraw any positive wallet balance,
-            and (c) resolve any pending disputes. On closure, we anonymise your profile, your
-            public comments, and your order messages so that they no longer identify you; we
-            cancel any residual listings; we remove your listing photos from storage within
-            6 hours; and we delete your account in our authentication system. Information we
-            are required by law to retain (completed-order records, invoices, DAC7 reporting
-            data, and security logs) is retained for the periods set out in Section 9 of our{' '}
+            You can close your account at any time from your account settings. Closure happens
+            immediately. Before we can close it you need to (a) cancel or complete any active
+            listings and in-progress orders, (b) withdraw any positive wallet balance, and
+            (c) resolve any open disputes. When you close the account we anonymise your
+            profile, your public comments, and your order messages so they no longer point
+            back at you; cancel any stray listings; remove your photos from storage within
+            six hours; and delete your login in our authentication system. Records we have to
+            keep by law — completed-order data, invoices, DAC7 reporting data, and security
+            logs — stay for the periods listed in Section 9 of our{' '}
             <Link href="/privacy" className="link-brand">
               Privacy Policy
             </Link>
-            , in a form that does not link to your anonymised account except where the retention
-            obligation requires it.
+            , and they do not link back to your anonymised account except where the law
+            requires the link to survive.
           </p>
 
           <h3 className={subHeadingClass}>
             Us ending your account
           </h3>
           <p>
-            We may suspend or terminate your account, remove listings, or freeze your wallet
-            balance if we have reasonable grounds to believe you have (a) breached these Terms
-            or the Seller Agreement, (b) engaged in fraud, misrepresentation, or commercial
-            reselling, (c) failed to ship or respond to orders repeatedly, (d) accumulated
-            excessive chargebacks, (e) triggered our anti-money-laundering, sanctions, or
-            fraud controls, or (f) caused us or another user harm. Where we take such action,
-            we notify you of the reasons and of your right to dispute the decision, in
-            accordance with Article 17 of Regulation (EU) 2022/2065 (the Digital Services Act).
-            Where your account is terminated for cause, any positive wallet balance is payable
-            to you after deduction of any amounts you owe us, and may be held for up to
-            180 days to cover potential chargebacks or claims before being released.
+            We can suspend or terminate your account, take down listings, or freeze your
+            wallet balance if we have reasonable grounds to believe you have (a) broken these
+            Terms or the Seller Agreement, (b) engaged in fraud, misrepresentation, or
+            commercial reselling, (c) repeatedly failed to ship or reply to orders, (d) racked
+            up too many chargebacks, (e) triggered our anti-money-laundering, sanctions, or
+            fraud controls, or (f) harmed us or another user. When we do, we tell you why and
+            how to dispute it, per Article 17 of Regulation (EU) 2022/2065 (the Digital
+            Services Act). If we terminate for cause, any positive wallet balance is payable
+            to you minus anything you owe us, and we may hold it for up to 180 days to cover
+            chargebacks or claims before releasing.
           </p>
 
           <h3 className={subHeadingClass}>
@@ -419,13 +417,12 @@ export default function TermsPage() {
             Trader-status disputes
           </h3>
           <p>
-            If a dispute between a buyer and a seller concerns whether the seller is a trader
-            within the meaning of Directive 2011/83/EU, we will (a) review the seller&apos;s
-            activity against our internal criteria, (b) provide the buyer with the outcome of
-            our review, and (c) where we conclude the seller is likely a trader, support the
-            buyer in exercising their statutory rights, including facilitating a refund where a
-            withdrawal right would apply. Our review does not bind the courts or consumer
-            protection authorities.
+            If a buyer-seller dispute turns on whether the seller is really a trader under
+            Directive 2011/83/EU, we will look at the seller&apos;s activity against our
+            internal criteria, tell the buyer what we found, and — if we think the seller is
+            likely a trader — help the buyer use their statutory rights, including a refund
+            where a withdrawal right applies. Our assessment does not bind the courts or the
+            consumer-protection authorities.
           </p>
         </section>
 
@@ -481,24 +478,23 @@ export default function TermsPage() {
             17. Reporting illegal content
           </h2>
           <p>
-            Anyone can notify us of content on Second Turn Games they believe is illegal, using
+            Anyone can tell us about content on Second Turn Games they think is illegal. Use
             the form at{' '}
             <Link href="/report-illegal-content" className="link-brand">
               secondturn.games/report-illegal-content
             </Link>
-            {' '}or by email to{' '}
+            {' '}or email{' '}
             <a href="mailto:info@secondturn.games" className="link-brand">
               info@secondturn.games
             </a>
-            . A notice should identify the content (URL or listing ID), explain why you believe
-            it is illegal, include your name and email address (unless your notice concerns
-            content you believe constitutes a criminal offence involving sexual exploitation of
-            minors, in which case you may submit anonymously), and confirm that the information
-            you provide is accurate to the best of your knowledge. We acknowledge valid notices
-            promptly and take action where required, without undue delay. We may use automated
-            tools to assist triage; a human reviews every decision that restricts or removes
-            content. We notify both the notifier and the affected user of our decision and the
-            reasons for it, in accordance with Article 17 of Regulation (EU) 2022/2065.
+            . A valid notice identifies the content (a URL or listing ID), explains why you
+            believe it&apos;s illegal, includes your name and email, and confirms the
+            information is accurate to the best of your knowledge. Reports of suspected child
+            sexual abuse material can be submitted anonymously. We acknowledge valid notices
+            quickly and act where required, without undue delay. We use automated tools to
+            help with triage, but every decision to remove or restrict content is reviewed by
+            a human. We notify both the reporter and the affected user of the decision and
+            the reasons for it, per Article 17 of Regulation (EU) 2022/2065.
           </p>
           <p>
             <strong>Criminal-offence notifications.</strong> Where we become aware of

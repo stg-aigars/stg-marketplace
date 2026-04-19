@@ -190,16 +190,16 @@ export default function CookiesPage() {
             Third-party tools on form submissions
           </h2>
           <p>
-            On forms that are a common target for bots (sign-up, password reset, newsletter,
-            comments, checkout, bidding, listing edits), we use{' '}
-            <strong>Cloudflare Turnstile</strong> in invisible mode. Turnstile loads a script
-            from <span className="font-mono">challenges.cloudflare.com</span> and may set
-            transient cookies on the <span className="font-mono">cloudflare.com</span> domain
-            while verifying that the submission is not automated. Turnstile also writes small
-            items to your browser&apos;s local storage on our domain (prefixed{' '}
-            <span className="font-mono">cf.turnstile.</span>) to avoid re-challenging you on
-            every form — these are listed in the local-storage table above. Turnstile is
-            strictly necessary to keep bot submissions out of the marketplace. See{' '}
+            On forms that bots like to target — sign-up, password reset, newsletter, comments,
+            checkout, bidding, listing edits — we use <strong>Cloudflare Turnstile</strong> in
+            invisible mode. Turnstile loads a script from{' '}
+            <span className="font-mono">challenges.cloudflare.com</span> and may set transient
+            cookies on the <span className="font-mono">cloudflare.com</span> domain while it
+            checks that the submission isn&apos;t automated. It also writes small items to
+            your browser&apos;s local storage on our domain (prefixed{' '}
+            <span className="font-mono">cf.turnstile.</span>) so it doesn&apos;t re-challenge
+            you on every form — those are in the local-storage table above. Turnstile is
+            strictly necessary to keep bots out of the marketplace. See{' '}
             <a
               href="https://www.cloudflare.com/privacypolicy/"
               target="_blank"
@@ -211,9 +211,9 @@ export default function CookiesPage() {
             for details.
           </p>
           <p>
-            Cloudflare also proxies traffic to our domain and runs edge-level bot management,
-            which is what sets the <span className="font-mono">cf_clearance</span> cookie
-            listed in the cookies table above.
+            Cloudflare also proxies our traffic and runs edge-level bot management, which is
+            what sets the <span className="font-mono">cf_clearance</span> cookie in the
+            cookies table above.
           </p>
         </section>
 
