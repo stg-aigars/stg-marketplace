@@ -78,27 +78,25 @@ export default function SellerTermsPage() {
             1. Eligibility and private-sellers-only rule
           </h2>
           <p>
-            To sell on Second Turn Games you must be at least 18 years old and reside in Latvia,
+            To sell on Second Turn Games you need to be 18 or older and living in Latvia,
             Lithuania, or Estonia.
           </p>
           <p>
-            Second Turn Games is a platform for private individuals selling their personal board
-            game collections. You may not list items on the platform in the course of a business,
-            trade, or profession, including as a retailer, reseller, distributor, wholesaler, or
-            auction house. You must not list items that you acquired primarily for resale. We
-            may, at our discretion and without notice, require you to confirm the private nature
-            of your activity and may suspend or terminate your account if we have reasonable
-            grounds to believe you are acting as a trader.
+            This platform is for private individuals selling off their own board game
+            collections. You can&apos;t list here in the course of a business, trade, or
+            profession — that includes retailers, resellers, distributors, wholesalers, and
+            auction houses. You can&apos;t list items you bought to resell at a profit. If we
+            have reason to think you&apos;re acting as a trader, we can ask you to confirm the
+            private nature of your activity and, if needed, suspend or close your account.
           </p>
           <p>
-            If you believe you are or have become a trader for the purposes of Directive
-            2011/83/EU (the Consumer Rights Directive), you must notify us immediately at{' '}
+            If you come to think you are or have become a trader for the purposes of Directive
+            2011/83/EU (the Consumer Rights Directive), tell us right away at{' '}
             <a href="mailto:info@secondturn.games" className="link-brand">
               info@secondturn.games
             </a>
-            , cease new listings, and complete any outstanding orders in accordance with the
-            trader obligations in that Directive (including the 14-day withdrawal right for
-            buyers).
+            , stop new listings, and complete any open orders with the trader obligations that
+            Directive imposes on you — including the 14-day withdrawal right for your buyers.
           </p>
         </section>
 
@@ -107,19 +105,17 @@ export default function SellerTermsPage() {
             2. Payment authorization
           </h2>
           <p>
-            By listing an item on Second Turn Games, you authorise {LEGAL_ENTITY_NAME} to
-            receive payments from buyers on your behalf. Payments are processed through
-            EveryPay (Maksekeskus AS), a licensed Estonian payment institution. Funds are held
-            in an account designated for marketplace transactions and released to you after
-            the order is confirmed delivered and the dispute window has closed.
+            When you list an item, you authorise {LEGAL_ENTITY_NAME} to take payment from
+            buyers on your behalf. Payments go through EveryPay (Maksekeskus AS), a licensed
+            Estonian payment institution. The funds sit in a marketplace account and are
+            released to you once delivery is confirmed and the dispute window has closed.
           </p>
           <p>
-            {LEGAL_ENTITY_NAME} is not itself a payment institution and does not hold a payment
-            services licence. We refer to our role in this flow as that of a commercial agent
-            acting on your behalf, and we rely on the exemption in Article 3(b) of Directive
-            (EU) 2015/2366 (PSD2). If that exemption is determined not to apply in any
-            particular case, we will restructure the flow through a licensed payment
-            institution.
+            We are not a payment institution ourselves and do not hold a payment services
+            licence. Our role in this flow is that of a commercial agent acting for you, and
+            we rely on the exemption in Article 3(b) of Directive (EU) 2015/2366 (PSD2). If
+            that exemption turns out not to apply, we will move the flow to a licensed
+            payment institution.
           </p>
         </section>
 
@@ -187,43 +183,41 @@ export default function SellerTermsPage() {
             Identity verification
           </h3>
           <p>
-            Before your first withdrawal, you may be required to verify your identity and the
-            ownership of the IBAN to which you are withdrawing, in accordance with the Know
-            Your Customer requirements of our payment processor. Verification may require a
-            government-issued identity document. We may decline or delay withdrawals pending
-            successful verification.
+            Before your first withdrawal, you may need to verify your identity and prove the
+            IBAN belongs to you — this is the Know Your Customer check our payment processor
+            runs. You may need to send a government-issued ID. We can decline or delay a
+            withdrawal while verification is outstanding.
           </p>
 
           <h3 className={subHeadingClass}>
             Chargebacks and clawback
           </h3>
           <p>
-            If a buyer successfully disputes a completed order after you have withdrawn the
-            associated funds, you agree that (a) we may retain an equivalent amount from your
-            future wallet balance and from any subsequent sales proceeds, and (b) if your wallet
-            balance is insufficient, you remain liable for the shortfall and we may pursue the
-            amount through the courts of your country of habitual residence.
+            If a buyer successfully disputes a completed order after you&apos;ve already
+            withdrawn the money, you agree that (a) we can take the equivalent amount from
+            your future wallet balance or sales proceeds, and (b) if your wallet doesn&apos;t
+            cover it, you owe us the shortfall — and we may pursue it through the courts of
+            your country of habitual residence.
           </p>
 
           <h3 className={subHeadingClass}>
             Negative balance
           </h3>
           <p>
-            If a refund, chargeback, or other adjustment results in your wallet balance being
-            negative, you must repay the shortfall within 30 days of notice, either by transfer
-            to the bank account we designate or by offset against future sales proceeds.
+            If a refund, chargeback, or other adjustment pushes your wallet into the negative,
+            you need to repay the shortfall within 30 days of notice — either by transfer to
+            the bank account we name, or by offset against future sales.
           </p>
 
           <h3 className={subHeadingClass}>
             Inactive accounts
           </h3>
           <p>
-            Wallet balances are retained indefinitely. If you have not logged into your account
-            for 24 months and your wallet balance is positive, we will attempt to contact you at
-            your registered email address. If you do not respond within 90 days of such contact,
-            we may withdraw the balance to the last IBAN we have on file for you, subject to
-            successful re-verification. Unclaimed amounts remain your property and will be paid
-            on request.
+            We hold wallet balances indefinitely. If you haven&apos;t logged in for 24 months
+            and your balance is positive, we&apos;ll email the address on file. If we
+            don&apos;t hear back within 90 days, we may try to send the balance to your last
+            IBAN on file (after re-verification). Anything still unclaimed stays yours and
+            we&apos;ll pay it out on request.
           </p>
         </section>
 
@@ -250,17 +244,18 @@ export default function SellerTermsPage() {
             Anti-money-laundering, sanctions, and fraud
           </h3>
           <p>
-            We reserve the right, at our discretion and without prior notice, to (a) screen
+            We reserve the right — at our discretion and without prior notice — to (a) screen
             transactions, accounts, IBANs, and identifying information against EU and
-            international sanctions lists, politically exposed person lists, and fraud databases;
-            (b) suspend your account, freeze your wallet balance, or refuse a payout if we have
-            reasonable grounds to suspect money laundering, terrorist financing, sanctions
-            evasion, or fraud; (c) request additional identification, source-of-funds, or
-            beneficial-ownership information; and (d) share information with competent
-            authorities, including the Latvian State Security Service, the Financial
-            Intelligence Unit (FID), the State Revenue Service (VID), and our payment processor.
-            Funds frozen under this provision remain your property and will be released once the
-            matter is resolved, subject to any order of a competent authority.
+            international sanctions lists, politically exposed person lists, and fraud
+            databases; (b) suspend your account, freeze your wallet balance, or refuse a payout
+            if we have reasonable grounds to suspect money laundering, terrorist financing,
+            sanctions evasion, or fraud; (c) ask you for more identification, source-of-funds
+            information, or beneficial-ownership information; and (d) share information with
+            competent authorities — including the Latvian State Security Service, the
+            Financial Intelligence Unit (FID), the State Revenue Service (VID), and our
+            payment processor. Funds frozen under this clause stay your property and are
+            released once the matter is resolved, subject to any order from a competent
+            authority.
           </p>
         </section>
 
@@ -273,32 +268,32 @@ export default function SellerTermsPage() {
             VAT on our commission
           </h3>
           <p>
-            Our 10% commission on the item price is an electronically supplied service within the
-            meaning of Article 7 of Council Implementing Regulation (EU) No 282/2011. Place of
-            supply is determined under Article 58 of Directive 2006/112/EC (place of the non-
-            taxable-person customer). VAT is added on top of the commission amount (not
-            included), at the rate of your country of residence: 21% for Latvia, 21% for
-            Lithuania, 24% for Estonia. Our VAT number is {LEGAL_ENTITY_VAT_NUMBER}.
+            Our 10% commission on the item price is an electronically supplied service under
+            Article 7 of Council Implementing Regulation (EU) No 282/2011. Place of supply is
+            set by Article 58 of Directive 2006/112/EC (where the non-taxable-person customer
+            is). VAT is added on top of the commission (not included), at the rate of your
+            country: 21% for Latvia, 21% for Lithuania, 24% for Estonia. Our VAT number is{' '}
+            {LEGAL_ENTITY_VAT_NUMBER}.
           </p>
 
           <h3 className={subHeadingClass}>
             VAT on shipping
           </h3>
           <p>
-            When we arrange shipping through our logistics partners on your behalf, we re-supply
-            the shipping service to you at the VAT rate of the country where the goods depart
-            (your country). Place of supply is determined under Articles 49 and 50 of Directive
-            2006/112/EC, depending on whether the shipment is domestic or cross-border.
+            When we arrange shipping through our logistics partners, we re-supply the shipping
+            to you at the VAT rate of the country the goods depart from (your country). Place
+            of supply is set by Articles 49 and 50 of Directive 2006/112/EC, depending on
+            whether the shipment is domestic or cross-border.
           </p>
 
           <h3 className={subHeadingClass}>
             Invoices
           </h3>
           <p>
-            We issue an invoice for commission and shipping VAT after each completed order in
-            the format <span className="font-mono">INV-YYYY-NNNNN</span>. Invoices are available
-            under &ldquo;My sales&rdquo; in your account and are retained for the periods set
-            out in our{' '}
+            We issue an invoice for commission and shipping VAT after each completed order,
+            in the format <span className="font-mono">INV-YYYY-NNNNN</span>. Invoices are
+            available under &ldquo;My sales&rdquo; in your account and are kept for the
+            periods in our{' '}
             <Link href="/privacy" className="link-brand">
               Privacy Policy
             </Link>
@@ -309,25 +304,23 @@ export default function SellerTermsPage() {
             Your income tax
           </h3>
           <p>
-            You are responsible for declaring income from sales on the platform to the tax
-            authorities of your country of residence, subject to any applicable private-seller
-            thresholds. We do not withhold income tax on your behalf and do not provide tax
-            advice.
+            You&apos;re responsible for declaring sales income to the tax authority in your
+            country, subject to any private-seller thresholds that apply there. We don&apos;t
+            withhold income tax for you and we don&apos;t give tax advice.
           </p>
 
           <h3 className={subHeadingClass}>
             DAC7 reporting
           </h3>
           <p>
-            Under Council Directive (EU) 2021/514 (DAC7), we are required to report to the
-            Latvian State Revenue Service (VID) once you exceed 30 sales or €2,000 in a
-            calendar year. We may ask you to provide DAC7 data as you approach this threshold
-            (our internal warning trigger is 25 sales or €1,750) so that reporting is not held
-            up when the statutory threshold is reached. We ask for your full legal name, date
-            of birth, address, and tax identification number. If you do not provide this
-            information, we may have to suspend your selling privileges and withhold payouts
-            until the obligation is resolved. A copy of what we report about you is available
-            on request.
+            Under Council Directive (EU) 2021/514 (DAC7), we have to report you to the
+            Latvian State Revenue Service (VID) once you pass 30 sales or €2,000 in a
+            calendar year. Before that happens, we&apos;ll ask you for the DAC7 data so the
+            report doesn&apos;t get held up — our internal warning trigger is 25 sales or
+            €1,750. We ask for your full legal name, date of birth, address, and tax
+            identification number. If you don&apos;t give us those, we may need to pause your
+            selling and hold payouts until you do. You can ask for a copy of what we report
+            about you.
           </p>
         </section>
 

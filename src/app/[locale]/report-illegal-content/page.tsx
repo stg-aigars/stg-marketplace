@@ -14,27 +14,26 @@ export default function ReportIllegalContentPage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-4 mb-6">
         <p>
-          If you believe a listing, comment, or other content on Second Turn Games is illegal,
-          this is the place to tell us. We action valid notices without undue delay and review
-          every decision before removing or restricting content. You will be notified of the
-          outcome, as will the user who posted the content, in accordance with Article 17 of
+          If you think a listing, comment, or other content on Second Turn Games is illegal,
+          this is where you tell us. We act on valid notices quickly, and every decision to
+          remove or restrict content is reviewed by a human. You&apos;ll hear back from us
+          with the outcome, and so will the user who posted the content — per Article 17 of
           Regulation (EU) 2022/2065 (the Digital Services Act).
         </p>
         <p>
-          If this is not an urgent matter and does not concern illegal content, please use our{' '}
+          If this isn&apos;t about illegal content, use our{' '}
           <a href="/contact" className="link-brand">
             contact page
           </a>{' '}
-          instead. For data-protection questions, use{' '}
+          instead. For data-protection questions, email{' '}
           <a href="mailto:privacy@secondturn.games" className="link-brand">
             privacy@secondturn.games
           </a>
           .
         </p>
         <p className="text-xs text-semantic-text-muted">
-          If your notice concerns content that constitutes a criminal offence involving the sexual
-          exploitation of minors, you may submit anonymously by leaving the name and email fields
-          blank.
+          If you&apos;re reporting suspected child sexual abuse material, you can submit
+          anonymously — leave the name and email fields blank.
         </p>
       </div>
 

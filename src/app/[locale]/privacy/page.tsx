@@ -74,9 +74,9 @@ export default function PrivacyPage() {
           </h2>
           <p>
             {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;), registration number {LEGAL_ENTITY_REG_NUMBER},
-            registered at {LEGAL_ENTITY_ADDRESS}, is the data controller. This policy explains how
-            we collect, use, and protect your personal data under the General Data Protection
-            Regulation (GDPR, EU 2016/679) and Latvian data protection law.
+            registered at {LEGAL_ENTITY_ADDRESS}, is the data controller. This policy explains
+            what data we collect and why, under the General Data Protection Regulation
+            (Regulation (EU) 2016/679) and Latvian data-protection law.
           </p>
           <p>
             For data-protection questions and requests (access, export, deletion, objection),
@@ -237,14 +237,14 @@ export default function PrivacyPage() {
             6. Who we share your data with
           </h2>
           <p>
-            We share your personal data only with the third parties listed below, and only to the
-            extent each of them needs to deliver a part of the service. Our partners fall into
-            two groups: <strong>processors</strong>, who act on our documented instructions under
-            a data processing agreement, and <strong>independent controllers</strong>, who have
-            their own direct relationship with you and handle your data under their own privacy
-            policy — primarily the sign-in providers. Each section below notes which relationship
-            applies. We do not sell your personal data. We are not in the business of advertising.
+            We share your data with the third parties listed below, and only to the extent each
+            of them needs to do its job. These partners fall into two groups. Most are{' '}
+            <strong>processors</strong>: they act on our written instructions, under a data
+            processing agreement. A few are <strong>independent controllers</strong> with their
+            own relationship with you and their own privacy policy — the sign-in providers are
+            the main example. Each group is labelled below so you can tell which is which.
           </p>
+          <p>We do not sell your personal data, and we do not run ads.</p>
 
           <h3 className={subHeadingClass}>Payments, shipping, and messaging (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
@@ -267,14 +267,12 @@ export default function PrivacyPage() {
 
           <h3 className={subHeadingClass}>Sign-in providers (independent controllers)</h3>
           <p>
-            If you choose to sign in with Google or Facebook, the provider authenticates you
-            against their own account system and returns a verified email address and basic
-            profile identifier to us. The provider is an <strong>independent controller</strong>{' '}
-            of your account data with them under its own privacy policy; we do not instruct the
-            provider on how to process its users&apos; data. The transfer from the provider to
-            us happens under your own authorisation at the &ldquo;Continue with &hellip;&rdquo;
-            prompt. These are not processor relationships, and no data processing agreement is
-            needed for them.
+            If you sign in with Google or Facebook, the provider checks your login on their end
+            and hands us back your verified email and a profile identifier. The provider is an
+            independent controller of your account data with them, under its own privacy
+            policy. We don&apos;t tell Google or Meta how to handle their users&apos; data; they
+            don&apos;t process data on our behalf. The handover happens under the consent you
+            give at the &ldquo;Continue with &hellip;&rdquo; prompt.
           </p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -331,14 +329,12 @@ export default function PrivacyPage() {
 
           <h3 className={subHeadingClass}>Outgoing connections your browser makes</h3>
           <p>
-            When you view a listing, your browser loads the game&apos;s cover image directly
-            from BoardGameGeek&apos;s CDN (<span className="font-mono">cf.geekdo-images.com</span>).
-            BoardGameGeek is the cornerstone data source for game identity on the platform; its
-            CDN logs your IP address in the normal course of serving images, the same way any
-            website you visit directly would. BoardGameGeek is not a processor of ours — we do
-            not send them your account data — but this browser-level contact is worth knowing
-            about. API calls to BoardGameGeek for game metadata are made server-side only and
-            never expose your IP address.
+            When you look at a listing, your browser fetches the cover image directly from
+            BoardGameGeek&apos;s CDN (<span className="font-mono">cf.geekdo-images.com</span>).
+            BGG is where most of our game data comes from, and their CDN logs your IP just like
+            any site you visit. BGG is not our processor; we don&apos;t send them your account
+            data. But the image load is a direct browser-to-BGG hit, so it&apos;s worth knowing.
+            Our server-to-server calls to BGG for game metadata never expose your IP.
           </p>
         </section>
 

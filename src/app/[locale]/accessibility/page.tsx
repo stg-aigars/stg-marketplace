@@ -19,9 +19,9 @@ export default function AccessibilityPage() {
         </p>
 
         <p>
-          Second Turn Games is committed to making the marketplace usable for everyone, in line
-          with the European Accessibility Act (EAA, Directive (EU) 2019/882) which applies to
-          e-commerce services from 28 June 2025.
+          Second Turn Games should be usable for everyone. The European Accessibility Act
+          (Directive (EU) 2019/882) has applied to e-commerce services since 28 June 2025, and
+          this page is how we describe where we stand.
         </p>
 
         <section className="space-y-3">
@@ -29,13 +29,14 @@ export default function AccessibilityPage() {
             Our commitment
           </h2>
           <p>
-            We aim to meet Web Content Accessibility Guidelines (WCAG) 2.1 Level AA across the
-            platform. We design for keyboard navigation, screen readers, adequate colour contrast,
-            resizable text, and sensible touch targets on mobile.
+            We aim for Web Content Accessibility Guidelines (WCAG) 2.1 Level AA across the
+            platform. That means: keyboard navigation works, screen readers get sensible
+            labels, colour contrast is adequate, text resizes cleanly, and touch targets on
+            mobile are big enough to tap reliably.
           </p>
           <p>
-            Accessibility is an ongoing effort. As we ship new features we audit them for
-            accessibility issues, and we treat accessibility regressions as bugs.
+            Accessibility isn&apos;t a one-time checkbox. We audit new features as they ship,
+            and we treat accessibility regressions as bugs.
           </p>
         </section>
 
@@ -44,8 +45,8 @@ export default function AccessibilityPage() {
             Known limitations
           </h2>
           <p>
-            We are still documenting the full list of known accessibility gaps and the plan to
-            close them. This page will be updated as that work progresses.
+            We&apos;re still working through a full list of known gaps and the plan for
+            closing them. This page will get updated as that work progresses.
           </p>
         </section>
 
@@ -54,13 +55,13 @@ export default function AccessibilityPage() {
             Contact us
           </h2>
           <p>
-            If you run into an accessibility barrier while using Second Turn Games, please let us
-            know so we can fix it. Reach us via the{' '}
+            If you hit an accessibility barrier using Second Turn Games, let us know so we can
+            fix it. Reach out through our{' '}
             <Link href="/contact" className="link-brand">
               contact page
             </Link>
-            . Describe what you were trying to do, which page you were on, and which assistive
-            technology you were using if any.
+            . Tell us what you were trying to do, which page you were on, and what assistive
+            technology you were using (if any).
           </p>
         </section>
       </div>
