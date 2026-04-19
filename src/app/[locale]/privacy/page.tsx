@@ -370,16 +370,55 @@ export default function PrivacyPage() {
               </thead>
               <tbody className="divide-y divide-semantic-border-subtle">
                 <tr>
-                  <td className="py-2 pr-4">Account data</td>
-                  <td className="py-2">Until account deletion (anonymized immediately)</td>
+                  <td className="py-2 pr-4">Account profile (name, email, phone)</td>
+                  <td className="py-2">
+                    Anonymized the moment you delete your account. There is no reactivation
+                    grace window &mdash; account deletion is immediate and final.
+                  </td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4">Listing data</td>
-                  <td className="py-2">Until listing or account deleted</td>
+                  <td className="py-2 pr-4">Active listing data and photos</td>
+                  <td className="py-2">
+                    Until the listing is removed or the account is deleted. Photos are removed
+                    from Supabase Storage within six hours of listing removal.
+                  </td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4">Transaction and order records</td>
-                  <td className="py-2">7 years (tax and accounting law)</td>
+                  <td className="py-2 pr-4">
+                    Completed orders, invoices, and transaction records
+                  </td>
+                  <td className="py-2">
+                    Up to 10 years after the transaction, as required by Latvian accounting law
+                    (Gr&#x101;matved&#x12B;bas likums) and VAT law (PVN likums). These records
+                    are retained even after you delete your account &mdash; they are exempt
+                    from erasure requests under GDPR Article 17(3)(b).
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">
+                    DAC7 seller data (TIN, date of birth, address, annual totals)
+                  </td>
+                  <td className="py-2">
+                    10 years after the reportable year, as required by Council Directive (EU)
+                    2021/514 implementing Article 25d of Directive 2011/16/EU. Applies only to
+                    sellers who reach the DAC7 reporting thresholds.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">Reviews you wrote or received</td>
+                  <td className="py-2">
+                    Retained on the reviewed seller&apos;s profile indefinitely. When you delete
+                    your account, reviews you wrote are anonymized rather than removed, so the
+                    seller&apos;s reputation stays intact.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">Listing comments and order messages</td>
+                  <td className="py-2">
+                    Anonymized the moment you delete your account (content replaced with
+                    &ldquo;[deleted]&rdquo;); retained otherwise for the life of the listing or
+                    order.
+                  </td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4">Security logs (IP, login activity)</td>
@@ -389,8 +428,10 @@ export default function PrivacyPage() {
             </table>
           </div>
           <p>
-            You may request deletion of your account at any time. Transaction records are exempt from
-            erasure requests due to legal retention requirements.
+            You may request deletion of your account at any time from your account settings. The
+            records listed above that are subject to legal-obligation retention will continue to
+            be held for the period the law requires, but your profile, direct identifiers, and
+            non-transactional content are removed or anonymized immediately.
           </p>
         </section>
 
