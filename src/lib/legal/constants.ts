@@ -17,6 +17,15 @@ export const PRIVACY_VERSION_DISPLAY = '19 April 2026';
 export const SELLER_TERMS_VERSION = '2026-04-19';
 export const SELLER_TERMS_VERSION_DISPLAY = '19 April 2026';
 
+/** The lawyer-drafted private-individual declaration sellers must affirm at
+ *  Seller Agreement acceptance. The phrase "not acting in the course of a
+ *  business, trade, or profession" is the load-bearing Consumer Rights
+ *  Directive term of art that anchors the trader-dispute fallback clause in
+ *  Terms §15. Do not soften it in UI. Render via `{SELLER_DECLARATION_TEXT}`,
+ *  never hard-code in JSX — a UI refactor must go through this constant. */
+export const SELLER_DECLARATION_TEXT =
+  'I am at least 18 years old. I confirm that I am a private individual, not acting in the course of a business, trade, or profession. I have read and agree to the Seller Agreement.';
+
 /** Sunset date for the transitional PSD2 Art. 3(b) wording in Terms §1 and
  *  Seller Agreement §2. The current wording does not affirmatively claim the
  *  exemption — it describes the fund flow and flags that if Art. 3(b) is
