@@ -34,13 +34,16 @@ export default function PrivacyPage() {
             Regulation (GDPR, EU 2016/679) and Latvian data protection law.
           </p>
           <p>
-            Contact:{' '}
-            <a
-              href="mailto:info@secondturn.games"
-              className="link-brand"
-            >
+            For data-protection questions and requests (access, export, deletion, objection),
+            write to{' '}
+            <a href="mailto:privacy@secondturn.games" className="link-brand">
+              privacy@secondturn.games
+            </a>
+            . For anything else, use{' '}
+            <a href="mailto:info@secondturn.games" className="link-brand">
               info@secondturn.games
             </a>
+            .
           </p>
         </section>
 
@@ -73,6 +76,15 @@ export default function PrivacyPage() {
               to improve the platform)
             </li>
           </ul>
+          <p>
+            <strong>What is visible to the public.</strong> Once you list a game or leave a review,
+            some of your profile becomes visible to anyone browsing the site, including people who
+            are not signed in: your display name, your country (shown as a flag), your profile
+            photo if you uploaded one, and the date your account was created. Seller reviews you
+            receive are also public and show up on your profile. We do not expose your email
+            address, phone number, full address, or any payment information to other users or to
+            anonymous visitors.
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -117,8 +129,27 @@ export default function PrivacyPage() {
                   </td>
                 </tr>
                 <tr>
+                  <td className="py-2 pr-4">
+                    DAC7 seller identification (TIN, date of birth, address)
+                  </td>
+                  <td className="py-2">
+                    Art. 6(1)(c) &mdash; legal obligation (Council Directive (EU) 2021/514,
+                    reporting to Latvian State Revenue Service)
+                  </td>
+                </tr>
+                <tr>
                   <td className="py-2 pr-4">Usage and security data</td>
-                  <td className="py-2">Art. 6(1)(f) &mdash; legitimate interest (security, fraud prevention)</td>
+                  <td className="py-2">
+                    Art. 6(1)(f) &mdash; legitimate interest (platform security, service
+                    improvement)
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">Fraud prevention signals</td>
+                  <td className="py-2">
+                    Art. 6(1)(f) &mdash; legitimate interest (preventing fraud, counterfeit
+                    listings, and abuse)
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -143,45 +174,117 @@ export default function PrivacyPage() {
             5. Data storage and security
           </h2>
           <p>
-            Your data is stored in Supabase (cloud database, hosted in Stockholm, Sweden) with
-            row-level security policies. Our application servers are in Helsinki, Finland. Data in
-            transit is encrypted via TLS, data at rest via AES-256. Photos are stored in Supabase
-            Storage with access controls.
+            Your data is stored in Supabase (cloud database in the North EU region, Stockholm)
+            with row-level security policies enforced at the database layer. Our application
+            servers run on Hetzner in Helsinki, Finland. Data in transit is encrypted via TLS,
+            data at rest via AES-256. Photos are stored in Supabase Storage with access controls.
+          </p>
+          <p>
+            <strong>Photo cleanup.</strong> When a listing is removed — by the seller, by the
+            platform, or when an account is deleted — the associated photos are removed from
+            Supabase Storage by an automated cleanup job that runs every six hours. Photos are
+            not retained beyond the life of the listing they belong to.
           </p>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            6. Data sharing
+            6. Who we share your data with
           </h2>
-          <p>We share your data with these processors:</p>
+          <p>
+            We share your personal data only with the third parties listed below, and only to the
+            extent each of them needs to deliver a part of the service. We do not sell your
+            personal data. We are not in the business of advertising.
+          </p>
+
+          <h3 className="text-base font-semibold pt-2">Payments, shipping, and messaging</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>EveryPay (Swedbank):</strong> payment processing &mdash; name, email,
-              transaction data
+              <strong>EveryPay (Maksekeskus AS, part of Swedbank).</strong> Payment processing.
+              Receives buyer name, email, amount, and transaction metadata. We do not store card
+              details; card data is handled entirely within EveryPay&apos;s PCI-DSS environment.
             </li>
             <li>
-              <strong>Unisend SIA:</strong> parcel locker shipping &mdash; names, phone numbers,
-              terminal selections
+              <strong>Unisend SIA.</strong> Parcel-locker shipping between the Baltic states.
+              Receives sender and recipient names, phone numbers, email addresses, and the
+              chosen terminals.
             </li>
             <li>
-              <strong>Resend:</strong> transactional email delivery &mdash; email address, name,
-              order information
-            </li>
-            <li>
-              <strong>Supabase:</strong> database and storage infrastructure &mdash; all account,
-              listing, and order data
-            </li>
-            <li>
-              <strong>Cloudflare:</strong> security, CDN, and bot protection &mdash; IP address,
-              browser fingerprint
-            </li>
-            <li>
-              <strong>Sentry:</strong> error monitoring &mdash; error details, browser info
-              (IP addresses and user identity are stripped before transmission)
+              <strong>Resend.</strong> Transactional email delivery (order confirmations,
+              shipping updates, auction notifications). Receives the recipient email address,
+              display name, and the content of the email. We do not use Resend for marketing.
             </li>
           </ul>
-          <p>We do not sell your personal data to third parties.</p>
+
+          <h3 className="text-base font-semibold pt-2">Authentication</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Google (Google Ireland Ltd).</strong> Optional &ldquo;Continue with
+              Google&rdquo; sign-in. If you use it, Google receives a sign-in request and
+              returns your verified email and basic profile to us. Governed by Google&apos;s
+              own privacy policy.
+            </li>
+            <li>
+              <strong>Meta Platforms Ireland Ltd.</strong> Optional &ldquo;Continue with
+              Facebook&rdquo; sign-in. If you use it, Meta receives a sign-in request and
+              returns your verified email and basic profile to us. Governed by Meta&apos;s own
+              privacy policy.
+            </li>
+          </ul>
+
+          <h3 className="text-base font-semibold pt-2">Infrastructure</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Supabase (Supabase Inc., EU region).</strong> Our database, authentication
+              provider, and file storage. Stores account, listing, order, messaging, wallet, and
+              photo data. Access is governed by row-level security policies in the database.
+            </li>
+            <li>
+              <strong>Hetzner Online GmbH (Helsinki, Finland).</strong> The VPS provider that
+              hosts the Next.js application layer. Processes every HTTP request to the site as
+              a network sub-processor.
+            </li>
+            <li>
+              <strong>Cloudflare, Inc.</strong> DNS, CDN, reverse proxy, and bot-management edge
+              for <span className="font-mono">secondturn.games</span>. Processes your IP address
+              and request metadata when you visit the site, and runs{' '}
+              <strong>Cloudflare Turnstile</strong> to keep automated submissions off the
+              platform. Details of the cookies Cloudflare sets are in our{' '}
+              <Link href="/cookies" className="link-brand">
+                Cookie Policy
+              </Link>
+              .
+            </li>
+          </ul>
+
+          <h3 className="text-base font-semibold pt-2">Observability</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Sentry (Functional Software, Inc.).</strong> Error monitoring. Receives
+              stack traces and limited browser context when something breaks so we can fix it.
+              We run a PII-stripping filter on events before they leave our servers, and session
+              replay is disabled.
+            </li>
+            <li>
+              <strong>PostHog Cloud (PostHog, Inc., EU region in Frankfurt).</strong> Product
+              analytics. Runs in cookieless mode, so it does not place cookies or local-storage
+              items in your browser. Events are routed through a first-party reverse proxy on
+              our own domain that strips client IP headers before the request leaves our
+              server, so PostHog sees our server&apos;s IP rather than yours.
+            </li>
+          </ul>
+
+          <h3 className="text-base font-semibold pt-2">Outgoing connections your browser makes</h3>
+          <p>
+            When you view a listing, your browser loads the game&apos;s cover image directly
+            from BoardGameGeek&apos;s CDN (<span className="font-mono">cf.geekdo-images.com</span>).
+            BoardGameGeek is the cornerstone data source for game identity on the platform; its
+            CDN logs your IP address in the normal course of serving images, the same way any
+            website you visit directly would. BoardGameGeek is not a processor of ours — we do
+            not send them your account data — but this browser-level contact is worth knowing
+            about. API calls to BoardGameGeek for game metadata are made server-side only and
+            never expose your IP address.
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -223,6 +326,10 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Restrict</strong> processing in certain circumstances (Article 18)
+            </li>
+            <li>
+              <strong>Lodge a complaint</strong> with a supervisory authority (Article 77) — see
+              section 12 for the Latvian authority and its contact details.
             </li>
           </ul>
           <p>
