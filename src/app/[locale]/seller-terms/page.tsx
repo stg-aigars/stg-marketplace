@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   title: 'Seller Agreement',
 };
 
+const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-1';
+
 export default function SellerTermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -176,12 +178,12 @@ export default function SellerTermsPage() {
             typically processed within 1&ndash;3 business days.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Currency
           </h3>
           <p>All amounts in your wallet are held in Euro (EUR).</p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Identity verification
           </h3>
           <p>
@@ -192,7 +194,7 @@ export default function SellerTermsPage() {
             successful verification.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Chargebacks and clawback
           </h3>
           <p>
@@ -203,7 +205,7 @@ export default function SellerTermsPage() {
             amount through the courts of your country of habitual residence.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Negative balance
           </h3>
           <p>
@@ -212,7 +214,7 @@ export default function SellerTermsPage() {
             to the bank account we designate or by offset against future sales proceeds.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Inactive accounts
           </h3>
           <p>
@@ -244,7 +246,7 @@ export default function SellerTermsPage() {
             chargebacks, refunds, or unresolved disputes.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Anti-money-laundering, sanctions, and fraud
           </h3>
           <p>
@@ -267,7 +269,7 @@ export default function SellerTermsPage() {
             7. Tax and invoicing
           </h2>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             VAT on our commission
           </h3>
           <p>
@@ -279,7 +281,7 @@ export default function SellerTermsPage() {
             Lithuania, 24% for Estonia. Our VAT number is {LEGAL_ENTITY_VAT_NUMBER}.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             VAT on shipping
           </h3>
           <p>
@@ -289,7 +291,7 @@ export default function SellerTermsPage() {
             2006/112/EC, depending on whether the shipment is domestic or cross-border.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Invoices
           </h3>
           <p>
@@ -303,7 +305,7 @@ export default function SellerTermsPage() {
             {' '}§9.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Your income tax
           </h3>
           <p>
@@ -313,7 +315,7 @@ export default function SellerTermsPage() {
             advice.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             DAC7 reporting
           </h3>
           <p>

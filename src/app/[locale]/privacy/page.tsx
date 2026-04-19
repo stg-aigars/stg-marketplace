@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Privacy Policy',
 };
 
-const subHeadingClass = 'text-base font-semibold pt-2';
+const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-2';
 
 export default function PrivacyPage() {
   return (

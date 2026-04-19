@@ -11,15 +11,11 @@ import {
 } from '@/components/ui';
 import type { SelectOption, TurnstileWidgetRef } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
+import { REPORT_CATEGORY_LABELS, REPORT_CATEGORY_VALUES } from './categories';
 
 const CATEGORY_OPTIONS: SelectOption[] = [
   { value: '', label: 'Select a category' },
-  { value: 'counterfeit', label: 'Counterfeit product' },
-  { value: 'ip_infringement', label: 'Intellectual property infringement' },
-  { value: 'illegal_goods', label: 'Illegal goods (stolen property, prohibited items)' },
-  { value: 'csam', label: 'Child sexual abuse material' },
-  { value: 'hate_or_harassment', label: 'Hate speech or harassment' },
-  { value: 'other', label: 'Other illegal content' },
+  ...REPORT_CATEGORY_VALUES.map((value) => ({ value, label: REPORT_CATEGORY_LABELS[value] })),
 ];
 
 export function ReportIllegalContentForm() {
