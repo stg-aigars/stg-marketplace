@@ -58,7 +58,7 @@ export function SellerTermsAcceptanceGate({ isReAcceptance }: SellerTermsAccepta
       </CardHeader>
       <CardBody className="space-y-4">
         <ul className="list-disc pl-5 space-y-2 text-sm text-semantic-text-secondary">
-          <li>You must be at least 18 and a private individual &mdash; no business-like reselling.</li>
+          <li>You must be at least 18 and a private individual living in Latvia, Lithuania, or Estonia &mdash; no business-like reselling.</li>
           <li>Describe games accurately, pack them well, and ship on time.</li>
           <li>We take a 10% commission on the item price (not shipping). Your earnings land in a platform wallet.</li>
           <li>DAC7 reporting kicks in at 30 sales or €2,000 in consideration per calendar year; we&apos;ll ask for your tax details before that.</li>

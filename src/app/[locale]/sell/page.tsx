@@ -20,20 +20,24 @@ export default async function SellPage() {
   const dac7Blocked = profile?.dac7_status === 'blocked';
   const needsSellerTerms = needsSellerTermsAcceptance(profile);
 
+  function renderContent() {
+    if (dac7Blocked) return <Dac7BlockedAlert />;
+    if (needsSellerTerms) {
+      return (
+        <SellerTermsAcceptanceGate
+          isReAcceptance={profile?.seller_terms_accepted_at != null}
+        />
+      );
+    }
+    return <SellPageClient />;
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
         Create a listing
       </h1>
-      {dac7Blocked ? (
-        <Dac7BlockedAlert />
-      ) : needsSellerTerms ? (
-        <SellerTermsAcceptanceGate
-          isReAcceptance={profile?.seller_terms_accepted_at != null}
-        />
-      ) : (
-        <SellPageClient />
-      )}
+      {renderContent()}
     </div>
   );
 }
