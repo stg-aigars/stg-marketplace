@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Card, CardBody, CardHeader } from '@/components/ui';
 
 export const metadata: Metadata = {
   title: 'Cookie Policy',
@@ -13,19 +14,46 @@ export default function CookiesPage() {
       </h1>
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
-        <p>
-          This page lists every cookie and local-storage item Second Turn Games sets in your
-          browser, what it is for, how long it lasts, and whether you can turn it off. Under the
-          ePrivacy Directive (Art. 5(3)) we disclose all of them — not only the ones that need
-          your consent.
-        </p>
-
-        <p>
-          Today every item below is strictly necessary for the platform to work or stores a
-          preference you chose yourself. We do not use advertising, retargeting, or cross-site
-          tracking cookies. Our analytics tool (PostHog) runs in <em>cookieless mode</em> and
-          does not set any cookies or local-storage items.
-        </p>
+        <Card className="not-prose">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-semantic-text-heading">
+              Quick Start
+            </h2>
+            <p className="text-xs text-semantic-text-muted mt-0.5">
+              The plain-English version. For the full rulebook, read on.
+            </p>
+          </CardHeader>
+          <CardBody>
+            <ul className="list-disc pl-5 space-y-2 text-sm text-semantic-text-secondary">
+              <li>
+                We disclose every cookie and browser-storage item we set — even the ones that
+                don&apos;t need your consent. The ePrivacy Directive (Art. 5(3)) requires it,
+                and we&apos;d do it anyway.
+              </li>
+              <li>
+                Everything we set is either strictly necessary for the platform to work (keeping
+                you signed in, cart contents, bot protection) or a preference you chose yourself.
+              </li>
+              <li>
+                No advertising, retargeting, or cross-site tracking cookies. We don&apos;t run
+                ads, and we don&apos;t plan to.
+              </li>
+              <li>
+                Our analytics (PostHog, EU region) runs in cookieless mode — no cookies, no
+                localStorage, and IP addresses are stripped at our own proxy before events
+                leave the server.
+              </li>
+              <li>
+                Cloudflare hosts our DNS and CDN and runs Turnstile on bot-prone forms. Both
+                set a small number of cookies — listed in the tables below.
+              </li>
+              <li>
+                You can clear cookies any time in your browser settings. That will sign you out
+                and empty your cart, but the site will still work.
+              </li>
+            </ul>
+          </CardBody>
+        </Card>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">

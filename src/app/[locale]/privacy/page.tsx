@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Card, CardBody, CardHeader } from '@/components/ui';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 import {
   LEGAL_ENTITY_NAME,
@@ -22,6 +23,48 @@ export default function PrivacyPage() {
         <p className="text-semantic-text-secondary">
           Last updated: {TERMS_VERSION_DISPLAY}
         </p>
+
+        <Card className="not-prose">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-semantic-text-heading">
+              Quick Start
+            </h2>
+            <p className="text-xs text-semantic-text-muted mt-0.5">
+              The plain-English version. For the full rulebook, read on.
+            </p>
+          </CardHeader>
+          <CardBody>
+            <ul className="list-disc pl-5 space-y-2 text-sm text-semantic-text-secondary">
+              <li>
+                We collect only what we need to run the marketplace — your account info, what
+                you buy and sell, and the records the tax authorities require us to keep.
+              </li>
+              <li>
+                We never sell your data. Everyone we share data with is listed in section 6,
+                grouped by what they do.
+              </li>
+              <li>
+                Our analytics run in cookieless mode, don&apos;t track you across sites, and
+                don&apos;t see your IP address. We don&apos;t run ads.
+              </li>
+              <li>
+                You can access, export, or delete your account any time from your settings.
+                Deletion is immediate — your profile is anonymized in seconds.
+              </li>
+              <li>
+                We keep some records (orders, invoices, DAC7 seller data) for up to 10 years
+                because Latvian law requires it. Everything else goes when you do.
+              </li>
+              <li>
+                Data-protection questions and requests go to{' '}
+                <a href="mailto:privacy@secondturn.games" className="link-brand">
+                  privacy@secondturn.games
+                </a>
+                . You can also complain to the Latvian Data State Inspectorate.
+              </li>
+            </ul>
+          </CardBody>
+        </Card>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Card, CardBody, CardHeader } from '@/components/ui';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 import { LEGAL_ENTITY_NAME } from '@/lib/constants';
 
@@ -29,6 +30,46 @@ export default function SellerTermsPage() {
           </Link>
           . By creating a listing on Second Turn Games, you agree to these additional terms.
         </p>
+
+        <Card className="not-prose">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-semantic-text-heading">
+              Quick Start
+            </h2>
+            <p className="text-xs text-semantic-text-muted mt-0.5">
+              The plain-English version for sellers. For the full rulebook, read on.
+            </p>
+          </CardHeader>
+          <CardBody>
+            <ul className="list-disc pl-5 space-y-2 text-sm text-semantic-text-secondary">
+              <li>
+                You must be at least 18 and a private individual living in Latvia, Lithuania, or
+                Estonia. No business-like reselling operations.
+              </li>
+              <li>
+                Describe your games accurately, pack them well, and ship on time. If a buyer
+                receives something noticeably worse than the listing, they can claim a refund.
+              </li>
+              <li>
+                We charge 10% commission on the item price (not shipping). Your earnings land in
+                a platform wallet; you withdraw them to a bank account you own.
+              </li>
+              <li>
+                Once you cross 30 sales or €2,000 in a calendar year, we&apos;re required to
+                report you to the tax authority under DAC7. We&apos;ll ask for your tax details
+                before you hit that line, not after.
+              </li>
+              <li>
+                We can delay payouts, reverse transactions, or suspend your account if fraud,
+                counterfeit items, or false descriptions come up.
+              </li>
+              <li>
+                You remain responsible for your own income-tax obligations — being a private
+                seller doesn&apos;t mean your sales are automatically tax-free.
+              </li>
+            </ul>
+          </CardBody>
+        </Card>
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
