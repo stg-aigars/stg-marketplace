@@ -165,6 +165,54 @@ export default function SellerTermsPage() {
             You may withdraw your wallet balance to your bank account (IBAN). Withdrawals are
             typically processed within 1&ndash;3 business days.
           </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Currency
+          </h3>
+          <p>All amounts in your wallet are held in Euro (EUR).</p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Identity verification
+          </h3>
+          <p>
+            Before your first withdrawal, you may be required to verify your identity and the
+            ownership of the IBAN to which you are withdrawing, in accordance with the Know
+            Your Customer requirements of our payment processor. Verification may require a
+            government-issued identity document. We may decline or delay withdrawals pending
+            successful verification.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Chargebacks and clawback
+          </h3>
+          <p>
+            If a buyer successfully disputes a completed order after you have withdrawn the
+            associated funds, you agree that (a) we may retain an equivalent amount from your
+            future wallet balance and from any subsequent sales proceeds, and (b) if your wallet
+            balance is insufficient, you remain liable for the shortfall and we may pursue the
+            amount through the courts of your country of habitual residence.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Negative balance
+          </h3>
+          <p>
+            If a refund, chargeback, or other adjustment results in your wallet balance being
+            negative, you must repay the shortfall within 30 days of notice, either by transfer
+            to the bank account we designate or by offset against future sales proceeds.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Inactive accounts
+          </h3>
+          <p>
+            Wallet balances are retained indefinitely. If you have not logged into your account
+            for 24 months and your wallet balance is positive, we will attempt to contact you at
+            your registered email address. If you do not respond within 90 days of such contact,
+            we may withdraw the balance to the last IBAN we have on file for you, subject to
+            successful re-verification. Unclaimed amounts remain your property and will be paid
+            on request.
+          </p>
         </section>
 
         <section className="space-y-3">
