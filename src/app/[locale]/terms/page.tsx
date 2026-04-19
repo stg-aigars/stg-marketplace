@@ -452,6 +452,48 @@ export default function TermsPage() {
             this address to reach us directly in any language spoken by our users (English,
             Latvian, Lithuanian, or Estonian) on any DSA-related matter.
           </p>
+          <p>
+            <strong>Point of contact for authorities.</strong> Under Article 11 of Regulation
+            (EU) 2022/2065, the single point of contact for Member State authorities, the
+            European Commission, and the European Board for Digital Services is{' '}
+            <a href="mailto:info@secondturn.games" className="link-brand">
+              info@secondturn.games
+            </a>
+            . Communications in English or Latvian are accepted.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+            17. Reporting illegal content
+          </h2>
+          <p>
+            Anyone can notify us of content on Second Turn Games they believe is illegal, using
+            the form at{' '}
+            <Link href="/report-illegal-content" className="link-brand">
+              secondturn.games/report-illegal-content
+            </Link>
+            {' '}or by email to{' '}
+            <a href="mailto:info@secondturn.games" className="link-brand">
+              info@secondturn.games
+            </a>
+            . A notice should identify the content (URL or listing ID), explain why you believe
+            it is illegal, include your name and email address (unless your notice concerns
+            content you believe constitutes a criminal offence involving sexual exploitation of
+            minors, in which case you may submit anonymously), and confirm that the information
+            you provide is accurate to the best of your knowledge. We acknowledge valid notices
+            promptly and take action where required, without undue delay. We may use automated
+            tools to assist triage; a human reviews every decision that restricts or removes
+            content. We notify both the notifier and the affected user of our decision and the
+            reasons for it, in accordance with Article 17 of Regulation (EU) 2022/2065.
+          </p>
+          <p>
+            <strong>Criminal-offence notifications.</strong> Where we become aware of
+            information giving rise to a suspicion that a criminal offence involving a threat
+            to the life or safety of a person has taken or is likely to take place, we will
+            promptly inform the law enforcement authorities of the Member State concerned, in
+            accordance with Article 18 of Regulation (EU) 2022/2065.
+          </p>
         </section>
 
         <p className="text-sm text-semantic-text-muted pt-4 border-t border-semantic-border-subtle">
