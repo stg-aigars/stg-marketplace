@@ -155,15 +155,15 @@ export default function SellerTermsPage() {
             <li>
               You can withdraw an auction listing while it has no bids. Once any
               bid has been placed, you cannot withdraw the listing and you must
-              honour the winning bid at close. This rule is absolute &mdash; we do
-              not make exceptions for damage, loss, or change of mind.
+              honour the winning bid at close. We do not make exceptions for
+              damage, loss, or change of mind.
             </li>
             <li>
               If the winning bidder does not pay within 24 hours of the auction
               closing, the platform cancels the listing and the game returns to
-              your inventory. No order is created until payment completes, so this
-              is a platform cancellation, not one you initiate &mdash; and you are
-              free to re-list the game.
+              your inventory. Orders are only created once payment succeeds, so
+              this cancellation is ours to make, not yours &mdash; you are free to
+              re-list the game.
             </li>
           </ul>
 
@@ -171,10 +171,10 @@ export default function SellerTermsPage() {
             Matches with wanted listings
           </h3>
           <p>
-            If a game you list happens to match an active wanted listing from a
-            buyer, that buyer gets a notification. You have no visibility into
-            wanted listings and no special obligations as a result of the match
-            &mdash; the standard rules above apply to the sale like any other.
+            If a game you list matches an active wanted listing from a buyer, that
+            buyer gets a notification. You have no visibility into wanted listings
+            and no special obligations as a result of the match &mdash; the
+            standard rules above apply to the sale like any other.
           </p>
         </section>
 
@@ -347,8 +347,9 @@ export default function SellerTermsPage() {
           <p>
             Under Council Directive (EU) 2021/514 (DAC7), we have to report you to the
             Latvian State Revenue Service (VID) once your activity in a calendar year
-            passes 30 sales or €2,000 in gross consideration. These thresholds come
-            from the Directive; we cannot adjust them. Before you hit them, we&apos;ll
+            passes 30 sales or €2,000 in consideration (the amount you receive after
+            our commission). These thresholds come from the Directive; we cannot
+            adjust them. Before you hit them, we&apos;ll
             ask you for the DAC7 data so the report doesn&apos;t get held up &mdash;
             our internal warning trigger is earlier, at 25 sales or €1,750. We ask for
             your full legal name, date of birth, address, and tax identification
