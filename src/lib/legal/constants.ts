@@ -16,3 +16,14 @@ export const PRIVACY_VERSION_DISPLAY = '26 April 2026';
  *  (Phase 2) and recorded on the audit-log resourceId. */
 export const SELLER_TERMS_VERSION = '2026-04-26';
 export const SELLER_TERMS_VERSION_DISPLAY = '26 April 2026';
+
+/** Sunset date for the transitional PSD2 Art. 3(b) wording in Terms §1 and
+ *  Seller Agreement §2. The current wording does not affirmatively claim the
+ *  exemption — it describes the fund flow and flags that if Art. 3(b) is
+ *  determined not to apply, we will restructure through a licensed payment
+ *  institution. The lawyer memo (2026-04-26) says this framing is valid for
+ *  3–6 months while EveryPay Option 1 (collecting-account through Maksekeskus)
+ *  is scoped. Enforced by a Vitest assertion co-located in `constants.test.ts`
+ *  — when the date passes, `pnpm test` fails and CI blocks every subsequent PR
+ *  until the transitional wording is replaced. */
+export const PSD2_TRANSITIONAL_SUNSET = new Date('2026-10-26T00:00:00.000Z');
