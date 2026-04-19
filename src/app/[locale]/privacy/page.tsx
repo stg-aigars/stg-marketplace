@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
-import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { PRIVACY_VERSION_DISPLAY } from '@/lib/legal/constants';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Last updated: {TERMS_VERSION_DISPLAY}
+          Last updated: {PRIVACY_VERSION_DISPLAY}
         </p>
 
         <Card className="not-prose">
