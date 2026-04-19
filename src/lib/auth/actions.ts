@@ -10,6 +10,7 @@ import { loginLimiter, signupLimiter, passwordResetLimiter } from '@/lib/rate-li
 import { TERMS_VERSION } from '@/lib/legal/constants';
 import { safeReturnUrl } from '@/lib/auth/safe-return-url';
 import { validatePasswordStrength } from '@/lib/auth/password-validation';
+import { logAuditEvent } from '@/lib/services/audit';
 
 /**
  * Validate rate-limit and Turnstile before the client signs in.
@@ -49,7 +50,7 @@ export async function signUpWithEmail(
   const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const emailRedirectTo = `${appUrl}/auth/callback?signup=true`;
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: formData.email,
     password: formData.password,
     options: {
@@ -71,6 +72,17 @@ export async function signUpWithEmail(
       return { error: 'Password must be at least 8 characters' };
     }
     return { error: 'Something went wrong. Please try again' };
+  }
+
+  if (data.user) {
+    void logAuditEvent({
+      actorId: data.user.id,
+      actorType: 'user',
+      action: 'terms.accepted',
+      resourceType: 'terms',
+      resourceId: TERMS_VERSION,
+      metadata: { source: 'signup' },
+    });
   }
 
   redirect(returnUrl ? safeReturnUrl(returnUrl) : '/browse?welcome=true');
@@ -179,19 +191,33 @@ export async function updateProfile(data: {
 
   // Write terms acceptance atomically — only if not already set (first-time only).
   // The .is('terms_accepted_at', null) clause prevents overwriting an existing timestamp.
+  // .select('id') returns the updated rows so we can tell whether the stamp actually wrote,
+  // which is what gates the audit-log emission below (no duplicate events on repeat calls).
   if (data.termsAccepted) {
-    const { error: termsError } = await supabase
+    const { data: updated, error: termsError } = await supabase
       .from('user_profiles')
       .update({
         terms_accepted_at: new Date().toISOString(),
         terms_version: TERMS_VERSION,
       })
       .eq('id', user.id)
-      .is('terms_accepted_at', null);
+      .is('terms_accepted_at', null)
+      .select('id');
 
     if (termsError) {
       console.error('[updateProfile] Terms write failed:', termsError);
       return { error: 'Something went wrong. Please try again' };
+    }
+
+    if (updated && updated.length > 0) {
+      void logAuditEvent({
+        actorId: user.id,
+        actorType: 'user',
+        action: 'terms.accepted',
+        resourceType: 'terms',
+        resourceId: TERMS_VERSION,
+        metadata: { source: 'oauth_onboarding' },
+      });
     }
   }
 

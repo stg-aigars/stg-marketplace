@@ -67,7 +67,7 @@ export function CompleteProfileForm({ returnUrl }: CompleteProfileFormProps) {
 
       <div className="border-t border-semantic-border-subtle pt-4">
         <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
-          I agree to the{' '}
+          I am at least 16 years old and I agree to the{' '}
           <Link
             href="/terms"
             target="_blank"
