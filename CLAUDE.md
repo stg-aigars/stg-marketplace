@@ -93,7 +93,7 @@ Orders store `cancellation_reason` (nullable): `'declined'` (seller), `'response
 ## Invoicing Model
 - Shipping = logistics service provided TO the seller (funded by buyer at checkout)
 - Platform services invoice to seller: commission + shipping as 2 separate line items
-- VAT follows seller's country for BOTH lines. Article references pending accountant confirmation (`docs/legal_audit/accountant-vat-query.md`) — commission is most likely Article 58 (electronically supplied services to non-taxable persons), not Article 46; shipping is Article 50 (transport of goods, place of departure)
+- VAT follows seller's country for BOTH lines (confirmed by accountant in `docs/legal_audit/accountant-vat-confirmation.md`). Commission is an electronically supplied service under Article 7 of Implementing Regulation (EU) 282/2011; place of supply per Article 58 of Directive 2006/112/EC. Shipping re-supply falls under Articles 49 (domestic) and 50 (cross-border) of the same Directive — rate outcome identical (seller's country) but article reference varies by scenario; public disclosure cites both
 - Fund flow through EveryPay (Maksekeskus AS, licensed Estonian PI). STG relies on the Art. 3(b) commercial-agent exemption of Directive (EU) 2015/2366 (PSD2) as a transitional framing, with `PSD2_TRANSITIONAL_SUNSET = 2026-10-26` enforced by `src/lib/legal/constants.test.ts`. Option 1 scoping with Maksekeskus (collecting-account model) is the target architecture before sunset; see `docs/legal_audit/lawyer-response.md` §A.2
 
 ## Supported Markets

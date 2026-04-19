@@ -443,24 +443,32 @@ export default function PrivacyPage() {
                     Completed orders, invoices, and transaction records
                   </td>
                   <td className="py-2">
-                    5 years from the end of the calendar year of the transaction for ordinary
-                    commission invoices, per Latvian VAT Law (PVN likums) Article 133, and
-                    5 years for accounting source documents per Latvian Accounting Law
-                    (Gr&#x101;matved&#x12B;bas likums) §10. Extended to 10 years where the
-                    record supports a tax declaration, annual report, or transaction involving
-                    immovable property. These records are retained even after you delete your
-                    account &mdash; they are exempt from erasure requests under GDPR
-                    Article 17(3)(b).
+                    5 years from the end of the calendar year of the transaction, per Article
+                    133 of the Latvian VAT Law (Pievienotās vērtības nodokļa likums) for
+                    commission invoices, and §10 of the Latvian Accounting Law (Gr&#x101;matved&#x12B;bas
+                    likums) for accounting source documents. These records are retained even
+                    after you delete your account &mdash; they are exempt from erasure requests
+                    under GDPR Article 17(3)(b).
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">Annual financial reports and supporting ledgers</td>
+                  <td className="py-2">
+                    10 years, per Gr&#x101;matved&#x12B;bas likums §10. These are company-level
+                    records that do not ordinarily contain personal data, but are listed here
+                    for completeness.
                   </td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4">
-                    DAC7 seller data (TIN, date of birth, address, annual totals)
+                    DAC7 seller data (TIN, date of birth, address, reported amounts)
                   </td>
                   <td className="py-2">
-                    10 years after the reportable year, as required by Council Directive (EU)
-                    2021/514 implementing Article 25d of Directive 2011/16/EU. Applies only to
-                    sellers who reach the DAC7 reporting thresholds.
+                    10 years from the end of the calendar year of reporting, as required by
+                    Article 25 of Council Directive 2011/16/EU as amended by Council Directive
+                    (EU) 2021/514. Applies only to sellers who reach the DAC7 reporting
+                    thresholds. This is a separate obligation from, and longer than, the
+                    accounting-record retention above.
                   </td>
                 </tr>
                 <tr>
