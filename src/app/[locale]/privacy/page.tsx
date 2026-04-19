@@ -174,10 +174,10 @@ export default function PrivacyPage() {
             5. Data storage and security
           </h2>
           <p>
-            Your data is stored in Supabase (cloud database in the EU region) with row-level
-            security policies enforced at the database layer. Our application servers run on
-            Hetzner in Helsinki, Finland. Data in transit is encrypted via TLS, data at rest
-            via AES-256. Photos are stored in Supabase Storage with access controls.
+            Your data is stored in Supabase (cloud database in the North EU region, Stockholm)
+            with row-level security policies enforced at the database layer. Our application
+            servers run on Hetzner in Helsinki, Finland. Data in transit is encrypted via TLS,
+            data at rest via AES-256. Photos are stored in Supabase Storage with access controls.
           </p>
           <p>
             <strong>Photo cleanup.</strong> When a listing is removed — by the seller, by the
