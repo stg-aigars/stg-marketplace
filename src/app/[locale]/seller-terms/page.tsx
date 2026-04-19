@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { SELLER_TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
-import { LEGAL_ENTITY_NAME } from '@/lib/constants';
+import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_VAT_NUMBER } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Seller Agreement',
@@ -264,18 +264,68 @@ export default function SellerTermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-            7. Tax obligations
+            7. Tax and invoicing
           </h2>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            VAT on our commission
+          </h3>
           <p>
-            You are responsible for reporting your sales income in accordance with the tax laws of
-            your country of residence. STG does not provide tax advice.
+            Our 10% commission on the item price is an electronically supplied service within the
+            meaning of Article 7 of Council Implementing Regulation (EU) No 282/2011. Place of
+            supply is determined under Article 58 of Directive 2006/112/EC (place of the non-
+            taxable-person customer). VAT is added on top of the commission amount (not
+            included), at the rate of your country of residence: 21% for Latvia, 21% for
+            Lithuania, 24% for Estonia. Our VAT number is {LEGAL_ENTITY_VAT_NUMBER}.
           </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            VAT on shipping
+          </h3>
           <p>
-            Under the EU DAC7 directive (Council Directive 2021/514), STG may need to report seller
-            information to the Latvian State Revenue Service (VID) once you reach 30 transactions or
-            &euro;2,000 in sales per calendar year. If this applies to you, we will let you know and
-            ask for your full legal name, date of birth, address, and tax identification number. If
-            you do not provide this information, we may have to suspend your selling privileges.
+            When we arrange shipping through our logistics partners on your behalf, we re-supply
+            the shipping service to you at the VAT rate of the country where the goods depart
+            (your country). Place of supply is determined under Articles 49 and 50 of Directive
+            2006/112/EC, depending on whether the shipment is domestic or cross-border.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Invoices
+          </h3>
+          <p>
+            We issue an invoice for commission and shipping VAT after each completed order in
+            the format <span className="font-mono">INV-YYYY-NNNNN</span>. Invoices are available
+            under &ldquo;My sales&rdquo; in your account and are retained for the periods set
+            out in our{' '}
+            <Link href="/privacy" className="link-brand">
+              Privacy Policy
+            </Link>
+            {' '}§9.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            Your income tax
+          </h3>
+          <p>
+            You are responsible for declaring income from sales on the platform to the tax
+            authorities of your country of residence, subject to any applicable private-seller
+            thresholds. We do not withhold income tax on your behalf and do not provide tax
+            advice.
+          </p>
+
+          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+            DAC7 reporting
+          </h3>
+          <p>
+            Under Council Directive (EU) 2021/514 (DAC7), we are required to report to the
+            Latvian State Revenue Service (VID) once you exceed 30 sales or €2,000 in a
+            calendar year. We may ask you to provide DAC7 data as you approach this threshold
+            (our internal warning trigger is 25 sales or €1,750) so that reporting is not held
+            up when the statutory threshold is reached. We ask for your full legal name, date
+            of birth, address, and tax identification number. If you do not provide this
+            information, we may have to suspend your selling privileges and withhold payouts
+            until the obligation is resolved. A copy of what we report about you is available
+            on request.
           </p>
         </section>
 

@@ -228,10 +228,13 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
  * Orders, listings (sold/cancelled), reviews, and wallet transactions
  * are retained under legal-obligation carve-outs (GDPR Art. 17(3)(b)):
  * 5 years per Latvia Grāmatvedības likums (Law on Accounting) §10 and
- * PVN likums (VAT Law) Art. 133, extended to 10 years for tax
- * declarations, annual reports, and immovable-property transactions;
- * 10 years for DAC7 records per Council Directive (EU) 2021/514
- * (Art. 25d of Directive 2011/16/EU).
+ * PVN likums (VAT Law) Art. 133; 10 years for DAC7 records per
+ * Article 25 of Council Directive 2011/16/EU as amended by
+ * Council Directive (EU) 2021/514. The "extended to 10 years" carve-
+ * outs previously listed here apply to tax declarations, annual
+ * reports, and immovable-property transactions — none of which are
+ * relevant to a C2C marketplace, so the effective retention for STG
+ * transactional records is 5 years.
  * Kept in lockstep with the retention table in /privacy §9.
  */
 export async function deleteUserAccount(

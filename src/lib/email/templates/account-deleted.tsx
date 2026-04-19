@@ -22,8 +22,9 @@ export function AccountDeleted({ userName }: AccountDeletedProps) {
 
       <Text style={s.body}>
         Your personal information (name, email, phone) has been removed. Some transaction records
-        (orders, invoices) are retained for up to 10 years as required by Latvian accounting and
-        VAT law.
+        (orders, invoices) are retained for 5 years as required by Latvian accounting and VAT
+        law, and DAC7 seller-reporting data (if applicable to you) is retained for 10 years as
+        required by EU tax-transparency rules.
       </Text>
 
       <Text style={s.note}>
