@@ -443,10 +443,14 @@ export default function PrivacyPage() {
                     Completed orders, invoices, and transaction records
                   </td>
                   <td className="py-2">
-                    Up to 10 years after the transaction, as required by Latvian accounting law
-                    (Gr&#x101;matved&#x12B;bas likums) and VAT law (PVN likums). These records
-                    are retained even after you delete your account &mdash; they are exempt
-                    from erasure requests under GDPR Article 17(3)(b).
+                    5 years from the end of the calendar year of the transaction for ordinary
+                    commission invoices, per Latvian VAT Law (PVN likums) Article 133, and
+                    5 years for accounting source documents per Latvian Accounting Law
+                    (Gr&#x101;matved&#x12B;bas likums) §10. Extended to 10 years where the
+                    record supports a tax declaration, annual report, or transaction involving
+                    immovable property. These records are retained even after you delete your
+                    account &mdash; they are exempt from erasure requests under GDPR
+                    Article 17(3)(b).
                   </td>
                 </tr>
                 <tr>

@@ -227,9 +227,11 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
  *
  * Orders, listings (sold/cancelled), reviews, and wallet transactions
  * are retained under legal-obligation carve-outs (GDPR Art. 17(3)(b)):
- * up to 10 years per Latvia Grāmatvedības likums (Law on Accounting)
- * and PVN likums (VAT Law) Art. 133, and 10 years for DAC7 records per
- * Council Directive (EU) 2021/514 (Art. 25d of Directive 2011/16/EU).
+ * 5 years per Latvia Grāmatvedības likums (Law on Accounting) §10 and
+ * PVN likums (VAT Law) Art. 133, extended to 10 years for tax
+ * declarations, annual reports, and immovable-property transactions;
+ * 10 years for DAC7 records per Council Directive (EU) 2021/514
+ * (Art. 25d of Directive 2011/16/EU).
  * Kept in lockstep with the retention table in /privacy §9.
  */
 export async function deleteUserAccount(
