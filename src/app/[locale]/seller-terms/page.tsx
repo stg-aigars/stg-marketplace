@@ -144,6 +144,38 @@ export default function SellerTermsPage() {
               Misrepresentation may lead to disputes, refunds, or account suspension
             </li>
           </ul>
+
+          <h3 className={subHeadingClass}>
+            Auction listings
+          </h3>
+          <p>
+            If you list a game as an auction, the rules above apply plus these:
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              You can withdraw an auction listing while it has no bids. Once any
+              bid has been placed, you cannot withdraw the listing and you must
+              honour the winning bid at close. This rule is absolute &mdash; we do
+              not make exceptions for damage, loss, or change of mind.
+            </li>
+            <li>
+              If the winning bidder does not pay within 24 hours of the auction
+              closing, the platform cancels the listing and the game returns to
+              your inventory. No order is created until payment completes, so this
+              is a platform cancellation, not one you initiate &mdash; and you are
+              free to re-list the game.
+            </li>
+          </ul>
+
+          <h3 className={subHeadingClass}>
+            Matches with wanted listings
+          </h3>
+          <p>
+            If a game you list happens to match an active wanted listing from a
+            buyer, that buyer gets a notification. You have no visibility into
+            wanted listings and no special obligations as a result of the match
+            &mdash; the standard rules above apply to the sale like any other.
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -314,12 +346,14 @@ export default function SellerTermsPage() {
           </h3>
           <p>
             Under Council Directive (EU) 2021/514 (DAC7), we have to report you to the
-            Latvian State Revenue Service (VID) once you pass 30 sales or €2,000 in a
-            calendar year. Before that happens, we&apos;ll ask you for the DAC7 data so the
-            report doesn&apos;t get held up — our internal warning trigger is 25 sales or
-            €1,750. We ask for your full legal name, date of birth, address, and tax
-            identification number. If you don&apos;t give us those, we may need to pause your
-            selling and hold payouts until you do. You can ask for a copy of what we report
+            Latvian State Revenue Service (VID) once your activity in a calendar year
+            passes 30 sales or €2,000 in gross consideration. These thresholds come
+            from the Directive; we cannot adjust them. Before you hit them, we&apos;ll
+            ask you for the DAC7 data so the report doesn&apos;t get held up &mdash;
+            our internal warning trigger is earlier, at 25 sales or €1,750. We ask for
+            your full legal name, date of birth, address, and tax identification
+            number. If you don&apos;t give us those, we may need to pause your selling
+            and hold payouts until you do. You can ask for a copy of what we report
             about you.
           </p>
         </section>
