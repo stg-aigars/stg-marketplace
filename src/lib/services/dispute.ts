@@ -363,7 +363,7 @@ async function handleRefundInitiationFailure(
 }
 
 /**
- * Restore listings to active and revert shelf items after a dispute refund.
+ * Restore reserved listings to active after a dispute refund.
  * Shared by sellerAcceptRefund and staffResolveDispute (refund branch).
  */
 async function restoreListingsAfterRefund(

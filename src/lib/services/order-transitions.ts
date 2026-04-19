@@ -454,10 +454,9 @@ async function markListingsAsSold(
 }
 
 /**
- * Mark listings as sold + sync shelf items to not_for_sale. Fire-and-forget:
- * listing status is cosmetic and must not delay wallet credit or block completion.
- * Shared by acceptOrder, completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
- * Called early at acceptance and again at completion — idempotent (.in('status', ['reserved', 'active']) guard).
+ * Mark an order's listings as sold. Fire-and-forget: listing status is cosmetic
+ * and must not delay wallet credit or block completion. Idempotent via the
+ * `.in('status', ['reserved', 'active'])` guard in `markListingsAsSold`.
  */
 export function markOrderListingsSold(order: Pick<OrderWithRelations, 'order_items' | 'listing_id' | 'seller_id'>): void {
   void markListingsAsSold(order.order_items, order.listing_id)

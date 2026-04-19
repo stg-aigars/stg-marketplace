@@ -10,9 +10,7 @@ import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
 import { notify } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
-import type { CreateListingData, ListingCondition, UpdateListingData } from './types';
 import { extractStoragePath } from './storage-utils';
-
 import {
   LISTING_CONDITIONS,
   MIN_PRICE_CENTS,
@@ -23,6 +21,9 @@ import {
   conditionRequiresPhotos,
   conditionRequiresDescription,
   isAuctionWithBids,
+  type CreateListingData,
+  type ListingCondition,
+  type UpdateListingData,
 } from './types';
 
 interface ListingFieldsToValidate {

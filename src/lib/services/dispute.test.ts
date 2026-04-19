@@ -234,11 +234,10 @@ describe('sellerAcceptRefund', () => {
   });
 
   // Regression guard for the listing restore bug: before this fix, sellerAcceptRefund
-  // marked order_items inactive but left listings stuck in 'reserved' status and
-  // shelf items in 'listed' — meaning a seller who voluntarily accepted a refund
-  // couldn't re-list the game afterward. staffResolveDispute had the restore block;
-  // sellerAcceptRefund was silently missing it.
-  it('restores listings and syncs shelves after a successful refund', async () => {
+  // marked order_items inactive but left listings stuck in 'reserved' status, so a
+  // seller who voluntarily accepted a refund couldn't re-list the game afterward.
+  // staffResolveDispute had the restore block; sellerAcceptRefund was silently missing it.
+  it('restores reserved listings after a successful refund', async () => {
     const { sellerAcceptRefund } = await import('./dispute');
     const { loadOrder } = await import('./order-transitions');
     const { refundOrder } = await import('./order-refund');
@@ -313,7 +312,7 @@ describe('staffResolveDispute', () => {
     vi.clearAllMocks();
   });
 
-  it('restores listings and syncs shelves on refund decision', async () => {
+  it('restores reserved listings on refund decision', async () => {
     const { staffResolveDispute } = await import('./dispute');
     const { loadOrder } = await import('./order-transitions');
     const { refundOrder } = await import('./order-refund');
