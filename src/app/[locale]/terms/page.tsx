@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   title: 'Terms of Service',
 };
 
+const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-1';
+
 export default function TermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -199,7 +201,7 @@ export default function TermsPage() {
             9. Cancellations, refunds, and disputes
           </h2>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Order cancellations
           </h3>
           <p>
@@ -209,7 +211,7 @@ export default function TermsPage() {
             payment &mdash; orders are binding once paid.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Returns and replacements
           </h3>
           <p>
@@ -220,7 +222,7 @@ export default function TermsPage() {
             open a dispute (see below).
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Refunds
           </h3>
           <p>
@@ -232,7 +234,7 @@ export default function TermsPage() {
             wallet to wallet).
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Disputes
           </h3>
           <p>
@@ -272,7 +274,7 @@ export default function TermsPage() {
             12. Ending your account or our services
           </h2>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             You ending your account
           </h3>
           <p>
@@ -292,7 +294,7 @@ export default function TermsPage() {
             obligation requires it.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Us ending your account
           </h3>
           <p>
@@ -309,7 +311,7 @@ export default function TermsPage() {
             180 days to cover potential chargebacks or claims before being released.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Effect of termination
           </h3>
           <p>
@@ -413,7 +415,7 @@ export default function TermsPage() {
             Regulation (EU) 2024/3228 and is no longer available.
           </p>
 
-          <h3 className="text-base font-semibold text-semantic-text-heading pt-1">
+          <h3 className={subHeadingClass}>
             Trader-status disputes
           </h3>
           <p>

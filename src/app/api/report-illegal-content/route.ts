@@ -6,15 +6,9 @@ import { applyRateLimit, reportIllegalContentLimiter } from '@/lib/rate-limit';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 import { logAuditEvent } from '@/lib/services/audit';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
+import { REPORT_CATEGORY_VALUES } from '@/app/[locale]/report-illegal-content/categories';
 
-const VALID_CATEGORIES = new Set([
-  'counterfeit',
-  'ip_infringement',
-  'illegal_goods',
-  'csam',
-  'hate_or_harassment',
-  'other',
-]);
+const VALID_CATEGORIES = new Set<string>(REPORT_CATEGORY_VALUES);
 
 const MAX_FIELD = {
   contentReference: 2000,
@@ -121,13 +115,19 @@ export async function POST(request: Request) {
     );
   }
 
+  // actorType: 'system' — the notice is an inbound external submission, not a platform-
+  // initiated user action. There is no authenticated actor (even named notifiers are
+  // unauthenticated visitors), so 'user' without an actorId would misrepresent the
+  // relationship. Reporter identity lives in metadata where it can be queried without
+  // conflating with authenticated user-attributed rows.
   void logAuditEvent({
-    actorType: notifierEmail ? 'user' : 'system',
+    actorType: 'system',
     action: 'illegal_content.reported',
     resourceType: 'notice',
     metadata: {
       category,
       anonymous: !notifierEmail,
+      notifierEmail: notifierEmail || null,
       contentReferencePreview: contentReference.slice(0, 200),
     },
   });
