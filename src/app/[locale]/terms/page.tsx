@@ -255,22 +255,53 @@ export default function TermsPage() {
           </p>
           <p>
             If you have a complaint, please contact us first at{' '}
-            <a
-              href="mailto:info@secondturn.games"
-              className="link-brand"
-            >
+            <a href="mailto:info@secondturn.games" className="link-brand">
               info@secondturn.games
             </a>
-            . You may also contact the Consumer Rights Protection Centre of Latvia (PTAC) at{' '}
-            <a
-              href="https://www.ptac.gov.lv"
-              className="link-brand"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              ptac.gov.lv
-            </a>
-            .
+            . If we cannot resolve it between us, you can take the complaint to the consumer
+            protection authority in your country of residence:
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Latvia:</strong> Consumer Rights Protection Centre (Patērētāju tiesību
+              aizsardzības centrs &mdash; PTAC), Brīvības 55, Riga, LV-1010 &mdash;{' '}
+              <a
+                href="https://www.ptac.gov.lv"
+                className="link-brand"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ptac.gov.lv
+              </a>
+            </li>
+            <li>
+              <strong>Lithuania:</strong> State Consumer Rights Protection Authority (Valstybinė
+              vartotojų teisių apsaugos tarnyba) &mdash;{' '}
+              <a
+                href="https://vvtat.lrv.lt"
+                className="link-brand"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                vvtat.lrv.lt
+              </a>
+            </li>
+            <li>
+              <strong>Estonia:</strong> Consumer Protection and Technical Regulatory Authority
+              (Tarbijakaitse ja Tehnilise Järelevalve Amet &mdash; TTJA) &mdash;{' '}
+              <a
+                href="https://www.ttja.ee"
+                className="link-brand"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ttja.ee
+              </a>
+            </li>
+          </ul>
+          <p className="text-xs text-semantic-text-muted">
+            The EU Online Dispute Resolution platform was discontinued on 20 July 2025 under
+            Regulation (EU) 2024/3228 and is no longer available.
           </p>
         </section>
 
@@ -291,20 +322,24 @@ export default function TermsPage() {
           </h2>
           <p>
             Questions about these terms? Reach us at{' '}
-            <a
-              href="mailto:info@secondturn.games"
-              className="link-brand"
-            >
+            <a href="mailto:info@secondturn.games" className="link-brand">
               info@secondturn.games
             </a>{' '}
             or visit our{' '}
-            <Link
-              href="/contact"
-              className="link-brand"
-            >
+            <Link href="/contact" className="link-brand">
               contact page
             </Link>
             .
+          </p>
+          <p>
+            <strong>Single point of contact under the Digital Services Act.</strong>{' '}
+            <a href="mailto:info@secondturn.games" className="link-brand">
+              info@secondturn.games
+            </a>{' '}
+            is also our designated electronic single point of contact for communications with
+            users under Article 12 of Regulation (EU) 2022/2065 (the Digital Services Act). Use
+            this address to reach us directly in any language spoken by our users (English,
+            Latvian, Lithuanian, or Estonian) on any DSA-related matter.
           </p>
         </section>
 
