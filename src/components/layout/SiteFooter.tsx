@@ -128,7 +128,7 @@ function SiteFooter() {
         </div>
       </div>
 
-      {/* Bottom row — dark, legal imprint per Directive 2000/31/EC Art. 5 + Latvia Commercial Law §8 */}
+      {/* Bottom row — dark */}
       <div className="bg-[#363e4b]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-2 text-xs text-white/50">
           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
