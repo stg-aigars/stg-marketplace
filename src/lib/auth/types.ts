@@ -13,6 +13,8 @@ export interface UserProfile {
   avatar_url: string | null;
   onboarding_dismissed_at: string | null;
   dac7_status: Dac7SellerStatus;
+  seller_terms_accepted_at: string | null;
+  seller_terms_version: string | null;
   created_at: string;
   updated_at: string;
 }
