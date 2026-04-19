@@ -13,7 +13,7 @@
  *   (e) scope and duration            → `scopeAndDuration`
  *   (f) redress options               → rendered inline; user has 30 days to dispute by
  *                                        replying to the email, plus ADR + court routes
- *                                        already covered in Terms §14
+ *                                        already covered in Terms §15
  *
  * The EU Commission DSA Transparency Database ingests these statements and checks for
  * completeness. Do not ship without all six fields populated.

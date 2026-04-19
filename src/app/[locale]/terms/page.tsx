@@ -282,14 +282,14 @@ export default function TermsPage() {
             Listing questions
           </h3>
           <p>
-            Each listing has a public comment thread for questions to the seller.
-            Comments are flat (oldest first), limited to 1,000 characters, and cannot
-            be edited once posted. The seller is notified when a new question is
-            posted; if the seller replies, everyone who has commented previously on
-            that listing is also notified. Comments are public and visible to anyone
-            viewing the listing. We may remove comments that violate these Terms or
-            are flagged through the process in Section 18 (Reporting illegal content),
-            and we will tell you why if we do.
+            Each listing has a public comment thread where anyone can ask the seller
+            about the game. Comments are flat (oldest first), limited to 1,000
+            characters, and cannot be edited once posted. The seller is notified on
+            every new comment; if the seller replies, everyone who commented
+            previously on that listing is also notified. Comments are visible to
+            anyone viewing the listing. We may remove comments that violate these
+            Terms or are flagged through the process in Section 18 (Reporting illegal
+            content), and we will tell you why if we do.
           </p>
 
           <h3 className={subHeadingClass}>
@@ -299,9 +299,8 @@ export default function TermsPage() {
             When you list a game in auction format, you accept a binding sale to the
             highest bidder at close. You can withdraw an auction listing only while it
             has no bids; once any bid has been placed you cannot withdraw the listing
-            and you must honour the winning bid at close. There is no admin override,
-            dispute carve-out, or &ldquo;damaged before shipment&rdquo; exception for
-            withdrawing an auction with live bids.
+            and you must honour the winning bid at close. This rule is absolute &mdash;
+            there is no exception for damage, loss, or change of mind.
           </p>
           <p>
             When you place a bid, you commit to buying the game at your bid price if
@@ -327,11 +326,11 @@ export default function TermsPage() {
             binding any seller.
           </p>
           <p>
-            Wanted listings stay active until you cancel them. When you receive a
-            match notification, you decide whether to buy the game like any other
-            listing &mdash; the standard rules on payment, shipping, and disputes
-            apply at that point. Wanted listings are visible publicly but are only
-            used on the platform to trigger notifications to the buyer.
+            Wanted listings stay active until you cancel them. Other users can browse
+            the wanted board and see what games people are looking for. When you
+            receive a match notification, you decide whether to buy the game like any
+            other listing. The standard rules on payment, shipping, and disputes apply
+            at that point.
           </p>
         </section>
 
