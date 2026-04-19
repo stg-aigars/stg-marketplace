@@ -166,10 +166,8 @@ export function PriceStep({
           className="block text-sm font-medium text-semantic-text-primary mb-1.5"
         >
           Description{' '}
-          {condition && conditionRequiresDescription(condition) ? (
+          {condition && conditionRequiresDescription(condition) && (
             <span className="text-semantic-error">*</span>
-          ) : (
-            <span className="font-normal text-semantic-text-muted">(optional)</span>
           )}
         </label>
         <Textarea

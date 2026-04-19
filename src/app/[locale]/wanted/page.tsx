@@ -103,15 +103,15 @@ export default async function WantedBrowsePage(
         filtersActive ? (
           <EmptyState
             icon={MagnifyingGlass}
-            title="No wanted listings match your filters"
-            description="Try adjusting your filters or clearing them to see all wanted games."
+            title="Nothing matches those filters"
+            description="Try tweaking them, or clear to see every wanted game."
             action={{ label: 'Clear filters', href: '/wanted', variant: 'secondary' }}
           />
         ) : (
           <EmptyState
             icon={Cube}
-            title="No games wanted yet"
-            description="Be the first to post a game you are looking for."
+            title="The want board's empty"
+            description="Nobody's posted a wanted game yet — you could be the first."
             action={{ label: 'Post a want', href: '/wanted/new', variant: 'primary' }}
           />
         )

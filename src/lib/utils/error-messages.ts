@@ -4,19 +4,19 @@
  * Used across order actions, checkout, and future wallet/dispute flows.
  */
 
-const DEFAULT_MESSAGE = 'Something went wrong. Please try again.';
+const DEFAULT_MESSAGE = 'That didn\'t go through — mind trying again?';
 
 /**
  * Known patterns from order transitions and internal errors.
  * First match wins — order matters.
  */
 const ERROR_PATTERNS: [RegExp, string][] = [
-  [/cannot transition/i, 'This action is no longer available. The order may have been updated.'],
-  [/only the (seller|buyer)/i, 'You don\'t have permission for this action.'],
-  [/order not found/i, 'This order could not be found.'],
-  [/order status has changed/i, 'This order was updated by someone else. Please refresh the page.'],
-  [/not authenticated/i, 'Please sign in to continue.'],
-  [/listing is no longer available/i, 'This listing is no longer available.'],
+  [/cannot transition/i, 'This order has moved on. Refresh to see where it\'s at.'],
+  [/only the (seller|buyer)/i, 'That\'s not something you can do on this order.'],
+  [/order not found/i, 'We couldn\'t find that order.'],
+  [/order status has changed/i, 'Someone else updated this order — refresh to catch up.'],
+  [/not authenticated/i, 'Sign in to continue.'],
+  [/listing is no longer available/i, 'That listing\'s no longer available.'],
 ];
 
 /**
@@ -41,20 +41,20 @@ export function sanitizeErrorMessage(raw: string | undefined | null): string {
 const KNOWN_USER_MESSAGES = new Set([
   'This listing is no longer available',
   'You cannot buy your own listing',
-  'Please set your country in your profile first',
+  'Add your country to your profile first — we need it for shipping.',
   'Shipping is not available for this route',
-  'Please select a pickup terminal',
+  'Pick a parcel locker to ship to.',
   'Please enter a valid phone number',
   'Listing not found',
-  'Failed to start checkout. Please try again.',
-  'Failed to initiate payment. Please try again.',
+  'Checkout didn\'t start — mind trying again?',
+  'Payment couldn\'t start — mind trying again?',
   'Wallet covers the full amount. Use wallet payment instead.',
   'Insufficient wallet balance for full wallet payment',
   'Insufficient wallet balance',
   'Please enter a valid withdrawal amount',
   'Please enter the bank account holder name',
   'Please enter a valid Baltic IBAN (LV, LT, or EE)',
-  'Failed to create order. Please try again.',
+  'Order didn\'t go through — mind trying again?',
   'Withdrawal status has already changed',
   'Verification failed. Please try again.',
   'Verification service unavailable. Please try again.',

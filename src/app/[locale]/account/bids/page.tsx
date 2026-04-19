@@ -36,8 +36,8 @@ export default async function MyBidsPage() {
       {bids.length === 0 ? (
         <EmptyState
           icon={Gavel}
-          title="No bids yet"
-          description="Browse auctions and place your first bid."
+          title="You haven't bid on anything yet"
+          description="Find an auction you like and get in on it."
           action={{ label: 'Browse games', href: '/browse', variant: 'primary' }}
         />
       ) : (

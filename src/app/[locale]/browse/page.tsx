@@ -212,15 +212,15 @@ export default async function BrowsePage(
         filtersActive ? (
           <EmptyState
             icon={MagnifyingGlass}
-            title="No games match your filters"
-            description="Try different filters or clear them to see everything."
+            title="Nothing matches those filters"
+            description="Try tweaking them, or clear to see everything."
             action={{ label: 'Clear filters', href: '/browse', variant: 'secondary' }}
           />
         ) : (
           <EmptyState
             icon={Cube}
-            title="No games listed yet"
-            description="Be the first to list a game."
+            title="The shelf's empty"
+            description="No games here yet — you could be the first."
             action={{ label: 'List a game', href: '/sell', variant: 'primary' }}
           />
         )

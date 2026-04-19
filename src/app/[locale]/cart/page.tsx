@@ -123,8 +123,8 @@ export default function CartPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <EmptyState
           icon={ShoppingCart}
-          title="Your cart is empty"
-          description="Browse the marketplace and add some pre-loved games to your cart."
+          title="Nothing in your cart yet"
+          description="Browse around — there's probably a pre-loved game with your name on it."
           action={{ label: 'Browse games', href: '/browse' }}
         />
       </div>

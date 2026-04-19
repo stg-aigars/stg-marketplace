@@ -31,8 +31,8 @@ export default async function MyWantedPage() {
       {listings.length === 0 ? (
         <EmptyState
           icon={Cube}
-          title="No wanted games yet"
-          description="Post a game you are looking for and sellers will find you."
+          title="No wanted games on your list"
+          description="Post the games you're after — we'll email you when a matching one gets listed."
           action={{ label: 'Post a want', href: '/wanted/new', variant: 'primary' }}
         />
       ) : (
