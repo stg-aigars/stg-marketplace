@@ -17,7 +17,8 @@
 
 ALTER TABLE public.user_profiles
   ADD COLUMN seller_terms_accepted_at TIMESTAMPTZ,
-  ADD COLUMN seller_terms_version TEXT;
+  ADD COLUMN seller_terms_version TEXT
+    CHECK (seller_terms_version ~ '^\d{4}-\d{2}-\d{2}$');
 
 COMMENT ON COLUMN public.user_profiles.seller_terms_accepted_at IS
   'Timestamp of the user''s most recent Seller Agreement acceptance. NULL = never accepted.';
