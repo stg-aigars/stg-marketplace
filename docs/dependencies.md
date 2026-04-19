@@ -41,7 +41,7 @@
 
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
-| **Cloudflare** | DNS for secondturn.games (DNS only mode, grey cloud) | Free | Account login, domain config |
+| **Cloudflare** | DNS + proxy for secondturn.games (full proxy / orange cloud since 2026-03-31 — edge bot management sets `cf_clearance` on user browsers; cache rules configured in dashboard, post-deploy purge script `scripts/purge-cloudflare-cache.sh`) | Free | Account login, domain config |
 
 ## Auth
 
@@ -54,7 +54,7 @@
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
 | **Sentry** | Error tracking (live — used by `global-error.tsx`, EveryPay client, dispute service; PII scrubbing in `src/lib/sentry/strip-pii.ts`) | — | DSN, auth token, dashboard login |
-| **Cloudflare Turnstile** | Bot protection (planned, Week 4) | Free | Site key, secret key |
+| **Cloudflare Turnstile** | Bot protection, invisible mode (live — wraps signup, password reset, newsletter, comments, checkout, bids, listing create/edit/remove via `TurnstileWidget` in `src/components/ui`) | Free | Site key, secret key |
 
 ## Analytics
 

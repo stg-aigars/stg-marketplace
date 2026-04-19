@@ -189,9 +189,13 @@ export default function PrivacyPage() {
             7. Cookies
           </h2>
           <p>
-            We use essential cookies for authentication and session management. These are necessary
-            for the platform to function and cannot be disabled. We do not use advertising or
-            tracking cookies.
+            We use only strictly necessary cookies and a small number of preference items in your
+            browser&apos;s local storage. We do not use advertising or tracking cookies. For the
+            full list — including the exact names, purpose, and duration — see our{' '}
+            <Link href="/cookies" className="link-brand">
+              Cookie Policy
+            </Link>
+            .
           </p>
         </section>
 
