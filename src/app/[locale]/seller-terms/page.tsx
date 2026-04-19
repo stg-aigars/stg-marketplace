@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
-import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { SELLER_TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 import { LEGAL_ENTITY_NAME } from '@/lib/constants';
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export default function SellerTermsPage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Last updated: {TERMS_VERSION_DISPLAY}
+          Last updated: {SELLER_TERMS_VERSION_DISPLAY}
         </p>
 
         <p>
