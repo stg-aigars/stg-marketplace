@@ -3,7 +3,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance, getTransactionHistory } from '@/lib/services/wallet';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { Card, CardBody } from '@/components/ui';
-import { createServiceClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import { TransactionList } from './TransactionList';
 import { WithdrawalForm } from './WithdrawalForm';
 
@@ -14,7 +14,9 @@ export const metadata: Metadata = {
 export default async function WalletPage() {
   const { user } = await requireServerAuth();
 
-  const supabase = createServiceClient();
+  // User-scoped SSR client — RLS policy "Users and staff can view withdrawals"
+  // (migration 059) already restricts reads to the caller's own rows.
+  const supabase = await createClient();
 
   const [balanceCents, { transactions, total }, { data: withdrawalRefs }] = await Promise.all([
     getWalletBalance(user.id),

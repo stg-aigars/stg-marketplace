@@ -2,6 +2,12 @@
 -- Adds human-readable sequential reference to withdrawal_requests for use
 -- in SEPA remittance field when paying sellers from platform bank account.
 -- Format: WD-YYYY-NNNNN (e.g. WD-2026-00001). Year boundary uses Europe/Riga.
+--
+-- Sequence gaps are acceptable: createWithdrawalRequest inserts the row (trigger
+-- consumes a number) and then debits the wallet via RPC; if the debit fails it
+-- rolls back by deleting the row, leaving an unused reference. Unlike invoice
+-- numbering, withdrawal references are an operational identifier, not a legal
+-- document, so gaps are fine.
 
 -- 1. Add column (nullable initially for backfill)
 ALTER TABLE public.withdrawal_requests
