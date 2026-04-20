@@ -5,6 +5,7 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import type { WithdrawalStatus } from '@/lib/wallet/types';
 import { WithdrawalActions } from './WithdrawalActions';
+import { SepaRemittanceGuidance } from './SepaRemittanceGuidance';
 
 export const metadata: Metadata = {
   title: 'Withdrawals — Staff',
@@ -14,6 +15,7 @@ interface WithdrawalRow {
   id: string;
   amount_cents: number;
   status: WithdrawalStatus;
+  reference_number: string;
   bank_account_holder: string;
   bank_iban: string;
   staff_notes: string | null;
@@ -83,6 +85,9 @@ export default async function StaffWithdrawalsPage(
                       <Badge variant={STATUS_BADGE[w.status] ?? 'default'}>
                         {w.status}
                       </Badge>
+                      <code className="text-xs font-semibold text-semantic-text-heading">
+                        {w.reference_number}
+                      </code>
                       <span className="text-xs text-semantic-text-muted">
                         {formatDate(w.created_at)}
                       </span>
@@ -116,6 +121,9 @@ export default async function StaffWithdrawalsPage(
                     )}
                   </div>
                 </div>
+                {w.status === 'approved' && (
+                  <SepaRemittanceGuidance reference={w.reference_number} />
+                )}
               </CardBody>
             </Card>
           ))}

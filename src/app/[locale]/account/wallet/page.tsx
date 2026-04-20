@@ -3,6 +3,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance, getTransactionHistory } from '@/lib/services/wallet';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { Card, CardBody } from '@/components/ui';
+import { createClient } from '@/lib/supabase/server';
 import { TransactionList } from './TransactionList';
 import { WithdrawalForm } from './WithdrawalForm';
 
@@ -13,10 +14,25 @@ export const metadata: Metadata = {
 export default async function WalletPage() {
   const { user } = await requireServerAuth();
 
-  const [balanceCents, { transactions, total }] = await Promise.all([
+  // User-scoped SSR client — RLS policy "Users and staff can view withdrawals"
+  // (migration 059) already restricts reads to the caller's own rows.
+  const supabase = await createClient();
+
+  const [balanceCents, { transactions, total }, { data: withdrawalRefs }] = await Promise.all([
     getWalletBalance(user.id),
     getTransactionHistory(user.id, 1, 20),
+    supabase
+      .from('withdrawal_requests')
+      .select('id, reference_number')
+      .eq('user_id', user.id),
   ]);
+
+  const withdrawalReferenceMap: Record<string, string> = {};
+  for (const row of withdrawalRefs ?? []) {
+    if (row.id && row.reference_number) {
+      withdrawalReferenceMap[row.id] = row.reference_number;
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -56,6 +72,7 @@ export default async function WalletPage() {
           <TransactionList
             initialTransactions={transactions}
             initialTotal={total}
+            withdrawalReferences={withdrawalReferenceMap}
           />
         )}
       </div>

@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api-fetch';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
+import { CopyReferenceButton } from './CopyReferenceButton';
 
 interface WithdrawalFormProps {
   balanceCents: number;
@@ -19,6 +20,7 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
 
   const amountCents = Math.round(parseFloat(amountEuros || '0') * 100);
   const canSubmit = amountCents > 0 && amountCents <= balanceCents && holder.trim() && iban.trim();
@@ -48,12 +50,18 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
         return;
       }
 
+      setReference(data?.withdrawal?.reference_number ?? null);
       setSuccess(true);
-      setTimeout(() => window.location.reload(), 1500);
+      setLoading(false);
     } catch {
       setError('Connection error. Please try again.');
       setLoading(false);
     }
+  }
+
+  function handleClose() {
+    setOpen(false);
+    if (success) window.location.reload();
   }
 
   return (
@@ -62,14 +70,33 @@ export function WithdrawalForm({ balanceCents }: WithdrawalFormProps) {
         Request withdrawal
       </Button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Request withdrawal">
+      <Modal open={open} onClose={handleClose} title="Request withdrawal">
         <div className="space-y-4">
           {success ? (
-            <div className="text-center py-4">
-              <p className="text-semantic-text-heading font-medium">Withdrawal request submitted</p>
-              <p className="text-sm text-semantic-text-muted mt-1">
-                We will process your request and transfer the funds to your bank account.
-              </p>
+            <div className="py-2 space-y-4">
+              <div className="text-center">
+                <p className="text-semantic-text-heading font-medium">Withdrawal request submitted</p>
+                <p className="text-sm text-semantic-text-muted mt-1">
+                  We will process your request and transfer the funds to your bank account.
+                </p>
+              </div>
+              {reference && (
+                <div className="border border-semantic-border rounded-md p-3 bg-semantic-surface-muted">
+                  <p className="text-xs text-semantic-text-muted mb-1">Reference</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <code className="text-sm font-semibold text-semantic-text-heading">
+                      {reference}
+                    </code>
+                    <CopyReferenceButton value={reference} />
+                  </div>
+                  <p className="text-xs text-semantic-text-muted mt-2">
+                    We will include this on the bank transfer so you can match it on your statement.
+                  </p>
+                </div>
+              )}
+              <Button variant="primary" onClick={handleClose} className="w-full">
+                Done
+              </Button>
             </div>
           ) : (
             <>
