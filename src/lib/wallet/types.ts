@@ -34,6 +34,7 @@ export interface WithdrawalRequestRow {
   user_id: string;
   amount_cents: number;
   status: WithdrawalStatus;
+  reference_number: string;
   bank_account_holder: string;
   bank_iban: string;
   staff_notes: string | null;
