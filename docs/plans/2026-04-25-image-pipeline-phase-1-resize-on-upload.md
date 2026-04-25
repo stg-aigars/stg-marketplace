@@ -60,6 +60,8 @@ Expected: "Switched to a new branch 'feature/image-pipeline-phase-1-resize'".
 
 **Step 1: Add the constant near the top of the file (above `EXTENSION_MAP`).**
 
+> Location verified at plan-write time: `EXTENSION_MAP` is at lines 3–8 of [src/lib/images/process.ts](../../src/lib/images/process.ts). If the file has been refactored between plan and execution, locate it via `rg -n 'EXTENSION_MAP' src/lib/images/process.ts` and place the new constant immediately above the first hit.
+
 Add:
 ```ts
 /**
@@ -139,6 +141,22 @@ describe('stripExifMetadata', () => {
       const meta = await sharp(output).metadata();
       expect(meta.width).toBe(800);
       expect(meta.height).toBe(600);
+    });
+
+    it('does not enlarge avatar-sized inputs (256px after the avatar route\'s fit:cover resize)', async () => {
+      // Regression guard for the avatar pipeline: the avatar route resizes
+      // to 256x256 BEFORE calling stripExifMetadata, so the new resize step
+      // here must be a no-op for that case. If withoutEnlargement is ever
+      // dropped, this test catches it before avatars get silently upscaled.
+      const input = await sharp({
+        create: { width: 256, height: 256, channels: 3, background: { r: 100, g: 100, b: 100 } },
+      })
+        .jpeg()
+        .toBuffer();
+      const output = await stripExifMetadata(input, 'image/jpeg');
+      const meta = await sharp(output).metadata();
+      expect(meta.width).toBe(256);
+      expect(meta.height).toBe(256);
     });
 
     it('caps PNG inputs the same way as JPEG', async () => {
@@ -247,10 +265,10 @@ Then in browser:
 1. Sign in.
 2. Navigate to `/sell`, complete the flow up to the photo step.
 3. Upload a single large phone photo (≥ 3 MiB). The upload should succeed.
-4. Note the resulting URL from the network response.
-5. Open the URL in a new tab. The image should load and display normally.
-6. Save the image and check its dimensions — long edge should be ≤ 2048 px.
-7. Verify file size is under ~1 MiB (will vary by photo content).
+4. From the network response to `POST /api/listings/photos`, copy the `url` field. **This is the direct Supabase Storage URL** (format: `https://{project}.supabase.co/storage/v1/object/public/listing-photos/{userId}/{uuid}.{ext}`). Verify it does NOT start with `/_next/image` — that would be the optimizer-transformed variant, not the source bytes.
+5. Open the direct Storage URL (not the gallery / browse rendering) in a new tab. The image should load.
+6. Save the image (right-click → Save image as) and check its dimensions however your OS exposes them — image-viewer properties panel, file-manager Get Info, or a CLI tool you have installed (`identify` from ImageMagick, `sips` on macOS, `exiftool`, etc.). Long edge should be ≤ 2048 px. **This step matters because `next/image` would happily downscale at request time even if the source bytes weren't resized — only the Storage URL proves the resize-on-upload step actually ran.**
+7. Verify the saved file size is under ~1 MiB (will vary by photo content).
 
 If any step fails, do NOT commit. Diagnose first; the resize step should be transparent to the upload path.
 
