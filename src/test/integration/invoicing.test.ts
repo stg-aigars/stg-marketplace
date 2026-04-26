@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execSync } from 'child_process';
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { createTestServiceClient } from '../helpers/supabase';
 import { createTestUser, createTestListing, createTestOrder, cleanupTestData } from '../helpers/factories';
 
@@ -118,8 +119,8 @@ describe('invoice numbering', () => {
     );
 
     const numbers = results
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => (r as PromiseFulfilledResult<{ data: string }>).value.data);
+      .filter((r): r is PromiseFulfilledResult<PostgrestSingleResponse<string>> => r.status === 'fulfilled')
+      .map((r) => r.value.data!);
 
     // All 10 should succeed
     expect(numbers).toHaveLength(10);

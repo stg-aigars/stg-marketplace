@@ -6,7 +6,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { RefundableOrder } from '@/lib/services/order-refund';
+import type { refundOrder } from '@/lib/services/order-refund';
+
+type RefundableOrder = Parameters<typeof refundOrder>[1];
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
