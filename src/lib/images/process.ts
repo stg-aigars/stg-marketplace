@@ -6,7 +6,6 @@ import sharp from 'sharp';
  * Applies to every upload that flows through stripExifMetadata — listings
  * and dispute evidence both get capped here; avatars are a no-op because
  * the avatar route pre-resizes to 256×256 before calling this helper.
- * A 12 MP phone photo (4032×3024) becomes ~2048×1536 in the bucket.
  * Picked to match a Next deviceSize so /_next/image doesn't have to
  * upscale on browse / lightbox surfaces. See plan at
  * docs/plans/2026-04-25-image-pipeline-phase-1-resize-on-upload.md for
