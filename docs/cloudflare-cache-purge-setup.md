@@ -1,49 +1,43 @@
-# Cloudflare Cache Purge Setup
+# Cloudflare Cache + Image Optimization Setup
 
-After enabling Cloudflare proxy (orange cloud), SSR pages and HTML can get cached at the edge. This causes stale content after deploys. The setup below ensures the cache is purged on every deploy.
+The site is on Cloudflare's free plan with the orange cloud (proxy) enabled. Edge caching is restricted to Next.js's hashed-filename outputs; everything else bypasses the edge entirely.
 
-## 1. Create a Cloudflare API Token
+## Cache Rules (Cloudflare dashboard)
 
-1. Go to Cloudflare dashboard > My Profile > API Tokens
-2. Click "Create Token"
-3. Use "Custom token" template
-4. Permissions: **Zone > Cache Purge > Purge**
-5. Zone Resources: **Include > Specific zone > secondturn.games**
-6. Create and copy the token
-
-## 2. Add Environment Variables in Coolify
-
-Add these as **runtime** environment variables (not build-time):
-
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `CLOUDFLARE_ZONE_ID` | Zone ID from Cloudflare dashboard overview page | 32-char hex string |
-| `CLOUDFLARE_API_TOKEN` | Token created in step 1 | Starts with a random string |
-
-## 3. Configure Post Deployment Command
-
-In Coolify, set the **Post Deployment Command** to:
-
-```
-bash scripts/purge-cloudflare-cache.sh
-```
-
-The script exits gracefully (exit 0) if the env vars are not set, so it won't break deploys in environments without Cloudflare.
-
-## Cloudflare Cache Rules (Dashboard)
-
-These rules are configured manually in the Cloudflare dashboard under Caching > Cache Rules. They are not managed in code.
+These rules live in the Cloudflare dashboard under Caching → Cache Rules. They are not managed in code.
 
 | Priority | Name | Match | Action |
-|----------|------|-------|--------|
-| 1 | Cache Next.js static assets | URI Path starts with `/_next/static/` | Eligible for cache, Edge TTL 1 year |
-| 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible for cache, Edge TTL 1 day |
+|---:|---|---|---|
+| 1 | Cache Next.js static assets | URI Path starts with `/_next/static/` | Eligible, Edge TTL 1 year |
+| 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible, Edge TTL 1 day |
 | 3 | Bypass everything else | All incoming requests | Bypass cache |
 
-**Warning:** Never add SSR page paths (like `/browse`, `/game/`, `/en/`) to cache-eligible rules. This caused stale listings being served to users where one auction listing was completely missing from the browse page but visible on the homepage because the two pages were cached at different times.
+**Critical:** Never add SSR page paths (e.g. `/browse`, `/listings/`, `/`) to cache-eligible rules. We hit this regression once where a cached `/browse` page served stale listings to users while the homepage showed the same listing as removed — the two pages were cached at different points in time.
 
-## How It Works Together
+## Why no post-deploy cache purge runs
 
-1. **Cache-Control headers** (in `next.config.mjs`): Origin tells Cloudflare not to cache HTML/API responses (`no-cache, no-store, must-revalidate`), while static assets get `immutable` with a 1-year max-age.
-2. **Cache Rules** (in Cloudflare dashboard): Explicitly bypass caching for everything except `/_next/static/` and `/_next/image`.
-3. **Post-deploy purge** (this script): Purges the entire edge cache after each deploy so any stale static assets referencing old chunk hashes are cleared.
+Coolify's Post Deployment Command for the production application is intentionally empty. Both cache-eligible patterns above handle invalidation correctly without an explicit purge:
+
+- **`/_next/static/*`** filenames are content-hashed by Next.js (e.g. `chunks/abc123.js`). After a deploy, fresh HTML references new hashes which are fetched on first request; old cached chunks become unreachable and eventually expire (1y TTL) or get evicted by Cloudflare's LRU. No correctness issue, no manual intervention needed.
+- **`/_next/image*`** transforms are stable for the lifetime of the source asset. A deploy doesn't change what `/_next/image?url=...&w=2048&q=75` should resolve to. Letting the 1-day edge TTL run undisturbed across deploys saves a CPU spike on the Hetzner CX23 origin (image transforms are CPU-heavy; the previous full-purge setup forced 100% cache-miss rate on the first wave of post-deploy traffic).
+
+Earlier setups invoked `purge_everything: true` after every deploy — first via a `scripts/purge-cloudflare-cache.sh` repo script (later removed), then via an inline Coolify Post Deployment Command (cleared 2026-04-26 as part of the Phase 3 image-pipeline work). See [docs/audits/image-pipeline-audit-2026-04-25.md](audits/image-pipeline-audit-2026-04-25.md) §2.2 F-6.
+
+## Persistent volume requirement
+
+The production container must mount a Coolify-managed Docker volume at `/app/.next/cache/images` so the Next.js image-optimization cache survives container restarts and redeploys. Without this volume, every container restart wipes the on-VPS transform cache, defeating the 30-day `minimumCacheTTL` set in [next.config.mjs](../next.config.mjs).
+
+Configured in Coolify dashboard: Projects → stg-marketplace → production → the Next.js app → Persistent Storage → one entry with destination `/app/.next/cache/images`.
+
+## Optional: emergency manual purge
+
+If a stale-cache emergency ever needs a manual purge, the Cloudflare API token + zone ID can be set as runtime env vars in Coolify (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`) and the purge fired ad-hoc via:
+
+```bash
+curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data '{"purge_everything":true}'
+```
+
+Use sparingly — purging `/_next/image*` triggers the cache-miss CPU spike Phase 3 was meant to eliminate.
