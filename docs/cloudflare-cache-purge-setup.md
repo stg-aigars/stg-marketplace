@@ -10,11 +10,17 @@ These rules live in the Cloudflare dashboard under Caching → Cache Rules. They
 |---:|---|---|---|
 | 1 | Cache Next.js static assets | URI Path starts with `/_next/static/` | Eligible, Edge TTL 1 year |
 | 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible, Edge TTL 1 day |
-| 3 | Bypass everything else | All incoming requests | Bypass cache |
+| 3 | Bypass everything else | NOT (URI Path starts with `/_next/static/` OR `/_next/image`) | Bypass cache |
 
 **Critical:** Never add SSR page paths (e.g. `/browse`, `/listings/`, `/`, locale-prefixed `/en/...`) to cache-eligible rules. We hit this regression once where a cached `/browse` page served stale listings to users while the homepage showed the same listing as removed — the two pages were cached at different points in time.
 
-**Rule 3 is load-bearing.** [next.config.mjs](../next.config.mjs) emits `Cache-Control: public, s-maxage=60, stale-while-revalidate=300` on `/browse`, `/listings`, `/sellers`, `/wanted`, and the homepage — these origin headers advertise those routes as edge-cacheable. Rule 3 ("Bypass everything else") is the active guard that overrides them and prevents Cloudflare from actually caching SSR responses. Removing or reordering Rule 3 (e.g. thinking it's redundant now that the rules above it cover what we want cached) silently re-introduces the regression described in the warning above.
+**Rule 3's match expression must NEGATE the cacheable patterns above.** Cloudflare's Cache Rules engine does NOT use first-match-wins semantics. Multiple rules can match the same request, and each rule's `set_cache_settings` action mutates the request's cache configuration in evaluation order — **later mutations override earlier ones**. If Rule 3 matched "All incoming requests" (Global), it would fire AFTER Rules 1 and 2 for `/_next/static/*` and `/_next/image*` requests, and its `bypass cache` action would silently override their `eligible for cache` settings. Net result: 0% cache hit rate on the assets we want cached, with no error or warning — `cf-cache-status: DYNAMIC` instead of `HIT`. The rule's expression must therefore exclude what Rules 1 and 2 already cover:
+
+```
+not (starts_with(http.request.uri.path, "/_next/static/") or starts_with(http.request.uri.path, "/_next/image"))
+```
+
+**Rule 3 is also load-bearing for SSR routes.** [next.config.mjs](../next.config.mjs) emits `Cache-Control: public, s-maxage=60, stale-while-revalidate=300` on `/browse`, `/listings`, `/sellers`, `/wanted`, and the homepage — these origin headers advertise those routes as edge-cacheable. Rule 3 (now scoped to "everything except cacheable Next.js assets") is the active guard that overrides them and prevents Cloudflare from caching SSR responses. Removing it would re-introduce the stale-listing regression described above for the SSR routes.
 
 ## Why no post-deploy cache purge runs
 
@@ -40,18 +46,20 @@ Run these checks periodically (or after any Cloudflare dashboard / Coolify chang
 #    Use a locale-prefixed path — next.config.mjs only emits the public s-maxage header
 #    on /:locale(en|lv)/... routes; bare /browse hits a redirect first and would false-green.
 curl -sI https://secondturn.games/en/browse | grep -i cf-cache-status
-# Expect: cf-cache-status: BYPASS  (or "DYNAMIC" — both indicate not-cached)
+# Expect: cf-cache-status: DYNAMIC  (Rule 3 bypasses; SSR responses are not edge-cached)
 
 # 2. /_next/image* must be cacheable (this is what Phase 3's volume + no-purge protects).
 curl -sI 'https://secondturn.games/_next/image?url=%2Ficons%2Ficon-192.png&w=256&q=75' | grep -i cf-cache-status
-# Expect: cf-cache-status: HIT (warm cache) or MISS (first cold request) — never BYPASS.
+# Expect: cf-cache-status: MISS on first request, then HIT on subsequent requests within the
+# 1-day edge TTL. If you see DYNAMIC instead, Rule 2 isn't being applied — most likely Rule 3
+# is matching too broadly (its expression must NEGATE /_next/static/ and /_next/image).
 
 # 3. Persistent volume actually mounted on the container (run on the Hetzner box).
 docker volume ls | grep nextjs-image-cache
 # Expect: one line of output naming the volume.
 ```
 
-If (1) returns `HIT`/`MISS` instead of `BYPASS`/`DYNAMIC`, Cache Rule 3 has been removed or reordered — restore it before the next deploy. If (2) returns `BYPASS`, Cache Rule 2 has been removed — restore it. If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart.
+If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart.
 
 ## Optional: emergency manual purge
 
