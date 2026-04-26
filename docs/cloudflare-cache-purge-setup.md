@@ -12,7 +12,9 @@ These rules live in the Cloudflare dashboard under Caching → Cache Rules. They
 | 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible, Edge TTL 1 day |
 | 3 | Bypass everything else | All incoming requests | Bypass cache |
 
-**Critical:** Never add SSR page paths (e.g. `/browse`, `/listings/`, `/`) to cache-eligible rules. We hit this regression once where a cached `/browse` page served stale listings to users while the homepage showed the same listing as removed — the two pages were cached at different points in time.
+**Critical:** Never add SSR page paths (e.g. `/browse`, `/listings/`, `/`, locale-prefixed `/en/...`) to cache-eligible rules. We hit this regression once where a cached `/browse` page served stale listings to users while the homepage showed the same listing as removed — the two pages were cached at different points in time.
+
+**Rule 3 is load-bearing.** [next.config.mjs](../next.config.mjs) emits `Cache-Control: public, s-maxage=60, stale-while-revalidate=300` on `/browse`, `/listings`, `/sellers`, `/wanted`, and the homepage — these origin headers advertise those routes as edge-cacheable. Rule 3 ("Bypass everything else") is the active guard that overrides them and prevents Cloudflare from actually caching SSR responses. Removing or reordering Rule 3 (e.g. thinking it's redundant now that the rules above it cover what we want cached) silently re-introduces the regression described in the warning above.
 
 ## Why no post-deploy cache purge runs
 
@@ -25,13 +27,45 @@ Earlier setups invoked `purge_everything: true` after every deploy — first via
 
 ## Persistent volume requirement
 
-The production container must mount a Coolify-managed Docker volume at `/app/.next/cache/images` so the Next.js image-optimization cache survives container restarts and redeploys. Without this volume, every container restart wipes the on-VPS transform cache, defeating the 30-day `minimumCacheTTL` set in [next.config.mjs](../next.config.mjs).
+The production container mounts a Coolify-managed Docker volume named `nextjs-image-cache` at `/app/.next/cache/images` so the Next.js image-optimization cache survives container restarts and redeploys. Without this volume, every container restart wipes the on-VPS transform cache, defeating the 30-day `minimumCacheTTL` set in [next.config.mjs](../next.config.mjs).
 
-Configured in Coolify dashboard: Projects → stg-marketplace → production → the Next.js app → Persistent Storage → one entry with destination `/app/.next/cache/images`.
+Configured in Coolify dashboard: Projects → stg-marketplace → production → the Next.js app → Persistent Storage → one entry, name `nextjs-image-cache`, destination `/app/.next/cache/images`.
+
+## Verifying the setup is intact
+
+Run these checks periodically (or after any Cloudflare dashboard / Coolify change) to confirm the layered behavior holds:
+
+```bash
+# 1. SSR routes must bypass the edge cache (otherwise the stale-listing regression returns).
+curl -sI https://secondturn.games/browse | grep -i cf-cache-status
+# Expect: cf-cache-status: BYPASS  (or "DYNAMIC" — both indicate not-cached)
+
+# 2. /_next/image* must be cacheable (this is what Phase 3's volume + no-purge protects).
+curl -sI 'https://secondturn.games/_next/image?url=%2Ficons%2Ficon-192.png&w=256&q=75' | grep -i cf-cache-status
+# Expect: cf-cache-status: HIT (warm cache) or MISS (first cold request) — never BYPASS.
+
+# 3. Persistent volume actually mounted on the container (run on the Hetzner box).
+docker volume ls | grep nextjs-image-cache
+# Expect: one line of output naming the volume.
+```
+
+If (1) returns `HIT`/`MISS` instead of `BYPASS`/`DYNAMIC`, Cache Rule 3 has been removed or reordered — restore it before the next deploy. If (2) returns `BYPASS`, Cache Rule 2 has been removed — restore it. If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart.
 
 ## Optional: emergency manual purge
 
-If a stale-cache emergency ever needs a manual purge, the Cloudflare API token + zone ID can be set as runtime env vars in Coolify (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`) and the purge fired ad-hoc via:
+The Cloudflare API token + zone ID are configured as runtime env vars in Coolify (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, set 2026-03-31 — values stored in Bitwarden under "Cloudflare"). They're no longer used by the deploy pipeline but remain available for ad-hoc emergency purges.
+
+**Prefer the narrow prefix-based purge** — preserves cache for everything outside the offending path:
+
+```bash
+# Cloudflare's free plan supports prefix-based purge. Format: hostname/path (no scheme).
+curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data '{"prefixes":["secondturn.games/_next/image"]}'
+```
+
+**Nuclear option** — only if a prefix purge isn't sufficient. Re-triggers the post-deploy CPU spike Phase 3 was designed to eliminate:
 
 ```bash
 curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
@@ -39,5 +73,3 @@ curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_I
   -H "Content-Type: application/json" \
   --data '{"purge_everything":true}'
 ```
-
-Use sparingly — purging `/_next/image*` triggers the cache-miss CPU spike Phase 3 was meant to eliminate.

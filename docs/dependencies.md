@@ -41,7 +41,7 @@
 
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
-| **Cloudflare** | DNS + proxy for secondturn.games (full proxy / orange cloud since 2026-03-31 — edge bot management sets `cf_clearance` on user browsers; cache rules configured in dashboard, no post-deploy purge — content-hashed `/_next/static` and 1-day-TTL `/_next/image` handle invalidation naturally; see [docs/cloudflare-cache-purge-setup.md](cloudflare-cache-purge-setup.md)) | Free | Account login, domain config |
+| **Cloudflare** | DNS + proxy for secondturn.games (full proxy / orange cloud since 2026-03-31 — edge bot management sets `cf_clearance` on user browsers; cache rules configured in dashboard, no post-deploy purge — content-hashed `/_next/static` and 1-day-TTL `/_next/image` handle invalidation naturally; see [docs/cloudflare-cache-purge-setup.md](cloudflare-cache-purge-setup.md)) | Free | Account login, domain config, API token (Cache Purge scope) + zone ID for emergency manual purge (set in Coolify env as `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID`) |
 
 ## Auth
 
