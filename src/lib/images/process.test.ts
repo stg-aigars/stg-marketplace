@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { stripExifMetadata, LISTING_PHOTO_MAX_DIMENSION } from './process';
+import { stripExifMetadata, MAX_PHOTO_DIMENSION } from './process';
 
 /**
  * Helper: generate a synthetic JPEG buffer at the requested dimensions.
@@ -20,14 +20,14 @@ describe('stripExifMetadata', () => {
       const input = await makeJpegBuffer(4032, 3024);
       const output = await stripExifMetadata(input, 'image/jpeg');
       const meta = await sharp(output).metadata();
-      expect(Math.max(meta.width!, meta.height!)).toBe(LISTING_PHOTO_MAX_DIMENSION);
+      expect(Math.max(meta.width!, meta.height!)).toBe(MAX_PHOTO_DIMENSION);
     });
 
     it('caps the long edge of an oversized portrait JPEG', async () => {
       const input = await makeJpegBuffer(3024, 4032);
       const output = await stripExifMetadata(input, 'image/jpeg');
       const meta = await sharp(output).metadata();
-      expect(Math.max(meta.width!, meta.height!)).toBe(LISTING_PHOTO_MAX_DIMENSION);
+      expect(Math.max(meta.width!, meta.height!)).toBe(MAX_PHOTO_DIMENSION);
     });
 
     it('preserves aspect ratio when resizing', async () => {
@@ -70,7 +70,7 @@ describe('stripExifMetadata', () => {
         .toBuffer();
       const output = await stripExifMetadata(inputPng, 'image/png');
       const meta = await sharp(output).metadata();
-      expect(Math.max(meta.width!, meta.height!)).toBe(LISTING_PHOTO_MAX_DIMENSION);
+      expect(Math.max(meta.width!, meta.height!)).toBe(MAX_PHOTO_DIMENSION);
       expect(meta.format).toBe('png'); // format preserved (Phase 4 will change this)
     });
   });
