@@ -34,7 +34,7 @@ interface UnifiedTimelineProps {
     refunded_at?: string | null;
     cancellation_reason?: CancellationReason | null;
     seller_country?: string | null;
-    destination_country?: string | null;
+    terminal_country?: string | null;
   };
   trackingEvents: TrackingEventRow[];
   trackingUrl: string | null;
@@ -223,7 +223,7 @@ export function UnifiedTimeline({
   const labelCtx: Omit<LabelContext, 'entry'> = {
     destinationTerminal,
     destinationCity,
-    destinationCountry: order.destination_country,
+    destinationCountry: order.terminal_country,
     sellerCountry: order.seller_country,
   };
 

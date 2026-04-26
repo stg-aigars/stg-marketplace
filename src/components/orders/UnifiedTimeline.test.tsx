@@ -13,7 +13,7 @@ const baseOrder = {
   completed_at: null,
   cancelled_at: null,
   seller_country: 'EE' as const,
-  destination_country: 'LV' as const,
+  terminal_country: 'LV' as const,
 };
 
 function trackingEvent(

@@ -86,22 +86,38 @@ async function processOrderEvents(
       }
     }
 
-    // Notify buyer when parcel is ready for pickup (NOTIFICATIONS_INFORMED = Unisend sent pickup SMS)
-    if (insertedEventTypes.has('NOTIFICATIONS_INFORMED')) {
-      const { data: orderForNotif } = await supabase
-        .from('orders')
-        .select('*, order_items(listing_id, listings(game_name)), listings(game_name)')
-        .eq('id', orderId)
-        .single();
+    // Notify buyer when parcel is ready for pickup. Either RECEIVED_TERMINAL
+    // (parcel arrived at destination locker) or NOTIFICATIONS_INFORMED (Unisend
+    // pickup SMS sent) signals readiness — real-world feeds sometimes deliver
+    // one without the other, so trigger on whichever arrives first. Cross-tick
+    // dedupe via row count: only notify when this tick added the first arrival
+    // event for the order, so a later companion event doesn't fire a second push.
+    const newArrivalEventCount =
+      (insertedEventTypes.has('RECEIVED_TERMINAL') ? 1 : 0) +
+      (insertedEventTypes.has('NOTIFICATIONS_INFORMED') ? 1 : 0);
+    if (newArrivalEventCount > 0) {
+      const { count: totalArrivalEvents } = await supabase
+        .from('tracking_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('order_id', orderId)
+        .in('event_type', ['RECEIVED_TERMINAL', 'NOTIFICATIONS_INFORMED']);
 
-      if (orderForNotif) {
-        const gameName = getOrderGameSummary(orderForNotif.order_items as OrderItemLike[], orderForNotif.listings as LegacyListingsLike);
-        void notify(orderForNotif.buyer_id, 'shipping.ready_for_pickup', {
-          gameName,
-          orderNumber: orderForNotif.order_number,
-          orderId,
-          terminalName: orderForNotif.terminal_name ?? undefined,
-        });
+      if (totalArrivalEvents === newArrivalEventCount) {
+        const { data: orderForNotif } = await supabase
+          .from('orders')
+          .select('*, order_items(listing_id, listings(game_name)), listings(game_name)')
+          .eq('id', orderId)
+          .single();
+
+        if (orderForNotif) {
+          const gameName = getOrderGameSummary(orderForNotif.order_items as OrderItemLike[], orderForNotif.listings as LegacyListingsLike);
+          void notify(orderForNotif.buyer_id, 'shipping.ready_for_pickup', {
+            gameName,
+            orderNumber: orderForNotif.order_number,
+            orderId,
+            terminalName: orderForNotif.terminal_name ?? undefined,
+          });
+        }
       }
     }
 

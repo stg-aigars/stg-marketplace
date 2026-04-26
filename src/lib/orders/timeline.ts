@@ -58,7 +58,7 @@ export interface OrderForTimeline {
   refunded_at?: string | null;
   cancellation_reason?: CancellationReason | null;
   seller_country?: string | null;
-  destination_country?: string | null;
+  terminal_country?: string | null;
 }
 
 /** Structural type — satisfied by TrackingEventRow */
@@ -122,10 +122,10 @@ export function buildOrderTimeline(
       courierCollectionEntry &&
       !hasArrivedAtDestination &&
       order.seller_country &&
-      order.destination_country
+      order.terminal_country
     ) {
       courierCollectionEntry.detail =
-        order.seller_country !== order.destination_country
+        order.seller_country !== order.terminal_country
           ? 'Typically 2–3 working days'
           : 'Typically next working day';
     }
