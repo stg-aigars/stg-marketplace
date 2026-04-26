@@ -43,6 +43,7 @@ export default async function HomePage() {
   // section's background-image class below.
   ReactDOM.preload('/images/hero-bg-2.webp', {
     as: 'image',
+    fetchPriority: 'high',
     media: '(min-width: 1024px)',
   });
 
