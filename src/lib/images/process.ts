@@ -1,5 +1,16 @@
 import sharp from 'sharp';
 
+/**
+ * Listing-photo upload resize cap (long edge, in pixels).
+ *
+ * Caps stored photo dimensions so a 12 MP phone photo (4032×3024) becomes
+ * ~2048×1536 in the bucket. Picked to match a Next deviceSize so /_next/image
+ * doesn't have to upscale on browse / lightbox surfaces. See plan at
+ * docs/plans/2026-04-25-image-pipeline-phase-1-resize-on-upload.md for the
+ * trade-off behind this number.
+ */
+export const LISTING_PHOTO_MAX_DIMENSION = 2048;
+
 export const EXTENSION_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -61,7 +72,14 @@ export function detectImageType(buffer: Buffer): string | null {
  * Uses format-specific encoding to avoid silent quality degradation.
  */
 export async function stripExifMetadata(buffer: Buffer, mimeType: string): Promise<Buffer> {
-  const pipeline = sharp(buffer, { limitInputPixels: 25_000_000 }).rotate();
+  const pipeline = sharp(buffer, { limitInputPixels: 25_000_000 })
+    .rotate()
+    .resize({
+      width: LISTING_PHOTO_MAX_DIMENSION,
+      height: LISTING_PHOTO_MAX_DIMENSION,
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
 
   switch (mimeType) {
     case 'image/jpeg': return pipeline.jpeg({ quality: 90 }).toBuffer();
