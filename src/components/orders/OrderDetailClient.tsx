@@ -225,6 +225,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           trackingEvents={trackingEvents}
           trackingUrl={order.tracking_url}
           destinationTerminal={order.terminal_name ?? undefined}
+          destinationCity={order.terminal_city ?? undefined}
         />
 
         {/* Terminal reference panel */}
