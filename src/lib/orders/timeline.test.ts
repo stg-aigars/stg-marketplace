@@ -268,7 +268,7 @@ describe('buildOrderTimeline', () => {
         accepted_at: '2026-04-15T05:05:00Z',
         completed_at: '2026-04-20T12:00:00Z',
         seller_country: 'EE',
-        destination_country: 'LV',
+        terminal_country: 'LV',
       });
 
       const result = buildOrderTimeline(order, realWorldEvents());
@@ -299,7 +299,7 @@ describe('buildOrderTimeline', () => {
         accepted_at: '2026-04-01T12:00:00Z',
         shipped_at: '2026-04-02T08:00:00Z',
         seller_country: 'EE',
-        destination_country: 'LV',
+        terminal_country: 'LV',
       });
       const events = [
         trackingEvent('PARCEL_RECEIVED', '2026-04-02T06:00:00Z', 'Häädemeeste', 'ACCEPTED_TERMINAL'),
@@ -317,7 +317,7 @@ describe('buildOrderTimeline', () => {
         accepted_at: '2026-04-01T12:00:00Z',
         shipped_at: '2026-04-02T08:00:00Z',
         seller_country: 'LV',
-        destination_country: 'LV',
+        terminal_country: 'LV',
       });
       const events = [
         trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Riga', 'RECEIVED_TERMINAL_OUT'),
@@ -333,7 +333,7 @@ describe('buildOrderTimeline', () => {
         status: 'delivered',
         accepted_at: '2026-04-01T12:00:00Z',
         seller_country: 'EE',
-        destination_country: 'LV',
+        terminal_country: 'LV',
       });
       const events = [
         trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
