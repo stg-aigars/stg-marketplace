@@ -303,7 +303,6 @@ export async function fetchGameMetadata(gameId: number): Promise<BGGGameMetadata
 
     // Exclude versions from in-memory cache to avoid bloating the 200-entry Map
     // (some games have 50+ versions). Versions are persisted to DB by ensureGameMetadata.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { versions: _cachedVersions, ...metadataWithoutVersions } = metadata;
     setCache(cacheKey, metadataWithoutVersions);
     return metadata;

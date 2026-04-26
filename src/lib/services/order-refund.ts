@@ -37,7 +37,7 @@ export class RefundInitiationError extends Error {
   }
 }
 
-interface RefundableOrder {
+export interface RefundableOrder {
   buyer_id: string;
   total_amount_cents: number;
   buyer_wallet_debit_cents: number;

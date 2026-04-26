@@ -94,7 +94,7 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
   // --- Comments ---
   'comment.received': {
     title: (ctx) => `${ctx.commenterName ?? 'Someone'} asked about ${ctx.gameName ?? 'your listing'}`,
-    body: (ctx) => `A new comment's in — take a look and reply when you can.`,
+    body: () => `A new comment's in — take a look and reply when you can.`,
     link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}#comments` : null,
   },
 
