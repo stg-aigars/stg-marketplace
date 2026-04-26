@@ -8,6 +8,7 @@ const config = [
   {
     rules: {
       "@next/next/no-img-element": "error",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       // React Compiler rules — downgraded to warn until patterns are refactored
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/refs": "warn",

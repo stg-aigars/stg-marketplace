@@ -6,6 +6,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { refundOrder } from '@/lib/services/order-refund';
+
+type RefundableOrder = Parameters<typeof refundOrder>[1];
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
@@ -43,15 +46,16 @@ function makeQueryBuilder() {
   return builder;
 }
 
-function makeOrder(overrides: Record<string, unknown> = {}) {
+function makeOrder(overrides: Partial<RefundableOrder> = {}): RefundableOrder {
   return {
     buyer_id: 'buyer-1',
     total_amount_cents: 3000,
     buyer_wallet_debit_cents: 0,
-    payment_method: 'card' as const,
+    payment_method: 'card',
     everypay_payment_reference: 'ep-ref-1',
     order_number: 'STG-20260413-001',
     refund_status: null,
+    invoice_number: null,
     ...overrides,
   };
 }

@@ -14,12 +14,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mockNotify = vi.fn();
 const mockNotifyMany = vi.fn();
 const mockFetchProfiles = vi.fn();
-const mockSendAuctionWonToWinner = vi.fn(() => Promise.resolve());
-const mockSendAuctionWonToSeller = vi.fn(() => Promise.resolve());
-const mockSendAuctionLostNotification = vi.fn(() => Promise.resolve());
-const mockSendAuctionEndedNoBidsToSeller = vi.fn(() => Promise.resolve());
-const mockSendAuctionPaymentReminderToWinner = vi.fn(() => Promise.resolve());
-const mockSendAuctionPaymentExpired = vi.fn(() => Promise.resolve());
+const mockSendAuctionWonToWinner = vi.fn().mockResolvedValue(undefined);
+const mockSendAuctionWonToSeller = vi.fn().mockResolvedValue(undefined);
+const mockSendAuctionLostNotification = vi.fn().mockResolvedValue(undefined);
+const mockSendAuctionEndedNoBidsToSeller = vi.fn().mockResolvedValue(undefined);
+const mockSendAuctionPaymentReminderToWinner = vi.fn().mockResolvedValue(undefined);
+const mockSendAuctionPaymentExpired = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(),

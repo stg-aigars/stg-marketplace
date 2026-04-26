@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { ReportIllegalContentForm } from './ReportIllegalContentForm';
 
 export const metadata: Metadata = {
@@ -22,9 +23,9 @@ export default function ReportIllegalContentPage() {
         </p>
         <p>
           If this isn&apos;t about illegal content, use our{' '}
-          <a href="/contact" className="link-brand">
+          <Link href="/contact" className="link-brand">
             contact page
-          </a>{' '}
+          </Link>{' '}
           instead. For data-protection questions, email{' '}
           <a href="mailto:privacy@secondturn.games" className="link-brand">
             privacy@secondturn.games
