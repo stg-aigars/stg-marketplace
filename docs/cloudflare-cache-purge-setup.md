@@ -1,6 +1,6 @@
 # Cloudflare Cache + Image Optimization Setup
 
-The site is on Cloudflare's free plan with the orange cloud (proxy) enabled. Edge caching is restricted to Next.js's hashed-filename outputs; everything else bypasses the edge entirely.
+Edge caching is restricted to Next.js's hashed-filename outputs; everything else bypasses the edge entirely. The site is on Cloudflare's Free plan, which constrains the available cache-purge mechanisms (see Emergency manual purge below).
 
 ## Cache Rules (Cloudflare dashboard)
 
@@ -37,7 +37,9 @@ Run these checks periodically (or after any Cloudflare dashboard / Coolify chang
 
 ```bash
 # 1. SSR routes must bypass the edge cache (otherwise the stale-listing regression returns).
-curl -sI https://secondturn.games/browse | grep -i cf-cache-status
+#    Use a locale-prefixed path — next.config.mjs only emits the public s-maxage header
+#    on /:locale(en|lv)/... routes; bare /browse hits a redirect first and would false-green.
+curl -sI https://secondturn.games/en/browse | grep -i cf-cache-status
 # Expect: cf-cache-status: BYPASS  (or "DYNAMIC" — both indicate not-cached)
 
 # 2. /_next/image* must be cacheable (this is what Phase 3's volume + no-purge protects).
@@ -55,17 +57,20 @@ If (1) returns `HIT`/`MISS` instead of `BYPASS`/`DYNAMIC`, Cache Rule 3 has been
 
 The Cloudflare API token + zone ID are configured as runtime env vars in Coolify (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, set 2026-03-31 — values stored in Bitwarden under "Cloudflare"). They're no longer used by the deploy pipeline but remain available for ad-hoc emergency purges.
 
-**Prefer the narrow prefix-based purge** — preserves cache for everything outside the offending path:
+Free-plan zones only support two purge modes: by exact URL list, or `purge_everything`. Prefix / hostname / tag-based purges require Enterprise. So the operational ladder is:
+
+**Prefer URL-list purge** when you know the specific stale URLs (up to 30 per request on Free):
 
 ```bash
-# Cloudflare's free plan supports prefix-based purge. Format: hostname/path (no scheme).
 curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
   -H "Content-Type: application/json" \
-  --data '{"prefixes":["secondturn.games/_next/image"]}'
+  --data '{"files":["https://secondturn.games/_next/image?url=%2Fpath%2Fto%2Fimage&w=2048&q=75"]}'
 ```
 
-**Nuclear option** — only if a prefix purge isn't sufficient. Re-triggers the post-deploy CPU spike Phase 3 was designed to eliminate:
+This is most useful when a specific image got cached wrong (e.g., a listing photo was replaced and the transform URL is serving the old bytes). Construct the exact `/_next/image?...` URL that needs purging.
+
+**Nuclear option** — when scope is too broad to enumerate. Re-triggers the post-deploy CPU spike Phase 3 was designed to eliminate:
 
 ```bash
 curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
