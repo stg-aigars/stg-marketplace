@@ -1,5 +1,18 @@
 import sharp from 'sharp';
 
+/**
+ * Photo upload resize cap (long edge, in pixels).
+ *
+ * Applies to every upload that flows through stripExifMetadata — listings
+ * and dispute evidence both get capped here; avatars are a no-op because
+ * the avatar route pre-resizes to 256×256 before calling this helper.
+ * Picked to match a Next deviceSize so /_next/image doesn't have to
+ * upscale on browse / lightbox surfaces. See plan at
+ * docs/plans/2026-04-25-image-pipeline-phase-1-resize-on-upload.md for
+ * the trade-off behind this number.
+ */
+export const MAX_PHOTO_DIMENSION = 2048;
+
 export const EXTENSION_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -61,7 +74,14 @@ export function detectImageType(buffer: Buffer): string | null {
  * Uses format-specific encoding to avoid silent quality degradation.
  */
 export async function stripExifMetadata(buffer: Buffer, mimeType: string): Promise<Buffer> {
-  const pipeline = sharp(buffer, { limitInputPixels: 25_000_000 }).rotate();
+  const pipeline = sharp(buffer, { limitInputPixels: 25_000_000 })
+    .rotate()
+    .resize({
+      width: MAX_PHOTO_DIMENSION,
+      height: MAX_PHOTO_DIMENSION,
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
 
   switch (mimeType) {
     case 'image/jpeg': return pipeline.jpeg({ quality: 90 }).toBuffer();
