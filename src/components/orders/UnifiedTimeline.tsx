@@ -75,28 +75,95 @@ const TRACKING_ICONS: Record<string, PhosphorIcon> = {
   RETURNING: ArrowUUpLeft,
 };
 
+interface LabelContext {
+  entry: TimelineEntry;
+  destinationTerminal?: string;
+}
+
 /**
  * Granular Unisend publicEventType overrides — each entry's coarse state_type is
  * still ON_THE_WAY, but the event_type tells us *which* handoff this is. Unmapped
- * event_types fall back to the state_type label/icon (`LABELS` / `TRACKING_ICONS`).
+ * event_types fall through to the generic tracking-event label builder, which
+ * appends the event's location with a middle dot when present.
  */
 const EVENT_TYPE_OVERRIDES: Record<
   string,
-  { label: (destinationTerminal?: string) => string; icon: PhosphorIcon }
+  { label: (ctx: LabelContext) => string; icon: PhosphorIcon }
 > = {
+  ACCEPTED_TERMINAL: {
+    label: ({ entry }) => {
+      const city = extractTerminalCity(entry.location);
+      return city ? `Dropped off at terminal in ${city}` : 'Dropped off at terminal';
+    },
+    icon: Package,
+  },
   RECEIVED_TERMINAL_OUT: {
     label: () => 'Collected by courier',
     icon: Truck,
   },
   RECEIVED_TERMINAL: {
-    label: (dest) => (dest ? `Ready for pickup at ${dest}` : 'Ready for pickup'),
+    label: ({ destinationTerminal }) =>
+      destinationTerminal ? `Ready for pickup at ${destinationTerminal}` : 'Ready for pickup',
     icon: MapPin,
   },
   NOTIFICATIONS_INFORMED: {
-    label: (dest) => (dest ? `Ready for pickup at ${dest}` : 'Ready for pickup'),
+    label: ({ destinationTerminal }) =>
+      destinationTerminal ? `Ready for pickup at ${destinationTerminal}` : 'Ready for pickup',
     icon: MapPin,
   },
+  DELIVERY_DELIVERED: {
+    label: () => 'Picked up',
+    icon: CheckCircle,
+  },
 };
+
+/**
+ * Pulls a city name out of a Unisend terminal address. Confident extraction
+ * only when the trailing segment is a postal code; otherwise falls back to the
+ * raw single-token location (e.g. transit scans that already report just a city).
+ *
+ * Examples:
+ *   "9602 pakiautomaat, Häädemeeste uDrop Coop, Pärnu mnt 40, Häädemeeste, 86001" → "Häädemeeste"
+ *   "Tallinn" → "Tallinn"
+ *   undefined → null
+ */
+function extractTerminalCity(rawLocation: string | null | undefined): string | null {
+  if (!rawLocation) return null;
+  const parts = rawLocation
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return null;
+  const last = parts[parts.length - 1];
+  if (/^\d{4,6}$/.test(last) && parts.length >= 2) {
+    return parts[parts.length - 2];
+  }
+  if (parts.length === 1 && !/\d/.test(last)) {
+    return last;
+  }
+  return null;
+}
+
+/**
+ * Single-line label composer. Folds the entry's location (tracking events) and
+ * detail (cancellation reason / "waiting for tracking") into the label so each
+ * row renders as exactly two stacked lines: this label + the timestamp.
+ */
+function composeLabel(entry: TimelineEntry, destinationTerminal?: string): string {
+  if (entry.eventType) {
+    const override = EVENT_TYPE_OVERRIDES[entry.eventType];
+    if (override) return override.label({ entry, destinationTerminal });
+  }
+  const baseLabel = LABELS[entry.key] ?? entry.key;
+  if (entry.type === 'tracking_event' && entry.location) {
+    return `${baseLabel} · ${entry.location}`;
+  }
+  if (entry.type === 'order_milestone' && entry.detail) {
+    const detailLower = entry.detail.charAt(0).toLowerCase() + entry.detail.slice(1);
+    return `${baseLabel}: ${detailLower}`;
+  }
+  return baseLabel;
+}
 
 const ERROR_KEYS = new Set(['cancelled', 'disputed', 'refunded', 'PARCEL_CANCELED', 'RETURNING']);
 
@@ -152,14 +219,13 @@ function TimelineRow({
 }) {
   const isError = ERROR_KEYS.has(entry.key);
   const isMilestone = entry.type === 'order_milestone';
-  let Icon = isMilestone ? MILESTONE_ICONS[entry.key] : TRACKING_ICONS[entry.key];
-  let label = LABELS[entry.key] ?? entry.key;
-
   const override = entry.eventType ? EVENT_TYPE_OVERRIDES[entry.eventType] : undefined;
-  if (override) {
-    label = override.label(destinationTerminal);
-    Icon = override.icon;
-  }
+  const Icon = override
+    ? override.icon
+    : isMilestone
+    ? MILESTONE_ICONS[entry.key]
+    : TRACKING_ICONS[entry.key];
+  const label = composeLabel(entry, destinationTerminal);
 
   const dotSize = isMilestone ? 'w-5 h-5' : 'w-4 h-4';
   const iconSize = isMilestone ? 12 : 10;
@@ -193,11 +259,6 @@ function TimelineRow({
     }
   }
 
-  let detailText = entry.detail;
-  if (entry.key === 'LABEL_CREATED' && entry.isCurrent && destinationTerminal) {
-    detailText = `Pickup from ${destinationTerminal}`;
-  }
-
   return (
     <div className="flex gap-3">
       <div className="flex flex-col items-center">
@@ -221,16 +282,6 @@ function TimelineRow({
         <p className={`text-sm font-medium ${textClass}`}>
           {label}
         </p>
-        {entry.location && (
-          <p className="text-xs text-semantic-text-muted mt-0.5">
-            {entry.location}
-          </p>
-        )}
-        {detailText && (
-          <p className="text-xs text-semantic-text-muted mt-0.5">
-            {detailText}
-          </p>
-        )}
         {entry.timestamp && !entry.isFuture && (
           <p className="text-xs text-semantic-text-muted mt-0.5">
             {formatDateTime(entry.timestamp)}

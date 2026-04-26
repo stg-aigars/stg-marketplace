@@ -29,10 +29,49 @@ function trackingEvent(
   };
 }
 
-describe('UnifiedTimeline event_type label overrides', () => {
+describe('UnifiedTimeline two-line rendering', () => {
   afterEach(cleanup);
 
-  it('renders RECEIVED_TERMINAL_OUT as "Collected by courier"', () => {
+  it('ACCEPTED_TERMINAL: extracts city from full Unisend address', () => {
+    render(
+      <UnifiedTimeline
+        order={baseOrder}
+        trackingEvents={[
+          trackingEvent(
+            'PARCEL_RECEIVED',
+            'ACCEPTED_TERMINAL',
+            '2026-04-16T10:31:58Z',
+            '9602 pakiautomaat, Häädemeeste uDrop Coop, Pärnu mnt 40, Häädemeeste, 86001'
+          ),
+        ]}
+        trackingUrl={null}
+      />
+    );
+
+    expect(screen.getByText('Dropped off at terminal in Häädemeeste')).toBeDefined();
+    // No separate location line — the full address is not rendered as its own row
+    expect(
+      screen.queryByText(
+        '9602 pakiautomaat, Häädemeeste uDrop Coop, Pärnu mnt 40, Häädemeeste, 86001'
+      )
+    ).toBeNull();
+  });
+
+  it('ACCEPTED_TERMINAL: falls back to plain label when location is unparseable', () => {
+    render(
+      <UnifiedTimeline
+        order={baseOrder}
+        trackingEvents={[
+          trackingEvent('PARCEL_RECEIVED', 'ACCEPTED_TERMINAL', '2026-04-16T10:31:58Z', null),
+        ]}
+        trackingUrl={null}
+      />
+    );
+
+    expect(screen.getByText('Dropped off at terminal')).toBeDefined();
+  });
+
+  it('RECEIVED_TERMINAL_OUT: renders "Collected by courier" with no location appended', () => {
     render(
       <UnifiedTimeline
         order={baseOrder}
@@ -44,11 +83,13 @@ describe('UnifiedTimeline event_type label overrides', () => {
     );
 
     expect(screen.getByText('Collected by courier')).toBeDefined();
-    // Generic state-type label does not appear for this row
+    // The event location ("Häädemeeste") is intentionally suppressed for this row — it would
+    // duplicate the drop-off row above it.
+    expect(screen.queryByText('Häädemeeste')).toBeNull();
     expect(screen.queryByText('In transit')).toBeNull();
   });
 
-  it('renders RECEIVED_TERMINAL with destinationTerminal as "Ready for pickup at <terminal>" and keeps the event location line', () => {
+  it('RECEIVED_TERMINAL with destinationTerminal: uses the order pickup terminal name', () => {
     render(
       <UnifiedTimeline
         order={baseOrder}
@@ -60,10 +101,7 @@ describe('UnifiedTimeline event_type label overrides', () => {
       />
     );
 
-    // Label uses the order's destination terminal name (not the event location)
     expect(screen.getByText('Ready for pickup at Rīga LSE Park')).toBeDefined();
-    // The event's own location ("Rīga", the city Unisend scanned at) still renders below the label
-    expect(screen.getByText('Rīga')).toBeDefined();
   });
 
   it('regression: NOTIFICATIONS_INFORMED with no destinationTerminal falls back to "Ready for pickup"', () => {
@@ -95,5 +133,60 @@ describe('UnifiedTimeline event_type label overrides', () => {
     );
 
     expect(screen.getByText('Ready for pickup')).toBeDefined();
+  });
+
+  it('DELIVERY_DELIVERED: renders "Picked up" with no location appended', () => {
+    render(
+      <UnifiedTimeline
+        order={baseOrder}
+        trackingEvents={[
+          trackingEvent('PARCEL_DELIVERED', 'DELIVERY_DELIVERED', '2026-04-18T08:56:25Z', 'Rīga'),
+        ]}
+        trackingUrl={null}
+      />
+    );
+
+    expect(screen.getByText('Picked up')).toBeDefined();
+    expect(screen.queryByText('Picked up · Rīga')).toBeNull();
+  });
+
+  it('unknown granular ON_THE_WAY: falls through to "In transit · <location>" middle-dot format', () => {
+    render(
+      <UnifiedTimeline
+        order={baseOrder}
+        trackingEvents={[
+          trackingEvent('ON_THE_WAY', 'FUTURE_NEW_TYPE', '2026-04-17T15:48:00Z', 'Tallinn'),
+        ]}
+        trackingUrl={null}
+      />
+    );
+
+    expect(screen.getByText('In transit · Tallinn')).toBeDefined();
+  });
+
+  it('cancelled milestone: cancellation reason is inlined into the label', () => {
+    const cancelledOrder = {
+      ...baseOrder,
+      status: 'cancelled' as const,
+      delivered_at: null,
+      shipped_at: null,
+      cancelled_at: '2026-04-15T08:00:00Z',
+      cancellation_reason: 'declined' as const,
+    };
+    render(<UnifiedTimeline order={cancelledOrder} trackingEvents={[]} trackingUrl={null} />);
+
+    expect(screen.getByText('Order cancelled: the seller declined this order')).toBeDefined();
+  });
+
+  it('shipped milestone fallback (no tracking): "waiting for tracking updates" is inlined', () => {
+    const shippedOrder = {
+      ...baseOrder,
+      status: 'shipped' as const,
+      delivered_at: null,
+      shipped_at: '2026-04-16T10:31:58Z',
+    };
+    render(<UnifiedTimeline order={shippedOrder} trackingEvents={[]} trackingUrl={null} />);
+
+    expect(screen.getByText('Shipped: waiting for tracking updates')).toBeDefined();
   });
 });

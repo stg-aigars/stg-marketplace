@@ -237,90 +237,6 @@ describe('buildOrderTimeline', () => {
     expect(result[result.length - 1]).toMatchObject({ key: 'completed', isCurrent: true });
   });
 
-  describe('ON_THE_WAY transit estimate', () => {
-    it('same country: shows next working day', () => {
-      const order = makeOrder({
-        status: 'shipped',
-        accepted_at: '2026-04-01T12:00:00Z',
-        seller_country: 'LV',
-        destination_country: 'LV',
-      });
-      const events = [
-        trackingEvent('LABEL_CREATED', '2026-04-01T13:00:00Z'),
-        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z'),
-      ];
-
-      const result = buildOrderTimeline(order, events);
-      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
-      expect(onTheWay?.detail).toBe('Typically next working day');
-    });
-
-    it('cross-border: shows 2-3 working days', () => {
-      const order = makeOrder({
-        status: 'shipped',
-        accepted_at: '2026-04-01T12:00:00Z',
-        seller_country: 'LV',
-        destination_country: 'EE',
-      });
-      const events = [
-        trackingEvent('LABEL_CREATED', '2026-04-01T13:00:00Z'),
-        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z'),
-      ];
-
-      const result = buildOrderTimeline(order, events);
-      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
-      expect(onTheWay?.detail).toBe('Typically 2–3 working days');
-    });
-
-    it('missing seller_country: no detail', () => {
-      const order = makeOrder({
-        status: 'shipped',
-        accepted_at: '2026-04-01T12:00:00Z',
-        destination_country: 'LV',
-      });
-      const events = [trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z')];
-
-      const result = buildOrderTimeline(order, events);
-      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
-      expect(onTheWay?.detail).toBeUndefined();
-    });
-
-    it('missing destination_country: no detail', () => {
-      const order = makeOrder({
-        status: 'shipped',
-        accepted_at: '2026-04-01T12:00:00Z',
-        seller_country: 'LV',
-      });
-      const events = [trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z')];
-
-      const result = buildOrderTimeline(order, events);
-      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
-      expect(onTheWay?.detail).toBeUndefined();
-    });
-
-    it('once parcel reaches destination: ETA detail is suppressed on transit row', () => {
-      // Updated from the previous "detail still present" expectation. Once the parcel has
-      // arrived at the destination locker (or been picked up), the in-flight ETA copy is
-      // stale and would mislead the buyer. This ensures it is suppressed.
-      const order = makeOrder({
-        status: 'delivered',
-        accepted_at: '2026-04-01T12:00:00Z',
-        seller_country: 'LT',
-        destination_country: 'EE',
-      });
-      const events = [
-        trackingEvent('LABEL_CREATED', '2026-04-01T13:00:00Z'),
-        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z'),
-        trackingEvent('PARCEL_RECEIVED', '2026-04-02T18:00:00Z'),
-        trackingEvent('PARCEL_DELIVERED', '2026-04-03T14:00:00Z'),
-      ];
-
-      const result = buildOrderTimeline(order, events);
-      const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
-      expect(onTheWay?.detail).toBeUndefined();
-    });
-  });
-
   describe('granular Unisend event_type policy', () => {
     /** Mirrors the real production order 0dcfed09-1fe8-4f6e-9569-4079963359ec */
     function realWorldEvents(): TrackingEventForTimeline[] {
@@ -346,7 +262,7 @@ describe('buildOrderTimeline', () => {
       ];
     }
 
-    it('real-world delivered order: 7 timeline rows, hub events filtered, no ETA after pickup', () => {
+    it('real-world delivered order: 7 timeline rows, hub events filtered, no ETA detail on tracking entries', () => {
       const order = makeOrder({
         status: 'completed',
         accepted_at: '2026-04-15T05:05:00Z',
@@ -373,7 +289,8 @@ describe('buildOrderTimeline', () => {
         'PARCEL_DELIVERED',
         'completed',
       ]);
-      // ETA detail suppressed on every transit row because PARCEL_DELIVERED exists
+      // ETA copy is no longer attached at the data layer — the renderer inlines what's needed
+      // into the label, and we've decided not to render an ETA per the 2-line row constraint.
       expect(trackingEntries.every((e) => e.detail === undefined)).toBe(true);
     });
 
@@ -426,52 +343,13 @@ describe('buildOrderTimeline', () => {
       expect(eventTypes).toContain('NOTIFICATIONS_INFORMED');
     });
 
-    it('in-flight ETA: detail attaches to first surviving ON_THE_WAY when no destination event yet', () => {
-      const order = makeOrder({
-        status: 'shipped',
-        accepted_at: '2026-04-01T12:00:00Z',
-        shipped_at: '2026-04-02T08:00:00Z',
-        seller_country: 'EE',
-        destination_country: 'LV',
-      });
-      const events = [
-        trackingEvent('PARCEL_RECEIVED', '2026-04-02T06:00:00Z', 'Häädemeeste', 'ACCEPTED_TERMINAL'),
-        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
-        trackingEvent('ON_THE_WAY', '2026-04-02T12:00:00Z', 'Tallinn', 'RECEIVED_LC'),
-      ];
-
-      const result = buildOrderTimeline(order, events);
-      const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
-      expect(courierCollection?.detail).toBe('Typically 2–3 working days');
-    });
-
-    it('post-arrival: ETA suppressed once RECEIVED_TERMINAL has fired', () => {
-      const order = makeOrder({
-        status: 'delivered',
-        accepted_at: '2026-04-01T12:00:00Z',
-        seller_country: 'EE',
-        destination_country: 'LV',
-      });
-      const events = [
-        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
-        trackingEvent('ON_THE_WAY', '2026-04-03T07:00:00Z', 'Riga', 'RECEIVED_TERMINAL'),
-      ];
-
-      const result = buildOrderTimeline(order, events);
-      const trackingEntries = result.filter((e) => e.type === 'tracking_event');
-      expect(trackingEntries.every((e) => e.detail === undefined)).toBe(true);
-    });
-
-    it('drop-off location preserved: PARCEL_RECEIVED.location renders the full terminal address', () => {
-      // Guards against the ETA-attachment logic accidentally clobbering non-transit fields.
+    it('drop-off location preserved on the entry: full terminal address survives so the renderer can extract a city', () => {
       const terminalAddress =
         '9602 pakiautomaat, Häädemeeste uDrop Coop , Pärnu mnt 40, Häädemeeste, 86001';
       const order = makeOrder({
         status: 'shipped',
         accepted_at: '2026-04-01T12:00:00Z',
         shipped_at: '2026-04-02T08:00:00Z',
-        seller_country: 'EE',
-        destination_country: 'LV',
       });
       const events = [
         trackingEvent('PARCEL_RECEIVED', '2026-04-02T06:00:00Z', terminalAddress, 'ACCEPTED_TERMINAL'),
@@ -481,7 +359,6 @@ describe('buildOrderTimeline', () => {
       const result = buildOrderTimeline(order, events);
       const dropOff = result.find((e) => e.eventType === 'ACCEPTED_TERMINAL');
       expect(dropOff?.location).toBe(terminalAddress);
-      expect(dropOff?.detail).toBeUndefined();
     });
 
     it('unknown granular event_type within ON_THE_WAY: rendered, not filtered', () => {
