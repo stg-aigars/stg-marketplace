@@ -87,6 +87,14 @@ export function buildOrderTimeline(
   if (hasTracking) {
     // Dedupe ready-for-pickup: if RECEIVED_TERMINAL exists, NOTIFICATIONS_INFORMED is redundant.
     const hasReceivedTerminal = trackingEvents.some((e) => e.event_type === 'RECEIVED_TERMINAL');
+    // Suppress the in-flight ETA copy once the parcel has arrived at the destination locker.
+    const hasArrivedAtDestination = trackingEvents.some(
+      (e) =>
+        e.state_type === 'PARCEL_DELIVERED' ||
+        e.event_type === 'RECEIVED_TERMINAL' ||
+        e.event_type === 'NOTIFICATIONS_INFORMED'
+    );
+    let courierCollectionEntry: TimelineEntry | null = null;
 
     for (const event of trackingEvents) {
       // LABEL_CREATED is redundant with "Seller accepted" in T2T — both fire at the same moment
@@ -94,7 +102,7 @@ export function buildOrderTimeline(
       if (HIDDEN_EVENT_TYPES.has(event.event_type)) continue;
       if (event.event_type === 'NOTIFICATIONS_INFORMED' && hasReceivedTerminal) continue;
 
-      entries.push({
+      const entry: TimelineEntry = {
         type: 'tracking_event',
         key: event.state_type as TrackingStateType,
         eventType: event.event_type,
@@ -102,7 +110,24 @@ export function buildOrderTimeline(
         location: event.location ?? undefined,
         isCurrent: false,
         isFuture: false,
-      });
+      };
+      if (event.event_type === 'RECEIVED_TERMINAL_OUT' && !courierCollectionEntry) {
+        courierCollectionEntry = entry;
+      }
+      entries.push(entry);
+    }
+
+    // ETA attaches only to "Collected by courier" and only while the parcel is still in flight.
+    if (
+      courierCollectionEntry &&
+      !hasArrivedAtDestination &&
+      order.seller_country &&
+      order.destination_country
+    ) {
+      courierCollectionEntry.detail =
+        order.seller_country !== order.destination_country
+          ? 'Typically 2–3 working days'
+          : 'Typically next working day';
     }
   } else {
     if (order.shipped_at) {

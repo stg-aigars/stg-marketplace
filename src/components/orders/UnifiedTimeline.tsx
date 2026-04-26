@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import { Card, CardBody } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
 import { buildOrderTimeline, type TimelineEntry } from '@/lib/orders/timeline';
 import type { OrderStatus, CancellationReason } from '@/lib/orders/types';
 import type { TrackingEventRow } from '@/lib/services/tracking';
+import { getCountryFlag } from '@/lib/country-utils';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import {
   Receipt,
@@ -36,6 +38,13 @@ interface UnifiedTimelineProps {
   trackingEvents: TrackingEventRow[];
   trackingUrl: string | null;
   destinationTerminal?: string;
+  destinationCity?: string;
+}
+
+function CountryFlag({ countryCode }: { countryCode: string | null | undefined }) {
+  const flagClass = getCountryFlag(countryCode);
+  if (!flagClass) return null;
+  return <span className={`${flagClass} ml-1.5 text-sm`} aria-hidden="true" />;
 }
 
 const LABELS: Record<string, string> = {
@@ -78,6 +87,9 @@ const TRACKING_ICONS: Record<string, PhosphorIcon> = {
 interface LabelContext {
   entry: TimelineEntry;
   destinationTerminal?: string;
+  destinationCity?: string;
+  destinationCountry?: string | null;
+  sellerCountry?: string | null;
 }
 
 /**
@@ -85,15 +97,24 @@ interface LabelContext {
  * still ON_THE_WAY, but the event_type tells us *which* handoff this is. Unmapped
  * event_types fall through to the generic tracking-event label builder, which
  * appends the event's location with a middle dot when present.
+ *
+ * Override `label` returns a ReactNode so it can interleave inline country flags
+ * (rendered via the flag-icons CSS classes from `@/lib/country-utils`).
  */
 const EVENT_TYPE_OVERRIDES: Record<
   string,
-  { label: (ctx: LabelContext) => string; icon: PhosphorIcon }
+  { label: (ctx: LabelContext) => ReactNode; icon: PhosphorIcon }
 > = {
   ACCEPTED_TERMINAL: {
-    label: ({ entry }) => {
+    label: ({ entry, sellerCountry }) => {
       const city = extractTerminalCity(entry.location);
-      return city ? `Dropped off at terminal in ${city}` : 'Dropped off at terminal';
+      if (!city) return 'Dropped off at terminal';
+      return (
+        <>
+          Dropped off at terminal in {city}
+          <CountryFlag countryCode={sellerCountry} />
+        </>
+      );
     },
     icon: Package,
   },
@@ -102,13 +123,13 @@ const EVENT_TYPE_OVERRIDES: Record<
     icon: Truck,
   },
   RECEIVED_TERMINAL: {
-    label: ({ destinationTerminal }) =>
-      destinationTerminal ? `Ready for pickup at ${destinationTerminal}` : 'Ready for pickup',
+    label: ({ destinationTerminal, destinationCity, destinationCountry }) =>
+      composeReadyForPickup(destinationTerminal, destinationCity, destinationCountry),
     icon: MapPin,
   },
   NOTIFICATIONS_INFORMED: {
-    label: ({ destinationTerminal }) =>
-      destinationTerminal ? `Ready for pickup at ${destinationTerminal}` : 'Ready for pickup',
+    label: ({ destinationTerminal, destinationCity, destinationCountry }) =>
+      composeReadyForPickup(destinationTerminal, destinationCity, destinationCountry),
     icon: MapPin,
   },
   DELIVERY_DELIVERED: {
@@ -116,6 +137,27 @@ const EVENT_TYPE_OVERRIDES: Record<
     icon: CheckCircle,
   },
 };
+
+function composeReadyForPickup(
+  terminalName: string | undefined,
+  city: string | undefined,
+  countryCode: string | null | undefined
+): ReactNode {
+  if (!terminalName) return 'Ready for pickup';
+  // Avoid duplicating the city when the terminal name already contains it
+  // (e.g. "Häädemeeste uDrop Coop" + city "Häädemeeste"). When the terminal
+  // name doesn't carry the city ("Circle K (Latvijas Pasts)"), append it.
+  const cityIsRedundant =
+    city != null && terminalName.toLowerCase().includes(city.toLowerCase());
+  const showCity = city && !cityIsRedundant;
+  return (
+    <>
+      Ready for pickup at {terminalName}
+      {showCity ? `, ${city}` : null}
+      <CountryFlag countryCode={countryCode} />
+    </>
+  );
+}
 
 /**
  * Pulls a city name out of a Unisend terminal address. Confident extraction
@@ -145,14 +187,16 @@ function extractTerminalCity(rawLocation: string | null | undefined): string | n
 }
 
 /**
- * Single-line label composer. Folds the entry's location (tracking events) and
- * detail (cancellation reason / "waiting for tracking") into the label so each
- * row renders as exactly two stacked lines: this label + the timestamp.
+ * Label composer. Folds the entry's location (tracking events) and detail
+ * (cancellation reason / "waiting for tracking") into the label so each row's
+ * primary line is self-contained. The ETA copy on the courier-collection row
+ * is rendered as a separate small subtitle by `TimelineRow` rather than inlined.
  */
-function composeLabel(entry: TimelineEntry, destinationTerminal?: string): string {
+function composeLabel(ctx: LabelContext): ReactNode {
+  const { entry } = ctx;
   if (entry.eventType) {
     const override = EVENT_TYPE_OVERRIDES[entry.eventType];
-    if (override) return override.label({ entry, destinationTerminal });
+    if (override) return override.label(ctx);
   }
   const baseLabel = LABELS[entry.key] ?? entry.key;
   if (entry.type === 'tracking_event' && entry.location) {
@@ -167,7 +211,13 @@ function composeLabel(entry: TimelineEntry, destinationTerminal?: string): strin
 
 const ERROR_KEYS = new Set(['cancelled', 'disputed', 'refunded', 'PARCEL_CANCELED', 'RETURNING']);
 
-export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinationTerminal }: UnifiedTimelineProps) {
+export function UnifiedTimeline({
+  order,
+  trackingEvents,
+  trackingUrl,
+  destinationTerminal,
+  destinationCity,
+}: UnifiedTimelineProps) {
   const entries = buildOrderTimeline(order, trackingEvents);
 
   return (
@@ -185,6 +235,9 @@ export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinatio
               isLast={index === entries.length - 1}
               nextIsFuture={index < entries.length - 1 && entries[index + 1].isFuture}
               destinationTerminal={destinationTerminal}
+              destinationCity={destinationCity}
+              destinationCountry={order.destination_country}
+              sellerCountry={order.seller_country}
             />
           ))}
         </div>
@@ -211,11 +264,17 @@ function TimelineRow({
   isLast,
   nextIsFuture,
   destinationTerminal,
+  destinationCity,
+  destinationCountry,
+  sellerCountry,
 }: {
   entry: TimelineEntry;
   isLast: boolean;
   nextIsFuture: boolean;
   destinationTerminal?: string;
+  destinationCity?: string;
+  destinationCountry?: string | null;
+  sellerCountry?: string | null;
 }) {
   const isError = ERROR_KEYS.has(entry.key);
   const isMilestone = entry.type === 'order_milestone';
@@ -225,13 +284,24 @@ function TimelineRow({
     : isMilestone
     ? MILESTONE_ICONS[entry.key]
     : TRACKING_ICONS[entry.key];
-  const label = composeLabel(entry, destinationTerminal);
+  const label = composeLabel({
+    entry,
+    destinationTerminal,
+    destinationCity,
+    destinationCountry,
+    sellerCountry,
+  });
 
-  const dotSize = isMilestone ? 'w-5 h-5' : 'w-4 h-4';
-  const iconSize = isMilestone ? 12 : 10;
-  const iconWeight = isMilestone ? 'bold' as const : 'regular' as const;
+  // Tracking events surface a small subtitle line for the in-flight ETA copy.
+  // Milestone details are inlined into the label by `composeLabel`, so we only
+  // render `entry.detail` as a 3rd line for tracking events.
+  const showDetailSubtitle = entry.type === 'tracking_event' && Boolean(entry.detail);
 
+  // Unified icon dimensions and squared shape across milestones and tracking
+  // events. Milestones stay solid (filled); tracking events read as outlined
+  // sub-points so the milestone hierarchy is still visible at a glance.
   let dotClass: string;
+  let iconColorClass = 'text-white';
   let textClass: string;
   if (entry.isFuture) {
     dotClass = 'bg-semantic-border-subtle';
@@ -242,8 +312,12 @@ function TimelineRow({
   } else if (entry.isCurrent) {
     dotClass = 'bg-semantic-brand ring-4 ring-semantic-brand/20';
     textClass = 'text-semantic-brand';
-  } else {
+  } else if (isMilestone) {
     dotClass = 'bg-semantic-brand';
+    textClass = 'text-semantic-text-primary';
+  } else {
+    dotClass = 'bg-white border-2 border-semantic-brand';
+    iconColorClass = 'text-semantic-brand';
     textClass = 'text-semantic-text-primary';
   }
 
@@ -263,14 +337,10 @@ function TimelineRow({
     <div className="flex gap-3">
       <div className="flex flex-col items-center">
         <div
-          className={`${dotSize} rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center ${dotClass}`}
+          className={`w-5 h-5 rounded-md flex-shrink-0 mt-0.5 flex items-center justify-center ${dotClass}`}
         >
           {Icon && (
-            <Icon
-              size={iconSize}
-              weight={iconWeight}
-              className="text-white"
-            />
+            <Icon size={12} weight="bold" className={iconColorClass} />
           )}
         </div>
         {showLine && (
@@ -282,6 +352,11 @@ function TimelineRow({
         <p className={`text-sm font-medium ${textClass}`}>
           {label}
         </p>
+        {showDetailSubtitle && (
+          <p className="text-xs text-semantic-text-muted mt-0.5">
+            {entry.detail}
+          </p>
+        )}
         {entry.timestamp && !entry.isFuture && (
           <p className="text-xs text-semantic-text-muted mt-0.5">
             {formatDateTime(entry.timestamp)}

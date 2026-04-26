@@ -262,7 +262,7 @@ describe('buildOrderTimeline', () => {
       ];
     }
 
-    it('real-world delivered order: 7 timeline rows, hub events filtered, no ETA detail on tracking entries', () => {
+    it('real-world delivered order: 7 timeline rows, hub events filtered, ETA suppressed after pickup', () => {
       const order = makeOrder({
         status: 'completed',
         accepted_at: '2026-04-15T05:05:00Z',
@@ -289,9 +289,75 @@ describe('buildOrderTimeline', () => {
         'PARCEL_DELIVERED',
         'completed',
       ]);
-      // ETA copy is no longer attached at the data layer — the renderer inlines what's needed
-      // into the label, and we've decided not to render an ETA per the 2-line row constraint.
+      // PARCEL_DELIVERED has fired → no ETA detail on any in-transit row.
       expect(trackingEntries.every((e) => e.detail === undefined)).toBe(true);
+    });
+
+    it('in-flight courier collection: ETA detail attaches to RECEIVED_TERMINAL_OUT', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+        seller_country: 'EE',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('PARCEL_RECEIVED', '2026-04-02T06:00:00Z', 'Häädemeeste', 'ACCEPTED_TERMINAL'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
+      expect(courierCollection?.detail).toBe('Typically 2–3 working days');
+    });
+
+    it('domestic in-flight courier collection: detail reads "next working day"', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+        seller_country: 'LV',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Riga', 'RECEIVED_TERMINAL_OUT'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
+      expect(courierCollection?.detail).toBe('Typically next working day');
+    });
+
+    it('post-arrival: ETA suppressed once RECEIVED_TERMINAL has fired', () => {
+      const order = makeOrder({
+        status: 'delivered',
+        accepted_at: '2026-04-01T12:00:00Z',
+        seller_country: 'EE',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
+        trackingEvent('ON_THE_WAY', '2026-04-03T07:00:00Z', 'Riga', 'RECEIVED_TERMINAL'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
+      expect(courierCollection?.detail).toBeUndefined();
+    });
+
+    it('countries missing on order: no ETA detail (defensive)', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Riga', 'RECEIVED_TERMINAL_OUT'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
+      expect(courierCollection?.detail).toBeUndefined();
     });
 
     it('hidden events filtered: RECEIVED_LC and DELIVERY_TRANSFER never appear', () => {
