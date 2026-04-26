@@ -298,7 +298,10 @@ describe('buildOrderTimeline', () => {
       expect(onTheWay?.detail).toBeUndefined();
     });
 
-    it('past ON_THE_WAY with later events: detail still present', () => {
+    it('once parcel reaches destination: ETA detail is suppressed on transit row', () => {
+      // Updated from the previous "detail still present" expectation. Once the parcel has
+      // arrived at the destination locker (or been picked up), the in-flight ETA copy is
+      // stale and would mislead the buyer. This ensures it is suppressed.
       const order = makeOrder({
         status: 'delivered',
         accepted_at: '2026-04-01T12:00:00Z',
@@ -314,7 +317,186 @@ describe('buildOrderTimeline', () => {
 
       const result = buildOrderTimeline(order, events);
       const onTheWay = result.find((e) => e.key === 'ON_THE_WAY');
-      expect(onTheWay?.detail).toBe('Typically 2–3 working days');
+      expect(onTheWay?.detail).toBeUndefined();
+    });
+  });
+
+  describe('granular Unisend event_type policy', () => {
+    /** Mirrors the real production order 0dcfed09-1fe8-4f6e-9569-4079963359ec */
+    function realWorldEvents(): TrackingEventForTimeline[] {
+      return [
+        trackingEvent('LABEL_CREATED', '2026-04-15T05:05:59Z', undefined, 'LABEL_CREATED'),
+        trackingEvent(
+          'PARCEL_RECEIVED',
+          '2026-04-16T10:31:58Z',
+          '9602 pakiautomaat, Häädemeeste uDrop Coop , Pärnu mnt 40, Häädemeeste, 86001',
+          'ACCEPTED_TERMINAL'
+        ),
+        trackingEvent(
+          'ON_THE_WAY',
+          '2026-04-17T08:58:56Z',
+          '9602 pakiautomaat, Häädemeeste uDrop Coop , Pärnu mnt 40, Häädemeeste, 86001',
+          'RECEIVED_TERMINAL_OUT'
+        ),
+        trackingEvent('ON_THE_WAY', '2026-04-17T12:48:04Z', 'Tallinn', 'RECEIVED_LC'),
+        trackingEvent('ON_THE_WAY', '2026-04-17T13:19:33Z', 'Tallinn', 'DELIVERY_TRANSFER'),
+        trackingEvent('ON_THE_WAY', '2026-04-17T21:33:04Z', 'Rīga', 'RECEIVED_LC'),
+        trackingEvent('ON_THE_WAY', '2026-04-18T03:05:55Z', 'Rīga', 'RECEIVED_TERMINAL'),
+        trackingEvent('PARCEL_DELIVERED', '2026-04-18T08:56:25Z', 'Rīga', 'DELIVERY_DELIVERED'),
+      ];
+    }
+
+    it('real-world delivered order: 7 timeline rows, hub events filtered, no ETA after pickup', () => {
+      const order = makeOrder({
+        status: 'completed',
+        accepted_at: '2026-04-15T05:05:00Z',
+        completed_at: '2026-04-20T12:00:00Z',
+        seller_country: 'EE',
+        destination_country: 'LV',
+      });
+
+      const result = buildOrderTimeline(order, realWorldEvents());
+      const trackingEntries = result.filter((e) => e.type === 'tracking_event');
+
+      expect(trackingEntries.map((e) => e.eventType)).toEqual([
+        'ACCEPTED_TERMINAL',
+        'RECEIVED_TERMINAL_OUT',
+        'RECEIVED_TERMINAL',
+        'DELIVERY_DELIVERED',
+      ]);
+      expect(result.map((e) => e.key)).toEqual([
+        'ordered',
+        'accepted',
+        'PARCEL_RECEIVED',
+        'ON_THE_WAY',
+        'ON_THE_WAY',
+        'PARCEL_DELIVERED',
+        'completed',
+      ]);
+      // ETA detail suppressed on every transit row because PARCEL_DELIVERED exists
+      expect(trackingEntries.every((e) => e.detail === undefined)).toBe(true);
+    });
+
+    it('hidden events filtered: RECEIVED_LC and DELIVERY_TRANSFER never appear', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z', 'Tallinn', 'RECEIVED_LC'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Tallinn', 'DELIVERY_TRANSFER'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const eventTypes = result.map((e) => e.eventType).filter(Boolean);
+      expect(eventTypes).not.toContain('RECEIVED_LC');
+      expect(eventTypes).not.toContain('DELIVERY_TRANSFER');
+    });
+
+    it('dedupes ready-for-pickup: NOTIFICATIONS_INFORMED hidden when RECEIVED_TERMINAL exists', () => {
+      const order = makeOrder({
+        status: 'delivered',
+        accepted_at: '2026-04-01T12:00:00Z',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z', 'Riga', 'RECEIVED_TERMINAL_OUT'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T20:00:00Z', 'Riga', 'RECEIVED_TERMINAL'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T20:05:00Z', 'Riga', 'NOTIFICATIONS_INFORMED'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const eventTypes = result.map((e) => e.eventType).filter(Boolean);
+      expect(eventTypes).toContain('RECEIVED_TERMINAL');
+      expect(eventTypes).not.toContain('NOTIFICATIONS_INFORMED');
+    });
+
+    it('lone NOTIFICATIONS_INFORMED renders (defensive fallback when RECEIVED_TERMINAL missing)', () => {
+      const order = makeOrder({
+        status: 'delivered',
+        accepted_at: '2026-04-01T12:00:00Z',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T06:00:00Z', 'Riga', 'RECEIVED_TERMINAL_OUT'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T20:05:00Z', 'Riga', 'NOTIFICATIONS_INFORMED'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const eventTypes = result.map((e) => e.eventType).filter(Boolean);
+      expect(eventTypes).toContain('NOTIFICATIONS_INFORMED');
+    });
+
+    it('in-flight ETA: detail attaches to first surviving ON_THE_WAY when no destination event yet', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+        seller_country: 'EE',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('PARCEL_RECEIVED', '2026-04-02T06:00:00Z', 'Häädemeeste', 'ACCEPTED_TERMINAL'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T12:00:00Z', 'Tallinn', 'RECEIVED_LC'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
+      expect(courierCollection?.detail).toBe('Typically 2–3 working days');
+    });
+
+    it('post-arrival: ETA suppressed once RECEIVED_TERMINAL has fired', () => {
+      const order = makeOrder({
+        status: 'delivered',
+        accepted_at: '2026-04-01T12:00:00Z',
+        seller_country: 'EE',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
+        trackingEvent('ON_THE_WAY', '2026-04-03T07:00:00Z', 'Riga', 'RECEIVED_TERMINAL'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const trackingEntries = result.filter((e) => e.type === 'tracking_event');
+      expect(trackingEntries.every((e) => e.detail === undefined)).toBe(true);
+    });
+
+    it('drop-off location preserved: PARCEL_RECEIVED.location renders the full terminal address', () => {
+      // Guards against the ETA-attachment logic accidentally clobbering non-transit fields.
+      const terminalAddress =
+        '9602 pakiautomaat, Häädemeeste uDrop Coop , Pärnu mnt 40, Häädemeeste, 86001';
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+        seller_country: 'EE',
+        destination_country: 'LV',
+      });
+      const events = [
+        trackingEvent('PARCEL_RECEIVED', '2026-04-02T06:00:00Z', terminalAddress, 'ACCEPTED_TERMINAL'),
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Häädemeeste', 'RECEIVED_TERMINAL_OUT'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const dropOff = result.find((e) => e.eventType === 'ACCEPTED_TERMINAL');
+      expect(dropOff?.location).toBe(terminalAddress);
+      expect(dropOff?.detail).toBeUndefined();
+    });
+
+    it('unknown granular event_type within ON_THE_WAY: rendered, not filtered', () => {
+      const order = makeOrder({
+        status: 'shipped',
+        accepted_at: '2026-04-01T12:00:00Z',
+        shipped_at: '2026-04-02T08:00:00Z',
+      });
+      const events = [
+        trackingEvent('ON_THE_WAY', '2026-04-02T07:00:00Z', 'Tallinn', 'FUTURE_NEW_TYPE'),
+      ];
+
+      const result = buildOrderTimeline(order, events);
+      const eventTypes = result.map((e) => e.eventType).filter(Boolean);
+      expect(eventTypes).toContain('FUTURE_NEW_TYPE');
     });
   });
 });

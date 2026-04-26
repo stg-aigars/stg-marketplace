@@ -75,6 +75,29 @@ const TRACKING_ICONS: Record<string, PhosphorIcon> = {
   RETURNING: ArrowUUpLeft,
 };
 
+/**
+ * Granular Unisend publicEventType overrides — each entry's coarse state_type is
+ * still ON_THE_WAY, but the event_type tells us *which* handoff this is. Unmapped
+ * event_types fall back to the state_type label/icon (`LABELS` / `TRACKING_ICONS`).
+ */
+const EVENT_TYPE_OVERRIDES: Record<
+  string,
+  { label: (destinationTerminal?: string) => string; icon: PhosphorIcon }
+> = {
+  RECEIVED_TERMINAL_OUT: {
+    label: () => 'Collected by courier',
+    icon: Truck,
+  },
+  RECEIVED_TERMINAL: {
+    label: (dest) => (dest ? `Ready for pickup at ${dest}` : 'Ready for pickup'),
+    icon: MapPin,
+  },
+  NOTIFICATIONS_INFORMED: {
+    label: (dest) => (dest ? `Ready for pickup at ${dest}` : 'Ready for pickup'),
+    icon: MapPin,
+  },
+};
+
 const ERROR_KEYS = new Set(['cancelled', 'disputed', 'refunded', 'PARCEL_CANCELED', 'RETURNING']);
 
 export function UnifiedTimeline({ order, trackingEvents, trackingUrl, destinationTerminal }: UnifiedTimelineProps) {
@@ -132,11 +155,10 @@ function TimelineRow({
   let Icon = isMilestone ? MILESTONE_ICONS[entry.key] : TRACKING_ICONS[entry.key];
   let label = LABELS[entry.key] ?? entry.key;
 
-  if (entry.eventType === 'NOTIFICATIONS_INFORMED') {
-    label = destinationTerminal
-      ? `Ready for pickup at ${destinationTerminal}`
-      : 'Ready for pickup';
-    Icon = MapPin;
+  const override = entry.eventType ? EVENT_TYPE_OVERRIDES[entry.eventType] : undefined;
+  if (override) {
+    label = override.label(destinationTerminal);
+    Icon = override.icon;
   }
 
   const dotSize = isMilestone ? 'w-5 h-5' : 'w-4 h-4';

@@ -38,6 +38,13 @@ const CANCELLATION_LABELS: Record<CancellationReason, string> = {
 
 const TERMINAL_STATUSES = new Set(['cancelled', 'disputed', 'refunded']);
 
+/**
+ * Granular Unisend publicEventType values that are hub-to-hub logistics scans
+ * — meaningful to operations, noise to buyers. Buyers who want every scan can
+ * follow the "View full tracking details" link.
+ */
+const HIDDEN_EVENT_TYPES = new Set(['RECEIVED_LC', 'DELIVERY_TRANSFER']);
+
 /** Structural type — satisfied by OrderRow, OrderWithDetails, and component prop objects */
 export interface OrderForTimeline {
   status: string;
@@ -78,9 +85,22 @@ export function buildOrderTimeline(
 
   // When tracking events exist, they replace shipped/delivered milestones with more granular data
   if (hasTracking) {
+    // Dedupe ready-for-pickup: if RECEIVED_TERMINAL exists, NOTIFICATIONS_INFORMED is redundant.
+    const hasReceivedTerminal = trackingEvents.some((e) => e.event_type === 'RECEIVED_TERMINAL');
+    // Suppress in-flight ETA copy once the parcel has reached its destination.
+    const hasArrivedAtDestination = trackingEvents.some(
+      (e) =>
+        e.state_type === 'PARCEL_DELIVERED' ||
+        e.event_type === 'RECEIVED_TERMINAL' ||
+        e.event_type === 'NOTIFICATIONS_INFORMED'
+    );
+    let firstOnTheWayEntry: TimelineEntry | null = null;
+
     for (const event of trackingEvents) {
       // LABEL_CREATED is redundant with "Seller accepted" in T2T — both fire at the same moment
       if (event.state_type === 'LABEL_CREATED') continue;
+      if (HIDDEN_EVENT_TYPES.has(event.event_type)) continue;
+      if (event.event_type === 'NOTIFICATIONS_INFORMED' && hasReceivedTerminal) continue;
 
       const entry: TimelineEntry = {
         type: 'tracking_event',
@@ -91,12 +111,22 @@ export function buildOrderTimeline(
         isCurrent: false,
         isFuture: false,
       };
-      if (event.state_type === 'ON_THE_WAY' && order.seller_country && order.destination_country) {
-        entry.detail = order.seller_country !== order.destination_country
-          ? 'Typically 2–3 working days'
-          : 'Typically next working day';
+      if (event.state_type === 'ON_THE_WAY' && !firstOnTheWayEntry) {
+        firstOnTheWayEntry = entry;
       }
       entries.push(entry);
+    }
+
+    if (
+      firstOnTheWayEntry &&
+      !hasArrivedAtDestination &&
+      order.seller_country &&
+      order.destination_country
+    ) {
+      firstOnTheWayEntry.detail =
+        order.seller_country !== order.destination_country
+          ? 'Typically 2–3 working days'
+          : 'Typically next working day';
     }
   } else {
     if (order.shipped_at) {
