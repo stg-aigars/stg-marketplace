@@ -118,8 +118,8 @@ describe('invoice numbering', () => {
     );
 
     const numbers = results
-      .filter((r): r is PromiseFulfilledResult<{ data: string }> => r.status === 'fulfilled')
-      .map((r) => r.value.data);
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => (r as PromiseFulfilledResult<{ data: string }>).value.data);
 
     // All 10 should succeed
     expect(numbers).toHaveLength(10);

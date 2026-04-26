@@ -18,10 +18,11 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 
 ## Commands
 - `pnpm dev` - Start dev server (localhost:3000)
-- `pnpm build` - Production build (THE pre-deploy gate, catches ESLint + type errors)
+- `pnpm build` - Production Next.js build only. NOT a sufficient pre-deploy gate on its own — `next build` only type-checks code reachable from the app graph, so test files, scripts, and other auxiliary TS can drift unseen. Use `pnpm verify` before pushing.
+- `pnpm verify` - **Pre-deploy gate.** Runs `pnpm type-check && pnpm lint && pnpm test && pnpm build`. Covers everything in `tsconfig.json`'s include set (including test files), all lint rules, the full test suite, and the production build. Run before pushing or merging.
 - `pnpm test` - Run Vitest test suite
 - `pnpm lint` - Run ESLint
-- `pnpm type-check` - TypeScript validation (not sufficient alone for deploy)
+- `pnpm type-check` - TypeScript validation across the full `tsconfig.json` include set (test files, scripts, etc. that `next build` skips)
 
 ## Safety
 - Before executing any database migration, SQL command, or deployment operation, verify you are operating on the correct environment (correct Supabase project, correct database, correct branch)
@@ -36,7 +37,7 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 - Follow existing patterns in codebase
 - All monetary values as INTEGER CENTS (never floats). 1299 not 12.99
 - Be careful with Server Component / Client Component boundaries. Never pass React component functions as props from Server Components to Client Components. Never call hooks unconditionally where refs may be null
-- When refactoring or simplifying code, do not remove imports, guards, or behavioral logic without verifying they are truly unused. Run `pnpm build` after any simplification pass
+- When refactoring or simplifying code, do not remove imports, guards, or behavioral logic without verifying they are truly unused. Run `pnpm verify` after any simplification pass
 
 ## Date & Time Formatting
 Always use centralized utilities from `@/lib/date-utils`:
@@ -271,7 +272,7 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 - Non-blocking side effects (emails, notifications, audit): use `void fn().catch(...)` pattern
 
 ## Important Notes
-- `pnpm build` is the real deploy gate, not `pnpm type-check` alone
+- `pnpm verify` is the real deploy gate (`type-check && lint && test && build`). `pnpm build` alone only type-checks app-graph code, so test files / scripts can drift unseen — that's how 24 type errors accumulated invisibly before the gate was added
 - Supabase RLS policies control data access — never skip them
 - Supabase SSR cookies: use `getAll()`/`setAll()`, never `get()`/`set()`
 - VAT rates by seller's country: LV=21%, LT=21%, EE=24%

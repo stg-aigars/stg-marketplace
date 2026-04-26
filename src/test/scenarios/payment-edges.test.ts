@@ -13,7 +13,7 @@ import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 // ---------------------------------------------------------------------------
 
 const mockGetPaymentStatus = vi.fn();
-const mockMapEveryPayMethod = vi.fn(() => 'card' as const);
+const mockMapEveryPayMethod = vi.fn((..._args: unknown[]) => 'card' as const);
 // mockFulfillCartPayment reserved for future reconcile-payments integration tests
 const mockDebitWallet = vi.fn();
 const mockCreditWallet = vi.fn();
@@ -22,7 +22,7 @@ const mockRefundPayment = vi.fn();
 const mockCreateOrder = vi.fn();
 const mockSendCartOrderEmails = vi.fn();
 const mockLogAuditEvent = vi.fn();
-const mockSendEmail = vi.fn(() => Promise.resolve());
+const mockSendEmail = vi.fn((..._args: unknown[]) => Promise.resolve());
 
 vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(),
