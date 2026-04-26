@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import ReactDOM from 'react-dom';
+import { preload } from 'react-dom';
 import { GlobeHemisphereWest, Package, ShieldCheck } from '@phosphor-icons/react/ssr';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
@@ -38,10 +38,9 @@ interface RecentListingRow {
 }
 
 export default async function HomePage() {
-  // Desktop hero preload, gated by media query so mobile (<1024px) skips
-  // the request. Matches the Tailwind lg breakpoint (1024px) used by the
-  // section's background-image class below.
-  ReactDOM.preload('/images/hero-bg-2.webp', {
+  // Media query must match the Tailwind lg breakpoint (1024px) on the
+  // section's background-image class below — keep these two in sync.
+  preload('/images/hero-bg-2.webp', {
     as: 'image',
     fetchPriority: 'high',
     media: '(min-width: 1024px)',
