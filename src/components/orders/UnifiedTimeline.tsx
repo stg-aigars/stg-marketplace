@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Card, CardBody } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { formatDateTime } from '@/lib/date-utils';
 import { buildOrderTimeline, type TimelineEntry } from '@/lib/orders/timeline';
 import type { OrderStatus, CancellationReason } from '@/lib/orders/types';
@@ -219,6 +220,12 @@ export function UnifiedTimeline({
   destinationCity,
 }: UnifiedTimelineProps) {
   const entries = buildOrderTimeline(order, trackingEvents);
+  const labelCtx: Omit<LabelContext, 'entry'> = {
+    destinationTerminal,
+    destinationCity,
+    destinationCountry: order.destination_country,
+    sellerCountry: order.seller_country,
+  };
 
   return (
     <Card>
@@ -234,10 +241,7 @@ export function UnifiedTimeline({
               entry={entry}
               isLast={index === entries.length - 1}
               nextIsFuture={index < entries.length - 1 && entries[index + 1].isFuture}
-              destinationTerminal={destinationTerminal}
-              destinationCity={destinationCity}
-              destinationCountry={order.destination_country}
-              sellerCountry={order.seller_country}
+              labelCtx={labelCtx}
             />
           ))}
         </div>
@@ -263,18 +267,12 @@ function TimelineRow({
   entry,
   isLast,
   nextIsFuture,
-  destinationTerminal,
-  destinationCity,
-  destinationCountry,
-  sellerCountry,
+  labelCtx,
 }: {
   entry: TimelineEntry;
   isLast: boolean;
   nextIsFuture: boolean;
-  destinationTerminal?: string;
-  destinationCity?: string;
-  destinationCountry?: string | null;
-  sellerCountry?: string | null;
+  labelCtx: Omit<LabelContext, 'entry'>;
 }) {
   const isError = ERROR_KEYS.has(entry.key);
   const isMilestone = entry.type === 'order_milestone';
@@ -284,13 +282,7 @@ function TimelineRow({
     : isMilestone
     ? MILESTONE_ICONS[entry.key]
     : TRACKING_ICONS[entry.key];
-  const label = composeLabel({
-    entry,
-    destinationTerminal,
-    destinationCity,
-    destinationCountry,
-    sellerCountry,
-  });
+  const label = composeLabel({ entry, ...labelCtx });
 
   // Tracking events surface a small subtitle line for the in-flight ETA copy.
   // Milestone details are inlined into the label by `composeLabel`, so we only
@@ -316,7 +308,7 @@ function TimelineRow({
     dotClass = 'bg-semantic-brand';
     textClass = 'text-semantic-text-primary';
   } else {
-    dotClass = 'bg-white border-2 border-semantic-brand';
+    dotClass = 'bg-semantic-bg-elevated border-2 border-semantic-brand';
     iconColorClass = 'text-semantic-brand';
     textClass = 'text-semantic-text-primary';
   }
@@ -337,7 +329,10 @@ function TimelineRow({
     <div className="flex gap-3">
       <div className="flex flex-col items-center">
         <div
-          className={`w-5 h-5 rounded-md flex-shrink-0 mt-0.5 flex items-center justify-center ${dotClass}`}
+          className={cn(
+            'w-5 h-5 rounded-md flex-shrink-0 mt-0.5 flex items-center justify-center',
+            dotClass
+          )}
         >
           {Icon && (
             <Icon size={12} weight="bold" className={iconColorClass} />
@@ -349,7 +344,7 @@ function TimelineRow({
       </div>
 
       <div className={isLast ? 'pb-0' : 'pb-3'}>
-        <p className={`text-sm font-medium ${textClass}`}>
+        <p className={cn('text-sm font-medium', textClass)}>
           {label}
         </p>
         {showDetailSubtitle && (

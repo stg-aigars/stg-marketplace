@@ -131,9 +131,9 @@ describe('UnifiedTimeline two-line rendering', () => {
   });
 
   it('regression: NOTIFICATIONS_INFORMED with no destinationTerminal falls back to "Ready for pickup"', () => {
-    // The no-prop branch has shipped since commit 32bc5a9 for NOTIFICATIONS_INFORMED. This test
-    // guards that behaviour through the migration into EVENT_TYPE_OVERRIDES — do not delete as
-    // redundant with the override-map test above.
+    // Some Unisend routes deliver NOTIFICATIONS_INFORMED without a prior RECEIVED_TERMINAL, and
+    // some orders ship without a stored terminal_name. This is the load-bearing path for that
+    // case — do not delete as redundant with the override-map tests above.
     render(
       <UnifiedTimeline
         order={baseOrder}
@@ -296,6 +296,8 @@ describe('UnifiedTimeline two-line rendering', () => {
       />
     );
 
-    expect(container.querySelector('.bg-white.border-2.border-semantic-brand')).not.toBeNull();
+    expect(
+      container.querySelector('.bg-semantic-bg-elevated.border-2.border-semantic-brand')
+    ).not.toBeNull();
   });
 });
