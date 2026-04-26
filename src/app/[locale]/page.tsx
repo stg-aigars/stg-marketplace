@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { preload } from 'react-dom';
 import { GlobeHemisphereWest, Package, ShieldCheck } from '@phosphor-icons/react/ssr';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
@@ -37,6 +38,14 @@ interface RecentListingRow {
 }
 
 export default async function HomePage() {
+  // Media query must match the Tailwind lg breakpoint (1024px) on the
+  // section's background-image class below — keep these two in sync.
+  preload('/images/hero-bg-2.webp', {
+    as: 'image',
+    fetchPriority: 'high',
+    media: '(min-width: 1024px)',
+  });
+
   const t = await getTranslations();
 
   const supabase = await createClient();
