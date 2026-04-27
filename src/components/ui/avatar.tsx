@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/cn';
 
 interface AvatarProps {
@@ -18,17 +19,32 @@ const sizeClasses: Record<NonNullable<AvatarProps['size']>, string> = {
   lg: 'w-16 h-16 text-xl rounded-xl',
 };
 
+// Pixel sizes match sizeClasses Tailwind units (1 = 4px). Used as the
+// next/image `width`/`height`/`sizes` so /_next/image generates 1x and 2x
+// variants of the right dimensions instead of always shipping the 256×256
+// upload-route source for a 20px display slot.
+const sizePixels: Record<NonNullable<AvatarProps['size']>, number> = {
+  xs: 20,
+  sm: 32,
+  nav: 28,
+  md: 40,
+  lg: 64,
+};
+
 export function Avatar({ name, src, size = 'md', className }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
   const initial = (name || '?').charAt(0).toUpperCase();
   const sizeClass = sizeClasses[size];
 
   if (src && !imgError) {
+    const px = sizePixels[size];
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- small user-uploaded avatar with onError → initials fallback; next/image overhead not worth it
-      <img
+      <Image
         src={src}
         alt={name}
+        width={px}
+        height={px}
+        sizes={`${px}px`}
         onError={() => setImgError(true)}
         className={cn(sizeClass, 'object-cover', className)}
       />
