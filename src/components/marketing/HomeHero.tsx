@@ -6,6 +6,8 @@ import { Button } from '@/components/ui';
 const HEX_FLAT_TOP =
   'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
 
+const STAT_KEYS = ['lockers', 'catalog', 'buyerFee'] as const;
+
 async function HomeHero() {
   const t = await getTranslations('home.hero');
 
@@ -26,14 +28,9 @@ async function HomeHero() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
-        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
+        <div className="grid lg:grid-cols-[1.5fr_1fr] gap-12 items-center">
           <div className="flex flex-col items-start gap-6">
-            <span className="inline-flex items-center gap-2 rounded-full bg-semantic-bg-elevated border border-semantic-border-strong px-3 py-1 text-sm font-medium text-semantic-text-secondary">
-              <span className="w-1.5 h-1.5 rounded-full bg-semantic-success" aria-hidden="true" />
-              {t('statusPill')}
-            </span>
-
-            <h1 className="font-display font-medium text-5xl sm:text-6xl lg:text-7xl tracking-tight leading-[1.02] text-semantic-text-heading max-w-[14ch]">
+            <h1 className="font-display font-medium text-5xl sm:text-6xl tracking-tight leading-[1.05] text-semantic-text-heading">
               {t('headlineLeading')}
               <span className="italic text-semantic-primary">{t('headlineEmphasis')}</span>
               {t('headlineTrailing')}
@@ -51,9 +48,22 @@ async function HomeHero() {
                 <Link href="/sell">{t('sellCta')}</Link>
               </Button>
             </div>
+
+            <dl className="grid grid-cols-3 divide-x divide-semantic-border-strong pt-6 w-full max-w-lg">
+              {STAT_KEYS.map((key) => (
+                <div key={key} className="px-4 first:pl-0 last:pr-0">
+                  <dt className="text-2xl sm:text-3xl font-display font-medium text-semantic-text-heading">
+                    {t(`stats.${key}.value`)}
+                  </dt>
+                  <dd className="mt-1 text-xs uppercase tracking-wider text-semantic-text-secondary">
+                    {t(`stats.${key}.label`)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          <div className="relative aspect-square mx-auto w-full max-w-md lg:max-w-none">
+          <div className="hidden lg:block relative aspect-square w-full max-w-sm mx-auto">
             <div
               aria-hidden="true"
               className="absolute inset-0 bg-polar-night scale-[1.04]"
@@ -68,7 +78,7 @@ async function HomeHero() {
                 alt={t('imageAlt')}
                 fill
                 priority
-                sizes="(min-width: 1024px) 560px, (min-width: 640px) 448px, 90vw"
+                sizes="(min-width: 1024px) 384px, 0px"
                 className="object-cover"
               />
             </div>

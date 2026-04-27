@@ -21,14 +21,18 @@
   },
   "home": {
     "hero": {
-      "statusPill": "Now shipping across the Baltics",
-      "headlineLeading": "Board games deserve a ",
+      "headlineLeading": "Every game deserves a ",
       "headlineEmphasis": "second turn",
-      "headlineTrailing": ".",
+      "headlineTrailing": "",
       "lede": "A peer-to-peer marketplace for pre-loved games in Latvia, Lithuania, and Estonia.",
       "browseCta": "Browse the marketplace",
       "sellCta": "List a game",
-      "imageAlt": "Stack of colourful board game pieces"
+      "imageAlt": "Stack of colourful board game pieces",
+      "stats": {
+        "lockers": { "value": "2,000+", "label": "Parcel lockers" },
+        "catalog": { "value": "170K+", "label": "BGG catalogue" },
+        "buyerFee": { "value": "0%", "label": "Buyer service fee" }
+      }
     },
     "recentlyListed": "Recently listed",
     "browseAll": "Browse all",
