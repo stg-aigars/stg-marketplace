@@ -181,4 +181,9 @@ export const shadows = {
   pop: '0 4px 0 #2E3440',         // Resting (polar.night reference)
   'pop-lg': '0 5px 0 #2E3440',    // Hover (lifted +1px, shadow grows)
   'pop-sm': '0 2px 0 #2E3440',    // Active (pressed +2px, shadow shrinks)
+  // Inverted variants for buttons sitting on dark surfaces (e.g. CTA card on polar-night).
+  // The standard polar drop is invisible against polar bg; these use snow.stormLight instead.
+  'pop-inverse': '0 4px 0 #F5F3EF',
+  'pop-inverse-lg': '0 5px 0 #F5F3EF',
+  'pop-inverse-sm': '0 2px 0 #F5F3EF',
 } as const;

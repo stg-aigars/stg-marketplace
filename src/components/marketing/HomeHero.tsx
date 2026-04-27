@@ -47,7 +47,7 @@ async function HomeHero() {
               <Button variant="primary" size="lg" asChild>
                 <Link href="/browse">{t('browseCta')}</Link>
               </Button>
-              <Button variant="ghost" size="lg" asChild>
+              <Button variant="secondary" size="lg" asChild>
                 <Link href="/sell">{t('sellCta')}</Link>
               </Button>
             </div>

@@ -5,7 +5,7 @@ import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { HomeHero } from '@/components/marketing/HomeHero';
-import { HowItWorks } from '@/components/marketing/HowItWorks';
+import { Features } from '@/components/marketing/Features';
 import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
@@ -79,7 +79,7 @@ export default async function HomePage() {
         </div>
       )}
 
-      <HowItWorks />
+      <Features />
       <FaqAccordion />
       <HomeCta />
     </>

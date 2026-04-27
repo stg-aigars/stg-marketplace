@@ -32,24 +32,57 @@
     },
     "recentlyListed": "Recently listed",
     "browseAll": "Browse all",
-    "howItWorks": {
-      "eyebrow": "How selling works",
-      "heading": "List a game in three steps.",
-      "steps": {
-        "1": {
-          "tag": "01",
-          "title": "Find your game",
-          "body": "Search the BoardGameGeek catalog and pick the exact edition you own."
+    "features": {
+      "eyebrow": "What you can do",
+      "heading": "Built for the way Baltic gamers actually trade.",
+      "tabs": {
+        "browse": {
+          "label": "Find your game",
+          "title": "A catalog backed by BoardGameGeek.",
+          "body": "Search 170,000+ titles by name, year, or edition. Every listing pulls metadata, photos, and player counts from BGG so you know exactly what you're buying.",
+          "linkText": "Browse the marketplace",
+          "items": [
+            { "name": "BGG-backed search", "detail": "Find the exact edition you're looking for, in your language." },
+            { "name": "Condition badges", "detail": "Five tiers from Like New to For Parts, visible on every listing." },
+            { "name": "Edition tracking", "detail": "Publisher, language, and edition year recorded for each copy." },
+            { "name": "Wanted listings", "detail": "Save games you're hunting and get notified when one lands." }
+          ]
         },
-        "2": {
-          "tag": "02",
-          "title": "Set price and condition",
-          "body": "Grade your copy on our five-tier scale and choose a price."
+        "sell": {
+          "label": "List with confidence",
+          "title": "Three steps from shelf to sold.",
+          "body": "Search BGG, set your price and condition, drop it in a parcel locker. We handle the label, the payment, and the messaging.",
+          "linkText": "List a game",
+          "items": [
+            { "name": "Five-tier grading", "detail": "Like New, Very Good, Good, Acceptable, or For Parts." },
+            { "name": "Auctions or fixed price", "detail": "Pick the format that fits the game." },
+            { "name": "10% commission", "detail": "Only on the item price; shipping is not commissioned." },
+            { "name": "Wallet payouts", "detail": "Sales credit your platform wallet once orders complete." }
+          ]
         },
-        "3": {
-          "tag": "03",
-          "title": "Ship via parcel locker",
-          "body": "We provide the parcel-locker label. Drop your game off; the buyer collects."
+        "ship": {
+          "label": "Ship across the Baltics",
+          "title": "Cross-border parcel lockers.",
+          "body": "Unisend lockers connect Latvia, Lithuania, and Estonia. Drop off, the buyer collects, tracking is automatic.",
+          "linkText": "Read shipping details",
+          "items": [
+            { "name": "Cross-border lockers", "detail": "LV, LT, and EE buyers can purchase from any seller." },
+            { "name": "Buyer-funded shipping", "detail": "Shipping is added at checkout, never bundled into your asking price." },
+            { "name": "Automatic tracking", "detail": "Both sides see status updates from drop-off to collection." },
+            { "name": "Built-in deadlines", "detail": "Auto-cancel and auto-refund if a parcel doesn't move." }
+          ]
+        },
+        "payments": {
+          "label": "Pay safely",
+          "title": "Licensed payments. Real dispute support.",
+          "body": "Payments run through EveryPay, a licensed Estonian payment institution. If something goes wrong, we step in.",
+          "linkText": "Read about payments",
+          "items": [
+            { "name": "EveryPay processing", "detail": "Bank cards and Baltic bank links in one checkout." },
+            { "name": "Wallet for sellers", "detail": "Sale proceeds credit a platform wallet you control." },
+            { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." },
+            { "name": "Order deadlines", "detail": "Acceptance, shipping, and delivery deadlines protect both sides." }
+          ]
         }
       }
     },

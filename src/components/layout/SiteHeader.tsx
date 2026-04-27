@@ -77,21 +77,11 @@ function SiteHeader() {
 
   const displayName = profile?.full_name || 'Account';
 
-  const isActive = (href: string) => {
-    const clean = stripLocalePrefix(pathname);
-    return clean === href || (href !== '/' && clean.startsWith(href + '/'));
-  };
-
-  const navLinkClass = (href: string) =>
-    isActive(href)
-      ? 'bg-semantic-brand-bg text-semantic-brand font-semibold rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom'
-      : 'text-semantic-text-secondary sm:hover:text-semantic-text-primary rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom font-medium';
-
   const navLinks = (
     <>
-      <Link href="/browse" className={navLinkClass('/browse')}>
-        Browse
-      </Link>
+      <Button variant="secondary" size="sm" asChild className="min-h-0 py-1.5 text-base">
+        <Link href="/browse">Browse</Link>
+      </Button>
       <Button variant="brand" size="sm" asChild className="min-h-0 py-1.5 text-base">
         <Link href="/sell">Sell a game</Link>
       </Button>
@@ -253,13 +243,9 @@ function SiteHeader() {
       {mobileOpen && (
         <nav className="sm:hidden border-t border-semantic-border-subtle bg-semantic-bg-elevated px-4 pb-4 pt-2">
           <div className="flex flex-col gap-1">
-            <Link
-              href="/browse"
-              className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-              onClick={() => setMobileOpen(false)}
-            >
-              Browse
-            </Link>
+            <Button variant="secondary" size="sm" asChild className="w-full">
+              <Link href="/browse" onClick={() => setMobileOpen(false)}>Browse</Link>
+            </Button>
             <Button variant="brand" size="sm" asChild className="w-full mt-1">
               <Link href="/sell" onClick={() => setMobileOpen(false)}>Sell a game</Link>
             </Button>
