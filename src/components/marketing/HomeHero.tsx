@@ -25,7 +25,7 @@ async function HomeHero() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
-        <div className="grid lg:grid-cols-[1.5fr_1fr] gap-12 items-center">
+        <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 items-center">
           <div className="flex flex-col items-start gap-6">
             <h1 className="font-display font-medium text-5xl sm:text-6xl tracking-tight leading-[1.05] text-semantic-text-heading">
               {t('headlineLeading')}
@@ -60,13 +60,13 @@ async function HomeHero() {
             </dl>
           </div>
 
-          <div className="hidden lg:block relative aspect-square w-full max-w-sm mx-auto rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
+          <div className="hidden lg:block relative aspect-[4/3] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
             <Image
               src="/images/hero.webp"
               alt={t('imageAlt')}
               fill
               priority
-              sizes="(min-width: 1024px) 384px, 0px"
+              sizes="(min-width: 1024px) 540px, 0px"
               className="object-cover"
             />
           </div>
