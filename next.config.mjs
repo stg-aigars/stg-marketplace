@@ -88,10 +88,14 @@ const nextConfig = {
   },
   images: {
     minimumCacheTTL: 2592000, // 30 days — reduce CPU pressure on VPS
-    // AVIF first, WebP fallback. AVIF encode is CPU-heavy on the CX23, but the
-    // 30d minimumCacheTTL above + 1d Cloudflare edge TTL bound it to one encode
-    // per (image, deviceSize) per ~30 days.
-    formats: ['image/avif', 'image/webp'],
+    // No `formats` override — Next 16's default (`['image/webp']`) is intentional.
+    // AVIF was tried (PR #208 → reverted) and broken at the Cloudflare edge:
+    // Free-plan cache keys don't include the `Accept` header, so even though
+    // origin emits `Vary: Accept` and negotiates correctly, Cloudflare collapses
+    // both AVIF and WebP variants into one cache slot per (url, w, q). Whichever
+    // format gets cached first is served to all clients — including AVIF bytes
+    // to browsers that can't decode them. Re-enabling AVIF requires either
+    // bypassing edge cache for /_next/image or a Worker that custom-keys by Accept.
     remotePatterns: [
       {
         protocol: 'https',
