@@ -64,7 +64,7 @@ function Features() {
           role="tabpanel"
           id={`tab-panel-${activeKey}`}
           aria-labelledby={`tab-${activeKey}`}
-          className="border-2 border-polar-night rounded-b-lg rounded-tr-lg bg-semantic-bg-elevated p-6 sm:p-10"
+          className="border-2 border-semantic-border-strong rounded-b-lg rounded-tr-lg bg-semantic-bg-elevated p-6 sm:p-10"
           style={{ borderTopWidth: '4px', borderTopColor: active.color }}
         >
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14">
