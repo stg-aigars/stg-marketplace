@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowRight, Check } from '@phosphor-icons/react/ssr';
+import { Check } from '@phosphor-icons/react/ssr';
+import { SectionLink } from '@/components/ui';
 import { colors } from '@/styles/tokens';
 
 type TabKey = 'browse' | 'sell' | 'ship' | 'payments';
@@ -75,14 +75,9 @@ function Features() {
               <p className="text-semantic-text-secondary leading-relaxed mb-6">
                 {t(`tabs.${activeKey}.body`)}
               </p>
-              <Link
-                href={active.href}
-                className="inline-flex items-center gap-1.5 font-semibold sm:hover:opacity-70 transition-opacity duration-250 ease-out-custom"
-                style={{ color: active.color }}
-              >
+              <SectionLink href={active.href} color={active.color}>
                 {t(`tabs.${activeKey}.linkText`)}
-                <ArrowRight size={16} weight="bold" />
-              </Link>
+              </SectionLink>
             </div>
 
             <ul className="grid gap-4">

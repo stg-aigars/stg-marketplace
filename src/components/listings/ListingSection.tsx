@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { SectionLink } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingType } from '@/lib/listings/types';
 
@@ -24,7 +24,6 @@ interface ListingSectionProps {
   heading: string;
   href?: string;
   linkText?: string;
-  linkClassName?: string;
   listings: ListingSectionItem[];
   /** Server Component only — Set doesn't survive JSON serialization */
   favoriteIds?: Set<string>;
@@ -39,7 +38,6 @@ export function ListingSection({
   heading,
   href,
   linkText = 'View all',
-  linkClassName = 'text-sm font-medium text-semantic-brand hover:underline transition-colors duration-250 ease-out-custom',
   listings,
   favoriteIds,
   isAuthenticated,
@@ -56,11 +54,7 @@ export function ListingSection({
         <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
           {heading}
         </h2>
-        {href && (
-          <Link href={href} className={linkClassName}>
-            {linkText}
-          </Link>
-        )}
+        {href && <SectionLink href={href}>{linkText}</SectionLink>}
       </div>
       {listings.length === 0 ? (
         emptyState

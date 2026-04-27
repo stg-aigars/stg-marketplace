@@ -68,7 +68,6 @@ export default async function HomePage() {
             heading={t('recentlyListed')}
             href="/browse"
             linkText={t('browseAll')}
-            linkClassName="text-sm font-medium text-semantic-text-secondary sm:hover:text-semantic-text-primary transition-colors duration-250 ease-out-custom"
             listings={recentListings}
             favoriteIds={favoriteIds}
             isAuthenticated={isAuthenticated}
