@@ -29,9 +29,8 @@
       "sellCta": "List a game",
       "imageAlt": "Stack of colourful board game pieces",
       "stats": {
-        "lockers": { "value": "2,000+", "label": "Parcel lockers" },
-        "catalog": { "value": "170K+", "label": "BGG catalogue" },
-        "buyerFee": { "value": "0%", "label": "Buyer service fee" }
+        "catalog": { "value": "170 000+", "label": "BGG catalogue" },
+        "lockers": { "value": "1 300+", "label": "Parcel lockers" }
       }
     },
     "recentlyListed": "Recently listed",

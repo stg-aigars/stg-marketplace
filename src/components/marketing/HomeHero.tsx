@@ -3,10 +3,7 @@ import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui';
 
-const HEX_FLAT_TOP =
-  'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
-
-const STAT_KEYS = ['lockers', 'catalog', 'buyerFee'] as const;
+const STAT_KEYS = ['catalog', 'lockers'] as const;
 
 async function HomeHero() {
   const t = await getTranslations('home.hero');
@@ -49,9 +46,9 @@ async function HomeHero() {
               </Button>
             </div>
 
-            <dl className="grid grid-cols-3 divide-x divide-semantic-border-strong pt-6 w-full max-w-lg">
+            <dl className="grid grid-cols-2 divide-x divide-semantic-border-strong pt-6 w-full max-w-md">
               {STAT_KEYS.map((key) => (
-                <div key={key} className="px-4 first:pl-0 last:pr-0">
+                <div key={key} className="px-6 first:pl-0 last:pr-0">
                   <dt className="text-2xl sm:text-3xl font-display font-medium text-semantic-text-heading">
                     {t(`stats.${key}.value`)}
                   </dt>
@@ -63,25 +60,15 @@ async function HomeHero() {
             </dl>
           </div>
 
-          <div className="hidden lg:block relative aspect-square w-full max-w-sm mx-auto">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-polar-night scale-[1.04]"
-              style={{ clipPath: HEX_FLAT_TOP, WebkitClipPath: HEX_FLAT_TOP }}
+          <div className="hidden lg:block relative aspect-square w-full max-w-sm mx-auto rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
+            <Image
+              src="/images/hero.webp"
+              alt={t('imageAlt')}
+              fill
+              priority
+              sizes="(min-width: 1024px) 384px, 0px"
+              className="object-cover"
             />
-            <div
-              className="relative w-full h-full overflow-hidden"
-              style={{ clipPath: HEX_FLAT_TOP, WebkitClipPath: HEX_FLAT_TOP }}
-            >
-              <Image
-                src="/images/hero-hex.webp"
-                alt={t('imageAlt')}
-                fill
-                priority
-                sizes="(min-width: 1024px) 384px, 0px"
-                className="object-cover"
-              />
-            </div>
           </div>
         </div>
       </div>
