@@ -20,13 +20,76 @@
     "signOut": "Sign out"
   },
   "home": {
-    "hero": "Every game deserves a Second Turn",
-    "heroSub": "Pre-loved board games, passed between fellow gamers across Latvia, Lithuania, and Estonia.",
-    "browseCta": "Browse games",
-    "sellCta": "Sell a game",
-    "statBaltics": "Latvia, Lithuania, Estonia",
-    "statShipping": "Parcel lockers across the Baltics",
-    "statPayments": "Safe payments, dispute support"
+    "hero": {
+      "statusPill": "Now shipping across the Baltics",
+      "headlineLeading": "Board games deserve a ",
+      "headlineEmphasis": "second turn",
+      "headlineTrailing": ".",
+      "lede": "A peer-to-peer marketplace for pre-loved games in Latvia, Lithuania, and Estonia.",
+      "browseCta": "Browse the marketplace",
+      "sellCta": "List a game",
+      "imageAlt": "Stack of colourful board game pieces"
+    },
+    "recentlyListed": "Recently listed",
+    "browseAll": "Browse all",
+    "howItWorks": {
+      "eyebrow": "How selling works",
+      "heading": "List a game in three steps.",
+      "steps": {
+        "1": {
+          "tag": "01",
+          "title": "Find your game",
+          "body": "Search the BoardGameGeek catalog and pick the exact edition you own."
+        },
+        "2": {
+          "tag": "02",
+          "title": "Set price and condition",
+          "body": "Grade your copy on our five-tier scale and choose a price."
+        },
+        "3": {
+          "tag": "03",
+          "title": "Ship via parcel locker",
+          "body": "We provide the parcel-locker label. Drop your game off; the buyer collects."
+        }
+      }
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "heading": "Before you ask.",
+      "items": [
+        {
+          "q": "Where can I buy and sell?",
+          "a": "We currently serve Latvia, Lithuania, and Estonia. Listings are visible to buyers in all three countries."
+        },
+        {
+          "q": "How does shipping work?",
+          "a": "Sellers ship through Unisend parcel lockers. Cross-border lockers are supported across the Baltics."
+        },
+        {
+          "q": "What does the marketplace cost?",
+          "a": "Buyers pay the item price plus shipping. Sellers pay a 10% commission on the item price; shipping is not commissioned."
+        },
+        {
+          "q": "How are games graded?",
+          "a": "Sellers grade each copy on a five-tier scale: Like New, Very Good, Good, Acceptable, or For Parts. Buyers see this on every listing."
+        },
+        {
+          "q": "How do payments work?",
+          "a": "Payments are processed by EveryPay, a licensed Estonian payment institution. Sellers receive their share in a platform wallet once the order completes."
+        },
+        {
+          "q": "What if something goes wrong?",
+          "a": "Orders include built-in deadlines for acceptance, shipping, and delivery. If a dispute is opened, we step in to help resolve it."
+        }
+      ]
+    },
+    "cta": {
+      "eyebrow": "Got games on the shelf?",
+      "heading": "Pass them on.",
+      "body": "List your collection and let other gamers in the Baltics give them another turn.",
+      "primaryCta": "List a game",
+      "secondaryCta": "Browse the marketplace"
+    }
   },
   "listing": {
     "condition": "Condition",

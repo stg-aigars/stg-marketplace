@@ -79,6 +79,7 @@ export const colors = {
     textSecondary: '#434C5E',
     textMuted: '#4C566A',
     textInverse: '#FAF9F6',
+    textPrimaryInk: '#5A3020',    // Warm dark brown for text on orange CTAs (high-contrast, palette-cohesive vs pure white)
 
     bgPrimary: '#FAF9F6',
     bgSecondary: '#F5F3EF',
@@ -175,4 +176,9 @@ export const shadows = {
   focus: '0 0 0 3px rgba(107, 163, 181, 0.25)',   // Focus ring (brand teal)
   'glow-primary': '0 2px 8px rgba(208, 135, 112, 0.2)',   // Warm glow beneath primary CTA
   'glow-error': '0 0 0 3px rgba(191, 97, 106, 0.1)',      // Soft red glow for error state
+  // Neo-brutalist solid-drop press shadows for buttons. Three variants for the
+  // three press states; resting → hover (lifted) → active (pressed).
+  pop: '0 4px 0 #2E3440',         // Resting (polar.night reference)
+  'pop-lg': '0 5px 0 #2E3440',    // Hover (lifted +1px, shadow grows)
+  'pop-sm': '0 2px 0 #2E3440',    // Active (pressed +2px, shadow shrinks)
 } as const;

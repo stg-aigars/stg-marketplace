@@ -37,6 +37,28 @@ function SiteHeader() {
   const { count: cartCount } = useCart();
   const { isSeller } = usePendingActions();
 
+  // Scroll-driven chrome: only the homepage hero gets the transparent-at-top treatment.
+  // Every other route reads as scrolled-glass immediately so we don't get
+  // transparent-on-white. Detection is by route here (not by prop) because
+  // SiteHeader is rendered from the locale layout — page.tsx can't pass props in.
+  const transparentAtTop = stripLocalePrefix(pathname) === '/';
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!transparentAtTop) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setScrolled(window.scrollY > 8));
+    };
+    onScroll(); // initialize correctly on mount/refresh-mid-scroll
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [transparentAtTop]);
+  const isGlass = !transparentAtTop || scrolled;
+
   // Close menus on route change
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- closing menus on route change
@@ -77,7 +99,14 @@ function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-semantic-bg-elevated/85 backdrop-blur-xl border-b border-semantic-border-subtle shadow-sm">
+    <header
+      className={
+        'sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-200 ease-out ' +
+        (isGlass
+          ? 'bg-semantic-bg-elevated/85 backdrop-blur-xl border-b border-semantic-border-subtle shadow-sm'
+          : 'bg-transparent border-b border-transparent shadow-none')
+      }
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}

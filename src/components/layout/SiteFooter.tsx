@@ -147,6 +147,27 @@ function SiteFooter() {
             </a>
             </p>
           </div>
+          <p>
+            Hero photo by{' '}
+            <a
+              href="https://unsplash.com/@christopherphigh?utm_source=second_turn_games&utm_medium=referral"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors duration-250 ease-out-custom"
+            >
+              Christopher Paul High
+            </a>
+            {' '}on{' '}
+            <a
+              href="https://unsplash.com/photos/yellow-red-and-blue-lego-blocks-fwRMK19zavc?utm_source=second_turn_games&utm_medium=referral"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors duration-250 ease-out-custom"
+            >
+              Unsplash
+            </a>
+            .
+          </p>
         </div>
       </div>
     </footer>
