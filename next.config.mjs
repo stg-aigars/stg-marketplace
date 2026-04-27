@@ -88,6 +88,10 @@ const nextConfig = {
   },
   images: {
     minimumCacheTTL: 2592000, // 30 days — reduce CPU pressure on VPS
+    // AVIF first, WebP fallback. AVIF encode is CPU-heavy on the CX23, but the
+    // 30d minimumCacheTTL above + 1d Cloudflare edge TTL bound it to one encode
+    // per (image, deviceSize) per ~30 days.
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
