@@ -11,11 +11,15 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const BUCKET = 'avatars';
 
 function extractStoragePath(avatarUrl: string): string | null {
-  // Public URL format: .../storage/v1/object/public/avatars/{userId}/avatar.{ext}
+  // Public URL format: .../storage/v1/object/public/avatars/{userId}/avatar.{ext}?v=...
+  // The ?v=${Date.now()} is appended to the stored avatar_url for cache busting
+  // but is NOT part of the storage path — strip it before passing to .remove().
   const marker = `/storage/v1/object/public/${BUCKET}/`;
   const idx = avatarUrl.indexOf(marker);
   if (idx === -1) return null;
-  return avatarUrl.slice(idx + marker.length);
+  const pathWithQuery = avatarUrl.slice(idx + marker.length);
+  const queryIdx = pathWithQuery.indexOf('?');
+  return queryIdx === -1 ? pathWithQuery : pathWithQuery.slice(0, queryIdx);
 }
 
 export async function POST(request: Request) {
