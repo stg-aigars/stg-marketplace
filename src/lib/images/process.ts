@@ -13,12 +13,12 @@ import sharp from 'sharp';
  */
 export const MAX_PHOTO_DIMENSION = 2048;
 
-export const EXTENSION_MAP: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/avif': 'avif',
-};
+/**
+ * All uploads are normalized to WebP at storage time. PNG inputs typically
+ * shrink 3–5×; JPEG inputs shrink modestly; WebP/AVIF inputs round-trip.
+ */
+export const OUTPUT_MIME = 'image/webp';
+export const OUTPUT_EXTENSION = 'webp';
 
 export function detectImageType(buffer: Buffer): string | null {
   if (buffer.length < 12) return null;
@@ -70,24 +70,19 @@ export function detectImageType(buffer: Buffer): string | null {
 }
 
 /**
- * Strip EXIF metadata (GPS location, device info) while preserving orientation.
- * Uses format-specific encoding to avoid silent quality degradation.
+ * Strip EXIF metadata (GPS, device info), cap long edge, normalize to WebP@90.
+ * Sharp auto-detects input format from the buffer's magic bytes, so callers
+ * don't pass it. `.rotate()` applies EXIF orientation before stripping it.
  */
-export async function stripExifMetadata(buffer: Buffer, mimeType: string): Promise<Buffer> {
-  const pipeline = sharp(buffer, { limitInputPixels: 25_000_000 })
+export async function stripExifMetadata(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer, { limitInputPixels: 25_000_000 })
     .rotate()
     .resize({
       width: MAX_PHOTO_DIMENSION,
       height: MAX_PHOTO_DIMENSION,
       fit: 'inside',
       withoutEnlargement: true,
-    });
-
-  switch (mimeType) {
-    case 'image/jpeg': return pipeline.jpeg({ quality: 90 }).toBuffer();
-    case 'image/png': return pipeline.png().toBuffer();
-    case 'image/webp': return pipeline.webp({ quality: 90 }).toBuffer();
-    case 'image/avif': return pipeline.avif({ quality: 75 }).toBuffer();
-    default: return pipeline.toBuffer();
-  }
+    })
+    .webp({ quality: 90 })
+    .toBuffer();
 }

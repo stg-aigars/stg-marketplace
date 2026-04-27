@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
-import { detectImageType, EXTENSION_MAP, stripExifMetadata } from '@/lib/images/process';
+import { detectImageType, stripExifMetadata, OUTPUT_MIME, OUTPUT_EXTENSION } from '@/lib/images/process';
 import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
@@ -49,12 +49,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Resize to cap dimensions, then strip EXIF
+  // Resize to cap dimensions, then strip EXIF + normalize to WebP
   const resized = await sharp(buffer)
     .resize(AVATAR_DIMENSION, AVATAR_DIMENSION, { fit: 'cover' })
     .toBuffer();
-  const strippedBuffer = await stripExifMetadata(resized, detectedType);
-  const extension = EXTENSION_MAP[detectedType] ?? 'jpg';
+  const strippedBuffer = await stripExifMetadata(resized);
 
   // Read current avatar URL before uploading (for old file cleanup)
   const { data: profile } = await supabase
@@ -65,10 +64,10 @@ export async function POST(request: Request) {
   const oldPath = profile?.avatar_url ? extractStoragePath(profile.avatar_url) : null;
 
   // Upload new avatar first — if this fails, the old avatar remains intact
-  const path = `${user.id}/avatar.${extension}`;
+  const path = `${user.id}/avatar.${OUTPUT_EXTENSION}`;
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
-    .upload(path, strippedBuffer, { contentType: detectedType, upsert: true });
+    .upload(path, strippedBuffer, { contentType: OUTPUT_MIME, upsert: true });
 
   if (uploadError) {
     console.error('Avatar upload failed:', uploadError);

@@ -4,7 +4,7 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createServiceClient } from '@/lib/supabase';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
-import { detectImageType, EXTENSION_MAP, stripExifMetadata } from '@/lib/images/process';
+import { detectImageType, stripExifMetadata, OUTPUT_MIME, OUTPUT_EXTENSION } from '@/lib/images/process';
 
 export async function POST(request: Request) {
   const rateLimitError = applyRateLimit(photoUploadLimiter, request);
@@ -63,13 +63,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const strippedBuffer = await stripExifMetadata(buffer, detectedType);
-  const extension = EXTENSION_MAP[detectedType] ?? 'jpg';
-  const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+  const strippedBuffer = await stripExifMetadata(buffer);
+  const path = `${user.id}/${crypto.randomUUID()}.${OUTPUT_EXTENSION}`;
 
   const { error: uploadError } = await supabase.storage
     .from('dispute-photos')
-    .upload(path, strippedBuffer, { contentType: detectedType });
+    .upload(path, strippedBuffer, { contentType: OUTPUT_MIME });
 
   if (uploadError) {
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });
