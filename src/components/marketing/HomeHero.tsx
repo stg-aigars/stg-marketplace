@@ -45,7 +45,7 @@ async function HomeHero() {
             </div>
           </div>
 
-          <div className="hidden lg:block relative aspect-[4/3] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
+          <div className="hidden lg:block relative aspect-[16/9] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
             <Image
               src="/images/hero.webp"
               alt={t('imageAlt')}
