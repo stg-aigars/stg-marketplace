@@ -8,20 +8,22 @@ import { colors } from '@/styles/tokens';
 
 type TabKey = 'browse' | 'sell' | 'ship' | 'payments';
 
-const TAB_CONFIG: Array<{ key: TabKey; color: string; href: string }> = [
-  { key: 'browse', color: colors.semantic.primary, href: '/browse' },
-  { key: 'sell', color: colors.semantic.brand, href: '/sell' },
-  { key: 'ship', color: colors.semantic.success, href: '/help' },
-  { key: 'payments', color: colors.aurora.purple, href: '/help' },
+const TAB_CONFIG: Array<{ key: TabKey; color: string }> = [
+  { key: 'browse', color: colors.semantic.primary },
+  { key: 'sell', color: colors.semantic.brand },
+  { key: 'ship', color: colors.semantic.success },
+  { key: 'payments', color: colors.aurora.purple },
 ];
 
 type FeatureItem = { name: string; detail: string };
+type FeatureLink = { text: string; href: string };
 
 function Features() {
   const t = useTranslations('home.features');
   const [activeKey, setActiveKey] = useState<TabKey>('browse');
   const active = TAB_CONFIG.find((c) => c.key === activeKey)!;
   const items = t.raw(`tabs.${activeKey}.items`) as FeatureItem[];
+  const links = t.raw(`tabs.${activeKey}.links`) as FeatureLink[];
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-semantic-bg-secondary border-y border-semantic-border-subtle">
@@ -75,9 +77,13 @@ function Features() {
               <p className="text-semantic-text-secondary leading-relaxed mb-6">
                 {t(`tabs.${activeKey}.body`)}
               </p>
-              <SectionLink href={active.href} color={active.color}>
-                {t(`tabs.${activeKey}.linkText`)}
-              </SectionLink>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {links.map((link) => (
+                  <SectionLink key={link.href} href={link.href} color={active.color}>
+                    {link.text}
+                  </SectionLink>
+                ))}
+              </div>
             </div>
 
             <ul className="grid gap-4">

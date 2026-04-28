@@ -26,13 +26,13 @@
       "headlineTrailing": "",
       "lede": "Where Baltic board gamers buy and sell their games.",
       "browseCta": "Browse the marketplace",
-      "sellCta": "List a game",
+      "sellCta": "Sell a game",
       "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins"
     },
     "recentlyListed": {
       "eyebrow": "On the shelves",
       "heading": "Recently listed",
-      "browseAll": "Browse all"
+      "browseAll": "Browse all games"
     },
     "features": {
       "eyebrow": "What you can do",
@@ -40,50 +40,60 @@
       "tabs": {
         "browse": {
           "label": "Find your game",
-          "title": "A catalogue backed by BoardGameGeek.",
-          "body": "Find the right game in a catalogue of 170 000+ titles. Every listing pulls images and details straight from BGG, so you know what edition you're getting.",
-          "linkText": "Browse the marketplace",
+          "title": "Browse, filter, find.",
+          "body": "Filter by category, condition, country, and price. Every listing pulls cover art and game details from BoardGameGeek so what you see matches what's in the box. Bid in auctions, buy fixed-price listings, or post a wanted ad if no one's selling the title you're after.",
+          "links": [
+            { "text": "Browse the marketplace", "href": "/browse" },
+            { "text": "Post a wanted listing", "href": "/wanted/new" }
+          ],
           "items": [
-            { "name": "BGG-backed search", "detail": "Find the exact edition you're looking for, in your language." },
-            { "name": "Condition badges", "detail": "Five tiers from Like New to For Parts, on every listing." },
-            { "name": "Edition tracking", "detail": "Each copy tracks its publisher, language, and edition year." },
-            { "name": "Wanted listings", "detail": "Save games you're hunting and get notified when one lands." }
+            { "name": "Filter to taste", "detail": "By category, condition, country, and price." },
+            { "name": "Condition badges", "detail": "Five tiers from Like New to For Parts. Every listing has photos." },
+            { "name": "Auctions or buy now", "detail": "Bid against other buyers, or buy fixed-price outright." },
+            { "name": "Wanted listings", "detail": "Post a wanted ad and we'll notify you when one lands." }
           ]
         },
         "sell": {
-          "label": "List with confidence",
+          "label": "Sell with confidence",
           "title": "Three steps from shelf to sold.",
-          "body": "Search BGG, set your price and condition, drop it in a parcel locker. We handle the label, the payment, and the messaging.",
-          "linkText": "List a game",
+          "body": "Search BoardGameGeek to match your exact edition: the right publisher, language, and printing. Set your price, grade your copy, drop it in a parcel locker. We handle the label, the payment, and the messaging.",
+          "links": [
+            { "text": "List a game", "href": "/sell" },
+            { "text": "Read the condition guide", "href": "/help" }
+          ],
           "items": [
-            { "name": "Five-tier grading", "detail": "Like New, Very Good, Good, Acceptable, or For Parts." },
+            { "name": "BGG edition matching", "detail": "Pick the exact publisher, language, and printing you own." },
+            { "name": "Five-tier grading", "detail": "Grade each copy from Like New to For Parts." },
             { "name": "Auctions or fixed price", "detail": "Pick the format that fits the game." },
-            { "name": "10% commission", "detail": "Charged on the item only, not on shipping." },
-            { "name": "Wallet payouts", "detail": "Sales land in your wallet when the order completes." }
+            { "name": "Wallet payouts", "detail": "Sales land in your wallet. Withdraw, or spend it on your next game." }
           ]
         },
         "ship": {
           "label": "Ship across the Baltics",
-          "title": "Cross-border parcel lockers.",
-          "body": "Unisend lockers connect Latvia, Lithuania, and Estonia. Drop off, the buyer collects, tracking is automatic.",
-          "linkText": "Read shipping details",
+          "title": "1 300+ lockers across three countries.",
+          "body": "The Unisend network connects Latvia, Lithuania, and Estonia, including Latvijas Pasts and uDrop terminals. Drop off, the buyer collects. Typical delivery is 2–3 business days. Buyers picking multiple games from one seller split the shipping.",
+          "links": [
+            { "text": "Read shipping details", "href": "/help" }
+          ],
           "items": [
-            { "name": "Cross-border lockers", "detail": "Buyers in LV, LT, and EE can order from any seller." },
-            { "name": "Buyer-funded shipping", "detail": "Shipping is added at checkout, never bundled into your asking price." },
-            { "name": "Automatic tracking", "detail": "Both sides see status updates from drop-off to collection." },
-            { "name": "Built-in deadlines", "detail": "Auto-cancel and auto-refund if a parcel doesn't move." }
+            { "name": "1 300+ lockers", "detail": "Unisend, Latvijas Pasts, and uDrop networks combined." },
+            { "name": "2–3 business days", "detail": "Typical delivery time across the Baltics." },
+            { "name": "Bundle and save", "detail": "Buy multiple games from one seller and split the shipping." },
+            { "name": "Auto-tracked", "detail": "Status updates from drop-off to collection. Built-in delivery deadlines." }
           ]
         },
         "payments": {
           "label": "Pay safely",
           "title": "Licensed payments. People handle disputes.",
-          "body": "EveryPay handles payments. They're a licensed Estonian payment institution. If something goes wrong, we step in.",
-          "linkText": "Read about payments",
+          "body": "Swedbank AS (Latvia) is our payment service provider, running on the EveryPay platform. If something goes wrong, we step in.",
+          "links": [
+            { "text": "Read about payments", "href": "/help" }
+          ],
           "items": [
-            { "name": "EveryPay processing", "detail": "Bank cards and Baltic bank links in one checkout." },
-            { "name": "Wallet for sellers", "detail": "Your earnings land in a wallet you control." },
-            { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." },
-            { "name": "Order deadlines", "detail": "Acceptance, shipping, and delivery deadlines protect both sides." }
+            { "name": "Swedbank AS", "detail": "Latvian credit institution, our payment service provider." },
+            { "name": "EveryPay platform", "detail": "Bank cards and Baltic bank links in one checkout." },
+            { "name": "Wallet for sellers", "detail": "Earnings land in a wallet you control." },
+            { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." }
           ]
         }
       }
@@ -110,7 +120,7 @@
         },
         {
           "q": "How do payments work?",
-          "a": "EveryPay handles payments. They're a licensed Estonian payment institution. Once an order completes, your earnings land in your platform wallet."
+          "a": "Swedbank AS (Latvia) is our payment service provider, with payments running on the EveryPay platform. Once an order completes, your earnings land in your platform wallet."
         },
         {
           "q": "What if something goes wrong?",
