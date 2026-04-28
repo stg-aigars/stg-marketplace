@@ -65,9 +65,10 @@ export default async function HomePage() {
       {recentListings && recentListings.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <ListingSection
-            heading={t('recentlyListed')}
+            eyebrow={t('recentlyListed.eyebrow')}
+            heading={t('recentlyListed.heading')}
             href="/browse"
-            linkText={t('browseAll')}
+            linkText={t('recentlyListed.browseAll')}
             listings={recentListings}
             favoriteIds={favoriteIds}
             isAuthenticated={isAuthenticated}

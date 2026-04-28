@@ -22,6 +22,8 @@ export interface ListingSectionItem {
 
 interface ListingSectionProps {
   heading: string;
+  /** Optional small label above the heading (uppercase, muted). Matches other landing sections. */
+  eyebrow?: string;
   href?: string;
   linkText?: string;
   listings: ListingSectionItem[];
@@ -36,6 +38,7 @@ interface ListingSectionProps {
 
 export function ListingSection({
   heading,
+  eyebrow,
   href,
   linkText = 'View all',
   listings,
@@ -50,10 +53,17 @@ export function ListingSection({
 
   return (
     <section className={className}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          {heading}
-        </h2>
+      <div className="flex items-end justify-between mb-4 gap-4">
+        <div>
+          {eyebrow && (
+            <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-2">
+              {eyebrow}
+            </p>
+          )}
+          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+            {heading}
+          </h2>
+        </div>
         {href && <SectionLink href={href}>{linkText}</SectionLink>}
       </div>
       {listings.length === 0 ? (

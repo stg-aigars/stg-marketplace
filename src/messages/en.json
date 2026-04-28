@@ -29,8 +29,11 @@
       "sellCta": "List a game",
       "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins"
     },
-    "recentlyListed": "Recently listed",
-    "browseAll": "Browse all",
+    "recentlyListed": {
+      "eyebrow": "On the shelves",
+      "heading": "Recently listed",
+      "browseAll": "Browse all"
+    },
     "features": {
       "eyebrow": "What you can do",
       "heading": "Built for the Baltic board game scene.",
