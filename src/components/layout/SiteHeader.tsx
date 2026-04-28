@@ -37,6 +37,27 @@ function SiteHeader() {
   const { count: cartCount } = useCart();
   const { isSeller } = usePendingActions();
 
+  // Only the homepage gets transparent-at-top chrome (it has a hero).
+  // Detection is by route because this component is rendered from the locale
+  // layout, so page.tsx can't pass props in.
+  const transparentAtTop = stripLocalePrefix(pathname) === '/';
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!transparentAtTop) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setScrolled(window.scrollY > 8));
+    };
+    onScroll(); // initialize correctly on mount/refresh-mid-scroll
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [transparentAtTop]);
+  const isGlass = !transparentAtTop || scrolled;
+
   // Close menus on route change
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- closing menus on route change
@@ -55,21 +76,11 @@ function SiteHeader() {
 
   const displayName = profile?.full_name || 'Account';
 
-  const isActive = (href: string) => {
-    const clean = stripLocalePrefix(pathname);
-    return clean === href || (href !== '/' && clean.startsWith(href + '/'));
-  };
-
-  const navLinkClass = (href: string) =>
-    isActive(href)
-      ? 'bg-semantic-brand-bg text-semantic-brand font-semibold rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom'
-      : 'text-semantic-text-secondary sm:hover:text-semantic-text-primary rounded-md px-3 py-1.5 transition-all duration-250 ease-out-custom font-medium';
-
   const navLinks = (
     <>
-      <Link href="/browse" className={navLinkClass('/browse')}>
-        Browse
-      </Link>
+      <Button variant="secondary" size="sm" asChild className="min-h-0 py-1.5 text-base">
+        <Link href="/browse">Browse</Link>
+      </Button>
       <Button variant="brand" size="sm" asChild className="min-h-0 py-1.5 text-base">
         <Link href="/sell">Sell a game</Link>
       </Button>
@@ -77,7 +88,14 @@ function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-semantic-bg-elevated/85 backdrop-blur-xl border-b border-semantic-border-subtle shadow-sm">
+    <header
+      className={
+        'sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-250 ease-out-custom ' +
+        (isGlass
+          ? 'bg-semantic-bg-elevated/85 backdrop-blur-xl border-b border-semantic-border-subtle shadow-sm'
+          : 'bg-transparent border-b border-transparent shadow-none')
+      }
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
@@ -224,13 +242,9 @@ function SiteHeader() {
       {mobileOpen && (
         <nav className="sm:hidden border-t border-semantic-border-subtle bg-semantic-bg-elevated px-4 pb-4 pt-2">
           <div className="flex flex-col gap-1">
-            <Link
-              href="/browse"
-              className="py-2.5 text-semantic-text-secondary active:text-semantic-text-primary font-medium"
-              onClick={() => setMobileOpen(false)}
-            >
-              Browse
-            </Link>
+            <Button variant="secondary" size="sm" asChild className="w-full">
+              <Link href="/browse" onClick={() => setMobileOpen(false)}>Browse</Link>
+            </Button>
             <Button variant="brand" size="sm" asChild className="w-full mt-1">
               <Link href="/sell" onClick={() => setMobileOpen(false)}>Sell a game</Link>
             </Button>

@@ -46,6 +46,9 @@ export type { EmptyStateProps } from './empty-state';
 
 export { BackLink } from './BackLink';
 
+export { SectionLink } from './SectionLink';
+export type { SectionLinkProps } from './SectionLink';
+
 export { Breadcrumb } from './breadcrumb';
 export type { BreadcrumbProps } from './breadcrumb';
 

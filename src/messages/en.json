@@ -20,13 +20,121 @@
     "signOut": "Sign out"
   },
   "home": {
-    "hero": "Every game deserves a Second Turn",
-    "heroSub": "Pre-loved board games, passed between fellow gamers across Latvia, Lithuania, and Estonia.",
-    "browseCta": "Browse games",
-    "sellCta": "Sell a game",
-    "statBaltics": "Latvia, Lithuania, Estonia",
-    "statShipping": "Parcel lockers across the Baltics",
-    "statPayments": "Safe payments, dispute support"
+    "hero": {
+      "headlineLeading": "Every game deserves a ",
+      "headlineEmphasis": "Second Turn",
+      "headlineTrailing": "",
+      "lede": "Where Baltic board gamers buy and sell their games.",
+      "browseCta": "Browse the marketplace",
+      "sellCta": "Sell a game",
+      "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins"
+    },
+    "recentlyListed": {
+      "eyebrow": "On the shelves",
+      "heading": "Recently listed",
+      "browseAll": "Browse all games"
+    },
+    "features": {
+      "eyebrow": "What you can do",
+      "heading": "Built for the Baltic board game scene.",
+      "tabs": {
+        "browse": {
+          "label": "Find your game",
+          "title": "Browse, filter, find.",
+          "body": "Filter by category, condition, country, and price. Every listing pulls cover art and game details from BoardGameGeek so what you see matches what's in the box. Bid in auctions, buy fixed-price listings, or post a wanted ad if no one's selling the title you're after.",
+          "links": [
+            { "text": "Browse the marketplace", "href": "/browse" },
+            { "text": "Post a wanted listing", "href": "/wanted/new" }
+          ],
+          "items": [
+            { "name": "Filter to taste", "detail": "By category, condition, country, and price." },
+            { "name": "Condition badges", "detail": "Five tiers from Like New to For Parts. Every listing has photos." },
+            { "name": "Auctions or buy now", "detail": "Bid against other buyers, or buy fixed-price outright." },
+            { "name": "Wanted listings", "detail": "Post a wanted ad and we'll notify you when one lands." }
+          ]
+        },
+        "sell": {
+          "label": "Sell with confidence",
+          "title": "Three steps from shelf to sold.",
+          "body": "Search BoardGameGeek to match your exact edition: the right publisher, language, and printing. Set your price, grade your copy, drop it in a parcel locker. We handle the label, the payment, and the messaging.",
+          "links": [
+            { "text": "List a game", "href": "/sell" },
+            { "text": "Read the condition guide", "href": "/help" }
+          ],
+          "items": [
+            { "name": "BGG edition matching", "detail": "Pick the exact publisher, language, and printing you own." },
+            { "name": "Five-tier grading", "detail": "Grade each copy from Like New to For Parts." },
+            { "name": "Auctions or fixed price", "detail": "Pick the format that fits the game." },
+            { "name": "Wallet payouts", "detail": "Sales land in your wallet. Withdraw, or spend it on your next game." }
+          ]
+        },
+        "ship": {
+          "label": "Ship across the Baltics",
+          "title": "1 300+ lockers across three countries.",
+          "body": "The Unisend network connects Latvia, Lithuania, and Estonia, including Latvijas Pasts and uDrop terminals. Drop off, the buyer collects. Typical delivery is 2–3 business days. Buyers picking multiple games from one seller split the shipping.",
+          "links": [
+            { "text": "Read shipping details", "href": "/help" }
+          ],
+          "items": [
+            { "name": "1 300+ lockers", "detail": "Unisend, Latvijas Pasts, and uDrop networks combined." },
+            { "name": "2–3 business days", "detail": "Typical delivery time across the Baltics." },
+            { "name": "Bundle and save", "detail": "Buy multiple games from one seller and split the shipping." },
+            { "name": "Auto-tracked", "detail": "Status updates from drop-off to collection. Built-in delivery deadlines." }
+          ]
+        },
+        "payments": {
+          "label": "Pay safely",
+          "title": "Licensed payments. People handle disputes.",
+          "body": "Swedbank AS (Latvia) is our payment service provider, running on the EveryPay platform. If something goes wrong, we step in.",
+          "links": [
+            { "text": "Read about payments", "href": "/help" }
+          ],
+          "items": [
+            { "name": "Swedbank AS", "detail": "Latvian credit institution, our payment service provider." },
+            { "name": "EveryPay platform", "detail": "Bank cards and Baltic bank links in one checkout." },
+            { "name": "Wallet for sellers", "detail": "Earnings land in a wallet you control." },
+            { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." }
+          ]
+        }
+      }
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "heading": "Before you ask.",
+      "items": [
+        {
+          "q": "Where can I buy and sell?",
+          "a": "Latvia, Lithuania, and Estonia. Buyers in all three countries see every listing."
+        },
+        {
+          "q": "How does shipping work?",
+          "a": "Sellers ship through Unisend parcel lockers. Cross-border drop-offs work across all three Baltic countries."
+        },
+        {
+          "q": "What does the marketplace cost?",
+          "a": "Buyers pay the item price plus shipping. Sellers pay 10% commission on the item price. Shipping isn't commissioned."
+        },
+        {
+          "q": "How are games graded?",
+          "a": "Sellers grade each copy on a five-tier scale: Like New, Very Good, Good, Acceptable, or For Parts. Buyers see this on every listing."
+        },
+        {
+          "q": "How do payments work?",
+          "a": "Swedbank AS (Latvia) is our payment service provider, with payments running on the EveryPay platform. Once an order completes, your earnings land in your platform wallet."
+        },
+        {
+          "q": "What if something goes wrong?",
+          "a": "Every order has deadlines for acceptance, shipping, and delivery. If a dispute opens, we review what happened and help resolve it."
+        }
+      ]
+    },
+    "cta": {
+      "eyebrow": "Got games on the shelf?",
+      "heading": "Pass them on.",
+      "body": "List your collection and let other gamers in the Baltics give them another turn.",
+      "primaryCta": "List a game",
+      "secondaryCta": "Browse the marketplace"
+    }
   },
   "listing": {
     "condition": "Condition",

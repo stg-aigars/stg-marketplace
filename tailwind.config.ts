@@ -62,6 +62,7 @@ const config: Config = {
           'text-secondary': colors.semantic.textSecondary,
           'text-muted': colors.semantic.textMuted,
           'text-inverse': colors.semantic.textInverse,
+          'text-primary-ink': colors.semantic.textPrimaryInk,
           'bg-primary': colors.semantic.bgPrimary,
           'bg-secondary': colors.semantic.bgSecondary,
           'bg-elevated': colors.semantic.bgElevated,

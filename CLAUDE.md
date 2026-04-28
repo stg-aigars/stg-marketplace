@@ -127,6 +127,7 @@ Always use these — do not write inline equivalents:
 | Loading spinners | `Spinner` (sizes: sm, md, lg) | `@/components/ui` |
 | Empty / no-results states | `EmptyState` (icon, title, description, action, secondaryAction) | `@/components/ui` |
 | Back navigation | `BackLink` (href, label; arrow + text, muted with brand hover) | `@/components/ui` |
+| Section nav link | `SectionLink` (href, children, optional `color` override; brand teal + right arrow; use next to section headings — "Browse all", "Read more") | `@/components/ui` |
 | Breadcrumb navigation | `Breadcrumb` (items: { label, href? }[]) | `@/components/ui` |
 | Pagination | `Pagination` (currentPage, totalPages, totalItems, pageSize, buildUrl) | `@/components/ui` |
 | State-based tabs | `Tabs` (tabs, activeTab, onTabChange; underline style with counts) | `@/components/ui` |
