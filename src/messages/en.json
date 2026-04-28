@@ -85,15 +85,15 @@
         "payments": {
           "label": "Pay safely",
           "title": "Licensed payments. People handle disputes.",
-          "body": "Payments are processed by EveryPay (Maksekeskus AS), a licensed Estonian payment institution. If something goes wrong, we step in.",
+          "body": "Swedbank AS (Latvia) is our payment service provider, running on the EveryPay platform. If something goes wrong, we step in.",
           "links": [
             { "text": "Read about payments", "href": "/help" }
           ],
           "items": [
-            { "name": "EveryPay processing", "detail": "Bank cards and Baltic bank links in one checkout." },
+            { "name": "Swedbank AS", "detail": "Latvian credit institution, our payment service provider." },
+            { "name": "EveryPay platform", "detail": "Bank cards and Baltic bank links in one checkout." },
             { "name": "Wallet for sellers", "detail": "Earnings land in a wallet you control." },
-            { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." },
-            { "name": "Order deadlines", "detail": "Acceptance, shipping, and delivery deadlines protect both sides." }
+            { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." }
           ]
         }
       }
@@ -120,7 +120,7 @@
         },
         {
           "q": "How do payments work?",
-          "a": "Payments are processed by EveryPay (Maksekeskus AS), a licensed Estonian payment institution. Once an order completes, your earnings land in your platform wallet."
+          "a": "Swedbank AS (Latvia) is our payment service provider, with payments running on the EveryPay platform. Once an order completes, your earnings land in your platform wallet."
         },
         {
           "q": "What if something goes wrong?",
