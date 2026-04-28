@@ -36,10 +36,10 @@ async function HomeHero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button variant="primary" size="lg" asChild>
+              <Button variant="secondary" size="lg" asChild>
                 <Link href="/browse">{t('browseCta')}</Link>
               </Button>
-              <Button variant="secondary" size="lg" asChild>
+              <Button variant="brand" size="lg" asChild>
                 <Link href="/sell">{t('sellCta')}</Link>
               </Button>
             </div>

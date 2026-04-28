@@ -42,7 +42,7 @@ async function HomeCta() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                variant="primary"
+                variant="brand"
                 size="lg"
                 asChild
                 className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
@@ -50,7 +50,7 @@ async function HomeCta() {
                 <Link href="/sell">{t('primaryCta')}</Link>
               </Button>
               <Button
-                variant="brand"
+                variant="secondary"
                 size="lg"
                 asChild
                 className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
