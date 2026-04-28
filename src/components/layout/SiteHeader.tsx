@@ -91,7 +91,7 @@ function SiteHeader() {
   return (
     <header
       className={
-        'sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-200 ease-out ' +
+        'sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-250 ease-out-custom ' +
         (isGlass
           ? 'bg-semantic-bg-elevated/85 backdrop-blur-xl border-b border-semantic-border-subtle shadow-sm'
           : 'bg-transparent border-b border-transparent shadow-none')
