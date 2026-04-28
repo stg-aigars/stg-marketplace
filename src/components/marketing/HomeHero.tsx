@@ -3,8 +3,6 @@ import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui';
 
-const STAT_KEYS = ['catalog', 'lockers'] as const;
-
 async function HomeHero() {
   const t = await getTranslations('home.hero');
 
@@ -45,19 +43,6 @@ async function HomeHero() {
                 <Link href="/sell">{t('sellCta')}</Link>
               </Button>
             </div>
-
-            <dl className="grid grid-cols-2 divide-x divide-semantic-border-strong pt-6 w-full max-w-md">
-              {STAT_KEYS.map((key) => (
-                <div key={key} className="px-6 first:pl-0 last:pr-0">
-                  <dt className="text-2xl sm:text-3xl font-display font-medium text-semantic-text-heading">
-                    {t(`stats.${key}.value`)}
-                  </dt>
-                  <dd className="mt-1 text-xs uppercase tracking-wider text-semantic-text-secondary">
-                    {t(`stats.${key}.label`)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
           </div>
 
           <div className="hidden lg:block relative aspect-[4/3] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">

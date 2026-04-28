@@ -24,14 +24,10 @@
       "headlineLeading": "Every game deserves a ",
       "headlineEmphasis": "Second Turn",
       "headlineTrailing": "",
-      "lede": "A marketplace for pre-loved games in Latvia, Lithuania, and Estonia.",
+      "lede": "Where Baltic board gamers buy and sell their games.",
       "browseCta": "Browse the marketplace",
       "sellCta": "List a game",
-      "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins",
-      "stats": {
-        "catalog": { "value": "170 000+", "label": "BGG catalogue" },
-        "lockers": { "value": "1 300+", "label": "Parcel lockers" }
-      }
+      "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins"
     },
     "recentlyListed": "Recently listed",
     "browseAll": "Browse all",
