@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui';
+import { colors } from '@/styles/tokens';
 
 async function HomeHero() {
   const t = await getTranslations('home.hero');
@@ -12,8 +13,7 @@ async function HomeHero() {
         aria-hidden="true"
         className="absolute inset-0 -z-10"
         style={{
-          backgroundImage:
-            'radial-gradient(circle, #C0BAB0 1px, transparent 1px)',
+          backgroundImage: `radial-gradient(circle, ${colors.semantic.borderStrong} 1px, transparent 1px)`,
           backgroundSize: '32px 32px',
           WebkitMaskImage:
             'radial-gradient(ellipse 60% 50% at center, black 40%, transparent 75%)',

@@ -37,10 +37,9 @@ function SiteHeader() {
   const { count: cartCount } = useCart();
   const { isSeller } = usePendingActions();
 
-  // Scroll-driven chrome: only the homepage hero gets the transparent-at-top treatment.
-  // Every other route reads as scrolled-glass immediately so we don't get
-  // transparent-on-white. Detection is by route here (not by prop) because
-  // SiteHeader is rendered from the locale layout — page.tsx can't pass props in.
+  // Only the homepage gets transparent-at-top chrome (it has a hero).
+  // Detection is by route because this component is rendered from the locale
+  // layout, so page.tsx can't pass props in.
   const transparentAtTop = stripLocalePrefix(pathname) === '/';
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
