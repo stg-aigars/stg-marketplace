@@ -24,7 +24,7 @@
       "headlineLeading": "Every game deserves a ",
       "headlineEmphasis": "Second Turn",
       "headlineTrailing": "",
-      "lede": "A peer-to-peer marketplace for pre-loved games in Latvia, Lithuania, and Estonia.",
+      "lede": "A marketplace for pre-loved games in Latvia, Lithuania, and Estonia.",
       "browseCta": "Browse the marketplace",
       "sellCta": "List a game",
       "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins",
@@ -37,17 +37,17 @@
     "browseAll": "Browse all",
     "features": {
       "eyebrow": "What you can do",
-      "heading": "Built for the way Baltic gamers actually trade.",
+      "heading": "Built for the Baltic board game scene.",
       "tabs": {
         "browse": {
           "label": "Find your game",
-          "title": "A catalog backed by BoardGameGeek.",
-          "body": "Search 170,000+ titles by name, year, or edition. Every listing pulls metadata, photos, and player counts from BGG so you know exactly what you're buying.",
+          "title": "A catalogue backed by BoardGameGeek.",
+          "body": "Find the right game in a catalogue of 170 000+ titles. Every listing pulls images and details straight from BGG, so you know what edition you're getting.",
           "linkText": "Browse the marketplace",
           "items": [
             { "name": "BGG-backed search", "detail": "Find the exact edition you're looking for, in your language." },
-            { "name": "Condition badges", "detail": "Five tiers from Like New to For Parts, visible on every listing." },
-            { "name": "Edition tracking", "detail": "Publisher, language, and edition year recorded for each copy." },
+            { "name": "Condition badges", "detail": "Five tiers from Like New to For Parts, on every listing." },
+            { "name": "Edition tracking", "detail": "Each copy tracks its publisher, language, and edition year." },
             { "name": "Wanted listings", "detail": "Save games you're hunting and get notified when one lands." }
           ]
         },
@@ -59,8 +59,8 @@
           "items": [
             { "name": "Five-tier grading", "detail": "Like New, Very Good, Good, Acceptable, or For Parts." },
             { "name": "Auctions or fixed price", "detail": "Pick the format that fits the game." },
-            { "name": "10% commission", "detail": "Only on the item price; shipping is not commissioned." },
-            { "name": "Wallet payouts", "detail": "Sales credit your platform wallet once orders complete." }
+            { "name": "10% commission", "detail": "Charged on the item only, not on shipping." },
+            { "name": "Wallet payouts", "detail": "Sales land in your wallet when the order completes." }
           ]
         },
         "ship": {
@@ -69,7 +69,7 @@
           "body": "Unisend lockers connect Latvia, Lithuania, and Estonia. Drop off, the buyer collects, tracking is automatic.",
           "linkText": "Read shipping details",
           "items": [
-            { "name": "Cross-border lockers", "detail": "LV, LT, and EE buyers can purchase from any seller." },
+            { "name": "Cross-border lockers", "detail": "Buyers in LV, LT, and EE can order from any seller." },
             { "name": "Buyer-funded shipping", "detail": "Shipping is added at checkout, never bundled into your asking price." },
             { "name": "Automatic tracking", "detail": "Both sides see status updates from drop-off to collection." },
             { "name": "Built-in deadlines", "detail": "Auto-cancel and auto-refund if a parcel doesn't move." }
@@ -77,12 +77,12 @@
         },
         "payments": {
           "label": "Pay safely",
-          "title": "Licensed payments. Real dispute support.",
-          "body": "Payments run through EveryPay, a licensed Estonian payment institution. If something goes wrong, we step in.",
+          "title": "Licensed payments. People handle disputes.",
+          "body": "EveryPay handles payments. They're a licensed Estonian payment institution. If something goes wrong, we step in.",
           "linkText": "Read about payments",
           "items": [
             { "name": "EveryPay processing", "detail": "Bank cards and Baltic bank links in one checkout." },
-            { "name": "Wallet for sellers", "detail": "Sale proceeds credit a platform wallet you control." },
+            { "name": "Wallet for sellers", "detail": "Your earnings land in a wallet you control." },
             { "name": "Dispute resolution", "detail": "If buyer and seller can't agree, we review and decide." },
             { "name": "Order deadlines", "detail": "Acceptance, shipping, and delivery deadlines protect both sides." }
           ]
@@ -95,15 +95,15 @@
       "items": [
         {
           "q": "Where can I buy and sell?",
-          "a": "We currently serve Latvia, Lithuania, and Estonia. Listings are visible to buyers in all three countries."
+          "a": "Latvia, Lithuania, and Estonia. Buyers in all three countries see every listing."
         },
         {
           "q": "How does shipping work?",
-          "a": "Sellers ship through Unisend parcel lockers. Cross-border lockers are supported across the Baltics."
+          "a": "Sellers ship through Unisend parcel lockers. Cross-border drop-offs work across all three Baltic countries."
         },
         {
           "q": "What does the marketplace cost?",
-          "a": "Buyers pay the item price plus shipping. Sellers pay a 10% commission on the item price; shipping is not commissioned."
+          "a": "Buyers pay the item price plus shipping. Sellers pay 10% commission on the item price. Shipping isn't commissioned."
         },
         {
           "q": "How are games graded?",
@@ -111,11 +111,11 @@
         },
         {
           "q": "How do payments work?",
-          "a": "Payments are processed by EveryPay, a licensed Estonian payment institution. Sellers receive their share in a platform wallet once the order completes."
+          "a": "EveryPay handles payments. They're a licensed Estonian payment institution. Once an order completes, your earnings land in your platform wallet."
         },
         {
           "q": "What if something goes wrong?",
-          "a": "Orders include built-in deadlines for acceptance, shipping, and delivery. If a dispute is opened, we step in to help resolve it."
+          "a": "Every order has deadlines for acceptance, shipping, and delivery. If a dispute opens, we review what happened and help resolve it."
         }
       ]
     },
