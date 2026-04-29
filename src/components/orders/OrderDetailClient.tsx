@@ -107,18 +107,26 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
   const items = order.order_items ?? [];
   const hasMultipleItems = items.length > 1;
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/account/orders" label="Your orders" />
+  // Staff renders this component embedded inside its own staff-page chrome
+  // (BackLink, header, side panel) — drop the user-facing chrome here and
+  // suppress action buttons / message form so staff can't accidentally act
+  // as the seller. Read-only by design.
+  const embedded = isStaff;
 
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-          Order {order.order_number}
-        </h1>
-        {statusConfig && (
-          <Badge variant={statusConfig.badgeVariant} dot>{statusConfig.label}</Badge>
-        )}
-      </div>
+  return (
+    <div className={embedded ? '' : 'max-w-4xl mx-auto px-4 sm:px-6 py-6'}>
+      {!embedded && <BackLink href="/account/orders" label="Your orders" />}
+
+      {!embedded && (
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+            Order {order.order_number}
+          </h1>
+          {statusConfig && (
+            <Badge variant={statusConfig.badgeVariant} dot>{statusConfig.label}</Badge>
+          )}
+        </div>
+      )}
 
       {/* Status message */}
       {statusMessage && (
@@ -153,13 +161,15 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
       )}
 
       <div className="space-y-6">
-        {/* Actions (top for prominence) */}
-        <OrderActions
-          order={order}
-          userRole={userRole}
-          sellerPhone={sellerPhone}
-          dispute={order.dispute}
-        />
+        {/* Actions (top for prominence) — staff is read-only */}
+        {!embedded && (
+          <OrderActions
+            order={order}
+            userRole={userRole}
+            sellerPhone={sellerPhone}
+            dispute={order.dispute}
+          />
+        )}
 
         {/* Dispute details */}
         {order.dispute && (
@@ -480,21 +490,25 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               Messages
             </h2>
             <OrderMessageList messages={messages} isStaff={isStaff} />
-            <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-              <OrderMessageForm orderId={order.id} />
-            </div>
+            {!embedded && (
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                <OrderMessageForm orderId={order.id} />
+              </div>
+            )}
           </CardBody>
         </Card>
 
-        <p className="text-sm text-semantic-text-muted">
-          Need help?{' '}
-          <Link
-            href="/contact"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-          >
-            Contact support
-          </Link>
-        </p>
+        {!embedded && (
+          <p className="text-sm text-semantic-text-muted">
+            Need help?{' '}
+            <Link
+              href="/contact"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+            >
+              Contact support
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );
