@@ -47,14 +47,15 @@ const STATUS_BADGE: Record<StaffNoticeRow['status'], { label: string; variant: '
 function ageBadge(createdAtIso: string, nowMs: number): { label: string; variant: 'success' | 'warning' | 'error' } {
   const ageMs = nowMs - new Date(createdAtIso).getTime();
   const ageHours = Math.max(0, ageMs / (1000 * 60 * 60));
-  const formatted = ageHours < 1
-    ? `${Math.round(ageHours * 60)}m ago`
-    : ageHours < 48
-      ? `${Math.floor(ageHours)}h ago`
-      : `${Math.floor(ageHours / 24)}d ago`;
-  if (ageHours < 24) return { label: formatted, variant: 'success' };
-  if (ageHours < 48) return { label: formatted, variant: 'warning' };
-  return { label: formatted, variant: 'error' };
+
+  let label: string;
+  if (ageHours < 1) label = `${Math.round(ageHours * 60)}m ago`;
+  else if (ageHours < 48) label = `${Math.floor(ageHours)}h ago`;
+  else label = `${Math.floor(ageHours / 24)}d ago`;
+
+  if (ageHours < 24) return { label, variant: 'success' };
+  if (ageHours < 48) return { label, variant: 'warning' };
+  return { label, variant: 'error' };
 }
 
 export default async function StaffNoticesPage(props: {

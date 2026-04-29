@@ -8,6 +8,7 @@ import { getCountryName } from '@/lib/country-utils';
 import { SellerStatusForm } from './SellerStatusForm';
 import type { SellerStatus } from './actions';
 import { TraderSignalActions } from './TraderSignalActions';
+import type { DismissRationaleCategory } from './trader-signal-actions';
 import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
@@ -16,14 +17,25 @@ export const metadata: Metadata = {
   title: 'User — Staff',
 };
 
-// Matches the rationale categories enumerated in CLAUDE.md's audit-events
-// register for `seller.trader_signal_dismissed`.
-const DISMISSAL_CATEGORY_LABEL: Record<string, string> = {
+// Short labels for the staff display surface. The dismissal form
+// (TraderSignalActions) uses longer explanatory labels for selection.
+// Type-narrowed against DismissRationaleCategory so a new category in the
+// canonical union forces an update here.
+const DISMISSAL_CATEGORY_LABEL: Record<DismissRationaleCategory, string> = {
   verified_collector: 'Verified collector',
   low_engagement_pattern: 'Low-engagement pattern',
   marketplace_norm: 'Marketplace norm',
   other: 'Other',
 };
+
+// Render-time guard: only allow http(s) URLs in the evidence link.
+// Defense-in-depth against javascript: or data: URLs landing in audit metadata
+// — staff-to-staff trust boundary is low-severity but cheap to enforce here.
+function safeEvidenceUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : null;
+}
 
 interface UserPageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -72,24 +84,27 @@ export default async function StaffUserPage({ params }: UserPageProps) {
       : Promise.resolve({ data: null }),
   ]);
 
-  // Resolve the dismissing-staff actor name (one tiny query, only when there's a row to resolve).
+  // Resolve the dismissing-staff actor name. .maybeSingle() because the actor
+  // profile may have been deleted (offboarded staff) — 0 rows is legitimate
+  // and shouldn't log a PGRST116 error on every page load.
   let dismissalActorName: string | null = null;
   if (dismissalAuditRow?.actor_id) {
     const { data: actor } = await serviceClient
       .from('user_profiles')
       .select('full_name, email')
       .eq('id', dismissalAuditRow.actor_id)
-      .single();
+      .maybeSingle();
     dismissalActorName = actor?.full_name ?? actor?.email ?? null;
   }
 
   type DismissalRationale = {
-    category?: 'verified_collector' | 'low_engagement_pattern' | 'marketplace_norm' | 'other';
+    category?: DismissRationaleCategory;
     justification?: string;
     evidenceUrl?: string | null;
   };
   const dismissalMeta = dismissalAuditRow?.metadata as { rationale?: DismissalRationale } | null;
   const dismissalRationale = dismissalMeta?.rationale ?? null;
+  const safeEvidence = safeEvidenceUrl(dismissalRationale?.evidenceUrl);
 
   const sellerStatus = (profile.seller_status as SellerStatus) ?? 'active';
 
@@ -188,11 +203,11 @@ export default async function StaffUserPage({ params }: UserPageProps) {
                   <span className="font-semibold">Justification:</span> {dismissalRationale.justification}
                 </div>
               )}
-              {dismissalRationale?.evidenceUrl && (
+              {safeEvidence && (
                 <div>
                   <span className="font-semibold">Evidence:</span>{' '}
-                  <a href={dismissalRationale.evidenceUrl} target="_blank" rel="noopener noreferrer" className="link-brand">
-                    {dismissalRationale.evidenceUrl}
+                  <a href={safeEvidence} target="_blank" rel="noopener noreferrer" className="link-brand">
+                    {safeEvidence}
                   </a>
                 </div>
               )}
