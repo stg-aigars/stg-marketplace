@@ -132,7 +132,7 @@ export async function createListing(
   // Fetch seller profile to get country + DAC7 status + seller-terms acceptance
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
-    .select('country, dac7_status, seller_terms_accepted_at, seller_terms_version')
+    .select('country, dac7_status, seller_status, seller_terms_accepted_at, seller_terms_version')
     .eq('id', user.id)
     .single();
 
@@ -142,6 +142,10 @@ export async function createListing(
 
   if (profile.dac7_status === 'blocked') {
     return { error: 'Your account is blocked. Please provide the required tax information in your account settings before creating listings' };
+  }
+
+  if (profile.seller_status === 'suspended') {
+    return { error: 'Your selling privileges are suspended. Contact support if you think this is in error.' };
   }
 
   // Seller Terms gate — mirrors the page-level gate in app/[locale]/sell/page.tsx.
