@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
-import { createOrder } from '@/lib/services/orders';
+import { createOrder, lookupSellerIbanCountry } from '@/lib/services/orders';
 import { debitWallet, getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
@@ -152,6 +152,13 @@ export async function POST(request: Request) {
 
   // Step 1: Create order
   try {
+    // OSS Article 24f corroborating evidence (see migration 086).
+    // requestCountryAtOrder is the buyer's geolocation (this is a buyer-initiated
+    // request); sellerIbanCountryAtOrder is the seller's IBAN-country snapshot,
+    // null if they have no non-rejected withdrawal_request yet.
+    const requestCountryAtOrder = request.headers.get('cf-ipcountry');
+    const sellerIbanCountryAtOrder = await lookupSellerIbanCountry(sellerId);
+
     const order = await createOrder({
       buyerId: user.id,
       sellerId,
@@ -168,6 +175,8 @@ export async function POST(request: Request) {
       terminalCountry,
       buyerPhone,
       cartGroupId,
+      requestCountryAtOrder,
+      sellerIbanCountryAtOrder,
     });
 
     createdOrder = { id: order.id, orderNumber: order.order_number };

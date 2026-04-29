@@ -70,7 +70,8 @@ export async function GET(request: Request) {
     cartGroup,
     paymentReference,
     callbackToken,
-    serviceClient
+    serviceClient,
+    request,
   );
 }
 
@@ -82,7 +83,8 @@ async function handleCartCallback(
   paymentReference: string,
   callbackToken: string | null,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>
+  serviceClient: SupabaseClient<any, any, any>,
+  request: Request,
 ) {
   // Idempotency: check if orders already exist for this group
   const { data: existingOrders } = await serviceClient
@@ -148,14 +150,18 @@ async function handleCartCallback(
     return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
   }
 
-  // Fulfill the cart payment — create orders, debit wallet, send notifications
+  // Fulfill the cart payment — create orders, debit wallet, send notifications.
+  // cf-ipcountry is the buyer's geolocation here (browser redirect from EveryPay);
+  // forensic / fraud-investigation evidence captured per migration 086.
   const paymentMethod = mapEveryPayMethod(paymentStatus.payment_method, paymentStatus.order_reference);
+  const requestCountryAtOrder = request.headers.get('cf-ipcountry');
   const result = await fulfillCartPayment(
     group,
     paymentReference,
     paymentStatus.payment_state,
     serviceClient,
-    paymentMethod
+    paymentMethod,
+    requestCountryAtOrder,
   );
 
   switch (result.outcome) {

@@ -50,6 +50,7 @@ vi.mock('@/lib/services/wallet', () => ({
 }));
 vi.mock('@/lib/services/orders', () => ({
   createOrder: (...args: unknown[]) => mockCreateOrder(...args),
+  lookupSellerIbanCountry: vi.fn().mockResolvedValue(null),
 }));
 vi.mock('@/lib/email/cart-emails', () => ({
   sendCartOrderEmails: (...args: unknown[]) => mockSendCartOrderEmails(...args),

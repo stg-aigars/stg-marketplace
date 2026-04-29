@@ -161,4 +161,16 @@ export interface CreateOrderParams {
   buyerPhone: string;
   orderNumber?: string;
   cartGroupId?: string;
+  /**
+   * Order-time evidence captures. See migration 086 + Article 24f notes.
+   * - `requestCountryAtOrder`: cf-ipcountry of the request that fired the
+   *   order (typically the buyer in callback flows, null in cron flows).
+   *   Forensic / fraud signal — NOT primary OSS evidence.
+   * - `sellerIbanCountryAtOrder`: 2-char prefix of the seller's most-recent
+   *   non-rejected withdrawal_requests.bank_iban. Primary OSS Article 24f
+   *   corroborating evidence paired with the declared `sellerCountry`.
+   * Both nullable — null when the source isn't available at order creation.
+   */
+  requestCountryAtOrder?: string | null;
+  sellerIbanCountryAtOrder?: string | null;
 }
