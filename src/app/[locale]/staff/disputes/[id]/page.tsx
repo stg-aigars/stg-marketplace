@@ -58,7 +58,9 @@ export default async function StaffDisputeDetailPage(
   // Party history — counts of prior orders + disputes per party. Surfaces
   // patterns like "this seller has 4 of 12 orders end in dispute" so the
   // resolution decision can be pattern-aware. Excludes the current dispute's
-  // order from the counts.
+  // order from the counts. Dispute count is all-status (open, escalated,
+  // resolved, withdrawn) — serial complainers and seller-favored
+  // resolutions both inform the pattern.
   const [
     buyerOrdersCount,
     buyerDisputesCount,
