@@ -219,6 +219,7 @@ export async function POST(request: Request) {
       totalAmountCents: grandTotalCents,
       paymentMethod: 'wallet',
     },
+    retentionClass: 'regulatory',
   });
 
   // Send emails (non-blocking)

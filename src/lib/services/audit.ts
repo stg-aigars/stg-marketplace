@@ -5,6 +5,22 @@
 
 import { createServiceClient } from '@/lib/supabase';
 
+/**
+ * Retention class drives the cleanup-audit-log cron's filter.
+ *
+ * - 'operational' — 30-day retention. Use for ephemeral events (shipping
+ *   operational events, moderation steps with a regulatory companion, order
+ *   lifecycle status changes that mirror orders.status).
+ * - 'regulatory' — 10-year retention. Use for any event that may be relevant
+ *   to a regulator inquiry, OSS prior-period adjustment, accountant retention,
+ *   DSA Art. 16/17 defensibility, financial ledger, contract resolution, or
+ *   trader-status (Kamenova C-105/17) defense.
+ *
+ * Canonical register: CLAUDE.md "Audit Events". New event types must be
+ * registered there with their retention class before/with the emission site.
+ */
+export type RetentionClass = 'operational' | 'regulatory';
+
 interface AuditEvent {
   actorId?: string;
   // Operator-precedence trap: '||' binds tighter than '?:'. To derive actorType from a
@@ -15,6 +31,7 @@ interface AuditEvent {
   resourceType: string;
   resourceId?: string;
   metadata?: Record<string, unknown>;
+  retentionClass: RetentionClass;
 }
 
 /**
@@ -34,6 +51,7 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
         resource_type: event.resourceType,
         resource_id: event.resourceId ?? null,
         metadata: event.metadata ?? {},
+        retention_class: event.retentionClass,
       });
 
     if (error) {

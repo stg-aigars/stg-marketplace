@@ -280,6 +280,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         resourceType: 'order',
         resourceId: order.id,
         metadata: { orderNumber: order.order_number, reason },
+        retentionClass: 'regulatory',
       });
 
       // Emails (non-blocking)
@@ -450,6 +451,7 @@ async function escalateStaleShippedOrders(
         resourceType: 'order',
         resourceId: order.id,
         metadata: { orderNumber: order.order_number },
+        retentionClass: 'regulatory',
       });
 
       // Notify both parties + staff

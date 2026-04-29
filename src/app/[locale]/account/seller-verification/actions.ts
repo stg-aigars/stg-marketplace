@@ -83,6 +83,7 @@ export async function submitSellerVerification(response: VerificationResponse): 
       response,
       responded_within_days: respondedWithinDays,
     },
+    retentionClass: 'regulatory',
   });
 
   revalidatePath('/account/seller-verification');

@@ -147,6 +147,7 @@ export async function deleteOrderMessage(
     action: 'order_message.deleted',
     resourceType: 'order_message',
     resourceId: messageId,
+    retentionClass: 'operational',
   });
 
   revalidatePath(`/orders/${orderId}`);

@@ -94,6 +94,7 @@ export async function creditWallet(
     resourceType: 'wallet_transaction',
     resourceId: txn.id,
     metadata: { amountCents, orderId, balanceAfterCents: txn.balance_after_cents },
+    retentionClass: 'regulatory',
   });
 
   return txn;
@@ -134,6 +135,7 @@ export async function refundToWallet(
     resourceType: 'wallet_transaction',
     resourceId: txn.id,
     metadata: { amountCents, orderId, balanceAfterCents: txn.balance_after_cents },
+    retentionClass: 'regulatory',
   });
 
   return txn;
@@ -180,6 +182,7 @@ export async function debitWallet(
     resourceType: 'wallet_transaction',
     resourceId: txn.id,
     metadata: { amountCents, orderId, balanceAfterCents: txn.balance_after_cents },
+    retentionClass: 'regulatory',
   });
 
   return txn;
@@ -286,6 +289,7 @@ export async function createWithdrawalRequest(
     resourceType: 'withdrawal_request',
     resourceId: withdrawal.id,
     metadata: { amountCents, bankIban: bankIban.slice(0, 4) + '****' },
+    retentionClass: 'regulatory',
   });
 
   return withdrawal;

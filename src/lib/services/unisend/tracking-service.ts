@@ -151,6 +151,7 @@ async function processOrderEvents(
           resourceType: 'order',
           resourceId: orderId,
           metadata: { from: 'shipped', to: 'delivered', trigger: 'tracking_parcel_delivered' },
+          retentionClass: 'operational',
         });
 
         const buyerProfile = delivered.buyer_profile as { full_name?: string; email?: string } | null;
@@ -228,6 +229,7 @@ async function processOrderEvents(
           resourceType: 'order',
           resourceId: orderId,
           metadata: { from: 'accepted', to: 'shipped', trigger: 'tracking_parcel_received' },
+          retentionClass: 'operational',
         });
 
         const buyerProfile = shipped.buyer_profile as { full_name?: string; email?: string } | null;
@@ -327,6 +329,7 @@ async function processOrderEvents(
             resourceType: 'order',
             resourceId: orderId,
             metadata: { orderNumber: disputed.order_number, trigger: 'tracking_returning' },
+            retentionClass: 'operational',
           });
 
           const buyerProfile = disputed.buyer_profile as { full_name?: string; email?: string } | null;

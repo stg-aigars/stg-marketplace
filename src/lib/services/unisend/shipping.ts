@@ -349,6 +349,7 @@ export async function cancelOrderShipment(orderId: string): Promise<void> {
       resourceType: 'order',
       resourceId: orderId,
       metadata: { parcelId: order.unisend_parcel_id },
+      retentionClass: 'operational',
     });
   } catch (error) {
     // Parcel already dropped off, Unisend rejected, or DB error. Don't block cancellation flow.

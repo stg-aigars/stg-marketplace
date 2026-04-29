@@ -163,6 +163,7 @@ export async function refundOrder(
       expectedTotal,
       refundStatus,
     },
+    retentionClass: 'regulatory',
   });
 
   return { cardRefunded, walletRefunded };

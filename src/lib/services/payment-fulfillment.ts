@@ -49,6 +49,7 @@ export async function attemptAutoRefund(
       resourceType: 'payment',
       resourceId: paymentReference,
       metadata: { amountCents, reason },
+      retentionClass: 'regulatory',
     });
     return true;
   } catch (refundError) {
@@ -318,6 +319,7 @@ export async function fulfillCartPayment(
       paymentReference,
       totalAmountCents: group.total_amount_cents,
     },
+    retentionClass: 'regulatory',
   });
 
   return { outcome: 'created', orderIds: createdOrders.map((o) => o.id) };

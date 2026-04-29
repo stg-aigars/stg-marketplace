@@ -118,6 +118,7 @@ export async function openDispute(
     resourceType: 'dispute',
     resourceId: dispute.id,
     metadata: { orderId, reason: reason.substring(0, 100), photoCount: photos.length },
+    retentionClass: 'regulatory',
   });
 
   // Email seller (non-blocking)
@@ -196,6 +197,7 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
     resourceType: 'dispute',
     resourceId: dispute.id,
     metadata: { orderId },
+    retentionClass: 'regulatory',
   });
 
   // Email seller (non-blocking)
@@ -286,6 +288,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     resourceType: 'dispute',
     resourceId: dispute.id,
     metadata: { orderId, refundAmountCents: totalRefunded, cardRefunded, walletRefunded },
+    retentionClass: 'regulatory',
   });
 
   // Email both parties (non-blocking)
@@ -415,6 +418,7 @@ export async function escalateDispute(orderId: string, userId: string): Promise<
     resourceType: 'dispute',
     resourceId: dispute.id,
     metadata: { orderId, escalatedBy: userId },
+    retentionClass: 'regulatory',
   });
 
   // Email both parties (non-blocking)
@@ -505,6 +509,7 @@ export async function staffResolveDispute(
       resourceType: 'dispute',
       resourceId: dispute.id,
       metadata: { orderId, decision: 'refund', refundAmountCents: totalRefunded, cardRefunded, walletRefunded, notes },
+      retentionClass: 'regulatory',
     });
 
     sendDisputeResolvedRefund({
@@ -571,6 +576,7 @@ export async function staffResolveDispute(
     resourceType: 'dispute',
     resourceId: dispute.id,
     metadata: { orderId, decision: 'no_refund', notes },
+    retentionClass: 'regulatory',
   });
 
   sendDisputeResolvedNoRefund({

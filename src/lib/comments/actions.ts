@@ -215,6 +215,7 @@ export async function deleteComment(
     action: 'comment.deleted',
     resourceType: 'listing_comment',
     resourceId: commentId,
+    retentionClass: 'operational',
   });
 
   revalidatePath(`/listings/${listingId}`);

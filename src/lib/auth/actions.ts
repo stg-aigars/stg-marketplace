@@ -22,6 +22,7 @@ function logTermsAccepted(actorId: string, source: TermsAcceptanceSource): void 
     resourceType: 'terms',
     resourceId: TERMS_VERSION,
     metadata: { source },
+    retentionClass: 'regulatory',
   });
 }
 
