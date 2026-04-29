@@ -119,9 +119,25 @@ export default async function StaffOssPage(props: PageProps) {
   // and the platform's financial books. Uses canonical (non-superseded)
   // submissions only — amendments are reflected through the chain.
   const targetYear = Number(targetQuarter.quarterStart.slice(0, 4));
-  const yearSubmissions = submissions.filter((s) =>
-    s.quarter_start.startsWith(`${targetYear}-`) && !supersededIds.has(s.id),
+  // Dedicated YTD query — the top-20 submissions feed `submissions` for the
+  // history card and is sized for that view. Once multi-year history
+  // accrues, year-N submissions can scroll out of the top-20 and silently
+  // empty the YTD card. Bound the YTD pull to the target year explicitly.
+  const { data: yearSubmissionsRaw } = await serviceClient
+    .from('oss_submissions')
+    .select('*')
+    .gte('quarter_start', `${targetYear}-01-01`)
+    .lt('quarter_start', `${targetYear + 1}-01-01`);
+  const yearSubmissionsAll = (yearSubmissionsRaw ?? []) as OssSubmissionRow[];
+  const yearSupersededIds = new Set(
+    yearSubmissionsAll.map((s) => s.supersedes_submission_id).filter((x): x is string => !!x),
   );
+  const yearSubmissions = yearSubmissionsAll.filter((s) => !yearSupersededIds.has(s.id));
+
+  // YTD reads HISTORICAL filed amounts straight from oss_submissions —
+  // intentionally not re-projected from current orders, because the audit
+  // artefact is what was declared at filing time, not what the current
+  // orders snapshot would compute.
   const ytdByQuarter: Record<1 | 2 | 3 | 4, OssSubmissionRow | null> = { 1: null, 2: null, 3: null, 4: null };
   for (const s of yearSubmissions) {
     const month = Number(s.quarter_start.slice(5, 7));
