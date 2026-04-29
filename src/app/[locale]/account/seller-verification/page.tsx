@@ -55,11 +55,19 @@ export default async function SellerVerificationPage() {
         <Card>
           <CardBody className="space-y-4">
             <p className="text-sm text-semantic-text-secondary">
-              EU consumer law treats people who sell games <strong>as a business or trade</strong>{' '}
-              differently from people who sell <strong>from their personal collection</strong>.
-              Most of our community sits squarely in the second group — collectors thinning
-              shelves, parents passing on games their kids outgrew, that kind of thing. But we
-              need to confirm with you which side of that line you&apos;re on.
+              Second Turn Games is built specifically for private collectors culling their
+              personal shelves. EU consumer protection rules require us to occasionally check
+              in with high-volume sellers to confirm they aren&apos;t operating as commercial
+              businesses.
+            </p>
+            <p className="text-sm text-semantic-text-secondary">
+              <strong>STG does not currently support commercial accounts.</strong> If you are
+              acting as a registered business or trader, please reply directly to the email we
+              sent you (or contact{' '}
+              <a href="mailto:info@secondturn.games" className="link-brand">
+                info@secondturn.games
+              </a>
+              ) so we can help you wrap up any active orders.
             </p>
             <SellerVerificationForm />
           </CardBody>

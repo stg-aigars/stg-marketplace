@@ -1,11 +1,12 @@
 /**
- * Seller Verification Request — Soft-touch email per lawyer correspondence 2026-04-28.
+ * Seller Verification Request — verbatim copy from lawyer correspondence 2026-04-28.
  * Filed memo: docs/legal_audit/trader-detection-deferral.md
  *
- * Tone: warm, community-vibe. Stiff legal Latvian undermines the C2C-platform
- * defense as much as the underlying logic. Most recipients are collectors
- * thinning shelves; the email frames the question that way and treats the
- * trader case as a normal alternative, not an accusation.
+ * The trader self-declaration option is deliberately NOT in the structured form
+ * (DSA Art. 30 trap: knowing = liability — see deferral memo). Sellers who are
+ * commercial reply to this email instead, and support handles wind-down via the
+ * support inbox. The on-platform structured response is binary:
+ * collector / 'd-rather-not-say.
  */
 
 import { Button, Text } from '@react-email/components';
@@ -16,6 +17,7 @@ interface SellerVerificationRequestProps {
   sellerFirstName: string;
   salesCount: number;
   appUrl: string;
+  // Retained for potential future use; not referenced by the verbatim copy.
   responseDeadlineDays: number;
 }
 
@@ -23,44 +25,39 @@ export function SellerVerificationRequest({
   sellerFirstName,
   salesCount,
   appUrl,
-  responseDeadlineDays,
 }: SellerVerificationRequestProps) {
   return (
-    <EmailLayout preview="A quick question about your selling on Second Turn Games">
-      <Text style={s.greeting}>Hey {sellerFirstName},</Text>
+    <EmailLayout preview="Checking in: please confirm your account status">
+      <Text style={s.greeting}>Hi {sellerFirstName},</Text>
 
       <Text style={s.body}>
-        We&apos;ve noticed you&apos;ve been doing quite a bit of selling on Second Turn Games
-        lately — {salesCount} games over the past year, which is fantastic for the community.
-        Pre-loved games finding new homes is exactly what we&apos;re here for.
+        Wow, you recently crossed {salesCount} sales — you&apos;re officially one of STG&apos;s
+        most active sellers!
       </Text>
 
       <Text style={s.body}>
-        We just need to ask a quick question to keep our paperwork straight. The short
-        version: EU consumer law treats people who sell games <strong>as a business or trade</strong>{' '}
-        differently from people who sell <strong>from their personal collection</strong>.
-        Most of our community sits squarely in the second group — collectors thinning shelves,
-        parents passing on games their kids outgrew, that kind of thing. But we need to confirm
-        with you which side of that line you&apos;re on.
+        Because Second Turn Games is built specifically for private collectors culling their
+        personal shelves, EU consumer protection rules require us to occasionally check in
+        with high-volume sellers to ensure they aren&apos;t operating as commercial businesses.
       </Text>
 
-      <Text style={s.body}>Could you take 30 seconds to let us know?</Text>
+      <Text style={s.body}>Could you take 30 seconds to confirm your account status here?</Text>
 
       <div style={s.ctaSection}>
         <Button style={s.ctaFrost} href={`${appUrl}/account/seller-verification`}>
-          Answer the question
+          Confirm my account status
         </Button>
       </div>
 
       <Text style={s.note}>
-        If you don&apos;t reply within {responseDeadlineDays} days, we&apos;ll reach out again.
-        If you&apos;re a trader, that&apos;s totally fine — we&apos;ll just switch on the trader
-        features in your account so buyers see your business details and get the 14-day
-        return rights they&apos;re entitled to.
+        Note: STG does not currently support commercial accounts. If you are acting as a
+        registered business or trader, please reply directly to this email so we can help
+        you wrap up any active orders.
       </Text>
 
       <Text style={s.body}>
-        Thanks for being part of the community.
+        If you have any questions, just hit reply. Thanks for helping us keep the STG community
+        awesome!
         <br />
         — The Second Turn Games team
       </Text>

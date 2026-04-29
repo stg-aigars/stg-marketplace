@@ -4,30 +4,34 @@ import { useState, useTransition } from 'react';
 import { Alert, Button } from '@/components/ui';
 import { submitSellerVerification, type VerificationResponse } from './actions';
 
-const OPTIONS: { value: VerificationResponse; label: string; description: string }[] = [
+/**
+ * The structured form is BINARY by design (lawyer correspondence 2026-04-28,
+ * Option B). Sellers who are commercial reply to the email instead — adding
+ * an "I'm a trader" radio button to a private-only platform creates a DSA
+ * Art. 30 trap (a click confirms knowledge of commercial activity, which
+ * triggers either offboarding or full Art. 30 compliance). The trader case
+ * is handled via the support inbox, not the structured response.
+ */
+type FormResponse = Extract<VerificationResponse, 'collector' | 'unresponsive'>;
+
+const OPTIONS: { value: FormResponse; label: string; description: string }[] = [
   {
     value: 'collector',
-    label: "I'm a private collector culling my collection",
+    label: 'I confirm I am a private collector selling from my personal collection.',
     description:
-      'Selling games you bought, played, and decided to pass on. Most of our community sits here.',
-  },
-  {
-    value: 'trader',
-    label: "I'm acting as a trader (running a shop, reselling for profit)",
-    description:
-      "We'll switch on the trader features in your account so buyers see your business details and get the 14-day return rights they're entitled to.",
+      'Games you bought, played, and decided to pass on — collectors thinning shelves, parents passing on games their kids outgrew. This keeps everything on your account exactly as it is.',
   },
   {
     value: 'unresponsive',
-    label: "I'd rather not say",
+    label: "I'd rather not answer.",
     description:
-      "We'll record this as 'no answer' and our staff team will follow up if needed.",
+      "We'll record this as 'no answer' and our staff team will follow up directly. If you're a registered business or trader, please reply to the email instead — we don't currently support commercial accounts and want to help you wrap up cleanly.",
   },
 ];
 
 export function SellerVerificationForm() {
   const [isPending, startTransition] = useTransition();
-  const [selected, setSelected] = useState<VerificationResponse | null>(null);
+  const [selected, setSelected] = useState<FormResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 

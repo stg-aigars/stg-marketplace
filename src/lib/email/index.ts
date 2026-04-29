@@ -867,7 +867,7 @@ export async function sendSellerVerificationRequest(params: {
 }): Promise<void> {
   await sendEmail({
     to: params.sellerEmail,
-    subject: 'A quick question about your selling on Second Turn Games',
+    subject: 'Checking in: please confirm your account status',
     react: React.createElement(SellerVerificationRequest, {
       sellerFirstName: params.sellerFirstName,
       salesCount: params.salesCount,
