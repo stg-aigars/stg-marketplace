@@ -19,6 +19,10 @@ import {
   aggregatePriorPeriodRefunds,
   type PriorRefundRow,
 } from '@/lib/oss/prior-period-refunds';
+import {
+  aggregateArticle24fEvidence,
+  type Article24fEvidenceRow,
+} from '@/lib/oss/article-24f-evidence';
 import { OssSubmissionForm } from './OssSubmissionForm';
 
 export const metadata: Metadata = {
@@ -49,7 +53,7 @@ export default async function StaffOssPage(props: PageProps) {
   const [ordersResult, submissionsResult, priorRefundsResult] = await Promise.all([
     serviceClient
       .from('orders')
-      .select('status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents')
+      .select('status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents, seller_iban_country_at_order')
       .gte('created_at', quarterStartIso)
       .lt('created_at', quarterEndExclusive),
     serviceClient
@@ -78,12 +82,14 @@ export default async function StaffOssPage(props: PageProps) {
       .eq('refund_status', 'completed'),
   ]);
 
-  const orders = (ordersResult.data ?? []) as unknown as OrderFinancialData[];
+  const ordersRaw = (ordersResult.data ?? []) as unknown as Array<OrderFinancialData & Article24fEvidenceRow>;
+  const orders = ordersRaw as OrderFinancialData[];
   const submissions = (submissionsResult.data ?? []) as OssSubmissionRow[];
   const priorRefunds = (priorRefundsResult.data ?? []) as PriorRefundRow[];
 
   // Aggregate non-LV (cross-border) VAT for the target quarter.
   const aggregates = aggregateVatByMS(orders, { excludeHomeCountry: HOME_COUNTRY });
+  const evidence = aggregateArticle24fEvidence(ordersRaw);
   const declared: OssDeclaredAmounts = {};
   for (const row of aggregates) {
     if (OSS_MEMBER_STATES.includes(row.ms as OssMemberState)) {
@@ -190,6 +196,64 @@ export default async function StaffOssPage(props: PageProps) {
           </p>
         </CardBody>
       </Card>
+
+      {totalOrderCount > 0 && (
+        <Card>
+          <CardBody>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              Customer-location evidence (Article 24f)
+            </h2>
+            <p className="text-xs text-semantic-text-muted mb-3">
+              Two non-contradictory pieces required per Article 24f of
+              Implementing Regulation (EU) 282/2011. Primary piece:
+              declared <code className="font-mono">seller_country</code>
+              (snapshotted at order creation). Corroborating piece:
+              the seller&apos;s most recent non-rejected withdrawal IBAN
+              country prefix at order time. Single-stranded means no
+              IBAN snapshot was available — common for first-time
+              sellers who haven&apos;t requested a payout yet.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-semantic-text-muted border-b border-semantic-border-subtle">
+                    <th className="pb-2 font-medium">MS</th>
+                    <th className="pb-2 font-medium text-right">Orders</th>
+                    <th className="pb-2 font-medium text-right">Consistent</th>
+                    <th className="pb-2 font-medium text-right">Single-stranded</th>
+                    <th className="pb-2 font-medium text-right">Conflicting</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {OSS_MEMBER_STATES.map((ms) => {
+                    const row = evidence[ms];
+                    if (!row || row.total === 0) return null;
+                    return (
+                      <tr key={ms} className="border-b border-semantic-border-subtle last:border-0">
+                        <td className="py-2 font-medium text-semantic-text-heading">{ms}</td>
+                        <td className="py-2 text-right text-semantic-text-secondary">{row.total}</td>
+                        <td className="py-2 text-right text-semantic-success font-medium">{row.consistent}</td>
+                        <td className="py-2 text-right text-semantic-text-secondary">{row.singleStranded}</td>
+                        <td className="py-2 text-right font-semibold text-semantic-error">{row.conflicting}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {OSS_MEMBER_STATES.some((ms) => (evidence[ms]?.conflicting ?? 0) > 0) && (
+              <Alert variant="warning" className="mt-3">
+                <p>
+                  Conflicting rows present — seller&apos;s declared country
+                  disagrees with the IBAN country at order time. Investigate
+                  in <Link href="/staff/audit?resource_type=order" className="text-semantic-brand sm:hover:underline">audit log</Link> before
+                  including these in the per-MS declaration.
+                </p>
+              </Alert>
+            )}
+          </CardBody>
+        </Card>
+      )}
 
       {adjustmentTotalCount > 0 && (
         <Card>
