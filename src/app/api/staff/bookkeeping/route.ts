@@ -23,8 +23,14 @@ export async function GET(request: Request) {
   const seller = searchParams.get('seller');
   const dateFrom = searchParams.get('date_from');
   const dateTo = searchParams.get('date_to');
+  const scope = searchParams.get('scope'); // 'all' | 'domestic' | 'cross_border'
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const limit = Math.min(100, parseInt(searchParams.get('limit') ?? String(PAGE_SIZE), 10));
+
+  // STG home country — domestic = LV→LV (regular LV VAT return scope);
+  // cross-border = non-LV sellers (OSS scope). Both can be reconciled
+  // against the OSS quarterly aggregation by toggling between modes.
+  const HOME_COUNTRY = 'LV';
 
   const serviceClient = createServiceClient();
 
@@ -52,6 +58,11 @@ export async function GET(request: Request) {
   }
   if (dateTo) {
     query = query.lte('created_at', dateTo);
+  }
+  if (scope === 'domestic') {
+    query = query.eq('seller_country', HOME_COUNTRY);
+  } else if (scope === 'cross_border') {
+    query = query.neq('seller_country', HOME_COUNTRY);
   }
 
   // Seller name filter: resolve seller IDs before applying to queries
@@ -126,7 +137,17 @@ export async function GET(request: Request) {
     shipping_net_cents: number;
     shipping_vat_cents: number;
   }
-  const summaryRows = (summaryRpcResult.data ?? []) as SummaryRow[];
+  const allSummaryRows = (summaryRpcResult.data ?? []) as SummaryRow[];
+
+  // Apply the same scope filter to the per-country aggregates as the orders
+  // query — without this, the country breakdown and summary cards would show
+  // every country regardless of the toggle. The RPC doesn't take a scope
+  // parameter; filter in app code is fine since it returns one row per country.
+  const summaryRows = scope === 'domestic'
+    ? allSummaryRows.filter((row) => row.seller_country?.toUpperCase() === HOME_COUNTRY)
+    : scope === 'cross_border'
+      ? allSummaryRows.filter((row) => row.seller_country?.toUpperCase() !== HOME_COUNTRY)
+      : allSummaryRows;
 
   // Aggregate across countries for overall summary
   const platformRevenue: VatBreakdownCents = { grossCents: 0, netCents: 0, vatCents: 0 };
