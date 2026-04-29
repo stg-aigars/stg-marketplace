@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { Card, CardBody, Badge } from '@/components/ui';
@@ -147,8 +148,10 @@ export default async function Dac7StaffPage() {
                     return (
                       <tr key={seller.id} className="border-b border-semantic-border-subtle last:border-0">
                         <td className="py-2">
-                          <p className="font-medium text-semantic-text-heading">{seller.full_name ?? 'Unknown'}</p>
-                          <p className="text-xs text-semantic-text-muted">{seller.email}</p>
+                          <Link href={`/staff/users/${seller.id}`} className="link-brand">
+                            <p className="font-medium text-semantic-text-heading">{seller.full_name ?? 'Unknown'}</p>
+                            <p className="text-xs text-semantic-text-muted">{seller.email}</p>
+                          </Link>
                         </td>
                         <td className="py-2">
                           <Badge variant={STATUS_VARIANTS[seller.dac7_status]}>
@@ -183,14 +186,18 @@ export default async function Dac7StaffPage() {
               {approachingSellers?.map((seller) => {
                 const stats = statsMap.get(seller.id);
                 return (
-                  <div key={seller.id} className="flex items-center justify-between text-sm py-1">
+                  <Link
+                    key={seller.id}
+                    href={`/staff/users/${seller.id}`}
+                    className="flex items-center justify-between text-sm py-1 hover:bg-semantic-surface-subtle rounded px-2 -mx-2"
+                  >
                     <span className="text-semantic-text-heading">{seller.full_name ?? 'Unknown'}</span>
                     <span className="text-semantic-text-muted">
                       {stats?.completed_transaction_count ?? 0}/{DAC7_REPORT_TRANSACTIONS} tx
                       {' · '}
                       {formatCentsToCurrency(stats?.total_consideration_cents ?? 0)}/{formatCentsToCurrency(DAC7_REPORT_CONSIDERATION_CENTS)}
                     </span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
