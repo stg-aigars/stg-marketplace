@@ -15,6 +15,10 @@ import {
   type OssMemberState,
   type OssDeclaredAmounts,
 } from '@/lib/oss/types';
+import {
+  aggregatePriorPeriodRefunds,
+  type PriorRefundRow,
+} from '@/lib/oss/prior-period-refunds';
 import { OssSubmissionForm } from './OssSubmissionForm';
 
 export const metadata: Metadata = {
@@ -42,7 +46,7 @@ export default async function StaffOssPage(props: PageProps) {
   const quarterStartIso = `${targetQuarter.quarterStart}T00:00:00Z`;
   const quarterEndExclusive = nextDayIso(targetQuarter.quarterEnd);
 
-  const [ordersResult, submissionsResult] = await Promise.all([
+  const [ordersResult, submissionsResult, priorRefundsResult] = await Promise.all([
     serviceClient
       .from('orders')
       .select('status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents')
@@ -54,10 +58,29 @@ export default async function StaffOssPage(props: PageProps) {
       .order('quarter_start', { ascending: false })
       .order('filed_at', { ascending: false })
       .limit(20),
+    // Prior-period refund adjustments: orders created BEFORE this quarter
+    // whose refund settled INSIDE this quarter, on a non-LV (OSS-scope) seller.
+    // OSS allows current-period reduction for prior-period reversals; the audit
+    // trail must show which refunds were treated this way (Article 369k/369i).
+    //
+    // Only `refund_status='completed'` rows count — `partial` and `failed`
+    // are manual-reconciliation states that haven't fully reversed the
+    // original supply, so declaring them as OSS reversals would risk a
+    // restatement once the operational fix lands.
+    serviceClient
+      .from('orders')
+      .select('seller_country, total_amount_cents, refund_amount_cents, commission_vat_cents, shipping_vat_cents')
+      .lt('created_at', quarterStartIso)
+      .gte('refunded_at', quarterStartIso)
+      .lt('refunded_at', quarterEndExclusive)
+      .neq('seller_country', HOME_COUNTRY)
+      .gt('refund_amount_cents', 0)
+      .eq('refund_status', 'completed'),
   ]);
 
   const orders = (ordersResult.data ?? []) as unknown as OrderFinancialData[];
   const submissions = (submissionsResult.data ?? []) as OssSubmissionRow[];
+  const priorRefunds = (priorRefundsResult.data ?? []) as PriorRefundRow[];
 
   // Aggregate non-LV (cross-border) VAT for the target quarter.
   const aggregates = aggregateVatByMS(orders, { excludeHomeCountry: HOME_COUNTRY });
@@ -67,6 +90,11 @@ export default async function StaffOssPage(props: PageProps) {
       declared[row.ms as OssMemberState] = projectToDeclared(row);
     }
   }
+
+  const priorAdjustments = aggregatePriorPeriodRefunds(priorRefunds);
+  const adjustmentTotalNet = OSS_MEMBER_STATES.reduce((sum, ms) => sum + (priorAdjustments[ms]?.netReversalCents ?? 0), 0);
+  const adjustmentTotalVat = OSS_MEMBER_STATES.reduce((sum, ms) => sum + (priorAdjustments[ms]?.vatReversalCents ?? 0), 0);
+  const adjustmentTotalCount = OSS_MEMBER_STATES.reduce((sum, ms) => sum + (priorAdjustments[ms]?.orderCount ?? 0), 0);
 
   const totalNetCents = OSS_MEMBER_STATES.reduce((sum, ms) => sum + (declared[ms]?.net_cents ?? 0), 0);
   const totalVatCents = OSS_MEMBER_STATES.reduce((sum, ms) => sum + (declared[ms]?.vat_cents ?? 0), 0);
@@ -162,6 +190,55 @@ export default async function StaffOssPage(props: PageProps) {
           </p>
         </CardBody>
       </Card>
+
+      {adjustmentTotalCount > 0 && (
+        <Card>
+          <CardBody>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              Prior-period refund adjustments
+            </h2>
+            <p className="text-xs text-semantic-text-muted mb-3">
+              Refunds settled in {targetQuarter.label} on orders created in a
+              prior quarter, by MS. OSS permits current-period reduction for
+              prior-period reversals; the per-MS portal entry can be
+              decreased by the VAT amounts below. Recorded in audit_log via
+              the upstream order.refunded events.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-semantic-text-muted border-b border-semantic-border-subtle">
+                    <th className="pb-2 font-medium">MS</th>
+                    <th className="pb-2 font-medium text-right">Orders</th>
+                    <th className="pb-2 font-medium text-right">Net reversal</th>
+                    <th className="pb-2 font-medium text-right">VAT reversal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {OSS_MEMBER_STATES.map((ms) => {
+                    const row = priorAdjustments[ms];
+                    if (!row || row.orderCount === 0) return null;
+                    return (
+                      <tr key={ms} className="border-b border-semantic-border-subtle last:border-0">
+                        <td className="py-2 font-medium text-semantic-text-heading">{ms}</td>
+                        <td className="py-2 text-right text-semantic-text-secondary">{row.orderCount}</td>
+                        <td className="py-2 text-right text-semantic-text-primary">−{formatCentsToCurrency(row.netReversalCents)}</td>
+                        <td className="py-2 text-right font-semibold text-semantic-error">−{formatCentsToCurrency(row.vatReversalCents)}</td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="bg-semantic-bg-elevated">
+                    <td className="py-2 font-semibold text-semantic-text-heading">Total</td>
+                    <td className="py-2 text-right font-semibold text-semantic-text-heading">{adjustmentTotalCount}</td>
+                    <td className="py-2 text-right font-semibold text-semantic-text-heading">−{formatCentsToCurrency(adjustmentTotalNet)}</td>
+                    <td className="py-2 text-right font-semibold text-semantic-error">−{formatCentsToCurrency(adjustmentTotalVat)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {!currentSubmission && totalVatCents > 0 && (
         <Card>
