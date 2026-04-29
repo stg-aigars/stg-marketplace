@@ -107,17 +107,15 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
   const items = order.order_items ?? [];
   const hasMultipleItems = items.length > 1;
 
-  // Staff renders this component embedded inside its own staff-page chrome
-  // (BackLink, header, side panel) — drop the user-facing chrome here and
-  // suppress action buttons / message form so staff can't accidentally act
-  // as the seller. Read-only by design.
-  const embedded = isStaff;
+  // When isStaff, the staff page provides BackLink + header + side panel
+  // around this component, and OrderActions / OrderMessageForm are suppressed
+  // so staff can't accidentally act as the seller.
 
   return (
-    <div className={embedded ? '' : 'max-w-4xl mx-auto px-4 sm:px-6 py-6'}>
-      {!embedded && <BackLink href="/account/orders" label="Your orders" />}
+    <div className={isStaff ? '' : 'max-w-4xl mx-auto px-4 sm:px-6 py-6'}>
+      {!isStaff && <BackLink href="/account/orders" label="Your orders" />}
 
-      {!embedded && (
+      {!isStaff && (
         <div className="flex items-center gap-3 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
             Order {order.order_number}
@@ -161,8 +159,8 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
       )}
 
       <div className="space-y-6">
-        {/* Actions (top for prominence) — staff is read-only */}
-        {!embedded && (
+        {/* Actions (top for prominence) */}
+        {!isStaff && (
           <OrderActions
             order={order}
             userRole={userRole}
@@ -490,7 +488,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               Messages
             </h2>
             <OrderMessageList messages={messages} isStaff={isStaff} />
-            {!embedded && (
+            {!isStaff && (
               <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
                 <OrderMessageForm orderId={order.id} />
               </div>
@@ -498,7 +496,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           </CardBody>
         </Card>
 
-        {!embedded && (
+        {!isStaff && (
           <p className="text-sm text-semantic-text-muted">
             Need help?{' '}
             <Link
