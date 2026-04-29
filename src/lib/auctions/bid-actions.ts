@@ -9,6 +9,7 @@ import {
   sendAuctionBidReceivedToSeller,
   sendAuctionOutbidNotification,
 } from '@/lib/email';
+import { trackServer } from '@/lib/analytics/track-server';
 import { QUIET_WINDOW_MS } from './types';
 import type { PlaceBidResult } from './types';
 
@@ -112,6 +113,12 @@ export async function placeBid(
       }
     }
   }
+
+  void trackServer('auction_bid_placed', user.id, {
+    listing_id: listingId,
+    amount_cents: amountCents,
+    bid_count: result.bid_count ?? 0,
+  });
 
   revalidatePath(`/listings/${listingId}`);
 

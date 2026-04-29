@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { trackServer } from '@/lib/analytics/track-server';
 import type { WantedListingWithGame, WantedListingWithDetails } from './types';
 import { MAX_NOTE_LENGTH } from './types';
 import type { VersionSource } from '@/lib/listings/types';
@@ -76,6 +77,12 @@ export async function createWantedListing(
     console.error('[Wanted] Failed to create:', error);
     return { error: 'Failed to create wanted listing' };
   }
+
+  void trackServer('wanted_listing_created', user.id, {
+    wanted_listing_id: data.id,
+    bgg_game_id: bggGameId,
+    has_edition_preference: edition !== null,
+  });
 
   revalidatePath('/account/wanted');
   revalidatePath('/wanted');

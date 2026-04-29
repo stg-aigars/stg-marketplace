@@ -11,6 +11,7 @@ import { ListingSection } from '@/components/listings/ListingSection';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
+import { SellerProfileAnalytics } from '@/components/analytics/SellerProfileAnalytics';
 import type { ListingCondition } from '@/lib/listings/types';
 
 interface SellerProfile {
@@ -115,6 +116,7 @@ export default async function SellerProfilePage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <SellerProfileAnalytics sellerId={id} listingCount={activeListings.length} />
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />

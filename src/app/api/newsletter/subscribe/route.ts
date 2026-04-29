@@ -4,6 +4,7 @@ import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, newsletterLimiter } from '@/lib/rate-limit';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
+import { trackServer } from '@/lib/analytics/track-server';
 
 const resend = new Resend(env.resend.apiKey);
 
@@ -54,6 +55,8 @@ export async function POST(request: Request) {
     }
 
     console.log('[Newsletter] Contact created:', data?.id);
+
+    void trackServer('newsletter_subscribed', 'anonymous', {});
 
     // Notify admin of new signup (fire-and-forget)
     const adminEmail = env.app.adminEmail;
