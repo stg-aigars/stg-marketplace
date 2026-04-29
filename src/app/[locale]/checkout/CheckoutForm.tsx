@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { getAdrBodyForBuyer } from '@/lib/legal/adr-bodies';
 import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity, Toggle, Checkbox } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { Trash } from '@phosphor-icons/react/ssr';
@@ -329,6 +330,23 @@ export function CheckoutForm({
             <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
               Payment
             </h2>
+
+            {/* ADR pre-contract disclosure (PTAL 19.¹) — names the buyer's home-country consumer dispute body */}
+            <p className="mb-3 text-xs text-semantic-text-muted">
+              {t.rich('adrNotice', {
+                body: getAdrBodyForBuyer(buyerCountry).name,
+                link: (chunks) => (
+                  <a
+                    className="link-brand"
+                    href={getAdrBodyForBuyer(buyerCountry).url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </p>
 
             {/* Terms & refund consent */}
             <div className="mb-4">

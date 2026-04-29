@@ -151,6 +151,7 @@
   "checkout": {
     "placeOrderButton": "Place order",
     "payButton": "Pay {amount}",
-    "obligationNote": "By clicking, you confirm an order with an obligation to pay."
+    "obligationNote": "By clicking, you confirm an order with an obligation to pay.",
+    "adrNotice": "Out-of-court dispute resolution: <link>{body}</link>."
   }
 }

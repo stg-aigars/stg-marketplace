@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { ADR_BODIES } from '@/lib/legal/adr-bodies';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -441,7 +442,7 @@ export default function TermsPage() {
               <strong>Latvia:</strong> Consumer Rights Protection Centre (Patērētāju tiesību
               aizsardzības centrs &mdash; PTAC), Brīvības 55, Riga, LV-1010 &mdash;{' '}
               <a
-                href="https://www.ptac.gov.lv"
+                href={ADR_BODIES.LV.url}
                 className="link-brand"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -453,7 +454,7 @@ export default function TermsPage() {
               <strong>Lithuania:</strong> State Consumer Rights Protection Authority (Valstybinė
               vartotojų teisių apsaugos tarnyba) &mdash;{' '}
               <a
-                href="https://vvtat.lrv.lt"
+                href={ADR_BODIES.LT.url}
                 className="link-brand"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -465,7 +466,7 @@ export default function TermsPage() {
               <strong>Estonia:</strong> Consumer Protection and Technical Regulatory Authority
               (Tarbijakaitse ja Tehnilise Järelevalve Amet &mdash; TTJA) &mdash;{' '}
               <a
-                href="https://www.ttja.ee"
+                href={ADR_BODIES.EE.url}
                 className="link-brand"
                 target="_blank"
                 rel="noopener noreferrer"
