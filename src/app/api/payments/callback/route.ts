@@ -151,8 +151,6 @@ async function handleCartCallback(
   }
 
   // Fulfill the cart payment — create orders, debit wallet, send notifications.
-  // cf-ipcountry is the buyer's geolocation here (browser redirect from EveryPay);
-  // forensic / fraud-investigation evidence captured per migration 086.
   const paymentMethod = mapEveryPayMethod(paymentStatus.payment_method, paymentStatus.order_reference);
   const requestCountryAtOrder = request.headers.get('cf-ipcountry');
   const result = await fulfillCartPayment(

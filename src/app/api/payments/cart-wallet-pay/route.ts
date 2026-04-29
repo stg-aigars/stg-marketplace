@@ -152,10 +152,6 @@ export async function POST(request: Request) {
 
   // Step 1: Create order
   try {
-    // OSS Article 24f corroborating evidence (see migration 086).
-    // requestCountryAtOrder is the buyer's geolocation (this is a buyer-initiated
-    // request); sellerIbanCountryAtOrder is the seller's IBAN-country snapshot,
-    // null if they have no non-rejected withdrawal_request yet.
     const requestCountryAtOrder = request.headers.get('cf-ipcountry');
     const sellerIbanCountryAtOrder = await lookupSellerIbanCountry(sellerId);
 

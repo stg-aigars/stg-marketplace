@@ -196,8 +196,6 @@ export async function fulfillCartPayment(
         (sum, l) => sum + (walletAllocation[l.id] ?? 0), 0
       );
 
-      // OSS Article 24f corroborating evidence — null if the seller has no
-      // non-rejected withdrawal_request yet (typical for first-time sellers).
       const sellerIbanCountryAtOrder = await lookupSellerIbanCountry(sellerId);
 
       const order = await createOrder({
