@@ -8,6 +8,7 @@ import { getCountryName } from '@/lib/country-utils';
 import { SellerStatusForm } from './SellerStatusForm';
 import type { SellerStatus } from './actions';
 import { TraderSignalActions } from './TraderSignalActions';
+import type { DismissRationaleCategory } from './trader-signal-actions';
 import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
@@ -15,6 +16,26 @@ import { formatDateTime } from '@/lib/date-utils';
 export const metadata: Metadata = {
   title: 'User — Staff',
 };
+
+// Short labels for the staff display surface. The dismissal form
+// (TraderSignalActions) uses longer explanatory labels for selection.
+// Type-narrowed against DismissRationaleCategory so a new category in the
+// canonical union forces an update here.
+const DISMISSAL_CATEGORY_LABEL: Record<DismissRationaleCategory, string> = {
+  verified_collector: 'Verified collector',
+  low_engagement_pattern: 'Low-engagement pattern',
+  marketplace_norm: 'Marketplace norm',
+  other: 'Other',
+};
+
+// Render-time guard: only allow http(s) URLs in the evidence link.
+// Defense-in-depth against javascript: or data: URLs landing in audit metadata
+// — staff-to-staff trust boundary is low-severity but cheap to enforce here.
+function safeEvidenceUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : null;
+}
 
 interface UserPageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -29,7 +50,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
   const { data: profile } = await serviceClient
     .from('user_profiles')
-    .select('id, full_name, email, country, created_at, is_staff, dac7_status, seller_status, completed_sales_12mo_count, completed_sales_12mo_revenue_cents, trader_signal_first_crossed_at, trader_signal_threshold_version, verification_requested_at, verification_response, verification_responded_at')
+    .select('id, full_name, email, country, created_at, is_staff, dac7_status, seller_status, completed_sales_12mo_count, completed_sales_12mo_revenue_cents, trader_signal_first_crossed_at, trader_signal_threshold_version, verification_requested_at, verification_response, verification_responded_at, trader_signal_dismissed_at, trader_signal_dismissed_threshold_version')
     .eq('id', id)
     .single();
 
@@ -38,11 +59,52 @@ export default async function StaffUserPage({ params }: UserPageProps) {
   }
 
   // In-flight + active listing counts (used by the suspension UI's warning Alert)
-  const [{ count: activeCount }, { count: reservedCount }, { count: auctionEndedCount }] = await Promise.all([
+  // + the most recent dismissal audit row (only if the seller has been dismissed).
+  // The audit lookup is cheap (indexed on resource_type+resource_id) and lets us
+  // surface the rationale inline instead of forcing staff to grep audit_log.
+  const [
+    { count: activeCount },
+    { count: reservedCount },
+    { count: auctionEndedCount },
+    { data: dismissalAuditRow },
+  ] = await Promise.all([
     serviceClient.from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', id).eq('status', 'active'),
     serviceClient.from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', id).eq('status', 'reserved'),
     serviceClient.from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', id).eq('status', 'auction_ended'),
+    profile.trader_signal_dismissed_at
+      ? serviceClient
+          .from('audit_log')
+          .select('actor_id, created_at, metadata')
+          .eq('action', 'seller.trader_signal_dismissed')
+          .eq('resource_type', 'user')
+          .eq('resource_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  // Resolve the dismissing-staff actor name. .maybeSingle() because the actor
+  // profile may have been deleted (offboarded staff) — 0 rows is legitimate
+  // and shouldn't log a PGRST116 error on every page load.
+  let dismissalActorName: string | null = null;
+  if (dismissalAuditRow?.actor_id) {
+    const { data: actor } = await serviceClient
+      .from('user_profiles')
+      .select('full_name, email')
+      .eq('id', dismissalAuditRow.actor_id)
+      .maybeSingle();
+    dismissalActorName = actor?.full_name ?? actor?.email ?? null;
+  }
+
+  type DismissalRationale = {
+    category?: DismissRationaleCategory;
+    justification?: string;
+    evidenceUrl?: string | null;
+  };
+  const dismissalMeta = dismissalAuditRow?.metadata as { rationale?: DismissalRationale } | null;
+  const dismissalRationale = dismissalMeta?.rationale ?? null;
+  const safeEvidence = safeEvidenceUrl(dismissalRationale?.evidenceUrl);
 
   const sellerStatus = (profile.seller_status as SellerStatus) ?? 'active';
 
@@ -122,6 +184,40 @@ export default async function StaffUserPage({ params }: UserPageProps) {
             Advisory at launch — counters surface here but never auto-mutate seller_status. See{' '}
             <code>docs/legal_audit/trader-detection-deferral.md</code> for the lawyer&apos;s framework.
           </p>
+          {profile.trader_signal_dismissed_at && (
+            <div className="rounded border border-semantic-border-subtle bg-semantic-bg-elevated p-3 text-sm space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="default">Dismissed</Badge>
+                <span className="text-xs text-semantic-text-muted">
+                  {formatDateTime(profile.trader_signal_dismissed_at)}
+                  {dismissalActorName ? ` · by ${dismissalActorName}` : ''}
+                </span>
+              </div>
+              {dismissalRationale?.category && (
+                <div>
+                  <span className="font-semibold">Category:</span> {DISMISSAL_CATEGORY_LABEL[dismissalRationale.category] ?? dismissalRationale.category}
+                </div>
+              )}
+              {dismissalRationale?.justification && (
+                <div className="whitespace-pre-wrap break-words">
+                  <span className="font-semibold">Justification:</span> {dismissalRationale.justification}
+                </div>
+              )}
+              {safeEvidence && (
+                <div>
+                  <span className="font-semibold">Evidence:</span>{' '}
+                  <a href={safeEvidence} target="_blank" rel="noopener noreferrer" className="link-brand">
+                    {safeEvidence}
+                  </a>
+                </div>
+              )}
+              {profile.trader_signal_dismissed_threshold_version && profile.trader_signal_dismissed_threshold_version !== TRADER_THRESHOLDS.version && (
+                <div className="text-xs text-semantic-warning">
+                  Dismissed at threshold version <code>{profile.trader_signal_dismissed_threshold_version}</code>; current is <code>{TRADER_THRESHOLDS.version}</code>. The cron will treat this seller as a fresh review candidate.
+                </div>
+              )}
+            </div>
+          )}
           <TraderSignalActions
             userId={profile.id}
             signalCrossedAt={profile.trader_signal_first_crossed_at ?? null}
