@@ -10,7 +10,7 @@
  * Returns outcome objects — callers map outcomes to redirects (callback) or logs (cron).
  */
 
-import { createOrder } from '@/lib/services/orders';
+import { createOrder, lookupSellerIbanCountry } from '@/lib/services/orders';
 import { debitWallet, creditWallet, refundToWallet } from '@/lib/services/wallet';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
@@ -71,7 +71,13 @@ export async function fulfillCartPayment(
   paymentState: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   serviceClient: SupabaseClient<any, any, any>,
-  paymentMethod: PaymentMethod = 'card'
+  paymentMethod: PaymentMethod = 'card',
+  /**
+   * cf-ipcountry header from the request that triggered fulfillment. Null when
+   * called from a cron (no request context). Captured on each order created in
+   * this group for fraud-investigation forensics; see migration 086.
+   */
+  requestCountryAtOrder: string | null = null,
 ): Promise<CartFulfillmentOutcome> {
   // Idempotency: check if orders already exist for this group
   const { data: existingOrders } = await serviceClient
@@ -190,6 +196,8 @@ export async function fulfillCartPayment(
         (sum, l) => sum + (walletAllocation[l.id] ?? 0), 0
       );
 
+      const sellerIbanCountryAtOrder = await lookupSellerIbanCountry(sellerId);
+
       const order = await createOrder({
         buyerId: group.buyer_id,
         sellerId,
@@ -208,6 +216,8 @@ export async function fulfillCartPayment(
         terminalCountry: group.terminal_country,
         buyerPhone: group.buyer_phone,
         cartGroupId: group.id,
+        requestCountryAtOrder,
+        sellerIbanCountryAtOrder,
         // Reuse cart group order number when there's only one seller (matches EveryPay reference)
         orderNumber: sellerGroups.size === 1 ? group.order_number : undefined,
       });

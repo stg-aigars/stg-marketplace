@@ -13,6 +13,39 @@ import { trackServer } from '@/lib/analytics/track-server';
 import type { CreateOrderParams, OrderRow, OrderWithDetails } from '@/lib/orders/types';
 
 /**
+ * Look up the seller's IBAN country prefix from their most recent non-rejected
+ * withdrawal_request, for OSS Article 24f evidence at order time.
+ *
+ * Returns null when:
+ * - the seller has no withdrawal_requests yet (most first-time sellers)
+ * - the lookup fails for any reason (defensive: IBAN is corroborating evidence,
+ *   not a gate — losing it for one order is fine, failing payment fulfillment
+ *   for it is not)
+ *
+ * Tiebreaker if multiple non-rejected withdrawal_requests exist: most recent
+ * by created_at (DESC). Supported by `idx_withdrawal_requests_user_created`
+ * (added in migration 086).
+ */
+export async function lookupSellerIbanCountry(sellerId: string): Promise<string | null> {
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from('withdrawal_requests')
+      .select('bank_iban')
+      .eq('user_id', sellerId)
+      .neq('status', 'rejected')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<{ bank_iban: string }>();
+    if (!data?.bank_iban || data.bank_iban.length < 2) return null;
+    return data.bank_iban.slice(0, 2).toUpperCase();
+  } catch (err) {
+    console.error('[Orders] IBAN-country lookup failed (returning null):', err);
+    return null;
+  }
+}
+
+/**
  * Generate a unique order number: STG-YYYYMMDD-XXXX
  */
 export function generateOrderNumber(): string {
@@ -71,6 +104,8 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
         items_total_cents: pricing.itemsTotalCents,
         shipping_cost_cents: pricing.shippingCostCents,
         seller_country: params.sellerCountry,
+        request_country_at_order: params.requestCountryAtOrder ?? null,
+        seller_iban_country_at_order: params.sellerIbanCountryAtOrder ?? null,
         everypay_payment_reference: params.paymentReference,
         everypay_payment_state: params.paymentState,
         payment_method: params.paymentMethod,

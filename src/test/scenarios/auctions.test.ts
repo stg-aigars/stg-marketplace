@@ -46,6 +46,7 @@ const mockLogAuditEvent = vi.fn();
 
 vi.mock('@/lib/services/orders', () => ({
   createOrder: (...args: unknown[]) => mockCreateOrder(...args),
+  lookupSellerIbanCountry: vi.fn().mockResolvedValue(null),
 }));
 vi.mock('@/lib/services/wallet', () => ({
   debitWallet: (...args: unknown[]) => mockDebitWallet(...args),
