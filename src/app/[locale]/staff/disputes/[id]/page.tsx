@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge, BackLink } from '@/components/ui';
+import { Card, CardBody, Badge, BackLink, SectionLink } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
@@ -59,11 +59,17 @@ export default async function StaffDisputeDetailPage(
     <div className="max-w-4xl">
       <BackLink href="/staff/disputes" label="All disputes" />
 
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           Dispute — {typedDispute.orders?.order_number ?? '—'}
         </h1>
         <Badge variant={status.badgeVariant}>{status.label}</Badge>
+        <SectionLink
+          href={`/staff/audit?resource_type=dispute&resource_id=${typedDispute.id}`}
+          className="ml-auto"
+        >
+          Audit log
+        </SectionLink>
       </div>
 
       <div className="space-y-6">

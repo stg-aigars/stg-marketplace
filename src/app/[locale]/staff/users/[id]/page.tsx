@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, SectionLink } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryName } from '@/lib/country-utils';
 import { SellerStatusForm } from './SellerStatusForm';
@@ -116,14 +116,19 @@ export default async function StaffUserPage({ params }: UserPageProps) {
         </Link>
       </div>
 
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-          {profile.full_name ?? 'Unnamed user'}
-        </h1>
-        <p className="text-sm text-semantic-text-muted mt-1">
-          {profile.email} · {getCountryName(profile.country) || profile.country || '—'} · joined{' '}
-          {profile.created_at ? formatDate(profile.created_at) : 'unknown'}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+            {profile.full_name ?? 'Unnamed user'}
+          </h1>
+          <p className="text-sm text-semantic-text-muted mt-1">
+            {profile.email} · {getCountryName(profile.country) || profile.country || '—'} · joined{' '}
+            {profile.created_at ? formatDate(profile.created_at) : 'unknown'}
+          </p>
+        </div>
+        <SectionLink href={`/staff/audit?resource_type=user&resource_id=${profile.id}`}>
+          Audit log
+        </SectionLink>
       </div>
 
       <Card>

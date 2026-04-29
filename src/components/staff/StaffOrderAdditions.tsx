@@ -7,7 +7,7 @@ import {
   User,
   Warning,
 } from '@phosphor-icons/react/ssr';
-import { Alert, Card, CardBody, ConditionBadge } from '@/components/ui';
+import { Alert, Card, CardBody, ConditionBadge, SectionLink } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
@@ -207,10 +207,15 @@ export function StaffOrderAdditions({
           refund amount are already in the seller-view price breakdown. */}
       <Card>
         <CardBody>
-          <h3 className="text-base font-semibold text-semantic-text-heading mb-3">
-            <CreditCard size={16} className="inline mr-1.5 -mt-0.5" />
-            Payment internals
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-semantic-text-heading">
+              <CreditCard size={16} className="inline mr-1.5 -mt-0.5" />
+              Payment internals
+            </h3>
+            <SectionLink href={`/staff/audit?resource_type=order&resource_id=${order.id}`}>
+              Audit log
+            </SectionLink>
+          </div>
           <dl className="space-y-2 text-sm">
             {order.everypay_payment_reference && (
               <div>
