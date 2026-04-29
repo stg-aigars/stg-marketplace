@@ -3,30 +3,36 @@
  * Used by the Staff Dashboard Bookkeeping view.
  *
  * All monetary values are INTEGER CENTS — format only at display time.
+ *
+ * Foundational primitives (EXCLUDED_FROM_TOTALS, OrderFinancialData,
+ * VatBreakdownCents, resolveVatBreakdownCents) live in @/lib/vat-aggregation
+ * — the canonical home for all VAT aggregation. This file re-exports them
+ * for backward compatibility with existing importers.
  */
 
-import { DEFAULT_VAT_RATE, getVatRate } from '@/lib/services/pricing';
+import { getVatRate } from '@/lib/services/pricing';
+import {
+  EXCLUDED_FROM_TOTALS,
+  resolveVatBreakdownCents,
+  aggregateVatByMS,
+  type OrderFinancialData,
+  type VatBreakdownCents,
+} from '@/lib/vat-aggregation';
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/** Order statuses to exclude from financial totals (but still show in table).
- *  Must match the WHERE clause in get_bookkeeping_summary RPC. */
-export const EXCLUDED_FROM_TOTALS = ['cancelled', 'refunded'];
+// Re-export foundational primitives for backward compatibility — existing
+// callers import these from `@/lib/bookkeeping-utils`.
+export {
+  EXCLUDED_FROM_TOTALS,
+  resolveVatBreakdownCents,
+  aggregateVatByMS,
+};
+export type { OrderFinancialData, VatBreakdownCents };
 
 // ============================================================================
 // INTERFACES
 // ============================================================================
 
-/** VAT breakdown in cents */
-export interface VatBreakdownCents {
-  grossCents: number;
-  netCents: number;
-  vatCents: number;
-}
-
-/** Order data needed for bookkeeping calculations */
+/** Order data needed for bookkeeping calculations (display-rich superset). */
 export interface OrderBookkeepingData {
   id: string;
   order_number: string;
@@ -44,13 +50,6 @@ export interface OrderBookkeepingData {
   shipping_net_cents: number | null;
   shipping_vat_cents: number | null;
 }
-
-/** Subset of order data needed for financial aggregation (no display fields) */
-export type OrderFinancialData = Pick<OrderBookkeepingData,
-  'status' | 'seller_country' | 'items_total_cents' | 'shipping_cost_cents' |
-  'platform_commission_cents' | 'total_amount_cents' |
-  'commission_net_cents' | 'commission_vat_cents' | 'shipping_net_cents' | 'shipping_vat_cents'
->;
 
 /** Aggregated bookkeeping summary */
 export interface BookkeepingSummary {
@@ -157,32 +156,6 @@ export const DATE_RANGE_PRESETS: DateRangePreset[] = [
 ];
 
 // ============================================================================
-// VAT CALCULATION
-// ============================================================================
-
-/**
- * Resolve VAT breakdown from stored per-order columns, falling back to
- * rate-based calculation for legacy orders.
- */
-export function resolveVatBreakdownCents(
-  grossCents: number,
-  storedNetCents: number | null,
-  storedVatCents: number | null,
-  vatRate: number = DEFAULT_VAT_RATE,
-): VatBreakdownCents {
-  if (storedNetCents != null) {
-    return {
-      grossCents,
-      netCents: storedNetCents,
-      vatCents: storedVatCents ?? 0,
-    };
-  }
-  // Fallback: extract VAT from gross using rate
-  const netCents = Math.round(grossCents / (1 + vatRate));
-  return { grossCents, netCents, vatCents: grossCents - netCents };
-}
-
-// ============================================================================
 // AGGREGATION
 // ============================================================================
 
@@ -231,40 +204,21 @@ export function calculateBookkeepingSummary(orders: OrderFinancialData[]): Bookk
 
 /**
  * Calculate per-country VAT breakdown for filing.
+ *
+ * Thin projection over `aggregateVatByMS` (in `@/lib/vat-aggregation`) — both
+ * Bookkeeping (this) and the OSS tab share the same underlying aggregation
+ * to prevent drift on rounding/VAT-split nuances. See `vat-aggregation.ts`
+ * for the integer-cents rounding contract.
  */
 export function calculateCountryVatBreakdown(orders: OrderFinancialData[]): CountryVatBreakdown[] {
-  const validOrders = orders.filter((o) => !EXCLUDED_FROM_TOTALS.includes(o.status));
-  const byCountry = new Map<string, CountryVatBreakdown>();
-
-  for (const order of validOrders) {
-    const country = order.seller_country?.toUpperCase() || 'UNKNOWN';
-    const vatRate = getVatRate(order.seller_country);
-
-    const existing = byCountry.get(country) ?? {
-      country,
-      vatRate,
-      commissionVatCents: 0,
-      shippingVatCents: 0,
-      totalVatCents: 0,
-      orderCount: 0,
-    };
-
-    const commission = resolveVatBreakdownCents(
-      order.platform_commission_cents, order.commission_net_cents, order.commission_vat_cents, vatRate,
-    );
-    const shipping = resolveVatBreakdownCents(
-      order.shipping_cost_cents, order.shipping_net_cents, order.shipping_vat_cents, vatRate,
-    );
-
-    existing.commissionVatCents += commission.vatCents;
-    existing.shippingVatCents += shipping.vatCents;
-    existing.totalVatCents += commission.vatCents + shipping.vatCents;
-    existing.orderCount += 1;
-
-    byCountry.set(country, existing);
-  }
-
-  return Array.from(byCountry.values()).sort((a, b) => a.country.localeCompare(b.country));
+  return aggregateVatByMS(orders).map((row) => ({
+    country: row.ms,
+    vatRate: row.rate,
+    commissionVatCents: row.commissionVatCents,
+    shippingVatCents: row.shippingVatCents,
+    totalVatCents: row.commissionVatCents + row.shippingVatCents,
+    orderCount: row.orderCount,
+  }));
 }
 
 // ============================================================================
