@@ -4,7 +4,12 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge, NavTabs, EmptyState, Input, Button } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
-import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
+import {
+  ORDER_STATUS_CONFIG,
+  SELLER_RESPONSE_REMINDER_HOURS,
+  SHIPPING_REMINDER_DAYS,
+  DELIVERY_REMINDER_DAYS,
+} from '@/lib/orders/constants';
 import type { OrderStatus } from '@/lib/orders/types';
 import { getOrderGameSummary } from '@/lib/orders/utils';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
@@ -32,14 +37,11 @@ interface StaffOrderRow {
   seller_profile: { full_name: string | null } | null;
 }
 
-// Soft-reminder thresholds align with the deadline-enforcement cron — the
-// "Stuck" tab surfaces orders past their reminder threshold so staff can
-// intervene before auto-action hits (auto-decline at 48h pending_seller,
-// auto-cancel at 5d accepted, auto-escalate at 21d shipped). Exact age
-// thresholds documented in CLAUDE.md "Order Deadlines".
-const STUCK_PENDING_SELLER_HOURS = 24;
-const STUCK_ACCEPTED_DAYS = 3;
-const STUCK_SHIPPED_DAYS = 14;
+// Stuck-tab thresholds reuse the soft-reminder thresholds the cron
+// already uses — keeps the UI definition of "stuck" in lockstep with
+// the deadline-enforcement cron's reminder firing. Hard auto-action
+// thresholds (48h decline / 5d cancel / 21d escalate) are documented
+// in CLAUDE.md "Order Deadlines".
 
 /** Strip characters that have meaning in PostgREST `.or()` filters or
  *  PostgreSQL LIKE wildcards. The remaining set covers order numbers
@@ -78,9 +80,9 @@ export default async function StaffOrdersPage(
     .limit(100);
 
   if (isStuck) {
-    const t24h = new Date(requestTimeMs - STUCK_PENDING_SELLER_HOURS * 60 * 60 * 1000).toISOString();
-    const t3d = new Date(requestTimeMs - STUCK_ACCEPTED_DAYS * 24 * 60 * 60 * 1000).toISOString();
-    const t14d = new Date(requestTimeMs - STUCK_SHIPPED_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const t24h = new Date(requestTimeMs - SELLER_RESPONSE_REMINDER_HOURS * 60 * 60 * 1000).toISOString();
+    const t3d = new Date(requestTimeMs - SHIPPING_REMINDER_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const t14d = new Date(requestTimeMs - DELIVERY_REMINDER_DAYS * 24 * 60 * 60 * 1000).toISOString();
     query = query.or(
       `and(status.eq.pending_seller,created_at.lt.${t24h}),` +
       `and(status.eq.accepted,accepted_at.lt.${t3d}),` +
@@ -147,7 +149,7 @@ export default async function StaffOrdersPage(
 
       {isStuck && (
         <p className="text-xs text-semantic-text-muted mb-4">
-          Orders past their soft-reminder deadline: pending_seller older than {STUCK_PENDING_SELLER_HOURS}h, accepted older than {STUCK_ACCEPTED_DAYS}d, shipped older than {STUCK_SHIPPED_DAYS}d. The deadline-enforcement cron will auto-decline / auto-cancel / auto-escalate the harder thresholds; intervene before then if needed.
+          Orders past their soft-reminder deadline: pending_seller older than {SELLER_RESPONSE_REMINDER_HOURS}h, accepted older than {SHIPPING_REMINDER_DAYS}d, shipped older than {DELIVERY_REMINDER_DAYS}d. The deadline-enforcement cron will auto-decline / auto-cancel / auto-escalate the harder thresholds; intervene before then if needed.
         </p>
       )}
 
