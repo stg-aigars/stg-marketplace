@@ -434,7 +434,7 @@ async function escalateStaleShippedOrders(
       if (!updated) continue;
 
       // Create dispute
-      await supabase
+      const { data: insertedDispute } = await supabase
         .from('disputes')
         .insert({
           order_id: order.id,
@@ -443,7 +443,27 @@ async function escalateStaleShippedOrders(
           reason: 'Auto-escalated: no delivery confirmation after 21 days',
           photos: [],
           escalated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      // Regulatory companion to the operational order.delivery_escalated signal — every
+      // dispute (manual openDispute or cron auto-escalation) needs a dispute.opened
+      // audit row so the contract-resolution chain is reconstructable years later.
+      if (insertedDispute) {
+        void logAuditEvent({
+          actorType: 'cron',
+          action: 'dispute.opened',
+          resourceType: 'dispute',
+          resourceId: insertedDispute.id,
+          metadata: {
+            orderId: order.id,
+            reason: 'auto_escalated_no_delivery_21d',
+            trigger: 'enforce_deadlines',
+          },
+          retentionClass: 'regulatory',
         });
+      }
 
       void logAuditEvent({
         actorType: 'cron',

@@ -314,14 +314,36 @@ async function processOrderEvents(
           statusChanged = true;
           newStatus = 'disputed';
 
-          await supabase.from('disputes').insert({
-            order_id: orderId,
-            buyer_id: disputed.buyer_id,
-            seller_id: disputed.seller_id,
-            reason: 'Auto-escalated: parcel not collected, returning to sender',
-            photos: [],
-            escalated_at: new Date().toISOString(),
-          });
+          const { data: insertedDispute } = await supabase
+            .from('disputes')
+            .insert({
+              order_id: orderId,
+              buyer_id: disputed.buyer_id,
+              seller_id: disputed.seller_id,
+              reason: 'Auto-escalated: parcel not collected, returning to sender',
+              photos: [],
+              escalated_at: new Date().toISOString(),
+            })
+            .select('id')
+            .single();
+
+          // Regulatory companion to the operational order.parcel_returning signal — every
+          // dispute (manual openDispute or cron auto-escalation) needs a dispute.opened
+          // audit row so the contract-resolution chain is reconstructable years later.
+          if (insertedDispute) {
+            void logAuditEvent({
+              actorType: 'cron',
+              action: 'dispute.opened',
+              resourceType: 'dispute',
+              resourceId: insertedDispute.id,
+              metadata: {
+                orderId,
+                reason: 'auto_escalated_parcel_returning',
+                trigger: 'tracking_returning',
+              },
+              retentionClass: 'regulatory',
+            });
+          }
 
           void logAuditEvent({
             actorType: 'cron',
