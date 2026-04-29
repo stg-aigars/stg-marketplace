@@ -1,35 +1,34 @@
 # Trader-detection deferral — lawyer correspondence (2026-04-28 + follow-up)
 
-> **Provenance.** This file captures the lawyer's 2026-04-28 framework for the
-> trader-volume verification workflow plus the follow-up confirmation
-> (also 2026-04-28) that resolved the "trader option in the form" question
-> raised during Phase 7 implementation. Both rounds are now on file. The
-> verbatim email copy in §(b) is the lawyer-supplied text we ship in
-> production; do not paraphrase or summarize it without sending the proposed
-> change back for confirmation.
+> **Provenance.** Two rounds of lawyer correspondence on 2026-04-28 are
+> captured here: the original framework for the trader-volume verification
+> workflow, and the follow-up that fixed the "trader option in the form"
+> question we ran into during Phase 7 implementation. Both are on file. The
+> verbatim email copy in §(b) is the lawyer's actual wording — don't
+> paraphrase it without checking with them first.
 
 ## Background
 
-Earlier review at `docs/legal_audit/lawyer-response.md` Item 10 deferred the
-DSA Art. 30 trader pathway and confirmed the "prohibit + enforce" framing
-holds for launch. The 2026-04-28 follow-up adds two requirements to the
-advisory posture: mandatory dismissal logging and a soft-touch verification
-workflow. The follow-up-to-the-follow-up (after the engineering team flagged
-that the synthesized email overpromised non-existent "trader features")
-selected **Option B — binary form** as the implementation, with the trader
-case routed through the support inbox rather than a structured response.
+`docs/legal_audit/lawyer-response.md` Item 10 deferred the DSA Art. 30 trader
+pathway and confirmed the "prohibit + enforce" framing for launch. The
+2026-04-28 follow-up added two requirements: mandatory dismissal logging
+and a soft-touch verification workflow.
+
+A second follow-up landed after we noticed the synthesized email was
+promising "trader features" the platform doesn't have. The lawyer's answer:
+**Option B — binary form**, with the trader case routed through the support
+inbox rather than a structured radio button.
 
 ## Lawyer's framework — four required elements
 
 ### (a) Confirmation: advisory + reactive enforcement is acceptable for launch
 
-Confirmed. The advisory posture is fine for launch. Counters surface to staff;
-seller_status is never auto-mutated.
+Confirmed. Counters surface to staff and `seller_status` is never auto-mutated;
+suspension stays a human decision.
 
-The framing in `lawyer-response.md` Item 10 ("prohibit + enforce stays") is
-preserved. Reactive enforcement via the Phase 5 DSA notices flow + Phase 6
-staff suspension covers the obligation; counters in the staff dashboard
-supplement the human decision rather than replacing it.
+The "prohibit + enforce" framing from `lawyer-response.md` Item 10 still holds.
+The Phase 5 DSA notices flow + Phase 6 staff suspension cover the enforcement
+side; counters supplement the human decision rather than replacing it.
 
 ### (b) Verification email — verbatim copy
 

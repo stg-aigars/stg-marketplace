@@ -1,14 +1,14 @@
 # Legal — deferred work
 
-Tracking file for legal/compliance items that are deliberately out of scope
-for current launch but documented so future maintainers know what was
-considered, why it was deferred, and what would trigger revisiting.
+Things we deliberately didn't build for launch, with the reason and the
+signal that would tell us to revisit. Future maintainers (or auditors) read
+this; if an entry feels stale, the revisit-signal is what to check first.
 
-**Two-sources-of-truth note (deliberate):** entries here may duplicate text
+**Two-sources-of-truth note (deliberate):** some entries here repeat text
 from `docs/plans/2026-04-28-ptac-distance-trading-compliance.md`. The plan
 file is the engineering execution log; this file is what staff and lawyers
-consult. Each surface needs the same fact stated for its own audience —
-do not "deduplicate" by removing one copy.
+consult. Each surface needs the same fact stated for its own audience, so
+don't "deduplicate" by removing one copy.
 
 ---
 

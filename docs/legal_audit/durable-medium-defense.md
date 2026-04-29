@@ -8,11 +8,12 @@ medium" (pastāvīgs informācijas nesējs). The seminal case interpreting that
 phrase under Directive 2011/83/EU is **Case C-49/11 (BAWAG / Content Services
 Ltd v Bundesarbeitskammer, 5 July 2012)**.
 
-This memo records why STG's Phase 8 implementation — inlining the Terms
-summary + Annex B withdrawal-form template directly in the order-confirmation
-email body — satisfies the C-49/11 standard. The motivating concern: a future
-contributor proposes "let's just link to /terms instead — it's simpler." That
-proposal would re-introduce the exact failure mode the ECJ rejected.
+Phase 8's implementation inlines the Terms summary + Annex B withdrawal-form
+template directly in the order-confirmation email body. This memo explains why
+that satisfies C-49/11. The reason it's worth writing down: at some point a
+future contributor will propose "let's just link to /terms instead, it's
+simpler." That's exactly what the ECJ rejected, and we'd rather catch the
+proposal before it ships.
 
 ## What C-49/11 actually held
 
@@ -22,27 +23,26 @@ website. The court said **no**, on three grounds (paragraphs 41-51):
 
 1. **Active provision.** The directive requires the merchant to "provide"
    the information. A hyperlink requires the consumer to take additional
-   steps — clicking through, reading on the merchant's site — and the
-   information is not in the consumer's hands until they do. A pull
-   (consumer fetches) is not equivalent to a push (merchant delivers).
+   steps (click through, read on the merchant's site), so the information
+   isn't in the consumer's hands until they do. A pull (consumer fetches)
+   is not equivalent to a push (merchant delivers).
 
 2. **Editability by the merchant.** A page on the merchant's website can be
    changed by the merchant after the email is sent. The consumer therefore
-   does not hold an immutable copy of the terms they agreed to. The court
-   treated this as the load-bearing problem with the hyperlink form: it
-   cannot serve as evidence of "what we agreed to on day X" because the
-   merchant retains unilateral edit rights.
+   does not hold an immutable copy of the terms they agreed to. This was
+   the court's central objection to the hyperlink form: it cannot serve as
+   evidence of "what we agreed to on day X" because the merchant retains
+   unilateral edit rights.
 
 3. **Permanence and reproducibility.** Durable medium requires the consumer
    to be able to store the information personally and reproduce it
    unchanged. A live website page is neither stored personally nor
    guaranteed to be reproducible unchanged.
 
-The court's solution — explicitly cited at paragraph 51 — was that the
-merchant must either (a) deliver the text in the email body itself, or
-(b) attach the text as a file (PDF, RTF, etc.) the consumer can save.
-Either form makes the consumer's email client the durable storage and
-removes the merchant's edit access.
+The court's solution, at paragraph 51: the merchant must either (a) deliver
+the text in the email body itself, or (b) attach the text as a file (PDF,
+RTF, etc.) the consumer can save. Either form makes the consumer's email
+client the durable storage and removes the merchant's edit access.
 
 ## Why inline-in-email satisfies C-49/11
 
@@ -58,9 +58,9 @@ STG's Phase 8 implementation:
   text is permanent, personal, and reproducible.
 - A `terms_version` and `seller_terms_version` are stamped on the `orders`
   row at insert time (migration 082). This is forensic evidence of which
-  contractual constants were in force, independent of the email — the email
-  is the consumer's copy; the order row is STG's copy. They match by
-  construction.
+  contractual constants were in force, independent of the email. The email
+  is the consumer's copy; the order row is STG's copy; they should agree on
+  every order.
 
 This is the textbook resolution C-49/11 paragraph 51 contemplates. The link
 to `/terms` (an editable canonical Next.js page) remains in the email as a
@@ -70,21 +70,20 @@ link would not affect compliance; removing the inline body would.
 ## Common alternatives — and why they don't help
 
 - **Versioned static PDFs hosted at `public/legal/terms-v[version].pdf`.**
-  Compliant in the same way email body is (immutable per filename version),
-  but adds a per-version PDF authoring overhead, four-locale translation
-  effort, hosting concerns, and the version-discovery complexity of "which
-  PDF was current when this order shipped?" Substituting PDFs for email
-  body does not improve C-49/11 defensibility — both forms satisfy paragraph
-  51's "deliver in body OR attach as file" disjunction. Documented as a
-  fallback path in `docs/legal_audit/legal_deferred_work.md`.
+  Compliant in the same way the email body is (immutable per filename
+  version). The cost is a per-version PDF authoring step, four-locale
+  translation, hosting, and the version-discovery question of "which PDF
+  was current when this order shipped?" Both inline and PDF satisfy
+  paragraph 51's "deliver in body OR attach as file" disjunction, so PDFs
+  don't improve defensibility — they're a fallback path tracked in
+  `legal_deferred_work.md`, not a primary one.
 
 - **A versioned read-only Next.js route at `/legal/terms-v[version]`.**
-  Considered and dropped during the Phase 8 design pass. The route is a
-  navigation convenience, not the durable medium — the email body is
-  already that. Building it would have required a JSX-to-markdown refactor
-  of the 594-line `/terms` page plus a new `react-markdown` dependency, for
-  no compliance lift. Documented as the second fallback path alongside
-  static PDFs.
+  Considered and dropped during the Phase 8 design pass. The route would be
+  navigation convenience, not the durable medium. Building it means a
+  JSX-to-markdown rewrite of the 594-line `/terms` page plus a new
+  `react-markdown` dependency, with no compliance lift. Same fallback
+  status as the PDF path.
 
 - **A hyperlink to `/terms` in the email body.** This is the C-49/11
   failure mode. Do not introduce it as the primary delivery method. The
