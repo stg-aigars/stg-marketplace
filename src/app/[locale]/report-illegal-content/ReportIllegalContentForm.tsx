@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Button,
   Checkbox,
@@ -13,13 +14,22 @@ import type { SelectOption, TurnstileWidgetRef } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { REPORT_CATEGORY_LABELS, REPORT_CATEGORY_VALUES } from './categories';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CATEGORY_OPTIONS: SelectOption[] = [
   { value: '', label: 'Select a category' },
   ...REPORT_CATEGORY_VALUES.map((value) => ({ value, label: REPORT_CATEGORY_LABELS[value] })),
 ];
 
 export function ReportIllegalContentForm() {
-  const [contentReference, setContentReference] = useState('');
+  // Optional deep-link from a listing detail page: /report-illegal-content?listingId=<uuid>&contentReference=<url>
+  const searchParams = useSearchParams();
+  const prefilledListingId = searchParams.get('listingId');
+  const validListingId =
+    prefilledListingId && UUID_REGEX.test(prefilledListingId) ? prefilledListingId : null;
+  const prefilledContentReference = searchParams.get('contentReference') ?? '';
+
+  const [contentReference, setContentReference] = useState(prefilledContentReference);
   const [category, setCategory] = useState('');
   const [explanation, setExplanation] = useState('');
   const [notifierName, setNotifierName] = useState('');
@@ -70,6 +80,7 @@ export function ReportIllegalContentForm() {
           notifierEmail: notifierEmail || null,
           accuracyConfirmed,
           turnstileToken,
+          listingId: validListingId,
         }),
       });
 

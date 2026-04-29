@@ -7,6 +7,8 @@ import { Button, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, theme, templateStyles as s } from './layout';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { OrderTermsSummary } from './_OrderTermsSummary';
+import { getAdrBodyForBuyer } from '@/lib/legal/adr-bodies';
 
 interface OrderConfirmationBuyerProps {
   buyerName: string;
@@ -18,6 +20,10 @@ interface OrderConfirmationBuyerProps {
   shippingCents: number;
   terminalName: string;
   appUrl: string;
+  // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
+  buyerCountry: string | null;
+  termsVersion: string;
+  sellerTermsVersion: string;
 }
 
 export function OrderConfirmationBuyer({
@@ -30,9 +36,13 @@ export function OrderConfirmationBuyer({
   shippingCents,
   terminalName,
   appUrl,
+  buyerCountry,
+  termsVersion,
+  sellerTermsVersion,
 }: OrderConfirmationBuyerProps) {
   const totalCents = priceCents + shippingCents;
   const orderUrl = `${appUrl}/orders/${orderId}`;
+  const adr = getAdrBodyForBuyer(buyerCountry);
 
   return (
     <EmailLayout preview={`Order confirmed — ${gameName}`}>
@@ -91,6 +101,14 @@ export function OrderConfirmationBuyer({
       <Text style={s.body}>
         See you at the table.
       </Text>
+
+      <OrderTermsSummary
+        orderNumber={orderNumber}
+        termsVersion={termsVersion}
+        sellerTermsVersion={sellerTermsVersion}
+        sellerName={sellerName}
+        adr={adr}
+      />
     </EmailLayout>
   );
 }

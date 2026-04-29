@@ -4,6 +4,8 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { getAdrBodyForBuyer } from '@/lib/legal/adr-bodies';
 import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity, Toggle, Checkbox } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { Trash } from '@phosphor-icons/react/ssr';
@@ -52,6 +54,7 @@ export function CheckoutForm({
   sellerProfile,
 }: CheckoutFormProps) {
   const router = useRouter();
+  const t = useTranslations('checkout');
   const { items, removeItem, removeItems } = useCart();
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminal, setSelectedTerminal] = useState<TerminalOption | null>(null);
@@ -75,6 +78,10 @@ export function CheckoutForm({
     () => sellerItems.filter((i) => i.isAuction && i.auctionDeadlineAt),
     [sellerItems]
   );
+  // ADR body for the buyer's home country — single source of truth for the
+  // PTAL 19.¹ pre-contract banner. Memoized so the Sentry-fallback branch
+  // doesn't fire on every render when the country is missing/invalid.
+  const adr = useMemo(() => getAdrBodyForBuyer(buyerCountry), [buyerCountry]);
   const [expiredAuctionIds, setExpiredAuctionIds] = useState<Set<string>>(new Set());
 
   // Auction deadline countdown — track expired items
@@ -328,6 +335,23 @@ export function CheckoutForm({
               Payment
             </h2>
 
+            {/* ADR pre-contract disclosure (PTAL 19.¹) — names the buyer's home-country consumer dispute body */}
+            <p className="mb-3 text-xs text-semantic-text-muted">
+              {t.rich('adrNotice', {
+                body: adr.name,
+                link: (chunks) => (
+                  <a
+                    className="link-brand"
+                    href={adr.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </p>
+
             {/* Terms & refund consent */}
             <div className="mb-4">
               <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
@@ -367,8 +391,13 @@ export function CheckoutForm({
               disabled={!canSubmit || loading}
               loading={loading}
             >
-              {walletCoversTotal ? 'Place order' : `Pay ${formatCentsToCurrency(cardChargeCents)}`}
+              {walletCoversTotal
+                ? t('placeOrderButton')
+                : t('payButton', { amount: formatCentsToCurrency(cardChargeCents) })}
             </Button>
+            <p className="mt-2 text-xs text-semantic-text-muted text-center">
+              {t('obligationNote')}
+            </p>
 
             {walletCoversTotal ? (
               <p className="mt-3 text-xs text-semantic-text-muted text-center">

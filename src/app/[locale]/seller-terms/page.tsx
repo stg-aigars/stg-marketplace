@@ -276,9 +276,13 @@ export default function SellerTermsPage() {
             Anti-money-laundering, sanctions, and fraud
           </h3>
           <p>
-            We reserve the right — at our discretion and without prior notice — to (a) screen
-            transactions, accounts, IBANs, and identifying information against EU and
-            international sanctions lists, politically exposed person lists, and fraud
+            <strong>
+              On reasonable grounds, with notice as soon as legally permitted (notice may be
+              delayed where required by AML, sanctions, or law-enforcement obligations), we
+              may
+            </strong>{' '}
+            (a) screen transactions, accounts, IBANs, and identifying information against EU
+            and international sanctions lists, politically exposed person lists, and fraud
             databases; (b) suspend your account, freeze your wallet balance, or refuse a payout
             if we have reasonable grounds to suspect money laundering, terrorist financing,
             sanctions evasion, or fraud; (c) ask you for more identification, source-of-funds
@@ -287,7 +291,14 @@ export default function SellerTermsPage() {
             Financial Intelligence Unit (FID), the State Revenue Service (VID), and our
             payment processor. Funds frozen under this clause stay your property and are
             released once the matter is resolved, subject to any order from a competent
-            authority.
+            authority.{' '}
+            <strong>
+              You may appeal any such action by writing to info@secondturn.games. A person who
+              did not take the original decision will review the appeal within 14 days and
+              respond in writing. Where AML, sanctions, or law-enforcement obligations
+              prevent us from explaining a particular action, we will tell you when those
+              obligations no longer prevent disclosure.
+            </strong>
           </p>
         </section>
 
@@ -370,23 +381,33 @@ export default function SellerTermsPage() {
           </p>
         </section>
 
-        <p className="text-sm text-semantic-text-muted pt-4 border-t border-semantic-border-subtle">
-          See also our{' '}
-          <Link
-            href="/terms"
-            className="link-brand"
-          >
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link
-            href="/privacy"
-            className="link-brand"
-          >
-            Privacy Policy
-          </Link>
-          .
-        </p>
+        <div className="pt-4 border-t border-semantic-border-subtle space-y-3">
+          <p className="text-xs text-semantic-text-muted">
+            <strong>Version 2026-04-28</strong> — the AML/sanctions clause now requires
+            reasonable grounds and gives notice as soon as legally permitted (silent only
+            while AML, sanctions, or law-enforcement obligations require). If we act, you can
+            appeal in writing and a reviewer who didn&rsquo;t take the original decision
+            will respond within 14 days.
+          </p>
+
+          <p className="text-sm text-semantic-text-muted">
+            See also our{' '}
+            <Link
+              href="/terms"
+              className="link-brand"
+            >
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link
+              href="/privacy"
+              className="link-brand"
+            >
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

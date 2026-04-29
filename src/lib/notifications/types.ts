@@ -45,7 +45,10 @@ export type NotificationType =
   | 'dac7.data_requested'
   | 'dac7.reminder'
   | 'dac7.blocked'
-  | 'dac7.report_available';
+  | 'dac7.report_available'
+  // Moderation (DSA Art. 16/17)
+  | 'moderation.notice_received'
+  | 'listing.actioned';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {
@@ -75,4 +78,10 @@ export interface NotificationContext {
   terminalName?: string;
   hoursRemaining?: number;
   daysRemaining?: number;
+  // Moderation (DSA Art. 16/17)
+  noticeId?: string;
+  category?: string;
+  anonymous?: boolean;
+  restrictionType?: 'soft_delete' | 'edit' | 'flag_only';
+  redressMechanism?: string;
 }

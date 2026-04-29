@@ -5,8 +5,12 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, reportIllegalContentLimiter } from '@/lib/rate-limit';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 import { logAuditEvent } from '@/lib/services/audit';
+import { notifyStaff } from '@/lib/notifications';
+import { createServiceClient } from '@/lib/supabase';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
 import { REPORT_CATEGORY_VALUES } from '@/app/[locale]/report-illegal-content/categories';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const VALID_CATEGORIES = new Set<string>(REPORT_CATEGORY_VALUES);
 
@@ -29,6 +33,9 @@ interface Payload {
   notifierEmail: unknown;
   accuracyConfirmed: unknown;
   turnstileToken: unknown;
+  // Optional: when the notice is filed against a specific listing, the listing
+  // detail page passes this UUID so the staff queue can deep-link.
+  listingId?: unknown;
 }
 
 export async function POST(request: Request) {
@@ -86,6 +93,11 @@ export async function POST(request: Request) {
     }
   }
 
+  // Optional listing binding — only persisted if the caller passed a syntactically valid UUID;
+  // we do not verify FK existence here (the FK is `on delete set null` so a stale ID is harmless).
+  const listingId =
+    typeof body.listingId === 'string' && UUID_REGEX.test(body.listingId) ? body.listingId : null;
+
   // Forward the notice to our legal mailbox. Keep the body plain text — staff will review
   // and triage manually at launch volume; queueing + review UI land when volume warrants.
   const lines = [
@@ -115,6 +127,36 @@ export async function POST(request: Request) {
     );
   }
 
+  // Persist the notice to the staff review queue (Phase 5 of PTAC plan). The row ID is
+  // captured so the audit-log row references the persistent record. If the insert fails,
+  // we still ack the email-forward path (the notice already shipped to legal) — staff can
+  // reconcile from email if the queue insert dropped.
+  let noticeId: string | null = null;
+  try {
+    const serviceClient = createServiceClient();
+    const { data: noticeRow, error: insertError } = await serviceClient
+      .from('dsa_notices')
+      .insert({
+        listing_id: listingId,
+        reporter_id: null, // unauthenticated route — no auth.uid() at this point
+        reporter_email: notifierEmail || null,
+        notifier_name: notifierName || null,
+        category,
+        content_reference: contentReference,
+        explanation,
+        reporter_ip: getClientIp(request) || null,
+      })
+      .select('id')
+      .single();
+    if (insertError) {
+      console.error('[report-illegal-content] dsa_notices insert failed:', insertError.message);
+    } else {
+      noticeId = noticeRow?.id ?? null;
+    }
+  } catch (err) {
+    console.error('[report-illegal-content] dsa_notices insert unexpected error:', err);
+  }
+
   // actorType: 'system' — the notice is an inbound external submission, not a platform-
   // initiated user action. There is no authenticated actor (even named notifiers are
   // unauthenticated visitors), so 'user' without an actorId would misrepresent the
@@ -122,14 +164,24 @@ export async function POST(request: Request) {
   // conflating with authenticated user-attributed rows.
   void logAuditEvent({
     actorType: 'system',
-    action: 'illegal_content.reported',
-    resourceType: 'notice',
+    action: 'dsa_notice.received',
+    resourceType: 'dsa_notice',
+    resourceId: noticeId ?? undefined,
     metadata: {
       category,
       anonymous: !notifierEmail,
       notifierEmail: notifierEmail || null,
       contentReferencePreview: contentReference.slice(0, 200),
+      listingId,
     },
+  });
+
+  // Fan out to staff so the queue is visible without polling. Fire-and-forget.
+  void notifyStaff('moderation.notice_received', {
+    noticeId: noticeId ?? undefined,
+    listingId: listingId ?? undefined,
+    category,
+    anonymous: !notifierEmail,
   });
 
   return NextResponse.json({ success: true });

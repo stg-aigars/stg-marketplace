@@ -7,6 +7,9 @@ import { createServiceClient } from '@/lib/supabase';
 
 interface AuditEvent {
   actorId?: string;
+  // Operator-precedence trap: '||' binds tighter than '?:'. To derive actorType from a
+  // possibly-empty value, write '(authedUserId || email) ? "user" : "system"' — without
+  // the parens, the ternary always returns "user" and the "system" branch is unreachable.
   actorType: 'user' | 'system' | 'cron';
   action: string;
   resourceType: string;

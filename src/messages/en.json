@@ -142,10 +142,17 @@
     "shipping": "Shipping",
     "seller": "Seller",
     "buyNow": "Buy now",
-    "preLovedGames": "Pre-loved games"
+    "preLovedGames": "Pre-loved games",
+    "sellerStatusNotice": "Private seller — the EU 14-day withdrawal right does not apply. <link>How returns work</link>."
   },
   "staleAction": {
     "updating": "Updating to the latest version…",
     "newVersionAvailable": "A newer version is available. Please refresh the page."
+  },
+  "checkout": {
+    "placeOrderButton": "Place order",
+    "payButton": "Pay {amount}",
+    "obligationNote": "By clicking, you confirm an order with an obligation to pay.",
+    "adrNotice": "Out-of-court dispute resolution: <link>{body}</link>."
   }
 }
