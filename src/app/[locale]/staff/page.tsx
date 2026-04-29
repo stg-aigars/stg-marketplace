@@ -92,8 +92,12 @@ export default async function StaffDashboardPage() {
       .from('user_profiles')
       .select('id', { count: 'exact', head: true })
       .not('trader_signal_first_crossed_at', 'is', null)
-      .is('verification_requested_at', null)
-      .is('trader_signal_dismissed_at', null),
+      .is('trader_signal_dismissed_at', null)
+      // Mirrors the action_needed cohort filter at /staff/users — covers both
+      // "verification not yet sent" and "verification sent, marked unresponsive
+      // by the cron after 14d." Without this .or() the panel count drifts below
+      // the click-through landing-page count.
+      .or('verification_requested_at.is.null,verification_response.eq.unresponsive'),
     serviceClient
       .from('user_profiles')
       .select('id', { count: 'exact', head: true })
