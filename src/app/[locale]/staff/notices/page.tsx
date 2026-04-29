@@ -38,6 +38,25 @@ const STATUS_BADGE: Record<StaffNoticeRow['status'], { label: string; variant: '
   dismissed: { label: 'Dismissed', variant: 'default' },
 };
 
+/**
+ * Age-based SLA badge for open notices. DSA Art. 16 doesn't impose a numeric
+ * SLA, but operational hygiene benefits from a deadline column so notices
+ * don't rot at the bottom of the queue. Heat: green <24h, amber 24-48h,
+ * red >48h.
+ */
+function ageBadge(createdAtIso: string, nowMs: number): { label: string; variant: 'success' | 'warning' | 'error' } {
+  const ageMs = nowMs - new Date(createdAtIso).getTime();
+  const ageHours = Math.max(0, ageMs / (1000 * 60 * 60));
+  const formatted = ageHours < 1
+    ? `${Math.round(ageHours * 60)}m ago`
+    : ageHours < 48
+      ? `${Math.floor(ageHours)}h ago`
+      : `${Math.floor(ageHours / 24)}d ago`;
+  if (ageHours < 24) return { label: formatted, variant: 'success' };
+  if (ageHours < 48) return { label: formatted, variant: 'warning' };
+  return { label: formatted, variant: 'error' };
+}
+
 export default async function StaffNoticesPage(props: {
   searchParams: Promise<{ filter?: string; binding?: string }>;
 }) {
@@ -49,6 +68,9 @@ export default async function StaffNoticesPage(props: {
 
   const activeFilter = (searchParams.filter as FilterTab) || 'open';
   const activeBinding = (searchParams.binding as BindingTab) || 'any';
+  // Server Component request-time anchor for the SLA-age badge on open notices.
+  // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is safe at request time
+  const nowMs = Date.now();
 
   let query = serviceClient
     .from('dsa_notices')
@@ -133,30 +155,37 @@ export default async function StaffNoticesPage(props: {
         <EmptyState title="No notices in this view" description="Try a different filter or binding." />
       ) : (
         <div className="space-y-3">
-          {typed.map((notice) => (
-            <Card key={notice.id}>
-              <CardBody>
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={STATUS_BADGE[notice.status].variant}>
-                      {STATUS_BADGE[notice.status].label}
-                    </Badge>
-                    <Badge variant="default">{REPORT_CATEGORY_LABELS[notice.category] ?? notice.category}</Badge>
-                    {notice.listing_id ? (
-                      <Link
-                        href={`/listings/${notice.listing_id}`}
-                        className="link-brand text-sm"
-                        target="_blank"
-                      >
-                        Bound to listing: {notice.listings?.game_name ?? notice.listing_id.slice(0, 8)}
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-semantic-text-muted">Unbound notice</span>
-                    )}
-                    <span className="text-xs text-semantic-text-muted ml-auto">
-                      {formatDateTime(notice.created_at)}
-                    </span>
-                  </div>
+          {typed.map((notice) => {
+            const age = notice.status === 'open' ? ageBadge(notice.created_at, nowMs) : null;
+            return (
+              <Card key={notice.id}>
+                <CardBody>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={STATUS_BADGE[notice.status].variant}>
+                        {STATUS_BADGE[notice.status].label}
+                      </Badge>
+                      {age && (
+                        <Badge variant={age.variant} dot>
+                          Received {age.label}
+                        </Badge>
+                      )}
+                      <Badge variant="default">{REPORT_CATEGORY_LABELS[notice.category] ?? notice.category}</Badge>
+                      {notice.listing_id ? (
+                        <Link
+                          href={`/listings/${notice.listing_id}`}
+                          className="link-brand text-sm"
+                          target="_blank"
+                        >
+                          Bound to listing: {notice.listings?.game_name ?? notice.listing_id.slice(0, 8)}
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-semantic-text-muted">Unbound notice</span>
+                      )}
+                      <span className="text-xs text-semantic-text-muted ml-auto">
+                        {formatDateTime(notice.created_at)}
+                      </span>
+                    </div>
 
                   <div className="text-sm text-semantic-text-secondary whitespace-pre-wrap break-words">
                     {notice.explanation}
@@ -188,7 +217,8 @@ export default async function StaffNoticesPage(props: {
                 </div>
               </CardBody>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -16,6 +16,15 @@ export const metadata: Metadata = {
   title: 'User — Staff',
 };
 
+// Matches the rationale categories enumerated in CLAUDE.md's audit-events
+// register for `seller.trader_signal_dismissed`.
+const DISMISSAL_CATEGORY_LABEL: Record<string, string> = {
+  verified_collector: 'Verified collector',
+  low_engagement_pattern: 'Low-engagement pattern',
+  marketplace_norm: 'Marketplace norm',
+  other: 'Other',
+};
+
 interface UserPageProps {
   params: Promise<{ id: string; locale: string }>;
 }
@@ -29,7 +38,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
   const { data: profile } = await serviceClient
     .from('user_profiles')
-    .select('id, full_name, email, country, created_at, is_staff, dac7_status, seller_status, completed_sales_12mo_count, completed_sales_12mo_revenue_cents, trader_signal_first_crossed_at, trader_signal_threshold_version, verification_requested_at, verification_response, verification_responded_at')
+    .select('id, full_name, email, country, created_at, is_staff, dac7_status, seller_status, completed_sales_12mo_count, completed_sales_12mo_revenue_cents, trader_signal_first_crossed_at, trader_signal_threshold_version, verification_requested_at, verification_response, verification_responded_at, trader_signal_dismissed_at, trader_signal_dismissed_threshold_version')
     .eq('id', id)
     .single();
 
@@ -38,11 +47,49 @@ export default async function StaffUserPage({ params }: UserPageProps) {
   }
 
   // In-flight + active listing counts (used by the suspension UI's warning Alert)
-  const [{ count: activeCount }, { count: reservedCount }, { count: auctionEndedCount }] = await Promise.all([
+  // + the most recent dismissal audit row (only if the seller has been dismissed).
+  // The audit lookup is cheap (indexed on resource_type+resource_id) and lets us
+  // surface the rationale inline instead of forcing staff to grep audit_log.
+  const [
+    { count: activeCount },
+    { count: reservedCount },
+    { count: auctionEndedCount },
+    { data: dismissalAuditRow },
+  ] = await Promise.all([
     serviceClient.from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', id).eq('status', 'active'),
     serviceClient.from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', id).eq('status', 'reserved'),
     serviceClient.from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', id).eq('status', 'auction_ended'),
+    profile.trader_signal_dismissed_at
+      ? serviceClient
+          .from('audit_log')
+          .select('actor_id, created_at, metadata')
+          .eq('action', 'seller.trader_signal_dismissed')
+          .eq('resource_type', 'user')
+          .eq('resource_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  // Resolve the dismissing-staff actor name (one tiny query, only when there's a row to resolve).
+  let dismissalActorName: string | null = null;
+  if (dismissalAuditRow?.actor_id) {
+    const { data: actor } = await serviceClient
+      .from('user_profiles')
+      .select('full_name, email')
+      .eq('id', dismissalAuditRow.actor_id)
+      .single();
+    dismissalActorName = actor?.full_name ?? actor?.email ?? null;
+  }
+
+  type DismissalRationale = {
+    category?: 'verified_collector' | 'low_engagement_pattern' | 'marketplace_norm' | 'other';
+    justification?: string;
+    evidenceUrl?: string | null;
+  };
+  const dismissalMeta = dismissalAuditRow?.metadata as { rationale?: DismissalRationale } | null;
+  const dismissalRationale = dismissalMeta?.rationale ?? null;
 
   const sellerStatus = (profile.seller_status as SellerStatus) ?? 'active';
 
@@ -122,6 +169,40 @@ export default async function StaffUserPage({ params }: UserPageProps) {
             Advisory at launch — counters surface here but never auto-mutate seller_status. See{' '}
             <code>docs/legal_audit/trader-detection-deferral.md</code> for the lawyer&apos;s framework.
           </p>
+          {profile.trader_signal_dismissed_at && (
+            <div className="rounded border border-semantic-border-subtle bg-semantic-bg-elevated p-3 text-sm space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="default">Dismissed</Badge>
+                <span className="text-xs text-semantic-text-muted">
+                  {formatDateTime(profile.trader_signal_dismissed_at)}
+                  {dismissalActorName ? ` · by ${dismissalActorName}` : ''}
+                </span>
+              </div>
+              {dismissalRationale?.category && (
+                <div>
+                  <span className="font-semibold">Category:</span> {DISMISSAL_CATEGORY_LABEL[dismissalRationale.category] ?? dismissalRationale.category}
+                </div>
+              )}
+              {dismissalRationale?.justification && (
+                <div className="whitespace-pre-wrap break-words">
+                  <span className="font-semibold">Justification:</span> {dismissalRationale.justification}
+                </div>
+              )}
+              {dismissalRationale?.evidenceUrl && (
+                <div>
+                  <span className="font-semibold">Evidence:</span>{' '}
+                  <a href={dismissalRationale.evidenceUrl} target="_blank" rel="noopener noreferrer" className="link-brand">
+                    {dismissalRationale.evidenceUrl}
+                  </a>
+                </div>
+              )}
+              {profile.trader_signal_dismissed_threshold_version && profile.trader_signal_dismissed_threshold_version !== TRADER_THRESHOLDS.version && (
+                <div className="text-xs text-semantic-warning">
+                  Dismissed at threshold version <code>{profile.trader_signal_dismissed_threshold_version}</code>; current is <code>{TRADER_THRESHOLDS.version}</code>. The cron will treat this seller as a fresh review candidate.
+                </div>
+              )}
+            </div>
+          )}
           <TraderSignalActions
             userId={profile.id}
             signalCrossedAt={profile.trader_signal_first_crossed_at ?? null}
