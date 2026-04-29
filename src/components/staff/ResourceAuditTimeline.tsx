@@ -71,6 +71,10 @@ export async function ResourceAuditTimeline({
   }
 
   const results = await Promise.all(queries);
+  // Each branch caps at `limit`; merging + sorting + slicing again can drop a
+  // globally-recent event when one branch is much busier than the other.
+  // Acceptable for the inline-summary use case — the "View all" link is the
+  // long-form view if staff needs the global ordering.
   const merged: AuditRow[] = [];
   const seenIds = new Set<string>();
   for (const result of results) {
