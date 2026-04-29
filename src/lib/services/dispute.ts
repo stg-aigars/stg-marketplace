@@ -44,6 +44,58 @@ export async function getDispute(orderId: string): Promise<DisputeRow | null> {
   return data ?? null;
 }
 
+/**
+ * Insert a dispute row from a cron auto-escalation path and emit the
+ * regulatory `dispute.opened` companion audit event.
+ *
+ * Shared between the parcel-returning auto-escalation in tracking-service.ts
+ * and the 21-day no-delivery auto-escalation in order-deadlines.ts. Both paths
+ * already optimistic-lock the order to `disputed` upstream, so this helper
+ * does not re-validate — it just persists the dispute and ensures every
+ * dispute row has a regulatory `dispute.opened` audit row, symmetric with
+ * the manual `openDispute()` flow.
+ */
+export async function insertAutoEscalatedDispute(params: {
+  orderId: string;
+  buyerId: string;
+  sellerId: string;
+  /** Human-readable text persisted in `disputes.reason`. */
+  disputeReason: string;
+  /** Categorical reason in audit metadata (e.g. 'auto_escalated_parcel_returning'). */
+  auditReason: string;
+  /** Categorical trigger in audit metadata (e.g. 'tracking_returning'). */
+  auditTrigger: string;
+}): Promise<void> {
+  const supabase = createServiceClient();
+  const { data: insertedDispute } = await supabase
+    .from('disputes')
+    .insert({
+      order_id: params.orderId,
+      buyer_id: params.buyerId,
+      seller_id: params.sellerId,
+      reason: params.disputeReason,
+      photos: [],
+      escalated_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+
+  if (insertedDispute) {
+    void logAuditEvent({
+      actorType: 'cron',
+      action: 'dispute.opened',
+      resourceType: 'dispute',
+      resourceId: insertedDispute.id,
+      metadata: {
+        orderId: params.orderId,
+        reason: params.auditReason,
+        trigger: params.auditTrigger,
+      },
+      retentionClass: 'regulatory',
+    });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Service functions
 // ---------------------------------------------------------------------------

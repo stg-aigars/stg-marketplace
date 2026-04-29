@@ -12,6 +12,7 @@ import type { TrackingEvent } from './types';
 import { createServiceClient } from '@/lib/supabase';
 import { sendOrderDeliveredToBuyer, sendOrderDeliveredToSeller, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { insertAutoEscalatedDispute } from '@/lib/services/dispute';
 import { notify, notifyMany } from '@/lib/notifications';
 import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from '@/lib/orders/utils';
 
@@ -314,36 +315,14 @@ async function processOrderEvents(
           statusChanged = true;
           newStatus = 'disputed';
 
-          const { data: insertedDispute } = await supabase
-            .from('disputes')
-            .insert({
-              order_id: orderId,
-              buyer_id: disputed.buyer_id,
-              seller_id: disputed.seller_id,
-              reason: 'Auto-escalated: parcel not collected, returning to sender',
-              photos: [],
-              escalated_at: new Date().toISOString(),
-            })
-            .select('id')
-            .single();
-
-          // Regulatory companion to the operational order.parcel_returning signal — every
-          // dispute (manual openDispute or cron auto-escalation) needs a dispute.opened
-          // audit row so the contract-resolution chain is reconstructable years later.
-          if (insertedDispute) {
-            void logAuditEvent({
-              actorType: 'cron',
-              action: 'dispute.opened',
-              resourceType: 'dispute',
-              resourceId: insertedDispute.id,
-              metadata: {
-                orderId,
-                reason: 'auto_escalated_parcel_returning',
-                trigger: 'tracking_returning',
-              },
-              retentionClass: 'regulatory',
-            });
-          }
+          await insertAutoEscalatedDispute({
+            orderId,
+            buyerId: disputed.buyer_id,
+            sellerId: disputed.seller_id,
+            disputeReason: 'Auto-escalated: parcel not collected, returning to sender',
+            auditReason: 'auto_escalated_parcel_returning',
+            auditTrigger: 'tracking_returning',
+          });
 
           void logAuditEvent({
             actorType: 'cron',
