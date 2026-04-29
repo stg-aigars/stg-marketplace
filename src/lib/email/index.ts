@@ -40,6 +40,7 @@ import { Dac7DataRequested } from './templates/dac7-data-requested';
 import { Dac7Reminder } from './templates/dac7-reminder';
 import { Dac7Blocked } from './templates/dac7-blocked';
 import { Dac7ReportAvailable } from './templates/dac7-report-available';
+import { SellerVerificationRequest } from './templates/seller-verification-request';
 import { env } from '@/lib/env';
 
 /**
@@ -846,6 +847,24 @@ export async function sendDac7ReportAvailable(params: {
     react: React.createElement(Dac7ReportAvailable, {
       sellerName: params.sellerName,
       year: params.year,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+export async function sendSellerVerificationRequest(params: {
+  sellerFirstName: string;
+  sellerEmail: string;
+  salesCount: number;
+  responseDeadlineDays: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.sellerEmail,
+    subject: 'A quick question about your selling on Second Turn Games',
+    react: React.createElement(SellerVerificationRequest, {
+      sellerFirstName: params.sellerFirstName,
+      salesCount: params.salesCount,
+      responseDeadlineDays: params.responseDeadlineDays,
       appUrl: env.app.url,
     }),
   });

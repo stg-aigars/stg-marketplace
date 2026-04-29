@@ -7,6 +7,10 @@ import { formatDate } from '@/lib/date-utils';
 import { getCountryName } from '@/lib/country-utils';
 import { SellerStatusForm } from './SellerStatusForm';
 import type { SellerStatus } from './actions';
+import { TraderSignalActions } from './TraderSignalActions';
+import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { formatDateTime } from '@/lib/date-utils';
 
 export const metadata: Metadata = {
   title: 'User — Staff',
@@ -25,7 +29,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
   const { data: profile } = await serviceClient
     .from('user_profiles')
-    .select('id, full_name, email, country, created_at, is_staff, dac7_status, seller_status')
+    .select('id, full_name, email, country, created_at, is_staff, dac7_status, seller_status, completed_sales_12mo_count, completed_sales_12mo_revenue_cents, trader_signal_first_crossed_at, trader_signal_threshold_version, verification_requested_at, verification_response, verification_responded_at')
     .eq('id', id)
     .single();
 
@@ -74,6 +78,56 @@ export default async function StaffUserPage({ params }: UserPageProps) {
             <Badge variant="default">Active listings: {activeCount ?? 0}</Badge>
             <Badge variant="default">In-flight: {(reservedCount ?? 0) + (auctionEndedCount ?? 0)}</Badge>
           </div>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody className="space-y-3">
+          <h2 className="text-base font-semibold text-semantic-text-heading">Trader-volume signal</h2>
+          <div className="text-sm text-semantic-text-secondary space-y-1">
+            <div>
+              <span className="font-semibold">Rolling 12-month sales:</span>{' '}
+              <span className={(profile.completed_sales_12mo_count ?? 0) >= TRADER_THRESHOLDS.verificationTrigger.salesCount ? 'text-semantic-warning font-semibold' : ''}>
+                {profile.completed_sales_12mo_count ?? 0}
+              </span>{' '}
+              <span className="text-xs text-semantic-text-muted">
+                (verification trigger: {TRADER_THRESHOLDS.verificationTrigger.salesCount})
+              </span>
+            </div>
+            <div>
+              <span className="font-semibold">Rolling 12-month revenue:</span>{' '}
+              <span className={(profile.completed_sales_12mo_revenue_cents ?? 0) >= TRADER_THRESHOLDS.verificationTrigger.revenueCents ? 'text-semantic-warning font-semibold' : ''}>
+                {formatCentsToCurrency(profile.completed_sales_12mo_revenue_cents ?? 0)}
+              </span>{' '}
+              <span className="text-xs text-semantic-text-muted">
+                (verification trigger: {formatCentsToCurrency(TRADER_THRESHOLDS.verificationTrigger.revenueCents)})
+              </span>
+            </div>
+            <div>
+              <span className="font-semibold">Signal first crossed:</span>{' '}
+              {profile.trader_signal_first_crossed_at
+                ? formatDateTime(profile.trader_signal_first_crossed_at)
+                : '—'}
+            </div>
+            <div>
+              <span className="font-semibold">Verification:</span>{' '}
+              {!profile.verification_requested_at
+                ? 'not yet requested'
+                : profile.verification_response
+                  ? `responded ${profile.verification_responded_at ? formatDateTime(profile.verification_responded_at) : ''} → ${profile.verification_response}`
+                  : `sent ${formatDateTime(profile.verification_requested_at)}, awaiting response`}
+            </div>
+          </div>
+          <p className="text-xs text-semantic-text-muted">
+            Advisory at launch — counters surface here but never auto-mutate seller_status. See{' '}
+            <code>docs/legal_audit/trader-detection-deferral.md</code> for the lawyer&apos;s framework.
+          </p>
+          <TraderSignalActions
+            userId={profile.id}
+            signalCrossedAt={profile.trader_signal_first_crossed_at ?? null}
+            verificationRequestedAt={profile.verification_requested_at ?? null}
+            verificationResponse={(profile.verification_response as 'collector' | 'trader' | 'unresponsive' | null) ?? null}
+          />
         </CardBody>
       </Card>
 
