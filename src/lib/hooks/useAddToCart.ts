@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
+import { trackClient } from '@/lib/analytics';
 import type { ListingCondition } from '@/lib/listings/types';
 
 export interface AddToCartListing {
@@ -35,6 +36,11 @@ export function useAddToCart(listing: AddToCartListing) {
         condition: listing.condition,
         addedAt: new Date().toISOString(),
         ...(listing.expansionCount ? { expansionCount: listing.expansionCount } : {}),
+      });
+      trackClient('cart_item_added', {
+        listing_id: listing.id,
+        price_cents: listing.priceCents,
+        seller_id: listing.sellerId,
       });
     }
     router.push('/cart');
