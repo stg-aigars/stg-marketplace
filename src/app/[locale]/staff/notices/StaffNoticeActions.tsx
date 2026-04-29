@@ -24,6 +24,38 @@ const REASON_CATEGORIES: SelectOption[] = [
   { value: 'other', label: 'Other' },
 ];
 
+// DSA Article 17 statement-of-reasons templates. Selecting a template
+// prefills the reason textarea — staff edits before submitting. Surfacing
+// canned reasoning improves the legal-defensibility of takedowns: every
+// statement of reasons follows a consistent shape that maps to a known
+// category, and a regulator looking at a sample can verify the platform
+// applied the rule the notice cited.
+const REASON_TEMPLATES: SelectOption[] = [
+  { value: 'custom', label: 'Custom (start blank)' },
+  { value: 'misleading_condition', label: 'Misleading — condition mismatch' },
+  { value: 'misleading_edition', label: 'Misleading — edition / version mismatch' },
+  { value: 'misleading_photos', label: 'Misleading — photos do not match item' },
+  { value: 'prohibited_item', label: 'Prohibited item' },
+  { value: 'ip_counterfeit', label: 'IP — counterfeit or unauthorized reproduction' },
+  { value: 'tos_violation_generic', label: 'ToS violation (generic)' },
+];
+
+const TEMPLATE_BODIES: Record<string, string> = {
+  custom: '',
+  misleading_condition:
+    'Listing condition does not match the item shown in the photos. The cancellation is required because misleading condition descriptions undermine buyer trust on the platform. You can re-list with the correct condition selected.',
+  misleading_edition:
+    'Listing description claims an edition or version that the photos / BGG metadata do not support. The cancellation is required because edition matters for buyer expectations (especially across language editions in the Baltic region). Re-list with accurate edition + language fields.',
+  misleading_photos:
+    'Listing photos do not show the actual item being sold (stock images or photos of a different copy). Buyers need to see the specific copy they are buying. Re-list with photos of your actual copy, including any wear, missing components, or sleeves.',
+  prohibited_item:
+    'This item falls into a prohibited category under our Terms of Service (Section on Prohibited Items). The listing has been cancelled and the item cannot be re-listed on the platform.',
+  ip_counterfeit:
+    'Listing was identified as a counterfeit or unauthorized reproduction following a notice from the rights holder. Listings of counterfeit goods are prohibited under our Terms of Service and EU intellectual-property rules.',
+  tos_violation_generic:
+    'This listing violates our Terms of Service. [Add specific clause + factual basis]. The listing has been cancelled. Please review the Terms before re-listing.',
+};
+
 export function StaffNoticeActions({ noticeId, hasListing, status }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +67,12 @@ export function StaffNoticeActions({ noticeId, hasListing, status }: Props) {
   // Action-modal state
   const [reasonCategory, setReasonCategory] = useState('');
   const [reasonText, setReasonText] = useState('');
+  const [templateKey, setTemplateKey] = useState('custom');
+
+  function handleTemplateChange(key: string) {
+    setTemplateKey(key);
+    setReasonText(TEMPLATE_BODIES[key] ?? '');
+  }
 
   const isResolved = status === 'actioned' || status === 'dismissed';
 
@@ -77,6 +115,7 @@ export function StaffNoticeActions({ noticeId, hasListing, status }: Props) {
         setOpenModal(null);
         setReasonCategory('');
         setReasonText('');
+        setTemplateKey('custom');
       }
     });
   };
@@ -138,12 +177,18 @@ export function StaffNoticeActions({ noticeId, hasListing, status }: Props) {
             onChange={(e) => setReasonCategory(e.target.value)}
             options={REASON_CATEGORIES}
           />
+          <Select
+            label="Statement-of-reasons template (optional)"
+            value={templateKey}
+            onChange={(e) => handleTemplateChange(e.target.value)}
+            options={REASON_TEMPLATES}
+          />
           <Textarea
             label="Reason for the seller (≥20 chars)"
             value={reasonText}
             onChange={(e) => setReasonText(e.target.value)}
-            rows={4}
-            placeholder="e.g. Listing description claims a 1st edition; photos show 2nd edition. We cancelled the listing — please re-list with accurate edition info."
+            rows={5}
+            placeholder="Pick a template above to prefill, or write from scratch. The seller will see this exact text."
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setOpenModal(null)} disabled={isPending}>
