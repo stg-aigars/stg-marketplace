@@ -55,6 +55,35 @@ export default async function StaffDisputeDetailPage(
   const status = getDisputeStatusConfig(typedDispute);
   const isResolved = !!typedDispute.resolved_at;
 
+  // Party history — counts of prior orders + disputes per party. Surfaces
+  // patterns like "this seller has 4 of 12 orders end in dispute" so the
+  // resolution decision can be pattern-aware. Excludes the current dispute's
+  // order from the counts.
+  const [
+    buyerOrdersCount,
+    buyerDisputesCount,
+    sellerOrdersCount,
+    sellerDisputesCount,
+  ] = await Promise.all([
+    serviceClient.from('orders').select('id', { count: 'exact', head: true })
+      .eq('buyer_id', typedDispute.buyer_id).neq('id', typedDispute.order_id),
+    serviceClient.from('disputes').select('id', { count: 'exact', head: true })
+      .eq('buyer_id', typedDispute.buyer_id).neq('id', typedDispute.id),
+    serviceClient.from('orders').select('id', { count: 'exact', head: true })
+      .eq('seller_id', typedDispute.seller_id).neq('id', typedDispute.order_id),
+    serviceClient.from('disputes').select('id', { count: 'exact', head: true })
+      .eq('seller_id', typedDispute.seller_id).neq('id', typedDispute.id),
+  ]);
+
+  const buyerHistory = {
+    priorOrders: buyerOrdersCount.count ?? 0,
+    priorDisputes: buyerDisputesCount.count ?? 0,
+  };
+  const sellerHistory = {
+    priorOrders: sellerOrdersCount.count ?? 0,
+    priorDisputes: sellerDisputesCount.count ?? 0,
+  };
+
   return (
     <div className="max-w-4xl">
       <BackLink href="/staff/disputes" label="All disputes" />
@@ -110,6 +139,33 @@ export default async function StaffDisputeDetailPage(
                 </dd>
               </div>
             </dl>
+          </CardBody>
+        </Card>
+
+        {/* Party history */}
+        <Card>
+          <CardBody>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              Party history
+            </h2>
+            <p className="text-xs text-semantic-text-muted mb-3">
+              Prior activity outside this dispute. A high dispute rate on either
+              side warrants pattern-aware judgment.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PartyHistoryBlock
+                role="Buyer"
+                userId={typedDispute.buyer_id}
+                priorOrders={buyerHistory.priorOrders}
+                priorDisputes={buyerHistory.priorDisputes}
+              />
+              <PartyHistoryBlock
+                role="Seller"
+                userId={typedDispute.seller_id}
+                priorOrders={sellerHistory.priorOrders}
+                priorDisputes={sellerHistory.priorDisputes}
+              />
+            </div>
           </CardBody>
         </Card>
 
@@ -237,6 +293,50 @@ export default async function StaffDisputeDetailPage(
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+interface PartyHistoryBlockProps {
+  role: string;
+  userId: string;
+  priorOrders: number;
+  priorDisputes: number;
+}
+
+function PartyHistoryBlock({ role, userId, priorOrders, priorDisputes }: PartyHistoryBlockProps) {
+  // Total prior interactions = orders + disputes-on-other-orders. The
+  // dispute rate is computed against orders only, since one order can have
+  // at most one dispute and disputes-on-other-orders is the numerator.
+  const disputeRatePct = priorOrders > 0 ? Math.round((priorDisputes / priorOrders) * 100) : 0;
+  const flagged = priorOrders >= 3 && disputeRatePct >= 25;
+
+  return (
+    <div>
+      <p className="text-xs text-semantic-text-muted uppercase tracking-wide mb-2">{role}</p>
+      <dl className="space-y-1 text-sm">
+        <div className="flex justify-between">
+          <dt className="text-semantic-text-muted">Prior orders</dt>
+          <dd className="text-semantic-text-primary font-medium">{priorOrders}</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-semantic-text-muted">Prior disputes</dt>
+          <dd className={flagged ? 'text-semantic-error font-medium' : 'text-semantic-text-primary font-medium'}>
+            {priorDisputes}
+            {priorOrders > 0 && (
+              <span className={flagged ? 'text-semantic-error' : 'text-semantic-text-muted'}>
+                {' '}({disputeRatePct}%)
+              </span>
+            )}
+          </dd>
+        </div>
+      </dl>
+      <Link
+        href={`/staff/users/${userId}`}
+        className="text-xs link-brand mt-2 inline-block"
+      >
+        Open user profile
+      </Link>
     </div>
   );
 }
