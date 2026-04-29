@@ -8,9 +8,10 @@ import {
   CardBody,
   EmptyState,
   Input,
+  Pagination,
   Select,
 } from '@/components/ui';
-import { fetchProfiles } from '@/lib/supabase/helpers';
+import { fetchProfiles, type Profile } from '@/lib/supabase/helpers';
 import { formatDateTime } from '@/lib/date-utils';
 import { ListMagnifyingGlass } from '@phosphor-icons/react/ssr';
 
@@ -18,8 +19,17 @@ export const metadata: Metadata = {
   title: 'Audit Log — Staff',
 };
 
-type ActorType = 'user' | 'system' | 'cron';
-type RetentionClass = 'operational' | 'regulatory';
+const ACTOR_TYPES = ['user', 'system', 'cron'] as const;
+const RETENTION_CLASSES = ['operational', 'regulatory'] as const;
+type ActorType = typeof ACTOR_TYPES[number];
+type RetentionClass = typeof RETENTION_CLASSES[number];
+
+function isActorType(value: string | undefined): value is ActorType {
+  return !!value && (ACTOR_TYPES as readonly string[]).includes(value);
+}
+function isRetentionClass(value: string | undefined): value is RetentionClass {
+  return !!value && (RETENTION_CLASSES as readonly string[]).includes(value);
+}
 
 interface AuditLogRow {
   id: string;
@@ -100,53 +110,73 @@ export default async function StaffAuditPage(
   const searchParams = await props.searchParams;
   const { serviceClient } = await requireServerAuth();
 
-  const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  const requestedPage = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
 
-  let query = serviceClient
-    .from('audit_log')
-    .select(
-      'id, created_at, actor_id, actor_type, action, resource_type, resource_id, retention_class, metadata',
-      { count: 'exact' }
-    )
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  // Builder factory — Supabase query builders mutate in place and return
+  // `this`, so a single instance can't be reused for two range() calls.
+  // Constructing fresh builders also keeps the filter wiring obviously
+  // free of cross-query state.
+  const buildQuery = () => {
+    let q = serviceClient
+      .from('audit_log')
+      .select(
+        'id, created_at, actor_id, actor_type, action, resource_type, resource_id, retention_class, metadata',
+        { count: 'exact' }
+      )
+      .order('created_at', { ascending: false });
 
-  if (searchParams.actor_type && ['user', 'system', 'cron'].includes(searchParams.actor_type)) {
-    query = query.eq('actor_type', searchParams.actor_type);
-  }
-  if (searchParams.actor_id) {
-    query = query.eq('actor_id', searchParams.actor_id);
-  }
-  if (searchParams.action) {
-    // Substring match — escape SQL wildcards in user input (% _) per CLAUDE.md ILIKE rule.
-    const escaped = searchParams.action.replace(/[%_]/g, (c) => `\\${c}`);
-    query = query.ilike('action', `%${escaped}%`);
-  }
-  if (searchParams.resource_type) {
-    query = query.eq('resource_type', searchParams.resource_type);
-  }
-  if (searchParams.resource_id) {
-    query = query.eq('resource_id', searchParams.resource_id);
-  }
-  if (searchParams.retention_class && ['operational', 'regulatory'].includes(searchParams.retention_class)) {
-    query = query.eq('retention_class', searchParams.retention_class);
-  }
-  if (searchParams.date_from) {
-    query = query.gte('created_at', searchParams.date_from);
-  }
-  if (searchParams.date_to) {
-    // Treat date_to as end-of-day inclusive
-    query = query.lte('created_at', `${searchParams.date_to}T23:59:59.999Z`);
-  }
+    if (isActorType(searchParams.actor_type)) {
+      q = q.eq('actor_type', searchParams.actor_type);
+    }
+    if (searchParams.actor_id) {
+      q = q.eq('actor_id', searchParams.actor_id);
+    }
+    if (searchParams.action) {
+      // Wildcard escape for PostgREST `.ilike()` — uses Postgres' default
+      // `\` escape character. NOT the `!` ESCAPE convention used in
+      // raw-SQL ILIKE inside RPC functions (see migration 046), which
+      // exists because `standard_conforming_strings` makes `\` ambiguous
+      // in PL/pgSQL string literals. The `.ilike()` call here goes through
+      // the PostgREST query string and uses the LIKE default escape.
+      const escaped = searchParams.action.replace(/[%_]/g, (c) => `\\${c}`);
+      q = q.ilike('action', `%${escaped}%`);
+    }
+    if (searchParams.resource_type) {
+      q = q.eq('resource_type', searchParams.resource_type);
+    }
+    if (searchParams.resource_id) {
+      q = q.eq('resource_id', searchParams.resource_id);
+    }
+    if (isRetentionClass(searchParams.retention_class)) {
+      q = q.eq('retention_class', searchParams.retention_class);
+    }
+    if (searchParams.date_from) {
+      q = q.gte('created_at', searchParams.date_from);
+    }
+    if (searchParams.date_to) {
+      q = q.lte('created_at', `${searchParams.date_to}T23:59:59.999Z`);
+    }
+    return q;
+  };
 
-  const { data, count, error } = await query;
-  const rows = (data ?? []) as AuditLogRow[];
+  const fromInitial = (requestedPage - 1) * PAGE_SIZE;
+  const toInitial = fromInitial + PAGE_SIZE - 1;
+  const { data: initialData, count, error } = await buildQuery().range(fromInitial, toInitial);
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Clamp so out-of-range URLs (e.g. ?page=999) display the last page rather
+  // than "page 999 of 3" with empty rows.
+  const page = Math.min(requestedPage, totalPages);
 
-  // Resolve actor names for `actor_type='user'` rows
+  let rows: AuditLogRow[];
+  if (page === requestedPage) {
+    rows = (initialData ?? []) as AuditLogRow[];
+  } else {
+    const from = (page - 1) * PAGE_SIZE;
+    const { data: clampedData } = await buildQuery().range(from, from + PAGE_SIZE - 1);
+    rows = (clampedData ?? []) as AuditLogRow[];
+  }
+
   const userActorIds = Array.from(
     new Set(
       rows
@@ -154,11 +184,10 @@ export default async function StaffAuditPage(
         .map((r) => r.actor_id as string)
     )
   );
-  const profileMap = userActorIds.length > 0
+  const profileMap: Map<string, Profile> = userActorIds.length > 0
     ? await fetchProfiles(serviceClient, userActorIds)
     : new Map();
 
-  // Build URL for pagination links — preserve all current filters
   const buildUrl = (newPage: number) => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(searchParams)) {
@@ -189,9 +218,9 @@ export default async function StaffAuditPage(
         retained for 10 years; operational rows for 30 days.
       </p>
 
-      {/* Filter form — native HTML GET form, no client JS needed */}
       <Card className="mb-6">
         <CardBody>
+          {/* Native HTML GET form — submits filters as query params with no client JS. */}
           <form method="GET" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Select
               name="actor_type"
@@ -292,20 +321,7 @@ export default async function StaffAuditPage(
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                     <div>
                       <span className="text-semantic-text-muted">Actor: </span>
-                      {row.actor_type === 'user' ? (
-                        actor ? (
-                          <Link
-                            href={`/staff/users/${row.actor_id}`}
-                            className="text-semantic-brand sm:hover:underline"
-                          >
-                            {actor.full_name ?? actor.email ?? row.actor_id}
-                          </Link>
-                        ) : (
-                          <span className="font-mono text-xs">{row.actor_id ?? 'user'}</span>
-                        )
-                      ) : (
-                        <span className="capitalize">{row.actor_type}</span>
-                      )}
+                      <ActorCell row={row} actor={actor} />
                     </div>
 
                     <div>
@@ -346,32 +362,35 @@ export default async function StaffAuditPage(
         </div>
       )}
 
-      {totalPages > 1 && (
-        <nav aria-label="Pagination" className="flex items-center justify-between mt-6">
-          <p className="text-sm text-semantic-text-secondary">
-            Showing {from + 1}–{Math.min(to + 1, total)} of {total.toLocaleString('en')}
-          </p>
-          <div className="flex items-center gap-2">
-            {page > 1 ? (
-              <Button variant="secondary" size="sm" asChild>
-                <Link href={buildUrl(page - 1)}>Previous</Link>
-              </Button>
-            ) : (
-              <Button variant="secondary" size="sm" disabled>Previous</Button>
-            )}
-            <span className="text-sm text-semantic-text-muted px-2">
-              {page} / {totalPages}
-            </span>
-            {page < totalPages ? (
-              <Button variant="secondary" size="sm" asChild>
-                <Link href={buildUrl(page + 1)}>Next</Link>
-              </Button>
-            ) : (
-              <Button variant="secondary" size="sm" disabled>Next</Button>
-            )}
-          </div>
-        </nav>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={total}
+        pageSize={PAGE_SIZE}
+        buildUrl={buildUrl}
+      />
     </div>
+  );
+}
+
+interface ActorCellProps {
+  row: AuditLogRow;
+  actor: Profile | null | undefined;
+}
+
+function ActorCell({ row, actor }: ActorCellProps) {
+  if (row.actor_type !== 'user') {
+    return <span className="capitalize">{row.actor_type}</span>;
+  }
+  if (!actor) {
+    return <span className="font-mono text-xs">{row.actor_id}</span>;
+  }
+  return (
+    <Link
+      href={`/staff/users/${row.actor_id}`}
+      className="text-semantic-brand sm:hover:underline"
+    >
+      {actor.full_name ?? actor.email ?? row.actor_id}
+    </Link>
   );
 }
