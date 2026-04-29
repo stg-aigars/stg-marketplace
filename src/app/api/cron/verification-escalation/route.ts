@@ -73,6 +73,7 @@ export async function POST(request: Request) {
           requested_at: candidate.verification_requested_at,
           escalation_days: TRADER_THRESHOLDS.verificationResponseDeadlineDays,
         },
+        retentionClass: 'regulatory',
       });
     }
 

@@ -86,6 +86,7 @@ export async function updateSellerStatus(
       inFlightReservedCount: reservedCount ?? 0,
       inFlightAuctionEndedCount: auctionEndedCount ?? 0,
     },
+    retentionClass: 'regulatory',
   });
 
   revalidatePath(`/staff/users/${userId}`);

@@ -174,6 +174,7 @@ export async function POST(request: Request) {
       contentReferencePreview: contentReference.slice(0, 200),
       listingId,
     },
+    retentionClass: 'regulatory',
   });
 
   // Fan out to staff so the queue is visible without polling. Fire-and-forget.

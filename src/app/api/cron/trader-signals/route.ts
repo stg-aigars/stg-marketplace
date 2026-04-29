@@ -131,6 +131,7 @@ export async function POST(request: Request) {
             enforcement: TRADER_THRESHOLDS.enforcement,
             triggered_by: triggeredBy(c),
           },
+          retentionClass: 'regulatory',
         });
       }
 

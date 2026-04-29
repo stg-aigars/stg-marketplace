@@ -87,6 +87,7 @@ export async function sendVerificationRequest(userId: string): Promise<ActionRes
       sales_count: profile.completed_sales_12mo_count ?? 0,
       revenue_cents: profile.completed_sales_12mo_revenue_cents ?? 0,
     },
+    retentionClass: 'regulatory',
   });
 
   revalidatePath(`/staff/users/${userId}`);
@@ -166,6 +167,7 @@ export async function dismissTraderSignal(
       verificationResponse: profile.verification_response ?? null,
       signalThresholdVersion: profile.trader_signal_threshold_version ?? null,
     },
+    retentionClass: 'regulatory',
   });
 
   revalidatePath(`/staff/users/${userId}`);

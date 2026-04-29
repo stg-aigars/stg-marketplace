@@ -12,6 +12,7 @@ import type { TrackingEvent } from './types';
 import { createServiceClient } from '@/lib/supabase';
 import { sendOrderDeliveredToBuyer, sendOrderDeliveredToSeller, sendOrderShippedToBuyer, sendOrderShippedToSeller, sendDisputeEscalated } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { insertAutoEscalatedDispute } from '@/lib/services/dispute';
 import { notify, notifyMany } from '@/lib/notifications';
 import { getOrderGameSummary, type OrderItemLike, type LegacyListingsLike } from '@/lib/orders/utils';
 
@@ -151,6 +152,7 @@ async function processOrderEvents(
           resourceType: 'order',
           resourceId: orderId,
           metadata: { from: 'shipped', to: 'delivered', trigger: 'tracking_parcel_delivered' },
+          retentionClass: 'operational',
         });
 
         const buyerProfile = delivered.buyer_profile as { full_name?: string; email?: string } | null;
@@ -228,6 +230,7 @@ async function processOrderEvents(
           resourceType: 'order',
           resourceId: orderId,
           metadata: { from: 'accepted', to: 'shipped', trigger: 'tracking_parcel_received' },
+          retentionClass: 'operational',
         });
 
         const buyerProfile = shipped.buyer_profile as { full_name?: string; email?: string } | null;
@@ -312,13 +315,13 @@ async function processOrderEvents(
           statusChanged = true;
           newStatus = 'disputed';
 
-          await supabase.from('disputes').insert({
-            order_id: orderId,
-            buyer_id: disputed.buyer_id,
-            seller_id: disputed.seller_id,
-            reason: 'Auto-escalated: parcel not collected, returning to sender',
-            photos: [],
-            escalated_at: new Date().toISOString(),
+          await insertAutoEscalatedDispute({
+            orderId,
+            buyerId: disputed.buyer_id,
+            sellerId: disputed.seller_id,
+            disputeReason: 'Auto-escalated: parcel not collected, returning to sender',
+            auditReason: 'auto_escalated_parcel_returning',
+            auditTrigger: 'tracking_returning',
           });
 
           void logAuditEvent({
@@ -327,6 +330,7 @@ async function processOrderEvents(
             resourceType: 'order',
             resourceId: orderId,
             metadata: { orderNumber: disputed.order_number, trigger: 'tracking_returning' },
+            retentionClass: 'operational',
           });
 
           const buyerProfile = disputed.buyer_profile as { full_name?: string; email?: string } | null;

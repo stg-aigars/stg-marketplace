@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { refundOrder } from '@/lib/services/order-refund';
 import { cancelOrderShipment } from '@/lib/services/unisend/shipping';
 import { logAuditEvent } from '@/lib/services/audit';
+import { insertAutoEscalatedDispute } from '@/lib/services/dispute';
 import {
   SELLER_RESPONSE_DEADLINE_HOURS,
   SELLER_RESPONSE_REMINDER_HOURS,
@@ -280,6 +281,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         resourceType: 'order',
         resourceId: order.id,
         metadata: { orderNumber: order.order_number, reason },
+        retentionClass: 'regulatory',
       });
 
       // Emails (non-blocking)
@@ -432,17 +434,14 @@ async function escalateStaleShippedOrders(
 
       if (!updated) continue;
 
-      // Create dispute
-      await supabase
-        .from('disputes')
-        .insert({
-          order_id: order.id,
-          buyer_id: order.buyer_id,
-          seller_id: order.seller_id,
-          reason: 'Auto-escalated: no delivery confirmation after 21 days',
-          photos: [],
-          escalated_at: new Date().toISOString(),
-        });
+      await insertAutoEscalatedDispute({
+        orderId: order.id,
+        buyerId: order.buyer_id,
+        sellerId: order.seller_id,
+        disputeReason: 'Auto-escalated: no delivery confirmation after 21 days',
+        auditReason: 'auto_escalated_no_delivery_21d',
+        auditTrigger: 'enforce_deadlines',
+      });
 
       void logAuditEvent({
         actorType: 'cron',
@@ -450,6 +449,7 @@ async function escalateStaleShippedOrders(
         resourceType: 'order',
         resourceId: order.id,
         metadata: { orderNumber: order.order_number },
+        retentionClass: 'regulatory',
       });
 
       // Notify both parties + staff

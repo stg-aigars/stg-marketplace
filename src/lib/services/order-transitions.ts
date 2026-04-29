@@ -116,6 +116,7 @@ async function transitionOrder(
     resourceType: 'order',
     resourceId: orderId,
     metadata: { from: currentStatus, to: toStatus, role },
+    retentionClass: 'operational',
   });
 
   return data;
@@ -401,6 +402,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     resourceType: 'order',
     resourceId: orderId,
     metadata: { from: 'delivered', to: 'completed', role: 'cron' },
+    retentionClass: 'operational',
   });
 
   // Credit seller wallet (idempotent)

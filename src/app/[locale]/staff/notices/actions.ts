@@ -170,6 +170,7 @@ export async function actionListingFromNotice(
       reasonText: reasonText.trim(),
       statementOfReasonsSentAt,
     },
+    retentionClass: 'regulatory',
   });
 
   revalidatePath('/staff/notices');

@@ -23,6 +23,7 @@ function logSellerTermsAccepted(actorId: string, previousVersion: string | null)
     resourceType: 'seller_terms',
     resourceId: SELLER_TERMS_VERSION,
     metadata: { source: 'sell_gate', previous_version: previousVersion },
+    retentionClass: 'regulatory',
   });
 }
 

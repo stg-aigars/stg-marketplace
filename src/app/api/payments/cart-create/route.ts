@@ -244,6 +244,7 @@ export async function POST(request: Request) {
         walletDebitCents,
         orderNumber,
       },
+      retentionClass: 'regulatory',
     });
 
     return NextResponse.json({ paymentLink: paymentResponse.payment_link });
