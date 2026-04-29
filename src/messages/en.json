@@ -142,7 +142,8 @@
     "shipping": "Shipping",
     "seller": "Seller",
     "buyNow": "Buy now",
-    "preLovedGames": "Pre-loved games"
+    "preLovedGames": "Pre-loved games",
+    "sellerStatusNotice": "Private seller — the EU 14-day withdrawal right does not apply. <link>How returns work</link>."
   },
   "staleAction": {
     "updating": "Updating to the latest version…",

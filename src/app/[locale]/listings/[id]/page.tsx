@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
@@ -150,6 +151,7 @@ export default async function ListingDetailPage(
     locale
   } = params;
 
+  const t = await getTranslations('listing');
   const supabase = await createClient();
 
   // Get current user + their favorites in a single auth call
@@ -601,6 +603,16 @@ export default async function ListingDetailPage(
                   </div>
                 </div>
               </div>
+              {/* Pre-contract private-seller notice (PTAC §2.5) */}
+              <p className="mt-3 text-xs text-semantic-text-muted">
+                {t.rich('sellerStatusNotice', {
+                  link: (chunks) => (
+                    <Link href="/terms#cancellations-refunds" className="link-brand">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
             </CardBody>
           </Card>
 
