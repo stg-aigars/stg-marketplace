@@ -147,5 +147,10 @@
   "staleAction": {
     "updating": "Updating to the latest version…",
     "newVersionAvailable": "A newer version is available. Please refresh the page."
+  },
+  "checkout": {
+    "placeOrderButton": "Place order",
+    "payButton": "Pay {amount}",
+    "obligationNote": "By clicking, you confirm an order with an obligation to pay."
   }
 }

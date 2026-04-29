@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Alert, Button, Card, CardBody, Skeleton, PhoneInput, TurnstileWidget, UserIdentity, Toggle, Checkbox } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { Trash } from '@phosphor-icons/react/ssr';
@@ -52,6 +53,7 @@ export function CheckoutForm({
   sellerProfile,
 }: CheckoutFormProps) {
   const router = useRouter();
+  const t = useTranslations('checkout');
   const { items, removeItem, removeItems } = useCart();
   const [phone, setPhone] = useState(initialPhone);
   const [selectedTerminal, setSelectedTerminal] = useState<TerminalOption | null>(null);
@@ -367,8 +369,13 @@ export function CheckoutForm({
               disabled={!canSubmit || loading}
               loading={loading}
             >
-              {walletCoversTotal ? 'Place order' : `Pay ${formatCentsToCurrency(cardChargeCents)}`}
+              {walletCoversTotal
+                ? t('placeOrderButton')
+                : t('payButton', { amount: formatCentsToCurrency(cardChargeCents) })}
             </Button>
+            <p className="mt-2 text-xs text-semantic-text-muted text-center">
+              {t('obligationNote')}
+            </p>
 
             {walletCoversTotal ? (
               <p className="mt-3 text-xs text-semantic-text-muted text-center">
