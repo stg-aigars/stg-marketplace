@@ -392,23 +392,32 @@ export default function TermsPage() {
             14. Limitation of liability
           </h2>
           <p>
-            The platform is provided &ldquo;as is&rdquo; without warranties of any kind. STG
-            connects buyers and sellers but is not a party to the sale itself. We do not guarantee
-            the condition, authenticity, or quality of listed items.
+            <strong>Limitation of liability.</strong> Our total liability to you in connection
+            with the platform or these Terms is limited to the greater of (a) &euro;500 and
+            (b) the fees and commissions paid by you in the twelve months preceding the event
+            giving rise to the claim,{' '}
+            <strong>
+              except where mandatory consumer-protection law of your country of habitual
+              residence requires otherwise &mdash; in which case that law prevails over this
+              cap.
+            </strong>{' '}
+            The platform is provided as is,{' '}
+            <strong>
+              except where mandatory consumer-protection or other applicable law requires
+              otherwise.
+            </strong>{' '}
+            STG connects buyers and sellers but is not a party to the sale itself; we do not
+            separately warrant the condition, authenticity, or quality of items listed by
+            sellers,{' '}
+            <strong>save for any warranties imposed on us by mandatory law.</strong>
           </p>
-          <p>
-            To the maximum extent permitted by applicable law, our total liability to you in
-            connection with the platform or these Terms is limited to the greater of (a)
-            &euro;500 and (b) the fees and commissions paid by you in the twelve months
-            preceding the event giving rise to the claim.
-          </p>
-          <p>The following are not limited or excluded:</p>
+          <p>For the avoidance of doubt, nothing in these Terms limits or excludes:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>liability for death or personal injury caused by our negligence,</li>
             <li>liability for fraud or fraudulent misrepresentation,</li>
             <li>
               any liability that cannot lawfully be limited or excluded under the consumer
-              protection law of your country of habitual residence, and
+              protection law of your country of habitual residence, or
             </li>
             <li>
               any statutory liability we have as an intermediary service provider under
@@ -498,9 +507,21 @@ export default function TermsPage() {
             16. Changes to these terms
           </h2>
           <p>
-            We may update these terms from time to time. Continued use of the platform after changes
-            constitutes acceptance of the updated terms. We will notify registered users of
-            significant changes via email.
+            <strong>Changes to these Terms.</strong> We may update these Terms from time to
+            time.{' '}
+            <strong>
+              For any change to fees, commissions, refund policy, dispute procedure, liability
+              cap, or grounds for account termination, we will email registered users at least
+              14 days before the changes take effect. For minor changes (typo fixes,
+              clarifications that do not reduce your rights), we will publish the new version
+              with a changelog entry.
+            </strong>{' '}
+            Continued use of the platform after the effective date constitutes acceptance of
+            the updated Terms.{' '}
+            <strong>
+              Changes do not apply retroactively to orders placed before the effective date
+              &mdash; those orders remain governed by the Terms in force when you placed them.
+            </strong>
           </p>
         </section>
 
@@ -572,23 +593,32 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <p className="text-sm text-semantic-text-muted pt-4 border-t border-semantic-border-subtle">
-          See also our{' '}
-          <Link
-            href="/privacy"
-            className="link-brand"
-          >
-            Privacy Policy
-          </Link>{' '}
-          and{' '}
-          <Link
-            href="/seller-terms"
-            className="link-brand"
-          >
-            Seller Agreement
-          </Link>
-          .
-        </p>
+        <div className="pt-4 border-t border-semantic-border-subtle space-y-3">
+          <p className="text-xs text-semantic-text-muted">
+            <strong>Version 2026-04-28</strong> — restructured the liability cap to inline the
+            consumer-protection priority; enumerated the triggers for the 14-day notice on
+            material changes and added an in-flight carve-out; clarified that the as-is
+            provision is bounded by mandatory consumer-protection law.
+          </p>
+
+          <p className="text-sm text-semantic-text-muted">
+            See also our{' '}
+            <Link
+              href="/privacy"
+              className="link-brand"
+            >
+              Privacy Policy
+            </Link>{' '}
+            and{' '}
+            <Link
+              href="/seller-terms"
+              className="link-brand"
+            >
+              Seller Agreement
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );
