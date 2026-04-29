@@ -9,6 +9,7 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import type { DisputeRow } from '@/lib/orders/types';
 import { StaffDisputeActions } from './StaffDisputeActions';
+import { ResourceAuditTimeline } from '@/components/staff/ResourceAuditTimeline';
 
 export const metadata: Metadata = {
   title: 'Dispute Detail — Staff',
@@ -294,6 +295,13 @@ export default async function StaffDisputeDetailPage(
             </CardBody>
           </Card>
         )}
+
+        <ResourceAuditTimeline
+          serviceClient={serviceClient}
+          resourceType="dispute"
+          resourceId={typedDispute.id}
+          title="Dispute audit trail"
+        />
       </div>
     </div>
   );
