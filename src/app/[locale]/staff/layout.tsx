@@ -10,6 +10,7 @@ const STAFF_TABS = [
   { key: 'disputes', label: 'Disputes', href: '/staff/disputes' },
   { key: 'notices', label: 'DSA notices', href: '/staff/notices' },
   { key: 'dac7', label: 'DAC7', href: '/staff/dac7' },
+  { key: 'users', label: 'Users', href: '/staff/users' },
   { key: 'showcase', label: 'Components', href: '/staff/showcase' },
 ];
 
