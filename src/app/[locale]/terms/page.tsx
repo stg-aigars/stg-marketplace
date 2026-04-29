@@ -392,10 +392,9 @@ export default function TermsPage() {
             14. Limitation of liability
           </h2>
           <p>
-            <strong>Limitation of liability.</strong> Our total liability to you in connection
-            with the platform or these Terms is limited to the greater of (a) &euro;500 and
-            (b) the fees and commissions paid by you in the twelve months preceding the event
-            giving rise to the claim,{' '}
+            Our total liability to you in connection with the platform or these Terms is
+            limited to the greater of (a) &euro;500 and (b) the fees and commissions paid by
+            you in the twelve months preceding the event giving rise to the claim,{' '}
             <strong>
               except where mandatory consumer-protection law of your country of habitual
               residence requires otherwise &mdash; in which case that law prevails over this
@@ -507,8 +506,7 @@ export default function TermsPage() {
             16. Changes to these terms
           </h2>
           <p>
-            <strong>Changes to these Terms.</strong> We may update these Terms from time to
-            time.{' '}
+            We may update these Terms from time to time.{' '}
             <strong>
               For any change to fees, commissions, refund policy, dispute procedure, liability
               cap, or grounds for account termination, we will email registered users at least
@@ -519,8 +517,8 @@ export default function TermsPage() {
             Continued use of the platform after the effective date constitutes acceptance of
             the updated Terms.{' '}
             <strong>
-              Changes do not apply retroactively to orders placed before the effective date
-              &mdash; those orders remain governed by the Terms in force when you placed them.
+              Changes do not apply retroactively to orders placed before the effective date.
+              Those orders remain governed by the Terms in force when you placed them.
             </strong>
           </p>
         </section>
@@ -595,10 +593,11 @@ export default function TermsPage() {
 
         <div className="pt-4 border-t border-semantic-border-subtle space-y-3">
           <p className="text-xs text-semantic-text-muted">
-            <strong>Version 2026-04-28</strong> — restructured the liability cap to inline the
-            consumer-protection priority; enumerated the triggers for the 14-day notice on
-            material changes and added an in-flight carve-out; clarified that the as-is
-            provision is bounded by mandatory consumer-protection law.
+            <strong>Version 2026-04-28</strong> — the liability cap now carries the
+            consumer-protection priority inline rather than in a separate paragraph, and the
+            &ldquo;as is&rdquo; wording is bounded by mandatory law. Material-change updates
+            now require 14 days&rsquo; email notice before they take effect, and they
+            don&rsquo;t apply to orders already placed when the change lands.
           </p>
 
           <p className="text-sm text-semantic-text-muted">

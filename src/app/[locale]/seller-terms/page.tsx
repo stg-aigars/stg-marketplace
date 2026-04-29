@@ -293,9 +293,9 @@ export default function SellerTermsPage() {
             released once the matter is resolved, subject to any order from a competent
             authority.{' '}
             <strong>
-              You may appeal any such action by writing to info@secondturn.games — a person
-              who did not take the original decision will review the appeal within 14 days
-              and respond in writing. Where AML, sanctions, or law-enforcement obligations
+              You may appeal any such action by writing to info@secondturn.games. A person who
+              did not take the original decision will review the appeal within 14 days and
+              respond in writing. Where AML, sanctions, or law-enforcement obligations
               prevent us from explaining a particular action, we will tell you when those
               obligations no longer prevent disclosure.
             </strong>
@@ -383,10 +383,11 @@ export default function SellerTermsPage() {
 
         <div className="pt-4 border-t border-semantic-border-subtle space-y-3">
           <p className="text-xs text-semantic-text-muted">
-            <strong>Version 2026-04-28</strong> — clarified the AML/sanctions clause: actions
-            taken on reasonable grounds with notice as soon as legally permitted (delayed only
-            where AML, sanctions, or law-enforcement obligations require), with an explicit
-            14-day appeal route to a reviewer who did not take the original decision.
+            <strong>Version 2026-04-28</strong> — the AML/sanctions clause now requires
+            reasonable grounds and gives notice as soon as legally permitted (silent only
+            while AML, sanctions, or law-enforcement obligations require). If we act, you can
+            appeal in writing and a reviewer who didn&rsquo;t take the original decision
+            will respond within 14 days.
           </p>
 
           <p className="text-sm text-semantic-text-muted">
