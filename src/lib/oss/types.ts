@@ -3,10 +3,21 @@
  *
  * The `oss_submissions` table stores the SUBMISSION EVENT only — the
  * per-MS aggregate values are computed at query time from `orders` via
- * `aggregateVatByMS({ excludeHomeCountry: 'LV' })`.
+ * `aggregateVatByMS({ excludeHomeCountry: HOME_COUNTRY })`.
  */
 
 import type { VatByMSRow } from '@/lib/vat-aggregation';
+
+/**
+ * STG's home country. Domestic supplies (LV → LV) feed the regular LV VAT
+ * return; cross-border B2C supplies (non-LV sellers) feed the OSS quarterly
+ * declaration via OSS_MEMBER_STATES below.
+ *
+ * Stored values for `seller_country` on `orders` and `country` on
+ * `user_profiles` are always uppercase ISO 3166-1 alpha-2 codes — enforced
+ * by the migration 001 CHECK constraint (LV|EE|LT).
+ */
+export const HOME_COUNTRY = 'LV';
 
 /**
  * Member states STG declares OSS for. STG's home is LV; OSS covers

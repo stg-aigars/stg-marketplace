@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { logAuditEvent } from '@/lib/services/audit';
 import { aggregateVatByMS, type OrderFinancialData } from '@/lib/vat-aggregation';
 import {
+  HOME_COUNTRY,
   OSS_MEMBER_STATES,
   projectToDeclared,
   quarterContaining,
@@ -28,7 +29,7 @@ type ActionResult = { success: true; submissionId: string } | { error: string };
  * the audit row is the regulator-facing artefact, so the values must be
  * authoritative regardless of what the client sent. The form passes only
  * the quarter identifier + payment reference; the server fetches orders,
- * runs aggregateVatByMS({ excludeHomeCountry: 'LV' }), and writes the
+ * runs aggregateVatByMS({ excludeHomeCountry: HOME_COUNTRY }), and writes the
  * recomputed projection. A tampered client cannot land different numbers
  * than the orders table actually supports.
  */
@@ -61,7 +62,7 @@ export async function recordOssSubmission(input: MarkFiledInput): Promise<Action
   // Recompute the per-MS aggregate server-side. Client-supplied amounts are
   // never trusted — only the quarter identifier + payment reference cross
   // the trust boundary.
-  const aggregates = aggregateVatByMS((orders ?? []) as OrderFinancialData[], { excludeHomeCountry: 'LV' });
+  const aggregates = aggregateVatByMS((orders ?? []) as OrderFinancialData[], { excludeHomeCountry: HOME_COUNTRY });
   const declaredAmounts: OssDeclaredAmounts = {};
   for (const row of aggregates) {
     if (OSS_MEMBER_STATES.includes(row.ms as OssMemberState)) {

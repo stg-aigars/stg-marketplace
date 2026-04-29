@@ -3,6 +3,14 @@ import { requireStaffAuth } from '@/lib/auth/helpers';
 import { createServiceClient } from '@/lib/supabase';
 import { getVatRate } from '@/lib/services/pricing';
 import type { BookkeepingSummary, CountryVatBreakdown, VatBreakdownCents } from '@/lib/bookkeeping-utils';
+import { HOME_COUNTRY } from '@/lib/oss/types';
+
+const BOOKKEEPING_SCOPES = ['all', 'domestic', 'cross_border'] as const;
+type BookkeepingScope = typeof BOOKKEEPING_SCOPES[number];
+
+function isBookkeepingScope(value: string | null): value is BookkeepingScope {
+  return !!value && (BOOKKEEPING_SCOPES as readonly string[]).includes(value);
+}
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +31,8 @@ export async function GET(request: Request) {
   const seller = searchParams.get('seller');
   const dateFrom = searchParams.get('date_from');
   const dateTo = searchParams.get('date_to');
+  const rawScope = searchParams.get('scope');
+  const scope: BookkeepingScope = isBookkeepingScope(rawScope) ? rawScope : 'all';
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const limit = Math.min(100, parseInt(searchParams.get('limit') ?? String(PAGE_SIZE), 10));
 
@@ -52,6 +62,11 @@ export async function GET(request: Request) {
   }
   if (dateTo) {
     query = query.lte('created_at', dateTo);
+  }
+  if (scope === 'domestic') {
+    query = query.eq('seller_country', HOME_COUNTRY);
+  } else if (scope === 'cross_border') {
+    query = query.neq('seller_country', HOME_COUNTRY);
   }
 
   // Seller name filter: resolve seller IDs before applying to queries
@@ -126,7 +141,16 @@ export async function GET(request: Request) {
     shipping_net_cents: number;
     shipping_vat_cents: number;
   }
-  const summaryRows = (summaryRpcResult.data ?? []) as SummaryRow[];
+  const allSummaryRows = (summaryRpcResult.data ?? []) as SummaryRow[];
+
+  // Apply the same scope filter to the per-country aggregates as the orders
+  // query. Direct equality matches the orders-side `.eq()` / `.neq()`:
+  // `seller_country` is uppercase by the migration 001 CHECK constraint.
+  const summaryRows = scope === 'domestic'
+    ? allSummaryRows.filter((row) => row.seller_country === HOME_COUNTRY)
+    : scope === 'cross_border'
+      ? allSummaryRows.filter((row) => row.seller_country !== HOME_COUNTRY)
+      : allSummaryRows;
 
   // Aggregate across countries for overall summary
   const platformRevenue: VatBreakdownCents = { grossCents: 0, netCents: 0, vatCents: 0 };

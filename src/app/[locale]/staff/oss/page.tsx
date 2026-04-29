@@ -7,6 +7,7 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate, formatDateTime } from '@/lib/date-utils';
 import { aggregateVatByMS, type OrderFinancialData } from '@/lib/vat-aggregation';
 import {
+  HOME_COUNTRY,
   OSS_MEMBER_STATES,
   quarterContaining,
   projectToDeclared,
@@ -59,7 +60,7 @@ export default async function StaffOssPage(props: PageProps) {
   const submissions = (submissionsResult.data ?? []) as OssSubmissionRow[];
 
   // Aggregate non-LV (cross-border) VAT for the target quarter.
-  const aggregates = aggregateVatByMS(orders, { excludeHomeCountry: 'LV' });
+  const aggregates = aggregateVatByMS(orders, { excludeHomeCountry: HOME_COUNTRY });
   const declared: OssDeclaredAmounts = {};
   for (const row of aggregates) {
     if (OSS_MEMBER_STATES.includes(row.ms as OssMemberState)) {

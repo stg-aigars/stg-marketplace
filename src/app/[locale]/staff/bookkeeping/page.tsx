@@ -40,6 +40,12 @@ const STATUS_OPTIONS = [
   })),
 ];
 
+const SCOPE_OPTIONS = [
+  { value: 'all', label: 'All countries' },
+  { value: 'domestic', label: 'Domestic (LV → LV)' },
+  { value: 'cross_border', label: 'Cross-border (OSS scope)' },
+];
+
 export default function StaffBookkeepingPage() {
   const router = useRouter();
 
@@ -50,6 +56,7 @@ export default function StaffBookkeepingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sellerFilter, setSellerFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [scopeFilter, setScopeFilter] = useState('all');
   const [dateRange, setDateRange] = useState('this_month');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -62,6 +69,7 @@ export default function StaffBookkeepingPage() {
   const buildFilterParams = useCallback((overrides?: { page?: number; limit?: number }) => {
     const params = new URLSearchParams();
     if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (scopeFilter !== 'all') params.set('scope', scopeFilter);
     if (searchQuery) params.set('search', searchQuery);
     if (sellerFilter) params.set('seller', sellerFilter);
     params.set('page', String(overrides?.page ?? currentPage));
@@ -74,7 +82,7 @@ export default function StaffBookkeepingPage() {
       params.set('date_to', formatDateForAPI(end));
     }
     return params;
-  }, [statusFilter, searchQuery, sellerFilter, dateRange, currentPage]);
+  }, [statusFilter, scopeFilter, searchQuery, sellerFilter, dateRange, currentPage]);
 
   const handleExportCSV = async () => {
     try {
@@ -171,6 +179,15 @@ export default function StaffBookkeepingPage() {
             setCurrentPage(1);
           }}
           options={STATUS_OPTIONS}
+        />
+
+        <Select
+          value={scopeFilter}
+          onChange={(e) => {
+            setScopeFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+          options={SCOPE_OPTIONS}
         />
 
         <Select
