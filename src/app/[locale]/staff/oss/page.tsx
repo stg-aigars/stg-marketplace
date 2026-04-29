@@ -53,7 +53,7 @@ export default async function StaffOssPage(props: PageProps) {
   const [ordersResult, submissionsResult, priorRefundsResult] = await Promise.all([
     serviceClient
       .from('orders')
-      .select('status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents, seller_iban_country_at_order')
+      .select('id, status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents, seller_iban_country_at_order')
       .gte('created_at', quarterStartIso)
       .lt('created_at', quarterEndExclusive),
     serviceClient
@@ -246,9 +246,22 @@ export default async function StaffOssPage(props: PageProps) {
                 <p>
                   Conflicting rows present — seller&apos;s declared country
                   disagrees with the IBAN country at order time. Investigate
-                  in <Link href="/staff/audit?resource_type=order" className="text-semantic-brand sm:hover:underline">audit log</Link> before
-                  including these in the per-MS declaration.
+                  before including these in the per-MS declaration:
                 </p>
+                <ul className="mt-2 space-y-1">
+                  {OSS_MEMBER_STATES.flatMap((ms) =>
+                    (evidence[ms]?.conflictingOrderIds ?? []).map((orderId) => (
+                      <li key={orderId} className="text-xs font-mono">
+                        <Link
+                          href={`/staff/orders/${orderId}`}
+                          className="link-brand"
+                        >
+                          {ms} · {orderId}
+                        </Link>
+                      </li>
+                    )),
+                  )}
+                </ul>
               </Alert>
             )}
           </CardBody>

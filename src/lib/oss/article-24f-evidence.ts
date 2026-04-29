@@ -28,9 +28,11 @@
  *   - conflicting      — IBAN-country differs from seller_country (review)
  */
 
+import { EXCLUDED_FROM_TOTALS } from '@/lib/vat-aggregation';
 import { OSS_MEMBER_STATES, type OssMemberState } from './types';
 
 export interface Article24fEvidenceRow {
+  id: string;
   status: string;
   seller_country: string | null;
   seller_iban_country_at_order: string | null;
@@ -41,22 +43,32 @@ export interface Article24fAggregate {
   consistent: number;
   singleStranded: number;
   conflicting: number;
+  /** Up to 20 order IDs that fell into the conflicting bucket — surfaced
+   *  inline so staff can investigate without a separate query. */
+  conflictingOrderIds: string[];
 }
 
-const EXCLUDED_STATUSES = ['cancelled', 'refunded'];
+const CONFLICT_SAMPLE_LIMIT = 20;
 
 export function aggregateArticle24fEvidence(
   rows: Article24fEvidenceRow[],
 ): Partial<Record<OssMemberState, Article24fAggregate>> {
   const result: Partial<Record<OssMemberState, Article24fAggregate>> = {};
   for (const row of rows) {
-    if (EXCLUDED_STATUSES.includes(row.status)) continue;
+    if (EXCLUDED_FROM_TOTALS.includes(row.status)) continue;
     const ms = row.seller_country?.toUpperCase() as OssMemberState | undefined;
     if (!ms || !OSS_MEMBER_STATES.includes(ms)) continue;
 
-    const ibanMs = row.seller_iban_country_at_order?.toUpperCase() ?? null;
+    const ibanRaw = row.seller_iban_country_at_order?.trim();
+    const ibanMs = ibanRaw ? ibanRaw.toUpperCase() : null;
 
-    const existing = result[ms] ?? { total: 0, consistent: 0, singleStranded: 0, conflicting: 0 };
+    const existing = result[ms] ?? {
+      total: 0,
+      consistent: 0,
+      singleStranded: 0,
+      conflicting: 0,
+      conflictingOrderIds: [],
+    };
     existing.total += 1;
     if (ibanMs === null) {
       existing.singleStranded += 1;
@@ -64,6 +76,9 @@ export function aggregateArticle24fEvidence(
       existing.consistent += 1;
     } else {
       existing.conflicting += 1;
+      if (existing.conflictingOrderIds.length < CONFLICT_SAMPLE_LIMIT) {
+        existing.conflictingOrderIds.push(row.id);
+      }
     }
     result[ms] = existing;
   }
