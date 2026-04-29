@@ -131,8 +131,20 @@ export async function actionListingFromNotice(
     .eq('id', noticeId);
 
   if (noticeUpdateError) {
-    console.error('[staff/notices] notice status update failed:', noticeUpdateError.message);
-    // Listing already cancelled — best-effort continue so the seller still gets notified.
+    // Listing is already cancelled. If we proceed past this point we'd send the
+    // seller their Art. 17 notification and write a `listing.actioned_by_staff`
+    // audit row — and the next staff retry would re-send the same notification
+    // (notify is not idempotent), giving the seller two emails for one decision.
+    // Stop here. Listing stays cancelled (the cancel is what the buyer sees);
+    // staff sees the notice still in 'open'/'reviewing' and can investigate.
+    console.error(
+      '[staff/notices] notice status update failed; aborting Art. 17 notify to avoid duplicate-on-retry:',
+      noticeUpdateError.message,
+    );
+    return {
+      error:
+        'The listing was cancelled, but the notice could not be marked actioned. Please retry — the notification will fire on a successful retry.',
+    };
   }
 
   // Fire the DSA Art. 17 statement-of-reasons to the affected seller

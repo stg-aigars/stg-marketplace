@@ -333,19 +333,22 @@ export function CheckoutForm({
 
             {/* ADR pre-contract disclosure (PTAL 19.¹) — names the buyer's home-country consumer dispute body */}
             <p className="mb-3 text-xs text-semantic-text-muted">
-              {t.rich('adrNotice', {
-                body: getAdrBodyForBuyer(buyerCountry).name,
-                link: (chunks) => (
-                  <a
-                    className="link-brand"
-                    href={getAdrBodyForBuyer(buyerCountry).url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {chunks}
-                  </a>
-                ),
-              })}
+              {(() => {
+                const adr = getAdrBodyForBuyer(buyerCountry);
+                return t.rich('adrNotice', {
+                  body: adr.name,
+                  link: (chunks) => (
+                    <a
+                      className="link-brand"
+                      href={adr.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                });
+              })()}
             </p>
 
             {/* Terms & refund consent */}

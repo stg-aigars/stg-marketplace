@@ -7,6 +7,13 @@ import { logAuditEvent } from '@/lib/services/audit';
 
 type ActionResult = { success: true } | { error: string };
 
+/**
+ * The DB CHECK constraint also permits `'trader'` for staff-side annotation
+ * if a seller emails support and a staff member sets it manually. The
+ * user-facing form must never write that value — see SellerVerificationForm
+ * `FormResponse` and the DSA Art. 30 trap discussion in
+ * docs/legal_audit/trader-detection-deferral.md.
+ */
 export type VerificationResponse = 'collector' | 'trader' | 'unresponsive';
 
 /**
@@ -15,10 +22,23 @@ export type VerificationResponse = 'collector' | 'trader' | 'unresponsive';
  *
  * "I'd rather not say" maps to 'unresponsive' (same as the cron escalation
  * after 14 days). The seller is told upfront — no surprises.
+ *
+ * Runtime guard rejects 'trader' even though the DB CHECK accepts it: a
+ * direct server-action call from devtools/crafted fetch would otherwise
+ * bypass the form's compile-time narrowing and write 'trader' to the
+ * user-facing audit trail, which closes around STG with DSA Art. 30
+ * obligations the platform doesn't currently support.
  */
 export async function submitSellerVerification(response: VerificationResponse): Promise<ActionResult> {
   const { user } = await requireServerAuth();
   if (!user) return { error: 'Not authorized' };
+
+  if (response === 'trader') {
+    return {
+      error:
+        "STG doesn't currently support trader accounts. Please reply to the verification email so we can help you wrap up active orders.",
+    };
+  }
 
   const service = createServiceClient();
 

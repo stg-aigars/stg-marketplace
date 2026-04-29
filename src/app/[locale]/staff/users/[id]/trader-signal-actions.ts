@@ -129,15 +129,23 @@ export async function dismissTraderSignal(
     return { error: 'No trader signal exists on this seller — nothing to dismiss.' };
   }
 
-  // Mark the signal as reviewed by clearing trader_signal_first_crossed_at.
-  // The audit row preserves the timing so this is non-destructive for forensics.
-  const { error: clearError } = await service
+  // Stamp the dismissal in the dedicated sentinel column. We deliberately do NOT
+  // clear trader_signal_first_crossed_at — clearing it caused the cron to re-fire
+  // the signal within 24h (the 12-month counters don't reset). The cron's
+  // first-crossing guard now also requires trader_signal_dismissed_at IS NULL OR
+  // dismissal at a different threshold version. Audit row preserves the original
+  // crossing timestamp for forensics.
+  const dismissedAt = new Date().toISOString();
+  const { error: dismissError } = await service
     .from('user_profiles')
-    .update({ trader_signal_first_crossed_at: null })
+    .update({
+      trader_signal_dismissed_at: dismissedAt,
+      trader_signal_dismissed_threshold_version: profile.trader_signal_threshold_version ?? TRADER_THRESHOLDS.version,
+    })
     .eq('id', userId);
 
-  if (clearError) {
-    console.error('[trader-signal-actions] dismiss clear failed:', clearError.message);
+  if (dismissError) {
+    console.error('[trader-signal-actions] dismiss update failed:', dismissError.message);
     return { error: 'Could not record the dismissal. Please try again.' };
   }
 

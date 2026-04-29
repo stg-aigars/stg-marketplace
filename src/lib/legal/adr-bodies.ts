@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import type { CountryCode } from '@/lib/country-utils';
 
 /**
@@ -37,13 +38,17 @@ export const ADR_BODIES: Record<CountryCode, AdrBody> = {
 
 /**
  * Returns the ADR body for the buyer's country, defaulting to LV (operator's
- * home jurisdiction) if the buyer's country is unknown. A missing buyer country
- * at checkout is a data-quality bug worth knowing about — the call site should
- * also log to Sentry when it falls back here.
+ * home jurisdiction) if the buyer's country is unknown. A missing or invalid
+ * buyer country at checkout is a data-quality bug — this function logs to
+ * Sentry when it falls back, so callers don't need to.
  */
 export function getAdrBodyForBuyer(country: CountryCode | string | undefined | null): AdrBody {
   if (country === 'LV' || country === 'LT' || country === 'EE') {
     return ADR_BODIES[country];
   }
+  Sentry.captureMessage('getAdrBodyForBuyer: fallback to LV — buyer country missing or invalid', {
+    level: 'warning',
+    extra: { receivedCountry: country ?? '(null/undefined)' },
+  });
   return ADR_BODIES.LV;
 }

@@ -70,7 +70,9 @@ export async function POST(request: Request) {
       // Load current state to detect first crossing
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('trader_signal_first_crossed_at, seller_status')
+        .select(
+          'trader_signal_first_crossed_at, trader_signal_dismissed_at, trader_signal_dismissed_threshold_version, seller_status',
+        )
         .eq('id', sellerId)
         .single();
 
@@ -81,7 +83,17 @@ export async function POST(request: Request) {
 
       // Always write current counters (cheap, gives staff dashboard live numbers)
       const signal = evaluateTraderSignal(c);
-      const firstCrossing = signal === 'verify' && !profile.trader_signal_first_crossed_at;
+      // First-crossing guard: signal is past the trigger AND we haven't already stamped
+      // a crossing AND staff hasn't dismissed at the current threshold version. The
+      // dismissal sentinel is required because the rolling 12-month counters don't
+      // reset overnight — without it, every dismissal gets undone by the next cron run.
+      const dismissedAtSameVersion =
+        !!profile.trader_signal_dismissed_at &&
+        profile.trader_signal_dismissed_threshold_version === TRADER_THRESHOLDS.version;
+      const firstCrossing =
+        signal === 'verify' &&
+        !profile.trader_signal_first_crossed_at &&
+        !dismissedAtSameVersion;
 
       const update: Record<string, unknown> = {
         completed_sales_12mo_count: c.count,
