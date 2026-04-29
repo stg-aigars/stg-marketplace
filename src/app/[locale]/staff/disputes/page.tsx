@@ -103,6 +103,7 @@ export default async function StaffDisputesPage() {
       <Section
         title="Needs action"
         description="Escalated to staff, not yet resolved. Chip reads how long staff has been ignoring."
+        emptyTitle="All caught up"
         rows={needsAction}
         chip={(d) => ageChip(d.escalated_at ?? d.created_at, requestTimeMs, 'urgent')}
       />
@@ -110,6 +111,7 @@ export default async function StaffDisputesPage() {
       <Section
         title="Awaiting seller"
         description="Buyer opened a dispute, ball in the seller's court (not escalated, not resolved). Chip reads how long since the dispute was opened."
+        emptyTitle="No disputes awaiting a seller response"
         rows={awaitingSeller}
         chip={(d) => ageChip(d.created_at, requestTimeMs, 'normal')}
       />
@@ -117,6 +119,7 @@ export default async function StaffDisputesPage() {
       <Section
         title="Refund issues"
         description={`Resolved within the last ${REFUND_ISSUES_LOOKBACK_DAYS} days but the underlying order refund is FAILED or PARTIAL — the decision was made but money didn't move.`}
+        emptyTitle="No stuck refunds"
         rows={refundIssues}
         chip={(d) => ageChip(d.resolved_at, requestTimeMs, 'urgent')}
       />
@@ -124,6 +127,7 @@ export default async function StaffDisputesPage() {
       <Section
         title="Recently resolved"
         description={`Last ${RECENTLY_RESOLVED_DAYS} days, for context. No SLA chip.`}
+        emptyTitle="No recent resolutions"
         rows={recentlyResolved}
         chip={() => null}
       />
@@ -134,11 +138,12 @@ export default async function StaffDisputesPage() {
 interface SectionProps {
   title: string;
   description: string;
+  emptyTitle: string;
   rows: StaffDisputeRow[];
   chip: (dispute: StaffDisputeRow) => React.ReactNode;
 }
 
-function Section({ title, description, rows, chip }: SectionProps) {
+function Section({ title, description, emptyTitle, rows, chip }: SectionProps) {
   return (
     <section>
       <div className="mb-3">
@@ -150,7 +155,7 @@ function Section({ title, description, rows, chip }: SectionProps) {
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState title="Nothing here" description="" />
+        <EmptyState title={emptyTitle} />
       ) : (
         <div className="space-y-2">
           {rows.map((dispute) => {
