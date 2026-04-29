@@ -93,7 +93,8 @@ export default async function StaffUsersPage(props: UsersPageProps) {
   }
 
   const searchParams = await props.searchParams;
-  const cohort: Cohort = (ALL_COHORTS.find((c) => c.key === searchParams.cohort)?.key) ?? 'action_needed';
+  const cohort: Cohort = ALL_COHORTS.find((c) => c.key === searchParams.cohort)?.key ?? 'action_needed';
+  const cohortLabel = ALL_COHORTS.find((c) => c.key === cohort)?.label.toLowerCase() ?? '';
   const q = (searchParams.q ?? '').trim();
 
   // Parallel: counts for every cohort (drives tab badges) + active cohort data.
@@ -110,9 +111,12 @@ export default async function StaffUsersPage(props: UsersPageProps) {
   );
 
   if (q.length > 0) {
-    // Escape PostgREST ilike wildcards. Per CLAUDE.md "ilike escape": % and _ in user input must be escaped.
-    const safe = q.replace(/[%_]/g, '\\$&');
-    const pattern = `%${safe}%`;
+    // Escape ilike wildcards (% and _), then wrap the whole value in PostgREST
+    // double quotes so commas / parens / dots in the search input don't break
+    // the .or() filter delimiter (comma) or its grouping syntax. Inner double
+    // quotes are escaped per PostgREST's quoting rules.
+    const safe = q.replace(/[%_]/g, '\\$&').replace(/"/g, '\\"');
+    const pattern = `"%${safe}%"`;
     activeQuery = activeQuery.or(
       `full_name.ilike.${pattern},email.ilike.${pattern},country.ilike.${pattern}`,
     );
@@ -160,7 +164,7 @@ export default async function StaffUsersPage(props: UsersPageProps) {
       />
 
       {users.length === 0 ? (
-        <EmptyState title={q ? `No users match "${q}" in the ${ALL_COHORTS.find((c) => c.key === cohort)?.label.toLowerCase()} cohort.` : `No users in the ${ALL_COHORTS.find((c) => c.key === cohort)?.label.toLowerCase()} cohort.`} />
+        <EmptyState title={q ? `No users match "${q}" in the ${cohortLabel} cohort.` : `No users in the ${cohortLabel} cohort.`} />
       ) : (
         <div className="space-y-2">
           {users.map((user) => (
