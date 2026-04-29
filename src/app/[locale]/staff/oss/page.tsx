@@ -114,6 +114,22 @@ export default async function StaffOssPage(props: PageProps) {
     (s) => s.quarter_start === targetQuarter.quarterStart && !supersededIds.has(s.id),
   ) ?? null;
 
+  // Year-to-date roll-up across the four quarters of the selected quarter's
+  // calendar year. Drives year-end reconciliation between OSS-filed amounts
+  // and the platform's financial books. Uses canonical (non-superseded)
+  // submissions only — amendments are reflected through the chain.
+  const targetYear = Number(targetQuarter.quarterStart.slice(0, 4));
+  const yearSubmissions = submissions.filter((s) =>
+    s.quarter_start.startsWith(`${targetYear}-`) && !supersededIds.has(s.id),
+  );
+  const ytdByQuarter: Record<1 | 2 | 3 | 4, OssSubmissionRow | null> = { 1: null, 2: null, 3: null, 4: null };
+  for (const s of yearSubmissions) {
+    const month = Number(s.quarter_start.slice(5, 7));
+    const q = (Math.floor((month - 1) / 3) + 1) as 1 | 2 | 3 | 4;
+    ytdByQuarter[q] = s;
+  }
+  const ytdHasAny = ([1, 2, 3, 4] as const).some((q) => ytdByQuarter[q] !== null);
+
   // Deadline banner state
   const deadlineDate = new Date(`${targetQuarter.deadline}T23:59:59Z`);
   const daysToDeadline = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -196,6 +212,22 @@ export default async function StaffOssPage(props: PageProps) {
           </p>
         </CardBody>
       </Card>
+
+      {ytdHasAny && (
+        <Card>
+          <CardBody>
+            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              {targetYear} year-to-date (filed)
+            </h2>
+            <p className="text-xs text-semantic-text-muted mb-3">
+              Sum of canonical (non-superseded) OSS submissions across {targetYear}. Use for year-end reconciliation against the platform&apos;s financial books. Unfiled quarters are shown as dashes.
+            </p>
+            <div className="overflow-x-auto">
+              <YearToDateTable ytdByQuarter={ytdByQuarter} />
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {totalOrderCount > 0 && (
         <Card>
@@ -417,4 +449,87 @@ function nextDayIso(isoDate: string): string {
   const d = new Date(`${isoDate}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString();
+}
+
+interface YearToDateTableProps {
+  ytdByQuarter: Record<1 | 2 | 3 | 4, OssSubmissionRow | null>;
+}
+
+function YearToDateTable({ ytdByQuarter }: YearToDateTableProps) {
+  // Per-quarter per-MS values; rows = quarters, columns = (LT net, LT VAT, EE net, EE VAT, total VAT).
+  const totals = OSS_MEMBER_STATES.reduce<Record<OssMemberState, { net: number; vat: number; orderCount: number }>>(
+    (acc, ms) => ({ ...acc, [ms]: { net: 0, vat: 0, orderCount: 0 } }),
+    {} as Record<OssMemberState, { net: number; vat: number; orderCount: number }>,
+  );
+
+  const quarterRows = ([1, 2, 3, 4] as const).map((q) => {
+    const submission = ytdByQuarter[q];
+    const amounts = (submission?.declared_amounts ?? {}) as OssDeclaredAmounts;
+    const cells = OSS_MEMBER_STATES.map((ms) => {
+      const cell = amounts[ms];
+      if (cell) {
+        totals[ms].net += cell.net_cents;
+        totals[ms].vat += cell.vat_cents;
+        totals[ms].orderCount += cell.order_count;
+      }
+      return { ms, net: cell?.net_cents ?? null, vat: cell?.vat_cents ?? null };
+    });
+    const totalVat = cells.reduce((sum, c) => sum + (c.vat ?? 0), 0);
+    return { q, filed: submission !== null, cells, totalVat };
+  });
+
+  const ytdTotalVat = OSS_MEMBER_STATES.reduce((sum, ms) => sum + totals[ms].vat, 0);
+
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-semantic-text-muted border-b border-semantic-border-subtle">
+          <th className="pb-2 font-medium">Quarter</th>
+          {OSS_MEMBER_STATES.map((ms) => (
+            <th key={`${ms}-net`} className="pb-2 font-medium text-right">{ms} net</th>
+          ))}
+          {OSS_MEMBER_STATES.map((ms) => (
+            <th key={`${ms}-vat`} className="pb-2 font-medium text-right">{ms} VAT</th>
+          ))}
+          <th className="pb-2 font-medium text-right">Total VAT</th>
+        </tr>
+      </thead>
+      <tbody>
+        {quarterRows.map(({ q, filed, cells, totalVat }) => (
+          <tr key={q} className="border-b border-semantic-border-subtle last:border-0">
+            <td className="py-2 font-medium text-semantic-text-heading">Q{q}</td>
+            {cells.map(({ ms, net }) => (
+              <td key={`${ms}-net`} className="py-2 text-right text-semantic-text-secondary">
+                {net == null ? '—' : formatCentsToCurrency(net)}
+              </td>
+            ))}
+            {cells.map(({ ms, vat }) => (
+              <td key={`${ms}-vat`} className="py-2 text-right text-semantic-text-primary">
+                {vat == null ? '—' : formatCentsToCurrency(vat)}
+              </td>
+            ))}
+            <td className="py-2 text-right font-semibold text-semantic-text-heading">
+              {filed ? formatCentsToCurrency(totalVat) : '—'}
+            </td>
+          </tr>
+        ))}
+        <tr className="bg-semantic-bg-elevated">
+          <td className="py-2 font-semibold text-semantic-text-heading">YTD</td>
+          {OSS_MEMBER_STATES.map((ms) => (
+            <td key={`${ms}-net-total`} className="py-2 text-right font-semibold text-semantic-text-heading">
+              {formatCentsToCurrency(totals[ms].net)}
+            </td>
+          ))}
+          {OSS_MEMBER_STATES.map((ms) => (
+            <td key={`${ms}-vat-total`} className="py-2 text-right font-semibold text-semantic-text-heading">
+              {formatCentsToCurrency(totals[ms].vat)}
+            </td>
+          ))}
+          <td className="py-2 text-right font-semibold text-semantic-text-heading">
+            {formatCentsToCurrency(ytdTotalVat)}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
 }
