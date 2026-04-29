@@ -2,7 +2,15 @@ import type { CountryCode } from '@/lib/country-utils';
 import type { Dac7SellerStatus } from '@/lib/dac7/types';
 
 export type SellerStatus = 'active' | 'warned' | 'suspended';
-export type VerificationResponseStored = 'collector' | 'trader' | 'unresponsive';
+
+/**
+ * Full DB-level union for `user_profiles.verification_response`. The user-facing
+ * form action narrows to `'collector' | 'unresponsive'` at runtime (rejecting
+ * `'trader'` to avoid the DSA Art. 30 trap); the `'trader'` value remains valid
+ * for staff-side annotation when a seller emails support confirming commercial
+ * activity. See docs/legal_audit/trader-detection-deferral.md.
+ */
+export type VerificationResponse = 'collector' | 'trader' | 'unresponsive';
 
 export interface UserProfile {
   id: string;
@@ -27,7 +35,7 @@ export interface UserProfile {
   trader_signal_dismissed_at: string | null;
   trader_signal_dismissed_threshold_version: string | null;
   verification_requested_at: string | null;
-  verification_response: VerificationResponseStored | null;
+  verification_response: VerificationResponse | null;
   verification_responded_at: string | null;
   created_at: string;
   updated_at: string;

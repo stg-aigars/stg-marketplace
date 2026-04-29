@@ -5,16 +5,11 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { createServiceClient } from '@/lib/supabase';
 import { logAuditEvent } from '@/lib/services/audit';
 
+import type { VerificationResponse } from '@/lib/auth/types';
+
 type ActionResult = { success: true } | { error: string };
 
-/**
- * The DB CHECK constraint also permits `'trader'` for staff-side annotation
- * if a seller emails support and a staff member sets it manually. The
- * user-facing form must never write that value — see SellerVerificationForm
- * `FormResponse` and the DSA Art. 30 trap discussion in
- * docs/legal_audit/trader-detection-deferral.md.
- */
-export type VerificationResponse = 'collector' | 'trader' | 'unresponsive';
+export type { VerificationResponse };
 
 /**
  * Seller self-classification — writes verification_response + verification_responded_at,

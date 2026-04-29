@@ -78,6 +78,10 @@ export function CheckoutForm({
     () => sellerItems.filter((i) => i.isAuction && i.auctionDeadlineAt),
     [sellerItems]
   );
+  // ADR body for the buyer's home country — single source of truth for the
+  // PTAL 19.¹ pre-contract banner. Memoized so the Sentry-fallback branch
+  // doesn't fire on every render when the country is missing/invalid.
+  const adr = useMemo(() => getAdrBodyForBuyer(buyerCountry), [buyerCountry]);
   const [expiredAuctionIds, setExpiredAuctionIds] = useState<Set<string>>(new Set());
 
   // Auction deadline countdown — track expired items
@@ -333,22 +337,19 @@ export function CheckoutForm({
 
             {/* ADR pre-contract disclosure (PTAL 19.¹) — names the buyer's home-country consumer dispute body */}
             <p className="mb-3 text-xs text-semantic-text-muted">
-              {(() => {
-                const adr = getAdrBodyForBuyer(buyerCountry);
-                return t.rich('adrNotice', {
-                  body: adr.name,
-                  link: (chunks) => (
-                    <a
-                      className="link-brand"
-                      href={adr.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {chunks}
-                    </a>
-                  ),
-                });
-              })()}
+              {t.rich('adrNotice', {
+                body: adr.name,
+                link: (chunks) => (
+                  <a
+                    className="link-brand"
+                    href={adr.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
 
             {/* Terms & refund consent */}

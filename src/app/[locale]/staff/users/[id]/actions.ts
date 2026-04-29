@@ -5,9 +5,11 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { createServiceClient } from '@/lib/supabase';
 import { logAuditEvent } from '@/lib/services/audit';
 
+import type { SellerStatus } from '@/lib/auth/types';
+
 type ActionResult = { success: true } | { error: string };
 
-export type SellerStatus = 'active' | 'warned' | 'suspended';
+export type { SellerStatus };
 
 /**
  * Staff-side mutation of seller_status. Captures from/to/reason in audit metadata,
