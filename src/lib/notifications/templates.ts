@@ -234,4 +234,20 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: () => 'Your annual tax report is ready. Review it before we submit to the tax authority.',
     link: () => '/account/tax',
   },
+
+  // Moderation (DSA Art. 16/17)
+  'moderation.notice_received': {
+    title: () => 'New DSA notice received',
+    body: (ctx) =>
+      ctx.listingId
+        ? `Listing report (${ctx.category ?? 'unknown'})${ctx.anonymous ? ' — anonymous' : ''}`
+        : `Notice received (${ctx.category ?? 'unknown'})${ctx.anonymous ? ' — anonymous' : ''}`,
+    link: () => '/staff/notices',
+  },
+  'listing.actioned': {
+    title: () => 'Action taken on your listing',
+    body: (ctx) =>
+      `We've acted on a notice about ${ctx.gameName ?? 'your listing'}. Reason: ${ctx.reason ?? 'see details'}.`,
+    link: (ctx) => (ctx.listingId ? `/listings/${ctx.listingId}` : '/account/listings'),
+  },
 };

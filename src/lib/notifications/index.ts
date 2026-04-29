@@ -39,6 +39,32 @@ export async function notify(
 }
 
 /**
+ * Fan a single notification out to every staff user (`is_staff = true`).
+ * Used for platform-side events that the moderation team needs to see (e.g.
+ * DSA Art. 16 notices landing in the queue). Fire-and-forget like `notify`.
+ */
+export async function notifyStaff(
+  type: NotificationType,
+  context: NotificationContext = {}
+): Promise<void> {
+  try {
+    const serviceClient = createServiceClient();
+    const { data: staff, error } = await serviceClient
+      .from('user_profiles')
+      .select('id')
+      .eq('is_staff', true);
+    if (error) {
+      console.error('[Notifications] notifyStaff staff lookup failed:', error.message);
+      return;
+    }
+    if (!staff?.length) return;
+    await notifyMany(staff.map((s) => ({ userId: s.id, type, context })));
+  } catch (err) {
+    console.error('[Notifications] notifyStaff unexpected error:', err);
+  }
+}
+
+/**
  * Create multiple notifications in a single batch insert.
  * Used for events that notify multiple users (e.g., dispute resolved → buyer + seller).
  */

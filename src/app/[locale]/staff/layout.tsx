@@ -8,6 +8,7 @@ const STAFF_TABS = [
   { key: 'bookkeeping', label: 'Bookkeeping', href: '/staff/bookkeeping' },
   { key: 'withdrawals', label: 'Withdrawals', href: '/staff/withdrawals' },
   { key: 'disputes', label: 'Disputes', href: '/staff/disputes' },
+  { key: 'notices', label: 'DSA notices', href: '/staff/notices' },
   { key: 'dac7', label: 'DAC7', href: '/staff/dac7' },
   { key: 'showcase', label: 'Components', href: '/staff/showcase' },
 ];

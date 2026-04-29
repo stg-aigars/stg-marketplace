@@ -613,6 +613,15 @@ export default async function ListingDetailPage(
                   ),
                 })}
               </p>
+              {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this listing */}
+              <p className="mt-2 text-xs text-semantic-text-muted">
+                <Link
+                  href={`/report-illegal-content?listingId=${listing.id}&contentReference=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`)}`}
+                  className="link-brand"
+                >
+                  Report this listing
+                </Link>
+              </p>
             </CardBody>
           </Card>
 

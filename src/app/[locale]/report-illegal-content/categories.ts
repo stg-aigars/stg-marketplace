@@ -10,6 +10,7 @@ export const REPORT_CATEGORY_VALUES = [
   'illegal_goods',
   'csam',
   'hate_or_harassment',
+  'misleading_listing',
   'other',
 ] as const;
 
@@ -21,5 +22,6 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   illegal_goods: 'Illegal goods (stolen property, prohibited items)',
   csam: 'Child sexual abuse material',
   hate_or_harassment: 'Hate speech or harassment',
+  misleading_listing: 'Misleading listing (condition, edition, completeness, pricing)',
   other: 'Other illegal content',
 };
