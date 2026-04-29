@@ -107,18 +107,24 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
   const items = order.order_items ?? [];
   const hasMultipleItems = items.length > 1;
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/account/orders" label="Your orders" />
+  // When isStaff, the staff page provides BackLink + header + side panel
+  // around this component, and OrderActions / OrderMessageForm are suppressed
+  // so staff can't accidentally act as the seller.
 
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-          Order {order.order_number}
-        </h1>
-        {statusConfig && (
-          <Badge variant={statusConfig.badgeVariant} dot>{statusConfig.label}</Badge>
-        )}
-      </div>
+  return (
+    <div className={isStaff ? '' : 'max-w-4xl mx-auto px-4 sm:px-6 py-6'}>
+      {!isStaff && <BackLink href="/account/orders" label="Your orders" />}
+
+      {!isStaff && (
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+            Order {order.order_number}
+          </h1>
+          {statusConfig && (
+            <Badge variant={statusConfig.badgeVariant} dot>{statusConfig.label}</Badge>
+          )}
+        </div>
+      )}
 
       {/* Status message */}
       {statusMessage && (
@@ -154,12 +160,14 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
 
       <div className="space-y-6">
         {/* Actions (top for prominence) */}
-        <OrderActions
-          order={order}
-          userRole={userRole}
-          sellerPhone={sellerPhone}
-          dispute={order.dispute}
-        />
+        {!isStaff && (
+          <OrderActions
+            order={order}
+            userRole={userRole}
+            sellerPhone={sellerPhone}
+            dispute={order.dispute}
+          />
+        )}
 
         {/* Dispute details */}
         {order.dispute && (
@@ -480,21 +488,25 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
               Messages
             </h2>
             <OrderMessageList messages={messages} isStaff={isStaff} />
-            <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
-              <OrderMessageForm orderId={order.id} />
-            </div>
+            {!isStaff && (
+              <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                <OrderMessageForm orderId={order.id} />
+              </div>
+            )}
           </CardBody>
         </Card>
 
-        <p className="text-sm text-semantic-text-muted">
-          Need help?{' '}
-          <Link
-            href="/contact"
-            className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-          >
-            Contact support
-          </Link>
-        </p>
+        {!isStaff && (
+          <p className="text-sm text-semantic-text-muted">
+            Need help?{' '}
+            <Link
+              href="/contact"
+              className="text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+            >
+              Contact support
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );
