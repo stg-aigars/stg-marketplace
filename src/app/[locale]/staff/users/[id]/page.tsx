@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge, SectionLink } from '@/components/ui';
+import { ResourceAuditTimeline } from '@/components/staff/ResourceAuditTimeline';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryName } from '@/lib/country-utils';
 import { SellerStatusForm } from './SellerStatusForm';
@@ -250,6 +251,14 @@ export default async function StaffUserPage({ params }: UserPageProps) {
           />
         </CardBody>
       </Card>
+
+      <ResourceAuditTimeline
+        serviceClient={serviceClient}
+        resourceType="user"
+        resourceId={profile.id}
+        alsoIncludeAsActor={profile.id}
+        title="User activity"
+      />
     </div>
   );
 }
