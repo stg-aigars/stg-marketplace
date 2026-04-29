@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
 import { calculateOrderPricing, getVatRate, calculateVatSplit } from '@/lib/services/pricing';
 import { ORDER_NUMBER_PREFIX } from '@/lib/orders/constants';
+import { TERMS_VERSION, SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { trackServer } from '@/lib/analytics/track-server';
 import type { CreateOrderParams, OrderRow, OrderWithDetails } from '@/lib/orders/types';
 
@@ -87,6 +88,11 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
         terminal_postal_code: params.terminalPostalCode ?? null,
         terminal_country: params.terminalCountry,
         buyer_phone: params.buyerPhone,
+        // PTAC §5.1 / ECJ C-49/11 — capture the contractual constants in force
+        // at the moment of order. Independent of email-body durable medium; this
+        // is the forensic answer to "which version did this buyer agree to?"
+        terms_version: TERMS_VERSION,
+        seller_terms_version: SELLER_TERMS_VERSION,
         ...(params.cartGroupId ? { cart_group_id: params.cartGroupId } : {}),
       })
       .select()

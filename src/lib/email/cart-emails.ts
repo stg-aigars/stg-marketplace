@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from './index';
 import { notify } from '@/lib/notifications';
 import { orderGameSummary } from '@/lib/orders/utils';
+import { TERMS_VERSION, SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 
 interface CartOrderEmailData {
   orderId: string;
@@ -30,13 +31,13 @@ export async function sendCartOrderEmails(
     );
     const { data: profiles } = await serviceClient
       .from('user_profiles')
-      .select('id, full_name, email')
+      .select('id, full_name, email, country')
       .in('id', userIds);
 
     if (!profiles) return;
 
     const profileMap = new Map(
-      profiles.map((p: { id: string; full_name: string | null; email: string | null }) => [p.id, p])
+      profiles.map((p: { id: string; full_name: string | null; email: string | null; country: string | null }) => [p.id, p])
     );
     const buyerProfile = profileMap.get(buyerId);
 
@@ -69,6 +70,10 @@ export async function sendCartOrderEmails(
           buyerName: buyerProfile.full_name ?? 'Buyer',
           buyerEmail: buyerProfile.email,
           sellerName: sellerProfile?.full_name ?? 'Seller',
+          // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
+          buyerCountry: buyerProfile.country ?? null,
+          termsVersion: TERMS_VERSION,
+          sellerTermsVersion: SELLER_TERMS_VERSION,
         }).catch((err) => console.error('[Email] Cart order buyer confirmation failed:', err));
       }
 

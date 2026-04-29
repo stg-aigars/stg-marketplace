@@ -87,6 +87,10 @@ export async function sendOrderConfirmationToBuyer(params: {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
+  // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
+  buyerCountry: string | null;
+  termsVersion: string;
+  sellerTermsVersion: string;
 }): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
@@ -101,6 +105,9 @@ export async function sendOrderConfirmationToBuyer(params: {
       shippingCents: params.shippingCents,
       terminalName: params.terminalName,
       appUrl: env.app.url,
+      buyerCountry: params.buyerCountry,
+      termsVersion: params.termsVersion,
+      sellerTermsVersion: params.sellerTermsVersion,
     }),
   });
 }
