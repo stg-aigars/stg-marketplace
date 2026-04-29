@@ -44,8 +44,11 @@ export function aggregatePriorPeriodRefunds(
 ): Partial<Record<OssMemberState, PriorRefundAggregate>> {
   const result: Partial<Record<OssMemberState, PriorRefundAggregate>> = {};
   for (const row of rows) {
-    const ms = row.seller_country as OssMemberState;
-    if (!OSS_MEMBER_STATES.includes(ms)) continue;
+    // Defensive uppercase: matches aggregateVatByMS so a stray lowercase row
+    // doesn't get silently dropped if the upstream CHECK constraint is ever
+    // relaxed.
+    const ms = row.seller_country?.toUpperCase() as OssMemberState | undefined;
+    if (!ms || !OSS_MEMBER_STATES.includes(ms)) continue;
     if (row.total_amount_cents === 0) continue;
 
     const proportion = row.refund_amount_cents / row.total_amount_cents;

@@ -62,6 +62,11 @@ export default async function StaffOssPage(props: PageProps) {
     // whose refund settled INSIDE this quarter, on a non-LV (OSS-scope) seller.
     // OSS allows current-period reduction for prior-period reversals; the audit
     // trail must show which refunds were treated this way (Article 369k/369i).
+    //
+    // Only `refund_status='completed'` rows count — `partial` and `failed`
+    // are manual-reconciliation states that haven't fully reversed the
+    // original supply, so declaring them as OSS reversals would risk a
+    // restatement once the operational fix lands.
     serviceClient
       .from('orders')
       .select('seller_country, total_amount_cents, refund_amount_cents, commission_vat_cents, shipping_vat_cents')
@@ -69,7 +74,8 @@ export default async function StaffOssPage(props: PageProps) {
       .gte('refunded_at', quarterStartIso)
       .lt('refunded_at', quarterEndExclusive)
       .neq('seller_country', HOME_COUNTRY)
-      .gt('refund_amount_cents', 0),
+      .gt('refund_amount_cents', 0)
+      .eq('refund_status', 'completed'),
   ]);
 
   const orders = (ordersResult.data ?? []) as unknown as OrderFinancialData[];

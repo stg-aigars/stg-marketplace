@@ -66,6 +66,15 @@ describe('aggregatePriorPeriodRefunds', () => {
     expect(result.LT?.orderCount).toBe(1);
   });
 
+  it('normalises seller_country casing so lowercase/null-safe', () => {
+    const result = aggregatePriorPeriodRefunds([
+      fullRefund({ seller_country: 'lt' }),
+      fullRefund({ seller_country: 'ee' }),
+    ]);
+    expect(result.LT?.orderCount).toBe(1);
+    expect(result.EE?.orderCount).toBe(1);
+  });
+
   it('treats null commission/shipping VAT as zero', () => {
     const result = aggregatePriorPeriodRefunds([
       fullRefund({ commission_vat_cents: null, shipping_vat_cents: null }),
