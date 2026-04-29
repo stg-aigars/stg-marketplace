@@ -173,8 +173,6 @@ export default async function StaffOssPage(props: PageProps) {
             </p>
             <OssSubmissionForm
               quarterStart={targetQuarter.quarterStart}
-              quarterEnd={targetQuarter.quarterEnd}
-              deadline={targetQuarter.deadline}
               declaredAmounts={declared}
             />
           </CardBody>

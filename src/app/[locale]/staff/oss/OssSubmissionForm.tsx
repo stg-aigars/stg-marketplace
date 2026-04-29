@@ -7,13 +7,14 @@ import { OSS_MEMBER_STATES, type OssDeclaredAmounts } from '@/lib/oss/types';
 import { recordOssSubmission } from './actions';
 
 interface Props {
+  /** ISO date — the quarter being filed. The server recomputes per-MS amounts
+   *  from orders rather than trusting whatever the client sends; the
+   *  `declaredAmounts` prop is for UI preview only. */
   quarterStart: string;
-  quarterEnd: string;
-  deadline: string;
   declaredAmounts: OssDeclaredAmounts;
 }
 
-export function OssSubmissionForm({ quarterStart, quarterEnd, deadline, declaredAmounts }: Props) {
+export function OssSubmissionForm({ quarterStart, declaredAmounts }: Props) {
   const [isPending, startTransition] = useTransition();
   const [paymentReference, setPaymentReference] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,9 +26,6 @@ export function OssSubmissionForm({ quarterStart, quarterEnd, deadline, declared
     startTransition(async () => {
       const result = await recordOssSubmission({
         quarterStart,
-        quarterEnd,
-        deadline,
-        declaredAmounts,
         paymentReference: paymentReference.trim() || undefined,
       });
       if ('error' in result) {
