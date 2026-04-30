@@ -23,11 +23,27 @@ interface NavTabsProps {
 function NavTabs({ tabs, activeTab, variant = 'underline', className }: NavTabsProps) {
   const pathname = usePathname();
 
-  const isActive = (tab: NavTabItem) => {
-    if (activeTab !== undefined) return tab.key === activeTab;
+  // Active tab: explicit prop wins. Otherwise pick the tab whose href is the
+  // longest prefix of the current path. The longest-prefix rule is what
+  // prevents a parent route (e.g. `/staff`) from appearing active for every
+  // `/staff/*` child — `/staff/orders` matches both `/staff/orders` and
+  // `/staff` under naive startsWith, but the longer href wins.
+  let activeKey: string | undefined = activeTab;
+  if (activeKey === undefined) {
     const cleanPath = stripLocalePrefix(pathname);
-    return cleanPath === tab.href || (tab.href !== '/' && cleanPath.startsWith(tab.href + '/'));
-  };
+    let bestMatch: NavTabItem | null = null;
+    for (const tab of tabs) {
+      const matches =
+        cleanPath === tab.href ||
+        (tab.href !== '/' && cleanPath.startsWith(tab.href + '/'));
+      if (matches && (!bestMatch || tab.href.length > bestMatch.href.length)) {
+        bestMatch = tab;
+      }
+    }
+    activeKey = bestMatch?.key;
+  }
+
+  const isActive = (tab: NavTabItem) => tab.key === activeKey;
 
   if (variant === 'pill') {
     return (
@@ -55,7 +71,16 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className }: NavTabsP
   }
 
   return (
-    <nav aria-label="Navigation" className={cn('flex gap-1 border-b border-semantic-border-subtle', className)}>
+    <nav
+      aria-label="Navigation"
+      className={cn(
+        // overflow-x-auto matches the homepage Features-tabs pattern so a
+        // long tab strip (e.g. the staff dashboard) scrolls horizontally
+        // on narrow viewports rather than overflowing the layout.
+        'flex gap-1 border-b border-semantic-border-subtle overflow-x-auto -mb-px',
+        className,
+      )}
+    >
       {tabs.map((tab) => {
         const active = isActive(tab);
         return (
@@ -64,7 +89,7 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className }: NavTabsP
             href={tab.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'px-4 py-2 text-sm font-medium transition-colors duration-250 ease-out-custom relative sm:hover:text-semantic-text-secondary',
+              'px-4 py-2 text-sm font-medium whitespace-nowrap shrink-0 transition-colors duration-250 ease-out-custom relative sm:hover:text-semantic-text-secondary',
               active ? 'text-semantic-brand' : 'text-semantic-text-muted',
             )}
           >
