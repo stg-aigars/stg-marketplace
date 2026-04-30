@@ -12,6 +12,45 @@ don't "deduplicate" by removing one copy.
 
 ---
 
+## Automated 14-day material-change notification email
+
+**Why deferred.** Terms §16 + Seller Agreement §8 commit STG to giving 14
+days' email notice before a material Terms / Seller-Agreement change takes
+effect. Today this is a manual operational step (Resend dashboard or a
+one-off direct message) — there is no `terms-updated.tsx` template, no
+helper such as `dispatchVersionChangeNotice()`, and no cron that fires when
+`TERMS_VERSION` or `SELLER_TERMS_VERSION` bumps. The version-gated
+acknowledgement banner pattern handles the *enforcement* side (a user can't
+keep transacting without acknowledging the new version on next sign-in),
+but enforcement happens after the 14-day notice obligation, not instead of
+it.
+
+Pre-launch the user base is internal test users only, so any change can be
+communicated directly. The obligation is a launch-time problem, not today.
+
+**Revisit signal.** The day STG accepts the first non-test sign-up — i.e.
+the day the user list contains anyone whose email isn't reachable by a
+direct one-to-one message. At that point one of these needs to ship before
+the next material Terms / Seller-Agreement bump:
+
+- Minimum: a one-shot `scripts/send-terms-update.ts` that pulls users with
+  `terms_accepted_at` set, sends them the new-version notice via the
+  existing Resend client, and logs an `audit_log` row per send.
+- Better: a `terms-updated.tsx` template + `dispatchVersionChangeNotice()`
+  helper invoked at version-bump time (or via a cron route that compares
+  `TERMS_VERSION` to the last-dispatched version recorded in a small
+  `version_notification_log` table).
+
+The version-gated banner already handles per-user acknowledgement on next
+sign-in via `terms.accepted` audit events; what's missing is the dispatch
+side that triggers the 14-day clock.
+
+**Implementation cost (when revisited).** ~45 min for the script-only
+path; ~2.5h for the template + helper + cron path. The latter pays back on
+the second bump.
+
+---
+
 ## 24-month conformity-rights reminder (PTAC §2.6)
 
 **Why deferred.** N/A under STG's private-sellers-only posture. The 24-month
