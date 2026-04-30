@@ -21,7 +21,7 @@ function FaqAccordion() {
             <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-3">
               {t('eyebrow')}
             </p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-semantic-text-heading">
               {t('heading')}
             </h2>
           </div>
@@ -40,7 +40,7 @@ function FaqAccordion() {
                       aria-expanded={isOpen}
                       aria-controls={panelId}
                       onClick={() => setOpenIndex(isOpen ? -1 : index)}
-                      className="flex items-center justify-between w-full py-5 text-left font-platform text-lg sm:text-xl font-medium text-semantic-text-heading transition-colors duration-250 ease-out-custom sm:hover:text-semantic-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 rounded-sm"
+                      className="flex items-center justify-between w-full py-5 text-left text-lg sm:text-xl font-medium text-semantic-text-heading transition-colors duration-250 ease-out-custom sm:hover:text-semantic-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 rounded-sm"
                     >
                       <span>{item.q}</span>
                       <Plus

@@ -96,10 +96,6 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', ...typography.fontFamily.primary.split(', ').map((f) => f.replace(/^"|"$/g, ''))],
         display: ['var(--font-display)', 'Georgia', 'serif'],
-        // Platform voice: wordmark, page H1s, section H2s, page chrome.
-        // Falls back to sans (NOT serif) so a Rubik Dirt failure doesn't bleed
-        // the product/game-identity register into platform chrome.
-        platform: ['var(--font-platform)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         ...borderRadius,

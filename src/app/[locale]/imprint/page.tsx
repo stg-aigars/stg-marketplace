@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function ImprintPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading mb-6">
         Imprint
       </h1>
 
@@ -28,7 +28,7 @@ export default function ImprintPage() {
         </p>
 
         <section className="space-y-2">
-          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Operator
           </h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
@@ -60,7 +60,7 @@ export default function ImprintPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Supervisory and data-protection authorities
           </h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">

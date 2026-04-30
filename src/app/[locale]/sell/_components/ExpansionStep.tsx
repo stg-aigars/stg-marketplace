@@ -33,7 +33,7 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
         Select included expansions
       </h2>
 

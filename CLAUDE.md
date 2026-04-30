@@ -56,9 +56,9 @@ Never use 12-hour time format (AM/PM).
 - Page vertical padding: `py-6`
 - Homepage sections: `py-8 sm:py-10 lg:py-12`
 - Card image containers: `aspect-square` (not fixed heights)
-- H1 page headings: `text-2xl sm:text-3xl font-bold font-platform tracking-tight` (platform voice — Big Shoulders)
-- H2 section headings: `text-xl sm:text-2xl font-semibold font-platform tracking-tight` (platform voice — Big Shoulders)
-- H2 card subsections: `text-base font-semibold` (stays Rubik, no display font)
+- H1 page headings: `text-2xl sm:text-3xl font-black tracking-tight` (Rubik @ 900 — heaviest weight carries platform voice)
+- H2 section headings: `text-xl sm:text-2xl font-bold tracking-tight` (Rubik @ 700)
+- H2 card subsections: `text-base font-semibold` (Rubik @ 600)
 - Game identity (game titles, listing detail H1, wanted detail H1, GameTitle atom): `font-display` (Fraunces) — see "Typography" rule below
 - Borders: `border` (1px default); `border-2` only for selected/active states
 - Shadows: `shadow-sm` (resting) → `shadow-md` (hover) → `shadow-lg` (dropdowns) → `shadow-xl` (modals)
@@ -165,12 +165,12 @@ Always use these — do not write inline equivalents:
 - **No hardcoded colors.** Never use raw Tailwind color classes (`red-600`, `amber-500`, `blue-100`). Always use semantic tokens (`semantic-error`, `semantic-warning`, `semantic-primary`) or design palette tokens (`aurora-*`, `frost-*`, `condition-*`).
 - **No inline button/card/input styling.** If it looks like a button, use `<Button>`. If it's a bordered content area, use `<Card>`. If it's a text field, use `<Input>` or `<Select>`.
 - **Button + Link:** Never nest `<Link>` inside `<Button>` (invalid `<a>` inside `<button>`). Use `<Button asChild><Link href="...">text</Link></Button>` — `asChild` renders Button styling on the Link element directly.
-- **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold font-platform tracking-tight`. Card-subsection H2 = `text-base font-semibold` (Rubik, no display font).
-- **Typography (two display registers):** The codebase has two display fonts that map to two semantic registers. Pick by *what the text represents*, not by visual weight.
-  - **`font-platform` (Big Shoulders)** — platform voice. Use for: wordmark, page H1s, section H2s, modal titles, marketing hero, FAQ questions, empty-state titles, error fallbacks, page chrome generally. Variable weight (100–900) — `font-bold` and `font-semibold` work natively. Narrow urban-poster proportions create width-contrast against the wide rounded Rubik body. Has no italic — never apply `italic` to a `font-platform` element (browsers synthesize fake italic via skew, which looks bad on display fonts).
+- **Heading hierarchy:** Page H1 = `text-2xl sm:text-3xl font-black tracking-tight`. Page-section H2 = `text-xl sm:text-2xl font-bold tracking-tight`. Card-subsection H2 = `text-base font-semibold` (all Rubik, weight is the contrast lever).
+- **Typography (one display register + weight hierarchy):** Two fonts map to two semantic registers. Pick by *what the text represents*, not by visual weight.
+  - **Rubik (default `font-sans`)** — platform voice and body. Variable weight 300–900 carries the entire UI. Heaviest weights (`font-black` 900, `font-bold` 700) signal platform chrome (wordmark, page H1s, section H2s, modal titles, marketing hero, empty-state titles, error fallbacks); medium weights (`font-medium` 500, `font-semibold` 600) carry interactive labels and card subsections; default (400) carries body. No `font-platform` Tailwind key — chrome and body share the same family, contrast is *weight*. Has no italic in our setup — never apply `italic` to chrome (browsers synthesize fake italic via skew, which looks bad at heavy weights).
   - **`font-display` (Fraunces)** — game / product voice. Use for: game titles (always via the `GameTitle` atom when possible), listing detail page H1 (`{listing.game_name}`), wanted listing detail H1, anywhere "this is a specific game" semantics. Variable weight + true italic available.
-  - **Never** for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Rubik).
-  - **Failure mode discipline:** Each register's fallback matches its semantic role. `font-platform` falls back to `var(--font-sans)` then system sans (so platform chrome stays sans-serif if Big Shoulders fails). `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). Don't change either fallback chain casually — the registers stay legible apart even under font load failure.
+  - **Never** use `font-display` for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Rubik).
+  - **Failure mode discipline:** `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). `font-sans` falls back to a system sans stack (so chrome and body stay legible if Rubik fails). Don't change either fallback chain casually.
 - **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Add to Cart) use `semantic-primary` (orange). Platform-action CTAs (Sell a game, seller dashboard entry points) use `Button variant="brand"` (teal, filled).
 - **Badge shape:** `rounded-md` (squared), not pills. Condition badges include a Phosphor tier icon.
 - **Image containers:** Game art uses `aspect-square`, not fixed heights.

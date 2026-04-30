@@ -72,7 +72,7 @@ export async function RelatedWants({ listingId, bggGameId, buyerId, gameName, bu
 function WantsSection({ title, wants }: { title: string; wants: WantedRelatedRow[] }) {
   return (
     <section>
-      <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading mb-4">
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
         {title}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

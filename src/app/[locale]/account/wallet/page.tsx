@@ -36,7 +36,7 @@ export default async function WalletPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading mb-6">
         Wallet
       </h1>
 
@@ -57,7 +57,7 @@ export default async function WalletPage() {
 
       {/* Transaction history */}
       <div className="mt-6">
-        <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
           Transaction history
         </h2>
         {transactions.length === 0 ? (

@@ -25,7 +25,7 @@ export default async function SellerVerificationPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading">
           A quick question about your selling
         </h1>
         <p className="text-sm text-semantic-text-muted mt-1">

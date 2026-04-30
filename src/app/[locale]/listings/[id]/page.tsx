@@ -240,7 +240,7 @@ export default async function ListingDetailPage(
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
           <Prohibit size={64} className="mx-auto text-semantic-text-muted mb-4" />
-          <h1 className="text-2xl font-bold font-platform tracking-tight text-semantic-text-heading mb-2">
+          <h1 className="text-2xl font-black tracking-tight text-semantic-text-heading mb-2">
             This listing is no longer available
           </h1>
           <p className="text-semantic-text-secondary mb-6">

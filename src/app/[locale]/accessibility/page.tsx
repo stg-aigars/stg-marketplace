@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function AccessibilityPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading mb-6">
         Accessibility Statement
       </h1>
 
@@ -25,7 +25,7 @@ export default function AccessibilityPage() {
         </p>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Our commitment
           </h2>
           <p>
@@ -41,7 +41,7 @@ export default function AccessibilityPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Known limitations
           </h2>
           <p>
@@ -51,7 +51,7 @@ export default function AccessibilityPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Contact us
           </h2>
           <p>
