@@ -377,6 +377,26 @@ export default function TermsPage() {
           </p>
 
           <h3 className={subHeadingClass}>
+            Appealing platform decisions
+          </h3>
+          <p>
+            If we take action against your account or content &mdash; a suspension, termination,
+            removal of a listing, freezing of a wallet balance, or any other restriction we
+            apply on grounds described above &mdash; you have the right to appeal our decision
+            free of charge within six months of the decision. To appeal, email{' '}
+            <a href="mailto:info@secondturn.games" className="link-brand">
+              info@secondturn.games
+            </a>{' '}
+            with the subject line &ldquo;Appeal &mdash; [Decision ID or Reference]&rdquo;.
+            Your appeal will be reviewed by qualified staff and not by automated means alone.
+            We will notify you of our reasoned decision without undue delay and, in any event,
+            within the timelines required by Article 20 of Regulation (EU) 2022/2065 (the
+            Digital Services Act). If our decision was wrong we will reinstate your account or
+            content; if it stands, we will explain why and remind you of your further redress
+            options under Sections 15 and 17.
+          </p>
+
+          <h3 className={subHeadingClass}>
             Effect of termination
           </h3>
           <p>
@@ -392,15 +412,10 @@ export default function TermsPage() {
             14. Limitation of liability
           </h2>
           <p>
-            Our total liability to you in connection with the platform or these Terms is
-            limited to the greater of (a) &euro;500 and (b) the fees and commissions paid by
-            you in the twelve months preceding the event giving rise to the claim,{' '}
-            <strong>
-              except where mandatory consumer-protection law of your country of habitual
-              residence requires otherwise &mdash; in which case that law prevails over this
-              cap.
-            </strong>{' '}
-            The platform is provided as is,{' '}
+            To the maximum extent permitted by applicable law, STG&apos;s total liability for
+            any claim arising out of these Terms is limited to the total amount paid by you to
+            us in the twelve months preceding the event giving rise to the claim. The platform
+            is provided as is,{' '}
             <strong>
               except where mandatory consumer-protection or other applicable law requires
               otherwise.
@@ -410,13 +425,14 @@ export default function TermsPage() {
             sellers,{' '}
             <strong>save for any warranties imposed on us by mandatory law.</strong>
           </p>
-          <p>For the avoidance of doubt, nothing in these Terms limits or excludes:</p>
+          <p>Nothing in these Terms seeks to exclude or limit liability for:</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li>liability for death or personal injury caused by our negligence,</li>
-            <li>liability for fraud or fraudulent misrepresentation,</li>
+            <li>death or personal injury caused by negligence,</li>
+            <li>fraud or fraudulent misrepresentation,</li>
             <li>
-              any liability that cannot lawfully be limited or excluded under the consumer
-              protection law of your country of habitual residence, or
+              any other liability which cannot be excluded or limited under Latvian consumer
+              protection laws or equivalent mandatory consumer-protection rules of your
+              country of habitual residence, or
             </li>
             <li>
               any statutory liability we have as an intermediary service provider under
@@ -592,6 +608,12 @@ export default function TermsPage() {
         </section>
 
         <div className="pt-4 border-t border-semantic-border-subtle space-y-3">
+          <p className="text-xs text-semantic-text-muted">
+            <strong>Version 2026-04-30</strong> — added an explicit appeal path for
+            platform decisions under Article 20 of the Digital Services Act (Section 13);
+            replaced the prior &euro;500 floor in the liability cap with a 12-month
+            spend cap and broadened the consumer-protection carve-out (Section 14).
+          </p>
           <p className="text-xs text-semantic-text-muted">
             <strong>Version 2026-04-28</strong> — the liability cap now carries the
             consumer-protection priority inline rather than in a separate paragraph, and the

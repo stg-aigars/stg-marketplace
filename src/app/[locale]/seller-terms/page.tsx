@@ -98,6 +98,17 @@ export default function SellerTermsPage() {
             , stop new listings, and complete any open orders with the trader obligations that
             Directive imposes on you — including the 14-day withdrawal right for your buyers.
           </p>
+          <p>
+            <strong>Verification of traders.</strong> If you use the platform in a professional
+            or commercial capacity, EU law requires us to verify your identity and contact
+            details before you can list items. This includes collecting and verifying your
+            name, address, telephone number, and self-certification that you will only offer
+            products that comply with applicable EU law. We may request supporting documents
+            and may delay or refuse listings while verification is outstanding. We can suspend
+            any seller who fails our verification checks or provides misleading information.
+            This is the obligation Article 30 of Regulation (EU) 2022/2065 (the Digital
+            Services Act) places on us as the platform.
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -382,6 +393,12 @@ export default function SellerTermsPage() {
         </section>
 
         <div className="pt-4 border-t border-semantic-border-subtle space-y-3">
+          <p className="text-xs text-semantic-text-muted">
+            <strong>Version 2026-04-30</strong> — added a verification-of-traders
+            disclosure under Section 1 covering the identity, address, and product-compliance
+            checks Article 30 of the Digital Services Act requires us to perform on anyone
+            using the platform commercially.
+          </p>
           <p className="text-xs text-semantic-text-muted">
             <strong>Version 2026-04-28</strong> — the AML/sanctions clause now requires
             reasonable grounds and gives notice as soon as legally permitted (silent only
