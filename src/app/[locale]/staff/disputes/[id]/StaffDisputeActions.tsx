@@ -5,46 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Alert, Button, Modal, Select, Textarea } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeErrorMessage } from '@/lib/utils/error-messages';
+import { DISPUTE_RESOLUTION_TEMPLATES } from '@/lib/staff-templates';
 
 interface StaffDisputeActionsProps {
   orderId: string;
 }
 
 type ConfirmAction = 'refund' | 'no_refund' | null;
-
-// Canned staff-notes templates. Surfaced as a Select that prefills the
-// textarea — staff can edit before submitting. The discipline of using
-// canned-then-edited reasoning keeps the audit trail consistent across
-// resolutions, which improves legal defensibility (similar to the
-// notice-and-action templates in /staff/notices).
-const NOTE_TEMPLATES: Array<{ key: string; label: string; body: string }> = [
-  { key: 'custom', label: 'Custom (start blank)', body: '' },
-  {
-    key: 'favor_buyer_damage',
-    label: 'Favor buyer — proof of damage',
-    body: 'Buyer provided photo evidence of damage consistent with the dispute reason. Refunding to buyer wallet.',
-  },
-  {
-    key: 'favor_buyer_not_received',
-    label: 'Favor buyer — item not received',
-    body: 'Tracking confirms shipment was not delivered (or seller never shipped within deadline). Refunding to buyer wallet.',
-  },
-  {
-    key: 'favor_seller_unresponsive',
-    label: 'Favor seller — buyer unresponsive',
-    body: 'Buyer did not provide requested evidence within the dispute window. Resolving in seller\'s favor.',
-  },
-  {
-    key: 'favor_seller_insufficient',
-    label: 'Favor seller — claim unsubstantiated',
-    body: 'Buyer\'s claim is not supported by the evidence provided. Resolving in seller\'s favor.',
-  },
-  {
-    key: 'favor_seller_buyer_misuse',
-    label: 'Favor seller — buyer caused damage',
-    body: 'Damage appears consistent with buyer mishandling rather than condition at sale. Resolving in seller\'s favor.',
-  },
-];
 
 export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
   const router = useRouter();
@@ -56,7 +23,7 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
 
   function handleTemplateChange(key: string) {
     setTemplateKey(key);
-    const template = NOTE_TEMPLATES.find((t) => t.key === key);
+    const template = DISPUTE_RESOLUTION_TEMPLATES.find((t) => t.key === key);
     if (template) setNotes(template.body);
   }
 
@@ -94,7 +61,7 @@ export function StaffDisputeActions({ orderId }: StaffDisputeActionsProps) {
         label="Reasoning template (optional)"
         value={templateKey}
         onChange={(e) => handleTemplateChange(e.target.value)}
-        options={NOTE_TEMPLATES.map((t) => ({ value: t.key, label: t.label }))}
+        options={DISPUTE_RESOLUTION_TEMPLATES.map((t) => ({ value: t.key, label: t.label }))}
       />
 
       <Textarea
