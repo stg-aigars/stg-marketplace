@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Fraunces } from 'next/font/google';
+import { Plus_Jakarta_Sans, Fraunces, Rubik_Dirt } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -39,6 +39,16 @@ const fraunces = Fraunces({
   variable: '--font-display',
   display: 'swap',
   axes: ['opsz'],
+});
+
+// Rubik Dirt: platform voice — wordmark, page H1s, section H2s, page chrome.
+// Single weight (400) only. Distinct from font-display (Fraunces) which owns
+// game identity / product voice. See CLAUDE.md "Typography" rule.
+const rubikDirt = Rubik_Dirt({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-platform',
+  display: 'swap',
+  weight: '400',
 });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
@@ -101,7 +111,7 @@ export default async function LocaleLayout(
   return (
     // translate="no" prevents browser auto-translate from mutating the DOM mid-hydration.
     <html lang={locale} translate="no">
-      <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
+      <body className={`${plusJakartaSans.variable} ${fraunces.variable} ${rubikDirt.variable} font-sans min-h-screen antialiased`}>
         <NextTopLoader color={colors.semantic.brand} showSpinner={false} shadow={false} />
         <JsonLd data={[
           {

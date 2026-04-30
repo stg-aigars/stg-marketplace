@@ -106,7 +106,7 @@ function SiteHeader() {
               <span className="text-[10px] sm:text-[11px] font-bold tracking-wide">
                 <span className="text-semantic-brand">Every game deserves a</span>
               </span>
-              <span className="text-lg sm:text-xl font-display font-bold text-semantic-primary tracking-wide">
+              <span className="text-lg sm:text-xl font-platform text-semantic-primary tracking-wide">
                 Second Turn
               </span>
             </span>

@@ -36,7 +36,7 @@ function EmptyState({ icon: Icon, title, description, action, secondaryAction, c
         </div>
       )}
       {title && (
-        <p className="text-semantic-text-secondary text-lg font-display tracking-tight font-semibold">{title}</p>
+        <p className="text-semantic-text-secondary text-lg font-platform tracking-tight font-semibold">{title}</p>
       )}
       {description && (
         <p className="text-semantic-text-muted mt-1">{description}</p>

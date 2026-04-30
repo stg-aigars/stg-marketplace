@@ -18,7 +18,7 @@ export function AccountHeader({ fullName, avatarUrl, country }: AccountHeaderPro
       <div className="flex items-center gap-3 min-w-0">
         <Avatar name={name} src={avatarUrl} size="md" />
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading truncate">
+          <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading truncate">
             {name}
           </h1>
           {flagClass && (

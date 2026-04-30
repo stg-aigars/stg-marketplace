@@ -13,7 +13,7 @@ const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-1
 export default function SellerTermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading mb-6">
         Seller Agreement
       </h1>
 
@@ -74,7 +74,7 @@ export default function SellerTermsPage() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             1. Eligibility and private-sellers-only rule
           </h2>
           <p>
@@ -112,7 +112,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             2. Payment authorization
           </h2>
           <p>
@@ -131,7 +131,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             3. Operational requirements
           </h2>
           <p>When an order is placed, you must:</p>
@@ -190,7 +190,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             4. Fees and commissions
           </h2>
           <p>
@@ -204,7 +204,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             5. Wallet and payouts
           </h2>
           <p>
@@ -265,7 +265,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             6. Suspension and termination
           </h2>
           <p>
@@ -314,7 +314,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             7. Tax and invoicing
           </h2>
 
@@ -382,7 +382,7 @@ export default function SellerTermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             8. Changes to this agreement
           </h2>
           <p>

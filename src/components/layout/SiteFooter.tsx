@@ -42,7 +42,7 @@ function SiteFooter() {
                   <span className="text-[10px] sm:text-[11px] font-bold tracking-wide text-semantic-brand">
                     Every game deserves a
                   </span>
-                  <span className="text-lg sm:text-xl font-display font-bold text-semantic-primary tracking-wide">
+                  <span className="text-lg sm:text-xl font-platform font-bold text-semantic-primary tracking-wide">
                     Second Turn
                   </span>
                 </span>

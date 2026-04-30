@@ -47,7 +47,7 @@ export function ConditionPhotosStep({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+        <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
           Describe your copy
         </h2>
         <p className="text-sm text-semantic-text-secondary mt-1">

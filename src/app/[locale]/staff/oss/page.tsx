@@ -156,7 +156,7 @@ export default async function StaffOssPage(props: PageProps) {
     <div className="space-y-6">
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading">
             VAT OSS — {targetQuarter.label}
           </h1>
           <QuarterPicker now={now} active={targetQuarter.label} />

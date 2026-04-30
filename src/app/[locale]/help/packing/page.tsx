@@ -10,7 +10,7 @@ export default function PackingGuidePage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <BackLink href="/help" label="Help Center" />
 
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-2 mt-4">
+      <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading mb-2 mt-4">
         How to pack your board game for shipping
       </h1>
       <p className="text-semantic-text-muted mb-6">
@@ -20,7 +20,7 @@ export default function PackingGuidePage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-8">
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Before you pack
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">
@@ -41,7 +41,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Choosing your outer packaging
           </h2>
           <p>
@@ -72,7 +72,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Step by step
           </h2>
           <ol className="list-decimal pl-5 space-y-3">
@@ -104,7 +104,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Weather in the Baltics
           </h2>
           <p>
@@ -132,7 +132,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Locker sizes
           </h2>
           <p>
@@ -193,7 +193,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Quick checklist
           </h2>
           <ul className="list-disc pl-5 space-y-1">
@@ -209,7 +209,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             Where to find packing materials
           </h2>
           <p>
@@ -234,7 +234,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-semibold font-platform tracking-tight text-semantic-text-heading">
             If something goes wrong
           </h2>
           <p>

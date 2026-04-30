@@ -89,7 +89,7 @@ export default async function CheckoutPage({
         ]}
       />
 
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mt-4 mb-6">
+      <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading mt-4 mb-6">
         Checkout
       </h1>
 

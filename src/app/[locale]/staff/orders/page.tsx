@@ -135,7 +135,7 @@ export default async function StaffOrdersPage(
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-bold font-platform tracking-tight text-semantic-text-heading">
           All orders
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

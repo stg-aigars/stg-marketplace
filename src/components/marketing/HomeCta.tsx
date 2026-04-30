@@ -34,7 +34,7 @@ async function HomeCta() {
             <p className="text-xs font-medium uppercase tracking-wider text-snow-storm/70 mb-3">
               {t('eyebrow')}
             </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold font-display tracking-tight mb-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold font-platform tracking-tight mb-4">
               {t('heading')}
             </h2>
             <p className="text-lg text-snow-storm/85 mb-8 max-w-xl">
