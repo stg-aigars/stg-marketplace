@@ -13,6 +13,7 @@ const STAFF_TABS = [
   { key: 'oss', label: 'OSS', href: '/staff/oss' },
   { key: 'users', label: 'Users', href: '/staff/users' },
   { key: 'audit', label: 'Audit log', href: '/staff/audit' },
+  { key: 'templates', label: 'Templates', href: '/staff/templates' },
   { key: 'showcase', label: 'Components', href: '/staff/showcase' },
 ];
 

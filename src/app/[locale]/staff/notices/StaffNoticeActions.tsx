@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Button, Modal, Textarea, Select } from '@/components/ui';
 import type { SelectOption } from '@/components/ui';
+import { DSA_STATEMENT_TEMPLATES } from '@/lib/staff-templates';
 import {
   markNoticeReviewing,
   dismissNotice,
@@ -24,37 +25,14 @@ const REASON_CATEGORIES: SelectOption[] = [
   { value: 'other', label: 'Other' },
 ];
 
-// DSA Article 17 statement-of-reasons templates. Selecting a template
-// prefills the reason textarea — staff edits before submitting. Surfacing
-// canned reasoning improves the legal-defensibility of takedowns: every
-// statement of reasons follows a consistent shape that maps to a known
-// category, and a regulator looking at a sample can verify the platform
-// applied the rule the notice cited.
-const REASON_TEMPLATES: SelectOption[] = [
-  { value: 'custom', label: 'Custom (start blank)' },
-  { value: 'misleading_condition', label: 'Misleading — condition mismatch' },
-  { value: 'misleading_edition', label: 'Misleading — edition / version mismatch' },
-  { value: 'misleading_photos', label: 'Misleading — photos do not match item' },
-  { value: 'prohibited_item', label: 'Prohibited item' },
-  { value: 'ip_counterfeit', label: 'IP — counterfeit or unauthorized reproduction' },
-  { value: 'tos_violation_generic', label: 'ToS violation (generic)' },
-];
+const REASON_TEMPLATE_OPTIONS: SelectOption[] = DSA_STATEMENT_TEMPLATES.map((t) => ({
+  value: t.key,
+  label: t.label,
+}));
 
-const TEMPLATE_BODIES: Record<string, string> = {
-  custom: '',
-  misleading_condition:
-    'Listing condition does not match the item shown in the photos. The cancellation is required because misleading condition descriptions undermine buyer trust on the platform. You can re-list with the correct condition selected.',
-  misleading_edition:
-    'Listing description claims an edition or version that the photos / BGG metadata do not support. The cancellation is required because edition matters for buyer expectations (especially across language editions in the Baltic region). Re-list with accurate edition + language fields.',
-  misleading_photos:
-    'Listing photos do not show the actual item being sold (stock images or photos of a different copy). Buyers need to see the specific copy they are buying. Re-list with photos of your actual copy, including any wear, missing components, or sleeves.',
-  prohibited_item:
-    'This item falls into a prohibited category under our Terms of Service (Section on Prohibited Items). The listing has been cancelled and the item cannot be re-listed on the platform.',
-  ip_counterfeit:
-    'Listing was identified as a counterfeit or unauthorized reproduction following a notice from the rights holder. Listings of counterfeit goods are prohibited under our Terms of Service and EU intellectual-property rules.',
-  tos_violation_generic:
-    'This listing violates our Terms of Service. [Add specific clause + factual basis]. The listing has been cancelled. Please review the Terms before re-listing.',
-};
+const TEMPLATE_BODIES: Record<string, string> = Object.fromEntries(
+  DSA_STATEMENT_TEMPLATES.map((t) => [t.key, t.body]),
+);
 
 export function StaffNoticeActions({ noticeId, hasListing, status }: Props) {
   const [isPending, startTransition] = useTransition();
@@ -181,7 +159,7 @@ export function StaffNoticeActions({ noticeId, hasListing, status }: Props) {
             label="Statement-of-reasons template (optional)"
             value={templateKey}
             onChange={(e) => handleTemplateChange(e.target.value)}
-            options={REASON_TEMPLATES}
+            options={REASON_TEMPLATE_OPTIONS}
           />
           <Textarea
             label="Reason for the seller (≥20 chars)"

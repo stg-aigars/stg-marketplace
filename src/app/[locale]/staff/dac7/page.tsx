@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { Card, CardBody, Badge } from '@/components/ui';
+import { Card, CardBody, Badge, Alert } from '@/components/ui';
+import { CalendarBlank, Warning } from '@phosphor-icons/react/ssr';
+import { formatDate } from '@/lib/date-utils';
 import {
   DAC7_REPORT_TRANSACTIONS,
   DAC7_REPORT_CONSIDERATION_CENTS,
@@ -45,7 +47,8 @@ const STATUS_VARIANTS: Record<Dac7SellerStatus, 'default' | 'warning' | 'error' 
 
 export default async function Dac7StaffPage() {
   const supabase = createServiceClient();
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
 
   // Parallel fetch: status counts, action sellers, approaching sellers
   const [
@@ -105,11 +108,49 @@ export default async function Dac7StaffPage() {
     .select('id, seller_id, calendar_year, generated_at, seller_notified_at, submitted_to_vid_at')
     .eq('calendar_year', currentYear);
 
+  // Submission deadline: DAC7 reports for calendar year N are filed by
+  // 31 January of year N+1 (Article 25 of Council Directive 2011/16/EU
+  // as amended by Council Directive (EU) 2021/514). The "current
+  // reporting year" is whatever year's data is being collected today —
+  // before 31 Jan that's the previous calendar year; after, it's the
+  // current calendar year.
+  const reportingYear = now.getMonth() === 0 ? currentYear - 1 : currentYear;
+  const deadline = new Date(Date.UTC(reportingYear + 1, 0, 31, 23, 59, 59));
+  const daysToDeadline = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const deadlinePassed = daysToDeadline < 0;
+  const deadlineImminent = !deadlinePassed && daysToDeadline <= 30;
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
         DAC7 Tax Reporting
       </h1>
+
+      {/* Submission-deadline banner */}
+      {deadlinePassed ? (
+        <Alert variant="error" icon={Warning} title="Filing deadline passed">
+          The DAC7 filing deadline for {reportingYear} calendar-year activity
+          ({formatDate(deadline.toISOString())}) has passed. Confirm submission
+          status with VID and update the report records below.
+        </Alert>
+      ) : deadlineImminent ? (
+        <Alert
+          variant="warning"
+          icon={Warning}
+          title={`${daysToDeadline} day${daysToDeadline === 1 ? '' : 's'} until DAC7 deadline`}
+        >
+          The {reportingYear} report is due {formatDate(deadline.toISOString())}.
+          Confirm seller data is complete and the XML report is generated for
+          submission to the Latvian State Revenue Service (VID).
+        </Alert>
+      ) : (
+        <Alert variant="info" icon={CalendarBlank} title="DAC7 reporting calendar">
+          Next filing deadline: {formatDate(deadline.toISOString())} for {reportingYear}{' '}
+          calendar-year activity ({daysToDeadline} day{daysToDeadline === 1 ? '' : 's'}{' '}
+          remaining). Article 25 of Council Directive 2011/16/EU as amended by
+          Council Directive (EU) 2021/514.
+        </Alert>
+      )}
 
       {/* Section A: Status Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
