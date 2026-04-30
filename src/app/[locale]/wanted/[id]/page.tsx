@@ -127,7 +127,7 @@ export default async function WantedDetailPage(props: Props) {
         {/* Right column: About this want */}
         <div className="space-y-6">
           {!isOwner && (
-            <Alert variant="info" icon={MagnifyingGlass} title="Someone is looking for this game">
+            <Alert variant="info" icon={<MagnifyingGlass size={20} />} title="Someone is looking for this game">
               <p>If you have a copy, you can list it for sale.</p>
               <div className="mt-3">
                 <Button asChild variant="primary" size="sm">

@@ -16,7 +16,7 @@ export function ActionStrip({ actions }: ActionStripProps) {
   const { seller, buyer } = buildActionChips(actions);
 
   return (
-    <Alert variant="warning" icon={WarningCircle} className="mb-6">
+    <Alert variant="warning" icon={<WarningCircle size={20} />} className="mb-6">
       <ActionChipList seller={seller} buyer={buyer} />
     </Alert>
   );

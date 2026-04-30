@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { Card, CardBody, Badge, EmptyState } from '@/components/ui';
+import { Card, CardBody, Badge, EmptyState, NavTabs } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { CheckCircle, CaretRight } from '@phosphor-icons/react/ssr';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
@@ -36,24 +36,81 @@ const RECENTLY_RESOLVED_DAYS = 7;
 // no longer the operational priority.
 const REFUND_ISSUES_LOOKBACK_DAYS = 90;
 
-export default async function StaffDisputesPage() {
+const COHORTS = ['needs_action', 'awaiting_seller', 'refund_issues', 'recently_resolved'] as const;
+type Cohort = typeof COHORTS[number];
+
+interface CohortMeta {
+  label: string;
+  description: string;
+  emptyTitle: string;
+  /** Tone for the SLA chip. `urgent` = staff is the actor (red faster);
+   *  `normal` = counterparty is the actor (red slower); `none` = no chip. */
+  tone: 'urgent' | 'normal' | 'none';
+  /** Which timestamp the SLA chip reads against — varies by cohort or
+   *  the cohort's meaning silently inverts. */
+  chipReference: (d: StaffDisputeRow) => string | null;
+}
+
+const COHORT_META: Record<Cohort, CohortMeta> = {
+  needs_action: {
+    label: 'Needs action',
+    description: 'Escalated to staff, not yet resolved. Chip reads how long staff has been ignoring.',
+    emptyTitle: 'All caught up',
+    tone: 'urgent',
+    chipReference: (d) => d.escalated_at ?? d.created_at,
+  },
+  awaiting_seller: {
+    label: 'Awaiting seller',
+    description: 'Buyer opened a dispute, ball in the seller\'s court (not escalated, not resolved). Chip reads how long since the dispute was opened.',
+    emptyTitle: 'No disputes awaiting a seller response',
+    tone: 'normal',
+    chipReference: (d) => d.created_at,
+  },
+  refund_issues: {
+    label: 'Refund issues',
+    description: `Resolved within the last ${REFUND_ISSUES_LOOKBACK_DAYS} days but the underlying order refund is FAILED or PARTIAL — the decision was made but money didn't move.`,
+    emptyTitle: 'No stuck refunds',
+    tone: 'urgent',
+    chipReference: (d) => d.resolved_at,
+  },
+  recently_resolved: {
+    label: 'Recently resolved',
+    description: `Last ${RECENTLY_RESOLVED_DAYS} days, for context. No SLA chip.`,
+    emptyTitle: 'No recent resolutions',
+    tone: 'none',
+    chipReference: () => null,
+  },
+};
+
+function isCohort(value: string | undefined): value is Cohort {
+  return !!value && (COHORTS as readonly string[]).includes(value);
+}
+
+export default async function StaffDisputesPage(
+  props: { searchParams: Promise<{ cohort?: string }> }
+) {
   const { isStaff, serviceClient } = await requireServerAuth();
   if (!isStaff) {
     redirect('/');
   }
+
+  const searchParams = await props.searchParams;
+  const activeCohort: Cohort = isCohort(searchParams.cohort) ? searchParams.cohort : 'needs_action';
 
   // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is safe at request time
   const requestTimeMs = Date.now();
   const recentlyResolvedSince = new Date(requestTimeMs - RECENTLY_RESOLVED_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const refundIssuesLookbackSince = new Date(requestTimeMs - REFUND_ISSUES_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+  // Fetch all four cohorts so the tab counts are accurate without
+  // forcing a re-render when staff switches tabs. Each query is small
+  // and bounded; total cost is similar to the previous stacked layout.
   const [
     needsActionResult,
     awaitingSellerResult,
     resolvedRecentResult,
     resolvedLookbackResult,
   ] = await Promise.all([
-    // Needs action — escalated, not yet resolved
     serviceClient
       .from('disputes')
       .select(SELECT)
@@ -61,7 +118,6 @@ export default async function StaffDisputesPage() {
       .is('resolved_at', null)
       .order('escalated_at', { ascending: true })
       .limit(50),
-    // Awaiting seller — buyer opened, not escalated, not resolved
     serviceClient
       .from('disputes')
       .select(SELECT)
@@ -69,16 +125,15 @@ export default async function StaffDisputesPage() {
       .is('resolved_at', null)
       .order('created_at', { ascending: true })
       .limit(50),
-    // Recently resolved — last 7 days, newest first
     serviceClient
       .from('disputes')
       .select(SELECT)
       .gte('resolved_at', recentlyResolvedSince)
       .order('resolved_at', { ascending: false })
       .limit(20),
-    // Refund issues — resolved disputes within the lookback window where the
-    // order's refund_status is FAILED or PARTIAL. The cohort is "decision made
-    // but the money didn't actually move," so post-filter on the joined order.
+    // Refund issues — resolved within the lookback window. App-side
+    // post-filter on the joined order's refund_status because PostgREST
+    // nested-table filters get noisy and the result set is small.
     serviceClient
       .from('disputes')
       .select(SELECT)
@@ -95,9 +150,19 @@ export default async function StaffDisputesPage() {
     (d) => d.orders?.refund_status === REFUND_STATUS.FAILED || d.orders?.refund_status === REFUND_STATUS.PARTIAL,
   );
 
+  const cohortRows: Record<Cohort, StaffDisputeRow[]> = {
+    needs_action: needsAction,
+    awaiting_seller: awaitingSeller,
+    refund_issues: refundIssues,
+    recently_resolved: recentlyResolved,
+  };
+
+  const activeMeta = COHORT_META[activeCohort];
+  const activeRows = cohortRows[activeCohort];
+
   return (
-    <div className="space-y-8">
-      <div>
+    <div>
+      <div className="mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           Disputes
         </h1>
@@ -106,66 +171,30 @@ export default async function StaffDisputesPage() {
         </p>
       </div>
 
-      <Section
-        title="Needs action"
-        description="Escalated to staff, not yet resolved. Chip reads how long staff has been ignoring."
-        emptyTitle="All caught up"
-        rows={needsAction}
-        chip={(d) => ageChip(d.escalated_at ?? d.created_at, requestTimeMs, 'urgent')}
+      <NavTabs
+        tabs={COHORTS.map((cohort) => ({
+          key: cohort,
+          label: COHORT_META[cohort].label,
+          href: cohort === 'needs_action' ? '/staff/disputes' : `/staff/disputes?cohort=${cohort}`,
+          count: cohortRows[cohort].length,
+          // Surface a warning dot on tabs that contain operationally-urgent
+          // rows — staff sees there's work without having to switch tabs.
+          attention: COHORT_META[cohort].tone === 'urgent' && cohortRows[cohort].length > 0,
+        }))}
+        activeTab={activeCohort}
+        variant="pill"
+        className="mb-4"
       />
 
-      <Section
-        title="Awaiting seller"
-        description="Buyer opened a dispute, ball in the seller's court (not escalated, not resolved). Chip reads how long since the dispute was opened."
-        emptyTitle="No disputes awaiting a seller response"
-        rows={awaitingSeller}
-        chip={(d) => ageChip(d.created_at, requestTimeMs, 'normal')}
-      />
+      <p className="text-sm text-semantic-text-muted mb-4">{activeMeta.description}</p>
 
-      <Section
-        title="Refund issues"
-        description={`Resolved within the last ${REFUND_ISSUES_LOOKBACK_DAYS} days but the underlying order refund is FAILED or PARTIAL — the decision was made but money didn't move.`}
-        emptyTitle="No stuck refunds"
-        rows={refundIssues}
-        chip={(d) => ageChip(d.resolved_at, requestTimeMs, 'urgent')}
-      />
-
-      <Section
-        title="Recently resolved"
-        description={`Last ${RECENTLY_RESOLVED_DAYS} days, for context. No SLA chip.`}
-        emptyTitle="No recent resolutions"
-        rows={recentlyResolved}
-        chip={() => null}
-      />
-    </div>
-  );
-}
-
-interface SectionProps {
-  title: string;
-  description: string;
-  emptyTitle: string;
-  rows: StaffDisputeRow[];
-  chip: (dispute: StaffDisputeRow) => React.ReactNode;
-}
-
-function Section({ title, description, emptyTitle, rows, chip }: SectionProps) {
-  return (
-    <section>
-      <div className="mb-3">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
-          {title}{' '}
-          <span className="text-base font-normal text-semantic-text-muted">({rows.length})</span>
-        </h2>
-        <p className="text-sm text-semantic-text-muted mt-1">{description}</p>
-      </div>
-
-      {rows.length === 0 ? (
-        <EmptyState icon={CheckCircle} title={emptyTitle} />
+      {activeRows.length === 0 ? (
+        <EmptyState icon={CheckCircle} title={activeMeta.emptyTitle} />
       ) : (
         <div className="space-y-2">
-          {rows.map((dispute) => {
+          {activeRows.map((dispute) => {
             const status = getDisputeStatusConfig(dispute);
+            const chipNode = renderAgeChip(activeMeta.chipReference(dispute), requestTimeMs, activeMeta.tone);
             return (
               <Link key={dispute.id} href={`/staff/disputes/${dispute.id}`}>
                 <Card hoverable>
@@ -182,7 +211,7 @@ function Section({ title, description, emptyTitle, rows, chip }: SectionProps) {
                         {dispute.orders?.refund_status === REFUND_STATUS.PARTIAL && (
                           <Badge variant="warning">refund partial</Badge>
                         )}
-                        {chip(dispute)}
+                        {chipNode}
                       </div>
                       <p className="text-sm text-semantic-text-secondary mt-0.5 truncate">
                         {dispute.orders?.listings?.game_name ?? '—'} ·{' '}
@@ -203,25 +232,25 @@ function Section({ title, description, emptyTitle, rows, chip }: SectionProps) {
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
 /**
- * Render an age chip relative to a reference timestamp. Two tone modes:
+ * Render an SLA-age chip relative to a reference timestamp. Two tone modes:
  *   - urgent  — green <24h, amber 24–72h, red >72h
  *   - normal  — green <72h, amber 72h–7d, red >7d
  *
  * "Urgent" applies to cohorts where staff intervention is the primary
  * action (Needs action, Refund issues). "Normal" applies to cohorts
- * waiting on counterparty action (Awaiting seller).
+ * waiting on counterparty action (Awaiting seller). `none` returns null.
  */
-function ageChip(
+function renderAgeChip(
   reference: string | null,
   nowMs: number,
-  mode: 'urgent' | 'normal',
+  mode: 'urgent' | 'normal' | 'none',
 ): React.ReactNode {
-  if (!reference) return null;
+  if (mode === 'none' || !reference) return null;
   const ageMs = nowMs - new Date(reference).getTime();
   const ageHours = ageMs / (1000 * 60 * 60);
 

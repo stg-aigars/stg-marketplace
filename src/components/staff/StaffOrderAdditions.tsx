@@ -49,7 +49,7 @@ export function StaffOrderAdditions({
       {refundEscalated && (
         <Alert
           variant={refundFailed ? 'error' : 'warning'}
-          icon={Warning}
+          icon={<Warning size={20} />}
           title={`Refund ${refundStatus}`}
         >
           <p>
@@ -114,7 +114,7 @@ export function StaffOrderAdditions({
       )}
 
       {order.status === 'disputed' && dispute?.id && !dispute.resolved_at && (
-        <Alert variant="error" icon={Warning} title="Open dispute">
+        <Alert variant="error" icon={<Warning size={20} />} title="Open dispute">
           <div className="flex items-center justify-between gap-4">
             <p>Review claims, then resolve.</p>
             <Link
@@ -128,7 +128,7 @@ export function StaffOrderAdditions({
       )}
 
       {order.status === 'cancelled' && !order.refunded_at && (
-        <Alert variant="warning" icon={Info} title="Refund not processed">
+        <Alert variant="warning" icon={<Info size={20} />} title="Refund not processed">
           <p>
             This cancelled order has no refund on record. Process via EveryPay dashboard or wait for the reconciliation sweep.
           </p>

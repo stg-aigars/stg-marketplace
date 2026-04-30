@@ -133,7 +133,7 @@ export default async function Dac7StaffPage() {
 
       {/* Submission-deadline banner */}
       {deadlinePassed ? (
-        <Alert variant="error" icon={Warning} title="Filing deadline passed">
+        <Alert variant="error" icon={<Warning size={20} />} title="Filing deadline passed">
           The DAC7 filing deadline for {reportingYear} calendar-year activity
           ({formatDate(deadline.toISOString())}) has passed. Confirm submission
           status with VID and update the report records below.
@@ -141,7 +141,7 @@ export default async function Dac7StaffPage() {
       ) : deadlineImminent ? (
         <Alert
           variant="warning"
-          icon={Warning}
+          icon={<Warning size={20} />}
           title={`${daysToDeadline} day${daysToDeadline === 1 ? '' : 's'} until DAC7 deadline`}
         >
           The {reportingYear} report is due {formatDate(deadline.toISOString())}.
@@ -149,7 +149,7 @@ export default async function Dac7StaffPage() {
           submission to the Latvian State Revenue Service (VID).
         </Alert>
       ) : (
-        <Alert variant="info" icon={CalendarBlank} title="DAC7 reporting calendar">
+        <Alert variant="info" icon={<CalendarBlank size={20} />} title="DAC7 reporting calendar">
           Next filing deadline: {formatDate(deadline.toISOString())} for {reportingYear}{' '}
           calendar-year activity ({daysToDeadline} day{daysToDeadline === 1 ? '' : 's'}{' '}
           remaining). Article 25 of Council Directive 2011/16/EU as amended by

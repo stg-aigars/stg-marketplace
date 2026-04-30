@@ -48,7 +48,7 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
       <div className="space-y-4">
         <Alert
           variant={status === 'approaching' ? 'info' : 'warning'}
-          icon={Warning}
+          icon={<Warning size={20} />}
           title={status === 'approaching'
             ? 'Getting close to the threshold'
             : 'Tax details needed'}
@@ -71,7 +71,7 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
   if (status === 'data_provided') {
     return (
       <div className="space-y-4">
-        <Alert variant="success" icon={CheckCircle} title="Tax details saved">
+        <Alert variant="success" icon={<CheckCircle size={20} />} title="Tax details saved">
           <p className="text-sm">
             We have your tax details on file. You can update them below if anything changes.
           </p>
@@ -88,7 +88,7 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
   if (status === 'blocked') {
     return (
       <div className="space-y-4">
-        <Alert variant="error" icon={ShieldWarning} title="Account restricted">
+        <Alert variant="error" icon={<ShieldWarning size={20} />} title="Account restricted">
           <p className="text-sm">
             New listings and withdrawals are paused because we don&apos;t have your
             tax details yet. Fill them in below to restore access.
