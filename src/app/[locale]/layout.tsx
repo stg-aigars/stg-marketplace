@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Rubik, Fraunces, Rubik_Dirt } from 'next/font/google';
+import { Rubik, Fraunces, Big_Shoulders } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -41,14 +41,16 @@ const fraunces = Fraunces({
   axes: ['opsz'],
 });
 
-// Rubik Dirt: platform voice — wordmark, page H1s, section H2s, page chrome.
-// Single weight (400) only. Distinct from font-display (Fraunces) which owns
-// game identity / product voice. See CLAUDE.md "Typography" rule.
-const rubikDirt = Rubik_Dirt({
+// Big Shoulders: platform voice — wordmark, page H1s, section H2s, page chrome.
+// Variable weight (100–900) + opsz axis; narrow urban-poster character that
+// width-contrasts the wide rounded Rubik body. Distinct from font-display
+// (Fraunces) which owns game identity / product voice. See CLAUDE.md
+// "Typography" rule.
+const bigShoulders = Big_Shoulders({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-platform',
   display: 'swap',
-  weight: '400',
+  axes: ['opsz'],
 });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
@@ -111,7 +113,7 @@ export default async function LocaleLayout(
   return (
     // translate="no" prevents browser auto-translate from mutating the DOM mid-hydration.
     <html lang={locale} translate="no">
-      <body className={`${rubik.variable} ${fraunces.variable} ${rubikDirt.variable} font-sans min-h-screen antialiased`}>
+      <body className={`${rubik.variable} ${fraunces.variable} ${bigShoulders.variable} font-sans min-h-screen antialiased`}>
         <NextTopLoader color={colors.semantic.brand} showSpinner={false} shadow={false} />
         <JsonLd data={[
           {

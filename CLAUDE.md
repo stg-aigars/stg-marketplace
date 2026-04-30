@@ -56,8 +56,8 @@ Never use 12-hour time format (AM/PM).
 - Page vertical padding: `py-6`
 - Homepage sections: `py-8 sm:py-10 lg:py-12`
 - Card image containers: `aspect-square` (not fixed heights)
-- H1 page headings: `text-2xl sm:text-3xl font-bold font-platform tracking-tight` (platform voice — Rubik Dirt)
-- H2 section headings: `text-xl sm:text-2xl font-semibold font-platform tracking-tight` (platform voice — Rubik Dirt)
+- H1 page headings: `text-2xl sm:text-3xl font-bold font-platform tracking-tight` (platform voice — Big Shoulders)
+- H2 section headings: `text-xl sm:text-2xl font-semibold font-platform tracking-tight` (platform voice — Big Shoulders)
 - H2 card subsections: `text-base font-semibold` (stays Rubik, no display font)
 - Game identity (game titles, listing detail H1, wanted detail H1, GameTitle atom): `font-display` (Fraunces) — see "Typography" rule below
 - Borders: `border` (1px default); `border-2` only for selected/active states
@@ -167,10 +167,10 @@ Always use these — do not write inline equivalents:
 - **Button + Link:** Never nest `<Link>` inside `<Button>` (invalid `<a>` inside `<button>`). Use `<Button asChild><Link href="...">text</Link></Button>` — `asChild` renders Button styling on the Link element directly.
 - **Heading hierarchy:** Page-section H2 = `text-xl sm:text-2xl font-semibold font-platform tracking-tight`. Card-subsection H2 = `text-base font-semibold` (Rubik, no display font).
 - **Typography (two display registers):** The codebase has two display fonts that map to two semantic registers. Pick by *what the text represents*, not by visual weight.
-  - **`font-platform` (Rubik Dirt)** — platform voice. Use for: wordmark, page H1s, section H2s, modal titles, marketing hero, FAQ questions, empty-state titles, error fallbacks, page chrome generally. Single weight (400) only — `font-bold` / `font-semibold` next to it are decorative no-ops; harmless but new code shouldn't add them. Has no italic — never apply `italic` to a `font-platform` element (browsers synthesize fake italic via skew, which looks bad on display fonts).
+  - **`font-platform` (Big Shoulders)** — platform voice. Use for: wordmark, page H1s, section H2s, modal titles, marketing hero, FAQ questions, empty-state titles, error fallbacks, page chrome generally. Variable weight (100–900) — `font-bold` and `font-semibold` work natively. Narrow urban-poster proportions create width-contrast against the wide rounded Rubik body. Has no italic — never apply `italic` to a `font-platform` element (browsers synthesize fake italic via skew, which looks bad on display fonts).
   - **`font-display` (Fraunces)** — game / product voice. Use for: game titles (always via the `GameTitle` atom when possible), listing detail page H1 (`{listing.game_name}`), wanted listing detail H1, anywhere "this is a specific game" semantics. Variable weight + true italic available.
   - **Never** for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Rubik).
-  - **Failure mode discipline:** Each register's fallback matches its semantic role. `font-platform` falls back to `var(--font-sans)` then system sans (so platform chrome stays sans-serif if Rubik Dirt fails). `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). Don't change either fallback chain casually — the registers stay legible apart even under font load failure.
+  - **Failure mode discipline:** Each register's fallback matches its semantic role. `font-platform` falls back to `var(--font-sans)` then system sans (so platform chrome stays sans-serif if Big Shoulders fails). `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). Don't change either fallback chain casually — the registers stay legible apart even under font load failure.
 - **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Add to Cart) use `semantic-primary` (orange). Platform-action CTAs (Sell a game, seller dashboard entry points) use `Button variant="brand"` (teal, filled).
 - **Badge shape:** `rounded-md` (squared), not pills. Condition badges include a Phosphor tier icon.
 - **Image containers:** Game art uses `aspect-square`, not fixed heights.
