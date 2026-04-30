@@ -25,6 +25,19 @@
 --   so it can write to public.login_activity from the auth schema's trigger
 --   context, and wrapped in EXCEPTION so a failure here never blocks
 --   sign-in (capture is best-effort; auth correctness is load-bearing).
+--
+--   IMPLICIT COUPLING TO SUPABASE-INTERNAL SCHEMA:
+--   The trigger function references new.ip / new.user_agent / new.user_id
+--   / new.created_at on auth.sessions. These columns are not part of any
+--   documented stable Supabase contract — if a future GoTrue release renames
+--   or drops them, the trigger will fail (gracefully — caught by the
+--   EXCEPTION block, capture goes silent). Operationally:
+--     - Renaming/dropping mirror_session_to_login_activity() requires
+--       dropping trg_mirror_session_to_login_activity FIRST. Otherwise
+--       every sign-in fails on the orphaned trigger reference.
+--     - On Supabase upgrades, validate that auth.sessions still has the
+--       four referenced columns. If a column rename lands, update the
+--       function body to match.
 
 create table public.login_activity (
   id uuid primary key default gen_random_uuid(),

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
+import { logAuditEvent } from '@/lib/services/audit';
 import {
   Badge,
   BackLink,
@@ -43,11 +44,33 @@ export default async function StaffSuspiciousActivityPage(
   props: { searchParams: Promise<{ days?: string; min_ips?: string; user_id?: string }> }
 ) {
   const searchParams = await props.searchParams;
-  const { serviceClient } = await requireServerAuth();
+  const { serviceClient, user } = await requireServerAuth();
 
   const days = clampInt(searchParams.days, DEFAULT_DAYS, 1, 30);
   const minIps = clampInt(searchParams.min_ips, DEFAULT_MIN_IPS, 2, 100);
-  const focusedUserId = searchParams.user_id?.trim() || null;
+  // UUID validation guards against malformed inputs reaching the DB query
+  // (the inet column would error gracefully but the focused-user empty
+  // state would mask that to staff). Strict UUID v4-ish shape check.
+  const rawFocus = searchParams.user_id?.trim() || null;
+  const focusedUserId = rawFocus && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(rawFocus)
+    ? rawFocus
+    : null;
+
+  // Audit-trail the staff drill-in. The ROPA balancing test for this
+  // surface claims staff reads are logged — this is the emission that
+  // backs that claim. Operational retention is sufficient (the artifact
+  // proves access happened; the originating signal data is in
+  // login_activity itself with its own retention).
+  if (focusedUserId) {
+    void logAuditEvent({
+      actorId: user.id,
+      actorType: 'user',
+      action: 'login_activity.staff_viewed',
+      resourceType: 'user',
+      resourceId: focusedUserId,
+      retentionClass: 'operational',
+    });
+  }
 
   // Suspicious-pattern flagger (RPC) — service-role only, gated by the
   // staff-only staff/layout.tsx wrapper that runs requireServerAuth.

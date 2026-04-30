@@ -289,6 +289,7 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
     - `shipment.cancelled` (operational) — fires from `unisend/shipping.ts` when a parcel is cancelled. Pure shipping operational signal.
     - `comment.deleted` (operational) — fires from `comments/actions.ts` when staff soft-deletes a listing comment. If the deletion is bound to a DSA notice, the regulatory `listing.actioned_by_staff` companion event fires alongside.
     - `order_message.deleted` (operational) — fires from `order-messages/actions.ts` when staff soft-deletes an order-message. Same companion-event pattern as `comment.deleted`.
+    - `login_activity.staff_viewed` (operational) — fires from `/staff/audit/security` when staff drills into a specific user's login history. `actorType: 'user'`, `actorId` = staff user. `resourceType: 'user'`, `resourceId` = the inspected user's id. Backs the ROPA balancing-test claim that staff reads of the security log are themselves audit-trailed (see `docs/legal_audit/ropa-login-activity.md`).
 
 ## Server Action Error Handling
 - Server actions return `{ success: true }` or `{ error: string }` — never throw to the client
