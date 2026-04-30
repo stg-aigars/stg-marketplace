@@ -122,9 +122,14 @@ export default async function Dac7StaffPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-        DAC7 Tax Reporting
-      </h1>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          DAC7 Tax Reporting
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Annual seller-reporting cycle for cross-border B2C activity. The next 31 January submission deadline is shown below.
+        </p>
+      </div>
 
       {/* Submission-deadline banner */}
       {deadlinePassed ? (

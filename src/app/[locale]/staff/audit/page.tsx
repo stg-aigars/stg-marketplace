@@ -14,7 +14,7 @@ import {
 } from '@/components/ui';
 import { fetchProfiles, type Profile } from '@/lib/supabase/helpers';
 import { formatDateTime } from '@/lib/date-utils';
-import { ListMagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { ListMagnifyingGlass, FileMagnifyingGlass } from '@phosphor-icons/react/ssr';
 
 export const metadata: Metadata = {
   title: 'Audit Log — Staff',
@@ -103,6 +103,10 @@ interface SearchParams {
   date_from?: string;
   date_to?: string;
   page?: string;
+  /** 'cards' (default — friendly long-form view) or 'table' (compact, scan
+   *  many events fast for compliance investigations). Persisted in the URL
+   *  so it survives filter changes within the same session. */
+  view?: string;
 }
 
 export default async function StaffAuditPage(
@@ -112,6 +116,7 @@ export default async function StaffAuditPage(
   const { serviceClient } = await requireServerAuth();
 
   const requestedPage = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+  const view: 'cards' | 'table' = searchParams.view === 'table' ? 'table' : 'cards';
 
   // Builder factory — Supabase query builders mutate in place and return
   // `this`, so a single instance can't be reused for two range() calls.
@@ -189,9 +194,10 @@ export default async function StaffAuditPage(
     ? await fetchProfiles(serviceClient, userActorIds)
     : new Map();
 
-  const buildUrl = (newPage: number) => {
+  const buildUrl = (newPage: number, overrides: Partial<SearchParams> = {}) => {
     const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(searchParams)) {
+    const merged = { ...searchParams, ...overrides };
+    for (const [key, value] of Object.entries(merged)) {
       if (value && key !== 'page') params.set(key, value);
     }
     if (newPage > 1) params.set('page', String(newPage));
@@ -294,14 +300,89 @@ export default async function StaffAuditPage(
         </div>
       )}
 
-      <p className="text-sm text-semantic-text-muted mb-3">
-        {total === 0
-          ? 'No matching events.'
-          : `${total.toLocaleString('en')} event${total === 1 ? '' : 's'} · page ${page} of ${totalPages}`}
-      </p>
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="text-sm text-semantic-text-muted">
+          {total === 0
+            ? 'No matching events.'
+            : `${total.toLocaleString('en')} event${total === 1 ? '' : 's'} · page ${page} of ${totalPages}`}
+        </p>
+        <div className="flex items-center gap-1 text-xs">
+          <span className="text-semantic-text-muted">View:</span>
+          <Link
+            href={buildUrl(page, { view: 'cards' })}
+            className={view === 'cards' ? 'font-semibold text-semantic-brand' : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'}
+          >
+            Cards
+          </Link>
+          <span className="text-semantic-text-muted">·</span>
+          <Link
+            href={buildUrl(page, { view: 'table' })}
+            className={view === 'table' ? 'font-semibold text-semantic-brand' : 'text-semantic-text-muted sm:hover:text-semantic-text-secondary'}
+          >
+            Table
+          </Link>
+        </div>
+      </div>
 
       {rows.length === 0 ? (
-        <EmptyState title="No audit events" description="Adjust filters above or remove date constraints." />
+        <EmptyState icon={FileMagnifyingGlass} title="No audit events" description="Adjust filters above or remove date constraints." />
+      ) : view === 'table' ? (
+        <Card>
+          <CardBody className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-semantic-bg-subtle border-b border-semantic-border-subtle">
+                  <tr className="text-left text-xs uppercase tracking-wider text-semantic-text-muted">
+                    <th className="px-3 py-2 font-medium">Time</th>
+                    <th className="px-3 py-2 font-medium">Action</th>
+                    <th className="px-3 py-2 font-medium">Actor</th>
+                    <th className="px-3 py-2 font-medium">Resource</th>
+                    <th className="px-3 py-2 font-medium">Retention</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-semantic-border-subtle">
+                  {rows.map((row) => {
+                    const actor = row.actor_id ? profileMap.get(row.actor_id) : null;
+                    const resourceHref = resourceDetailHref(row.resource_type, row.resource_id);
+                    return (
+                      <tr key={row.id} className="sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom">
+                        <td className="px-3 py-2 font-mono text-xs text-semantic-text-muted whitespace-nowrap align-top">
+                          {formatDateTime(row.created_at)}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-xs text-semantic-text-heading align-top">
+                          {row.action}
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <ActorCell row={row} actor={actor} />
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <span className="text-semantic-text-primary">{row.resource_type}</span>
+                          {row.resource_id && (
+                            <>
+                              {' / '}
+                              {resourceHref ? (
+                                <Link href={resourceHref} className="font-mono text-xs text-semantic-brand sm:hover:underline">
+                                  {row.resource_id.slice(0, 8)}…
+                                </Link>
+                              ) : (
+                                <span className="font-mono text-xs text-semantic-text-muted">{row.resource_id.slice(0, 8)}…</span>
+                              )}
+                            </>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <Badge variant={row.retention_class === 'regulatory' ? 'trust' : 'default'}>
+                            {row.retention_class}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardBody>
+        </Card>
       ) : (
         <div className="space-y-2">
           {rows.map((row) => {

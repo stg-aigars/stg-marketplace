@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge, NavTabs, EmptyState } from '@/components/ui';
+import { Megaphone } from '@phosphor-icons/react/ssr';
 import { formatDateTime } from '@/lib/date-utils';
 import { REPORT_CATEGORY_LABELS } from '@/app/[locale]/report-illegal-content/categories';
 import type { ReportCategory } from '@/app/[locale]/report-illegal-content/categories';
@@ -122,9 +123,14 @@ export default async function StaffNoticesPage(props: {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-2">
-        DSA notices
-      </h1>
+      <div className="mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          DSA notices
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Article 16 notice-and-action queue. SLA badges flag notices open beyond 24h; resolved notices carry the Article 17 statement-of-reasons audit chain.
+        </p>
+      </div>
       <p className="text-sm text-semantic-text-muted mb-6">
         Notice-and-action queue under DSA Art. 16. Each row is an inbound notice from{' '}
         <code>/api/report-illegal-content</code> persisted via{' '}
@@ -153,7 +159,7 @@ export default async function StaffNoticesPage(props: {
       </div>
 
       {typed.length === 0 ? (
-        <EmptyState title="No notices in this view" description="Try a different filter or binding." />
+        <EmptyState icon={Megaphone} title="No notices in this view" description="Try a different filter or binding." />
       ) : (
         <div className="space-y-3">
           {typed.map((notice) => {

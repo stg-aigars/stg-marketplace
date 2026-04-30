@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge, NavTabs, EmptyState } from '@/components/ui';
+import { Users } from '@phosphor-icons/react/ssr';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryName } from '@/lib/country-utils';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -137,9 +138,14 @@ export default async function StaffUsersPage(props: UsersPageProps) {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
-        Users
-      </h1>
+      <div className="mb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          Users
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Search by name or email; cohort tabs surface trader-signal lifecycle states (action needed, awaiting verification, approaching threshold, settled, suspended).
+        </p>
+      </div>
 
       <form className="mb-4" action="/staff/users" method="get">
         <input type="hidden" name="cohort" value={cohort} />
@@ -164,7 +170,7 @@ export default async function StaffUsersPage(props: UsersPageProps) {
       />
 
       {users.length === 0 ? (
-        <EmptyState title={q ? `No users match "${q}" in the ${cohortLabel} cohort.` : `No users in the ${cohortLabel} cohort.`} />
+        <EmptyState icon={Users} title={q ? `No users match "${q}" in the ${cohortLabel} cohort.` : `No users in the ${cohortLabel} cohort.`} />
       ) : (
         <div className="space-y-2">
           {users.map((user) => (

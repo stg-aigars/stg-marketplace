@@ -12,7 +12,7 @@ import {
   Button,
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
-import { ShieldWarning } from '@phosphor-icons/react/ssr';
+import { ShieldWarning, ShieldCheck, ClockCounterClockwise } from '@phosphor-icons/react/ssr';
 
 export const metadata: Metadata = {
   title: 'Suspicious activity — Staff',
@@ -152,6 +152,7 @@ export default async function StaffSuspiciousActivityPage(
 
       {suspicious.length === 0 ? (
         <EmptyState
+          icon={ShieldCheck}
           title="No flagged users"
           description="Adjust the thresholds above or wait for activity to accumulate. The suspicious-pattern flagger requires at least the minimum-IP threshold to fire."
         />
@@ -195,7 +196,7 @@ export default async function StaffSuspiciousActivityPage(
             Recent activity — {focusedProfile?.full_name ?? focusedProfile?.email ?? focusedUserId}
           </h2>
           {focusedRows.length === 0 ? (
-            <EmptyState title="No recorded sessions" description="This user has no login_activity rows in the last 30 days." />
+            <EmptyState icon={ClockCounterClockwise} title="No recorded sessions" description="This user has no login_activity rows in the last 30 days." />
           ) : (
             <Card>
               <CardBody>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge, NavTabs, EmptyState } from '@/components/ui';
+import { Wallet } from '@phosphor-icons/react/ssr';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDate } from '@/lib/date-utils';
 import type { WithdrawalStatus } from '@/lib/wallet/types';
@@ -55,9 +56,14 @@ export default async function StaffWithdrawalsPage(
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
-        Withdrawal requests
-      </h1>
+      <div className="mb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          Withdrawal requests
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Approve, reject, or mark complete. SEPA remittance guidance is shown alongside each pending withdrawal.
+        </p>
+      </div>
 
       <NavTabs
         tabs={[
@@ -73,7 +79,7 @@ export default async function StaffWithdrawalsPage(
       />
 
       {typedWithdrawals.length === 0 ? (
-        <EmptyState title="No withdrawal requests found" />
+        <EmptyState icon={Wallet} title="No withdrawal requests found" />
       ) : (
         <div className="space-y-3">
           {typedWithdrawals.map((w) => (

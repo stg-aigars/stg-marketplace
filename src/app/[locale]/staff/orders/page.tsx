@@ -13,7 +13,7 @@ import {
 import type { OrderStatus } from '@/lib/orders/types';
 import { getOrderGameSummary } from '@/lib/orders/utils';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
-import { MagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { MagnifyingGlass, Package, CaretRight } from '@phosphor-icons/react/ssr';
 
 export const metadata: Metadata = {
   title: 'All Orders — Staff',
@@ -98,8 +98,32 @@ export default async function StaffOrdersPage(
     query = query.or(`order_number.ilike.%${search}%,barcode.ilike.%${search}%`);
   }
 
-  const { data: orders } = await query;
+  // Cheap parallel counts so the Stuck and Refund-issues tabs can show an
+  // attention dot without staff having to click into them. `head: true`
+  // means no row payload — index-only counts on filters that already
+  // map to existing indexes.
+  const t24h = new Date(requestTimeMs - SELLER_RESPONSE_REMINDER_HOURS * 60 * 60 * 1000).toISOString();
+  const t3d = new Date(requestTimeMs - SHIPPING_REMINDER_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const t14d = new Date(requestTimeMs - DELIVERY_REMINDER_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data: orders }, stuckCountResult, refundIssuesCountResult] = await Promise.all([
+    query,
+    serviceClient
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .or(
+        `and(status.eq.pending_seller,created_at.lt.${t24h}),` +
+        `and(status.eq.accepted,accepted_at.lt.${t3d}),` +
+        `and(status.eq.shipped,shipped_at.lt.${t14d})`,
+      ),
+    serviceClient
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .in('refund_status', [REFUND_STATUS.FAILED, REFUND_STATUS.PARTIAL]),
+  ]);
   const typedOrders = (orders ?? []) as unknown as StaffOrderRow[];
+  const stuckCount = stuckCountResult.count ?? 0;
+  const refundIssuesCount = refundIssuesCountResult.count ?? 0;
 
   // Active tab key for NavTabs highlighting
   const activeTab = isStuck
@@ -110,9 +134,14 @@ export default async function StaffOrdersPage(
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-4">
-        All orders
-      </h1>
+      <div className="mb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          All orders
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Search by order number or barcode, slice by status, or surface what the deadline cron is about to touch via the Stuck tab.
+        </p>
+      </div>
 
       <form method="GET" className="mb-4 flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[200px] max-w-md">
@@ -134,13 +163,13 @@ export default async function StaffOrdersPage(
       <NavTabs
         tabs={[
           { key: 'all', label: 'All', href: '/staff/orders' },
-          { key: 'stuck', label: 'Stuck', href: '/staff/orders?tab=stuck' },
+          { key: 'stuck', label: 'Stuck', href: '/staff/orders?tab=stuck', attention: stuckCount > 0 },
           ...(['pending_seller', 'accepted', 'shipped', 'delivered', 'completed', 'cancelled', 'disputed'] as OrderStatus[]).map((s) => ({
             key: s,
             label: ORDER_STATUS_CONFIG[s]?.label ?? s,
             href: `/staff/orders?status=${s}`,
           })),
-          { key: 'refund_issues', label: 'Refund issues', href: '/staff/orders?refund_status=issues' },
+          { key: 'refund_issues', label: 'Refund issues', href: '/staff/orders?refund_status=issues', attention: refundIssuesCount > 0 },
         ]}
         activeTab={activeTab}
         variant="pill"
@@ -155,6 +184,7 @@ export default async function StaffOrdersPage(
 
       {typedOrders.length === 0 ? (
         <EmptyState
+          icon={Package}
           title={search ? 'No matching orders' : isStuck ? 'No stuck orders' : 'No orders found'}
           description={search ? 'Adjust the search term or clear the filter.' : undefined}
         />
@@ -190,13 +220,16 @@ export default async function StaffOrdersPage(
                       {getOrderGameSummary(order.order_items, order.listings)} · {order.buyer_profile?.full_name ?? 'Unknown'} → {order.seller_profile?.full_name ?? 'Unknown'}
                     </p>
                   </div>
-                  <div className="text-right ml-4 shrink-0">
-                    <p className="font-semibold text-semantic-text-heading">
-                      {formatCentsToCurrency(order.total_amount_cents)}
-                    </p>
-                    <p className="text-xs text-semantic-text-muted">
-                      {formatDate(order.created_at)}
-                    </p>
+                  <div className="flex items-center gap-3 ml-4 shrink-0">
+                    <div className="text-right">
+                      <p className="font-semibold text-semantic-text-heading">
+                        {formatCentsToCurrency(order.total_amount_cents)}
+                      </p>
+                      <p className="text-xs text-semantic-text-muted">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+                    <CaretRight size={16} className="text-semantic-text-muted shrink-0" />
                   </div>
                 </CardBody>
               </Card>
