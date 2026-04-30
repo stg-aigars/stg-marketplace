@@ -5,7 +5,7 @@
  */
 
 import type { Dac7ReportData } from './types';
-import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_REG_NUMBER } from '@/lib/constants';
+import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_REG_NUMBER, LEGAL_ENTITY_ADDRESS } from '@/lib/constants';
 
 function escapeXml(str: string): string {
   return str
@@ -31,7 +31,7 @@ export function generateDpiXml(reports: Dac7ReportData[], year: number): string 
     name: 'Second Turn Games',
     registered_name: LEGAL_ENTITY_NAME,
     registration_number: LEGAL_ENTITY_REG_NUMBER,
-    address: 'Riga, Latvia',
+    address: LEGAL_ENTITY_ADDRESS,
     country: 'LV',
   };
 

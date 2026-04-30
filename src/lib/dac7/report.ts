@@ -4,7 +4,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase';
-import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_REG_NUMBER } from '@/lib/constants';
+import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_REG_NUMBER, LEGAL_ENTITY_ADDRESS } from '@/lib/constants';
 import {
   DAC7_REPORT_TRANSACTIONS,
   DAC7_REPORT_CONSIDERATION_CENTS,
@@ -28,11 +28,18 @@ export interface ReportResult {
   incomplete: IncompleteEntry[];
 }
 
+// Single source of truth for the legal-entity identification block. Pulls
+// from src/lib/constants so the DAC7 XML carries the same registered name,
+// registration number, and registered address as the public legal pages
+// (Terms, Privacy, Imprint) and the contact page. Without this, the audit
+// document found in docs/legal_audit/claude.md flagged the DAC7 hardcoded
+// "Riga, Latvia" against the constants-driven full address — that drift
+// is what's being eliminated here.
 const PLATFORM_INFO = {
   name: 'Second Turn Games',
   registered_name: LEGAL_ENTITY_NAME,
   registration_number: LEGAL_ENTITY_REG_NUMBER,
-  address: 'Riga, Latvia',
+  address: LEGAL_ENTITY_ADDRESS,
   country: 'LV',
 };
 
