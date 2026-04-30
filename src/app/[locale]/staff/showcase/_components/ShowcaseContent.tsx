@@ -103,7 +103,7 @@ function AlertDismissibleDemo() {
       <Button size="sm" variant="ghost" onClick={() => setDismissed(false)}>Reset</Button>
     </div>
   ) : (
-    <Alert variant="warning" icon={Warning} title="Dismissible alert" dismissible onDismiss={() => setDismissed(true)}>
+    <Alert variant="warning" icon={<Warning size={20} />} title="Dismissible alert" dismissible onDismiss={() => setDismissed(true)}>
       This alert can be dismissed. Click the X to try it.
     </Alert>
   );
@@ -315,10 +315,10 @@ export function ShowcaseContent() {
 
           <ShowcaseSection id="alert" title="Alert" description="Contextual messages in 4 variants with optional icon, title, and dismiss.">
             <div className="space-y-3 max-w-xl">
-              <Alert variant="info" icon={Info} title="Info">Informational message with icon and title.</Alert>
-              <Alert variant="success" icon={CheckCircle}>Success message without title.</Alert>
-              <Alert variant="warning" icon={Warning} title="Warning">Something needs attention.</Alert>
-              <Alert variant="error" icon={XCircle} title="Error">Something went wrong.</Alert>
+              <Alert variant="info" icon={<Info size={20} />} title="Info">Informational message with icon and title.</Alert>
+              <Alert variant="success" icon={<CheckCircle size={20} />}>Success message without title.</Alert>
+              <Alert variant="warning" icon={<Warning size={20} />} title="Warning">Something needs attention.</Alert>
+              <Alert variant="error" icon={<XCircle size={20} />} title="Error">Something went wrong.</Alert>
             </div>
             <div className="max-w-xl">
               <SubHeading>Dismissible</SubHeading>

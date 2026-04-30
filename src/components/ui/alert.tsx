@@ -1,13 +1,19 @@
 'use client';
 
-import type { ComponentType, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { X } from '@phosphor-icons/react/ssr';
 import { cn } from '@/lib/cn';
 
 interface AlertProps {
   variant: 'error' | 'success' | 'warning' | 'info';
   children: ReactNode;
-  icon?: ComponentType<{ size?: number | string; className?: string }>;
+  /** Already-rendered icon element (e.g. `<Warning size={20} />`). Pass an
+   *  element rather than a component because Alert is a Client Component
+   *  and the Phosphor `/ssr` icons are forwardRef components — passing the
+   *  raw component type from a Server Component crashes the RSC boundary
+   *  with "Functions cannot be passed directly to Client Components".
+   *  Rendering server-side yields a React element that traverses cleanly. */
+  icon?: ReactNode;
   title?: string;
   dismissible?: boolean;
   onDismiss?: () => void;
@@ -21,13 +27,11 @@ const variantClasses: Record<AlertProps['variant'], string> = {
   info: 'bg-semantic-brand/10 border-semantic-brand/30 text-semantic-text-primary',
 };
 
-export function Alert({ variant, children, icon: Icon, title, dismissible, onDismiss, className }: AlertProps) {
-  const content = Icon || title ? (
+export function Alert({ variant, children, icon, title, dismissible, onDismiss, className }: AlertProps) {
+  const content = icon || title ? (
     <div className="flex gap-3">
-      {Icon && (
-        <div className="shrink-0 mt-0.5">
-          <Icon size={20} />
-        </div>
+      {icon && (
+        <div className="shrink-0 mt-0.5">{icon}</div>
       )}
       <div className="min-w-0">
         {title && (
