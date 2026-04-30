@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Fraunces, Rubik_Dirt } from 'next/font/google';
+import { Rubik, Fraunces, Rubik_Dirt } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -28,7 +28,7 @@ import '../globals.css';
 // cookieless_mode: 'always', so no analytics cookies are set. Sentry is
 // server-side only. Revisit if any cookie-based tracking is introduced.
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const rubik = Rubik({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-sans',
   display: 'swap',
@@ -111,7 +111,7 @@ export default async function LocaleLayout(
   return (
     // translate="no" prevents browser auto-translate from mutating the DOM mid-hydration.
     <html lang={locale} translate="no">
-      <body className={`${plusJakartaSans.variable} ${fraunces.variable} ${rubikDirt.variable} font-sans min-h-screen antialiased`}>
+      <body className={`${rubik.variable} ${fraunces.variable} ${rubikDirt.variable} font-sans min-h-screen antialiased`}>
         <NextTopLoader color={colors.semantic.brand} showSpinner={false} shadow={false} />
         <JsonLd data={[
           {
