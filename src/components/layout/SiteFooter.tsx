@@ -38,13 +38,8 @@ function SiteFooter() {
               <Link href="/" className="inline-flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
                 <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
-                <span className="flex flex-col leading-none">
-                  <span className="text-[10px] sm:text-[11px] font-bold tracking-wide text-semantic-brand">
-                    Every game deserves a
-                  </span>
-                  <span className="text-lg sm:text-xl font-platform font-bold text-semantic-primary tracking-wide">
-                    Second Turn
-                  </span>
+                <span className="text-[28px] sm:text-[32px] font-platform text-semantic-primary leading-none tracking-wide">
+                  Second Turn<span className="hidden sm:inline"> Games</span>
                 </span>
               </Link>
               <div>
