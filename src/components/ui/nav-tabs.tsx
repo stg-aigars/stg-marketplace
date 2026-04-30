@@ -82,13 +82,16 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className }: NavTabsP
     );
   }
 
-  // CSS mask gives us a right-edge fade independent of the parent
-  // background colour — useful here because NavTabs is used in places
-  // with different backgrounds (staff layout's frost-ice tint, plain
-  // white pages, etc.) and a colour-matched gradient overlay would have
-  // to be parameterised. The mask is mobile-only via the `sm:` breakpoint
-  // so desktop (where overflow is rare) doesn't get a vestigial fade.
-  const maskGradient = 'linear-gradient(to right, black 0, black calc(100% - 32px), transparent 100%)';
+  // CSS-mask right-edge fade hints that the strip scrolls horizontally.
+  // Mobile-only (sm:[mask-image:none]) so desktop, where the staff strip
+  // fits without overflow, doesn't get a vestigial dim on the last tab.
+  // Inline styles can't be breakpoint-gated, so the mask runs through
+  // Tailwind arbitrary-value utilities instead — same gradient via both
+  // mask-image and -webkit-mask-image for cross-browser coverage.
+  const maskClasses =
+    '[mask-image:linear-gradient(to_right,black_0,black_calc(100%-32px),transparent_100%)] ' +
+    '[-webkit-mask-image:linear-gradient(to_right,black_0,black_calc(100%-32px),transparent_100%)] ' +
+    'sm:[mask-image:none] sm:[-webkit-mask-image:none]';
 
   return (
     <nav
@@ -98,12 +101,9 @@ function NavTabs({ tabs, activeTab, variant = 'underline', className }: NavTabsP
         // long tab strip (e.g. the staff dashboard) scrolls horizontally
         // on narrow viewports rather than overflowing the layout.
         'flex gap-1 border-b border-semantic-border-subtle overflow-x-auto -mb-px',
+        maskClasses,
         className,
       )}
-      style={{
-        maskImage: maskGradient,
-        WebkitMaskImage: maskGradient,
-      }}
     >
       {tabs.map((tab) => {
         const active = isActive(tab);
