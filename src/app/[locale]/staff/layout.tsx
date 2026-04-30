@@ -32,9 +32,9 @@ export default async function StaffLayout({
     <div>
       <div className="bg-frost-ice/5 border-b border-frost-ice/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-3">
-            Staff Dashboard
-          </h1>
+          <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-muted mb-2">
+            Staff dashboard
+          </p>
           <NavTabs tabs={STAFF_TABS} />
         </div>
       </div>

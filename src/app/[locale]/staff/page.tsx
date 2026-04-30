@@ -156,6 +156,15 @@ export default async function StaffDashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          Overview
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Platform health snapshot plus the action-needed cohort across every staff surface.
+        </p>
+      </div>
+
       {actionRows.length > 0 && (
         <Card>
           <CardBody>

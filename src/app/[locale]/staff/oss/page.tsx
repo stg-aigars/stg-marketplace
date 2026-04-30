@@ -154,11 +154,16 @@ export default async function StaffOssPage(props: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-          VAT OSS — {targetQuarter.label}
-        </h1>
-        <QuarterPicker now={now} active={targetQuarter.label} />
+      <div>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+            VAT OSS — {targetQuarter.label}
+          </h1>
+          <QuarterPicker now={now} active={targetQuarter.label} />
+        </div>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Quarterly OSS declaration for non-LV cross-border B2C supplies. Per-MS aggregation, prior-period refund adjustments, Article 24f evidence, and YTD roll-up.
+        </p>
       </div>
 
       {!currentSubmission && deadlinePassed && (

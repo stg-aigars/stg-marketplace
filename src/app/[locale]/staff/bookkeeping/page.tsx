@@ -18,7 +18,7 @@ import {
   type BookkeepingSummary,
   type CountryVatBreakdown,
 } from '@/lib/bookkeeping-utils';
-import { DownloadSimple, MagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { DownloadSimple, MagnifyingGlass, Warning, Receipt } from '@phosphor-icons/react/ssr';
 
 interface BookkeepingResponse {
   orders: OrderBookkeepingData[];
@@ -141,6 +141,7 @@ export default function StaffBookkeepingPage() {
   if (error && !data) {
     return (
       <EmptyState
+        icon={Warning}
         title="Failed to load data"
         description={error ?? undefined}
         action={{ label: 'Try again', onClick: fetchData }}
@@ -150,6 +151,15 @@ export default function StaffBookkeepingPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          Bookkeeping
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Period accounting + per-country VAT breakdown. Toggle scope between domestic (LV→LV, regular VAT return) and cross-border (OSS scope) for clean reconciliation against the OSS tab.
+        </p>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); }} className="flex-1 min-w-[180px] max-w-xs">
@@ -399,6 +409,7 @@ export default function StaffBookkeepingPage() {
 
       {data && data.orders.length === 0 && !loading && (
         <EmptyState
+          icon={Receipt}
           title="No transactions found"
           description="No transactions match the selected filters and period."
         />

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody, Badge, EmptyState } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
+import { CheckCircle, CaretRight } from '@phosphor-icons/react/ssr';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
 import type { DisputeRow } from '@/lib/orders/types';
@@ -96,9 +97,14 @@ export default async function StaffDisputesPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-        Disputes
-      </h1>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          Disputes
+        </h1>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Triaged into Needs action, Awaiting seller, Refund issues, and Recently resolved. SLA chips read against the cohort-relevant timestamp.
+        </p>
+      </div>
 
       <Section
         title="Needs action"
@@ -155,7 +161,7 @@ function Section({ title, description, emptyTitle, rows, chip }: SectionProps) {
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState title={emptyTitle} />
+        <EmptyState icon={CheckCircle} title={emptyTitle} />
       ) : (
         <div className="space-y-2">
           {rows.map((dispute) => {
@@ -184,10 +190,11 @@ function Section({ title, description, emptyTitle, rows, chip }: SectionProps) {
                         {dispute.seller_profile?.full_name ?? 'Unknown'}
                       </p>
                     </div>
-                    <div className="text-right ml-4 shrink-0">
+                    <div className="flex items-center gap-3 ml-4 shrink-0">
                       <p className="text-xs text-semantic-text-muted">
                         {formatDate(dispute.created_at)}
                       </p>
+                      <CaretRight size={16} className="text-semantic-text-muted shrink-0" />
                     </div>
                   </CardBody>
                 </Card>
