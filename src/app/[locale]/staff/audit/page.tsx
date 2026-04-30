@@ -9,6 +9,7 @@ import {
   EmptyState,
   Input,
   Pagination,
+  SectionLink,
   Select,
 } from '@/components/ui';
 import { fetchProfiles, type Profile } from '@/lib/supabase/helpers';
@@ -204,11 +205,14 @@ export default async function StaffAuditPage(
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <ListMagnifyingGlass size={24} className="text-semantic-text-heading" />
         <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
           Audit log
         </h1>
+        <SectionLink href="/staff/audit/security" className="ml-auto">
+          Suspicious activity
+        </SectionLink>
       </div>
 
       <p className="text-sm text-semantic-text-secondary mb-6 max-w-2xl">
