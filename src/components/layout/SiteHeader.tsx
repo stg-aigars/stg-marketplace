@@ -98,11 +98,11 @@ function SiteHeader() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo — wordmark sized to match the die height (leading-none + matching px) */}
+          {/* Logo — die anchors visual weight; wordmark sits beside it at a quieter size */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
             <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="text-[28px] sm:text-[32px] font-extrabold text-semantic-primary leading-none tracking-wide">
+            <span className="text-xl sm:text-2xl font-extrabold text-semantic-primary leading-none tracking-wide">
               Second Turn<span className="hidden sm:inline"> Games</span>
             </span>
           </Link>
