@@ -5,7 +5,12 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  productionBrowserSourceMaps: false,
+  // productionBrowserSourceMaps intentionally unset. In dev/no-token builds Next
+  // defaults to `false`. In Coolify (SENTRY_AUTH_TOKEN present), withSentryConfig's
+  // maybeEnableTurbopackSourcemaps flips it on, uploads via Next's
+  // runAfterProductionCompile hook, then deletes .next/static/**/*.map before the
+  // Dockerfile COPY runs — so source maps reach Sentry but never the CDN. Setting
+  // this explicitly (true OR false) disables Sentry's auto-enable guard.
   poweredByHeader: false,
   output: 'standalone',
   // PostHog reverse proxy is implemented as a Route Handler at
