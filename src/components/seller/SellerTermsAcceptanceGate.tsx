@@ -51,7 +51,7 @@ export function SellerTermsAcceptanceGate({ isReAcceptance }: SellerTermsAccepta
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
           {heading}
         </h2>
         <p className="text-sm text-semantic-text-secondary mt-2">{intro}</p>

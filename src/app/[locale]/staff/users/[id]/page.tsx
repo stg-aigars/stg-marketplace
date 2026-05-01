@@ -119,7 +119,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
             {profile.full_name ?? 'Unnamed user'}
           </h1>
           <p className="text-sm text-semantic-text-muted mt-1">

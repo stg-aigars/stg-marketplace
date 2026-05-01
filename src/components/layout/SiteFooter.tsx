@@ -35,16 +35,17 @@ function SiteFooter() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {/* Branding & countries */}
             <div className="flex flex-col gap-4">
-              <Link href="/" className="inline-flex items-center gap-2">
+              <Link href="/" className="group inline-flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
-                <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
-                <span className="flex flex-col leading-none">
-                  <span className="text-[10px] sm:text-[11px] font-bold tracking-wide text-semantic-brand">
-                    Every game deserves a
-                  </span>
-                  <span className="text-lg sm:text-xl font-display font-bold text-semantic-primary tracking-wide">
-                    Second Turn
-                  </span>
+                <img
+                  src="/favicon.svg"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="w-7 h-7 sm:w-8 sm:h-8 border-2 border-polar-night rounded-md shadow-pop transition-[transform,box-shadow] duration-[80ms] ease-out sm:group-hover:-translate-x-px sm:group-hover:-translate-y-px sm:group-hover:shadow-pop-lg group-active:translate-x-[2px] group-active:translate-y-[2px] group-active:shadow-pop-sm"
+                />
+                <span className="text-xl sm:text-2xl font-extrabold text-semantic-primary leading-none tracking-wide">
+                  Second Turn<span className="hidden sm:inline"> Games</span>
                 </span>
               </Link>
               <div>

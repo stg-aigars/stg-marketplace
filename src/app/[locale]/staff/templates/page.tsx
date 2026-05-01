@@ -23,7 +23,7 @@ function TemplateGroup({ title, description, surface, surfaceHref, templates }: 
     <section className="space-y-3">
       <div>
         <div className="flex flex-wrap items-baseline gap-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             {title}
           </h2>
           <Link href={surfaceHref} className="text-sm link-brand">
@@ -65,7 +65,7 @@ export default function StaffTemplatesPage() {
     <div className="space-y-8">
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
             Staff templates
           </h1>
           <Badge variant="default">Read-only</Badge>

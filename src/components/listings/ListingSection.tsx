@@ -60,7 +60,7 @@ export function ListingSection({
               {eyebrow}
             </p>
           )}
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             {heading}
           </h2>
         </div>

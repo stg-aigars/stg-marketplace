@@ -8,13 +8,13 @@ export const metadata: Metadata = {
 export default function HelpPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
         Help center
       </h1>
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-8">
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Buying
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I buy a game?</h3>
@@ -40,7 +40,7 @@ export default function HelpPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Selling
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I list a game?</h3>
@@ -65,7 +65,7 @@ export default function HelpPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Shipping
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How does shipping work?</h3>
@@ -97,7 +97,7 @@ export default function HelpPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Orders and disputes
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">What happens after I buy?</h3>
@@ -118,7 +118,7 @@ export default function HelpPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Your account
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">How do I change my settings?</h3>
@@ -137,7 +137,7 @@ export default function HelpPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             About Second Turn Games
           </h2>
           <p>

@@ -91,7 +91,7 @@ export default async function AccountPage() {
 
       {isSeller && (
         <div className="mb-6">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-3">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-3">
             Selling
           </h2>
           <div className="space-y-3">
@@ -103,7 +103,7 @@ export default async function AccountPage() {
       )}
 
       <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-3">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-3">
           Buying
         </h2>
         <div className="space-y-3">

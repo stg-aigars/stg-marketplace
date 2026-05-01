@@ -117,7 +117,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
 
       {!isStaff && (
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
             Order {order.order_number}
           </h1>
           {statusConfig && (

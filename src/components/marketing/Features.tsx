@@ -36,7 +36,7 @@ function Features() {
           <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-3">
             {t('eyebrow')}
           </p>
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-semantic-text-heading">
             {t('heading')}
           </h2>
         </div>
@@ -75,7 +75,7 @@ function Features() {
         >
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14">
             <div>
-              <h3 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading mb-4">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
                 {t(`tabs.${activeKey}.title`)}
               </h3>
               <p className="text-semantic-text-secondary leading-relaxed mb-6">

@@ -14,7 +14,7 @@ export function ShowcaseSection({ id, title, description, children }: ShowcaseSe
     >
       <h2
         data-showcase-heading={id}
-        className="text-xl font-bold font-display tracking-tight text-semantic-text-heading mb-1"
+        className="text-xl font-extrabold tracking-tight text-semantic-text-heading mb-1"
       >
         {title}
       </h2>

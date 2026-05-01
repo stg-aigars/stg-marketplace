@@ -103,7 +103,7 @@ export default async function StaffSuspiciousActivityPage(
 
       <div className="flex items-center gap-3 mt-4 mb-4">
         <ShieldWarning size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
           Suspicious login activity
         </h1>
       </div>

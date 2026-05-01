@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function CookiesPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
         Cookie Policy
       </h1>
 
@@ -61,7 +61,7 @@ export default function CookiesPage() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Cookies on our domain
           </h2>
           <div className="overflow-x-auto">
@@ -106,7 +106,7 @@ export default function CookiesPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Items stored in your browser&apos;s local or session storage
           </h2>
           <p>
@@ -186,7 +186,7 @@ export default function CookiesPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Third-party tools on form submissions
           </h2>
           <p>
@@ -218,7 +218,7 @@ export default function CookiesPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             What we do <em>not</em> set
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -244,7 +244,7 @@ export default function CookiesPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             Your choices
           </h2>
           <p>

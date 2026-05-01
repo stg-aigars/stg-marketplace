@@ -213,7 +213,7 @@ export default async function StaffAuditPage(
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <ListMagnifyingGlass size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
           Audit log
         </h1>
         <SectionLink href="/staff/audit/security" className="ml-auto">

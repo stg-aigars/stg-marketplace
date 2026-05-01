@@ -39,7 +39,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
         !hideHeading && <h2 className="text-base font-semibold text-semantic-text-heading">Condition</h2>
       ) : (
         <>
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             What condition is it in?
           </h2>
           <p className="text-sm text-semantic-text-secondary">

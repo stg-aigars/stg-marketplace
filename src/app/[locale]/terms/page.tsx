@@ -18,7 +18,7 @@ const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-1
 export default function TermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
         Terms of Service
       </h1>
 
@@ -71,7 +71,7 @@ export default function TermsPage() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             1. About Second Turn Games
           </h2>
           <p>
@@ -94,7 +94,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             2. Eligibility
           </h2>
           <p>
@@ -105,7 +105,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             3. Consumer protection notice
           </h2>
           <p>
@@ -121,7 +121,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             4. Buyer obligations
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -136,7 +136,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             5. Seller obligations
           </h2>
           <p>
@@ -160,7 +160,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             6. Fees and commissions
           </h2>
           <p>
@@ -174,7 +174,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             7. Payments
           </h2>
           <p>
@@ -185,7 +185,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             8. Shipping
           </h2>
           <p>
@@ -197,7 +197,7 @@ export default function TermsPage() {
         </section>
 
         <section id="cancellations-refunds" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             9. Cancellations, refunds, and disputes
           </h2>
 
@@ -247,7 +247,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             10. Prohibited content
           </h2>
           <p>
@@ -258,7 +258,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             11. User content
           </h2>
           <p>
@@ -270,7 +270,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             12. Marketplace features
           </h2>
           <p>
@@ -336,7 +336,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             13. Ending your account or our services
           </h2>
 
@@ -408,7 +408,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             14. Limitation of liability
           </h2>
           <p>
@@ -442,7 +442,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             15. Governing law and disputes
           </h2>
           <p>
@@ -518,7 +518,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             16. Changes to these terms
           </h2>
           <p>
@@ -540,7 +540,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             17. Contact
           </h2>
           <p>
@@ -576,7 +576,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-semantic-text-heading">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
             18. Reporting illegal content
           </h2>
           <p>

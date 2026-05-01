@@ -272,7 +272,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
         ]}
       />
 
-      <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
         Edit listing
       </h1>
 

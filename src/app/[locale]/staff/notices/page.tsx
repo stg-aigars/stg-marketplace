@@ -124,7 +124,7 @@ export default async function StaffNoticesPage(props: {
   return (
     <div>
       <div className="mb-2">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
           DSA notices
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">
