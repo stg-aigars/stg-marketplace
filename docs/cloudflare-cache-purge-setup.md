@@ -72,7 +72,7 @@ If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed 
 
 ## Optional: emergency manual purge
 
-The Cloudflare API token + zone ID are configured as runtime env vars in Coolify (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, set 2026-03-31 — values stored in Bitwarden under "Cloudflare"). They're no longer used by the deploy pipeline but remain available for ad-hoc emergency purges.
+The Cloudflare API token + zone ID are configured as runtime env vars in Coolify (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, set 2026-03-31). They're no longer used by the deploy pipeline but remain available for ad-hoc emergency purges. The canonical source for these values is **Coolify dashboard → stg-marketplace project → production application → Environment Variables** (reveal the value in-place). For long-term operational use, also store them in Bitwarden under a "Cloudflare" entry — earlier docs claimed this entry already existed but it didn't (verified 2026-05-01 during the chunk-404 incident response). When creating a fresh ad-hoc token, scope it narrowly: `Zone → Cache Purge → Purge` on the `secondturn.games` zone only — that's all the curl below needs.
 
 Free-plan zones only support two purge modes: by exact URL list, or `purge_everything`. Prefix / hostname / tag-based purges require Enterprise. So the operational ladder is:
 
