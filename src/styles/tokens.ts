@@ -123,11 +123,12 @@ export const spacing = {
 } as const;
 
 // Typography fallback chain. The active font is set in layout.tsx via
-// next/font (var(--font-sans) → Rubik). Names listed here are best-effort
-// fallbacks if --font-sans fails to load; system fonts catch the rest.
+// next/font (var(--font-sans) → Plus Jakarta Sans). Names listed here are
+// best-effort fallbacks if --font-sans fails to load; system fonts catch
+// the rest.
 export const typography = {
   fontFamily: {
-    primary: '"Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    primary: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   fontSize: {
     xs: '0.75rem',      // 12px

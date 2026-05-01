@@ -56,9 +56,9 @@ Never use 12-hour time format (AM/PM).
 - Page vertical padding: `py-6`
 - Homepage sections: `py-8 sm:py-10 lg:py-12`
 - Card image containers: `aspect-square` (not fixed heights)
-- H1 page headings: `text-2xl sm:text-3xl font-extrabold tracking-tight` (Rubik @ 800 — heavy weight carries platform voice)
-- H2 section headings: `text-xl sm:text-2xl font-bold tracking-tight` (Rubik @ 700)
-- H2 card subsections: `text-base font-semibold` (Rubik @ 600)
+- H1 page headings: `text-2xl sm:text-3xl font-extrabold tracking-tight` (Plus Jakarta Sans @ 800 — heavy weight carries platform voice)
+- H2 section headings: `text-xl sm:text-2xl font-bold tracking-tight` (Plus Jakarta Sans @ 700)
+- H2 card subsections: `text-base font-semibold` (Plus Jakarta Sans @ 600)
 - Game identity (game titles, listing detail H1, wanted detail H1, GameTitle atom): `font-display` (Fraunces) — see "Typography" rule below
 - Borders: `border` (1px default); `border-2` only for selected/active states
 - Shadows: `shadow-sm` (resting) → `shadow-md` (hover) → `shadow-lg` (dropdowns) → `shadow-xl` (modals)
@@ -146,7 +146,7 @@ Always use these — do not write inline equivalents:
 | Game thumbnail | `GameThumb` (src, alt, size: sm/md/lg/xl; BGG-aware) | `@/components/listings/atoms` |
 | Game title | `GameTitle` (name, size, serif; display font by default) | `@/components/listings/atoms` |
 | Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
-| Price display | `Price` (cents, size; always Rubik, never display font) | `@/components/listings/atoms` |
+| Price display | `Price` (cents, size; always Plus Jakarta Sans, never display font) | `@/components/listings/atoms` |
 | Game identity row | `GameIdentityRow` (thumbnail + name + edition metadata icons; bare row, caller wraps in Card; size, href, action slot) | `@/components/listings/atoms` |
 | Listing identity | `ListingIdentity` (compact horizontal row: linked thumb + title + expansion count + price slot + action slot; `disableLink` for parent-linked contexts; `disabled` for unavailable items) | `@/components/listings/atoms` |
 | Compact listing row | `ListingRow` (horizontal; wraps `ListingIdentity` in bordered container with condition label) | `@/components/listings` |
@@ -165,12 +165,12 @@ Always use these — do not write inline equivalents:
 - **No hardcoded colors.** Never use raw Tailwind color classes (`red-600`, `amber-500`, `blue-100`). Always use semantic tokens (`semantic-error`, `semantic-warning`, `semantic-primary`) or design palette tokens (`aurora-*`, `frost-*`, `condition-*`).
 - **No inline button/card/input styling.** If it looks like a button, use `<Button>`. If it's a bordered content area, use `<Card>`. If it's a text field, use `<Input>` or `<Select>`.
 - **Button + Link:** Never nest `<Link>` inside `<Button>` (invalid `<a>` inside `<button>`). Use `<Button asChild><Link href="...">text</Link></Button>` — `asChild` renders Button styling on the Link element directly.
-- **Heading hierarchy:** Page H1 = `text-2xl sm:text-3xl font-black tracking-tight`. Page-section H2 = `text-xl sm:text-2xl font-bold tracking-tight`. Card-subsection H2 = `text-base font-semibold` (all Rubik, weight is the contrast lever).
+- **Heading hierarchy:** Page H1 = `text-2xl sm:text-3xl font-extrabold tracking-tight`. Page-section H2 = `text-xl sm:text-2xl font-bold tracking-tight`. Card-subsection H2 = `text-base font-semibold` (all Plus Jakarta Sans, weight is the contrast lever).
 - **Typography (one display register + weight hierarchy):** Two fonts map to two semantic registers. Pick by *what the text represents*, not by visual weight.
-  - **Rubik (default `font-sans`)** — platform voice and body. Variable weight 300–900 carries the entire UI. Heavy weights (`font-extrabold` 800 for H1s/wordmark/hero, `font-bold` 700 for H2s) signal platform chrome; medium weights (`font-medium` 500, `font-semibold` 600) carry interactive labels and card subsections; default (400) carries body. No `font-platform` Tailwind key — chrome and body share the same family, contrast is *weight*. Has no italic in our setup — never apply `italic` to chrome (browsers synthesize fake italic via skew, which looks bad at heavy weights).
+  - **Plus Jakarta Sans (default `font-sans`)** — platform voice and body. Variable weight 200–800 carries the entire UI. Heavy weights (`font-extrabold` 800 for H1s/wordmark/hero, `font-bold` 700 for H2s) signal platform chrome; medium weights (`font-medium` 500, `font-semibold` 600) carry interactive labels and card subsections; default (400) carries body. No `font-platform` Tailwind key — chrome and body share the same family, contrast is *weight*. Reads especially well in long-form content (terms/privacy/help) due to its higher x-height vs. alternatives like Rubik. Has no italic in our setup — never apply `italic` to chrome (browsers synthesize fake italic via skew, which looks bad at heavy weights).
   - **`font-display` (Fraunces)** — game / product voice. Use for: game titles (always via the `GameTitle` atom when possible), listing detail page H1 (`{listing.game_name}`), wanted listing detail H1, anywhere "this is a specific game" semantics. Variable weight + true italic available.
-  - **Never** use `font-display` for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Rubik).
-  - **Failure mode discipline:** `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). `font-sans` falls back to a system sans stack (so chrome and body stay legible if Rubik fails). Don't change either fallback chain casually.
+  - **Never** use `font-display` for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Plus Jakarta Sans).
+  - **Failure mode discipline:** `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). `font-sans` falls back to a system sans stack (so chrome and body stay legible if Plus Jakarta Sans fails). Don't change either fallback chain casually.
 - **Brand colors:** Interactive elements (links, focus rings, active states) use `semantic-brand` (teal). Purchase-intent CTAs (Buy, Checkout, Add to Cart) use `semantic-primary` (orange). Platform-action CTAs (Sell a game, seller dashboard entry points) use `Button variant="brand"` (teal, filled).
 - **Badge shape:** `rounded-md` (squared), not pills. Condition badges include a Phosphor tier icon.
 - **Image containers:** Game art uses `aspect-square`, not fixed heights.
