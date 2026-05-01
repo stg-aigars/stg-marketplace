@@ -8,9 +8,11 @@ These rules live in the Cloudflare dashboard under Caching → Cache Rules. They
 
 | Priority | Name | Match | Action |
 |---:|---|---|---|
-| 1 | Cache Next.js static assets | URI Path starts with `/_next/static/` | Eligible, Edge TTL 1 year |
-| 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible, Edge TTL 1 day |
+| 1 | Cache Next.js static assets | URI Path starts with `/_next/static/` | Eligible. Edge TTL: **status-code-aware** — `200, 206 → 1 year`, all other status codes → `no cache` |
+| 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible. Edge TTL: **status-code-aware** — `200, 206 → 1 day`, all other status codes → `no cache` |
 | 3 | Bypass everything else | NOT (URI Path starts with `/_next/static/` OR `/_next/image`) | Bypass cache |
+
+**Why status-code-aware Edge TTL is load-bearing.** A flat "Edge TTL: 1 year" caches whatever response came back — including 404s. We hit this once on 2026-05-01: about 4 minutes after a deploy, a request for a freshly-built chunk under `/_next/static/chunks/` reached Cloudflare during the rollover window before the new container could serve the file; origin returned 404 with `content-type: text/plain`; Rule 1's flat 1-year TTL pinned that 404 in the edge cache for a year. The chunk was on disk on the origin — `?cb=...` cache-busting returned 200 application/javascript immediately — but every browser hitting the canonical URL got a cached 404, the browser's `nosniff` rejected it for MIME mismatch, and the page failed with `ChunkLoadError`. Setting the rule's Edge TTL per status code (`200, 206 → 1y`, `404 → no cache`, optionally `5xx → no cache`) makes the deploy-race window self-heal: origin recovers, the next request gets 200, the cache fills with the correct response. Without this, every transient origin error during a deploy is one stuck-for-a-year poisoning event.
 
 **Critical:** Never add SSR page paths (e.g. `/browse`, `/listings/`, `/`, locale-prefixed `/en/...`) to cache-eligible rules. We hit this regression once where a cached `/browse` page served stale listings to users while the homepage showed the same listing as removed — the two pages were cached at different points in time.
 
@@ -24,12 +26,12 @@ not (starts_with(http.request.uri.path, "/_next/static/") or starts_with(http.re
 
 ## Why no post-deploy cache purge runs
 
-Coolify's Post Deployment Command for the production application is intentionally empty. Both cache-eligible patterns above handle invalidation correctly without an explicit purge:
+Coolify's Post Deployment Command for the production application is intentionally empty. Both cache-eligible patterns above handle invalidation correctly without an explicit purge **provided the Cache Rule Edge TTL is status-code-aware** (see "Why status-code-aware Edge TTL is load-bearing" above):
 
-- **`/_next/static/*`** filenames are content-hashed by Next.js (e.g. `chunks/abc123.js`). After a deploy, fresh HTML references new hashes which are fetched on first request; old cached chunks become unreachable and eventually expire (1y TTL) or get evicted by Cloudflare's LRU. No correctness issue, no manual intervention needed.
+- **`/_next/static/*`** filenames are content-hashed by Next.js (e.g. `chunks/abc123.js`). After a deploy, fresh HTML references new hashes which are fetched on first request; old cached chunks become unreachable and eventually expire (1y TTL) or get evicted by Cloudflare's LRU. With status-code-aware TTL, a transient origin 404 during the deploy rollover window self-heals on the next request instead of poisoning the cache for a year.
 - **`/_next/image*`** transforms are stable for the lifetime of the source asset. A deploy doesn't change what `/_next/image?url=...&w=2048&q=75` should resolve to. Letting the 1-day edge TTL run undisturbed across deploys saves a CPU spike on the Hetzner CX23 origin (image transforms are CPU-heavy; the previous full-purge setup forced 100% cache-miss rate on the first wave of post-deploy traffic).
 
-Earlier setups invoked `purge_everything: true` after every deploy — first via a `scripts/purge-cloudflare-cache.sh` repo script (later removed), then via an inline Coolify Post Deployment Command (cleared 2026-04-26 as part of the Phase 3 image-pipeline work). See [docs/audits/image-pipeline-audit-2026-04-25.md](audits/image-pipeline-audit-2026-04-25.md) §2.2 F-6.
+Earlier setups invoked `purge_everything: true` after every deploy — first via a `scripts/purge-cloudflare-cache.sh` repo script (later removed), then via an inline Coolify Post Deployment Command (cleared 2026-04-26 as part of the Phase 3 image-pipeline work). See [docs/audits/image-pipeline-audit-2026-04-25.md](audits/image-pipeline-audit-2026-04-25.md) §2.2 F-6. The 2026-05-01 chunk-404 incident was the first time the no-purge model surfaced a correctness gap; it was closed by tightening the Cache Rule rather than re-introducing the global purge.
 
 ## Persistent volume requirement
 
@@ -57,9 +59,16 @@ curl -sI 'https://secondturn.games/_next/image?url=%2Ficons%2Ficon-192.png&w=256
 # 3. Persistent volume actually mounted on the container (run on the Hetzner box).
 docker volume ls | grep nextjs-image-cache
 # Expect: one line of output naming the volume.
+
+# 4. 404 responses on /_next/static/* must NOT be cached at the edge.
+#    Pick any path that doesn't exist on the origin to test:
+curl -sI https://secondturn.games/_next/static/chunks/this-does-not-exist.js | grep -iE 'cf-cache-status|^http'
+# Expect: HTTP/2 404 + cf-cache-status: DYNAMIC (or BYPASS).
+# If you see cf-cache-status: HIT, Rule 1's status-code TTL is misconfigured —
+# it's caching 404s, which is the failure mode that broke the site on 2026-05-01.
 ```
 
-If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart.
+If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart. If (4) returns `HIT`, Cache Rule 1's status-code TTL has been flattened back to a single TTL — restore the per-status-code configuration (see "Why status-code-aware Edge TTL is load-bearing" above).
 
 ## Optional: emergency manual purge
 
