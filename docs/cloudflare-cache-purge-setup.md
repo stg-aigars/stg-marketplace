@@ -60,16 +60,21 @@ curl -sI 'https://secondturn.games/_next/image?url=%2Ficons%2Ficon-192.png&w=256
 docker volume ls | grep nextjs-image-cache
 # Expect: one line of output naming the volume.
 
-# 4. 404 responses on /_next/static/* must NOT be cached at the edge.
-#    Pick any path that doesn't exist on the origin to test:
-curl -sI https://secondturn.games/_next/static/chunks/this-does-not-exist.js | grep -iE 'cf-cache-status|^http'
-# Expect: HTTP/2 404 + cf-cache-status: DYNAMIC (or BYPASS).
-# Anything else (HIT or MISS) means Rule 1's status-code TTL is misconfigured —
-# it's caching 404s, the failure mode that broke the site on 2026-05-01.
-# (MISS = the 404 was just cached on THIS request; next hit will be HIT.)
+# 4. 404 responses on /_next/static/* must NOT cache long-term.
+#    Use a UNIQUE URL each run (so the response can never be a stale pre-fix
+#    cache entry from a prior rule misconfiguration):
+URL="https://secondturn.games/_next/static/chunks/rule-test-$(date +%s%N).js"
+echo "Hit 1:" && curl -sI "$URL" | grep -i cf-cache-status
+sleep 2
+echo "Hit 2:" && curl -sI "$URL" | grep -i cf-cache-status
+# Expected pass shapes (any of these is fine — all mean "404s don't stick"):
+#   Hit 1: DYNAMIC | BYPASS    Hit 2: DYNAMIC | BYPASS    (rule literally bypasses)
+#   Hit 1: MISS                Hit 2: EXPIRED             (rule has 0s TTL on 404 — also fine)
+# Expected fail shape (this is the cache-poisoning bug):
+#   Hit 1: MISS                Hit 2: HIT                 (rule caching 404s with persistent TTL)
 ```
 
-If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart. If (4) returns anything other than `DYNAMIC` or `BYPASS`, Cache Rule 1's status-code TTL has been flattened back to a single TTL — restore the per-status-code configuration (see "Why status-code-aware Edge TTL is load-bearing" above).
+If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart. If (4)'s second hit returns `HIT`, Cache Rule 1's status-code TTL has been flattened back to a single TTL — restore the per-status-code configuration (see "Why status-code-aware Edge TTL is load-bearing" above) AND run `purge_everything` (see "emergency manual purge" below) to clear stale pre-fix cache entries; the rule fix alone doesn't retroactively shorten existing entries' TTLs.
 
 ## Optional: emergency manual purge
 
@@ -88,7 +93,7 @@ curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_I
 
 This is most useful when a specific image got cached wrong (e.g., a listing photo was replaced and the transform URL is serving the old bytes). Construct the exact `/_next/image?...` URL that needs purging.
 
-**Nuclear option** — when scope is too broad to enumerate. Re-triggers the post-deploy CPU spike Phase 3 was designed to eliminate:
+**Nuclear option** — when scope is too broad to enumerate. Re-triggers the post-deploy CPU spike Phase 3 was designed to eliminate. Required after a Cache Rule TTL change that postdates bad entries (e.g. the 2026-05-01 status-code-aware fix): the new rule prevents new bad entries but doesn't retroactively shorten existing entries' TTLs, so 1-year-cached pre-fix 404s sit in the edge cache poisoning users until purged. URL-list purge is impractical here because the stale URLs aren't enumerable without trawling Sentry / browser logs.
 
 ```bash
 curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
