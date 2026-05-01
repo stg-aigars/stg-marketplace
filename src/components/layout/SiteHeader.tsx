@@ -98,10 +98,16 @@ function SiteHeader() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo — die anchors visual weight; wordmark sits beside it at a quieter size */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+          {/* Logo — die wears the brutalist button chrome (border + shadow + press); wordmark sits beside it */}
+          <Link href="/" className="group flex items-center gap-2 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
-            <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
+            <img
+              src="/favicon.svg"
+              alt=""
+              width={32}
+              height={32}
+              className="w-7 h-7 sm:w-8 sm:h-8 border-2 border-polar-night rounded-md shadow-pop transition-[transform,box-shadow] duration-[80ms] ease-out sm:group-hover:-translate-x-px sm:group-hover:-translate-y-px sm:group-hover:shadow-pop-lg group-active:translate-x-[2px] group-active:translate-y-[2px] group-active:shadow-pop-sm"
+            />
             <span className="text-xl sm:text-2xl font-extrabold text-semantic-primary leading-none tracking-wide">
               Second Turn<span className="hidden sm:inline"> Games</span>
             </span>
