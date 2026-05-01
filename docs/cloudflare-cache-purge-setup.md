@@ -64,11 +64,12 @@ docker volume ls | grep nextjs-image-cache
 #    Pick any path that doesn't exist on the origin to test:
 curl -sI https://secondturn.games/_next/static/chunks/this-does-not-exist.js | grep -iE 'cf-cache-status|^http'
 # Expect: HTTP/2 404 + cf-cache-status: DYNAMIC (or BYPASS).
-# If you see cf-cache-status: HIT, Rule 1's status-code TTL is misconfigured —
-# it's caching 404s, which is the failure mode that broke the site on 2026-05-01.
+# Anything else (HIT or MISS) means Rule 1's status-code TTL is misconfigured —
+# it's caching 404s, the failure mode that broke the site on 2026-05-01.
+# (MISS = the 404 was just cached on THIS request; next hit will be HIT.)
 ```
 
-If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart. If (4) returns `HIT`, Cache Rule 1's status-code TTL has been flattened back to a single TTL — restore the per-status-code configuration (see "Why status-code-aware Edge TTL is load-bearing" above).
+If (1) returns `HIT`/`MISS` instead of `DYNAMIC`, Cache Rule 3 has been removed — restore it (with the negated expression). If (2) returns `DYNAMIC` after multiple requests, Cache Rule 2 either isn't matching OR Rule 3's expression is too broad and overriding it (see "Rule 3's match expression must NEGATE the cacheable patterns" above). If (3) returns nothing, the persistent volume has been deleted — re-create it via the Coolify dashboard before the next container restart. If (4) returns anything other than `DYNAMIC` or `BYPASS`, Cache Rule 1's status-code TTL has been flattened back to a single TTL — restore the per-status-code configuration (see "Why status-code-aware Edge TTL is load-bearing" above).
 
 ## Optional: emergency manual purge
 
