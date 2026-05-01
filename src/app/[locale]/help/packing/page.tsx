@@ -10,7 +10,7 @@ export default function PackingGuidePage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <BackLink href="/help" label="Help Center" />
 
-      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading mb-2 mt-4">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-2 mt-4">
         How to pack your board game for shipping
       </h1>
       <p className="text-semantic-text-muted mb-6">

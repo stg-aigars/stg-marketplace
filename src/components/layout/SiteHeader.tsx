@@ -102,7 +102,7 @@ function SiteHeader() {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
             <img src="/favicon.svg" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="text-[28px] sm:text-[32px] font-black text-semantic-primary leading-none tracking-wide">
+            <span className="text-[28px] sm:text-[32px] font-extrabold text-semantic-primary leading-none tracking-wide">
               Second Turn<span className="hidden sm:inline"> Games</span>
             </span>
           </Link>

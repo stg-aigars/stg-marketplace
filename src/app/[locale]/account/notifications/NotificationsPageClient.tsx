@@ -53,7 +53,7 @@ export function NotificationsPageClient({
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
           Notifications
           {notifications.length > 0 && (
             <span className="ml-2 text-base font-normal text-semantic-text-muted">

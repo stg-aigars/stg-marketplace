@@ -92,7 +92,7 @@ export default async function StaffDisputeDetailPage(
       <BackLink href="/staff/disputes" label="All disputes" />
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
           Dispute — {typedDispute.orders?.order_number ?? '—'}
         </h1>
         <Badge variant={status.badgeVariant}>{status.label}</Badge>

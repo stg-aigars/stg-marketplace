@@ -30,7 +30,7 @@ export default async function MyBidsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading mb-6">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
         My bids
       </h1>
 

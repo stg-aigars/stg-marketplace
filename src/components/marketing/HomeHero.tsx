@@ -25,7 +25,7 @@ async function HomeHero() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20 lg:py-24">
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 items-center">
           <div className="flex flex-col items-start gap-6">
-            <h1 className="font-black text-5xl sm:text-6xl tracking-tight leading-[1.05] text-semantic-text-heading">
+            <h1 className="font-extrabold text-5xl sm:text-6xl tracking-tight leading-[1.05] text-semantic-text-heading">
               {t('headlineLeading')}
               <span className="text-semantic-primary">{t('headlineEmphasis')}</span>
               {t('headlineTrailing')}

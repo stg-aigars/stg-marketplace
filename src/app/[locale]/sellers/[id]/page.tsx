@@ -121,7 +121,7 @@ export default async function SellerProfilePage(
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
             {sellerName}
           </h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-semantic-text-secondary">
@@ -147,19 +147,19 @@ export default async function SellerProfilePage(
       {/* Stats bar */}
       <div className="flex items-center gap-6 sm:gap-10 py-4 mb-8 border-y border-semantic-border-subtle text-sm text-semantic-text-muted">
         <div>
-          <span className="block text-lg font-black text-semantic-text-heading">{completedSales}</span>
+          <span className="block text-lg font-extrabold text-semantic-text-heading">{completedSales}</span>
           {completedSales === 1 ? 'Sale' : 'Sales'}
         </div>
         <div className="w-px h-8 bg-semantic-border-subtle" />
         <div>
-          <span className="block text-lg font-black text-semantic-text-heading">
+          <span className="block text-lg font-extrabold text-semantic-text-heading">
             {rating.ratingCount > 0 ? `${rating.positivePct}%` : '\u2014'}
           </span>
           Positive
         </div>
         <div className="w-px h-8 bg-semantic-border-subtle" />
         <div>
-          <span className="block text-lg font-black text-semantic-text-heading">{activeListings.length}</span>
+          <span className="block text-lg font-extrabold text-semantic-text-heading">{activeListings.length}</span>
           Listed
         </div>
       </div>

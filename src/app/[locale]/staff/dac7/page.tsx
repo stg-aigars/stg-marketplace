@@ -123,7 +123,7 @@ export default async function Dac7StaffPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
           DAC7 Tax Reporting
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

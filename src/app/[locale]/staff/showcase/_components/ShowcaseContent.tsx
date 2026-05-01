@@ -145,7 +145,7 @@ const RESERVATION_TIME = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 export function ShowcaseContent() {
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-semantic-text-heading mb-8">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-8">
         Component Showcase
       </h1>
 

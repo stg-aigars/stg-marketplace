@@ -56,7 +56,7 @@ Never use 12-hour time format (AM/PM).
 - Page vertical padding: `py-6`
 - Homepage sections: `py-8 sm:py-10 lg:py-12`
 - Card image containers: `aspect-square` (not fixed heights)
-- H1 page headings: `text-2xl sm:text-3xl font-black tracking-tight` (Rubik @ 900 — heaviest weight carries platform voice)
+- H1 page headings: `text-2xl sm:text-3xl font-extrabold tracking-tight` (Rubik @ 800 — heavy weight carries platform voice)
 - H2 section headings: `text-xl sm:text-2xl font-bold tracking-tight` (Rubik @ 700)
 - H2 card subsections: `text-base font-semibold` (Rubik @ 600)
 - Game identity (game titles, listing detail H1, wanted detail H1, GameTitle atom): `font-display` (Fraunces) — see "Typography" rule below
@@ -167,7 +167,7 @@ Always use these — do not write inline equivalents:
 - **Button + Link:** Never nest `<Link>` inside `<Button>` (invalid `<a>` inside `<button>`). Use `<Button asChild><Link href="...">text</Link></Button>` — `asChild` renders Button styling on the Link element directly.
 - **Heading hierarchy:** Page H1 = `text-2xl sm:text-3xl font-black tracking-tight`. Page-section H2 = `text-xl sm:text-2xl font-bold tracking-tight`. Card-subsection H2 = `text-base font-semibold` (all Rubik, weight is the contrast lever).
 - **Typography (one display register + weight hierarchy):** Two fonts map to two semantic registers. Pick by *what the text represents*, not by visual weight.
-  - **Rubik (default `font-sans`)** — platform voice and body. Variable weight 300–900 carries the entire UI. Heaviest weights (`font-black` 900, `font-bold` 700) signal platform chrome (wordmark, page H1s, section H2s, modal titles, marketing hero, empty-state titles, error fallbacks); medium weights (`font-medium` 500, `font-semibold` 600) carry interactive labels and card subsections; default (400) carries body. No `font-platform` Tailwind key — chrome and body share the same family, contrast is *weight*. Has no italic in our setup — never apply `italic` to chrome (browsers synthesize fake italic via skew, which looks bad at heavy weights).
+  - **Rubik (default `font-sans`)** — platform voice and body. Variable weight 300–900 carries the entire UI. Heavy weights (`font-extrabold` 800 for H1s/wordmark/hero, `font-bold` 700 for H2s) signal platform chrome; medium weights (`font-medium` 500, `font-semibold` 600) carry interactive labels and card subsections; default (400) carries body. No `font-platform` Tailwind key — chrome and body share the same family, contrast is *weight*. Has no italic in our setup — never apply `italic` to chrome (browsers synthesize fake italic via skew, which looks bad at heavy weights).
   - **`font-display` (Fraunces)** — game / product voice. Use for: game titles (always via the `GameTitle` atom when possible), listing detail page H1 (`{listing.game_name}`), wanted listing detail H1, anywhere "this is a specific game" semantics. Variable weight + true italic available.
   - **Never** use `font-display` for body, labels, buttons, prices, badges, or UI chrome. Prices always use `font-sans` (Rubik).
   - **Failure mode discipline:** `font-display` falls back to Georgia, serif (so game identity stays serif if Fraunces fails). `font-sans` falls back to a system sans stack (so chrome and body stay legible if Rubik fails). Don't change either fallback chain casually.
