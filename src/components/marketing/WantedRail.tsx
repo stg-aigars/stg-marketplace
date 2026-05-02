@@ -20,7 +20,7 @@ interface WantedRow {
 export async function WantedRail() {
   const supabase = await createClient();
 
-  const { data: wantedListings } = await supabase
+  const { data: wantedListings, error } = await supabase
     .from('wanted_listings')
     .select(
       'id, game_name, game_year, language, publisher, edition_year, version_thumbnail, country, notes, games:bgg_game_id(image)',
@@ -29,6 +29,8 @@ export async function WantedRail() {
     .order('created_at', { ascending: false })
     .limit(6)
     .returns<WantedRow[]>();
+
+  if (error) console.error('[WantedRail] query failed', error);
 
   const listings = wantedListings ?? [];
 
@@ -48,7 +50,7 @@ export async function WantedRail() {
           <>
             <EmptyState
               icon={MagnifyingGlass}
-              title="No active wanted listings yet."
+              title="No active wanted listings yet"
               description="Post the first one — sellers across the Baltics will see what you're hunting for."
             />
             <div className="flex justify-center">
