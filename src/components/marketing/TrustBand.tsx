@@ -18,7 +18,7 @@ function TrustBand() {
               alt="BoardGameGeek"
               width={120}
               height={27}
-              className="h-5 w-auto"
+              className="h-6 w-auto"
             />
           </li>
 
@@ -38,7 +38,7 @@ function TrustBand() {
               alt="EveryPay"
               width={180}
               height={52}
-              className="h-6 w-auto"
+              className="h-9 w-auto"
             />
           </li>
 

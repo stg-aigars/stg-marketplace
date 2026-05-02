@@ -3,9 +3,9 @@ import { Card, CardBody } from '@/components/ui';
 import { getCountryFlag } from '@/lib/country-utils';
 
 const COUNTRY_TILES = [
-  { code: 'LV', name: 'Latvia', byline: 'Buy and sell in Latvia.' },
-  { code: 'LT', name: 'Lithuania', byline: 'Buy and sell in Lithuania.' },
-  { code: 'EE', name: 'Estonia', byline: 'Buy and sell in Estonia.' },
+  { code: 'LV', name: 'Latvia', byline: 'Listings from Latvia.' },
+  { code: 'LT', name: 'Lithuania', byline: 'Listings from Lithuania.' },
+  { code: 'EE', name: 'Estonia', byline: 'Listings from Estonia.' },
 ] as const;
 
 function CountryRail() {
@@ -37,7 +37,7 @@ function CountryRail() {
                   <h3 className="text-base font-semibold mt-3 text-semantic-text-heading">
                     {country.name}
                   </h3>
-                  <p className="font-display italic text-sm text-semantic-text-muted mt-1">
+                  <p className="text-sm text-semantic-text-muted mt-1">
                     {country.byline}
                   </p>
                 </CardBody>
