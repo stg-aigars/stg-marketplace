@@ -55,17 +55,15 @@ async function HomeHero() {
             </div>
           </div>
 
-          <div className="hidden lg:flex flex-col gap-2">
-            <div className="relative aspect-[16/9] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
-              <Image
-                src="/images/hero-shelves.webp"
-                alt={t('imageAlt')}
-                fill
-                priority
-                sizes="(min-width: 1024px) 540px, 0px"
-                className="object-cover"
-              />
-            </div>
+          <div className="relative hidden lg:block aspect-[16/9] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
+            <Image
+              src="/images/hero-shelves.webp"
+              alt={t('imageAlt')}
+              fill
+              priority
+              sizes="(min-width: 1024px) 540px, 0px"
+              className="object-cover"
+            />
           </div>
         </div>
       </div>
