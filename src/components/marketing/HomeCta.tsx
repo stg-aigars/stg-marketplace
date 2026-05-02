@@ -13,7 +13,7 @@ async function HomeCta() {
   const t = await getTranslations('home.cta');
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24">
+    <section id="sell-cta" className="py-16 sm:py-20 lg:py-24 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="relative overflow-hidden rounded-2xl bg-polar-night text-snow-storm-light p-10 sm:p-14 lg:p-18">
           {RING_SPECS.map(({ size, color }) => (
@@ -40,24 +40,14 @@ async function HomeCta() {
             <p className="text-lg text-snow-storm/85 mb-8 max-w-xl">
               {t('body')}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="brand"
-                size="lg"
-                asChild
-                className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
-              >
-                <Link href="/sell">{t('primaryCta')}</Link>
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                asChild
-                className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
-              >
-                <Link href="/browse">{t('secondaryCta')}</Link>
-              </Button>
-            </div>
+            <Button
+              variant="brand"
+              size="lg"
+              asChild
+              className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
+            >
+              <Link href="/sell">{t('primaryCta')}</Link>
+            </Button>
           </div>
         </div>
       </div>

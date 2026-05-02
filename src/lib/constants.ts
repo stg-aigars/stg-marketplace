@@ -31,3 +31,5 @@ export const COUNTRY_TO_EVERYPAY_LOCALE: Record<string, string> = {
   LT: 'lt',
   EE: 'et',
 };
+
+export const IS_PRELAUNCH = true;

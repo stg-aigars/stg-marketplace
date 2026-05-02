@@ -8,7 +8,7 @@ import { colors } from '@/styles/tokens';
 
 type TabKey = 'browse' | 'sell' | 'ship' | 'payments';
 
-const TAB_KEYS: readonly TabKey[] = ['browse', 'sell', 'ship', 'payments'];
+const TAB_KEYS: readonly TabKey[] = ['payments', 'ship', 'sell', 'browse'];
 
 const TAB_COLORS: Record<TabKey, string> = {
   browse: colors.semantic.primary,
@@ -22,12 +22,16 @@ type FeatureLink = { text: string; href: string };
 
 function Features() {
   const t = useTranslations('home.features');
-  const [activeKey, setActiveKey] = useState<TabKey>('browse');
+  const [activeKey, setActiveKey] = useState<TabKey>(TAB_KEYS[0]);
   const activeColor = TAB_COLORS[activeKey];
   // useMemo so t.raw doesn't return new array refs on every render and
   // bust child memoization downstream.
   const items = useMemo(() => t.raw(`tabs.${activeKey}.items`) as FeatureItem[], [t, activeKey]);
   const links = useMemo(() => t.raw(`tabs.${activeKey}.links`) as FeatureLink[], [t, activeKey]);
+  const subhead = useMemo(
+    () => (t.has(`tabs.${activeKey}.subhead`) ? t(`tabs.${activeKey}.subhead`) : null),
+    [t, activeKey]
+  );
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-semantic-bg-secondary border-y border-semantic-border-subtle">
@@ -78,6 +82,11 @@ function Features() {
               <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
                 {t(`tabs.${activeKey}.title`)}
               </h3>
+              {subhead ? (
+                <p className="text-sm text-semantic-text-muted font-medium mt-1 mb-4">
+                  {subhead}
+                </p>
+              ) : null}
               <p className="text-semantic-text-secondary leading-relaxed mb-6">
                 {t(`tabs.${activeKey}.body`)}
               </p>

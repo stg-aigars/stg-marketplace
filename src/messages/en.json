@@ -24,7 +24,8 @@
       "headlineLeading": "Every game deserves a ",
       "headlineEmphasis": "Second Turn",
       "headlineTrailing": "",
-      "lede": "Where Baltic board gamers buy and sell their games.",
+      "lede": "Buy and sell pre-loved board games across Latvia, Lithuania, and Estonia. Secure payments, parcel-locker shipping, listings verified through BoardGameGeek.",
+      "statusPill": "Launching summer 2026 — early sellers welcome",
       "browseCta": "Browse the marketplace",
       "sellCta": "Sell a game",
       "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins"
@@ -71,6 +72,7 @@
         "ship": {
           "label": "Ship across the Baltics",
           "title": "1 300+ lockers across three countries.",
+          "subhead": "Drop off and pick up at a parcel locker — no meeting strangers, no cash on hand.",
           "body": "The Unisend network connects Latvia, Lithuania, and Estonia, including Latvijas Pasts and uDrop terminals. Drop off, the buyer collects. Typical delivery is 2–3 business days. Buyers picking multiple games from one seller split the shipping.",
           "links": [
             { "text": "Read shipping details", "href": "/help" }
@@ -85,6 +87,7 @@
         "payments": {
           "label": "Pay safely",
           "title": "Licensed payments. People handle disputes.",
+          "subhead": "Card details handled by Swedbank, never by us. No bank transfers to strangers.",
           "body": "Swedbank AS (Latvia) is our payment service provider, running on the EveryPay platform. If something goes wrong, we step in.",
           "links": [
             { "text": "Read about payments", "href": "/help" }
@@ -103,37 +106,40 @@
       "heading": "Before you ask.",
       "items": [
         {
+          "q": "What if the seller doesn't ship?",
+          "a": "Sellers have 48 hours to accept and 5 days to ship. Miss either deadline and the order auto-cancels with a full refund."
+        },
+        {
+          "q": "What if the game arrives damaged or wrong?",
+          "a": "You can open a dispute up to 7 days after delivery. We review evidence from both sides and resolve it."
+        },
+        {
+          "q": "Are my payment details safe?",
+          "a": "Card details never touch our servers. Payments are processed by Swedbank AS through the EveryPay platform."
+        },
+        {
+          "q": "How are sellers verified?",
+          "a": "Every seller passes Swedbank's KYC before payouts. Reputation builds publicly through completed trades and buyer ratings."
+        },
+        {
           "q": "Where can I buy and sell?",
-          "a": "Latvia, Lithuania, and Estonia. Buyers in all three countries see every listing."
+          "a": "Latvia, Lithuania, and Estonia — buyers in all three countries see every listing, and parcel lockers ship cross-border."
         },
         {
-          "q": "How does shipping work?",
-          "a": "Sellers ship through Unisend parcel lockers. Cross-border drop-offs work across all three Baltic countries."
+          "q": "What's the commission?",
+          "a": "10% on the item price when it sells. Nothing on shipping. No listing fees."
         },
         {
-          "q": "What does the marketplace cost?",
-          "a": "Buyers pay the item price plus shipping. Sellers pay 10% commission on the item price. Shipping isn't commissioned."
-        },
-        {
-          "q": "How are games graded?",
-          "a": "Sellers grade each copy on a five-tier scale: Like New, Very Good, Good, Acceptable, or For Parts. Buyers see this on every listing."
-        },
-        {
-          "q": "How do payments work?",
-          "a": "Swedbank AS (Latvia) is our payment service provider, with payments running on the EveryPay platform. Once an order completes, your earnings land in your platform wallet."
-        },
-        {
-          "q": "What if something goes wrong?",
-          "a": "Every order has deadlines for acceptance, shipping, and delivery. If a dispute opens, we review what happened and help resolve it."
+          "q": "How is condition graded?",
+          "a": "Sellers grade each copy on a five-tier scale from Like New to For Parts. See the condition guide for full criteria."
         }
       ]
     },
     "cta": {
       "eyebrow": "Got games on the shelf?",
-      "heading": "Pass them on.",
-      "body": "List your collection and let other gamers in the Baltics give them another turn.",
-      "primaryCta": "List a game",
-      "secondaryCta": "Browse the marketplace"
+      "heading": "List one in about a minute.",
+      "body": "Pick from BoardGameGeek, set your price, ship from a parcel locker. Keep 90% — we only take 10% when it sells, and never on shipping.",
+      "primaryCta": "List a game"
     }
   },
   "listing": {
