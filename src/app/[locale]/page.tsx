@@ -5,6 +5,8 @@ import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { HomeHero } from '@/components/marketing/HomeHero';
+import { TrustBand } from '@/components/marketing/TrustBand';
+import { CountryRail } from '@/components/marketing/CountryRail';
 import { Features } from '@/components/marketing/Features';
 import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
@@ -61,6 +63,8 @@ export default async function HomePage() {
   return (
     <>
       <HomeHero />
+      <TrustBand />
+      <CountryRail />
 
       {recentListings && recentListings.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
