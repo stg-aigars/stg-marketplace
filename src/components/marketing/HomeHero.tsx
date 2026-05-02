@@ -29,7 +29,7 @@ async function HomeHero() {
             {IS_PRELAUNCH ? (
               <Link
                 href="#sell-cta"
-                className="inline-flex bg-semantic-brand text-white rounded-full px-3 py-1 text-xs font-medium max-w-full"
+                className="inline-flex bg-semantic-brand text-semantic-text-inverse rounded-full px-3 py-1 text-xs font-medium max-w-full transition-colors duration-250 ease-out-custom hover:bg-semantic-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2"
               >
                 {t('statusPill')}
               </Link>
