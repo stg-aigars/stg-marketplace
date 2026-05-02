@@ -22,13 +22,16 @@ type FeatureLink = { text: string; href: string };
 
 function Features() {
   const t = useTranslations('home.features');
-  const [activeKey, setActiveKey] = useState<TabKey>('payments');
+  const [activeKey, setActiveKey] = useState<TabKey>(TAB_KEYS[0]);
   const activeColor = TAB_COLORS[activeKey];
   // useMemo so t.raw doesn't return new array refs on every render and
   // bust child memoization downstream.
   const items = useMemo(() => t.raw(`tabs.${activeKey}.items`) as FeatureItem[], [t, activeKey]);
   const links = useMemo(() => t.raw(`tabs.${activeKey}.links`) as FeatureLink[], [t, activeKey]);
-  const subhead = t.has(`tabs.${activeKey}.subhead`) ? t(`tabs.${activeKey}.subhead`) : null;
+  const subhead = useMemo(
+    () => (t.has(`tabs.${activeKey}.subhead`) ? t(`tabs.${activeKey}.subhead`) : null),
+    [t, activeKey]
+  );
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-semantic-bg-secondary border-y border-semantic-border-subtle">
