@@ -31,3 +31,6 @@ export const COUNTRY_TO_EVERYPAY_LOCALE: Record<string, string> = {
   LT: 'lt',
   EE: 'et',
 };
+
+/** Pre-launch flag — toggles the homepage status pill near the hero. Flip to false at launch. */
+export const IS_PRELAUNCH = true;
