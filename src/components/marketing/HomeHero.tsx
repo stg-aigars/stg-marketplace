@@ -55,37 +55,15 @@ async function HomeHero() {
             </div>
           </div>
 
-          <div className="hidden lg:flex flex-col gap-2">
-            <div className="relative aspect-[16/9] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
-              <Image
-                src="/images/hero-shelves.webp"
-                alt={t('imageAlt')}
-                fill
-                priority
-                sizes="(min-width: 1024px) 540px, 0px"
-                className="object-cover"
-              />
-            </div>
-            <p className="text-xs text-semantic-text-muted text-right">
-              Photo by{' '}
-              <a
-                href="https://unsplash.com/@zoshuacolah?utm_source=second_turn_games&utm_medium=referral"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-semantic-text-secondary"
-              >
-                Zoshua Colah
-              </a>{' '}
-              on{' '}
-              <a
-                href="https://unsplash.com/?utm_source=second_turn_games&utm_medium=referral"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-semantic-text-secondary"
-              >
-                Unsplash
-              </a>
-            </p>
+          <div className="relative hidden lg:block aspect-[16/9] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">
+            <Image
+              src="/images/hero-shelves.webp"
+              alt={t('imageAlt')}
+              fill
+              priority
+              sizes="(min-width: 1024px) 540px, 0px"
+              className="object-cover"
+            />
           </div>
         </div>
       </div>
