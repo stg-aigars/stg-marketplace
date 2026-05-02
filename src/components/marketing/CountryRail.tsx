@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { Card, CardBody } from '@/components/ui';
-import { getCountryFlag } from '@/lib/country-utils';
+import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
 
-const COUNTRY_TILES = [
-  { code: 'LV', name: 'Latvia', byline: 'Listings from Latvia.' },
-  { code: 'LT', name: 'Lithuania', byline: 'Listings from Lithuania.' },
-  { code: 'EE', name: 'Estonia', byline: 'Listings from Estonia.' },
-] as const;
+const BYLINES: Record<CountryCode, string> = {
+  LV: 'Listings from Latvia.',
+  LT: 'Listings from Lithuania.',
+  EE: 'Listings from Estonia.',
+};
 
 function CountryRail() {
   return (
@@ -22,7 +22,7 @@ function CountryRail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {COUNTRY_TILES.map((country) => (
+          {COUNTRIES.map((country) => (
             <Link
               key={country.code}
               href={`/browse?country=${country.code}`}
@@ -38,7 +38,7 @@ function CountryRail() {
                     {country.name}
                   </h3>
                   <p className="text-sm text-semantic-text-muted mt-1">
-                    {country.byline}
+                    {BYLINES[country.code]}
                   </p>
                 </CardBody>
               </Card>
