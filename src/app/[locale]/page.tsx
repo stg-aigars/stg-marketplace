@@ -8,6 +8,7 @@ import { HomeHero } from '@/components/marketing/HomeHero';
 import { TrustBand } from '@/components/marketing/TrustBand';
 import { CountryRail } from '@/components/marketing/CountryRail';
 import { Features } from '@/components/marketing/Features';
+import { WantedRail } from '@/components/marketing/WantedRail';
 import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
@@ -84,6 +85,7 @@ export default async function HomePage() {
       )}
 
       <Features />
+      <WantedRail />
       <FaqAccordion />
       <HomeCta />
     </>
