@@ -66,26 +66,6 @@ async function HomeHero() {
                 className="object-cover"
               />
             </div>
-            <p className="text-xs text-semantic-text-muted text-right">
-              Photo by{' '}
-              <a
-                href="https://unsplash.com/@zoshuacolah?utm_source=second_turn_games&utm_medium=referral"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-semantic-text-secondary"
-              >
-                Zoshua Colah
-              </a>{' '}
-              on{' '}
-              <a
-                href="https://unsplash.com/?utm_source=second_turn_games&utm_medium=referral"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-semantic-text-secondary"
-              >
-                Unsplash
-              </a>
-            </p>
           </div>
         </div>
       </div>

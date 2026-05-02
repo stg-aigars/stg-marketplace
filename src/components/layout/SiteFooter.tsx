@@ -148,6 +148,18 @@ function SiteFooter() {
             </a>
             </p>
           </div>
+          <p>
+            Hero photo: Zoshua Colah on{' '}
+            <a
+              href="https://unsplash.com/@zoshuacolah?utm_source=second_turn_games&utm_medium=referral"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white transition-colors duration-250 ease-out-custom"
+            >
+              Unsplash
+            </a>
+            .
+          </p>
         </div>
       </div>
     </footer>
