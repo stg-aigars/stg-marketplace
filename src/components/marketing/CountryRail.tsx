@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody } from '@/components/ui';
 import { getCountryFlag } from '@/lib/country-utils';
-import { cn } from '@/lib/cn';
 
 const COUNTRY_TILES = [
   { code: 'LV', name: 'Latvia', byline: 'Buy and sell in Latvia.' },
@@ -29,17 +28,13 @@ function CountryRail() {
               href={`/browse?country=${country.code}`}
               className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2"
             >
-              <Card
-                className={cn(
-                  'shadow-sm sm:hover:shadow-md transition-shadow duration-250 ease-out-custom p-6 text-center',
-                )}
-              >
+              <Card hoverable className="p-6 text-center">
                 <CardBody className="p-0">
                   <span
                     aria-hidden="true"
                     className={`${getCountryFlag(country.code)} text-5xl`}
                   />
-                  <h3 className="text-xl font-bold mt-3 text-semantic-text-heading">
+                  <h3 className="text-base font-semibold mt-3 text-semantic-text-heading">
                     {country.name}
                   </h3>
                   <p className="font-display italic text-sm text-semantic-text-muted mt-1">
