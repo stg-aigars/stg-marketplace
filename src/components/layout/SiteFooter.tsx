@@ -4,6 +4,9 @@ import { LEGAL_ENTITY_EMAIL, LEGAL_ENTITY_NAME } from '@/lib/constants';
 const LINK_CLASS =
   'sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom';
 
+const CREDIT_LINK_CLASS =
+  'underline hover:text-white transition-colors duration-250 ease-out-custom';
+
 const MARKETPLACE_LINKS = [
   { href: '/browse', label: 'Browse Games' },
   { href: '/sell', label: 'Sell a Game' },
@@ -154,7 +157,7 @@ function SiteFooter() {
               href="https://unsplash.com/@zoshuacolah?utm_source=second_turn_games&utm_medium=referral"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-white transition-colors duration-250 ease-out-custom"
+              className={CREDIT_LINK_CLASS}
             >
               Zoshua Colah
             </a>
@@ -163,7 +166,7 @@ function SiteFooter() {
               href="https://unsplash.com/?utm_source=second_turn_games&utm_medium=referral"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-white transition-colors duration-250 ease-out-custom"
+              className={CREDIT_LINK_CLASS}
             >
               Unsplash
             </a>
