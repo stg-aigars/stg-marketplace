@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Button, SectionLink } from '@/components/ui';
 import { WantedListingCard } from '@/components/wanted/WantedListingCard';
 
-const HOME_RAIL_MIN_LISTINGS = 3;
+const WANTED_RAIL_MIN_LISTINGS = 3;
 
 interface WantedRow {
   id: string;
@@ -35,7 +35,7 @@ export async function WantedRail() {
 
   const listings = wantedListings ?? [];
 
-  if (listings.length < HOME_RAIL_MIN_LISTINGS) return null;
+  if (listings.length < WANTED_RAIL_MIN_LISTINGS) return null;
 
   return (
     <section className="py-8 sm:py-10 lg:py-12">

@@ -11,14 +11,16 @@ const STATIC_BYLINES: Record<CountryCode, string> = {
   EE: 'Listings from Estonia.',
 };
 
-const COUNTRY_CODES: readonly CountryCode[] = ['LV', 'LT', 'EE'] as const;
-
 const fetchCountryListingCounts = unstable_cache(
   async (): Promise<Record<CountryCode, number | null>> => {
+    // Raw @supabase/supabase-js client (not @/lib/supabase/server) because
+    // unstable_cache callbacks run outside the request scope — cookies() from
+    // next/headers throws there. Anon key is sufficient: the query is a public,
+    // RLS-permitted count of active/reserved listings.
     const client = createSupabaseClient(env.supabase.url, env.supabase.anonKey);
 
     const results = await Promise.all(
-      COUNTRY_CODES.map(async (code) => {
+      COUNTRIES.map(async ({ code }) => {
         const { count, error } = await client
           .from('listings')
           .select('id', { count: 'exact', head: true })
