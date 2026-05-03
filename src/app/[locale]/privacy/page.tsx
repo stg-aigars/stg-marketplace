@@ -6,6 +6,10 @@ import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
   LEGAL_ENTITY_REG_NUMBER,
+  LEGAL_ENTITY_BANK_NAME,
+  LEGAL_ENTITY_BANK_REG_NUMBER,
+  PSP_TECHNICAL_PROVIDER_NAME,
+  PSP_TECHNICAL_PROVIDER_REG_NUMBER,
 } from '@/lib/constants';
 
 export const metadata: Metadata = {
@@ -113,9 +117,10 @@ export default function PrivacyPage() {
               account details (IBAN) for withdrawals
             </li>
             <li>
-              <strong>Payment data:</strong> processed by Swedbank AS (a Latvian credit
-              institution) and its technical provider EveryPay AS (Estonia, reg. 12280690).
-              See &sect;6 for processor details. We do not store card details
+              <strong>Payment data:</strong> processed by {LEGAL_ENTITY_BANK_NAME} (a Latvian
+              credit institution) and its technical provider {PSP_TECHNICAL_PROVIDER_NAME}{' '}
+              (Estonia, reg. {PSP_TECHNICAL_PROVIDER_REG_NUMBER}). See &sect;6 for processor
+              details. We do not store card details
             </li>
             <li>
               <strong>Usage data:</strong> pages visited, browser type, IP address (for security and
@@ -250,17 +255,23 @@ export default function PrivacyPage() {
           <h3 className={subHeadingClass}>Payments, shipping, and messaging (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>Swedbank AS (Latvia, registration 40003074764).</strong> Payment processing.
-              Receives buyer name, email, amount, and transaction metadata. We do not store card
-              details. Card data is handled within a PCI-DSS environment operated by
-              Swedbank&apos;s technical provider on Swedbank&apos;s behalf (see next row).
+              <strong>
+                {LEGAL_ENTITY_BANK_NAME} (Latvia, registration {LEGAL_ENTITY_BANK_REG_NUMBER}).
+              </strong>{' '}
+              Payment processing. Receives buyer name, email, amount, and transaction metadata.
+              We do not store card details. Card data is handled within a PCI-DSS environment
+              operated by Swedbank&apos;s technical provider on Swedbank&apos;s behalf (see next
+              row).
             </li>
             <li>
-              <strong>EveryPay AS (Estonia, registration 12280690).</strong> Technical provider
-              engaged by Swedbank under &sect;1 and &sect;2.8 of the Swedbank E-commerce Payments
-              Platform Terms. Operates the PCI-DSS-certified payment platform on Swedbank&apos;s
-              behalf. Receives the same transaction metadata Swedbank discloses to it under
-              &sect;10.6 of those Terms.
+              <strong>
+                {PSP_TECHNICAL_PROVIDER_NAME} (Estonia, registration{' '}
+                {PSP_TECHNICAL_PROVIDER_REG_NUMBER}).
+              </strong>{' '}
+              Technical provider engaged by Swedbank under &sect;1 and &sect;2.8 of the Swedbank
+              E-commerce Payments Platform Terms. Operates the PCI-DSS-certified payment platform
+              on Swedbank&apos;s behalf. Receives the same transaction metadata Swedbank discloses
+              to it under &sect;10.6 of those Terms.
             </li>
             <li>
               <strong>Unisend SIA.</strong> Parcel-locker shipping between the Baltic states.

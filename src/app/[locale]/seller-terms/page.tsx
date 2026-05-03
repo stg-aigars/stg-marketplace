@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { SELLER_TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
-import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_VAT_NUMBER } from '@/lib/constants';
+import {
+  LEGAL_ENTITY_NAME,
+  LEGAL_ENTITY_VAT_NUMBER,
+  LEGAL_ENTITY_BANK_NAME,
+  PSP_TECHNICAL_PROVIDER_NAME,
+  PSP_TECHNICAL_PROVIDER_REG_NUMBER,
+} from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Seller Agreement',
@@ -117,11 +123,12 @@ export default function SellerTermsPage() {
           </h2>
           <p>
             When you list an item, you authorise {LEGAL_ENTITY_NAME} to take payment from
-            buyers on your behalf. Payments go through Swedbank AS, a Latvian credit
-            institution acting as our payment service provider. The technical platform is
-            operated on Swedbank&apos;s behalf by EveryPay AS (registered in Estonia,
-            reg. 12280690). The funds sit in a marketplace account and are released to you
-            once delivery is confirmed and the dispute window has closed.
+            buyers on your behalf. Payments go through {LEGAL_ENTITY_BANK_NAME}, a Latvian
+            credit institution acting as our payment service provider. The technical platform
+            is operated on Swedbank&apos;s behalf by {PSP_TECHNICAL_PROVIDER_NAME} (registered
+            in Estonia, reg. {PSP_TECHNICAL_PROVIDER_REG_NUMBER}). The funds sit in a
+            marketplace account and are released to you once delivery is confirmed and the
+            dispute window has closed.
           </p>
           <p>
             We are not a payment institution ourselves and do not hold a payment services
