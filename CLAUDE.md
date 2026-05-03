@@ -8,7 +8,7 @@ Launch philosophy: Start with basics across all three markets. Users grow with t
 ## Tech Stack
 - Next.js 16 (App Router, Turbopack build) with TypeScript, React 19
 - Supabase for database, auth, and storage
-- EveryPay (Swedbank) for payments + platform wallet system
+- Swedbank AS for payments (EveryPay AS as technical provider; internal code is EveryPay-named) + platform wallet system
 - BoardGameGeek (BGG) XML API for game search, metadata, and images (day-zero cornerstone)
 - Unisend for parcel locker shipping (Baltic cross-border)
 - Resend for transactional emails
@@ -96,7 +96,7 @@ Orders store `cancellation_reason` (nullable): `'declined'` (seller), `'response
 - Shipping = logistics service provided TO the seller (funded by buyer at checkout)
 - Platform services invoice to seller: commission + shipping as 2 separate line items
 - VAT follows seller's country for BOTH lines (confirmed by accountant in `docs/legal_audit/accountant-vat-confirmation.md`). Commission is an electronically supplied service under Article 7 of Implementing Regulation (EU) 282/2011; place of supply per Article 58 of Directive 2006/112/EC. Shipping re-supply falls under Articles 49 (domestic) and 50 (cross-border) of the same Directive — rate outcome identical (seller's country) but article reference varies by scenario; public disclosure cites both
-- Fund flow through EveryPay (Maksekeskus AS, licensed Estonian PI). STG relies on the Art. 3(b) commercial-agent exemption of Directive (EU) 2015/2366 (PSD2) as a transitional framing, with `PSD2_TRANSITIONAL_SUNSET = 2026-10-26` enforced by `src/lib/legal/constants.test.ts`. Option 1 scoping with Maksekeskus (collecting-account model) is the target architecture before sunset; see `docs/legal_audit/lawyer-response.md` §A.2
+- Fund flow through Swedbank AS (LV, contracting Service Provider) with EveryPay AS (EE, reg. 12280690 — formerly Maksekeskus AS, same legal entity, rebranded) as Technical Provider per §1 of Swedbank E-commerce Payments Platform T&Cs. STG relies on the Art. 3(b) commercial-agent exemption of Directive (EU) 2015/2366 (PSD2) as a transitional framing, with `PSD2_TRANSITIONAL_SUNSET = 2026-10-26` enforced by `src/lib/legal/constants.test.ts`. Option 1 scoping with Maksekeskus (collecting-account model) is the target architecture before sunset; see `docs/legal_audit/lawyer-response.md` §A.2
 
 ## Supported Markets
 Latvia (LV), Lithuania (LT), Estonia (EE) — all from launch.
@@ -281,8 +281,8 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
   - `seller_terms.accepted` (retention: regulatory) — fires from the Seller Terms acceptance gate at `/sell` (Phase 2 PR 2B-3) when a would-be seller accepts the Seller Agreement. `resourceId` captures `SELLER_TERMS_VERSION` at the moment of acceptance so the historical version is preserved across future bumps. Metadata: `{ source: 'sell_gate', previous_version: string | null }` — `previous_version` is `null` on first acceptance and the prior version string on re-acceptance after a `SELLER_TERMS_VERSION` bump. Always-present key convention: the `previous_version` key is always set (never omitted), so filters read cleanly as `metadata->>'previous_version' IS NOT NULL` for re-accept queries
   - Additional registered events (financial / dispute / lifecycle / moderation), each with their `retention_class`:
     - `order.refunded` (regulatory) — fires from `processRefund` in `order-refund.ts`. Source for OSS prior-period adjustments.
-    - `payment.refunded` (regulatory) — fires from `attemptAutoRefund` in `payment-fulfillment.ts`. EveryPay-side refund record.
-    - `payment.cart_completed` (regulatory) — fires when an EveryPay cart payment lands and orders are created in `payment-fulfillment.ts`.
+    - `payment.refunded` (regulatory) — fires from `attemptAutoRefund` in `payment-fulfillment.ts`. Swedbank-side refund record.
+    - `payment.cart_completed` (regulatory) — fires when a Swedbank cart payment lands and orders are created in `payment-fulfillment.ts`.
     - `payment.cart_wallet_completed` (regulatory) — fires when a wallet-funded cart payment completes in `cart-wallet-pay/route.ts`.
     - `payment.cart_created` (regulatory) — fires when a cart payment intent is created in `cart-create/route.ts`.
     - `wallet.credit` / `wallet.debit` / `wallet.refund` / `wallet.withdrawal_requested` (all regulatory) — fire from `src/lib/services/wallet.ts`. Financial ledger; accountant retention applies.

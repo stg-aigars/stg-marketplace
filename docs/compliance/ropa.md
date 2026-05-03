@@ -66,13 +66,13 @@ Each activity below carries the Article 30(1)(a)–(g) fields. Where a field is 
 
 | Field | Value |
 | --- | --- |
-| **(a) Controller** | See §0. EveryPay (Maksekeskus AS) is an independent controller for the card-data processing portion (PCI-DSS scope); STG receives only tokenised references and transaction metadata. |
-| **(b) Purpose** | Accept buyer payments via EveryPay hosted payment page, credit seller earnings to platform wallet, process withdrawals to seller IBANs, handle refunds and chargebacks. |
-| **(c) Data subjects + categories** | Buyers: name, email, transaction amount, currency, EveryPay transaction identifier. Sellers: legal name, IBAN, wallet balance (integer cents), withdrawal request history, KYC status from EveryPay. |
-| **(d) Recipients** | EveryPay (Maksekeskus AS). Supabase (storage + RLS). Our bank (Swedbank) for outbound payouts. |
-| **(e) Third-country transfers** | None. EveryPay and Swedbank are both EEA-resident. |
+| **(a) Controller** | See §0. Swedbank AS (LV, reg. 40003074764) is the contracting Service Provider; EveryPay AS (EE, reg. 12280690) is the Technical Provider engaged by Swedbank that operates the PCI-DSS-certified payment platform on Swedbank's behalf. Both are independent controllers for the card-data processing portion. STG receives only tokenised references and transaction metadata. |
+| **(b) Purpose** | Accept buyer payments via the Swedbank-branded hosted payment page (operated by EveryPay AS as Technical Provider), credit seller earnings to platform wallet, process withdrawals to seller IBANs, handle refunds and chargebacks. |
+| **(c) Data subjects + categories** | Buyers: name, email, transaction amount, currency, Swedbank/EveryPay transaction identifier. Sellers: legal name, IBAN, wallet balance (integer cents), withdrawal request history, KYC status from Swedbank. |
+| **(d) Recipients** | Swedbank AS (LV) for the buyer-payment relationship; EveryPay AS (EE) as Technical Provider sub-processor. Supabase (storage + RLS). Our bank (Swedbank) for outbound payouts. |
+| **(e) Third-country transfers** | None. Swedbank AS (LV), EveryPay AS (EE), and our payout bank are all EEA-resident. |
 | **(f) Retention** | Wallet transaction history: 5 years from end-of-year for accounting purposes (10 years for transactions supporting tax declarations) per Latvia VAT + Accounting law. IBAN + KYC: retained for life of seller relationship + 5 years after last withdrawal. |
-| **(g) TOMs** | §0 baseline. Card data never touches STG infrastructure (PCI-DSS scope is inside EveryPay). IBAN stored encrypted at rest. Withdrawals gated by first-withdrawal KYC through EveryPay per Seller §5. |
+| **(g) TOMs** | §0 baseline. Card data never touches STG infrastructure (PCI-DSS scope is operated by EveryPay AS as Technical Provider on Swedbank's behalf). IBAN stored encrypted at rest. Withdrawals gated by first-withdrawal KYC through Swedbank per Seller §5. |
 
 **Legal basis (Art. 6):** (b) contract performance for active transactions, (c) legal obligation for the retained records.
 
@@ -125,7 +125,7 @@ Each activity below carries the Article 30(1)(a)–(g) fields. Where a field is 
 | **(a) Controller** | See §0. |
 | **(b) Purpose** | Evidence collection and adjudication for buyer-seller disputes under Terms §9. Includes photos (e.g. of damaged packaging, wrong item), tracking screenshots, message transcripts surfaced into the dispute record. |
 | **(c) Data subjects + categories** | Disputing buyer and disputed-against seller. Photos uploaded during dispute (may incidentally contain PII — shipping labels with addresses, hand-written notes, medical packaging, etc.). Tracking screenshots (carrier identifiers, addresses). Message excerpts (names, email addresses, timestamps). |
-| **(d) Recipients** | Internal staff handling the dispute. Supabase Storage (photos), Supabase Postgres (`disputes` table). EveryPay (if chargeback-dispute status is shared with card network). |
+| **(d) Recipients** | Internal staff handling the dispute. Supabase Storage (photos), Supabase Postgres (`disputes` table). Swedbank / EveryPay AS (if chargeback-dispute status is shared with card network via the Technical Provider's connection to the International Card Organisation). |
 | **(e) Third-country transfers** | As §0 for Supabase; none for internal handling. |
 | **(f) Retention** | 7 years from dispute resolution date per legitimate interest (chargeback limitation periods + potential civil claims + audit trail for regulator complaints). This is longer than ordinary marketplace data retention because disputes have downstream legal-process implications. |
 | **(g) TOMs** | §0 baseline. **DSAR operational notes:** (i) dispute evidence is the category most likely to trigger Art. 15 subject access requests — motivated + adversarial users. (ii) redaction applied before disclosure — the other disputing party's personal data must be redacted before any disclosure to either side; staff apply redaction manually during DSAR response. (iii) retention hold — if a DSAR is in flight on a dispute record, the automated 7-year retention cron is suspended for that record until the DSAR is closed. (iv) special-category data risk — uploaded photos may incidentally contain health, religious, or political information (medical packaging, religious iconography on gifts); handle as if Art. 9 processing could apply. |

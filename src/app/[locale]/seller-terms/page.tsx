@@ -117,9 +117,11 @@ export default function SellerTermsPage() {
           </h2>
           <p>
             When you list an item, you authorise {LEGAL_ENTITY_NAME} to take payment from
-            buyers on your behalf. Payments go through EveryPay (Maksekeskus AS), a licensed
-            Estonian payment institution. The funds sit in a marketplace account and are
-            released to you once delivery is confirmed and the dispute window has closed.
+            buyers on your behalf. Payments go through Swedbank AS, a Latvian credit
+            institution acting as our payment service provider. The technical platform is
+            operated on Swedbank&apos;s behalf by EveryPay AS (registered in Estonia,
+            reg. 12280690). The funds sit in a marketplace account and are released to you
+            once delivery is confirmed and the dispute window has closed.
           </p>
           <p>
             We are not a payment institution ourselves and do not hold a payment services

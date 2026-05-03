@@ -1,7 +1,7 @@
 /** Legal entity name — used in checkout, invoices, and legal pages */
 export const LEGAL_ENTITY_NAME = 'Second Turn Games SIA';
 
-/** Registered business address — displayed at checkout per EveryPay requirements, in email footers, and on legal pages */
+/** Registered business address — displayed at checkout per Swedbank requirements, in email footers, and on legal pages */
 export const LEGAL_ENTITY_ADDRESS = 'Evalda Valtera 5-35, Riga, LV-1021, Latvia';
 
 /** Company registration number */
