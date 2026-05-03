@@ -15,6 +15,7 @@ const MARKETPLACE_LINKS = [
 const SUPPORT_LINKS = [
   { href: '/help', label: 'Help' },
   { href: '/contact', label: 'Contact' },
+  { href: '/about', label: 'About' },
   { href: '/terms', label: 'Terms of Service' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/cookies', label: 'Cookie Policy' },
