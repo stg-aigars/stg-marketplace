@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Modal } from '@/components/ui';
-import { TurnstileWidget } from '@/components/ui/TurnstileWidget';
 import { cancelListing } from '@/lib/listings/actions';
 
 interface RemoveListingModalProps {
@@ -16,7 +15,6 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Reset stale state when modal opens
   useEffect(() => {
@@ -31,7 +29,7 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
     setRemoving(true);
     setError(null);
 
-    const result = await cancelListing(listingId, turnstileToken ?? undefined);
+    const result = await cancelListing(listingId);
 
     if ('error' in result) {
       setError(result.error);
@@ -60,8 +58,6 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
             {removing ? 'Removing...' : 'Remove'}
           </Button>
         </div>
-
-        <TurnstileWidget onVerify={setTurnstileToken} />
       </div>
     </Modal>
   );

@@ -648,6 +648,7 @@ export function ListingCreationFlow({
               onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
               onPublish={handlePublish}
               publishing={publishing}
+              turnstileReady={!!turnstileToken}
               error={error}
               onEditStep={handleEditStep}
               lockedPrice={priceLocked ? formData.price_cents : undefined}

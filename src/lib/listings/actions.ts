@@ -434,12 +434,13 @@ export async function updateListing(
 }
 
 export async function cancelListing(
-  listingId: string,
-  turnstileToken?: string
+  listingId: string
 ): Promise<{ success: true } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
-  if (!turnstile.success) return { error: turnstile.error };
-
+  // No Turnstile gate here: the action is already constrained to the authenticated
+  // owner of the listing, blocked on reserved/sold/cancelled status, and refuses
+  // auctions with bids. A bot can only cancel listings it created — and creation
+  // is itself Turnstile-gated — so there's no abuse vector that adding bot
+  // protection here would close.
   const supabase = await createClient();
 
   const {

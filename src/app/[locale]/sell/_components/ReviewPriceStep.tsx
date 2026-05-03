@@ -19,6 +19,10 @@ interface ReviewPriceStepProps {
   onPriceChange: (cents: number) => void;
   onPublish: () => void;
   publishing: boolean;
+  // Falsy when the Turnstile widget hasn't yet produced a token (or has just been
+  // reset after an error). The Publish button stays disabled in that window so we
+  // don't send an empty/stale token and surface a "Verification failed" toast.
+  turnstileReady: boolean;
   error: string | null;
   onEditStep: (step: number) => void;
   lockedPrice?: number;
@@ -175,6 +179,7 @@ export function ReviewPriceStep({
   onPriceChange,
   onPublish,
   publishing,
+  turnstileReady,
   error,
   onEditStep,
   lockedPrice,
@@ -351,7 +356,7 @@ export function ReviewPriceStep({
         size="lg"
         onClick={onPublish}
         loading={publishing}
-        disabled={effectivePrice < MIN_PRICE_CENTS}
+        disabled={effectivePrice < MIN_PRICE_CENTS || !turnstileReady}
         className="w-full"
       >
         Publish listing

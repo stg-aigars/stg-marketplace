@@ -8,6 +8,10 @@ export interface TurnstileWidgetRef {
 }
 
 interface TurnstileWidgetProps {
+  // Receives the Cloudflare token on success, AND an empty string when the widget
+  // resets (imperatively via the forwarded `reset()` or automatically on expiry).
+  // Callers should treat falsy as "no usable token yet" and gate their submit
+  // button on `!!token` to avoid sending a stale/empty token on quick retries.
   onVerify: (token: string) => void;
   onError?: () => void;
 }
@@ -18,15 +22,22 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
   function TurnstileWidget({ onVerify, onError }, forwardedRef) {
     const ref = useRef<TurnstileInstance>(null);
 
+    // Reset and expire both invalidate the previously-emitted token. Clear the parent's
+    // token state at the same moment so callers gating their submit button on the token
+    // can't accidentally resend a stale (single-use, already consumed) token on retry.
     useImperativeHandle(forwardedRef, () => ({
-      reset: () => ref.current?.reset(),
-    }));
+      reset: () => {
+        ref.current?.reset();
+        onVerify('');
+      },
+    }), [onVerify]);
 
     const handleExpire = useCallback(() => {
       // Auto-reset on expiry so a fresh token is ready at submit time.
       // Tokens expire after ~300s — this handles users who idle on a form.
       ref.current?.reset();
-    }, []);
+      onVerify('');
+    }, [onVerify]);
 
     if (!siteKey) return null;
 
