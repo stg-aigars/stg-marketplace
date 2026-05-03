@@ -1,4 +1,4 @@
-import type { Icon } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Lightning, PiggyBank, Wallet } from '@phosphor-icons/react/ssr';
 import { Card, CardBody } from '@/components/ui';
 
@@ -7,7 +7,7 @@ interface SellerValuePropProps {
 }
 
 interface ValueProp {
-  Icon: Icon;
+  Icon: PhosphorIcon;
   title: string;
   body: string;
 }
