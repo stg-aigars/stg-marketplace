@@ -45,13 +45,22 @@ async function HomeHero() {
               {t('lede')}
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button variant="secondary" size="lg" asChild>
-                <Link href="/browse">{t('browseCta')}</Link>
-              </Button>
-              <Button variant="brand" size="lg" asChild>
-                <Link href="/sell">{t('sellCta')}</Link>
-              </Button>
+            <div className="flex flex-col gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button variant="secondary" size="lg" asChild>
+                  <Link href="/browse">{t('browseCta')}</Link>
+                </Button>
+                <Button variant="brand" size="lg" asChild>
+                  <Link href="/sell">
+                    {IS_PRELAUNCH ? t('sellCtaPrelaunch') : t('sellCta')}
+                  </Link>
+                </Button>
+              </div>
+              {IS_PRELAUNCH ? (
+                <p className="text-sm text-semantic-text-muted">
+                  {t('sellCtaSubtitle')}
+                </p>
+              ) : null}
             </div>
           </div>
 

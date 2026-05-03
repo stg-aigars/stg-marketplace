@@ -67,7 +67,7 @@ export function LaunchBanner() {
         ) : (
           <>
             <p className="text-sm font-medium text-semantic-text-heading flex-1 min-w-0">
-              We&rsquo;re launching soon. Leave your email to be the first to know.
+              Sellers can list now. Buyers join us summer 2026 &mdash; drop your email for launch updates.
             </p>
             <form onSubmit={handleSubmit} className="flex gap-2 items-start shrink-0">
               <div className="w-56 min-w-0">
