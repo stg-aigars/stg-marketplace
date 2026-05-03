@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+// import Image from 'next/image'; // uncomment when founder photo lands at public/images/aigars.jpg
 import { Card, CardBody } from '@/components/ui';
 import {
   LEGAL_ENTITY_ADDRESS,
