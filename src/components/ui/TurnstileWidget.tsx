@@ -8,6 +8,10 @@ export interface TurnstileWidgetRef {
 }
 
 interface TurnstileWidgetProps {
+  // Receives the Cloudflare token on success, AND an empty string when the widget
+  // resets (imperatively via the forwarded `reset()` or automatically on expiry).
+  // Callers should treat falsy as "no usable token yet" and gate their submit
+  // button on `!!token` to avoid sending a stale/empty token on quick retries.
   onVerify: (token: string) => void;
   onError?: () => void;
 }
