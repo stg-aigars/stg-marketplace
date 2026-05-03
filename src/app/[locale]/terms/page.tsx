@@ -7,6 +7,9 @@ import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
   LEGAL_ENTITY_REG_NUMBER,
+  LEGAL_ENTITY_BANK_NAME,
+  PSP_TECHNICAL_PROVIDER_NAME,
+  PSP_TECHNICAL_PROVIDER_REG_NUMBER,
 } from '@/lib/constants';
 
 export const metadata: Metadata = {
@@ -48,7 +51,7 @@ export default function TermsPage() {
               </li>
               <li>
                 Sellers describe their games honestly and ship them on time. We handle payments
-                through EveryPay and shipping through Unisend.
+                through Swedbank and shipping through Unisend.
               </li>
               <li>
                 We charge sellers 10% commission on the item price only. Buyers just pay the
@@ -82,14 +85,16 @@ export default function TermsPage() {
             contract between them, not with us.
           </p>
           <p>
-            Payments go through EveryPay (Maksekeskus AS), a licensed Estonian payment
-            institution. Buyer funds are held in a marketplace account and released to the
-            seller once delivery is confirmed and the dispute window has closed. We are not a
-            payment institution ourselves and do not hold a payment services licence. Our role
-            in the payment flow is that of a commercial agent acting for sellers, relying on
-            the exemption in Article 3(b) of Directive (EU) 2015/2366 (PSD2). If that
-            exemption turns out not to apply, we will move the flow to a licensed payment
-            institution.
+            Payments go through {LEGAL_ENTITY_BANK_NAME}, a Latvian credit institution acting
+            as our payment service provider. The technical platform is operated on
+            Swedbank&apos;s behalf by {PSP_TECHNICAL_PROVIDER_NAME} (registered in Estonia,
+            reg. {PSP_TECHNICAL_PROVIDER_REG_NUMBER}). Buyer funds are held in a marketplace
+            account and released to the seller once delivery is confirmed and the dispute
+            window has closed. We are not a payment institution ourselves and do not hold a
+            payment services licence. Our role in the payment flow is that of a commercial
+            agent acting for sellers, relying on the exemption in Article 3(b) of Directive
+            (EU) 2015/2366 (PSD2). If that exemption turns out not to apply, we will move the
+            flow to a licensed payment institution.
           </p>
         </section>
 
@@ -178,7 +183,7 @@ export default function TermsPage() {
             7. Payments
           </h2>
           <p>
-            Payments are processed through EveryPay (Swedbank). Orders are only created after
+            Payments are processed through {LEGAL_ENTITY_BANK_NAME}. Orders are only created after
             payment is confirmed. STG does not store card details. Buyer funds are held by the
             platform until the order is completed.
           </p>

@@ -133,3 +133,43 @@ Schedule: daily
 ```
 
 Same shape as the other cron entries in CLAUDE.md.
+
+---
+
+## 2026-05-03: Two-entity disclosure correction (PSP identity alignment)
+
+Replaced "EveryPay (Maksekeskus AS)" / "EveryPay (Swedbank)" wording across user-facing
+surfaces with a precise two-entity structure:
+
+- **Swedbank AS** (LV, reg. 40003074764) — contracting Service Provider
+- **EveryPay AS** (EE, reg. 12280690) — Technical Provider per §1 + §2.8 of the
+  Swedbank E-commerce Payments Platform T&Cs. Same legal entity formerly known as
+  Maksekeskus AS — rebrand only, same Estonian reg number, same Tallinn address.
+
+`/privacy` §6 now has TWO processor rows (Swedbank AS + EveryPay AS) per §12.2.3-§12.2.4
+disclosure obligation. ROPA mirrors this. DPA verification runbook line 34 unchanged
+("EE confirmed" remains correct — EveryPay AS is the Estonian-registered Technical
+Provider; §12 + Principles of Processing Personal Data on swedbank.lv is the Art. 28
+framework). Historical row label preserved to align with the artifact filenames; rationale
+note appended.
+
+No `TERMS_VERSION` / `SELLER_TERMS_VERSION` / `PRIVACY_VERSION` bump (option c). Substantive
+obligations and named regulated parties unchanged; this is a precision correction.
+
+Lawyer-drafted regulatory prose preserved verbatim per `src/lib/legal/constants.ts` and
+`CLAUDE.md` line 99 (Art. 3(b) framing, fallback clause, `PSD2_TRANSITIONAL_SUNSET`, and
+"Option 1 collecting-account through Maksekeskus" architecture pointer).
+
+### Items deferred to next legal review pass
+
+- **Card-acquiring §4.13.5** (no third-party-debt settlement) — STG marketplace flow
+  likely covered by "otherwise agreed with the Service Provider" via onboarding
+  MCC, but explicit written confirmation requested.
+- **Card-acquiring §4.13.7** (no third-party business settlement, "unless otherwise
+  agreed in the Agreement") — same shape, same confirmation request.
+- Whether the **Art. 3(b) fallback clause** should be softened given Swedbank AS is
+  already a credit institution + EveryPay AS is a licensed PI (the "if exemption
+  doesn't apply, move to a licensed PI" reads oddly when the platform is already
+  backed by both).
+- Whether **option (a) version bump + global seller re-acceptance** is preferred over
+  option (c) given the two-entity structure is more accurate than the prior wording.

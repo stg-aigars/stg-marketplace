@@ -20,7 +20,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Tech Stack
 
-Next.js 14 (App Router), TypeScript, Supabase, EveryPay, Resend, Unisend, Tailwind CSS. Deployed on Hetzner VPS (Helsinki) with Coolify.
+Next.js 16 (App Router), TypeScript, Supabase, Swedbank, Resend, Unisend, Tailwind CSS. Deployed on Hetzner VPS (Helsinki) with Coolify.
 
 ## Deployment
 

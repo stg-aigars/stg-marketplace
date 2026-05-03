@@ -17,7 +17,7 @@
 
 | Service | Purpose | Tier | Credentials to store |
 |---------|---------|------|---------------------|
-| **EveryPay** (Swedbank) | Payment processing — hosted payment page, callbacks | — | API username, API secret, account name, gateway URL, dashboard login |
+| **Swedbank AS** (LV, reg. 40003074764) with EveryPay AS (EE, reg. 12280690) as technical provider | Payment processing — hosted payment page, callbacks | — | API username, API secret, account name, gateway URL, dashboard login |
 
 ## Shipping
 

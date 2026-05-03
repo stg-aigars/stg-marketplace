@@ -26,9 +26,9 @@ export default function HelpPage() {
           <h3 className="text-base font-semibold text-semantic-text-heading">What payment methods do you accept?</h3>
           <p>
             Cards (Visa, Mastercard), bank payments from major Baltic banks, and mobile
-            wallets like Apple Pay and Google Pay, all through EveryPay. Available methods
-            may vary. If you&apos;ve sold games before and have wallet balance, you can use
-            that too.
+            wallets like Apple Pay and Google Pay, all through Swedbank&apos;s hosted payment
+            page. Available methods may vary. If you&apos;ve sold games before and have wallet
+            balance, you can use that too.
           </p>
           <h3 className="text-base font-semibold text-semantic-text-heading">How much does shipping cost?</h3>
           <p>
