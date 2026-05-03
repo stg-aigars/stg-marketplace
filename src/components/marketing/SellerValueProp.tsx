@@ -34,6 +34,7 @@ function SellerValueProp({ variant = 'default' }: SellerValuePropProps) {
   const isCompact = variant === 'compact';
 
   const sectionPadding = isCompact ? 'py-4 sm:py-6' : 'py-8 sm:py-10 lg:py-12';
+  const headingWrapperClass = isCompact ? 'mb-3 max-w-2xl' : 'mb-6 max-w-2xl';
   const headingClass = isCompact
     ? 'text-base font-bold tracking-tight text-semantic-text-heading'
     : 'text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading';
@@ -43,7 +44,7 @@ function SellerValueProp({ variant = 'default' }: SellerValuePropProps) {
   return (
     <section className={sectionPadding}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="mb-6 max-w-2xl">
+        <div className={headingWrapperClass}>
           <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-3">
             For sellers
           </p>
