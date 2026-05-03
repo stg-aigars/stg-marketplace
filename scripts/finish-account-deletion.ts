@@ -25,8 +25,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-
-const BAN_DURATION = '876000h'; // ~100 years
+import {
+  ACCOUNT_DELETION_BAN_DURATION,
+  DELETED_USER_DISPLAY_NAME,
+  anonymizedAuthEmail,
+  finalizeAuthDeletion,
+} from '../src/lib/services/account';
 
 async function findUserByEmail(sb: SupabaseClient, email: string) {
   // The admin API has no email-lookup primitive, so paginate listUsers.
@@ -114,36 +118,29 @@ async function main() {
   console.log(`  phone:     ${profile?.phone ?? 'null'}`);
 
   const isAnonymized =
-    profile?.full_name === 'Deleted User' && profile.email === null;
+    profile?.full_name === DELETED_USER_DISPLAY_NAME && profile.email === null;
 
   if (!isAnonymized && !force) {
     console.error(
       '\nuser_profiles is NOT in the anonymized state. Refusing to proceed without --force.'
     );
     console.error(
-      '(Half-deleted users have user_profiles.full_name = "Deleted User" and email = null.)'
+      `(Half-deleted users have user_profiles.full_name = "${DELETED_USER_DISPLAY_NAME}" and email = null.)`
     );
     process.exit(1);
   }
 
-  const newEmail = `deleted-${user.id}@deleted.local`;
-
   console.log('\nProposed changes to auth.users:');
-  console.log(`  email           -> ${newEmail}`);
+  console.log(`  email           -> ${anonymizedAuthEmail(user.id)}`);
   console.log(`  user_metadata   -> {}`);
-  console.log(`  ban_duration    -> ${BAN_DURATION}`);
+  console.log(`  ban_duration    -> ${ACCOUNT_DELETION_BAN_DURATION}`);
 
   if (!apply) {
     console.log('\nDRY RUN — re-run with --apply to execute.');
     return;
   }
 
-  const { error: updateError } = await sb.auth.admin.updateUserById(user.id, {
-    email: newEmail,
-    email_confirm: true,
-    user_metadata: {},
-    ban_duration: BAN_DURATION,
-  });
+  const { error: updateError } = await finalizeAuthDeletion(sb, user.id);
 
   if (updateError) {
     console.error('\nUpdate failed:', updateError);
