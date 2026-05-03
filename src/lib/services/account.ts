@@ -5,9 +5,46 @@
  */
 
 import React from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email/service';
 import { AccountDeleted } from '@/lib/email/templates/account-deleted';
+
+// ---------------------------------------------------------------------------
+// Anonymization constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Sentinel display name written to user_profiles.full_name on deletion. Doubles
+ * as a machine-checked marker — the email-resend idempotency guard and the
+ * recovery script (scripts/finish-account-deletion.ts) both detect "already
+ * anonymized" by comparing against this exact string.
+ */
+export const DELETED_USER_DISPLAY_NAME = 'Deleted User';
+
+/** ban_duration passed to auth.admin.updateUserById — ~100 years, effectively permanent. */
+export const ACCOUNT_DELETION_BAN_DURATION = '876000h';
+
+/** Non-PII deterministic email written to auth.users on deletion. */
+export function anonymizedAuthEmail(userId: string): string {
+  return `deleted-${userId}@deleted.local`;
+}
+
+/**
+ * Finalize an account deletion at the auth layer: anonymize the email, clear
+ * raw_user_meta_data, and permanently ban the row. Idempotent — re-applying the
+ * same values to an already-anonymized row is a no-op. Used both by the live
+ * deletion flow and by the manual recovery script for users stuck in the half-
+ * deleted state from the pre-fix bug.
+ */
+export async function finalizeAuthDeletion(sb: SupabaseClient, userId: string) {
+  return sb.auth.admin.updateUserById(userId, {
+    email: anonymizedAuthEmail(userId),
+    email_confirm: true,
+    user_metadata: {},
+    ban_duration: ACCOUNT_DELETION_BAN_DURATION,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -222,8 +259,19 @@ export async function gatherUserData(userId: string): Promise<Record<string, unk
 
 /**
  * Delete a user account. Re-checks eligibility (defense in depth),
- * sends confirmation email, anonymizes profile, cleans up data,
- * and deletes the Supabase auth user.
+ * sends confirmation email, anonymizes profile + content, cleans up
+ * non-retained data, and anonymizes + permanently bans the Supabase
+ * auth row.
+ *
+ * Note: the auth row is *anonymized and banned*, not deleted. Calling
+ * supabase.auth.admin.deleteUser would cascade through user_profiles
+ * (CASCADE) into ~24 FK references (orders, listings, reviews,
+ * wallet_transactions, disputes, bids, ...) most of which are
+ * RESTRICT or NO ACTION by retention design — so the cascade fails
+ * and the row stays alive (the "stuck deletion" bug pattern).
+ * Anonymizing the auth row + banning it achieves the GDPR Art. 17
+ * erasure outcome (no PII, no future sign-in) while preserving the
+ * FK chain that the retention obligations require intact.
  *
  * Orders, listings (sold/cancelled), reviews, and wallet transactions
  * are retained under legal-obligation carve-outs (GDPR Art. 17(3)(b)):
@@ -258,18 +306,24 @@ export async function deleteUserAccount(
     .eq('id', userId)
     .single();
 
+  // Idempotency on the email step: if profile is already anonymized, an earlier
+  // attempt got past this point. Don't resend the "your account is deleted" email
+  // on every retry. (Pre-fix, callers ended up with N emails for N retries.)
+  const alreadyAnonymized = profile?.full_name === DELETED_USER_DISPLAY_NAME;
   const userName = profile?.full_name || 'there';
 
-  // Send confirmation email BEFORE auth deletion (while we still have the email address)
-  try {
-    await sendEmail({
-      to: userEmail,
-      subject: 'Your Second Turn Games account has been deleted',
-      react: React.createElement(AccountDeleted, { userName }),
-    });
-  } catch (err) {
-    console.error('[Account] Failed to send deletion confirmation email:', err);
-    // Continue with deletion — email failure should not block account deletion
+  if (!alreadyAnonymized) {
+    // Send confirmation email BEFORE auth anonymization (while we still have the email)
+    try {
+      await sendEmail({
+        to: userEmail,
+        subject: 'Your Second Turn Games account has been deleted',
+        react: React.createElement(AccountDeleted, { userName }),
+      });
+    } catch (err) {
+      console.error('[Account] Failed to send deletion confirmation email:', err);
+      // Continue with deletion — email failure should not block account deletion
+    }
   }
 
   // Anonymize user content BEFORE profile deletion — user_id FK is ON DELETE SET NULL,
@@ -288,7 +342,7 @@ export async function deleteUserAccount(
   const { error: profileError } = await supabase
     .from('user_profiles')
     .update({
-      full_name: 'Deleted User',
+      full_name: DELETED_USER_DISPLAY_NAME,
       email: null,
       phone: null,
     })
@@ -332,10 +386,13 @@ export async function deleteUserAccount(
     })(),
   ]);
 
-  const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+  // Anonymize auth.users + permanently ban (see function-level docstring for why
+  // we don't call admin.deleteUser). Idempotent: if a previous attempt already
+  // applied these changes, re-applying them is a no-op.
+  const { error: authError } = await finalizeAuthDeletion(supabase, userId);
 
   if (authError) {
-    console.error('[Account] Failed to delete auth user:', authError);
+    console.error('[Account] Failed to anonymize auth user:', authError);
     return { success: false, error: 'Failed to delete account. Please try again.' };
   }
 
