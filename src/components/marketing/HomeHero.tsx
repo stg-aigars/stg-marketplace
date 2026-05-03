@@ -50,9 +50,16 @@ async function HomeHero() {
                 <Link href="/browse">{t('browseCta')}</Link>
               </Button>
               <Button variant="brand" size="lg" asChild>
-                <Link href="/sell">{t('sellCta')}</Link>
+                <Link href="/sell">
+                  {IS_PRELAUNCH ? t('sellCtaPrelaunch') : t('sellCta')}
+                </Link>
               </Button>
             </div>
+            {IS_PRELAUNCH ? (
+              <p className="text-sm text-semantic-text-muted -mt-2">
+                {t('sellCtaSubtitle')}
+              </p>
+            ) : null}
           </div>
 
           <div className="relative hidden lg:block aspect-[16/9] w-full rounded-lg border-2 border-polar-night shadow-pop overflow-hidden">

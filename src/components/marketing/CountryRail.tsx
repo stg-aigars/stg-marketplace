@@ -1,14 +1,52 @@
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { Card, CardBody } from '@/components/ui';
 import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
+import { env } from '@/lib/env';
 
-const BYLINES: Record<CountryCode, string> = {
+const STATIC_BYLINES: Record<CountryCode, string> = {
   LV: 'Listings from Latvia.',
   LT: 'Listings from Lithuania.',
   EE: 'Listings from Estonia.',
 };
 
-function CountryRail() {
+const COUNTRY_CODES: readonly CountryCode[] = ['LV', 'LT', 'EE'] as const;
+
+const fetchCountryListingCounts = unstable_cache(
+  async (): Promise<Record<CountryCode, number | null>> => {
+    const client = createSupabaseClient(env.supabase.url, env.supabase.anonKey);
+
+    const results = await Promise.all(
+      COUNTRY_CODES.map(async (code) => {
+        const { count, error } = await client
+          .from('listings')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['active', 'reserved'])
+          .eq('country', code);
+
+        if (error) {
+          console.error(`[CountryRail] count query failed for ${code}`, error);
+          return [code, null] as const;
+        }
+        return [code, count ?? 0] as const;
+      }),
+    );
+
+    return Object.fromEntries(results) as Record<CountryCode, number | null>;
+  },
+  ['country-listing-counts-v1'],
+  { revalidate: 300, tags: ['country-listing-counts'] },
+);
+
+function bylineFor(code: CountryCode, count: number | null): string {
+  if (count === null || count === 0) return STATIC_BYLINES[code];
+  return count === 1 ? '1 listing' : `${count} listings`;
+}
+
+async function CountryRail() {
+  const counts = await fetchCountryListingCounts();
+
   return (
     <section className="py-8 sm:py-10 lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -38,7 +76,7 @@ function CountryRail() {
                     {country.name}
                   </h3>
                   <p className="text-sm text-semantic-text-muted mt-1">
-                    {BYLINES[country.code]}
+                    {bylineFor(country.code, counts[country.code])}
                   </p>
                 </CardBody>
               </Card>
