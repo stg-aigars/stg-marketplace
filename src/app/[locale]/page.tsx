@@ -57,10 +57,14 @@ export default async function HomePage() {
   ]);
   const isAuthenticated = !!user;
 
+  const recentListingsList = recentListings ?? [];
+
   const { expansionCounts, commentCounts } = await getListingCardCounts(
     supabase,
-    (recentListings ?? []).map((l) => l.id)
+    recentListingsList.map((l) => l.id)
   );
+
+  const showAvailableNowRail = recentListingsList.length >= 6;
 
   return (
     <>
@@ -68,14 +72,14 @@ export default async function HomePage() {
       <TrustBand />
       <CountryRail />
 
-      {recentListings && recentListings.length > 0 && (
+      {showAvailableNowRail ? (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <ListingSection
             eyebrow={t('recentlyListed.eyebrow')}
             heading={t('recentlyListed.heading')}
             href="/browse"
             linkText={t('recentlyListed.browseAll')}
-            listings={recentListings}
+            listings={recentListingsList}
             favoriteIds={favoriteIds}
             isAuthenticated={isAuthenticated}
             expansionCounts={expansionCounts}
@@ -83,11 +87,13 @@ export default async function HomePage() {
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>
+      ) : (
+        <SellerValueProp variant="compact" />
       )}
 
       <Features />
       <WantedRail />
-      <SellerValueProp />
+      {showAvailableNowRail && <SellerValueProp />}
       <FaqAccordion />
       <HomeCta />
     </>

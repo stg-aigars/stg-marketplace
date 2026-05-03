@@ -11,7 +11,7 @@ function TrustBand() {
         <ul className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-center sm:gap-x-6">
           <li className="flex items-center gap-2 text-xs sm:text-sm text-semantic-text-secondary font-medium">
             <BookOpen size={16} weight="duotone" aria-hidden="true" />
-            <span>Listings powered by</span>
+            <span>Listings</span>
             {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
             <img
               src="/images/powered-by-bgg.svg"
@@ -31,7 +31,7 @@ function TrustBand() {
 
           <li className="flex items-center gap-2 text-xs sm:text-sm text-semantic-text-secondary font-medium">
             <CreditCard size={16} weight="duotone" aria-hidden="true" />
-            <span>Payments by Swedbank via</span>
+            <span>Payments via</span>
             {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
             <img
               src="/everypay_logo.svg"
