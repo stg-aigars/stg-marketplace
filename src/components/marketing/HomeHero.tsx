@@ -57,7 +57,7 @@ async function HomeHero() {
                 </Button>
               </div>
               {IS_PRELAUNCH ? (
-                <p className="text-sm text-semantic-text-muted">
+                <p className="text-sm text-semantic-text-muted text-left sm:text-right">
                   {t('sellCtaSubtitle')}
                 </p>
               ) : null}
