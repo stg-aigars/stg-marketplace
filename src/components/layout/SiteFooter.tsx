@@ -85,9 +85,9 @@ function SiteFooter() {
                 <img
                   src="/swedbank.svg"
                   alt="Swedbank"
-                  width={180}
-                  height={52}
-                  className="h-9 w-auto"
+                  width={216}
+                  height={48}
+                  className="h-7 w-auto"
                 />
                 {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
                 <img

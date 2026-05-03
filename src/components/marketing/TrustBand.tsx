@@ -36,9 +36,9 @@ function TrustBand() {
             <img
               src="/swedbank.svg"
               alt="Swedbank"
-              width={180}
-              height={52}
-              className="h-9 w-auto"
+              width={216}
+              height={48}
+              className="h-7 w-auto"
             />
           </li>
 
