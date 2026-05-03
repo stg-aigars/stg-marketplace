@@ -1,15 +1,7 @@
 import type { Metadata } from 'next';
 // import Image from 'next/image'; // uncomment when founder photo lands at public/images/aigars.jpg
-import { Card, CardBody } from '@/components/ui';
-import {
-  LEGAL_ENTITY_ADDRESS,
-  LEGAL_ENTITY_BANK_NAME,
-  LEGAL_ENTITY_EMAIL,
-  LEGAL_ENTITY_IBAN,
-  LEGAL_ENTITY_NAME,
-  LEGAL_ENTITY_REG_NUMBER,
-  LEGAL_ENTITY_VAT_NUMBER,
-} from '@/lib/constants';
+import Link from 'next/link';
+import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'About — Second Turn Games',
@@ -55,45 +47,13 @@ export default function AboutPage() {
         </p>
       </div>
 
-      <Card className="mt-8">
-        <CardBody className="p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-semantic-text-muted mb-4">
-            Legal entity
-          </h2>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-            <div>
-              <dt className="text-semantic-text-muted text-sm font-medium">Legal name</dt>
-              <dd className="text-semantic-text-secondary mt-0.5">{LEGAL_ENTITY_NAME}</dd>
-            </div>
-            <div>
-              <dt className="text-semantic-text-muted text-sm font-medium">Registration number</dt>
-              <dd className="text-semantic-text-secondary mt-0.5">{LEGAL_ENTITY_REG_NUMBER}</dd>
-            </div>
-            <div>
-              <dt className="text-semantic-text-muted text-sm font-medium">VAT</dt>
-              <dd className="text-semantic-text-secondary mt-0.5">{LEGAL_ENTITY_VAT_NUMBER}</dd>
-            </div>
-            <div>
-              <dt className="text-semantic-text-muted text-sm font-medium">Registered address</dt>
-              <dd className="text-semantic-text-secondary mt-0.5">{LEGAL_ENTITY_ADDRESS}</dd>
-            </div>
-            <div>
-              <dt className="text-semantic-text-muted text-sm font-medium">Contact</dt>
-              <dd className="text-semantic-text-secondary mt-0.5">
-                <a href={`mailto:${LEGAL_ENTITY_EMAIL}`} className="link-brand">
-                  {LEGAL_ENTITY_EMAIL}
-                </a>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-semantic-text-muted text-sm font-medium">Bank</dt>
-              <dd className="text-semantic-text-secondary mt-0.5">
-                {LEGAL_ENTITY_BANK_NAME} · {LEGAL_ENTITY_IBAN}
-              </dd>
-            </div>
-          </dl>
-        </CardBody>
-      </Card>
+      <p className="mt-8 text-sm text-semantic-text-muted">
+        Registered in Latvia. See our{' '}
+        <Link href="/imprint" className="link-brand">
+          imprint
+        </Link>
+        {' '}for full company details.
+      </p>
     </div>
   );
 }
