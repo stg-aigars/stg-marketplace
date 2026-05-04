@@ -133,7 +133,9 @@
         },
         {
           "q": "How is condition graded?",
-          "a": "Sellers grade each copy on a five-tier scale from Like New to For Parts. See the condition guide for full criteria."
+          "a": "Sellers grade each copy on a five-tier scale from Like New to For Parts. Each tier has a clear bar — what wear is normal, what bumps a tier down, what counts as for-parts.",
+          "linkLabel": "See the condition guide",
+          "linkHref": "/condition-guide"
         }
       ]
     },

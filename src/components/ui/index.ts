@@ -49,6 +49,9 @@ export { BackLink } from './BackLink';
 export { SectionLink } from './SectionLink';
 export type { SectionLinkProps } from './SectionLink';
 
+export { InlineArrowLink } from './InlineArrowLink';
+export type { InlineArrowLinkProps } from './InlineArrowLink';
+
 export { Breadcrumb } from './breadcrumb';
 export type { BreadcrumbProps } from './breadcrumb';
 
