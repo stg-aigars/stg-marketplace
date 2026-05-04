@@ -7,15 +7,19 @@ const LINK_CLASS =
 const CREDIT_LINK_CLASS =
   'underline hover:text-white transition-colors duration-250 ease-out-custom';
 
-const MARKETPLACE_LINKS = [
+const SECTION_HEADING_CLASS =
+  'text-sm font-semibold text-semantic-text-secondary mb-3';
+
+const EXPLORE_LINKS = [
   { href: '/browse', label: 'Browse Games' },
   { href: '/sell', label: 'Sell a Game' },
-] as const;
-
-const SUPPORT_LINKS = [
+  { href: '/wanted/new', label: 'Request a Game' },
   { href: '/help', label: 'Help' },
   { href: '/contact', label: 'Contact' },
   { href: '/about', label: 'About' },
+] as const;
+
+const LEGAL_LINKS = [
   { href: '/terms', label: 'Terms of Service' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/cookies', label: 'Cookie Policy' },
@@ -33,13 +37,11 @@ const BALTIC_COUNTRIES = [
 function SiteFooter() {
   return (
     <footer>
-      {/* Top row — light */}
       <div className="bg-semantic-bg-secondary border-t border-semantic-border-subtle">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {/* Branding & countries */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] lg:grid-cols-[1.2fr_1fr] gap-8">
             <div className="flex flex-col gap-4">
-              <Link href="/" className="group inline-flex items-center gap-2">
+              <Link href="/" className="group inline-flex items-center gap-2 self-start">
                 {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
                 <img
                   src="/favicon.svg"
@@ -52,11 +54,12 @@ function SiteFooter() {
                   Second Turn<span className="hidden sm:inline"> Games</span>
                 </span>
               </Link>
+              <p className="text-base font-medium text-semantic-text-muted">
+                Every game deserves a second turn.
+              </p>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-semantic-text-muted mb-2">
-                  Available in
-                </p>
-                <div className="flex flex-col gap-1.5 text-sm text-semantic-text-muted">
+                <p className={SECTION_HEADING_CLASS}>Available in</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
                   {BALTIC_COUNTRIES.map((country) => (
                     <span key={country.name} className="flex items-center gap-1.5">
                       <span className={country.flag} />
@@ -67,47 +70,11 @@ function SiteFooter() {
               </div>
             </div>
 
-            {/* Partners */}
-            <div className="flex flex-col gap-4 sm:items-center">
-              <p className="text-xs font-semibold uppercase tracking-wider text-semantic-text-muted sm:text-center">
-                Our partners
-              </p>
-              <div className="flex flex-col gap-3 items-start sm:items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
-                <img
-                  src="/images/powered-by-bgg.svg"
-                  alt="BoardGameGeek"
-                  width={120}
-                  height={27}
-                  className="h-6 w-auto"
-                />
-                {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
-                <img
-                  src="/swedbank.svg"
-                  alt="Swedbank"
-                  width={216}
-                  height={48}
-                  className="h-7 w-auto"
-                />
-                {/* eslint-disable-next-line @next/next/no-img-element -- SVG partner logo, next/image adds no value for vectors */}
-                <img
-                  src="/unisend_logo.svg"
-                  alt="Unisend"
-                  width={100}
-                  height={20}
-                  className="h-4 w-auto text-semantic-text-secondary"
-                />
-              </div>
-            </div>
-
-            {/* Navigation links */}
             <nav className="grid grid-cols-2 gap-8 sm:justify-end">
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-semantic-text-muted mb-3">
-                  Marketplace
-                </h3>
+                <h3 className={SECTION_HEADING_CLASS}>Explore</h3>
                 <ul className="space-y-2 text-sm text-semantic-text-muted">
-                  {MARKETPLACE_LINKS.map((link) => (
+                  {EXPLORE_LINKS.map((link) => (
                     <li key={link.href}>
                       <Link href={link.href} className={LINK_CLASS}>
                         {link.label}
@@ -117,11 +84,9 @@ function SiteFooter() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-semantic-text-muted mb-3">
-                  Support & Legal
-                </h3>
+                <h3 className={SECTION_HEADING_CLASS}>Legal</h3>
                 <ul className="space-y-2 text-sm text-semantic-text-muted">
-                  {SUPPORT_LINKS.map((link) => (
+                  {LEGAL_LINKS.map((link) => (
                     <li key={link.href}>
                       <Link href={link.href} className={LINK_CLASS}>
                         {link.label}
@@ -135,21 +100,21 @@ function SiteFooter() {
         </div>
       </div>
 
-      {/* Bottom row — dark */}
-      <div className="bg-[#363e4b]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-2 text-xs text-white/50">
+      <div className="bg-polar-night">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-2 text-xs text-white/60">
+          <p>Made in Riga for the Baltic board game community.</p>
           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
             <p>
               &copy; 2025&ndash;{new Date().getFullYear()} {LEGAL_ENTITY_NAME}
             </p>
             <p>
               Contact:{' '}
-            <a
-              href={`mailto:${LEGAL_ENTITY_EMAIL}`}
-              className="hover:text-white transition-colors duration-250 ease-out-custom"
-            >
-              {LEGAL_ENTITY_EMAIL}
-            </a>
+              <a
+                href={`mailto:${LEGAL_ENTITY_EMAIL}`}
+                className="hover:text-white transition-colors duration-250 ease-out-custom"
+              >
+                {LEGAL_ENTITY_EMAIL}
+              </a>
             </p>
           </div>
           <p>
