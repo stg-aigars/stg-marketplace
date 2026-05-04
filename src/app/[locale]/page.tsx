@@ -66,6 +66,8 @@ export default async function HomePage() {
   );
 
   const showAvailableNowRail = recentListingsList.length >= 6;
+  const showCompactSellerProp = !showAvailableNowRail && !IS_PRELAUNCH;
+  const showFullSellerProp = showAvailableNowRail && !IS_PRELAUNCH;
 
   return (
     <>
@@ -73,7 +75,7 @@ export default async function HomePage() {
       <TrustBand />
       <CountryRail />
 
-      {showAvailableNowRail ? (
+      {showAvailableNowRail && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <ListingSection
             eyebrow={t('recentlyListed.eyebrow')}
@@ -88,13 +90,12 @@ export default async function HomePage() {
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>
-      ) : IS_PRELAUNCH ? null : (
-        <SellerValueProp variant="compact" />
       )}
+      {showCompactSellerProp && <SellerValueProp variant="compact" />}
 
       <Features />
       <WantedRail />
-      {showAvailableNowRail && !IS_PRELAUNCH && <SellerValueProp />}
+      {showFullSellerProp && <SellerValueProp />}
       <FaqAccordion />
       <HomeCta />
     </>

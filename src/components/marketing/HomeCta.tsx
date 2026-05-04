@@ -10,23 +10,9 @@ const RING_SPECS: Array<{ size: number; color: string }> = [
   { size: 440, color: colors.semantic.success },
 ];
 
-const PRELAUNCH_KEYS = {
-  eyebrow: 'prelaunch.eyebrow',
-  heading: 'prelaunch.heading',
-  body: 'prelaunch.body',
-  primaryCta: 'prelaunch.primaryCta',
-} as const;
-
-const DEFAULT_KEYS = {
-  eyebrow: 'eyebrow',
-  heading: 'heading',
-  body: 'body',
-  primaryCta: 'primaryCta',
-} as const;
-
 async function HomeCta() {
   const t = await getTranslations('home.cta');
-  const keys = IS_PRELAUNCH ? PRELAUNCH_KEYS : DEFAULT_KEYS;
+  const prefix = IS_PRELAUNCH ? 'prelaunch.' : '';
   const ctaHref = IS_PRELAUNCH ? '#notify-banner' : '/sell';
 
   return (
@@ -49,13 +35,13 @@ async function HomeCta() {
 
           <div className="relative max-w-2xl">
             <p className="text-xs font-medium uppercase tracking-wider text-snow-storm/70 mb-3">
-              {t(keys.eyebrow)}
+              {t(`${prefix}eyebrow`)}
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-              {t(keys.heading)}
+              {t(`${prefix}heading`)}
             </h2>
             <p className="text-lg text-snow-storm/85 mb-8 max-w-xl">
-              {t(keys.body)}
+              {t(`${prefix}body`)}
             </p>
             <Button
               variant="brand"
@@ -63,7 +49,7 @@ async function HomeCta() {
               asChild
               className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
             >
-              <Link href={ctaHref}>{t(keys.primaryCta)}</Link>
+              <Link href={ctaHref}>{t(`${prefix}primaryCta`)}</Link>
             </Button>
           </div>
         </div>
