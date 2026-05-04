@@ -28,7 +28,7 @@ async function HomeHero() {
           <div className="flex flex-col items-start gap-6">
             {IS_PRELAUNCH ? (
               <Link
-                href="#sell-cta"
+                href="#notify-banner"
                 className="inline-flex bg-semantic-brand text-semantic-text-inverse rounded-full px-3 py-1 text-xs font-medium max-w-full transition-colors duration-250 ease-out-custom hover:bg-semantic-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2"
               >
                 {t('statusPill')}
@@ -51,14 +51,14 @@ async function HomeHero() {
                   <Link href="/browse">{t('browseCta')}</Link>
                 </Button>
                 <Button variant="brand" size="lg" asChild>
-                  <Link href="/sell">
+                  <Link href={IS_PRELAUNCH ? '#notify-banner' : '/sell'}>
                     {IS_PRELAUNCH ? t('sellCtaPrelaunch') : t('sellCta')}
                   </Link>
                 </Button>
               </div>
               {IS_PRELAUNCH ? (
                 <p className="text-sm text-semantic-text-muted text-left sm:text-right">
-                  {t('sellCtaSubtitle')}
+                  {t('sellCtaSubtitlePrelaunch')}
                 </p>
               ) : null}
             </div>

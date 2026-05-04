@@ -12,6 +12,7 @@ import { WantedRail } from '@/components/marketing/WantedRail';
 import { SellerValueProp } from '@/components/marketing/SellerValueProp';
 import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
+import { IS_PRELAUNCH } from '@/lib/constants';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
 export const metadata: Metadata = {
@@ -87,13 +88,13 @@ export default async function HomePage() {
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>
-      ) : (
+      ) : IS_PRELAUNCH ? null : (
         <SellerValueProp variant="compact" />
       )}
 
       <Features />
       <WantedRail />
-      {showAvailableNowRail && <SellerValueProp />}
+      {showAvailableNowRail && !IS_PRELAUNCH && <SellerValueProp />}
       <FaqAccordion />
       <HomeCta />
     </>
