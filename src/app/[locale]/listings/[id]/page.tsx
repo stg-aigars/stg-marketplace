@@ -8,7 +8,7 @@ import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiec
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionConfig, getConditionLabel } from '@/lib/condition-config';
+import { conditionGuide, getConditionLabel } from '@/lib/condition-config';
 import { conditionToBadgeKey, formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
@@ -254,7 +254,6 @@ export default async function ListingDetailPage(
     );
   }
 
-  const conditionInfo = conditionConfig[conditionToBadgeKey[listing.condition]];
   const sellerFlagClass = getCountryFlag(listing.user_profiles?.country);
   const sellerCountryName = getCountryName(listing.user_profiles?.country);
   const gameImage = toBggFullSize(listing.version_thumbnail) ?? toBggFullSize(listing.games?.image) ?? toBggFullSize(listing.games?.thumbnail) ?? null;
@@ -545,17 +544,17 @@ export default async function ListingDetailPage(
               <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
                 Condition & notes
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-3">
                 <ConditionBadge condition={listing.condition} />
-                <span className="text-sm text-semantic-text-muted">
-                  {conditionInfo.description}
-                </span>
                 <InlineArrowLink href="/condition-guide" size="sm" className="ml-auto shrink-0">
                   Condition guide
                 </InlineArrowLink>
               </div>
+              <p className="text-sm text-semantic-text-secondary leading-relaxed">
+                {conditionGuide[conditionToBadgeKey[listing.condition]].detail}
+              </p>
               {listing.description && (
-                <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
+                <p className="text-semantic-text-secondary whitespace-pre-line mt-3 pt-3 border-t border-semantic-border-subtle">
                   {listing.description}
                 </p>
               )}
