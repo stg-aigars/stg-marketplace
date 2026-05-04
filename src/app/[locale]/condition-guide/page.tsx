@@ -17,11 +17,14 @@ export default function ConditionGuidePage() {
         Condition guide
       </h1>
 
-      <p className="text-semantic-text-secondary mb-8 leading-relaxed">
+      <p className="text-semantic-text-secondary mb-4 leading-relaxed">
         Every listing on Second Turn Games is graded on the same five-tier scale. The bar
         shifts gradually — from a copy that looks new to one sold for parts — and sellers
         are asked to grade honestly so what arrives matches what was promised. If a copy
         does not fit cleanly into a tier, sellers drop one tier down.
+      </p>
+      <p className="text-semantic-text-secondary mb-8 leading-relaxed">
+        Across the top four tiers, all <strong className="font-semibold text-semantic-text-heading">play-essential components</strong> must be present. Non-essential omissions — extra-language rulebooks, scorepads, inserts, promos — are noted in the listing description rather than dropping a tier. Wear bumps a tier down; missing play-essential components send the listing to For Parts.
       </p>
 
       <div className="space-y-4">
