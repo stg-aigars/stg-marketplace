@@ -37,11 +37,9 @@ const BALTIC_COUNTRIES = [
 function SiteFooter() {
   return (
     <footer>
-      {/* Top row — light */}
       <div className="bg-semantic-bg-secondary border-t border-semantic-border-subtle">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] lg:grid-cols-[1.2fr_1fr] gap-8">
-            {/* Branding + tagline + reach */}
             <div className="flex flex-col gap-4">
               <Link href="/" className="group inline-flex items-center gap-2 self-start">
                 {/* eslint-disable-next-line @next/next/no-img-element -- SVG logo, next/image adds no value for vectors */}
@@ -72,7 +70,6 @@ function SiteFooter() {
               </div>
             </div>
 
-            {/* Navigation links */}
             <nav className="grid grid-cols-2 gap-8 sm:justify-end">
               <div>
                 <h3 className={SECTION_HEADING_CLASS}>Explore</h3>
@@ -103,7 +100,6 @@ function SiteFooter() {
         </div>
       </div>
 
-      {/* Bottom row — dark */}
       <div className="bg-polar-night">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-2 text-xs text-white/60">
           <p>Made in Riga for the Baltic board game community.</p>
