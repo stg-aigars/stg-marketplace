@@ -4,27 +4,27 @@ export const conditionConfig = {
   likeNew: {
     label: 'Like New',
     variant: 'success' as const,
-    description: 'Appears unplayed or played once. Components pristine.',
+    description: 'Appears unplayed or played once. No signs of wear.',
   },
   veryGood: {
     label: 'Very Good',
     variant: 'default' as const,
-    description: 'Minimal wear. All components present and in great shape.',
+    description: 'Minimal wear. Components in great shape.',
   },
   good: {
     label: 'Good',
     variant: 'warning' as const,
-    description: 'Shows play wear but fully functional. All components present.',
+    description: 'Shows play wear but fully functional.',
   },
   acceptable: {
     label: 'Acceptable',
     variant: 'warning' as const,
-    description: 'Significant wear but playable. May have minor damage.',
+    description: 'Significant wear but complete and playable.',
   },
   forParts: {
     label: 'For Parts',
     variant: 'error' as const,
-    description: 'Incomplete or damaged. Sold as-is for parts/crafts.',
+    description: 'Missing play-essential components or not playable. Sold as-is.',
   },
 };
 
