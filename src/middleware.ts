@@ -8,7 +8,7 @@ import { isOAuthUser } from '@/lib/auth/oauth-providers';
 const intlMiddleware = createIntlMiddleware(routing);
 
 // Routes that require authentication
-const PROTECTED_PREFIXES = ['/account', '/sell', '/orders', '/checkout', '/staff'];
+const PROTECTED_PREFIXES = ['/account', '/sell', '/wanted/new', '/orders', '/checkout', '/staff'];
 
 // Routes that should never be blocked (prevent redirect loops)
 const AUTH_PREFIX = '/auth/';
