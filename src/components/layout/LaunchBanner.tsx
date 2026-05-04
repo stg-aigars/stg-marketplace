@@ -25,7 +25,7 @@ export function LaunchBanner() {
 
   // Wait for mount to avoid hydration mismatch from localStorage read
   if (!mounted || loading) return null;
-  if (user) return null;
+  if (user && !IS_PRELAUNCH) return null;
   if (dismissed) return null;
 
   function hide() {
