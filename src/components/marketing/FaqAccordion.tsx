@@ -3,8 +3,9 @@
 import { useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus } from '@phosphor-icons/react/ssr';
+import { InlineArrowLink } from '@/components/ui';
 
-type FaqItem = { q: string; a: string };
+type FaqItem = { q: string; a: string; linkLabel?: string; linkHref?: string };
 
 function FaqAccordion() {
   const t = useTranslations('home.faq');
@@ -61,6 +62,11 @@ function FaqAccordion() {
                     className="pb-5 pr-10 text-semantic-text-secondary leading-relaxed"
                   >
                     {item.a}
+                    {item.linkLabel && item.linkHref && (
+                      <div className="mt-3">
+                        <InlineArrowLink href={item.linkHref}>{item.linkLabel}</InlineArrowLink>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

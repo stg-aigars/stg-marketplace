@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { CheckCircle } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, ConditionBadge, Modal, Button } from '@/components/ui';
-import { conditionConfig } from '@/lib/condition-config';
+import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
 
@@ -20,14 +21,6 @@ const conditionBg: Record<string, string> = {
   good: 'bg-condition-good-bg',
   acceptable: 'bg-condition-acceptable-bg',
   forParts: 'bg-condition-for-parts-bg',
-};
-
-const conditionExamples: Record<string, string> = {
-  likeNew: 'Shrink wrap removed but all components still in original packaging. No signs of play.',
-  veryGood: 'Played a few times. Box corners slightly worn but all cards, tokens, and pieces in excellent shape.',
-  good: 'Regularly played. Box shows wear, cards may have light edge wear. Everything works and is included.',
-  acceptable: 'Well-loved copy. Box may be taped, some components show significant wear. Still fully playable.',
-  forParts: 'Missing pieces or damaged beyond normal play. Useful for replacing lost components or crafts.',
 };
 
 export function ConditionStep({ selectedCondition, onSelect, compact, hideHeading }: ConditionStepProps) {
@@ -141,11 +134,14 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
                   {config.description}
                 </p>
                 <p className="text-sm text-semantic-text-muted italic">
-                  Example: {conditionExamples[badgeKey]}
+                  Example: {conditionGuide[badgeKey].example}
                 </p>
               </div>
             );
           })}
+          <Link href="/condition-guide" className="link-brand text-sm">
+            See the condition guide
+          </Link>
         </div>
       </Modal>
     </div>

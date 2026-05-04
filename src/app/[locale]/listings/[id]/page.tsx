@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
-import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, ShareButtons, ShowMoreList } from '@/components/ui';
+import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { conditionConfig, getConditionLabel } from '@/lib/condition-config';
@@ -550,6 +550,9 @@ export default async function ListingDetailPage(
                 <span className="text-sm text-semantic-text-muted">
                   {conditionInfo.description}
                 </span>
+                <InlineArrowLink href="/condition-guide" size="sm" className="ml-auto shrink-0">
+                  Condition guide
+                </InlineArrowLink>
               </div>
               {listing.description && (
                 <p className="text-semantic-text-secondary whitespace-pre-line mt-3">
