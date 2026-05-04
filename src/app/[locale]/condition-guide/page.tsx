@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ConditionBadge } from '@/components/ui';
+import { Card, CardBody, ConditionBadge } from '@/components/ui';
 import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 
@@ -24,30 +24,32 @@ export default function ConditionGuidePage() {
         does not fit cleanly into a tier, sellers drop one tier down.
       </p>
 
-      <div className="space-y-8">
+      <div className="space-y-4">
         {LISTING_CONDITIONS.map((condition) => {
           const key = conditionToBadgeKey[condition];
           const config = conditionConfig[key];
           const guide = conditionGuide[key];
           return (
-            <section key={condition} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <ConditionBadge condition={condition} />
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-                  {config.label}
-                </h2>
-              </div>
-              <p className="text-semantic-text-primary leading-relaxed">{guide.detail}</p>
-              <p className="text-sm italic text-semantic-text-muted">
-                Example: {guide.example}
-              </p>
-              <div className="rounded-md bg-semantic-bg-secondary border border-semantic-border-subtle px-4 py-3">
-                <p className="text-sm text-semantic-text-secondary">
-                  <span className="font-semibold text-semantic-text-heading">Selling? </span>
-                  {guide.sellerHint}
+            <Card key={condition}>
+              <CardBody className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <ConditionBadge condition={condition} />
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+                    {config.label}
+                  </h2>
+                </div>
+                <p className="text-semantic-text-primary leading-relaxed">{guide.detail}</p>
+                <p className="text-sm italic text-semantic-text-muted">
+                  Example: {guide.example}
                 </p>
-              </div>
-            </section>
+                <div className="pt-3 border-t border-semantic-border-subtle">
+                  <p className="text-sm text-semantic-text-secondary">
+                    <span className="font-semibold text-semantic-text-heading">Selling? </span>
+                    {guide.sellerHint}
+                  </p>
+                </div>
+              </CardBody>
+            </Card>
           );
         })}
       </div>
