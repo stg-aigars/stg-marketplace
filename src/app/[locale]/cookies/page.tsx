@@ -144,7 +144,7 @@ export default function CookiesPage() {
                   <td className="py-2 align-top">Strictly necessary</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
-                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v1</td>
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
                   <td className="py-2 pr-4 align-top">
                     Remembers that you dismissed the launch banner so it does not reappear.
                   </td>

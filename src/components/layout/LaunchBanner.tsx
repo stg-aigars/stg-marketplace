@@ -5,8 +5,10 @@ import { X } from '@phosphor-icons/react/ssr';
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
+import { IS_PRELAUNCH } from '@/lib/constants';
 
-const STORAGE_KEY = 'stg:launch-banner-dismissed:v1';
+// Bumped :v1 → :v2 to reset prelaunch dismissers after copy + dismiss-button changes
+const STORAGE_KEY = 'stg:launch-banner-dismissed:v2';
 
 export function LaunchBanner() {
   const { user, loading } = useAuth();
@@ -23,7 +25,7 @@ export function LaunchBanner() {
 
   // Wait for mount to avoid hydration mismatch from localStorage read
   if (!mounted || loading) return null;
-  if (user) return null;
+  if (user && !IS_PRELAUNCH) return null;
   if (dismissed) return null;
 
   function hide() {
@@ -58,7 +60,7 @@ export function LaunchBanner() {
   }
 
   return (
-    <div className="bg-semantic-brand/10 border-b border-semantic-brand/20">
+    <div id="notify-banner" className="bg-semantic-brand/10 border-b border-semantic-brand/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         {status === 'success' ? (
           <p className="text-sm font-medium text-semantic-success flex-1">
@@ -67,7 +69,7 @@ export function LaunchBanner() {
         ) : (
           <>
             <p className="text-sm font-medium text-semantic-text-heading flex-1 min-w-0">
-              Sellers can list now. Buyers join us summer 2026 &mdash; drop your email for launch updates.
+              We&rsquo;re launching summer 2026 &mdash; drop your email and we&rsquo;ll let you know.
             </p>
             <form onSubmit={handleSubmit} className="flex gap-2 items-start shrink-0">
               <div className="w-56 min-w-0">
@@ -95,15 +97,17 @@ export function LaunchBanner() {
             </form>
           </>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={hide}
-          aria-label="Dismiss"
-          className="shrink-0 !p-1"
-        >
-          <X size={16} weight="bold" />
-        </Button>
+        {!IS_PRELAUNCH && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={hide}
+            aria-label="Dismiss"
+            className="shrink-0 !p-1"
+          >
+            <X size={16} weight="bold" />
+          </Button>
+        )}
       </div>
     </div>
   );

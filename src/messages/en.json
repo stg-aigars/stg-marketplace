@@ -25,11 +25,11 @@
       "headlineEmphasis": "Second Turn",
       "headlineTrailing": "",
       "lede": "Buy and sell pre-loved board games across Latvia, Lithuania, and Estonia. Secure payments, parcel-locker shipping, listings verified through BoardGameGeek.",
-      "statusPill": "Sellers welcome now · Buyers from summer 2026",
+      "statusPill": "Launching summer 2026",
       "browseCta": "Browse the marketplace",
       "sellCta": "Sell a game",
-      "sellCtaPrelaunch": "List your first game",
-      "sellCtaSubtitle": "Keep 90% · No listing fees",
+      "sellCtaPrelaunch": "Get launch updates",
+      "sellCtaSubtitlePrelaunch": "Be the first to know when we open",
       "imageAlt": "Watercolour illustration of a board game with hexagonal tiles, meeples, cards, and coins"
     },
     "recentlyListed": {
@@ -141,7 +141,13 @@
       "eyebrow": "Got games on the shelf?",
       "heading": "List one in about a minute.",
       "body": "Pick from BoardGameGeek, set your price, ship from a parcel locker. Keep 90% — we only take 10% when it sells, and never on shipping.",
-      "primaryCta": "List a game"
+      "primaryCta": "List a game",
+      "prelaunch": {
+        "eyebrow": "Coming summer 2026",
+        "heading": "Be the first when we open.",
+        "body": "We're putting the finishing touches on the marketplace. Drop your email at the top of the page and we'll let you know the moment it goes live — one note, no spam.",
+        "primaryCta": "Get launch updates"
+      }
     }
   },
   "listing": {

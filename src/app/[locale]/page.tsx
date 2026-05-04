@@ -12,6 +12,7 @@ import { WantedRail } from '@/components/marketing/WantedRail';
 import { SellerValueProp } from '@/components/marketing/SellerValueProp';
 import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
+import { IS_PRELAUNCH } from '@/lib/constants';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
 export const metadata: Metadata = {
@@ -65,6 +66,8 @@ export default async function HomePage() {
   );
 
   const showAvailableNowRail = recentListingsList.length >= 6;
+  const showCompactSellerProp = !showAvailableNowRail && !IS_PRELAUNCH;
+  const showFullSellerProp = showAvailableNowRail && !IS_PRELAUNCH;
 
   return (
     <>
@@ -72,7 +75,7 @@ export default async function HomePage() {
       <TrustBand />
       <CountryRail />
 
-      {showAvailableNowRail ? (
+      {showAvailableNowRail && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <ListingSection
             eyebrow={t('recentlyListed.eyebrow')}
@@ -87,13 +90,12 @@ export default async function HomePage() {
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>
-      ) : (
-        <SellerValueProp variant="compact" />
       )}
+      {showCompactSellerProp && <SellerValueProp variant="compact" />}
 
       <Features />
       <WantedRail />
-      {showAvailableNowRail && <SellerValueProp />}
+      {showFullSellerProp && <SellerValueProp />}
       <FaqAccordion />
       <HomeCta />
     </>

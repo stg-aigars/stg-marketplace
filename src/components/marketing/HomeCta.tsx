@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui';
+import { IS_PRELAUNCH } from '@/lib/constants';
 import { colors } from '@/styles/tokens';
 
 const RING_SPECS: Array<{ size: number; color: string }> = [
@@ -11,6 +12,8 @@ const RING_SPECS: Array<{ size: number; color: string }> = [
 
 async function HomeCta() {
   const t = await getTranslations('home.cta');
+  const prefix = IS_PRELAUNCH ? 'prelaunch.' : '';
+  const ctaHref = IS_PRELAUNCH ? '#notify-banner' : '/sell';
 
   return (
     <section id="sell-cta" className="py-16 sm:py-20 lg:py-24 scroll-mt-24">
@@ -32,13 +35,13 @@ async function HomeCta() {
 
           <div className="relative max-w-2xl">
             <p className="text-xs font-medium uppercase tracking-wider text-snow-storm/70 mb-3">
-              {t('eyebrow')}
+              {t(`${prefix}eyebrow`)}
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-              {t('heading')}
+              {t(`${prefix}heading`)}
             </h2>
             <p className="text-lg text-snow-storm/85 mb-8 max-w-xl">
-              {t('body')}
+              {t(`${prefix}body`)}
             </p>
             <Button
               variant="brand"
@@ -46,7 +49,7 @@ async function HomeCta() {
               asChild
               className="border-snow-storm-light shadow-pop-inverse sm:hover:shadow-pop-inverse-lg active:shadow-pop-inverse-sm"
             >
-              <Link href="/sell">{t('primaryCta')}</Link>
+              <Link href={ctaHref}>{t(`${prefix}primaryCta`)}</Link>
             </Button>
           </div>
         </div>
