@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     if (!turnstile.success) {
       Sentry.captureMessage('newsletter.turnstile_failed', {
         level: 'warning',
-        extra: { errorCodes: turnstile.errorCodes },
+        extra: { reason: turnstile.reason, errorCodes: turnstile.errorCodes },
       });
       return NextResponse.json({ error: turnstile.error }, { status: 400 });
     }

@@ -1,8 +1,10 @@
 import { headers } from 'next/headers';
 
+export type TurnstileFailureReason = 'missing_token' | 'invalid_token' | 'network_error';
+
 type TurnstileVerifyResult =
-  | { success: true; error?: undefined; errorCodes?: undefined }
-  | { success: false; error: string; errorCodes: string[] };
+  | { success: true; error?: undefined; errorCodes?: undefined; reason?: undefined }
+  | { success: false; error: string; errorCodes: string[]; reason: TurnstileFailureReason };
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const VERIFY_TIMEOUT_MS = 5_000;
@@ -14,10 +16,12 @@ const secretKey = process.env.TURNSTILE_SECRET_KEY;
  * Fails closed on network errors — returns failure, not silent pass.
  *
  * On failure, returns `errorCodes` (Cloudflare's `error-codes` array, or `[]` when
- * we never reached Cloudflare — e.g. missing token, network timeout). Callers can
- * forward these to Sentry/log; the helper itself emits a single `console.error`
- * with `{ errorCodes, hasToken }` on every failure path so the diagnostic is visible
- * in container logs without requiring each caller to wire it up.
+ * we never reached Cloudflare — e.g. missing token, network timeout) AND `reason`
+ * (a high-level bucket: `missing_token`, `invalid_token`, `network_error`) so the
+ * "no errorCodes" cases are still distinguishable in Sentry/logs. Callers can
+ * forward these to Sentry; the helper itself emits a single `console.error` with
+ * `{ reason, errorCodes, hasToken }` on every failure path so the diagnostic is
+ * visible in container logs without requiring each caller to wire it up.
  *
  * Payload contains diagnostic codes only — no IP, no email — so it sits outside the
  * `login_activity` ROPA and doesn't expand processing scope.
@@ -34,8 +38,8 @@ export async function verifyTurnstileToken(
   }
 
   if (!token) {
-    console.error('[Turnstile] verify failed', { errorCodes: [], hasToken: false });
-    return { success: false, error: 'Verification failed. Please try again.', errorCodes: [] };
+    console.error('[Turnstile] verify failed', { reason: 'missing_token', errorCodes: [], hasToken: false });
+    return { success: false, error: 'Verification failed. Please try again.', errorCodes: [], reason: 'missing_token' };
   }
 
   try {
@@ -58,14 +62,14 @@ export async function verifyTurnstileToken(
 
     if (!data.success) {
       const errorCodes: string[] = Array.isArray(data['error-codes']) ? data['error-codes'] : [];
-      console.error('[Turnstile] verify failed', { errorCodes, hasToken: true });
-      return { success: false, error: 'Verification failed. Please try again.', errorCodes };
+      console.error('[Turnstile] verify failed', { reason: 'invalid_token', errorCodes, hasToken: true });
+      return { success: false, error: 'Verification failed. Please try again.', errorCodes, reason: 'invalid_token' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('[Turnstile] Verification request failed:', error);
-    return { success: false, error: 'Verification service unavailable. Please try again.', errorCodes: [] };
+    console.error('[Turnstile] Verification request failed:', { reason: 'network_error', error });
+    return { success: false, error: 'Verification service unavailable. Please try again.', errorCodes: [], reason: 'network_error' };
   }
 }
 
