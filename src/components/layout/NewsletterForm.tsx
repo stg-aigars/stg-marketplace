@@ -64,7 +64,7 @@ export function NewsletterForm() {
           variant="secondary"
           size="sm"
           loading={status === 'loading'}
-          disabled={!email.trim() || !turnstileToken || status === 'loading'}
+          disabled={!email.trim() || !turnstileToken}
           className="min-h-[36px] shrink-0"
         >
           Subscribe
