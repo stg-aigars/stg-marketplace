@@ -20,8 +20,9 @@ const secretKey = process.env.TURNSTILE_SECRET_KEY;
  * (a high-level bucket: `missing_token`, `invalid_token`, `network_error`) so the
  * "no errorCodes" cases are still distinguishable in Sentry/logs. Callers can
  * forward these to Sentry; the helper itself emits a single `console.error` with
- * `{ reason, errorCodes, hasToken }` on every failure path so the diagnostic is
- * visible in container logs without requiring each caller to wire it up.
+ * `{ reason, errorCodes }` (plus the underlying `error` on the network-error path)
+ * so the diagnostic is visible in container logs without requiring each caller
+ * to wire it up.
  *
  * Payload contains diagnostic codes only — no IP, no email — so it sits outside the
  * `login_activity` ROPA and doesn't expand processing scope.
@@ -38,7 +39,7 @@ export async function verifyTurnstileToken(
   }
 
   if (!token) {
-    console.error('[Turnstile] verify failed', { reason: 'missing_token', errorCodes: [], hasToken: false });
+    console.error('[Turnstile] verify failed', { reason: 'missing_token', errorCodes: [] });
     return { success: false, error: 'Verification failed. Please try again.', errorCodes: [], reason: 'missing_token' };
   }
 
@@ -62,13 +63,13 @@ export async function verifyTurnstileToken(
 
     if (!data.success) {
       const errorCodes: string[] = Array.isArray(data['error-codes']) ? data['error-codes'] : [];
-      console.error('[Turnstile] verify failed', { reason: 'invalid_token', errorCodes, hasToken: true });
+      console.error('[Turnstile] verify failed', { reason: 'invalid_token', errorCodes });
       return { success: false, error: 'Verification failed. Please try again.', errorCodes, reason: 'invalid_token' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('[Turnstile] Verification request failed:', { reason: 'network_error', error });
+    console.error('[Turnstile] verify failed', { reason: 'network_error', error });
     return { success: false, error: 'Verification service unavailable. Please try again.', errorCodes: [], reason: 'network_error' };
   }
 }
