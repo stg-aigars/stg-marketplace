@@ -59,7 +59,7 @@ export function CommentForm({ listingId }: CommentFormProps) {
         <span className="text-xs text-semantic-text-muted">
           {charCount > 0 && `${charCount}/${MAX_COMMENT_LENGTH}`}
         </span>
-        <Button type="submit" size="sm" disabled={!content.trim() || submitting}>
+        <Button type="submit" size="sm" disabled={!content.trim() || submitting || !turnstileToken}>
           {submitting ? 'Posting...' : 'Post comment'}
         </Button>
       </div>
