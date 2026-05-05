@@ -215,7 +215,7 @@ export function BidPanel({
                 size="lg"
                 onClick={() => handleQuickBid(qb.cents, i)}
                 loading={quickBidLoading === i}
-                disabled={isPending}
+                disabled={isPending || !turnstileToken}
               >
                 <Lightning size={16} weight="bold" className="mr-1" />
                 Bid {formatCentsToCurrency(qb.cents)}
@@ -237,7 +237,7 @@ export function BidPanel({
               variant="secondary"
               onClick={handleCustomSubmit}
               loading={isPending && quickBidLoading === null}
-              disabled={isPending}
+              disabled={isPending || !turnstileToken}
             >
               <Gavel size={18} weight="bold" className="mr-1.5" />
               Place bid

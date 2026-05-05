@@ -60,7 +60,13 @@ export function NewsletterForm() {
             className="min-h-[36px] py-1.5 text-sm"
           />
         </div>
-        <Button variant="secondary" size="sm" loading={status === 'loading'} className="min-h-[36px] shrink-0">
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={status === 'loading'}
+          disabled={!email.trim() || !turnstileToken || status === 'loading'}
+          className="min-h-[36px] shrink-0"
+        >
           Subscribe
         </Button>
       </form>
