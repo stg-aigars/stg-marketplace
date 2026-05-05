@@ -2,9 +2,15 @@
 // thresholds: 50 listings / 25 sellers / 10 delivered parcels. Until then it
 // stays as a static partner-trust strip — counters before they're earned read
 // as theatre.
-import { BookOpen, CreditCard, Package } from '@phosphor-icons/react/ssr';
+import { BookOpen, CreditCard, Package, Tag } from '@phosphor-icons/react/ssr';
 
-function TrustBand() {
+interface TrustBandProps {
+  /** When true, renders an additional BoardGamePrices slot between BGG and Swedbank.
+   * Used on /about, where the pricing-data partnership is explained in the prose. */
+  includeBgp?: boolean;
+}
+
+function TrustBand({ includeBgp = false }: TrustBandProps = {}) {
   return (
     <section className="border-y border-semantic-border-subtle bg-semantic-bg-secondary py-3 sm:py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -21,6 +27,30 @@ function TrustBand() {
               className="h-6 w-auto"
             />
           </li>
+
+          {includeBgp && (
+            <>
+              <li
+                aria-hidden="true"
+                className="hidden sm:inline-block text-semantic-text-muted"
+              >
+                ·
+              </li>
+
+              <li className="flex items-center gap-2 text-xs sm:text-sm text-semantic-text-secondary font-medium">
+                <Tag size={16} weight="duotone" aria-hidden="true" />
+                <span>Price suggestions by BoardGamePrices</span>
+                {/* eslint-disable-next-line @next/next/no-img-element -- partner logo kept consistent with the other img tags in this strip */}
+                <img
+                  src="/images/bgp-icon.png"
+                  alt="BoardGamePrices"
+                  width={40}
+                  height={40}
+                  className="h-10 w-auto"
+                />
+              </li>
+            </>
+          )}
 
           <li
             aria-hidden="true"
