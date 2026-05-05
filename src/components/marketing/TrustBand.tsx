@@ -5,8 +5,9 @@
 import { BookOpen, CreditCard, Package, Tag } from '@phosphor-icons/react/ssr';
 
 interface TrustBandProps {
-  /** When true, renders an additional BoardGamePrices slot between BGG and Swedbank.
-   * Used on /about, where the pricing-data partnership is explained in the prose. */
+  /** Renders an additional BoardGamePrices slot between BGG and Swedbank.
+   * Off by default because BGP's role isn't explained on the homepage; only /about
+   * surrounds the strip with the prose that gives the slot context. */
   includeBgp?: boolean;
 }
 

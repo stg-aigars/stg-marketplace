@@ -24,7 +24,6 @@ export default function AboutPage() {
           alt="Aigars Grenins, founder of Second Turn Games, with the Spiel Essen mascot"
           width={240}
           height={240}
-          priority
           className="rounded-lg mb-6 mx-auto shadow-sm"
         />
 
