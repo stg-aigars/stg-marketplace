@@ -1,3 +1,5 @@
+import { env } from '@/lib/env';
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('../sentry.server.config');
@@ -9,13 +11,13 @@ export async function register() {
     // permanently disabled. Both are alert-worthy on their own.
     if (process.env.NODE_ENV === 'production') {
       const Sentry = await import('@sentry/nextjs');
-      if (!process.env.TURNSTILE_SECRET_KEY) {
+      if (!env.turnstile.secretKey) {
         Sentry.captureMessage(
           'Turnstile secret key missing in production — bot protection silently disabled',
           { level: 'error' }
         );
       }
-      if (!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+      if (!env.turnstile.siteKey) {
         Sentry.captureMessage(
           'Turnstile site key missing in production — gated forms will be permanently disabled',
           { level: 'error' }
