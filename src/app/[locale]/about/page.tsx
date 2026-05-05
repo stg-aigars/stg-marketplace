@@ -29,27 +29,27 @@ export default function AboutPage() {
 
         <Card>
           <CardBody className="space-y-4 text-semantic-text-secondary leading-relaxed">
-            <p className="text-lg">
+            <p>
               Second Turn Games started where most board game purchases end: on a shelf. After
               years of watching games travel through Facebook groups — strangers in DMs, untracked
               envelopes, prices invented at the kitchen table, weeknight handoffs rescheduled
               twice — I wanted something that worked the way you&apos;d expect any other purchase
               to work.
             </p>
-            <p className="text-lg">
+            <p>
               Listings tied to BoardGameGeek so the game data is right. Price suggestions from
               BoardGamePrices so sellers aren&apos;t guessing. Secure payments so nobody&apos;s
               wiring money to a stranger. Parcel lockers across Latvia, Lithuania, and Estonia so
               shipping is a real service, not a favor. And a clear path when something goes
               wrong, so buying from a stranger doesn&apos;t have to feel like one.
             </p>
-            <p className="text-lg">
+            <p>
               That&apos;s all this is, really. A small Latvian company building the marketplace I
               wanted as a player. Twenty years in the hobby, somewhere around 300 games on the
               shelf, and I&apos;m still no good at culling. So I built this partly for myself. 
               Mostly for the rest of you, though.
             </p>
-            <p className="text-lg">
+            <p>
               {' '}
               <span className="font-semibold text-semantic-text-heading">
                 Every game deserves a Second Turn
