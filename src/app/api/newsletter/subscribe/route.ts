@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
     if (!turnstile.success) {
-      void Sentry.captureMessage('newsletter.turnstile_failed', {
+      Sentry.captureMessage('newsletter.turnstile_failed', {
         level: 'warning',
         extra: { errorCodes: turnstile.errorCodes },
       });
