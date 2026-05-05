@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from '@phosphor-icons/react/ssr';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, TurnstileWidget } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { IS_PRELAUNCH } from '@/lib/constants';
@@ -17,6 +18,8 @@ export function LaunchBanner() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
   const [error, setError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   useEffect(() => {
     setDismissed(localStorage.getItem(STORAGE_KEY) === '1');
@@ -33,6 +36,10 @@ export function LaunchBanner() {
     setDismissed(true);
   }
 
+  // Submit gated on token: invisible Turnstile may take a beat on slow networks,
+  // and a banner with one short field is the kind of surface where users tap fast.
+  const canSubmit = !!email.trim() && !!turnstileToken && status !== 'loading';
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus('loading');
@@ -42,7 +49,7 @@ export function LaunchBanner() {
       const res = await apiFetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
 
       if (!res.ok) {
@@ -56,6 +63,7 @@ export function LaunchBanner() {
     } catch (err) {
       setStatus('idle');
       setError(err instanceof Error ? err.message : 'Something went wrong');
+      turnstileRef.current?.reset();
     }
   }
 
@@ -90,11 +98,13 @@ export function LaunchBanner() {
                 variant="brand"
                 size="sm"
                 loading={status === 'loading'}
+                disabled={!canSubmit}
                 className="min-h-[36px] shrink-0"
               >
                 Notify me
               </Button>
             </form>
+            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
           </>
         )}
         {!IS_PRELAUNCH && (

@@ -1,8 +1,8 @@
 import { headers } from 'next/headers';
 
 type TurnstileVerifyResult =
-  | { success: true; error?: undefined }
-  | { success: false; error: string };
+  | { success: true; error?: undefined; errorCodes?: undefined }
+  | { success: false; error: string; errorCodes: string[] };
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const VERIFY_TIMEOUT_MS = 5_000;
@@ -12,6 +12,15 @@ const secretKey = process.env.TURNSTILE_SECRET_KEY;
  * Verify a Turnstile token server-side.
  * Skips verification if TURNSTILE_SECRET_KEY is not set (dev/CI only).
  * Fails closed on network errors — returns failure, not silent pass.
+ *
+ * On failure, returns `errorCodes` (Cloudflare's `error-codes` array, or `[]` when
+ * we never reached Cloudflare — e.g. missing token, network timeout). Callers can
+ * forward these to Sentry/log; the helper itself emits a single `console.error`
+ * with `{ errorCodes, hasToken }` on every failure path so the diagnostic is visible
+ * in container logs without requiring each caller to wire it up.
+ *
+ * Payload contains diagnostic codes only — no IP, no email — so it sits outside the
+ * `login_activity` ROPA and doesn't expand processing scope.
  */
 export async function verifyTurnstileToken(
   token: string | null | undefined,
@@ -25,7 +34,8 @@ export async function verifyTurnstileToken(
   }
 
   if (!token) {
-    return { success: false, error: 'Verification failed. Please try again.' };
+    console.error('[Turnstile] verify failed', { errorCodes: [], hasToken: false });
+    return { success: false, error: 'Verification failed. Please try again.', errorCodes: [] };
   }
 
   try {
@@ -47,13 +57,15 @@ export async function verifyTurnstileToken(
     const data = await res.json();
 
     if (!data.success) {
-      return { success: false, error: 'Verification failed. Please try again.' };
+      const errorCodes: string[] = Array.isArray(data['error-codes']) ? data['error-codes'] : [];
+      console.error('[Turnstile] verify failed', { errorCodes, hasToken: true });
+      return { success: false, error: 'Verification failed. Please try again.', errorCodes };
     }
 
     return { success: true };
   } catch (error) {
     console.error('[Turnstile] Verification request failed:', error);
-    return { success: false, error: 'Verification service unavailable. Please try again.' };
+    return { success: false, error: 'Verification service unavailable. Please try again.', errorCodes: [] };
   }
 }
 

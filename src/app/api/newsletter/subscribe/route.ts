@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import * as Sentry from '@sentry/nextjs';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, newsletterLimiter } from '@/lib/rate-limit';
@@ -31,6 +32,10 @@ export async function POST(request: Request) {
 
     const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
     if (!turnstile.success) {
+      void Sentry.captureMessage('newsletter.turnstile_failed', {
+        level: 'warning',
+        extra: { errorCodes: turnstile.errorCodes },
+      });
       return NextResponse.json({ error: turnstile.error }, { status: 400 });
     }
 
