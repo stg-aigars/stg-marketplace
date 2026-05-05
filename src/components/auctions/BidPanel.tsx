@@ -42,7 +42,7 @@ export function BidPanel({
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [quickBidLoading, setQuickBidLoading] = useState<number | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [showAllBids, setShowAllBids] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const bidEurRef = useRef(bidEur);
@@ -116,7 +116,7 @@ export function BidPanel({
   }, [minBid]);
 
   async function submitBid(amountCents: number) {
-    const result = await placeBid(listingId, amountCents, turnstileToken ?? undefined);
+    const result = await placeBid(listingId, amountCents, turnstileToken);
     if ('error' in result) {
       setError(result.error);
       turnstileRef.current?.reset();

@@ -192,7 +192,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   // Form state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Dirty detection
   const isDirty =
@@ -248,7 +248,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
         photos,
         expansions,
       },
-      turnstileToken ?? undefined
+      turnstileToken
     );
 
     if ('error' in result) {

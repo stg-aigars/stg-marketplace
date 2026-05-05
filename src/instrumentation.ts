@@ -1,8 +1,14 @@
-import { env } from '@/lib/env';
+import { env, assertEnv } from '@/lib/env';
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('../sentry.server.config');
+
+    // Centralized env validation at boot: console.warn for missing optional
+    // keys (visible in Coolify logs), throw for missing required keys (fail
+    // fast rather than crash on first request). Runs after Sentry init so
+    // the throw is captured with full context.
+    assertEnv();
 
     // Surface silent Turnstile misconfig in production. Both keys are declared
     // as optional in env.ts because dev/CI run without them, but in production
