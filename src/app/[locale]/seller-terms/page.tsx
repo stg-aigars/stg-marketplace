@@ -366,16 +366,18 @@ export default function SellerTermsPage() {
             Our 10% commission on the item price is an electronically supplied service under
             Article 7 of Council Implementing Regulation (EU) No 282/2011. Place of supply is
             set by Article 58 of Directive 2006/112/EC (where the non-taxable-person customer
-            is). VAT is added on top of the commission (not included), at the rate of your
-            country: 21% for Latvia, 21% for Lithuania, 24% for Estonia. Our VAT number is{' '}
-            {LEGAL_ENTITY_VAT_NUMBER}.
+            is). VAT is included in the 10% commission shown on your invoice (not added on
+            top), at the rate of your country: 21% for Latvia, 21% for Lithuania, 24% for
+            Estonia. For a &euro;2.00 commission in Latvia, that&apos;s &euro;1.65 net plus
+            &euro;0.35 VAT. Our VAT number is {LEGAL_ENTITY_VAT_NUMBER}.
           </p>
 
           <h3 className={subHeadingClass}>VAT on shipping</h3>
           <p>
             When we arrange shipping through our logistics partners, we re-supply the
             shipping to you at the VAT rate of the country the goods depart from (your
-            country). Place of supply is set by Articles 49 and 50 of Directive 2006/112/EC,
+            country). VAT is included in the shipping fee shown on your invoice (not added
+            on top). Place of supply is set by Articles 49 and 50 of Directive 2006/112/EC,
             depending on whether the shipment is domestic or cross-border.
           </p>
 
@@ -383,7 +385,7 @@ export default function SellerTermsPage() {
           <p>
             We issue an invoice for commission and shipping VAT after each completed order,
             in the format <span className="font-mono">INV-YYYY-NNNNN</span>. Invoices are
-            available under &ldquo;My sales&rdquo; in your account and are kept for the
+            available under &ldquo;Sales&rdquo; in your account and are kept for the
             periods in our{' '}
             <Link href="/privacy" className="link-brand">
               Privacy Policy
