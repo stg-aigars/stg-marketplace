@@ -18,6 +18,14 @@ export type AccordionProps = {
    */
   exclusive?: boolean;
   /**
+   * Whether to draw outer top and bottom borders that frame the accordion as a
+   * standalone block. Default true (the framed look used on a plain page). Pass
+   * false when the accordion already lives inside a bordered container — e.g. a
+   * Card — so the inter-item dividers do the visual work without the
+   * frame-within-a-frame heaviness.
+   */
+  bordered?: boolean;
+  /**
    * Optional label for the entire group, surfaced via aria-label on the wrapper.
    * Useful when there are multiple Accordions on a page (e.g. one per Help section)
    * so screen readers can distinguish them.
@@ -26,7 +34,13 @@ export type AccordionProps = {
   className?: string;
 };
 
-function Accordion({ items, exclusive = false, ariaLabel, className }: AccordionProps) {
+function Accordion({
+  items,
+  exclusive = false,
+  bordered = true,
+  ariaLabel,
+  className,
+}: AccordionProps) {
   const baseId = useId();
   const [open, setOpen] = useState<Set<number>>(() => new Set());
 
@@ -47,7 +61,8 @@ function Accordion({ items, exclusive = false, ariaLabel, className }: Accordion
       role="region"
       aria-label={ariaLabel}
       className={cn(
-        'divide-y divide-semantic-border-strong border-t border-b border-semantic-border-strong',
+        'divide-y divide-semantic-border-strong',
+        bordered && 'border-t border-b border-semantic-border-strong',
         className,
       )}
     >

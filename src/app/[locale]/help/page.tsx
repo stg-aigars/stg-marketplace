@@ -331,42 +331,42 @@ export default function HelpPage() {
         <Card>
           <CardBody className="space-y-4">
             <h2 className={SECTION_HEADING_CLASS}>Buying games</h2>
-            <Accordion items={buyingItems} ariaLabel="Buying games questions" />
+            <Accordion items={buyingItems} ariaLabel="Buying games questions" bordered={false} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-4">
             <h2 className={SECTION_HEADING_CLASS}>Selling games</h2>
-            <Accordion items={sellingItems} ariaLabel="Selling games questions" />
+            <Accordion items={sellingItems} ariaLabel="Selling games questions" bordered={false} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-4">
             <h2 className={SECTION_HEADING_CLASS}>Auctions and wanted listings</h2>
-            <Accordion items={auctionsItems} ariaLabel="Auctions and wanted listings questions" />
+            <Accordion items={auctionsItems} ariaLabel="Auctions and wanted listings questions" bordered={false} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-4">
             <h2 className={SECTION_HEADING_CLASS}>Wallet, payouts, and tax</h2>
-            <Accordion items={walletItems} ariaLabel="Wallet, payouts, and tax questions" />
+            <Accordion items={walletItems} ariaLabel="Wallet, payouts, and tax questions" bordered={false} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-4">
             <h2 className={SECTION_HEADING_CLASS}>Cancellations, refunds, and disputes</h2>
-            <Accordion items={disputesItems} ariaLabel="Cancellations, refunds, and disputes questions" />
+            <Accordion items={disputesItems} ariaLabel="Cancellations, refunds, and disputes questions" bordered={false} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-4">
             <h2 className={SECTION_HEADING_CLASS}>Account and data</h2>
-            <Accordion items={accountItems} ariaLabel="Account and data questions" />
+            <Accordion items={accountItems} ariaLabel="Account and data questions" bordered={false} />
           </CardBody>
         </Card>
 
