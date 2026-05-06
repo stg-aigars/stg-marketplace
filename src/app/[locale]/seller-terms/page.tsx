@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { SELLER_TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_VAT_NUMBER,
@@ -13,8 +14,6 @@ import {
 export const metadata: Metadata = {
   title: 'Seller Agreement',
 };
-
-const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-1';
 
 export default function SellerTermsPage() {
   return (
@@ -206,7 +205,7 @@ export default function SellerTermsPage() {
             .
           </p>
 
-          <h3 className={subHeadingClass}>Auction listings</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Auction listings</h3>
           <p>If you list a game as an auction, the rules above apply plus these:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -221,7 +220,7 @@ export default function SellerTermsPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Matches with wanted listings</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Matches with wanted listings</h3>
           <p>
             If a game you list matches an active wanted listing from a buyer, that buyer may
             receive a notification. You have no visibility into wanted listings and no
@@ -261,10 +260,10 @@ export default function SellerTermsPage() {
             processing times are outside our control.
           </p>
 
-          <h3 className={subHeadingClass}>Currency</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Currency</h3>
           <p>All amounts in your wallet are held in Euro (EUR).</p>
 
-          <h3 className={subHeadingClass}>Identity verification</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Identity verification</h3>
           <p>
             Before your first withdrawal, you may need to verify your identity and prove the
             IBAN belongs to you. This is the Know Your Customer check our payment processor
@@ -272,7 +271,7 @@ export default function SellerTermsPage() {
             withdrawal while verification is outstanding.
           </p>
 
-          <h3 className={subHeadingClass}>Chargebacks and clawback</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Chargebacks and clawback</h3>
           <p>
             If a buyer successfully disputes a completed order after you&apos;ve already
             withdrawn the money, you agree that (a) we can take the equivalent amount from
@@ -281,14 +280,14 @@ export default function SellerTermsPage() {
             your country of habitual residence.
           </p>
 
-          <h3 className={subHeadingClass}>Negative balance</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Negative balance</h3>
           <p>
             If a refund, chargeback, or other adjustment pushes your wallet into the
             negative, you need to repay the shortfall within 30 days of notice, either by
             transfer to the bank account we name or by offset against future sales.
           </p>
 
-          <h3 className={subHeadingClass}>Inactive accounts</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Inactive accounts</h3>
           <p>
             We hold wallet balances indefinitely. If you haven&apos;t logged in for 24 months
             and your balance is positive, we&apos;ll email the address on file. If we
@@ -324,7 +323,7 @@ export default function SellerTermsPage() {
             cover chargebacks, refunds, or unresolved disputes.
           </p>
 
-          <h3 className={subHeadingClass}>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>
             Anti-money-laundering, sanctions, and fraud
           </h3>
           <p>
@@ -361,7 +360,7 @@ export default function SellerTermsPage() {
             8. Tax and invoicing
           </h2>
 
-          <h3 className={subHeadingClass}>VAT on our commission</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>VAT on our commission</h3>
           <p>
             Our 10% commission on the item price is an electronically supplied service under
             Article 7 of Council Implementing Regulation (EU) No 282/2011. Place of supply is
@@ -372,7 +371,7 @@ export default function SellerTermsPage() {
             &euro;0.35 VAT. Our VAT number is {LEGAL_ENTITY_VAT_NUMBER}.
           </p>
 
-          <h3 className={subHeadingClass}>VAT on shipping</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>VAT on shipping</h3>
           <p>
             When we arrange shipping through our logistics partners, we re-supply the
             shipping to you at the VAT rate of the country the goods depart from (your
@@ -381,7 +380,7 @@ export default function SellerTermsPage() {
             depending on whether the shipment is domestic or cross-border.
           </p>
 
-          <h3 className={subHeadingClass}>Invoices</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Invoices</h3>
           <p>
             We issue an invoice for commission and shipping VAT after each completed order,
             in the format <span className="font-mono">INV-YYYY-NNNNN</span>. Invoices are
@@ -393,14 +392,14 @@ export default function SellerTermsPage() {
             {' '}§9.
           </p>
 
-          <h3 className={subHeadingClass}>Your income tax</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Your income tax</h3>
           <p>
             You&apos;re responsible for declaring sales income to the tax authority in your
             country, subject to any private-seller thresholds that apply there. We don&apos;t
             withhold income tax for you and we don&apos;t give tax advice.
           </p>
 
-          <h3 className={subHeadingClass}>DAC7 reporting</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>DAC7 reporting</h3>
           <p>
             Under Council Directive (EU) 2021/514 (DAC7), we have to report you to the
             Latvian State Revenue Service (VID) once your activity in a calendar year passes

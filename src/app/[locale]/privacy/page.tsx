@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { PRIVACY_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -15,8 +16,6 @@ import {
 export const metadata: Metadata = {
   title: 'Privacy Policy',
 };
-
-const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-2';
 
 export default function PrivacyPage() {
   return (
@@ -264,7 +263,7 @@ export default function PrivacyPage() {
           </p>
           <p>We do not sell your personal data, and we do not run ads.</p>
 
-          <h3 className={subHeadingClass}>Payments, shipping, and messaging (processors)</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Payments, shipping, and messaging (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>
@@ -297,7 +296,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Sign-in providers (independent controllers)</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Sign-in providers (independent controllers)</h3>
           <p>
             If you sign in with Google or Facebook, the provider checks your login on their end
             and hands us back your verified email and a profile identifier. The provider is an
@@ -317,7 +316,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Infrastructure (processors)</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Infrastructure (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Supabase (Supabase Inc., EU region).</strong> Our database, authentication
@@ -342,7 +341,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Observability (processors)</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Observability (processors)</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>Sentry (Functional Software, Inc.).</strong> Error monitoring. Receives
@@ -359,7 +358,7 @@ export default function PrivacyPage() {
             </li>
           </ul>
 
-          <h3 className={subHeadingClass}>Authorities and law-enforcement bodies</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Authorities and law-enforcement bodies</h3>
           <p>
             Where law requires it &mdash; sanctions screening, anti-money-laundering rules,
             tax reporting, or a specific law-enforcement request &mdash; we may share
@@ -395,7 +394,7 @@ export default function PrivacyPage() {
             .
           </p>
 
-          <h3 className={subHeadingClass}>Outgoing connections your browser makes</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Outgoing connections your browser makes</h3>
           <p>
             When you look at a listing, your browser fetches the cover image directly from
             BoardGameGeek&apos;s CDN (<span className="font-mono">cf.geekdo-images.com</span>).

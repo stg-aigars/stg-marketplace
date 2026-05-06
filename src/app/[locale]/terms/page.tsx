@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 import { ADR_BODIES } from '@/lib/legal/adr-bodies';
+import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -12,8 +13,6 @@ import {
 export const metadata: Metadata = {
   title: 'Terms of Service',
 };
-
-const subHeadingClass = 'text-base font-semibold text-semantic-text-heading pt-1';
 
 export default function TermsPage() {
   return (
@@ -224,7 +223,7 @@ export default function TermsPage() {
             8. Cancellations, refunds, and disputes
           </h2>
 
-          <h3 className={subHeadingClass}>Order cancellations</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Order cancellations</h3>
           <p>
             A seller may decline an order within a short acceptance window. If a seller does
             not respond or does not ship on time, the order may be cancelled automatically
@@ -232,7 +231,7 @@ export default function TermsPage() {
             are binding once paid.
           </p>
 
-          <h3 className={subHeadingClass}>Returns and replacements</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Returns and replacements</h3>
           <p>
             Returns and replacements are not available as a standard option. All sellers are
             private individuals, and each listed item is one of a kind, so we cannot offer
@@ -240,7 +239,7 @@ export default function TermsPage() {
             may open a dispute as described below.
           </p>
 
-          <h3 className={subHeadingClass}>Refunds</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Refunds</h3>
           <p>
             You receive a refund when (a) a seller cancels or declines an order, (b) an
             order is auto-cancelled due to seller inaction, or (c) a dispute is resolved in
@@ -248,7 +247,7 @@ export default function TermsPage() {
             original payment method or wallet balance used.
           </p>
 
-          <h3 className={subHeadingClass}>Disputes</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Disputes</h3>
           <p>
             You have a short dispute window after delivery to tell us if an item arrives
             damaged, is the wrong item, or does not match its listing description. If an item
@@ -301,14 +300,14 @@ export default function TermsPage() {
             11. Marketplace features
           </h2>
 
-          <h3 className={subHeadingClass}>Listing questions</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Listing questions</h3>
           <p>
             Each listing has a public comment thread where anyone can ask the seller about
             the game. Comments must stay on-topic and respectful. We may remove comments
             that violate these Terms or applicable law.
           </p>
 
-          <h3 className={subHeadingClass}>Auctions</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Auctions</h3>
           <p>
             Some listings may use an auction format. Bids are binding: if you place the
             winning bid, you are committing to buy at that price and must pay within the
@@ -320,7 +319,7 @@ export default function TermsPage() {
             .
           </p>
 
-          <h3 className={subHeadingClass}>Wanted listings</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Wanted listings</h3>
           <p>
             Wanted listings let you signal interest in a game. When a matching game is
             listed, we may notify you, but you are not reserving any item or committing to
@@ -334,7 +333,7 @@ export default function TermsPage() {
             12. Ending your account or our services
           </h2>
 
-          <h3 className={subHeadingClass}>You ending your account</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>You ending your account</h3>
           <p>
             You can close your account at any time from your account settings. Before we can
             close it you need to cancel or complete any active listings and in-progress
@@ -348,7 +347,7 @@ export default function TermsPage() {
             .
           </p>
 
-          <h3 className={subHeadingClass}>Us ending your account</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Us ending your account</h3>
           <p>
             We can suspend or terminate your account, take down listings, or freeze your
             wallet balance if we have reasonable grounds to believe you have broken these
@@ -359,7 +358,7 @@ export default function TermsPage() {
             or claims before being released.
           </p>
 
-          <h3 className={subHeadingClass}>Appealing platform decisions</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Appealing platform decisions</h3>
           <p>
             If we take action against your account or content (for example a suspension,
             termination, removal of a listing, or freezing of a wallet balance), you have
@@ -471,7 +470,7 @@ export default function TermsPage() {
             Regulation (EU) 2024/3228 and is no longer available.
           </p>
 
-          <h3 className={subHeadingClass}>Trader-status disputes</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Trader-status disputes</h3>
           <p>
             If a buyer-seller dispute turns on whether the seller is really a trader under
             Directive 2011/83/EU, we will look at the seller&apos;s activity against our
@@ -539,7 +538,7 @@ export default function TermsPage() {
             . Communications in English or Latvian are accepted.
           </p>
 
-          <h3 className={subHeadingClass}>Reporting illegal content</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Reporting illegal content</h3>
           <p>
             Anyone can tell us about content on Second Turn Games they think is illegal. Use
             the form at{' '}
@@ -560,7 +559,7 @@ export default function TermsPage() {
             the reasons for it, per Article 17 of Regulation (EU) 2022/2065.
           </p>
 
-          <h3 className={subHeadingClass}>Criminal-offence notifications</h3>
+          <h3 className={LEGAL_SUB_HEADING_CLASS}>Criminal-offence notifications</h3>
           <p>
             Where we become aware of information giving rise to a suspicion that a criminal
             offence involving a threat to the life or safety of a person has taken or is
