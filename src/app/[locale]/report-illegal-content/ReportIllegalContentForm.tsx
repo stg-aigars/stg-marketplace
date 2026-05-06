@@ -35,7 +35,7 @@ export function ReportIllegalContentForm() {
   const [notifierName, setNotifierName] = useState('');
   const [notifierEmail, setNotifierEmail] = useState('');
   const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const turnstileRef = useRef<TurnstileWidgetRef>(null);

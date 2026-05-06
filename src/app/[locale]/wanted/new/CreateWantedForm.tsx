@@ -18,7 +18,7 @@ export function CreateWantedForm() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
   const { profile } = useAuth();
@@ -58,7 +58,7 @@ export function CreateWantedForm() {
           versionThumbnail: edition.version_thumbnail,
         } : null,
         notes.trim() || undefined,
-        turnstileToken ?? undefined
+        turnstileToken
       );
 
       if ('error' in result) {

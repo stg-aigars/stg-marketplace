@@ -9,7 +9,7 @@ export function NewsletterForm() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
+  const [turnstileToken, setTurnstileToken] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
