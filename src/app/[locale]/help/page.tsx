@@ -320,6 +320,15 @@ const accountItems: AccordionItem[] = [
   },
 ];
 
+const accordionSections: { heading: string; items: AccordionItem[] }[] = [
+  { heading: 'Buying games', items: buyingItems },
+  { heading: 'Selling games', items: sellingItems },
+  { heading: 'Auctions and wanted listings', items: auctionsItems },
+  { heading: 'Wallet, payouts, and tax', items: walletItems },
+  { heading: 'Cancellations, refunds, and disputes', items: disputesItems },
+  { heading: 'Account and data', items: accountItems },
+];
+
 export default function HelpPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -328,47 +337,18 @@ export default function HelpPage() {
       </h1>
 
       <div className="space-y-4">
-        <Card>
-          <CardBody className="space-y-4">
-            <h2 className={SECTION_HEADING_CLASS}>Buying games</h2>
-            <Accordion items={buyingItems} ariaLabel="Buying games questions" bordered={false} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="space-y-4">
-            <h2 className={SECTION_HEADING_CLASS}>Selling games</h2>
-            <Accordion items={sellingItems} ariaLabel="Selling games questions" bordered={false} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="space-y-4">
-            <h2 className={SECTION_HEADING_CLASS}>Auctions and wanted listings</h2>
-            <Accordion items={auctionsItems} ariaLabel="Auctions and wanted listings questions" bordered={false} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="space-y-4">
-            <h2 className={SECTION_HEADING_CLASS}>Wallet, payouts, and tax</h2>
-            <Accordion items={walletItems} ariaLabel="Wallet, payouts, and tax questions" bordered={false} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="space-y-4">
-            <h2 className={SECTION_HEADING_CLASS}>Cancellations, refunds, and disputes</h2>
-            <Accordion items={disputesItems} ariaLabel="Cancellations, refunds, and disputes questions" bordered={false} />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="space-y-4">
-            <h2 className={SECTION_HEADING_CLASS}>Account and data</h2>
-            <Accordion items={accountItems} ariaLabel="Account and data questions" bordered={false} />
-          </CardBody>
-        </Card>
+        {accordionSections.map((section) => (
+          <Card key={section.heading}>
+            <CardBody className="space-y-4">
+              <h2 className={SECTION_HEADING_CLASS}>{section.heading}</h2>
+              <Accordion
+                items={section.items}
+                ariaLabel={`${section.heading} questions`}
+                bordered={false}
+              />
+            </CardBody>
+          </Card>
+        ))}
 
         <Card>
           <CardBody className="space-y-3">

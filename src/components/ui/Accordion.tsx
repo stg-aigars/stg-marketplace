@@ -17,19 +17,11 @@ export type AccordionProps = {
    * where one-at-a-time scanning is preferred.
    */
   exclusive?: boolean;
-  /**
-   * Whether to draw outer top and bottom borders that frame the accordion as a
-   * standalone block. Default true (the framed look used on a plain page). Pass
-   * false when the accordion already lives inside a bordered container — e.g. a
-   * Card — so the inter-item dividers do the visual work without the
-   * frame-within-a-frame heaviness.
-   */
+  /** Outer top/bottom borders. Default true; pass false when the accordion lives
+   *  inside a Card so only the inter-item dividers remain. */
   bordered?: boolean;
-  /**
-   * Optional label for the entire group, surfaced via aria-label on the wrapper.
-   * Useful when there are multiple Accordions on a page (e.g. one per Help section)
-   * so screen readers can distinguish them.
-   */
+  /** Surfaced as aria-label on the wrapper. Required-in-spirit when multiple
+   *  Accordions are on the same page. */
   ariaLabel?: string;
   className?: string;
 };
@@ -58,7 +50,7 @@ function Accordion({
 
   return (
     <div
-      role="region"
+      role="group"
       aria-label={ariaLabel}
       className={cn(
         'divide-y divide-semantic-border-strong',
