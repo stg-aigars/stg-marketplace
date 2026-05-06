@@ -21,18 +21,18 @@ export const SELLER_TERMS_VERSION_DISPLAY = '30 April 2026';
  *  Seller Agreement acceptance. The phrase "not acting in the course of a
  *  business, trade, or profession" is the load-bearing Consumer Rights
  *  Directive term of art that anchors the trader-dispute fallback clause in
- *  Terms §15. Do not soften it in UI. Render via `{SELLER_DECLARATION_TEXT}`,
+ *  Terms §14. Do not soften it in UI. Render via `{SELLER_DECLARATION_TEXT}`,
  *  never hard-code in JSX — a UI refactor must go through this constant. */
 export const SELLER_DECLARATION_TEXT =
   'I am at least 18 years old. I confirm that I am a private individual, not acting in the course of a business, trade, or profession. I have read and agree to the Seller Agreement.';
 
-/** Sunset date for the transitional PSD2 Art. 3(b) wording in Terms §1 and
- *  Seller Agreement §2. The current wording does not affirmatively claim the
- *  exemption — it describes the fund flow and flags that if Art. 3(b) is
- *  determined not to apply, we will restructure through a licensed payment
- *  institution. The lawyer memo (2026-04-26) says this framing is valid for
- *  3–6 months while EveryPay Option 1 (collecting-account through Maksekeskus)
- *  is scoped. Enforced by a Vitest assertion co-located in `constants.test.ts`
- *  — when the date passes, `pnpm test` fails and CI blocks every subsequent PR
- *  until the transitional wording is replaced. */
+/** Sunset date for the transitional PSD2 Art. 3(b) wording in Seller Agreement
+ *  §3 (Payment authorisation and flow). The current wording does not
+ *  affirmatively claim the exemption — it describes the fund flow and flags
+ *  that if Art. 3(b) is determined not to apply, we will restructure through
+ *  a licensed payment institution. The lawyer memo (2026-04-26) says this
+ *  framing is valid for 3–6 months while EveryPay Option 1 (collecting-account
+ *  through Maksekeskus) is scoped. Enforced by a Vitest assertion co-located
+ *  in `constants.test.ts` — when the date passes, `pnpm test` fails and CI
+ *  blocks every subsequent PR until the transitional wording is replaced. */
 export const PSD2_TRANSITIONAL_SUNSET = new Date('2026-10-26T00:00:00.000Z');

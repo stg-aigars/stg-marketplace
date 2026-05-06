@@ -368,7 +368,7 @@ export function ReviewPriceStep({
           href="/seller-terms"
           className="link-brand"
         >
-          Seller Terms
+          Seller Agreement
         </Link>
       </p>
     </div>

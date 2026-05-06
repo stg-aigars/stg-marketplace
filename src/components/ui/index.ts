@@ -77,6 +77,9 @@ export type { ShowMoreTextProps } from './ShowMoreText';
 export { ShowMoreList } from './ShowMoreList';
 export type { ShowMoreListProps } from './ShowMoreList';
 
+export { Accordion } from './Accordion';
+export type { AccordionProps, AccordionItem } from './Accordion';
+
 export { DeleteItemButton } from './DeleteItemButton';
 export type { DeleteItemButtonProps } from './DeleteItemButton';
 
