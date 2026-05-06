@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Accordion, type AccordionItem } from '@/components/ui';
+import { Accordion, Card, CardBody, type AccordionItem } from '@/components/ui';
 
 export const metadata: Metadata = {
   title: 'Help Center',
@@ -327,51 +327,65 @@ export default function HelpPage() {
         Help Center
       </h1>
 
-      <div className="space-y-10">
-        <section className="space-y-4">
-          <h2 className={SECTION_HEADING_CLASS}>Buying games</h2>
-          <Accordion items={buyingItems} ariaLabel="Buying games questions" />
-        </section>
+      <div className="space-y-4">
+        <Card>
+          <CardBody className="space-y-4">
+            <h2 className={SECTION_HEADING_CLASS}>Buying games</h2>
+            <Accordion items={buyingItems} ariaLabel="Buying games questions" />
+          </CardBody>
+        </Card>
 
-        <section className="space-y-4">
-          <h2 className={SECTION_HEADING_CLASS}>Selling games</h2>
-          <Accordion items={sellingItems} ariaLabel="Selling games questions" />
-        </section>
+        <Card>
+          <CardBody className="space-y-4">
+            <h2 className={SECTION_HEADING_CLASS}>Selling games</h2>
+            <Accordion items={sellingItems} ariaLabel="Selling games questions" />
+          </CardBody>
+        </Card>
 
-        <section className="space-y-4">
-          <h2 className={SECTION_HEADING_CLASS}>Auctions and wanted listings</h2>
-          <Accordion items={auctionsItems} ariaLabel="Auctions and wanted listings questions" />
-        </section>
+        <Card>
+          <CardBody className="space-y-4">
+            <h2 className={SECTION_HEADING_CLASS}>Auctions and wanted listings</h2>
+            <Accordion items={auctionsItems} ariaLabel="Auctions and wanted listings questions" />
+          </CardBody>
+        </Card>
 
-        <section className="space-y-4">
-          <h2 className={SECTION_HEADING_CLASS}>Wallet, payouts, and tax</h2>
-          <Accordion items={walletItems} ariaLabel="Wallet, payouts, and tax questions" />
-        </section>
+        <Card>
+          <CardBody className="space-y-4">
+            <h2 className={SECTION_HEADING_CLASS}>Wallet, payouts, and tax</h2>
+            <Accordion items={walletItems} ariaLabel="Wallet, payouts, and tax questions" />
+          </CardBody>
+        </Card>
 
-        <section className="space-y-4">
-          <h2 className={SECTION_HEADING_CLASS}>Cancellations, refunds, and disputes</h2>
-          <Accordion items={disputesItems} ariaLabel="Cancellations, refunds, and disputes questions" />
-        </section>
+        <Card>
+          <CardBody className="space-y-4">
+            <h2 className={SECTION_HEADING_CLASS}>Cancellations, refunds, and disputes</h2>
+            <Accordion items={disputesItems} ariaLabel="Cancellations, refunds, and disputes questions" />
+          </CardBody>
+        </Card>
 
-        <section className="space-y-4">
-          <h2 className={SECTION_HEADING_CLASS}>Account and data</h2>
-          <Accordion items={accountItems} ariaLabel="Account and data questions" />
-        </section>
+        <Card>
+          <CardBody className="space-y-4">
+            <h2 className={SECTION_HEADING_CLASS}>Account and data</h2>
+            <Accordion items={accountItems} ariaLabel="Account and data questions" />
+          </CardBody>
+        </Card>
 
-        <section className="space-y-3 prose prose-sm max-w-none text-semantic-text-secondary">
-          <h2 className={SECTION_HEADING_CLASS}>About Second Turn Games</h2>
-          <p>
-            Second Turn Games is a marketplace for pre-loved board games in Latvia,
-            Lithuania, and Estonia. Every game deserves a second turn at the table.
-          </p>
-          <p>
-            Question not covered here?{' '}
-            <Link href="/contact" className="link-brand">
-              Get in touch
-            </Link>{' '}
-            and we&apos;ll be happy to help.
-          </p>
-        </section>
+        <Card>
+          <CardBody className="space-y-3">
+            <h2 className={SECTION_HEADING_CLASS}>About Second Turn Games</h2>
+            <p className="text-semantic-text-secondary leading-relaxed">
+              Second Turn Games is a marketplace for pre-loved board games in Latvia,
+              Lithuania, and Estonia. Every game deserves a second turn at the table.
+            </p>
+            <p className="text-semantic-text-secondary leading-relaxed">
+              Question not covered here?{' '}
+              <Link href="/contact" className="link-brand">
+                Get in touch
+              </Link>{' '}
+              and we&apos;ll be happy to help.
+            </p>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
