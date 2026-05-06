@@ -6,7 +6,7 @@ import type { CountryCode } from '@/lib/country-utils';
  *
  * Per PTAL 19.¹ / Noteikumu Nr.255 5.22.apakšpunkts, the seller must name a
  * specific national consumer-protection authority and link to its website
- * **before** the contract is concluded — not buried in Terms. The Terms §15
+ * **before** the contract is concluded — not buried in Terms. The Terms §14
  * section also reads from this constant so the two surfaces cannot drift.
  *
  * EU ODR Platform (`ec.europa.eu/consumers/odr`) was discontinued 2025-07-20

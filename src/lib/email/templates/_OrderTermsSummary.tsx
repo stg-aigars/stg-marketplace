@@ -72,7 +72,7 @@ export function OrderTermsSummary({
           raised with us within 2 days of delivery, and we&apos;ll help mediate. If you and
           the seller disagree on whether the seller is acting in a business capacity, you
           may submit the withdrawal-form template (below) within 14 days of delivery; we
-          will review per Terms of Service §15 (Trader-status disputes).
+          will review per Terms of Service §14 (Trader-status disputes).
         </Text>
       </div>
 
