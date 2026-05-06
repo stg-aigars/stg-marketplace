@@ -78,7 +78,7 @@ function Accordion({
                 aria-controls={panelId}
                 onClick={() => toggle(index)}
                 className={cn(
-                  'flex items-center justify-between w-full py-5 text-left font-medium text-semantic-text-heading transition-colors duration-250 ease-out-custom sm:hover:text-semantic-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 rounded-sm',
+                  'flex items-center justify-between w-full py-5 text-left font-medium text-semantic-text-heading transition-colors duration-250 ease-out-custom sm:hover:text-semantic-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2 rounded-sm',
                   buttonSizeClass,
                 )}
               >
