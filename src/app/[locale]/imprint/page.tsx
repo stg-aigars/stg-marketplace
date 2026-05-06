@@ -27,71 +27,37 @@ export default function ImprintPage() {
           Services Act.
         </p>
 
-        <section className="space-y-2">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-            Operator
-          </h2>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-            <dt className="font-semibold text-semantic-text-heading">Company</dt>
-            <dd>{LEGAL_ENTITY_NAME}</dd>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+          <dt className="font-semibold text-semantic-text-heading">Company</dt>
+          <dd>{LEGAL_ENTITY_NAME}</dd>
 
-            <dt className="font-semibold text-semantic-text-heading">Registration number</dt>
-            <dd>{LEGAL_ENTITY_REG_NUMBER}</dd>
+          <dt className="font-semibold text-semantic-text-heading">Registration number</dt>
+          <dd>{LEGAL_ENTITY_REG_NUMBER}</dd>
 
-            <dt className="font-semibold text-semantic-text-heading">VAT number</dt>
-            <dd>{LEGAL_ENTITY_VAT_NUMBER}</dd>
+          <dt className="font-semibold text-semantic-text-heading">VAT number</dt>
+          <dd>{LEGAL_ENTITY_VAT_NUMBER}</dd>
 
-            <dt className="font-semibold text-semantic-text-heading">Registered office</dt>
-            <dd>{LEGAL_ENTITY_ADDRESS}</dd>
+          <dt className="font-semibold text-semantic-text-heading">Registered office</dt>
+          <dd>{LEGAL_ENTITY_ADDRESS}</dd>
 
-            <dt className="font-semibold text-semantic-text-heading">Commercial register</dt>
-            <dd>Register of Enterprises of the Republic of Latvia (Uzņēmumu reģistrs)</dd>
+          <dt className="font-semibold text-semantic-text-heading">Commercial register</dt>
+          <dd>Register of Enterprises of the Republic of Latvia (Uzņēmumu reģistrs)</dd>
 
-            <dt className="font-semibold text-semantic-text-heading">Email</dt>
-            <dd>
-              <a href={`mailto:${LEGAL_ENTITY_EMAIL}`} className="link-brand">
-                {LEGAL_ENTITY_EMAIL}
-              </a>
-            </dd>
+          <dt className="font-semibold text-semantic-text-heading">Email</dt>
+          <dd>
+            <a href={`mailto:${LEGAL_ENTITY_EMAIL}`} className="link-brand">
+              {LEGAL_ENTITY_EMAIL}
+            </a>
+          </dd>
 
-            <dt className="font-semibold text-semantic-text-heading">Telephone</dt>
-            <dd>{LEGAL_ENTITY_PHONE}</dd>
-          </dl>
-        </section>
+          <dt className="font-semibold text-semantic-text-heading">Telephone</dt>
+          <dd>{LEGAL_ENTITY_PHONE}</dd>
+        </dl>
 
-        <section className="space-y-2">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-            Supervisory and data-protection authorities
-          </h2>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-            <dt className="font-semibold text-semantic-text-heading">Consumer rights</dt>
-            <dd>
-              Consumer Rights Protection Centre (PTAC), Brīvības iela 55, Riga, LV-1010, Latvia
-              &mdash;{' '}
-              <a
-                href="https://www.ptac.gov.lv"
-                className="link-brand"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                ptac.gov.lv
-              </a>
-            </dd>
-
-            <dt className="font-semibold text-semantic-text-heading">Data protection</dt>
-            <dd>
-              Data State Inspectorate (DVI), Elijas iela 17, Riga, LV-1050, Latvia &mdash;{' '}
-              <a
-                href="https://www.dvi.gov.lv"
-                className="link-brand"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                dvi.gov.lv
-              </a>
-            </dd>
-          </dl>
-        </section>
+        <p className="text-sm text-semantic-text-muted">
+          For contractual terms, data protection details, and seller obligations, see our
+          Terms of Service, Privacy Policy, and Seller Agreement.
+        </p>
       </div>
     </div>
   );

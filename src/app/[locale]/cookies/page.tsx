@@ -31,9 +31,9 @@ export default function CookiesPage() {
           <CardBody>
             <ul className="list-disc pl-5 space-y-2 text-sm text-semantic-text-secondary">
               <li>
-                We disclose every cookie and browser-storage item we set — even the ones that
-                don&apos;t need your consent. The ePrivacy Directive (Art. 5(3)) requires it,
-                and we&apos;d do it anyway.
+                This page lists every cookie and browser-storage item we set &mdash; even the
+                ones that don&apos;t need your consent. The ePrivacy Directive (Art. 5(3))
+                requires transparency, and we&apos;d do it anyway.
               </li>
               <li>
                 Everything we set is either strictly necessary for the platform to work (keeping
@@ -253,7 +253,8 @@ export default function CookiesPage() {
             either strictly necessary or a preference you chose, we do not show a consent banner.
           </p>
           <p>
-            For everything else about how we handle your data, see the{' '}
+            For everything else about how we handle your data &mdash; including legal bases,
+            retention periods, and your rights &mdash; see the{' '}
             <Link href="/privacy" className="link-brand">
               Privacy Policy
             </Link>

@@ -94,6 +94,14 @@ export default function PrivacyPage() {
             </a>
             .
           </p>
+          <p className="text-xs text-semantic-text-muted">
+            Eligibility to use the platform (age, country of residence) is set out in our{' '}
+            <Link href="/terms" className="link-brand">
+              Terms of Service
+            </Link>
+            . If we learn that someone under the permitted age has an account, we will
+            delete their data.
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -125,6 +133,10 @@ export default function PrivacyPage() {
             <li>
               <strong>Usage data:</strong> pages visited, browser type, IP address (for security and
               to improve the platform)
+            </li>
+            <li>
+              <strong>Fraud prevention signals:</strong> device, behavioural, and transaction
+              signals used to detect fraud, counterfeit listings, and abuse
             </li>
           </ul>
           <p>
@@ -360,16 +372,21 @@ export default function PrivacyPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-            7. Cookies
+            7. Cookies and local storage
           </h2>
           <p>
-            We use only strictly necessary cookies and a small number of preference items in your
-            browser&apos;s local storage. We do not use advertising or tracking cookies. For the
-            full list — including the exact names, purpose, and duration — see our{' '}
+            We use only strictly necessary cookies and a small number of preference items in
+            your browser&apos;s local or session storage. We do not use advertising or
+            cross-site tracking cookies.
+          </p>
+          <p>
+            The{' '}
             <Link href="/cookies" className="link-brand">
               Cookie Policy
-            </Link>
-            .
+            </Link>{' '}
+            lists every cookie and storage item we set, including its exact name, purpose,
+            duration, and type (strictly necessary or preference). For analytics, we use
+            tools configured in cookieless mode that do not set cookies in your browser.
           </p>
         </section>
 
@@ -534,8 +551,12 @@ export default function PrivacyPage() {
             11. Children&apos;s data
           </h2>
           <p>
-            You must be at least 16 to use the platform and at least 18 to sell. If someone under 16
-            has created an account, contact us and we will delete their data.
+            The{' '}
+            <Link href="/terms" className="link-brand">
+              Terms of Service
+            </Link>{' '}
+            set out the age limits for using the platform and for selling. If someone under
+            the minimum age has created an account, contact us and we will delete their data.
           </p>
         </section>
 
