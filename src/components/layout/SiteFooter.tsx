@@ -22,9 +22,9 @@ const EXPLORE_LINKS = [
 
 const LEGAL_LINKS = [
   { href: '/terms', label: 'Terms of Service' },
+  { href: '/seller-terms', label: 'Seller Agreement' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/cookies', label: 'Cookie Policy' },
-  { href: '/seller-terms', label: 'Seller Terms' },
   { href: '/imprint', label: 'Imprint' },
   { href: '/accessibility', label: 'Accessibility' },
 ] as const;
