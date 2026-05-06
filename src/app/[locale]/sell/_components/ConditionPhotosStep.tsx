@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Card, CardBody, Textarea } from '@/components/ui';
 import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
+import { SellStepHeader } from './SellStepHeader';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
 
@@ -11,6 +12,8 @@ interface ConditionPhotosStepProps {
   condition: ListingCondition | null;
   photos: string[];
   description: string;
+  gameImage: string | null;
+  gameName: string;
   onConditionChange: (condition: ListingCondition) => void;
   onPhotosChange: (photos: string[]) => void;
   onDescriptionChange: (desc: string) => void;
@@ -20,6 +23,8 @@ export function ConditionPhotosStep({
   condition,
   photos,
   description,
+  gameImage,
+  gameName,
   onConditionChange,
   onPhotosChange,
   onDescriptionChange,
@@ -46,14 +51,13 @@ export function ConditionPhotosStep({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-          Describe your copy
-        </h2>
-        <p className="text-sm text-semantic-text-secondary mt-1">
-          Select condition, add photos, and note any details
-        </p>
-      </div>
+      <SellStepHeader
+        variant="anchor"
+        title="Describe your copy"
+        helper="Pick the condition, add a few photos, and note anything specific."
+        anchorImage={gameImage}
+        anchorGameName={gameName}
+      />
 
       {/* 1. Condition */}
       <Card>

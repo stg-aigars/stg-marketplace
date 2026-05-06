@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { CheckCircle, PencilSimple } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { GameIdentityRow } from '@/components/listings/atoms';
+import { SellStepHeader } from './SellStepHeader';
 import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
@@ -361,9 +362,13 @@ export function VersionStep({
   return (
     <div className="space-y-4">
       {!compact && (
-        <p className="text-sm text-semantic-text-secondary">
-          Select the edition that matches your copy of {primaryGameName}.
-        </p>
+        <SellStepHeader
+          variant="anchor"
+          title="Which edition do you have?"
+          helper="Match the language and publisher on the box — buyers in LV/LT/EE care about this."
+          anchorImage={selectedGame?.image ?? selectedGame?.thumbnail ?? null}
+          anchorGameName={primaryGameName}
+        />
       )}
 
       {fetchError && (

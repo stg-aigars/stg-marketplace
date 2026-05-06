@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Tag, Gavel } from '@phosphor-icons/react/ssr';
+import { Tag, Gavel, Storefront } from '@phosphor-icons/react/ssr';
 import { Card, CardBody } from '@/components/ui';
 import { ListingCreationFlow } from './ListingCreationFlow';
+import { SellStepHeader } from './SellStepHeader';
 import type { ListingType } from '@/lib/listings/types';
 
 export function SellPageClient() {
@@ -11,10 +12,13 @@ export function SellPageClient() {
 
   if (!listingType) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-semantic-text-muted">
-          How would you like to sell your game?
-        </p>
+      <div className="space-y-6">
+        <SellStepHeader
+          variant="icon"
+          title="Two ways to sell"
+          helper="Pick what fits this game — your next listing can be different."
+          icon={<Storefront size={24} weight="duotone" />}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button type="button" onClick={() => setListingType('fixed_price')}>
@@ -24,7 +28,7 @@ export function SellPageClient() {
                 <div>
                   <p className="font-semibold text-semantic-text-heading">Fixed price</p>
                   <p className="text-sm text-semantic-text-muted mt-1">
-                    Set a price and sell to the first buyer. Best for games you want to sell quickly.
+                    Set a price. First buyer wins.
                   </p>
                 </div>
               </CardBody>
@@ -38,7 +42,7 @@ export function SellPageClient() {
                 <div>
                   <p className="font-semibold text-semantic-text-heading">Auction</p>
                   <p className="text-sm text-semantic-text-muted mt-1">
-                    Set a starting price and let buyers bid. Best for rare or sought-after games.
+                    Start low. Watch buyers bid it up over a few days.
                   </p>
                 </div>
               </CardBody>

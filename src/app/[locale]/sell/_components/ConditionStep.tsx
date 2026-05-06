@@ -36,7 +36,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
             What condition is it in?
           </h2>
           <p className="text-sm text-semantic-text-secondary">
-            Be honest — it builds trust with buyers and avoids disputes.
+            Pick the closest match. You can describe specifics in the notes below.
           </p>
         </>
       )}
@@ -66,9 +66,14 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
           </div>
           <div className="min-h-[20px]">
             {selectedCondition && (
-              <p className="text-sm text-semantic-text-secondary">
-                {conditionConfig[conditionToBadgeKey[selectedCondition]].description}
-              </p>
+              <>
+                <p className="text-sm text-semantic-text-secondary">
+                  {conditionConfig[conditionToBadgeKey[selectedCondition]].description}
+                </p>
+                <p className="text-xs text-semantic-text-muted mt-0.5">
+                  e.g. {conditionGuide[conditionToBadgeKey[selectedCondition]].example}
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -133,7 +138,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
                 <p className="text-sm text-semantic-text-primary mb-1">
                   {config.description}
                 </p>
-                <p className="text-sm text-semantic-text-muted italic">
+                <p className="text-sm text-semantic-text-muted">
                   Example: {conditionGuide[badgeKey].example}
                 </p>
               </div>

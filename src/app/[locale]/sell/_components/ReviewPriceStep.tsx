@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { PencilSimple } from '@phosphor-icons/react/ssr';
+import { PencilSimple, Eye } from '@phosphor-icons/react/ssr';
 import { GameIdentityRow } from '@/components/listings/atoms';
 import { Card, CardBody, ConditionBadge, Button, Input, Select } from '@/components/ui';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
@@ -12,6 +12,7 @@ import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
+import { SellStepHeader } from './SellStepHeader';
 import type { FormData } from './ListingCreationFlow';
 
 interface ReviewPriceStepProps {
@@ -200,9 +201,12 @@ export function ReviewPriceStep({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-        Review and publish
-      </h2>
+      <SellStepHeader
+        variant="icon"
+        title="Review and publish"
+        helper="Last look before it goes live."
+        icon={<Eye size={24} weight="duotone" />}
+      />
 
       {/* Price input */}
       <Card>

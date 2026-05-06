@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { Input, Card, CardBody, Button, Spinner, Badge } from '@/components/ui';
-import { ImageSquare, PencilSimple } from '@phosphor-icons/react/ssr';
+import { Input, Card, CardBody, Button, Spinner, Badge, EmptyState } from '@/components/ui';
+import { MagnifyingGlass, MagnifyingGlassMinus, PencilSimple } from '@phosphor-icons/react/ssr';
+import { GameIdentityRow } from '@/components/listings/atoms';
+import { SellStepHeader } from './SellStepHeader';
 import { apiFetch } from '@/lib/api-fetch';
 
 interface GameResult {
@@ -192,61 +193,58 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
 
   // Show selected game card
   if (selectedGameId && selectedGame) {
+    const altName = selectedGame.matchedAlternateName;
+    const slimMetaParts: string[] = [];
+    if (selectedGame.yearpublished) slimMetaParts.push(String(selectedGame.yearpublished));
+    if (altName && altName !== selectedGame.name) slimMetaParts.push(`Also known as: ${altName}`);
+    const slimMeta = slimMetaParts.join(' · ');
+
     return (
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-          Selected game
-        </h2>
-        <Card>
-          <CardBody>
-            <div className="flex items-center gap-4">
-              {selectedGame.thumbnail && (
-                <Image
-                  src={selectedGame.thumbnail}
-                  alt={selectedGame.name}
-                  width={64}
-                  height={64}
-                  className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-semantic-text-primary truncate">
-                  {selectedGame.name}
+        <SellStepHeader
+          variant="anchor"
+          title="Your game"
+          helper="You can continue, or pick a different one."
+          anchorImage={selectedGame.image ?? selectedGame.thumbnail}
+          anchorGameName={selectedGame.name}
+        />
+        {(slimMeta || !locked) && (
+          <Card>
+            <CardBody className="py-2.5">
+              <div className="flex items-center gap-3">
+                <p className="flex-1 min-w-0 truncate text-sm text-semantic-text-muted">
+                  {slimMeta}
                 </p>
-                <div className="flex items-center gap-3 text-sm text-semantic-text-muted mt-0.5">
-                  {selectedGame.yearpublished && (
-                    <span>{selectedGame.yearpublished}</span>
-                  )}
-                  {selectedGame.player_count && (
-                    <span>{selectedGame.player_count} players</span>
-                  )}
-                </div>
+                {!locked && (
+                  <button
+                    type="button"
+                    onClick={handleChange}
+                    className="text-semantic-brand shrink-0 p-1"
+                    aria-label="Change game"
+                  >
+                    <PencilSimple size={16} />
+                  </button>
+                )}
               </div>
-              {!locked && (
-                <button
-                  type="button"
-                  onClick={handleChange}
-                  className="text-semantic-brand shrink-0 p-1"
-                  aria-label="Change game"
-                >
-                  <PencilSimple size={16} />
-                </button>
-              )}
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-        {heading}
-      </h2>
+      <SellStepHeader
+        variant="icon"
+        title={heading === 'What game are you selling?' ? 'Find your game' : heading}
+        helper="Search by the title on the box, in any language. We use BoardGameGeek as the catalog."
+        icon={<MagnifyingGlass size={24} weight="duotone" />}
+      />
 
       <Input
         placeholder="Search for a board game..."
+        prefix={<MagnifyingGlass size={18} />}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         autoFocus
@@ -279,70 +277,60 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
 
       {/* Empty state */}
       {!searching && !hasSearched && query.length < 2 && (
-        <p className="text-sm text-semantic-text-muted text-center py-8">
-          Search for a board game to get started
-        </p>
+        <EmptyState
+          icon={MagnifyingGlass}
+          title="Search a game to get started"
+          description="Title in any language works."
+        />
       )}
 
       {/* No results */}
       {!searching && hasSearched && results.length === 0 && (
-        <p className="text-sm text-semantic-text-muted text-center py-8">
-          No games found. Try a different search term.
-        </p>
+        <EmptyState
+          icon={MagnifyingGlassMinus}
+          title="We couldn't find that"
+          description="Try a shorter title or the original-language name."
+        />
       )}
 
       {/* Results */}
       {!searching && results.length > 0 && (
         <div className="space-y-2">
-          {results.map((game) => (
-            <Card
-              key={game.id}
-              hoverable
-              className="cursor-pointer"
-              onClick={() => handleSelectGame(game)}
-            >
-              <CardBody className="py-3">
-                <div className="flex items-center gap-3">
-                  {game.thumbnail ? (
-                    <Image
-                      src={game.thumbnail}
-                      alt={game.name}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
-                      <ImageSquare size={28} className="text-semantic-text-muted" />
-                    </div>
+          {results.map((game) => {
+            const showAltName =
+              game.matched_alternate_name &&
+              !game.name.toLowerCase().includes(query.trim().toLowerCase());
+            const action =
+              enriching === game.id ? (
+                <Spinner className="text-semantic-text-muted shrink-0" />
+              ) : game.is_expansion ? (
+                <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
+              ) : null;
+
+            return (
+              <Card
+                key={game.id}
+                hoverable
+                className="cursor-pointer"
+                onClick={() => handleSelectGame(game)}
+              >
+                <CardBody className="py-3">
+                  <GameIdentityRow
+                    thumbnail={game.thumbnail}
+                    name={game.name}
+                    year={game.yearpublished}
+                    size="md"
+                    action={action}
+                  />
+                  {showAltName && (
+                    <p className="text-xs text-semantic-text-muted truncate mt-1.5 ml-[60px]">
+                      Also known as: {game.matched_alternate_name}
+                    </p>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-semantic-text-primary truncate">
-                        {game.name}
-                      </p>
-                      {game.is_expansion && (
-                        <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
-                      )}
-                    </div>
-                    {game.matched_alternate_name &&
-                      !game.name.toLowerCase().includes(query.trim().toLowerCase()) && (
-                      <p className="text-xs text-semantic-text-muted truncate">
-                        Also known as: {game.matched_alternate_name}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 text-sm text-semantic-text-muted">
-                      {game.yearpublished && <span>{game.yearpublished}</span>}
-                      {game.player_count && <span>{game.player_count} players</span>}
-                    </div>
-                  </div>
-                  {enriching === game.id && (
-                    <Spinner className="text-semantic-text-muted shrink-0" />
-                  )}
-                </div>
-              </CardBody>
-            </Card>
-          ))}
+                </CardBody>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
