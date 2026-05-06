@@ -21,8 +21,8 @@ export type AccordionProps = {
    *  inside a Card so only the inter-item dividers remain. */
   bordered?: boolean;
   /** Question-button text size. `md` (default) — `text-base sm:text-lg`,
-   *  used in the Help center inside Cards. `lg` — `text-lg sm:text-xl`,
-   *  used in the home-page marketing FAQ. */
+   *  the standard accordion question size. `lg` — `text-lg sm:text-xl`, for
+   *  marketing-style FAQs where the question text is the dominant element. */
   size?: 'md' | 'lg';
   /** Surfaced as aria-label on the wrapper. Required-in-spirit when multiple
    *  Accordions are on the same page. */
