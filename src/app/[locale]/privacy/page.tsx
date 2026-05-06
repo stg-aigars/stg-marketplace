@@ -620,7 +620,7 @@ export default function PrivacyPage() {
             13. Changes to this policy
           </h2>
           <p>
-            We may update this policy from time to time. We will notify registered users of
+            We may update this policy. We will notify registered users of
             significant changes via email.
           </p>
         </section>

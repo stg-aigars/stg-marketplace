@@ -116,8 +116,8 @@ export default function HelpPage() {
           </h3>
           <p>
             Good packing protects the game and avoids disputes. Use a sturdy box, tape it
-            well, and protect corners and minis from impact. Baltic weather can be rough
-            &mdash; add plastic or extra padding if rain or snow is likely. We have a full{' '}
+            well, and protect corners and minis from impact. Baltic weather can be rough, so
+            add plastic or extra padding if rain or snow is likely. We have a full{' '}
             <Link href="/help/packing" className="link-brand">
               packing guide
             </Link>{' '}

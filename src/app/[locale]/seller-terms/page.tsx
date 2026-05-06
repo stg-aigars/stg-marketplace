@@ -225,8 +225,8 @@ export default function SellerTermsPage() {
           <p>
             If a game you list matches an active wanted listing from a buyer, that buyer may
             receive a notification. You have no visibility into wanted listings and no
-            special obligations as a result of the match &mdash; the standard rules above
-            apply to the sale like any other listing.
+            special obligations as a result of the match. The standard rules above apply to
+            the sale like any other listing.
           </p>
         </section>
 
@@ -267,9 +267,9 @@ export default function SellerTermsPage() {
           <h3 className={subHeadingClass}>Identity verification</h3>
           <p>
             Before your first withdrawal, you may need to verify your identity and prove the
-            IBAN belongs to you &mdash; this is the Know Your Customer check our payment
-            processor runs. You may need to send a government-issued ID. We can decline or
-            delay a withdrawal while verification is outstanding.
+            IBAN belongs to you. This is the Know Your Customer check our payment processor
+            runs. You may need to send a government-issued ID. We can decline or delay a
+            withdrawal while verification is outstanding.
           </p>
 
           <h3 className={subHeadingClass}>Chargebacks and clawback</h3>
@@ -277,15 +277,15 @@ export default function SellerTermsPage() {
             If a buyer successfully disputes a completed order after you&apos;ve already
             withdrawn the money, you agree that (a) we can take the equivalent amount from
             your future wallet balance or sales proceeds, and (b) if your wallet doesn&apos;t
-            cover it, you owe us the shortfall &mdash; and we may pursue it through the
-            courts of your country of habitual residence.
+            cover it, you owe us the shortfall, and we may pursue it through the courts of
+            your country of habitual residence.
           </p>
 
           <h3 className={subHeadingClass}>Negative balance</h3>
           <p>
             If a refund, chargeback, or other adjustment pushes your wallet into the
-            negative, you need to repay the shortfall within 30 days of notice &mdash; either
-            by transfer to the bank account we name, or by offset against future sales.
+            negative, you need to repay the shortfall within 30 days of notice, either by
+            transfer to the bank account we name or by offset against future sales.
           </p>
 
           <h3 className={subHeadingClass}>Inactive accounts</h3>
@@ -407,8 +407,8 @@ export default function SellerTermsPage() {
             30 sales or €2,000 in consideration (the amount you receive after our
             commission). These thresholds come from the Directive; we cannot adjust them.
             Before you hit them, we&apos;ll ask you for the DAC7 data so the report
-            doesn&apos;t get held up &mdash; our internal warning trigger is earlier, at 25
-            sales or €1,750. We ask for your full legal name, date of birth, address, and
+            doesn&apos;t get held up. Our internal warning trigger is earlier, at 25 sales or
+            €1,750. We ask for your full legal name, date of birth, address, and
             tax identification number. If you don&apos;t give us those, we may need to pause
             your selling and hold payouts until you do. You can ask for a copy of what we
             report about you.

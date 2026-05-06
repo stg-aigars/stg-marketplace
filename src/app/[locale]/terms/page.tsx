@@ -176,8 +176,8 @@ export default function TermsPage() {
               time.
             </li>
             <li>
-              Package items securely &mdash; sellers are responsible for transit damage caused
-              by poor packaging.
+              Package items securely. Sellers are responsible for transit damage caused by
+              poor packaging.
             </li>
             <li>
               Respond to buyer messages and disputes in good faith through the platform.
@@ -361,10 +361,9 @@ export default function TermsPage() {
 
           <h3 className={subHeadingClass}>Appealing platform decisions</h3>
           <p>
-            If we take action against your account or content &mdash; for example a
-            suspension, termination, removal of a listing, or freezing of a wallet balance
-            &mdash; you have the right to appeal our decision free of charge. To appeal,
-            email{' '}
+            If we take action against your account or content (for example a suspension,
+            termination, removal of a listing, or freezing of a wallet balance), you have
+            the right to appeal our decision free of charge. To appeal, email{' '}
             <a href="mailto:info@secondturn.games" className="link-brand">
               info@secondturn.games
             </a>{' '}
@@ -476,9 +475,9 @@ export default function TermsPage() {
           <p>
             If a buyer-seller dispute turns on whether the seller is really a trader under
             Directive 2011/83/EU, we will look at the seller&apos;s activity against our
-            internal criteria, tell the buyer what we found, and &mdash; if we think the
-            seller is likely a trader &mdash; help the buyer use their statutory rights,
-            including a refund where a withdrawal right applies. Our assessment does not bind
+            internal criteria, tell the buyer what we found, and, if we think the seller is
+            likely a trader, help the buyer use their statutory rights, including a refund
+            where a withdrawal right applies. Our assessment does not bind
             the courts or the consumer-protection authorities.
           </p>
         </section>
@@ -488,7 +487,7 @@ export default function TermsPage() {
             15. Changes to these Terms
           </h2>
           <p>
-            We may update these Terms from time to time.{' '}
+            We may update these Terms.{' '}
             <strong>
               For any change to fees, commissions, refund policy, dispute procedure, liability
               cap, or grounds for account termination, we will email registered users at least
