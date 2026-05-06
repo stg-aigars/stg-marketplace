@@ -155,6 +155,7 @@ Always use these — do not write inline equivalents:
 | Listing card grid | `ListingSection` (heading, optional link, responsive grid of `ListingCard`; `emptyState`, `className`, `linkClassName` overrides) | `@/components/listings` |
 | Truncated text | `ShowMoreText` (lines, children, className; line-clamp with "Show more/less" toggle; auto-detects if truncation needed) | `@/components/ui` |
 | Truncated list | `ShowMoreList` (maxItems, label, children; shows first N items with "Show all N {label}" toggle) | `@/components/ui` |
+| Q&A accordion | `Accordion` (items: `{ q: ReactNode; a: ReactNode }[]`, `exclusive` toggles single-vs-multi-open, `ariaLabel` for screen readers; brand-styled Plus-rotate-45 disclosure with full ARIA) | `@/components/ui` |
 | Staff delete button | `DeleteItemButton` (onDelete callback, title; icon trigger + confirm/cancel flow) | `@/components/ui` |
 | Icon count badge | `CountBadge` (count, className; 0 hides) | `@/components/ui` |
 | Auction bid guard | `isAuctionWithBids(listingType, bidCount)` — use instead of inline `=== 'auction' && > 0` | `@/lib/listings/types` |
