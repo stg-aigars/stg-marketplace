@@ -396,7 +396,8 @@ export function ListingCreationFlow({
       />
 
       {/* Step content */}
-      <div className="min-h-[300px]">
+      <Card>
+        <CardBody className="min-h-[300px] px-4 py-6 sm:px-6 sm:py-8">
         {currentStepId === 'game' && (
           <>
             <GameSearchStep
@@ -664,7 +665,8 @@ export function ListingCreationFlow({
             />
           </>
         )}
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Navigation */}
       {currentStepIndex >= 0 && (
