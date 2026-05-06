@@ -339,11 +339,13 @@ export default function SellerTermsPage() {
             payout if we have reasonable grounds to suspect money laundering, terrorist
             financing, sanctions evasion, or fraud; (c) ask you for more identification,
             source-of-funds information, or beneficial-ownership information; and (d) share
-            information with competent authorities &mdash; including the Latvian State
-            Security Service, the Financial Intelligence Unit (FID), the State Revenue
-            Service (VID), and our payment processor. Funds frozen under this clause stay
-            your property and are released once the matter is resolved, subject to any order
-            from a competent authority.{' '}
+            information with competent authorities and with our payment processor. The named
+            bodies that routinely receive such data are listed in &sect;6 of our{' '}
+            <Link href="/privacy" className="link-brand">
+              Privacy Policy
+            </Link>
+            . Funds frozen under this clause stay your property and are released once the
+            matter is resolved, subject to any order from a competent authority.{' '}
             <strong>
               You may appeal any such action by writing to info@secondturn.games. A person
               who did not take the original decision will review the appeal within 14 days

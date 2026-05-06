@@ -77,7 +77,7 @@ export default function PrivacyPage() {
             1. Who we are
           </h2>
           <p>
-            {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;), registration number {LEGAL_ENTITY_REG_NUMBER},
+            {LEGAL_ENTITY_NAME} (&ldquo;STG&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;), registration number {LEGAL_ENTITY_REG_NUMBER},
             registered at {LEGAL_ENTITY_ADDRESS}, is the data controller. This policy explains
             what data we collect and why, under the General Data Protection Regulation
             (Regulation (EU) 2016/679) and Latvian data-protection law.
@@ -358,6 +358,42 @@ export default function PrivacyPage() {
               server, so PostHog sees our server&apos;s IP rather than yours.
             </li>
           </ul>
+
+          <h3 className={subHeadingClass}>Authorities and law-enforcement bodies</h3>
+          <p>
+            Where law requires it &mdash; sanctions screening, anti-money-laundering rules,
+            tax reporting, or a specific law-enforcement request &mdash; we may share
+            account, transaction, or identity data with competent authorities. The routine
+            recipients in our jurisdiction are:
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>State Revenue Service (VID, Latvia)</strong> &mdash; DAC7 seller
+              reporting (Council Directive (EU) 2021/514) and other statutory tax
+              disclosures.
+            </li>
+            <li>
+              <strong>Financial Intelligence Unit (FID, Latvia)</strong> &mdash;
+              suspicious-activity reports under Latvian AML law.
+            </li>
+            <li>
+              <strong>Latvian State Security Service</strong> &mdash; sanctions and
+              national-security requests under EU and Latvian sanctions law.
+            </li>
+            <li>
+              <strong>Law enforcement authorities</strong> in Latvia, Lithuania, or Estonia,
+              on receipt of a court order or other lawful basis.
+            </li>
+          </ul>
+          <p>
+            Disclosures to these bodies are made under GDPR Art. 6(1)(c) &mdash; legal
+            obligation. The conditions under which a payout may be delayed or a wallet
+            frozen as a result of such disclosure are described in §7 of the{' '}
+            <Link href="/seller-terms" className="link-brand">
+              Seller Agreement
+            </Link>
+            .
+          </p>
 
           <h3 className={subHeadingClass}>Outgoing connections your browser makes</h3>
           <p>
