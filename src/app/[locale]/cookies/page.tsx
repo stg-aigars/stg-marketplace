@@ -193,9 +193,10 @@ export default function CookiesPage() {
             On forms that bots like to target — sign-up, password reset, newsletter, comments,
             checkout, bidding, listing edits — we use <strong>Cloudflare Turnstile</strong> in
             invisible mode. Turnstile loads a script from{' '}
-            <span className="font-mono">challenges.cloudflare.com</span> and may set transient
-            cookies on the <span className="font-mono">cloudflare.com</span> domain while it
-            checks that the submission isn&apos;t automated. It also writes small items to
+            <span className="font-mono">challenges.cloudflare.com</span>
+            {' '}and may set transient cookies on the{' '}
+            <span className="font-mono">cloudflare.com</span>
+            {' '}domain while it checks that the submission isn&apos;t automated. It also writes small items to
             your browser&apos;s local storage on our domain (prefixed{' '}
             <span className="font-mono">cf.turnstile.</span>) so it doesn&apos;t re-challenge
             you on every form — those are in the local-storage table above. Turnstile is
