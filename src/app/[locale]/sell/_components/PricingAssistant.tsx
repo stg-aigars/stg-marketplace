@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Lightbulb, ArrowSquareOut, Check } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, Button, Skeleton } from '@/components/ui';
+import { ArrowSquareOut, Check } from '@phosphor-icons/react/ssr';
+import { Button, Skeleton } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
 import { conditionToBadgeKey } from '@/lib/listings/types';
@@ -98,16 +98,11 @@ export function PricingAssistant({
 
   if (loading) {
     return (
-      <Card className="mb-4">
-        <CardBody className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-4 rounded" />
-            <Skeleton className="h-4 w-24 rounded" />
-          </div>
-          <Skeleton className="h-8 w-full rounded" />
-          <Skeleton className="h-4 w-3/4 rounded" />
-        </CardBody>
-      </Card>
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-24 rounded" />
+        <Skeleton className="h-8 w-full rounded" />
+        <Skeleton className="h-4 w-3/4 rounded" />
+      </div>
     );
   }
 
@@ -126,132 +121,148 @@ export function PricingAssistant({
   const multiplierPct = Math.round(CONDITION_MULTIPLIERS[condition] * 100);
 
   return (
-    <Card className="mb-4">
-      <CardBody className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Lightbulb size={16} weight="fill" className="text-semantic-brand shrink-0" />
-          <h4 className="text-sm font-semibold text-semantic-text-heading">Price guide</h4>
-        </div>
+    <div className="space-y-3">
+      <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+        Price guide
+      </p>
 
-        {suggestedPriceCents && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-semantic-text-secondary">
-                {isAuction ? 'Suggested starting bid' : 'Suggested price'}
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-lg font-bold tabular-nums text-semantic-text-primary">
-                  {formatCentsToCurrency(suggestedPriceCents)}
-                </span>
-                <Button variant="primary" size="sm" onClick={() => handleFill(suggestedPriceCents, 'suggested')}>
-                  {filledButton === 'suggested' ? <Check size={14} weight="bold" /> : 'Use price'}
-                </Button>
-              </div>
-            </div>
-            <p className="text-xs text-semantic-text-muted">
-              {multiplierPct}% of {effectiveRetailCents ? formatCentsToCurrency(effectiveRetailCents) : 'retail'} ({conditionLabel})
-              {isAuction && ' \u00d7 30% auction start'}
-              {hasBundle && data?.gamesWithRetailData != null && data?.totalGames != null && data.gamesWithRetailData < data.totalGames && (
-                <span> · Retail price based on {data.gamesWithRetailData} of {data.totalGames} games</span>
-              )}
-            </p>
-          </div>
-        )}
+      {/* Market context (retail + STG marketplace data) — shown first so the
+          suggested price below has visible inputs. */}
+      {(hasRetail || hasLowest || hasMedian) && (
+        <div className="space-y-2 rounded-lg bg-semantic-bg-surface px-3 py-2.5">
+          <p className="text-xs font-medium text-semantic-text-muted uppercase tracking-wide">
+            Market context
+          </p>
 
-        {(hasRetail || hasLowest || hasMedian) && (
-          <div className="space-y-2 rounded-lg bg-semantic-bg-surface px-3 py-2.5">
-            <p className="text-xs font-medium text-semantic-text-muted uppercase tracking-wide">
-              Market context
-            </p>
-
-            {hasRetail && hasBundle && data?.breakdown ? (
-              <div className="space-y-1.5">
-                <p className="text-xs text-semantic-text-muted">New retail (per game)</p>
-                {data.breakdown.map((item) => {
-                  const name = item.bggGameId === bggGameId
-                    ? (gameName ?? 'Base game')
-                    : (expansionNames[item.bggGameId] ?? `Game ${item.bggGameId}`);
-                  return (
-                    <div key={item.bggGameId} className="flex items-center justify-between text-sm">
-                      <span className="text-semantic-text-secondary truncate mr-3">{name}</span>
-                      <span className="tabular-nums text-semantic-text-primary shrink-0">
-                        {item.retailPriceCents != null
-                          ? formatCentsToCurrency(item.retailPriceCents)
-                          : '—'}
+          {hasRetail && (
+            <>
+              {hasBundle && data?.breakdown ? (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-semantic-text-muted">New retail (per game)</p>
+                  {data.breakdown.map((item) => {
+                    const name = item.bggGameId === bggGameId
+                      ? (gameName ?? 'Base game')
+                      : (expansionNames[item.bggGameId] ?? `Game ${item.bggGameId}`);
+                    return (
+                      <div key={item.bggGameId} className="flex items-center justify-between text-sm">
+                        <span className="text-semantic-text-secondary truncate mr-3">{name}</span>
+                        <span className="tabular-nums text-semantic-text-primary shrink-0">
+                          {item.retailPriceCents != null
+                            ? formatCentsToCurrency(item.retailPriceCents)
+                            : '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-between text-sm pt-1.5 border-t border-semantic-border-subtle">
+                    <span className="text-semantic-text-secondary font-medium">Bundle total</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold tabular-nums text-semantic-text-primary">
+                        {formatCentsToCurrency(data.bundleRetailPriceCents!)}
                       </span>
+                      <Button variant="secondary" size="sm" onClick={() => handleFill(data.bundleRetailPriceCents!, 'retail')}>
+                        {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
+                      </Button>
                     </div>
-                  );
-                })}
-                <div className="flex items-center justify-between text-sm pt-1.5 border-t border-semantic-border-subtle">
-                  <span className="text-semantic-text-secondary font-medium">Bundle total</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-semantic-text-secondary">New retail</span>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold tabular-nums text-semantic-text-primary">
-                      {formatCentsToCurrency(data.bundleRetailPriceCents!)}
+                      {formatCentsToCurrency(retailPriceCents!)}
                     </span>
-                    <Button variant="secondary" size="sm" onClick={() => handleFill(data.bundleRetailPriceCents!, 'retail')}>
+                    <Button variant="secondary" size="sm" onClick={() => handleFill(retailPriceCents!, 'retail')}>
                       {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
                     </Button>
                   </div>
                 </div>
-              </div>
-            ) : hasRetail && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-semantic-text-secondary">New retail</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold tabular-nums text-semantic-text-primary">
-                    {formatCentsToCurrency(retailPriceCents!)}
-                  </span>
-                  <Button variant="secondary" size="sm" onClick={() => handleFill(retailPriceCents!, 'retail')}>
-                    {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
-                  </Button>
-                </div>
-              </div>
-            )}
+              )}
+              {attributionUrl && <BgpAttribution url={attributionUrl} />}
+            </>
+          )}
 
-            {hasLowest && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-semantic-text-secondary">Lowest on STG</span>
-                <span className="tabular-nums text-semantic-text-primary">
-                  {formatCentsToCurrency(marketplace.lowestActiveCents!)}
-                  {marketplace.lowestIsAuction && (
-                    <span className="text-semantic-text-muted ml-1">(current bid)</span>
-                  )}
-                  <span className="text-semantic-text-muted ml-1">
-                    ({marketplace.activeListingCount} active)
-                  </span>
+          {hasLowest && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-semantic-text-secondary">Lowest on STG</span>
+              <span className="tabular-nums text-semantic-text-primary">
+                {formatCentsToCurrency(marketplace.lowestActiveCents!)}
+                {marketplace.lowestIsAuction && (
+                  <span className="text-semantic-text-muted ml-1">(current bid)</span>
+                )}
+                <span className="text-semantic-text-muted ml-1">
+                  ({marketplace.activeListingCount} active)
                 </span>
-              </div>
-            )}
+              </span>
+            </div>
+          )}
 
-            {hasMedian && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-semantic-text-secondary">Median sold here</span>
-                <span className="tabular-nums text-semantic-text-primary">
-                  {formatCentsToCurrency(marketplace.medianSoldCents!)}
-                  <span className="text-semantic-text-muted ml-1">
-                    ({marketplace.completedSaleCount} sales)
-                  </span>
+          {hasMedian && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-semantic-text-secondary">Median sold here</span>
+              <span className="tabular-nums text-semantic-text-primary">
+                {formatCentsToCurrency(marketplace.medianSoldCents!)}
+                <span className="text-semantic-text-muted ml-1">
+                  ({marketplace.completedSaleCount} sales)
                 </span>
-              </div>
-            )}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
-            {/* BGP ToS requires attribution to boardgameprices.co.uk, not the individual shop */}
-            {attributionUrl && (
-              <div className="pt-1 border-t border-semantic-border-subtle">
-                <a
-                  href={attributionUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-semantic-text-muted hover:text-semantic-brand inline-flex items-center gap-1 transition-colors duration-250 ease-out-custom"
-                >
-                  via BoardGamePrices.co.uk
-                  <ArrowSquareOut size={12} />
-                </a>
-              </div>
-            )}
+      {/* Suggested price (derived from retail × condition multiplier) — shown
+          after the inputs so the math reads top-down. */}
+      {suggestedPriceCents && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-semantic-text-secondary">
+              {isAuction ? 'Suggested starting bid' : 'Suggested price'}
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-lg font-bold tabular-nums text-semantic-text-primary">
+                {formatCentsToCurrency(suggestedPriceCents)}
+              </span>
+              <Button variant="primary" size="sm" onClick={() => handleFill(suggestedPriceCents, 'suggested')}>
+                {filledButton === 'suggested' ? <Check size={14} weight="bold" /> : 'Use price'}
+              </Button>
+            </div>
           </div>
-        )}
-      </CardBody>
-    </Card>
+          <p className="text-xs text-semantic-text-muted">
+            {multiplierPct}% of {effectiveRetailCents ? formatCentsToCurrency(effectiveRetailCents) : 'retail'} ({conditionLabel})
+            {isAuction && ' × 30% auction start'}
+            {hasBundle && data?.gamesWithRetailData != null && data?.totalGames != null && data.gamesWithRetailData < data.totalGames && (
+              <span> · Retail price based on {data.gamesWithRetailData} of {data.totalGames} games</span>
+            )}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// BGP ToS requires attribution to boardgameprices.co.uk, not the individual shop.
+// Scoped to retail rows only — STG marketplace data (lowest/median) is our own.
+function BgpAttribution({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-xs text-semantic-text-muted sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom pt-1"
+    >
+      <span>via</span>
+      {/* eslint-disable-next-line @next/next/no-img-element -- partner logo, kept consistent with TrustBand */}
+      <img
+        src="/images/bgp-icon.png"
+        alt="BoardGamePrices"
+        width={16}
+        height={16}
+        className="h-4 w-auto"
+      />
+      <span>BoardGamePrices.co.uk</span>
+      <ArrowSquareOut size={11} />
+    </a>
   );
 }

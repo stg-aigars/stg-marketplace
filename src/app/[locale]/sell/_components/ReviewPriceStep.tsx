@@ -3,15 +3,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { PencilSimple } from '@phosphor-icons/react/ssr';
+import { PencilSimple, Eye } from '@phosphor-icons/react/ssr';
 import { GameIdentityRow } from '@/components/listings/atoms';
-import { Card, CardBody, ConditionBadge, Button, Input, Select } from '@/components/ui';
+import { ConditionBadge, Button, Input, Select } from '@/components/ui';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
+import { SellStepHeader } from './SellStepHeader';
 import type { FormData } from './ListingCreationFlow';
 
 interface ReviewPriceStepProps {
@@ -189,7 +190,6 @@ export function ReviewPriceStep({
   expansions = [],
 }: ReviewPriceStepProps) {
   const effectivePrice = isAuction ? formData.starting_price_cents : formData.price_cents;
-  const earnings = effectivePrice > 0 ? calculateSellerEarnings(effectivePrice) : null;
 
   const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? null;
 
@@ -199,149 +199,113 @@ export function ReviewPriceStep({
   );
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-        Review and publish
-      </h2>
+    <div className="space-y-8">
+      <SellStepHeader
+        variant="icon"
+        title="Review and publish"
+        helper="Last look before it goes live."
+        icon={<Eye size={24} weight="duotone" />}
+      />
 
-      {/* Price input */}
-      <Card>
-        <CardBody>
-          <PriceInputSection
-            priceCents={effectivePrice}
-            onPriceChange={onPriceChange}
-            lockedPrice={lockedPrice}
-            isAuction={isAuction}
-            auctionDurationDays={auctionDurationDays}
-            onDurationChange={onDurationChange}
-            bggGameId={formData.bgg_game_id}
-            gameName={formData.game_name}
-            condition={formData.condition}
-            expansionIds={formData.selected_expansion_ids}
-            expansionNames={expansionNames}
-          />
-        </CardBody>
-      </Card>
+      {/* Price input + price guide */}
+      <PriceInputSection
+        priceCents={effectivePrice}
+        onPriceChange={onPriceChange}
+        lockedPrice={lockedPrice}
+        isAuction={isAuction}
+        auctionDurationDays={auctionDurationDays}
+        onDurationChange={onDurationChange}
+        bggGameId={formData.bgg_game_id}
+        gameName={formData.game_name}
+        condition={formData.condition}
+        expansionIds={formData.selected_expansion_ids}
+        expansionNames={expansionNames}
+      />
 
-      {/* Listing summary */}
-      <Card>
-        <CardBody>
-          <div className="space-y-5">
-            {/* Game + Edition */}
-            <GameIdentityRow
-              thumbnail={summaryImageUrl}
-              name={formData.game_name}
-              versionName={formData.version_name}
-              language={formData.language}
-              publisher={formData.publisher}
-              year={formData.edition_year}
-              size="xl"
-              action={
-                <button
-                  type="button"
-                  onClick={() => onEditStep(1)}
-                  className="text-semantic-brand shrink-0 p-1"
-                  aria-label="Edit game and edition"
-                >
-                  <PencilSimple size={16} />
-                </button>
-              }
-            />
+      <hr className="border-semantic-border-subtle" />
 
-            {/* Included expansions */}
-            {expansions.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm text-semantic-text-muted">
-                  +{expansions.length} {expansions.length === 1 ? 'expansion' : 'expansions'}:{' '}
-                  {expansions.map((e) => e.name).join(', ')}
-                </p>
-              </div>
-            )}
+      {/* Game + Edition */}
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+          Game &amp; edition
+        </p>
+        <GameIdentityRow
+          thumbnail={summaryImageUrl}
+          name={formData.game_name}
+          versionName={formData.version_name}
+          language={formData.language}
+          publisher={formData.publisher}
+          year={formData.edition_year}
+          size="xl"
+          action={
+            <button
+              type="button"
+              onClick={() => onEditStep(1)}
+              className="text-semantic-brand shrink-0 p-1"
+              aria-label="Edit game and edition"
+            >
+              <PencilSimple size={16} />
+            </button>
+          }
+        />
+        {expansions.length > 0 && (
+          <p className="text-sm text-semantic-text-muted">
+            +{expansions.length} {expansions.length === 1 ? 'expansion' : 'expansions'}:{' '}
+            {expansions.map((e) => e.name).join(', ')}
+          </p>
+        )}
+      </div>
 
-            <hr className="border-semantic-border-subtle" />
+      <hr className="border-semantic-border-subtle" />
 
-            {/* Condition + notes */}
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-semantic-text-primary mb-1">
-                  Condition
-                </p>
-                {formData.condition && (
-                  <ConditionBadge condition={formData.condition} />
-                )}
-                {formData.description && (
-                  <p className="text-sm text-semantic-text-secondary whitespace-pre-line mt-2">
-                    {formData.description}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => onEditStep(3)}
-                className="text-semantic-brand shrink-0 p-1"
-                aria-label="Edit condition and photos"
-              >
-                <PencilSimple size={16} />
-              </button>
-            </div>
+      {/* Condition + notes */}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+            Condition
+          </p>
+          <button
+            type="button"
+            onClick={() => onEditStep(3)}
+            className="text-semantic-brand shrink-0 p-1"
+            aria-label="Edit condition and photos"
+          >
+            <PencilSimple size={16} />
+          </button>
+        </div>
+        {formData.condition && <ConditionBadge condition={formData.condition} />}
+        {formData.description && (
+          <p className="text-sm text-semantic-text-secondary whitespace-pre-line">
+            {formData.description}
+          </p>
+        )}
+      </div>
 
-            <hr className="border-semantic-border-subtle" />
+      {formData.photos.length > 0 && (
+        <>
+          <hr className="border-semantic-border-subtle" />
 
-            {/* Photos */}
-            {formData.photos.length > 0 && (
-              <>
-                <div>
-                  <p className="text-sm font-medium text-semantic-text-primary mb-2">
-                    Photos ({formData.photos.length})
-                  </p>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {formData.photos.map((url, index) => (
-                      <div key={url} className="aspect-square relative rounded-lg overflow-hidden border border-semantic-border-subtle">
-                        <Image
-                          src={url}
-                          alt={`Photo ${index + 1}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 25vw, 16vw"
-                        />
-                      </div>
-                    ))}
-                  </div>
+          {/* Photos */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+              Photos ({formData.photos.length})
+            </p>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {formData.photos.map((url, index) => (
+                <div key={url} className="aspect-square relative rounded-lg overflow-hidden border border-semantic-border-subtle">
+                  <Image
+                    src={url}
+                    alt={`Photo ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 25vw, 16vw"
+                  />
                 </div>
-
-                <hr className="border-semantic-border-subtle" />
-              </>
-            )}
-
-            {/* Price summary */}
-            <div>
-              <p className="text-sm font-medium text-semantic-text-primary mb-1">
-                {isAuction ? 'Starting price' : 'Price'}
-              </p>
-              {effectivePrice >= MIN_PRICE_CENTS ? (
-                <>
-                  <p className="text-lg font-semibold text-semantic-text-heading">
-                    {formatCentsToCurrency(effectivePrice)}
-                  </p>
-                  {isAuction ? (
-                    <p className="text-sm text-semantic-text-muted">
-                      {formData.auction_duration_days}-day auction. 10% commission on winning bid.
-                    </p>
-                  ) : earnings ? (
-                    <p className="text-sm text-semantic-text-muted">
-                      You&apos;ll receive {formatCentsToCurrency(earnings.walletCreditCents)} after 10% platform fee
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <p className="text-sm text-semantic-text-muted">
-                  Enter a price above
-                </p>
-              )}
+              ))}
             </div>
           </div>
-        </CardBody>
-      </Card>
+        </>
+      )}
 
       {/* Error */}
       {error && (

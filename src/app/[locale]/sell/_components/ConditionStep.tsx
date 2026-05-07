@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import { CheckCircle } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, ConditionBadge, Modal, Button } from '@/components/ui';
+import { Card, CardBody, ConditionBadge, InlineArrowLink } from '@/components/ui';
 import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -13,6 +11,8 @@ interface ConditionStepProps {
   onSelect: (condition: ListingCondition) => void;
   compact?: boolean;
   hideHeading?: boolean;
+  /** Hide the internal condition-guide link so a parent can render its own. */
+  hideGuideButton?: boolean;
 }
 
 const conditionBg: Record<string, string> = {
@@ -23,8 +23,13 @@ const conditionBg: Record<string, string> = {
   forParts: 'bg-condition-for-parts-bg',
 };
 
-export function ConditionStep({ selectedCondition, onSelect, compact, hideHeading }: ConditionStepProps) {
-  const [showGuide, setShowGuide] = useState(false);
+export function ConditionStep({
+  selectedCondition,
+  onSelect,
+  compact,
+  hideHeading,
+  hideGuideButton,
+}: ConditionStepProps) {
 
   return (
     <div className="space-y-4">
@@ -36,7 +41,7 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
             What condition is it in?
           </h2>
           <p className="text-sm text-semantic-text-secondary">
-            Be honest — it builds trust with buyers and avoids disputes.
+            Pick the closest match. You can describe specifics in the notes below.
           </p>
         </>
       )}
@@ -64,13 +69,11 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
               );
             })}
           </div>
-          <div className="min-h-[20px]">
-            {selectedCondition && (
-              <p className="text-sm text-semantic-text-secondary">
-                {conditionConfig[conditionToBadgeKey[selectedCondition]].description}
-              </p>
-            )}
-          </div>
+          {selectedCondition && (
+            <p className="text-sm text-semantic-text-secondary leading-relaxed">
+              {conditionGuide[conditionToBadgeKey[selectedCondition]].detail}
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -111,39 +114,11 @@ export function ConditionStep({ selectedCondition, onSelect, compact, hideHeadin
         </div>
       )}
 
-      <Button variant="ghost" size="sm" onClick={() => setShowGuide(true)}>
-        What do these mean?
-      </Button>
-
-      <Modal
-        open={showGuide}
-        onClose={() => setShowGuide(false)}
-        title="Condition guide"
-      >
-        <div className="space-y-5">
-          {LISTING_CONDITIONS.map((condition) => {
-            const badgeKey = conditionToBadgeKey[condition];
-            const config = conditionConfig[badgeKey];
-
-            return (
-              <div key={condition}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <ConditionBadge condition={condition} />
-                </div>
-                <p className="text-sm text-semantic-text-primary mb-1">
-                  {config.description}
-                </p>
-                <p className="text-sm text-semantic-text-muted italic">
-                  Example: {conditionGuide[badgeKey].example}
-                </p>
-              </div>
-            );
-          })}
-          <Link href="/condition-guide" className="link-brand text-sm">
-            See the condition guide
-          </Link>
-        </div>
-      </Modal>
+      {!hideGuideButton && (
+        <InlineArrowLink href="/condition-guide" size="sm" target="_blank">
+          See the condition guide
+        </InlineArrowLink>
+      )}
     </div>
   );
 }

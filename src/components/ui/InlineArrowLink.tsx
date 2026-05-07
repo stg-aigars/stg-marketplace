@@ -9,6 +9,9 @@ interface InlineArrowLinkProps {
    *  md = 14px arrow + text-sm (default; FAQ panels, modal CTAs). */
   size?: 'sm' | 'md';
   className?: string;
+  /** Use "_blank" to open in a new tab (e.g. when the host page has unsaved state). */
+  target?: string;
+  rel?: string;
 }
 
 /**
@@ -17,12 +20,15 @@ interface InlineArrowLinkProps {
  * ("Browse all", "Read more"), use `SectionLink` instead — same idiom,
  * different layout role.
  */
-function InlineArrowLink({ href, children, size = 'md', className }: InlineArrowLinkProps) {
+function InlineArrowLink({ href, children, size = 'md', className, target, rel }: InlineArrowLinkProps) {
   const text = size === 'sm' ? 'text-xs' : 'text-sm';
   const iconSize = size === 'sm' ? 12 : 14;
+  const safeRel = target === '_blank' ? (rel ?? 'noopener noreferrer') : rel;
   return (
     <Link
       href={href}
+      target={target}
+      rel={safeRel}
       className={cn(
         'inline-flex items-center gap-1.5 font-semibold text-semantic-brand sm:hover:opacity-70 transition-opacity duration-250 ease-out-custom',
         text,

@@ -58,7 +58,7 @@ export async function POST(
 
   const { data: game, error } = await serviceClient
     .from('games')
-    .select('id, name, yearpublished, thumbnail, image, player_count, description, designers, alternate_names')
+    .select('id, name, yearpublished, thumbnail, image, player_count, min_age, playing_time, weight, description, designers, alternate_names')
     .eq('id', gameId)
     .single();
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Tag, Gavel } from '@phosphor-icons/react/ssr';
-import { Card, CardBody } from '@/components/ui';
+import { Tag, Gavel, Storefront } from '@phosphor-icons/react/ssr';
+import { Card, CardBody, Button } from '@/components/ui';
 import { ListingCreationFlow } from './ListingCreationFlow';
+import { SellStepHeader } from './SellStepHeader';
 import type { ListingType } from '@/lib/listings/types';
 
 export function SellPageClient() {
@@ -11,41 +12,48 @@ export function SellPageClient() {
 
   if (!listingType) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-semantic-text-muted">
-          How would you like to sell your game?
-        </p>
+      <Card>
+        <CardBody className="space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+          <SellStepHeader
+            variant="icon"
+            title="Two ways to sell"
+            helper="Pick what fits this game. Your next listing can be different."
+            icon={<Storefront size={24} weight="duotone" />}
+          />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button type="button" onClick={() => setListingType('fixed_price')}>
-            <Card hoverable className="h-full text-left">
-              <CardBody className="flex items-start gap-4 py-6">
-                <Tag size={32} weight="duotone" className="text-semantic-brand shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-semantic-text-heading">Fixed price</p>
-                  <p className="text-sm text-semantic-text-muted mt-1">
-                    Set a price and sell to the first buyer. Best for games you want to sell quickly.
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
+            <div className="space-y-2">
+              <Button
+                variant="brand"
+                size="md"
+                onClick={() => setListingType('fixed_price')}
+                className="w-full text-base"
+              >
+                <Tag size={20} weight="bold" className="mr-2" />
+                Fixed price
+              </Button>
+              <p className="text-sm text-semantic-text-muted">
+                Set a price. First buyer wins.
+              </p>
+            </div>
 
-          <button type="button" onClick={() => setListingType('auction')}>
-            <Card hoverable className="h-full text-left">
-              <CardBody className="flex items-start gap-4 py-6">
-                <Gavel size={32} weight="duotone" className="text-semantic-brand shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-semantic-text-heading">Auction</p>
-                  <p className="text-sm text-semantic-text-muted mt-1">
-                    Set a starting price and let buyers bid. Best for rare or sought-after games.
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </button>
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setListingType('auction')}
+                className="w-full text-base"
+              >
+                <Gavel size={20} weight="bold" className="mr-2" />
+                Auction
+              </Button>
+              <p className="text-sm text-semantic-text-muted">
+                Start low. Watch buyers bid it up over a few days.
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
     );
   }
 

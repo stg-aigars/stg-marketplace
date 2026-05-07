@@ -2,12 +2,11 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Stepper, TurnstileWidget, Alert, Card, CardBody, Spinner } from '@/components/ui';
+import { Button, Stepper, TurnstileWidget, Card, CardBody, Spinner } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource, ListingExpansion } from '@/lib/listings/types';
-import { conditionRequiresPhotos, conditionRequiresDescription, formatExpansionCount } from '@/lib/listings/types';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
 import { GameSearchStep, buildEnrichedGame } from './GameSearchStep';
@@ -396,13 +395,16 @@ export function ListingCreationFlow({
       />
 
       {/* Step content */}
-      <div className="min-h-[300px]">
+      <Card>
+        <CardBody className="min-h-[300px] px-4 py-6 sm:px-6 sm:py-8">
         {currentStepId === 'game' && (
           <>
             <GameSearchStep
               selectedGameId={formData.bgg_game_id}
               selectedGame={selectedGame}
               locked={gameLocked}
+              duplicateListings={duplicateListings}
+              locale={locale}
               onSelect={(game) => {
                 // If matched via alternate name, use that as the default listing name
                 const defaultName = game.matchedAlternateName ?? game.name;
@@ -451,29 +453,6 @@ export function ListingCreationFlow({
                 <Spinner size="sm" />
                 <span>Checking for expansions...</span>
               </div>
-            )}
-
-            {/* Duplicate listing alert */}
-            {duplicateListings.length > 0 && (
-              <Alert variant="info" className="mt-4">
-                <p className="font-medium">You already have {duplicateListings.length === 1 ? 'an active listing' : `${duplicateListings.length} active listings`} for this game</p>
-                <div className="mt-2 space-y-2">
-                  {duplicateListings.map((listing) => (
-                    <a
-                      key={listing.id}
-                      href={`/${locale}/listings/${listing.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-sm text-semantic-brand hover:underline"
-                    >
-                      {listing.game_name} — {formatCentsToCurrency(listing.price_cents)}
-                      {listing.expansion_count > 0 && (
-                        <span className="text-semantic-text-muted ml-1">{formatExpansionCount(listing.expansion_count)}</span>
-                      )}
-                    </a>
-                  ))}
-                </div>
-              </Alert>
             )}
 
             {/* Expansion gate prompt */}
@@ -545,7 +524,6 @@ export function ListingCreationFlow({
         )}
 
         {currentStepId === 'edition' && formData.bgg_game_id && (() => {
-          const hasExpansions = formData.selected_expansion_ids.length > 0;
           const baseGameStep = (
             <VersionStep
               userCountry={userCountry}
@@ -555,6 +533,7 @@ export function ListingCreationFlow({
               onGameNameChange={(name: string) => updateFormData({ game_name: name })}
               selectedVersionId={formData.bgg_version_id}
               selectedVersionSource={formData.version_source}
+              selectedVersionName={formData.version_name}
               selectedPublisher={formData.publisher}
               selectedLanguage={formData.language}
               selectedEditionYear={formData.edition_year}
@@ -574,17 +553,17 @@ export function ListingCreationFlow({
             />
           );
 
+          const expansionCount = formData.selected_expansion_ids.length;
           return (
-          <div className="space-y-6">
-            {hasExpansions ? (
-              <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle">
-                {baseGameStep}
-              </div>
-            ) : baseGameStep}
+          <div className="space-y-8">
+            {baseGameStep}
 
             {/* Expansions section */}
-            {formData.selected_expansion_ids.length > 0 && (
-              <div className="rounded-xl bg-semantic-bg-surface p-4 sm:p-6 border border-semantic-border-subtle space-y-6">
+            {expansionCount > 0 && (
+              <div className="space-y-6 pt-2">
+                <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+                  {expansionCount === 1 ? 'Expansion' : `${expansionCount} expansions`}
+                </p>
                 {formData.selected_expansion_ids.map((expId, idx) => {
                   const expansion = availableExpansions.find((e) => e.id === expId);
                   if (!expansion) return null;
@@ -605,6 +584,7 @@ export function ListingCreationFlow({
                         })}
                         selectedVersionId={expVersion?.bgg_version_id ?? null}
                         selectedVersionSource={expVersion?.version_source ?? null}
+                        selectedVersionName={expVersion?.version_name ?? null}
                         selectedPublisher={expVersion?.publisher ?? null}
                         selectedLanguage={expVersion?.language ?? null}
                         selectedEditionYear={expVersion?.edition_year ?? null}
@@ -662,7 +642,8 @@ export function ListingCreationFlow({
             />
           </>
         )}
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Navigation */}
       {currentStepIndex >= 0 && (
