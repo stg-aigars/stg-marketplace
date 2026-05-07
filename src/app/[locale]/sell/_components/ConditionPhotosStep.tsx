@@ -63,7 +63,6 @@ export function ConditionPhotosStep({
           </InlineArrowLink>
         </div>
         <ConditionStep
-          compact
           hideHeading
           hideGuideButton
           selectedCondition={condition}
