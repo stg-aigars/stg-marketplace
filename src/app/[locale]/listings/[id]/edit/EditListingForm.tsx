@@ -366,7 +366,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       <PhotoUploadStep photos={photos} onPhotosChange={setPhotos} compact />
 
       {/* Condition */}
-      <ConditionStep selectedCondition={condition} onSelect={setCondition} compact />
+      <ConditionStep selectedCondition={condition} onSelect={setCondition} />
 
       {/* Price & Description */}
       <PriceStep
