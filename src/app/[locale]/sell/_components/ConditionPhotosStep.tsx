@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { Textarea } from '@/components/ui';
+import { InlineArrowLink, Textarea } from '@/components/ui';
 import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
@@ -59,14 +58,9 @@ export function ConditionPhotosStep({
           <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
             Condition
           </p>
-          <Link
-            href="/condition-guide"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-          >
+          <InlineArrowLink href="/condition-guide" size="sm" target="_blank">
             See the condition guide
-          </Link>
+          </InlineArrowLink>
         </div>
         <ConditionStep
           compact

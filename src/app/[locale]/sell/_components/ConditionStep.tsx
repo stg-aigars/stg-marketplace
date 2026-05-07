@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { CheckCircle } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, ConditionBadge } from '@/components/ui';
+import { Card, CardBody, ConditionBadge, InlineArrowLink } from '@/components/ui';
 import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
@@ -116,14 +115,9 @@ export function ConditionStep({
       )}
 
       {!hideGuideButton && (
-        <Link
-          href="/condition-guide"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
-        >
+        <InlineArrowLink href="/condition-guide" size="sm" target="_blank">
           See the condition guide
-        </Link>
+        </InlineArrowLink>
       )}
     </div>
   );

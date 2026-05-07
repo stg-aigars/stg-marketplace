@@ -134,52 +134,53 @@ export function PricingAssistant({
             Market context
           </p>
 
-          {hasRetail && hasBundle && data?.breakdown ? (
-            <div className="space-y-1.5">
-              <p className="text-xs text-semantic-text-muted">New retail (per game)</p>
-              {data.breakdown.map((item) => {
-                const name = item.bggGameId === bggGameId
-                  ? (gameName ?? 'Base game')
-                  : (expansionNames[item.bggGameId] ?? `Game ${item.bggGameId}`);
-                return (
-                  <div key={item.bggGameId} className="flex items-center justify-between text-sm">
-                    <span className="text-semantic-text-secondary truncate mr-3">{name}</span>
-                    <span className="tabular-nums text-semantic-text-primary shrink-0">
-                      {item.retailPriceCents != null
-                        ? formatCentsToCurrency(item.retailPriceCents)
-                        : '—'}
-                    </span>
+          {hasRetail && (
+            <>
+              {hasBundle && data?.breakdown ? (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-semantic-text-muted">New retail (per game)</p>
+                  {data.breakdown.map((item) => {
+                    const name = item.bggGameId === bggGameId
+                      ? (gameName ?? 'Base game')
+                      : (expansionNames[item.bggGameId] ?? `Game ${item.bggGameId}`);
+                    return (
+                      <div key={item.bggGameId} className="flex items-center justify-between text-sm">
+                        <span className="text-semantic-text-secondary truncate mr-3">{name}</span>
+                        <span className="tabular-nums text-semantic-text-primary shrink-0">
+                          {item.retailPriceCents != null
+                            ? formatCentsToCurrency(item.retailPriceCents)
+                            : '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-between text-sm pt-1.5 border-t border-semantic-border-subtle">
+                    <span className="text-semantic-text-secondary font-medium">Bundle total</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold tabular-nums text-semantic-text-primary">
+                        {formatCentsToCurrency(data.bundleRetailPriceCents!)}
+                      </span>
+                      <Button variant="secondary" size="sm" onClick={() => handleFill(data.bundleRetailPriceCents!, 'retail')}>
+                        {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
+                      </Button>
+                    </div>
                   </div>
-                );
-              })}
-              <div className="flex items-center justify-between text-sm pt-1.5 border-t border-semantic-border-subtle">
-                <span className="text-semantic-text-secondary font-medium">Bundle total</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold tabular-nums text-semantic-text-primary">
-                    {formatCentsToCurrency(data.bundleRetailPriceCents!)}
-                  </span>
-                  <Button variant="secondary" size="sm" onClick={() => handleFill(data.bundleRetailPriceCents!, 'retail')}>
-                    {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
-                  </Button>
                 </div>
-              </div>
-              {attributionUrl && <BgpAttribution url={attributionUrl} />}
-            </div>
-          ) : hasRetail && (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-semantic-text-secondary">New retail</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold tabular-nums text-semantic-text-primary">
-                    {formatCentsToCurrency(retailPriceCents!)}
-                  </span>
-                  <Button variant="secondary" size="sm" onClick={() => handleFill(retailPriceCents!, 'retail')}>
-                    {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
-                  </Button>
+              ) : (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-semantic-text-secondary">New retail</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold tabular-nums text-semantic-text-primary">
+                      {formatCentsToCurrency(retailPriceCents!)}
+                    </span>
+                    <Button variant="secondary" size="sm" onClick={() => handleFill(retailPriceCents!, 'retail')}>
+                      {filledButton === 'retail' ? <Check size={14} weight="bold" /> : 'Fill'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
               {attributionUrl && <BgpAttribution url={attributionUrl} />}
-            </div>
+            </>
           )}
 
           {hasLowest && (

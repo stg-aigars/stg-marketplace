@@ -84,7 +84,7 @@ interface GameSearchStepProps {
   locale?: string;
 }
 
-export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked, heading = 'What game are you selling?', duplicateListings = [], locale = 'en' }: GameSearchStepProps) {
+export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked, heading = 'Find your game', duplicateListings = [], locale = 'en' }: GameSearchStepProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GameResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -260,32 +260,12 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                 <p className="font-medium text-semantic-text-primary truncate">
                   {selectedGame.name}
                 </p>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
-                  {selectedGame.yearpublished && (
-                    <span className="flex items-center gap-1">
-                      <CalendarBlank size={13} className="shrink-0" />
-                      {selectedGame.yearpublished}
-                    </span>
-                  )}
-                  {selectedGame.player_count && (
-                    <span className="flex items-center gap-1">
-                      <Users size={13} className="shrink-0" />
-                      {selectedGame.player_count}
-                    </span>
-                  )}
-                  {selectedGame.min_age != null && selectedGame.min_age > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Baby size={13} className="shrink-0" />
-                      {selectedGame.min_age}+
-                    </span>
-                  )}
-                  {formatPlayingTime(selectedGame.playing_time) && (
-                    <span className="flex items-center gap-1">
-                      <Timer size={13} className="shrink-0" />
-                      {formatPlayingTime(selectedGame.playing_time)} min
-                    </span>
-                  )}
-                </div>
+                <GameMetaRow
+                  year={selectedGame.yearpublished}
+                  playerCount={selectedGame.player_count}
+                  minAge={selectedGame.min_age}
+                  playingTime={selectedGame.playing_time}
+                />
                 {showAltName && (
                   <p className="text-xs text-semantic-text-muted truncate mt-0.5">
                     Also known as: {altName}
@@ -344,7 +324,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
     <div className="space-y-4">
       <SellStepHeader
         variant="icon"
-        title={heading === 'What game are you selling?' ? 'Find your game' : heading}
+        title={heading}
         helper="Search by the title on the box, in any language."
         icon={<MagnifyingGlass size={24} weight="duotone" />}
       />
@@ -430,32 +410,12 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                           <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
-                        {game.yearpublished && (
-                          <span className="flex items-center gap-1">
-                            <CalendarBlank size={13} className="shrink-0" />
-                            {game.yearpublished}
-                          </span>
-                        )}
-                        {game.player_count && (
-                          <span className="flex items-center gap-1">
-                            <Users size={13} className="shrink-0" />
-                            {game.player_count}
-                          </span>
-                        )}
-                        {game.min_age != null && game.min_age > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Baby size={13} className="shrink-0" />
-                            {game.min_age}+
-                          </span>
-                        )}
-                        {formatPlayingTime(game.playing_time) && (
-                          <span className="flex items-center gap-1">
-                            <Timer size={13} className="shrink-0" />
-                            {formatPlayingTime(game.playing_time)} min
-                          </span>
-                        )}
-                      </div>
+                      <GameMetaRow
+                        year={game.yearpublished}
+                        playerCount={game.player_count}
+                        minAge={game.min_age ?? null}
+                        playingTime={game.playing_time ?? null}
+                      />
                       {showAltName && (
                         <p className="text-xs text-semantic-text-muted truncate mt-0.5">
                           Also known as: {game.matched_alternate_name}
@@ -471,6 +431,48 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+function GameMetaRow({
+  year,
+  playerCount,
+  minAge,
+  playingTime,
+}: {
+  year: number | null;
+  playerCount: string | null;
+  minAge: number | null;
+  playingTime: string | null;
+}) {
+  const formattedPlayingTime = formatPlayingTime(playingTime);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
+      {year && (
+        <span className="flex items-center gap-1">
+          <CalendarBlank size={13} className="shrink-0" />
+          {year}
+        </span>
+      )}
+      {playerCount && (
+        <span className="flex items-center gap-1">
+          <Users size={13} className="shrink-0" />
+          {playerCount}
+        </span>
+      )}
+      {minAge != null && minAge > 0 && (
+        <span className="flex items-center gap-1">
+          <Baby size={13} className="shrink-0" />
+          {minAge}+
+        </span>
+      )}
+      {formattedPlayingTime && (
+        <span className="flex items-center gap-1">
+          <Timer size={13} className="shrink-0" />
+          {formattedPlayingTime} min
+        </span>
       )}
     </div>
   );
