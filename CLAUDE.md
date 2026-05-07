@@ -153,6 +153,7 @@ Always use these — do not write inline equivalents:
 | Compact listing row | `ListingRow` (horizontal; wraps `ListingIdentity` in bordered container with condition label) | `@/components/listings` |
 | Mobile listing card | `ListingCardMini` (compressed for 2-col mobile grid) | `@/components/listings` |
 | Listing card grid | `ListingSection` (heading, optional link, responsive grid of `ListingCard`; `emptyState`, `className`, `linkClassName` overrides) | `@/components/listings` |
+| Listing preview card | `ListingPreviewCard` (no outer Link, no FavoriteButton, no live AuctionCountdown — used in sell-flow Review step to render "this is what buyers will see on browse" before publish; mirrors `ListingCard` body, drift-insurance comments on both files) | `@/components/listings` |
 | Truncated text | `ShowMoreText` (lines, children, className; line-clamp with "Show more/less" toggle; auto-detects if truncation needed) | `@/components/ui` |
 | Truncated list | `ShowMoreList` (maxItems, label, children; shows first N items with "Show all N {label}" toggle) | `@/components/ui` |
 | Q&A accordion | `Accordion` (items: `{ q: ReactNode; a: ReactNode }[]`, `exclusive` toggles single-vs-multi-open, `bordered` (default true) — set false when the accordion lives inside a Card so the outer top/bottom borders drop and only the inter-item dividers remain, `size` (`'md'` default for Help-in-Card, `'lg'` for the home-page marketing FAQ), `ariaLabel` for screen readers; brand-styled Plus-rotate-45 disclosure with full ARIA) | `@/components/ui` |

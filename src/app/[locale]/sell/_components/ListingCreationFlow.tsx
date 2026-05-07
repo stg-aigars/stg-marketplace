@@ -639,6 +639,7 @@ export function ListingCreationFlow({
                 const exp = availableExpansions.find((e) => e.id === id);
                 return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };
               })}
+              userCountry={userCountry}
             />
           </>
         )}

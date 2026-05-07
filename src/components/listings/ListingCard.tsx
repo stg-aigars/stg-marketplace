@@ -1,3 +1,7 @@
+// Mirrors ListingPreviewCard.tsx — keep visual parity. The preview is what sellers
+// see on the sell-flow Review step before publishing; if you change the body shape
+// here, change it there too.
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece } from '@phosphor-icons/react/ssr';
