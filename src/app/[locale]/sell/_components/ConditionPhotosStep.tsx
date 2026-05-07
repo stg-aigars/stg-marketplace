@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Card, CardBody, Textarea } from '@/components/ui';
+import Link from 'next/link';
+import { Textarea } from '@/components/ui';
 import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
-import { SellStepHeader } from './SellStepHeader';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
 
@@ -12,8 +12,6 @@ interface ConditionPhotosStepProps {
   condition: ListingCondition | null;
   photos: string[];
   description: string;
-  gameImage: string | null;
-  gameName: string;
   onConditionChange: (condition: ListingCondition) => void;
   onPhotosChange: (photos: string[]) => void;
   onDescriptionChange: (desc: string) => void;
@@ -23,8 +21,6 @@ export function ConditionPhotosStep({
   condition,
   photos,
   description,
-  gameImage,
-  gameName,
   onConditionChange,
   onPhotosChange,
   onDescriptionChange,
@@ -46,92 +42,96 @@ export function ConditionPhotosStep({
   const photosRequired = condition ? conditionRequiresPhotos(condition) : false;
   const descriptionRequired = condition ? conditionRequiresDescription(condition) : false;
 
-  const photoLabel = 'Photos';
-  const notesLabel = 'Anything else a buyer should know?';
-
   return (
-    <div className="space-y-6">
-      <SellStepHeader
-        variant="anchor"
-        title="Describe your copy"
-        helper="Pick the condition, add a few photos, and note anything specific."
-        anchorImage={gameImage}
-        anchorGameName={gameName}
-      />
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          Describe your copy
+        </h2>
+        <p className="text-sm text-semantic-text-secondary mt-1">
+          Pick the condition, add a few photos, and note anything specific.
+        </p>
+      </div>
 
-      {/* 1. Condition */}
-      <Card>
-        <CardBody>
-          <p className="text-sm font-semibold text-semantic-text-secondary mb-3">1. Condition</p>
-          <ConditionStep
-            compact
-            hideHeading
-            selectedCondition={condition}
-            onSelect={onConditionChange}
-          />
-        </CardBody>
-      </Card>
+      {/* Condition */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+            Condition
+          </p>
+          <Link
+            href="/condition-guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+          >
+            See the condition guide
+          </Link>
+        </div>
+        <ConditionStep
+          compact
+          hideHeading
+          hideGuideButton
+          selectedCondition={condition}
+          onSelect={onConditionChange}
+        />
+      </div>
 
-      {/* 2. Photos — visible after condition is selected */}
+      {condition && <hr className="border-semantic-border-subtle" />}
+
+      {/* Photos — visible after condition is selected */}
       {condition && (
-        <div ref={photoSectionRef}>
-        <Card>
-          <CardBody className="space-y-3">
-            <p className="text-sm font-semibold text-semantic-text-secondary">
-              2. {photoLabel}{photosRequired && <span className="text-semantic-error"> *</span>}
+        <div ref={photoSectionRef} className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+              Photos{photosRequired && <span className="text-semantic-error"> *</span>}
             </p>
-            <PhotoUploadStep
-              compact
-              heading={null}
-              photos={photos}
-              onPhotosChange={onPhotosChange}
-              requiredMin={photosRequired ? 1 : undefined}
-            />
-
-            {photosRequired ? (
-              <p className="text-sm text-semantic-text-secondary">
-                Buyers need to see the condition of your game
-              </p>
-            ) : (
-              <p className="text-sm text-semantic-text-muted">
-                Listings with photos get more interest
-              </p>
-            )}
-          </CardBody>
-        </Card>
+            <p className="text-sm text-semantic-text-secondary mt-1">
+              {photosRequired
+                ? 'Buyers need to see the condition of your copy.'
+                : 'Listings with photos get more interest.'}
+            </p>
+          </div>
+          <PhotoUploadStep
+            compact
+            heading={null}
+            photos={photos}
+            onPhotosChange={onPhotosChange}
+            requiredMin={photosRequired ? 1 : undefined}
+          />
         </div>
       )}
 
-      {/* 3. Notes */}
+      {condition && <hr className="border-semantic-border-subtle" />}
+
+      {/* Notes */}
       {condition && (
-        <Card>
-          <CardBody>
-            <p className="text-sm font-semibold text-semantic-text-secondary mb-3">
-              3. {notesLabel}{descriptionRequired && <span className="text-semantic-error"> *</span>}
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+              Notes{descriptionRequired && <span className="text-semantic-error"> *</span>}
             </p>
-            <Textarea
-              id="listing-description"
-              value={description}
-              onChange={(e) => {
-                if (e.target.value.length <= MAX_DESCRIPTION_LENGTH) {
-                  onDescriptionChange(e.target.value);
-                }
-              }}
-              placeholder="Describe any wear, missing components, or other details about the game's condition"
-              rows={4}
-            />
-            <div className="flex justify-between mt-1">
-              {descriptionRequired && (
-                <p className="text-xs text-semantic-text-muted">
-                  Help buyers understand exactly what they&apos;re getting
-                </p>
-              )}
-              <p className="text-xs text-semantic-text-muted text-right ml-auto">
-                {description.length}/{MAX_DESCRIPTION_LENGTH}
-              </p>
-            </div>
-          </CardBody>
-        </Card>
+            <p className="text-sm text-semantic-text-secondary mt-1">
+              {descriptionRequired
+                ? "Help buyers understand exactly what they're getting."
+                : 'Anything else a buyer should know?'}
+            </p>
+          </div>
+          <Textarea
+            id="listing-description"
+            value={description}
+            onChange={(e) => {
+              if (e.target.value.length <= MAX_DESCRIPTION_LENGTH) {
+                onDescriptionChange(e.target.value);
+              }
+            }}
+            placeholder="e.g. All components present, light shelf wear on the box. Played a few times."
+            rows={4}
+          />
+          <p className="text-xs text-semantic-text-muted text-right">
+            {description.length}/{MAX_DESCRIPTION_LENGTH}
+          </p>
+        </div>
       )}
     </div>
   );

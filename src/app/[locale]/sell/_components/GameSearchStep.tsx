@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Input, Card, CardBody, Button, Spinner, Badge, EmptyState } from '@/components/ui';
-import { MagnifyingGlass, MagnifyingGlassMinus, PencilSimple } from '@phosphor-icons/react/ssr';
-import { GameIdentityRow } from '@/components/listings/atoms';
+import { ArrowSquareOut, Baby, CalendarBlank, ImageSquare, MagnifyingGlass, MagnifyingGlassMinus, PencilSimple, Timer, Users } from '@phosphor-icons/react/ssr';
 import { SellStepHeader } from './SellStepHeader';
 import { apiFetch } from '@/lib/api-fetch';
+import { formatPlayingTime } from '@/lib/bgg/utils';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { formatExpansionCount } from '@/lib/listings/types';
 
 interface GameResult {
   id: number;
@@ -13,6 +16,9 @@ interface GameResult {
   yearpublished: number | null;
   thumbnail: string | null;
   player_count: string | null;
+  min_age?: number | null;
+  playing_time?: string | null;
+  weight?: number | null;
   is_expansion?: boolean;
   matched_alternate_name?: string | null;
 }
@@ -24,6 +30,9 @@ export interface EnrichedGame {
   thumbnail: string | null;
   image: string | null;
   player_count: string | null;
+  min_age: number | null;
+  playing_time: string | null;
+  weight: number | null;
   alternateNames: string[];
   matchedAlternateName?: string | null;
 }
@@ -33,7 +42,15 @@ export function buildEnrichedGame(
   bggGameId: number,
   gameName: string,
   gameYear: number | null,
-  games: { thumbnail: string | null; image: string | null; player_count: string | null; alternate_names: string[] | null } | null,
+  games: {
+    thumbnail: string | null;
+    image: string | null;
+    player_count: string | null;
+    alternate_names: string[] | null;
+    min_age?: number | null;
+    playing_time?: string | null;
+    weight?: number | null;
+  } | null,
 ): EnrichedGame {
   return {
     id: bggGameId,
@@ -42,9 +59,19 @@ export function buildEnrichedGame(
     thumbnail: games?.thumbnail ?? null,
     image: games?.image ?? null,
     player_count: games?.player_count ?? null,
+    min_age: games?.min_age ?? null,
+    playing_time: games?.playing_time ?? null,
+    weight: games?.weight ?? null,
     alternateNames: games?.alternate_names ?? [],
     matchedAlternateName: null,
   };
+}
+
+export interface DuplicateListingNotice {
+  id: string;
+  game_name: string;
+  price_cents: number;
+  expansion_count: number;
 }
 
 interface GameSearchStepProps {
@@ -53,9 +80,11 @@ interface GameSearchStepProps {
   onSelect: (game: EnrichedGame) => void;
   locked?: boolean;
   heading?: string;
+  duplicateListings?: DuplicateListingNotice[];
+  locale?: string;
 }
 
-export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked, heading = 'What game are you selling?' }: GameSearchStepProps) {
+export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp, onSelect, locked, heading = 'What game are you selling?', duplicateListings = [], locale = 'en' }: GameSearchStepProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GameResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -166,6 +195,9 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
           thumbnail: data.game?.thumbnail ?? game.thumbnail,
           image: data.game?.image ?? null,
           player_count: data.game?.player_count ?? game.player_count,
+          min_age: data.game?.min_age ?? null,
+          playing_time: data.game?.playing_time ?? null,
+          weight: data.game?.weight ?? null,
           alternateNames: data.game?.alternate_names ?? [],
           matchedAlternateName: game.matched_alternate_name ?? null,
         };
@@ -194,41 +226,116 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
   // Show selected game card
   if (selectedGameId && selectedGame) {
     const altName = selectedGame.matchedAlternateName;
-    const slimMetaParts: string[] = [];
-    if (selectedGame.yearpublished) slimMetaParts.push(String(selectedGame.yearpublished));
-    if (altName && altName !== selectedGame.name) slimMetaParts.push(`Also known as: ${altName}`);
-    const slimMeta = slimMetaParts.join(' · ');
+    const showAltName = altName && altName !== selectedGame.name;
+    const thumbSrc = selectedGame.thumbnail ?? selectedGame.image;
 
     return (
       <div className="space-y-4">
-        <SellStepHeader
-          variant="anchor"
-          title="Your game"
-          helper="You can continue, or pick a different one."
-          anchorImage={selectedGame.image ?? selectedGame.thumbnail}
-          anchorGameName={selectedGame.name}
-        />
-        {(slimMeta || !locked) && (
-          <Card>
-            <CardBody className="py-2.5">
-              <div className="flex items-center gap-3">
-                <p className="flex-1 min-w-0 truncate text-sm text-semantic-text-muted">
-                  {slimMeta}
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+            Your game
+          </h2>
+          <p className="text-sm text-semantic-text-secondary mt-1">
+            You can continue, or pick a different one.
+          </p>
+        </div>
+        <Card>
+          <CardBody>
+            <div className="flex items-start gap-4">
+              {thumbSrc ? (
+                <Image
+                  src={thumbSrc}
+                  alt={selectedGame.name}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                  <ImageSquare size={28} className="text-semantic-text-muted" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-semantic-text-primary truncate">
+                  {selectedGame.name}
                 </p>
-                {!locked && (
-                  <button
-                    type="button"
-                    onClick={handleChange}
-                    className="text-semantic-brand shrink-0 p-1"
-                    aria-label="Change game"
-                  >
-                    <PencilSimple size={16} />
-                  </button>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
+                  {selectedGame.yearpublished && (
+                    <span className="flex items-center gap-1">
+                      <CalendarBlank size={13} className="shrink-0" />
+                      {selectedGame.yearpublished}
+                    </span>
+                  )}
+                  {selectedGame.player_count && (
+                    <span className="flex items-center gap-1">
+                      <Users size={13} className="shrink-0" />
+                      {selectedGame.player_count}
+                    </span>
+                  )}
+                  {selectedGame.min_age != null && selectedGame.min_age > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Baby size={13} className="shrink-0" />
+                      {selectedGame.min_age}+
+                    </span>
+                  )}
+                  {formatPlayingTime(selectedGame.playing_time) && (
+                    <span className="flex items-center gap-1">
+                      <Timer size={13} className="shrink-0" />
+                      {formatPlayingTime(selectedGame.playing_time)} min
+                    </span>
+                  )}
+                </div>
+                {showAltName && (
+                  <p className="text-xs text-semantic-text-muted truncate mt-0.5">
+                    Also known as: {altName}
+                  </p>
                 )}
               </div>
-            </CardBody>
-          </Card>
-        )}
+              {!locked && (
+                <button
+                  type="button"
+                  onClick={handleChange}
+                  className="text-semantic-brand shrink-0 p-1"
+                  aria-label="Change game"
+                >
+                  <PencilSimple size={16} />
+                </button>
+              )}
+            </div>
+            {duplicateListings.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-semantic-border-subtle space-y-1.5">
+                <p className="text-sm font-medium text-semantic-text-primary">
+                  {duplicateListings.length === 1
+                    ? "You've listed this game before"
+                    : `You've listed this game ${duplicateListings.length} times`}
+                </p>
+                <p className="text-sm text-semantic-text-secondary">
+                  If you have another copy, go ahead. Or edit your existing {duplicateListings.length === 1 ? 'listing' : 'listings'} instead.
+                </p>
+                <div className="space-y-0.5 pt-0.5">
+                  {duplicateListings.map((listing) => (
+                    <a
+                      key={listing.id}
+                      href={`/${locale}/listings/${listing.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+                    >
+                      <span>
+                        {listing.game_name} — {formatCentsToCurrency(listing.price_cents)}
+                        {listing.expansion_count > 0 && (
+                          <span className="text-semantic-text-muted ml-1">· {formatExpansionCount(listing.expansion_count)}</span>
+                        )}
+                      </span>
+                      <ArrowSquareOut size={13} weight="bold" className="shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
       </div>
     );
   }
@@ -238,13 +345,12 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
       <SellStepHeader
         variant="icon"
         title={heading === 'What game are you selling?' ? 'Find your game' : heading}
-        helper="Search by the title on the box, in any language. We use BoardGameGeek as the catalog."
+        helper="Search by the title on the box, in any language."
         icon={<MagnifyingGlass size={24} weight="duotone" />}
       />
 
       <Input
         placeholder="Search for a board game..."
-        prefix={<MagnifyingGlass size={18} />}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         autoFocus
@@ -275,15 +381,6 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
         </div>
       )}
 
-      {/* Empty state */}
-      {!searching && !hasSearched && query.length < 2 && (
-        <EmptyState
-          icon={MagnifyingGlass}
-          title="Search a game to get started"
-          description="Title in any language works."
-        />
-      )}
-
       {/* No results */}
       {!searching && hasSearched && results.length === 0 && (
         <EmptyState
@@ -300,12 +397,6 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
             const showAltName =
               game.matched_alternate_name &&
               !game.name.toLowerCase().includes(query.trim().toLowerCase());
-            const action =
-              enriching === game.id ? (
-                <Spinner className="text-semantic-text-muted shrink-0" />
-              ) : game.is_expansion ? (
-                <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
-              ) : null;
 
             return (
               <Card
@@ -315,18 +406,66 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
                 onClick={() => handleSelectGame(game)}
               >
                 <CardBody className="py-3">
-                  <GameIdentityRow
-                    thumbnail={game.thumbnail}
-                    name={game.name}
-                    year={game.yearpublished}
-                    size="md"
-                    action={action}
-                  />
-                  {showAltName && (
-                    <p className="text-xs text-semantic-text-muted truncate mt-1.5 ml-[60px]">
-                      Also known as: {game.matched_alternate_name}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {game.thumbnail ? (
+                      <Image
+                        src={game.thumbnail}
+                        alt={game.name}
+                        width={56}
+                        height={56}
+                        className="w-14 h-14 rounded-lg object-contain bg-semantic-bg-secondary shrink-0"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-semantic-bg-secondary shrink-0 flex items-center justify-center">
+                        <ImageSquare size={24} className="text-semantic-text-muted" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-semantic-text-primary truncate">
+                          {game.name}
+                        </p>
+                        {game.is_expansion && (
+                          <Badge variant="default" className="shrink-0 text-xs">Expansion</Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-semantic-text-muted mt-0.5">
+                        {game.yearpublished && (
+                          <span className="flex items-center gap-1">
+                            <CalendarBlank size={13} className="shrink-0" />
+                            {game.yearpublished}
+                          </span>
+                        )}
+                        {game.player_count && (
+                          <span className="flex items-center gap-1">
+                            <Users size={13} className="shrink-0" />
+                            {game.player_count}
+                          </span>
+                        )}
+                        {game.min_age != null && game.min_age > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Baby size={13} className="shrink-0" />
+                            {game.min_age}+
+                          </span>
+                        )}
+                        {formatPlayingTime(game.playing_time) && (
+                          <span className="flex items-center gap-1">
+                            <Timer size={13} className="shrink-0" />
+                            {formatPlayingTime(game.playing_time)} min
+                          </span>
+                        )}
+                      </div>
+                      {showAltName && (
+                        <p className="text-xs text-semantic-text-muted truncate mt-0.5">
+                          Also known as: {game.matched_alternate_name}
+                        </p>
+                      )}
+                    </div>
+                    {enriching === game.id && (
+                      <Spinner className="text-semantic-text-muted shrink-0" />
+                    )}
+                  </div>
                 </CardBody>
               </Card>
             );

@@ -17,7 +17,7 @@ export function SellPageClient() {
           <SellStepHeader
             variant="icon"
             title="Two ways to sell"
-            helper="Pick what fits this game — your next listing can be different."
+            helper="Pick what fits this game. Your next listing can be different."
             icon={<Storefront size={24} weight="duotone" />}
           />
 

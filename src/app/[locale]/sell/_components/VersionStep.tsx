@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckCircle, PencilSimple } from '@phosphor-icons/react/ssr';
+import { CheckCircle, Circle, PencilSimple, Plus } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Input, Spinner, Alert } from '@/components/ui';
 import { GameIdentityRow } from '@/components/listings/atoms';
-import { SellStepHeader } from './SellStepHeader';
 import { apiFetch } from '@/lib/api-fetch';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import type { BGGVersion } from '@/lib/bgg/types';
@@ -21,6 +20,7 @@ interface VersionStepProps {
   selectedVersionId: number | null;
   selectedVersionSource: VersionSource | null;
   /** Persisted version details for collapsed view (survives unmount/remount) */
+  selectedVersionName?: string | null;
   selectedPublisher?: string | null;
   selectedLanguage?: string | null;
   selectedEditionYear?: number | null;
@@ -54,6 +54,7 @@ export function VersionStep({
   onGameNameChange,
   selectedVersionId,
   selectedVersionSource,
+  selectedVersionName,
   selectedPublisher,
   selectedLanguage,
   selectedEditionYear,
@@ -68,7 +69,9 @@ export function VersionStep({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [collapsed, setCollapsed] = useState(selectedVersionSource !== null);
+  const [showAltNames, setShowAltNames] = useState(false);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
+  const [manualVersionName, setManualVersionName] = useState(selectedVersionName ?? '');
   const [manualPublisher, setManualPublisher] = useState(selectedPublisher ?? '');
   const [manualLanguage, setManualLanguage] = useState(selectedLanguage ?? '');
   const [manualYear, setManualYear] = useState(selectedEditionYear ? String(selectedEditionYear) : '');
@@ -76,6 +79,9 @@ export function VersionStep({
 
   const primaryGameName = selectedGame?.name ?? gameName;
   const alternateNames = selectedGame?.alternateNames ?? [];
+  // BGG often returns no image for niche edition versions. Fall back to the base
+  // game's cover so the version card never shows a Package placeholder.
+  const baseGameThumbnail = selectedGame?.image ?? selectedGame?.thumbnail ?? null;
 
   // Validate and collapse after selection
   const collapseWithValidation = () => {
@@ -176,6 +182,43 @@ export function VersionStep({
     setLanguageFilter(sorted[0]);
   }, [versions, userCountry]);
 
+  // Auto-select a sensible default edition once versions arrive, so the seller
+  // lands on a confirmed view instead of a long list of editions to scroll.
+  // Priority mirrors the language-filter auto-select: userCountry's language →
+  // English → first by priority sort. Seller can hit the pencil to expand the
+  // full list (or use manual entry) if their copy is different.
+  const hasAutoSelectedDefault = useRef(false);
+
+  useEffect(() => {
+    if (hasAutoSelectedDefault.current) return;
+    if (versions.length === 0) return;
+    if (selectedVersionSource !== null) return;
+
+    const findByLanguage = (lang: string) =>
+      versions.find((v) => getVersionLanguages(v).includes(lang));
+
+    let defaultVersion: BGGVersion | undefined;
+
+    if (userCountry) {
+      const countryLang = COUNTRY_TO_LANGUAGE[userCountry];
+      if (countryLang) defaultVersion = findByLanguage(countryLang);
+    }
+    if (!defaultVersion) defaultVersion = findByLanguage('English');
+    if (!defaultVersion) defaultVersion = versions[0];
+
+    hasAutoSelectedDefault.current = true;
+    onSelect({
+      version_source: 'bgg',
+      bgg_version_id: defaultVersion.id,
+      version_name: defaultVersion.name,
+      publisher: defaultVersion.publishers?.join(', ') ?? defaultVersion.publisher ?? null,
+      language: defaultVersion.languages?.join(', ') ?? defaultVersion.language ?? null,
+      edition_year: defaultVersion.yearPublished ?? null,
+      version_thumbnail: toBggFullSize(defaultVersion.image) ?? toBggFullSize(defaultVersion.thumbnail) ?? null,
+    });
+    setCollapsed(true);
+  }, [versions, selectedVersionSource, userCountry, onSelect]);
+
   // Extract unique languages sorted: Baltic-priority first, then alphabetical
   const uniqueLanguages = useMemo(() => {
     const langCounts = new Map<string, number>();
@@ -240,7 +283,7 @@ export function VersionStep({
     onSelect({
       version_source: 'manual',
       bgg_version_id: null,
-      version_name: null,
+      version_name: manualVersionName.trim() || null,
       publisher: manualPublisher || null,
       language: manualLanguage || null,
       edition_year: manualYear ? parseInt(manualYear, 10) : null,
@@ -261,6 +304,16 @@ export function VersionStep({
   if (canShowCollapsed) {
     return (
       <div className="space-y-4">
+        {!compact && (
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+              Your edition
+            </h2>
+            <p className="text-sm text-semantic-text-secondary mt-1">
+              We picked one for you, but change it below if the language or the name on the box doesn&apos;t match your copy.
+            </p>
+          </div>
+        )}
         {/* Selected edition card — unified VersionCard in confirmed mode */}
         <VersionCard
           version={selectedVersionSource === 'bgg' && selectedVersion
@@ -278,18 +331,46 @@ export function VersionStep({
           gameName={gameName}
           selected={false}
           mode="confirmed"
-          onEdit={() => setCollapsed(false)}
+          fallbackThumbnail={baseGameThumbnail}
         />
 
-        {/* Alternate name selector */}
-        {alternateNames.length > 0 && onGameNameChange && (
-          <AlternateNameSelector
-            primaryName={primaryGameName}
-            alternateNames={alternateNames}
-            selectedName={gameName}
-            onSelect={onGameNameChange}
-          />
-        )}
+        {/* Parallel edit affordances — both render as pencil-prefixed text links
+            so "change edition" and "change name on the box" share the same visual
+            treatment and stay equally accessible. */}
+        <div className="flex flex-col items-start gap-1.5">
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            className="inline-flex items-center gap-1.5 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+          >
+            <PencilSimple size={14} weight="bold" className="shrink-0" />
+            Change edition
+          </button>
+
+          {alternateNames.length > 0 && onGameNameChange && (
+            showAltNames ? (
+              <AlternateNameSelector
+                primaryName={primaryGameName}
+                alternateNames={alternateNames}
+                selectedName={gameName}
+                defaultExpanded
+                onSelect={(name) => {
+                  onGameNameChange(name);
+                  setShowAltNames(false);
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAltNames(true)}
+                className="inline-flex items-center gap-1.5 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
+              >
+                <PencilSimple size={14} weight="bold" className="shrink-0" />
+                Change name on the box
+              </button>
+            )
+          )}
+        </div>
       </div>
     );
   }
@@ -314,16 +395,22 @@ export function VersionStep({
 
         <div className="space-y-4">
           <Input
-            label="Publisher"
-            placeholder="e.g. Kosmos, Z-Man Games"
-            value={manualPublisher}
-            onChange={(e) => setManualPublisher(e.target.value)}
+            label="Edition name"
+            placeholder="e.g. Latvian edition, Kickstarter edition"
+            value={manualVersionName}
+            onChange={(e) => setManualVersionName(e.target.value)}
           />
           <Input
             label="Language *"
             placeholder="e.g. English, Latvian, German"
             value={manualLanguage}
             onChange={(e) => setManualLanguage(e.target.value)}
+          />
+          <Input
+            label="Publisher"
+            placeholder="e.g. Kosmos, Z-Man Games"
+            value={manualPublisher}
+            onChange={(e) => setManualPublisher(e.target.value)}
           />
           <div>
             <Input
@@ -362,13 +449,14 @@ export function VersionStep({
   return (
     <div className="space-y-4">
       {!compact && (
-        <SellStepHeader
-          variant="anchor"
-          title="Which edition do you have?"
-          helper="Match the language and publisher on the box — buyers in LV/LT/EE care about this."
-          anchorImage={selectedGame?.image ?? selectedGame?.thumbnail ?? null}
-          anchorGameName={primaryGameName}
-        />
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+            Which edition do you have?
+          </h2>
+          <p className="text-sm text-semantic-text-secondary mt-1">
+            Match the language and publisher on the box. It matters to Baltic buyers.
+          </p>
+        </div>
       )}
 
       {fetchError && (
@@ -404,6 +492,7 @@ export function VersionStep({
             gameName={gameName}
             selected
             onClick={() => handleSelectBGGVersion(selectedVersion)}
+            fallbackThumbnail={baseGameThumbnail}
           />
           <hr className="border-semantic-border-subtle" />
         </div>
@@ -419,6 +508,7 @@ export function VersionStep({
                 gameName={gameName}
                 selected={isSelected(version.id)}
                 onClick={() => handleSelectBGGVersion(version)}
+                fallbackThumbnail={baseGameThumbnail}
               />
             ))
           ) : (
@@ -433,14 +523,15 @@ export function VersionStep({
         </p>
       )}
 
-      <div className="pt-2">
-        <Button
-          variant="secondary"
-          size="sm"
+      <div className="pt-3 border-t border-semantic-border-subtle">
+        <button
+          type="button"
           onClick={() => setShowManual(true)}
+          className="inline-flex items-center gap-1.5 text-sm text-semantic-brand sm:hover:text-semantic-brand-hover transition-colors duration-250 ease-out-custom"
         >
-          My edition isn&apos;t listed
-        </Button>
+          <Plus size={14} weight="bold" className="shrink-0" />
+          Don&apos;t see your edition? Add it manually
+        </button>
       </div>
     </div>
   );
@@ -454,47 +545,41 @@ function VersionCard({
   selected,
   mode = 'select',
   onClick,
-  onEdit,
+  fallbackThumbnail,
 }: {
   version: BGGVersion;
   gameName?: string;
   selected: boolean;
   mode?: 'select' | 'confirmed';
   onClick?: () => void;
-  onEdit?: () => void;
+  /** Used when the BGG version has no image of its own (common for niche editions). */
+  fallbackThumbnail?: string | null;
 }) {
   const isSelect = mode === 'select';
 
+  // In confirmed mode, the card is purely a display surface — edit affordances
+  // live in a parallel link row below (so "change edition" and "change name on
+  // the box" share the same visual treatment).
   const actionElement = isSelect && selected
     ? <CheckCircle size={20} weight="fill" className="text-semantic-brand shrink-0" />
-    : !isSelect && onEdit
-    ? (
-      <button
-        type="button"
-        onClick={onEdit}
-        className="text-semantic-brand shrink-0 p-1"
-        aria-label="Change edition"
-      >
-        <PencilSimple size={16} />
-      </button>
-    ) : null;
+    : isSelect
+    ? <Circle size={20} className="text-semantic-border-default shrink-0" />
+    : null;
 
   return (
     <Card
       hoverable={isSelect}
       className={isSelect
-        ? `cursor-pointer transition-all duration-350 ease-out-custom ${selected ? 'border-2 border-semantic-brand shadow-md' : ''}`
-        : ''
+        ? `cursor-pointer transition-all duration-350 ease-out-custom shadow-none ${selected ? 'border-2 border-semantic-brand shadow-md' : ''}`
+        : 'shadow-none'
       }
       onClick={isSelect ? onClick : undefined}
     >
       <CardBody className="py-3">
-        {gameName && (
-          <p className="font-medium text-semantic-text-heading mb-1">{gameName}</p>
-        )}
         <GameIdentityRow
-          thumbnail={version.image ?? version.thumbnail}
-          name={version.name}
+          thumbnail={version.image ?? version.thumbnail ?? fallbackThumbnail ?? null}
+          name={gameName ?? version.name}
+          versionName={gameName ? version.name : null}
           language={version.languages?.join(', ') ?? version.language}
           publisher={version.publishers?.join(', ') ?? version.publisher}
           year={version.yearPublished}
@@ -520,6 +605,7 @@ function AlternateNameSelector({
   alternateNames,
   selectedName,
   onSelect,
+  defaultExpanded = false,
 }: {
   primaryName: string;
   alternateNames: string[];
@@ -527,8 +613,9 @@ function AlternateNameSelector({
   // or the primary name — so the collapsed view shows what the user searched for
   selectedName: string;
   onSelect: (name: string) => void;
+  defaultExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [showAll, setShowAll] = useState(false);
 
   const allNames = useMemo(() => [primaryName, ...alternateNames], [primaryName, alternateNames]);
@@ -541,25 +628,28 @@ function AlternateNameSelector({
   if (!expanded) {
     return (
       <div className="space-y-2">
-        <p className="text-sm font-medium text-semantic-text-secondary">
-          Name on the box
-        </p>
-        <div className="w-full text-left px-3 py-1.5 rounded-md border text-sm border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium">
+        <div>
+          <p className="text-sm font-medium text-semantic-text-secondary">
+            Name on the box
+          </p>
+          <p className="text-xs text-semantic-text-muted mt-0.5">
+            If your box has a different title, pick it. Buyers search by the title on the box.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="w-full text-left px-3 py-2 rounded-md border text-sm border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary font-medium sm:hover:bg-semantic-brand/10 transition-colors duration-250 ease-out-custom"
+        >
           <div className="flex items-center gap-2">
             <CheckCircle size={16} weight="fill" className="text-semantic-brand shrink-0" />
             <span className="truncate flex-1">{selectedName}</span>
             {selectedName === primaryName && (
               <span className="text-xs text-semantic-text-muted shrink-0">(primary)</span>
             )}
-            <button
-              type="button"
-              onClick={() => setExpanded(true)}
-              className="text-xs text-semantic-brand shrink-0 ml-2"
-            >
-              change
-            </button>
+            <PencilSimple size={14} className="text-semantic-brand shrink-0" />
           </div>
-        </div>
+        </button>
       </div>
     );
   }
