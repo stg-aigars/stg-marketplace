@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Check } from '@phosphor-icons/react/ssr';
 import { SectionLink } from '@/components/ui';
 import { colors } from '@/styles/tokens';
+import { trackClient } from '@/lib/analytics';
 
 type TabKey = 'browse' | 'sell' | 'ship' | 'payments';
 
@@ -55,7 +56,10 @@ function Features() {
                 id={`tab-${key}`}
                 aria-selected={isActive}
                 aria-controls={`tab-panel-${key}`}
-                onClick={() => setActiveKey(key)}
+                onClick={() => {
+                  setActiveKey(key);
+                  trackClient('homepage_feature_tab_clicked', { tab: key });
+                }}
                 className={
                   'px-4 sm:px-5 py-3 sm:py-3.5 rounded-t-lg whitespace-nowrap font-medium transition-colors duration-250 ease-out-custom focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus ' +
                   (isActive

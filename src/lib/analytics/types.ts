@@ -46,6 +46,7 @@ export interface AnalyticsEventMap {
     has_edition_preference: boolean;
   };
   newsletter_subscribed: Record<string, never>;
+  homepage_feature_tab_clicked: { tab: 'browse' | 'sell' | 'ship' | 'payments' };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;
