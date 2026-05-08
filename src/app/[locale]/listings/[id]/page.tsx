@@ -8,8 +8,8 @@ import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiec
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { conditionGuide, getConditionLabel } from '@/lib/condition-config';
-import { conditionToBadgeKey, formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
+import { getConditionDetail, getConditionLabel } from '@/lib/condition-config';
+import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
@@ -551,7 +551,7 @@ export default async function ListingDetailPage(
                 </InlineArrowLink>
               </div>
               <p className="text-sm text-semantic-text-secondary leading-relaxed">
-                {conditionGuide[conditionToBadgeKey[listing.condition]].detail}
+                {getConditionDetail(listing.condition)}
               </p>
               {listing.description && (
                 <p className="text-semantic-text-secondary whitespace-pre-line mt-3 pt-3 border-t border-semantic-border-subtle">

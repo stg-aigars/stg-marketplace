@@ -5,7 +5,7 @@ export { Card, CardHeader, CardBody, CardFooter } from './card';
 export type { CardProps } from './card';
 
 export { Badge } from './badge';
-export type { BadgeProps, ConditionKey } from './badge';
+export type { BadgeProps } from './badge';
 
 export { ConditionBadge } from './condition-badge';
 export type { ConditionBadgeProps } from './condition-badge';
