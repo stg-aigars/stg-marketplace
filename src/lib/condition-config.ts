@@ -60,3 +60,8 @@ export const conditionGuide: Record<ConditionBadgeKey, { example: string; detail
 export function getConditionLabel(condition: ListingCondition): string {
   return conditionConfig[conditionToBadgeKey[condition]].label;
 }
+
+/** Get the long-form condition description used on listing detail and the sell-flow Details step. */
+export function getConditionDetail(condition: ListingCondition): string {
+  return conditionGuide[conditionToBadgeKey[condition]].detail;
+}

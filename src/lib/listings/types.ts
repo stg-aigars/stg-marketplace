@@ -67,7 +67,9 @@ export interface UpdateListingData {
   expansions?: ListingExpansion[];
 }
 
-/** UI-facing key for a listing condition. Drives Badge styling, condition-config entries, and condition guide rows. */
+/** Camel-case mirror of `ListingCondition`. The DB stores snake_case (`like_new`); the UI codepath
+ *  (Badge styling, condition-config maps, condition-guide rows) keys on camelCase. Use
+ *  `conditionToBadgeKey` to bridge the two. */
 export type ConditionBadgeKey = 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts';
 
 /** Maps condition DB values to Badge component condition keys */

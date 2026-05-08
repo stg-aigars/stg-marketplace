@@ -1,12 +1,12 @@
 import { type HTMLAttributes } from 'react';
 import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass } from '@phosphor-icons/react/ssr';
 import { cn } from '@/lib/cn';
-import type { ConditionBadgeKey as ConditionKey } from '@/lib/listings/types';
+import type { ConditionBadgeKey } from '@/lib/listings/types';
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const conditionIcons: Record<ConditionKey, React.FC<any>> = {
+const conditionIcons: Record<ConditionBadgeKey, React.FC<any>> = {
   likeNew: Sparkle,
   veryGood: Star,
   good: Check,
@@ -22,7 +22,7 @@ const variantIcons: Partial<Record<BadgeVariant, React.FC<any>>> = {
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
-  condition?: ConditionKey;
+  condition?: ConditionBadgeKey;
   dot?: boolean;
 }
 
@@ -36,7 +36,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   wanted: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
 };
 
-const conditionClasses: Record<ConditionKey, string> = {
+const conditionClasses: Record<ConditionBadgeKey, string> = {
   likeNew: 'bg-condition-like-new-bg text-condition-like-new-text border-condition-like-new',
   veryGood: 'bg-condition-very-good-bg text-condition-very-good-text border-condition-very-good',
   good: 'bg-condition-good-bg text-condition-good-text border-condition-good',
@@ -67,4 +67,4 @@ function Badge({ variant = 'default', condition, dot, className, children, ...pr
 }
 
 export { Badge };
-export type { BadgeProps, ConditionKey };
+export type { BadgeProps };

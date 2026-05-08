@@ -1,7 +1,7 @@
 'use client';
 
 import { ConditionBadge, InlineArrowLink } from '@/components/ui';
-import { conditionGuide } from '@/lib/condition-config';
+import { getConditionDetail } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import type { ConditionBadgeKey, ListingCondition } from '@/lib/listings/types';
 
@@ -57,7 +57,7 @@ export function ConditionStep({
         </div>
         {selectedCondition && (
           <p className="text-sm text-semantic-text-secondary leading-relaxed">
-            {conditionGuide[conditionToBadgeKey[selectedCondition]].detail}
+            {getConditionDetail(selectedCondition)}
           </p>
         )}
       </div>
