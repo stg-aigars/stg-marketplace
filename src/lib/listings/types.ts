@@ -67,8 +67,11 @@ export interface UpdateListingData {
   expansions?: ListingExpansion[];
 }
 
+/** UI-facing key for a listing condition. Drives Badge styling, condition-config entries, and condition guide rows. */
+export type ConditionBadgeKey = 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts';
+
 /** Maps condition DB values to Badge component condition keys */
-export const conditionToBadgeKey: Record<ListingCondition, 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts'> = {
+export const conditionToBadgeKey: Record<ListingCondition, ConditionBadgeKey> = {
   like_new: 'likeNew',
   very_good: 'veryGood',
   good: 'good',

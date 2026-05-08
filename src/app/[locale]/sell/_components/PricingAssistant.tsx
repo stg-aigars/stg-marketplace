@@ -5,8 +5,7 @@ import { ArrowSquareOut, Check } from '@phosphor-icons/react/ssr';
 import { Button, Skeleton } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { apiFetch } from '@/lib/api-fetch';
-import { conditionToBadgeKey } from '@/lib/listings/types';
-import { conditionConfig } from '@/lib/condition-config';
+import { getConditionLabel } from '@/lib/condition-config';
 import {
   calculateSuggestedPrice,
   CONDITION_MULTIPLIERS,
@@ -117,7 +116,7 @@ export function PricingAssistant({
 
   if (!hasRetail && !hasMedian && !hasLowest) return null;
 
-  const conditionLabel = conditionConfig[conditionToBadgeKey[condition]].label;
+  const conditionLabel = getConditionLabel(condition);
   const multiplierPct = Math.round(CONDITION_MULTIPLIERS[condition] * 100);
 
   return (

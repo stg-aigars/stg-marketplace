@@ -1,6 +1,6 @@
-import { conditionToBadgeKey, type ListingCondition } from '@/lib/listings/types';
+import { conditionToBadgeKey, type ConditionBadgeKey, type ListingCondition } from '@/lib/listings/types';
 
-export const conditionConfig = {
+export const conditionConfig: Record<ConditionBadgeKey, { label: string }> = {
   likeNew: {
     label: 'Like New',
   },
@@ -18,7 +18,7 @@ export const conditionConfig = {
   },
 };
 
-export const conditionGuide = {
+export const conditionGuide: Record<ConditionBadgeKey, { example: string; detail: string; sellerHint: string }> = {
   likeNew: {
     example: 'Shrink wrap removed but all components still in original packaging. No signs of play.',
     detail:
@@ -54,7 +54,7 @@ export const conditionGuide = {
     sellerHint:
       'Be specific in the description: which components are missing or broken, and which are intact. Buyers expect photos of the damaged or missing parts.',
   },
-} as const;
+};
 
 /** Get the display label for a listing condition (e.g., "Like New", "Very Good"). */
 export function getConditionLabel(condition: ListingCondition): string {

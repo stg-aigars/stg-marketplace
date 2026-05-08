@@ -1,9 +1,9 @@
 import { type HTMLAttributes } from 'react';
 import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass } from '@phosphor-icons/react/ssr';
 import { cn } from '@/lib/cn';
+import type { ConditionBadgeKey as ConditionKey } from '@/lib/listings/types';
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted';
-type ConditionKey = 'likeNew' | 'veryGood' | 'good' | 'acceptable' | 'forParts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const conditionIcons: Record<ConditionKey, React.FC<any>> = {

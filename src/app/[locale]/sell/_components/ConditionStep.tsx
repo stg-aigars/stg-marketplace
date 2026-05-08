@@ -3,7 +3,7 @@
 import { ConditionBadge, InlineArrowLink } from '@/components/ui';
 import { conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ConditionBadgeKey, ListingCondition } from '@/lib/listings/types';
 
 interface ConditionStepProps {
   selectedCondition: ListingCondition | null;
@@ -13,7 +13,7 @@ interface ConditionStepProps {
   hideGuideButton?: boolean;
 }
 
-const conditionBg: Record<string, string> = {
+const conditionBg: Record<ConditionBadgeKey, string> = {
   likeNew: 'bg-condition-like-new-bg',
   veryGood: 'bg-condition-very-good-bg',
   good: 'bg-condition-good-bg',
