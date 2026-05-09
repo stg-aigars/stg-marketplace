@@ -3,8 +3,12 @@
 -- Seeds:
 --   - 52 accounts: chart of accounts (Latvian SME standard with marketplace
 --     adaptations per Phase 0 v2 + v3 mapping table §A).
---   - 29 periods: monthly 2025-05 → 2026-12 (20), quarterly 2025-Q2 →
---     2026-Q4 (7), annual 2025 / 2026 (2). All seeded with status='open'.
+--   - 97 periods: monthly 2025-05 → 2030-12 (68), quarterly 2025-Q2 →
+--     2030-Q4 (23), annual 2025 → 2030 (6). All seeded with status='open'.
+--     Generated via generate_series so extending the window in a future
+--     migration is a single end-date change. Window covers Phase 0 backfill
+--     plus a 5+ year forward buffer; before this buffer expires (~2029) a
+--     follow-up migration or cron route should extend it.
 --   - 4 vat_rates: LV 21%, LT 21%, EE 20% (closed 2025-06-30), EE 24%
 --     (open from 2025-07-01).
 --   - 2 counterparties: VID tax authority and STG_INTERNAL self-counterparty,
@@ -95,47 +99,35 @@ insert into public.accounts (code, name_lv, name_en, type, is_vat, parent_code) 
 on conflict (code) do nothing;
 
 -- ============================================================================
--- 2. periods (29 rows)
+-- 2. periods (97 rows)
 -- ============================================================================
 --
--- Window: 2025-05 → 2026-12 (covers Phase 0 backfill plus Phase 1 forward
--- through end of 2026). All status='open' at seed time; transitions are
--- operational. Quarterly and annual periods exist alongside monthly so OSS /
--- year-end-close queries can address them by key.
+-- Window: 2025-05 → 2030-12 monthly, 2025-Q2 → 2030-Q4 quarterly, 2025 →
+-- 2030 annual. Covers Phase 0 backfill (May 2025 onward) plus a 5+ year
+-- forward buffer for the posting engine. Extending the window later is a
+-- single end-date change in a follow-up migration; alternatively, a
+-- cron/seed-periods route can maintain a rolling buffer.
+--
+-- All status='open' at seed time; transitions are operational. Quarterly
+-- and annual periods exist alongside monthly so OSS / year-end-close
+-- queries can address them by key.
 
-insert into public.periods (period_key, period_type, status) values
-  -- Monthly (20)
-  ('2025-05', 'month', 'open'),
-  ('2025-06', 'month', 'open'),
-  ('2025-07', 'month', 'open'),
-  ('2025-08', 'month', 'open'),
-  ('2025-09', 'month', 'open'),
-  ('2025-10', 'month', 'open'),
-  ('2025-11', 'month', 'open'),
-  ('2025-12', 'month', 'open'),
-  ('2026-01', 'month', 'open'),
-  ('2026-02', 'month', 'open'),
-  ('2026-03', 'month', 'open'),
-  ('2026-04', 'month', 'open'),
-  ('2026-05', 'month', 'open'),
-  ('2026-06', 'month', 'open'),
-  ('2026-07', 'month', 'open'),
-  ('2026-08', 'month', 'open'),
-  ('2026-09', 'month', 'open'),
-  ('2026-10', 'month', 'open'),
-  ('2026-11', 'month', 'open'),
-  ('2026-12', 'month', 'open'),
-  -- Quarterly (7)
-  ('2025-Q2', 'quarter', 'open'),
-  ('2025-Q3', 'quarter', 'open'),
-  ('2025-Q4', 'quarter', 'open'),
-  ('2026-Q1', 'quarter', 'open'),
-  ('2026-Q2', 'quarter', 'open'),
-  ('2026-Q3', 'quarter', 'open'),
-  ('2026-Q4', 'quarter', 'open'),
-  -- Annual (2)
-  ('2025', 'year', 'open'),
-  ('2026', 'year', 'open')
+-- Monthly: 68 rows (2025-05 → 2030-12)
+insert into public.periods (period_key, period_type, status)
+select to_char(d, 'YYYY-MM'), 'month', 'open'
+from generate_series('2025-05-01'::date, '2030-12-01'::date, '1 month'::interval) as d
+on conflict (period_key, period_type) do nothing;
+
+-- Quarterly: 23 rows (2025-Q2 → 2030-Q4)
+insert into public.periods (period_key, period_type, status)
+select to_char(d, 'YYYY') || '-Q' || to_char(d, 'Q'), 'quarter', 'open'
+from generate_series('2025-04-01'::date, '2030-10-01'::date, '3 months'::interval) as d
+on conflict (period_key, period_type) do nothing;
+
+-- Annual: 6 rows (2025 → 2030)
+insert into public.periods (period_key, period_type, status)
+select to_char(d, 'YYYY'), 'year', 'open'
+from generate_series('2025-01-01'::date, '2030-01-01'::date, '1 year'::interval) as d
 on conflict (period_key, period_type) do nothing;
 
 -- ============================================================================

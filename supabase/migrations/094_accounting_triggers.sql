@@ -33,6 +33,7 @@
 create or replace function public.assert_entry_balanced()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 declare
   v_dr bigint;
@@ -68,6 +69,7 @@ create constraint trigger trg_jl_balanced
 create or replace function public.enforce_period_status()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 declare
   v_status text;
@@ -107,6 +109,7 @@ create trigger trg_je_period_status
 create or replace function public.journal_entries_immutable()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   raise exception 'Journal entries are immutable; corrections via reversal entries with reverses_entry_id'
@@ -129,6 +132,7 @@ create trigger trg_je_immutable
 create or replace function public.journal_lines_immutable()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   raise exception 'Journal lines are immutable; corrections via reversal entries'

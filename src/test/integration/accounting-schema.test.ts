@@ -316,7 +316,7 @@ describe('accounting schema (PR 1)', () => {
         const { data: periods } = await persona.client
           .from('periods')
           .select('period_key, period_type');
-        expect(periods ?? []).toHaveLength(29);
+        expect(periods ?? []).toHaveLength(97);
 
         const { data: vatRates } = await persona.client
           .from('vat_rates')

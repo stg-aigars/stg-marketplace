@@ -30,7 +30,7 @@ alter table public.accounts enable row level security;
 
 create policy accounts_staff_select on public.accounts
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -41,7 +41,7 @@ alter table public.periods enable row level security;
 
 create policy periods_staff_select on public.periods
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -52,7 +52,7 @@ alter table public.vat_rates enable row level security;
 
 create policy vat_rates_staff_select on public.vat_rates
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -63,7 +63,7 @@ alter table public.counterparties enable row level security;
 
 create policy counterparties_staff_select on public.counterparties
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -74,7 +74,7 @@ alter table public.vendor_invoices enable row level security;
 
 create policy vendor_invoices_staff_select on public.vendor_invoices
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -85,7 +85,7 @@ alter table public.fixed_assets enable row level security;
 
 create policy fixed_assets_staff_select on public.fixed_assets
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -96,7 +96,7 @@ alter table public.journal_entries enable row level security;
 
 create policy journal_entries_staff_select on public.journal_entries
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
 
 -- ============================================================================
@@ -107,5 +107,5 @@ alter table public.journal_lines enable row level security;
 
 create policy journal_lines_staff_select on public.journal_lines
   for select to authenticated using (
-    exists (select 1 from public.user_profiles where id = auth.uid() and is_staff = true)
+    exists (select 1 from public.user_profiles where id = (select auth.uid()) and is_staff = true)
   );
