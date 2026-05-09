@@ -13,6 +13,11 @@
  *   - includeBackfill=false filters journal_entries.posting_context.backfill
  *     entries (Phase 0 historical catch-up). Default is true (show everything)
  *     so backfill rows are visible by default and the UI surfaces a toggle.
+ *   - excludeTestArtifacts=true (default) filters journal_entries.posting_context.test_artifact
+ *     entries. Per CLAUDE.md, integration tests post entries to synthetic period
+ *     2027-01 with `posting_context.test_artifact=true`; those entries persist
+ *     permanently (immutability trigger blocks DELETE) but must not pollute
+ *     production reporting once the system date crosses the synthetic posting_date.
  *   - Σ debit = Σ credit must hold for every entry and the trial balance as a
  *     whole. is_balanced surfaces violations loudly — they should never occur
  *     against a healthy GL (the deferred constraint trigger from migration
@@ -137,6 +142,21 @@ function isBackfillEntry(entry: EmbeddedEntryFields | null | undefined): boolean
   return entry.posting_context.backfill === true;
 }
 
+/**
+ * True if the embedded entry is a test_artifact entry written by integration
+ * tests. Used to exclude such entries from production reporting views by
+ * default (excludeTestArtifacts=true).
+ *
+ * Match shape: `posting_context.test_artifact === true` (boolean), strict
+ * equality — same convention as isBackfillEntry. Per CLAUDE.md, integration
+ * tests post to synthetic period 2027-01 with this flag set; entries persist
+ * permanently because the immutability trigger blocks DELETE.
+ */
+function isTestArtifactEntry(entry: EmbeddedEntryFields | null | undefined): boolean {
+  if (!entry || !entry.posting_context) return false;
+  return entry.posting_context.test_artifact === true;
+}
+
 function throwIfError(error: { message: string } | null, context: string): void {
   if (error) {
     throw new Error(`${context}: ${error.message}`);
@@ -160,9 +180,10 @@ function throwIfError(error: { message: string } | null, context: string): void 
 export async function getTrialBalance(
   supabase: SupabaseClient,
   asOf: string,
-  options: { includeBackfill?: boolean } = {}
+  options: { includeBackfill?: boolean; excludeTestArtifacts?: boolean } = {}
 ): Promise<TrialBalance> {
   const includeBackfill = options.includeBackfill ?? true;
+  const excludeTestArtifacts = options.excludeTestArtifacts ?? true;
 
   const { data: lineRows, error: linesError } = await supabase
     .from('journal_lines')
@@ -175,10 +196,13 @@ export async function getTrialBalance(
 
   const lines = (lineRows ?? []) as unknown as JoinedLineRow[];
 
-  // Aggregate per account_code, filtering out backfill entries when requested.
+  // Aggregate per account_code, filtering out backfill and test_artifact entries
+  // when requested. test_artifact defaults to excluded (production reports must
+  // not see synthetic-period test rows).
   const totals = new Map<string, { debit_cents: number; credit_cents: number }>();
   for (const row of lines) {
     if (!includeBackfill && isBackfillEntry(row.journal_entries)) continue;
+    if (excludeTestArtifacts && isTestArtifactEntry(row.journal_entries)) continue;
     const current = totals.get(row.account_code) ?? { debit_cents: 0, credit_cents: 0 };
     current.debit_cents += row.debit_cents;
     current.credit_cents += row.credit_cents;
@@ -266,9 +290,10 @@ export async function getAccountLedger(
   supabase: SupabaseClient,
   accountCode: string,
   range: { from: string; to: string },
-  options: { includeBackfill?: boolean } = {}
+  options: { includeBackfill?: boolean; excludeTestArtifacts?: boolean } = {}
 ): Promise<AccountLedger> {
   const includeBackfill = options.includeBackfill ?? true;
+  const excludeTestArtifacts = options.excludeTestArtifacts ?? true;
 
   const { data: accountData, error: accountError } = await supabase
     .from('accounts')
@@ -303,6 +328,7 @@ export async function getAccountLedger(
   const allRows = ((lineRows ?? []) as unknown as JoinedRow[]).filter((row) => {
     if (!row.journal_entries) return false;
     if (!includeBackfill && isBackfillEntry(row.journal_entries)) return false;
+    if (excludeTestArtifacts && isTestArtifactEntry(row.journal_entries)) return false;
     return true;
   });
 
@@ -630,17 +656,40 @@ export async function getEntriesPostedSince(
  * /staff/accounting dashboard's recent activity tile. Sorted by created_at
  * (when posted) rather than posting_date (financial event date) so backfill
  * batches show as a clustered block — that's the truthful presentation.
+ *
+ * excludeTestArtifacts defaults to true so the dashboard's recent-activity
+ * tile doesn't pollute with test_artifact entries from integration tests.
+ * Filter is applied in-memory (the table column is jsonb, and PostgREST
+ * filtering on jsonb keys would complicate the select for negligible gain at
+ * this scale). To compensate for filtered rows, we fetch a buffered window
+ * (limit * 2 + 10) and then trim to the requested limit after filtering.
  */
 export async function getRecentJournalEntries(
   supabase: SupabaseClient,
-  limit: number
+  limit: number,
+  options: { excludeTestArtifacts?: boolean } = {}
 ): Promise<JournalEntryRow[]> {
+  const excludeTestArtifacts = options.excludeTestArtifacts ?? true;
+
+  // Buffer the SELECT to absorb a small number of filtered test_artifact
+  // rows without a second roundtrip. In healthy production state this overrun
+  // is wasted bytes but the dataset is tiny; in test-heavy environments it
+  // keeps the dashboard correct without paginating.
+  const fetchLimit = excludeTestArtifacts ? limit * 2 + 10 : limit;
+
   const { data, error } = await supabase
     .from('journal_entries')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(fetchLimit);
 
   throwIfError(error, 'getRecentJournalEntries: journal_entries SELECT failed');
-  return (data ?? []) as JournalEntryRow[];
+
+  const rows = (data ?? []) as JournalEntryRow[];
+  if (!excludeTestArtifacts) return rows.slice(0, limit);
+
+  // JournalEntryRow.posting_context is the same shape EmbeddedEntryFields
+  // uses for the field; pass the row directly through the helper.
+  const filtered = rows.filter((row) => !isTestArtifactEntry(row));
+  return filtered.slice(0, limit);
 }

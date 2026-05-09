@@ -272,6 +272,137 @@ describe('getTrialBalance', () => {
     expect(tb.total_credit_cents).toBe(0);
     expect(tb.is_balanced).toBe(true);
   });
+
+  it('excludes posting_context.test_artifact rows by default (excludeTestArtifacts=true)', async () => {
+    // Mixed data: one real entry, one test_artifact entry. Default behaviour
+    // must drop the test_artifact pair from the trial balance — production
+    // reporting at any "as-of" date that includes the synthetic 2027-01
+    // window must not see test rows.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            // Real production entry: 500 / 500.
+            {
+              account_code: '2610',
+              debit_cents: 500,
+              credit_cents: 0,
+              journal_entries: { posting_date: '2027-04-10', posting_context: {} }
+            },
+            {
+              account_code: '5351',
+              debit_cents: 0,
+              credit_cents: 500,
+              journal_entries: { posting_date: '2027-04-10', posting_context: {} }
+            },
+            // Test artifact entry: 9999 / 9999. Must be filtered.
+            {
+              account_code: '2610',
+              debit_cents: 9999,
+              credit_cents: 0,
+              journal_entries: {
+                posting_date: '2027-04-15',
+                posting_context: { test_artifact: true }
+              }
+            },
+            {
+              account_code: '5351',
+              debit_cents: 0,
+              credit_cents: 9999,
+              journal_entries: {
+                posting_date: '2027-04-15',
+                posting_context: { test_artifact: true }
+              }
+            }
+          ],
+          error: null
+        }
+      ],
+      accounts: [
+        {
+          data: [
+            { code: '2610', name_lv: 'Bank', name_en: 'Bank', type: 'asset' },
+            { code: '5351', name_lv: 'Wallet', name_en: 'Wallet', type: 'liability' }
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const tb = await getTrialBalance(client as never, '2027-04-30');
+
+    // Only the 500 / 500 real entry should appear; test_artifact pair excluded.
+    expect(tb.rows).toHaveLength(2);
+    expect(tb.total_debit_cents).toBe(500);
+    expect(tb.total_credit_cents).toBe(500);
+    expect(tb.is_balanced).toBe(true);
+    expect(tb.rows.find((r) => r.account_code === '2610')?.debit_cents).toBe(500);
+    expect(tb.rows.find((r) => r.account_code === '5351')?.credit_cents).toBe(500);
+  });
+
+  it('includes posting_context.test_artifact rows when excludeTestArtifacts=false', async () => {
+    // Same data as above. Setting excludeTestArtifacts=false must include
+    // the test_artifact pair so the staff entry-detail / debugging surfaces
+    // can opt back in when intentionally inspecting test data.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            {
+              account_code: '2610',
+              debit_cents: 500,
+              credit_cents: 0,
+              journal_entries: { posting_date: '2027-04-10', posting_context: {} }
+            },
+            {
+              account_code: '5351',
+              debit_cents: 0,
+              credit_cents: 500,
+              journal_entries: { posting_date: '2027-04-10', posting_context: {} }
+            },
+            {
+              account_code: '2610',
+              debit_cents: 9999,
+              credit_cents: 0,
+              journal_entries: {
+                posting_date: '2027-04-15',
+                posting_context: { test_artifact: true }
+              }
+            },
+            {
+              account_code: '5351',
+              debit_cents: 0,
+              credit_cents: 9999,
+              journal_entries: {
+                posting_date: '2027-04-15',
+                posting_context: { test_artifact: true }
+              }
+            }
+          ],
+          error: null
+        }
+      ],
+      accounts: [
+        {
+          data: [
+            { code: '2610', name_lv: 'Bank', name_en: 'Bank', type: 'asset' },
+            { code: '5351', name_lv: 'Wallet', name_en: 'Wallet', type: 'liability' }
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const tb = await getTrialBalance(client as never, '2027-04-30', {
+      excludeTestArtifacts: false
+    });
+
+    expect(tb.total_debit_cents).toBe(10499);
+    expect(tb.total_credit_cents).toBe(10499);
+    expect(tb.is_balanced).toBe(true);
+    expect(tb.rows.find((r) => r.account_code === '2610')?.debit_cents).toBe(10499);
+    expect(tb.rows.find((r) => r.account_code === '5351')?.credit_cents).toBe(10499);
+  });
 });
 
 // =============================================================================
@@ -1014,7 +1145,11 @@ describe('getRecentJournalEntries', () => {
   it('orders by created_at DESC and respects limit (DB-side)', async () => {
     // The function delegates ordering + limit to PostgREST. Verify it
     // requests the right shape (order on created_at desc + limit) and
-    // returns whatever the DB returned in that order.
+    // returns whatever the DB returned in that order. The function
+    // over-fetches a buffer to absorb test_artifact filtering, so when
+    // excludeTestArtifacts=false the limit passes through 1:1; when true
+    // (default), the SELECT limit is `limit*2 + 10` and the trim happens
+    // in memory.
     const queue = [
       {
         data: [
@@ -1047,7 +1182,11 @@ describe('getRecentJournalEntries', () => {
     });
     const client = { from: fromMock, rpc: vi.fn() };
 
-    const rows = await getRecentJournalEntries(client as never, 5);
+    // Pass excludeTestArtifacts=false so the SELECT limit matches the
+    // requested 5 exactly (no buffered over-fetch).
+    const rows = await getRecentJournalEntries(client as never, 5, {
+      excludeTestArtifacts: false
+    });
 
     expect(fromMock).toHaveBeenCalledWith('journal_entries');
     const builder = fromMock.mock.results[0]?.value as {
@@ -1059,5 +1198,82 @@ describe('getRecentJournalEntries', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]?.id).toBe('newer');
     expect(rows[1]?.id).toBe('older');
+  });
+
+  it('filters posting_context.test_artifact rows by default and trims to limit', async () => {
+    // Mixed feed: 3 real rows interspersed with 2 test_artifact rows. With
+    // limit=2 and excludeTestArtifacts default-true, the function must
+    // return the first 2 non-test rows in DB order.
+    const queue = [
+      {
+        data: [
+          {
+            id: 'real-1',
+            created_at: '2027-04-20T00:00:00Z',
+            accounting_period: '2027-04',
+            posting_context: {}
+          },
+          {
+            id: 'test-1',
+            created_at: '2027-04-19T00:00:00Z',
+            accounting_period: '2027-01',
+            posting_context: { test_artifact: true }
+          },
+          {
+            id: 'real-2',
+            created_at: '2027-04-18T00:00:00Z',
+            accounting_period: '2027-04',
+            posting_context: {}
+          },
+          {
+            id: 'test-2',
+            created_at: '2027-04-17T00:00:00Z',
+            accounting_period: '2027-01',
+            posting_context: { test_artifact: true }
+          },
+          {
+            id: 'real-3',
+            created_at: '2027-04-16T00:00:00Z',
+            accounting_period: '2027-04',
+            posting_context: {}
+          }
+        ],
+        error: null
+      }
+    ];
+    const fromMock = vi.fn(() => {
+      const builder: Record<string, ReturnType<typeof vi.fn>> & {
+        then?: (
+          onFulfilled: (value: unknown) => unknown,
+          onRejected?: (reason: unknown) => unknown
+        ) => Promise<unknown>;
+      } = {
+        select: vi.fn(),
+        order: vi.fn(),
+        limit: vi.fn()
+      };
+      builder.select.mockReturnValue(builder);
+      builder.order.mockReturnValue(builder);
+      builder.limit.mockReturnValue(builder);
+      builder.then = (onFulfilled, onRejected) =>
+        Promise.resolve(queue.shift() ?? { data: [], error: null }).then(
+          onFulfilled,
+          onRejected
+        );
+      return builder;
+    });
+    const client = { from: fromMock, rpc: vi.fn() };
+
+    const rows = await getRecentJournalEntries(client as never, 2);
+
+    // Buffered SELECT: limit*2 + 10 = 14. Filter happens in memory.
+    const builder = fromMock.mock.results[0]?.value as {
+      limit: ReturnType<typeof vi.fn>;
+    };
+    expect(builder.limit).toHaveBeenCalledWith(14);
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.id).toBe('real-1');
+    expect(rows[1]?.id).toBe('real-2');
   });
 });
