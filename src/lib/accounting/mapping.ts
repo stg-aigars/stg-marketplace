@@ -270,6 +270,112 @@ function buildVendorRcLines(input: {
   return { lines, invoice_net_cents, rc_vat_cents, payable_account };
 }
 
+/**
+ * Shared scaffolding for historical-override cash-only entries (H.2 input
+ * forfeited, H.3 pre-VAT-reg gross). Both have the same posting shape — no
+ * VAT split, no RC pair, just expense + cash credit. The two types differ
+ * only in their `override_type` / `vat_treatment` posting_context labels.
+ *
+ * Payload-conditional FX branch: when `payload.fx_rate` is present (with
+ * `foreign_amount` and `bank_amount_eur`), the entry splits the bank charge
+ * into service value + FX fee (3 lines via decomposeFx). When FX inputs are
+ * absent, falls back to gross-as-paid (2 lines via `payload.gross_cents`).
+ *
+ * Phase 0 callers:
+ *   - H.2 with FX: Cursor (Sep 2025, Oct 2025), Vercel (Dec 2025)
+ *   - H.2 without FX: Proton (Sep 2025), Inbokss (Sep 2025)
+ *   - H.3 with FX: Cursor (Aug 2025, pre-reg)
+ *   - H.3 without FX: VINCIT (Aug 2025), Proton (Aug 2025, EUR-billed)
+ */
+function buildHistoricalCashOnlyLines(input: {
+  payload: Record<string, unknown>;
+  override_type: string;
+  vat_treatment: string;
+  context_label: string;
+}): { lines: ComputedLine[]; posting_context_extras: Record<string, unknown> } {
+  const expense_account = requireString(input.payload, 'expense_account');
+  const cash_account = typeof input.payload.cash_account === 'string'
+    ? input.payload.cash_account
+    : '2610';
+  const has_fx = typeof input.payload.fx_rate === 'number';
+
+  if (has_fx) {
+    const foreign_amount = requireNumber(input.payload, 'foreign_amount');
+    const fx_rate = requireNumber(input.payload, 'fx_rate');
+    const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
+    const fx = decomposeFx({ foreign_amount, fx_rate, bank_amount_eur });
+    const bank_amount_cents = fx.service_value_eur_cents + fx.fx_fee_eur_cents;
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: expense_account,
+        debit_cents: fx.service_value_eur_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: `Expense (${input.context_label}, service value EUR-equivalent)`
+      },
+      {
+        line_number: 2,
+        account_code: '7710',
+        debit_cents: fx.fx_fee_eur_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: `FX fee (VAT-exempt, ${input.context_label})`
+      },
+      {
+        line_number: 3,
+        account_code: cash_account,
+        debit_cents: 0,
+        credit_cents: bank_amount_cents,
+        currency: 'EUR',
+        narrative: cash_account === '2610'
+          ? `Swedbank — card transaction (${input.context_label})`
+          : `${cash_account} — payment (${input.context_label})`
+      }
+    ];
+    return {
+      lines,
+      posting_context_extras: {
+        override_type: input.override_type,
+        vat_treatment: input.vat_treatment,
+        service_value_eur_cents: fx.service_value_eur_cents,
+        fx_fee_eur_cents: fx.fx_fee_eur_cents,
+        bank_amount_cents
+      }
+    };
+  }
+
+  const gross_cents = requireNumber(input.payload, 'gross_cents');
+  const lines: ComputedLine[] = [
+    {
+      line_number: 1,
+      account_code: expense_account,
+      debit_cents: gross_cents,
+      credit_cents: 0,
+      currency: 'EUR',
+      narrative: `Expense (${input.context_label})`
+    },
+    {
+      line_number: 2,
+      account_code: cash_account,
+      debit_cents: 0,
+      credit_cents: gross_cents,
+      currency: 'EUR',
+      narrative: cash_account === '2610'
+        ? `Swedbank — payment (${input.context_label})`
+        : `${cash_account} — payment (${input.context_label})`
+    }
+  ];
+  return {
+    lines,
+    posting_context_extras: {
+      override_type: input.override_type,
+      vat_treatment: input.vat_treatment,
+      gross_cents
+    }
+  };
+}
+
 // =============================================================================
 // O.1 — LV seller commission + shipping mgmt
 // =============================================================================
@@ -888,20 +994,24 @@ const H_1: VatMappingEntry = {
 };
 
 // =============================================================================
-// H.2 — Historical override: post-VAT-reg input forfeited
+// H.2 — Historical override: post-VAT-reg input forfeited (FX-aware)
 //
 // Used for transactions that occurred AFTER STG's VAT registration date but
-// where input VAT was NOT claimed on the as-filed PVN deklarācija (e.g. by
-// user decision not to file a precizēta amendment). The transaction is
-// expensed at gross to match the as-filed return; no VAT split, no RC pair.
+// where input VAT was NOT claimed on the as-filed PVN deklarācija. The
+// transaction is expensed without an RC self-assessment pair to match the
+// as-filed return; the December 2025 H.1 catch-up consolidates RC for
+// October Cursor + December Vercel separately.
 //
-// Phase 0 examples (Entries 7-10): post-VAT-reg subscriptions that the
-// September 2025 deklarācija was filed as zero return for, deferring any RC
-// catch-up to the December 2025 H.1 entry. Each entry posts at gross with
-// vat_treatment='input_forfeited' in posting_context.
+// FX-aware: payload presence of `fx_rate` triggers the 3-line FX shape
+// (Dr expense_account service_value / Dr 7710 fx_fee / Cr 2610 bank_amount).
+// Without FX inputs, falls back to 2-line gross-as-paid via `gross_cents`.
 //
-// Shape: 2-line entry. Caller passes `gross_cents`, `expense_account`. Bank
-// account defaults to '2610' but is overridable via `cash_account`.
+// Phase 0 callers:
+//   - Entry 7 (Cursor Sep 2025, FX): Dr 7730 €17.23 / Dr 7710 €0.51 / Cr 2610 €17.74
+//   - Entry 8 (Proton Sep 2025, no FX): Dr 7730 €7.99 / Cr 2610 €7.99
+//   - Entry 9 (Inbokss Sep 2025, no FX): Dr 7730 €9.99 / Cr 2610 €9.99
+//   - Entry 10 (Cursor Oct 2025, FX): Dr 7730 €17.12 / Dr 7710 €0.51 / Cr 2610 €17.63
+//   - Entry 11 (Vercel Dec 2025, FX): Dr 7730 €17.04 / Dr 7710 €0.50 / Cr 2610 €17.54
 // =============================================================================
 
 const H_2: VatMappingEntry = {
@@ -918,59 +1028,29 @@ const H_2: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['override_type', 'expense_account', 'user_decision_ref'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const gross_cents = requireNumber(input.payload, 'gross_cents');
-    const expense_account = requireString(input.payload, 'expense_account');
-    const cash_account = typeof input.payload.cash_account === 'string'
-      ? input.payload.cash_account
-      : '2610';
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: expense_account,
-        debit_cents: gross_cents,
-        credit_cents: 0,
-        currency: 'EUR',
-        narrative: 'Expense (gross — input VAT forfeited per as-filed return)'
-      },
-      {
-        line_number: 2,
-        account_code: cash_account,
-        debit_cents: 0,
-        credit_cents: gross_cents,
-        currency: 'EUR',
-        narrative: cash_account === '2610' ? 'Swedbank — payment' : `${cash_account} — payment`
-      }
-    ];
-    return {
-      lines,
-      posting_context_extras: {
-        override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
-        gross_cents,
-        vat_treatment: 'input_forfeited'
-      }
-    };
-  }
+  compute: (input: ComputeInput): ComputeOutput => buildHistoricalCashOnlyLines({
+    payload: input.payload,
+    override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
+    vat_treatment: 'input_forfeited',
+    context_label: 'post-VAT-reg, input forfeited'
+  })
 };
 
 // =============================================================================
-// H.3 — Historical override: pre-VAT-reg gross expensing (with optional FX)
+// H.3 — Historical override: pre-VAT-reg gross expensing (FX-aware)
 //
 // Used for transactions that occurred BEFORE STG's VAT registration date.
 // STG could not recover input VAT pre-registration, so the entire expense
 // goes at gross to a 7xxx account with no VAT split, no RC pair.
 //
-// FX-aware compute branch: when payload contains `foreign_amount`, `fx_rate`,
-// `bank_amount_eur` (e.g. Phase 0 Entry 5: Cursor $20 → €18.08), the entry
-// splits into 3 lines (service value to expense_account + FX fee to 7710 +
-// bank credit). When FX inputs are absent, the entry is a simple 2-line
-// (Dr expense / Cr 2610). Same routing, same legal basis, same VAT
-// treatment — payload presence of `fx_rate` discriminates.
+// FX-aware: payload presence of `fx_rate` triggers the 3-line FX shape
+// (Dr expense_account service_value / Dr 7710 fx_fee / Cr 2610 bank_amount).
+// Without FX inputs, falls back to 2-line gross via `gross_cents`.
 //
-// Phase 0 examples:
-//   - Entry 4 (VINCIT €35, no FX): 2-line, Dr 7740 / Cr 2610
-//   - Entry 5 (Cursor $20→€18.08, FX): 3-line, Dr 7730 €17.56 / Dr 7710 €0.52 / Cr 2610 €18.08
-//   - Entry 6 (Proton €7.99, no FX): 2-line, Dr 7730 / Cr 2610
+// Phase 0 callers:
+//   - Entry 4 (VINCIT Aug 2025, no FX): Dr 7740 €35 / Cr 2610 €35
+//   - Entry 5 (Cursor Aug 2025, FX): Dr 7730 €17.56 / Dr 7710 €0.52 / Cr 2610 €18.08
+//   - Entry 6 (Proton Aug 2025, no FX): Dr 7730 €7.99 / Cr 2610 €7.99
 // =============================================================================
 
 const H_3: VatMappingEntry = {
@@ -987,85 +1067,12 @@ const H_3: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['override_type', 'expense_account', 'vat_registration_date'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const expense_account = requireString(input.payload, 'expense_account');
-    const has_fx = typeof input.payload.fx_rate === 'number';
-    const cash_account = typeof input.payload.cash_account === 'string'
-      ? input.payload.cash_account
-      : '2610';
-
-    if (has_fx) {
-      const foreign_amount = requireNumber(input.payload, 'foreign_amount');
-      const fx_rate = requireNumber(input.payload, 'fx_rate');
-      const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
-      const fx = decomposeFx({ foreign_amount, fx_rate, bank_amount_eur });
-      const bank_amount_cents = fx.service_value_eur_cents + fx.fx_fee_eur_cents;
-      const lines: ComputedLine[] = [
-        {
-          line_number: 1,
-          account_code: expense_account,
-          debit_cents: fx.service_value_eur_cents,
-          credit_cents: 0,
-          currency: 'EUR',
-          narrative: 'Expense (pre-VAT-reg, service value EUR-equivalent)'
-        },
-        {
-          line_number: 2,
-          account_code: '7710',
-          debit_cents: fx.fx_fee_eur_cents,
-          credit_cents: 0,
-          currency: 'EUR',
-          narrative: 'FX fee (VAT-exempt financial service, pre-VAT-reg)'
-        },
-        {
-          line_number: 3,
-          account_code: cash_account,
-          debit_cents: 0,
-          credit_cents: bank_amount_cents,
-          currency: 'EUR',
-          narrative: cash_account === '2610' ? 'Swedbank — card transaction (gross EUR billed)' : `${cash_account} — payment`
-        }
-      ];
-      return {
-        lines,
-        posting_context_extras: {
-          override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
-          service_value_eur_cents: fx.service_value_eur_cents,
-          fx_fee_eur_cents: fx.fx_fee_eur_cents,
-          bank_amount_cents,
-          vat_treatment: 'pre_registration_gross'
-        }
-      };
-    }
-
-    const gross_cents = requireNumber(input.payload, 'gross_cents');
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: expense_account,
-        debit_cents: gross_cents,
-        credit_cents: 0,
-        currency: 'EUR',
-        narrative: 'Expense (pre-VAT-reg, gross)'
-      },
-      {
-        line_number: 2,
-        account_code: cash_account,
-        debit_cents: 0,
-        credit_cents: gross_cents,
-        currency: 'EUR',
-        narrative: cash_account === '2610' ? 'Swedbank — payment' : `${cash_account} — payment`
-      }
-    ];
-    return {
-      lines,
-      posting_context_extras: {
-        override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
-        gross_cents,
-        vat_treatment: 'pre_registration_gross'
-      }
-    };
-  }
+  compute: (input: ComputeInput): ComputeOutput => buildHistoricalCashOnlyLines({
+    payload: input.payload,
+    override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
+    vat_treatment: 'pre_registration_gross',
+    context_label: 'pre-VAT-reg, gross'
+  })
 };
 
 // =============================================================================
