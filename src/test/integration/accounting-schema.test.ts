@@ -88,9 +88,12 @@ describe('accounting schema (PR 1)', () => {
 
     it('T1: deferred balanced-entry check rejects imbalanced entries at COMMIT', async () => {
       const id = '11111111-1111-1111-1111-111111111111';
+      // type_id added per PR #2 migration 097 (NOT NULL column for posting-engine
+      // dispatch). Schema-test entries use synthetic 'TEST.T1' to avoid colliding
+      // with real catalog IDs in idx_journal_entries_idempotency.
       const sql = [
         'BEGIN;',
-        `INSERT INTO public.journal_entries (id, posting_date, accounting_period, tax_period, entry_type, narrative, created_by) VALUES ('${id}', '2026-04-15', '2026-04', '2026-04', 'manual', 'T1 imbalanced', 'test');`,
+        `INSERT INTO public.journal_entries (id, posting_date, accounting_period, tax_period, entry_type, type_id, source_doc_type, source_doc_id, narrative, created_by) VALUES ('${id}', '2026-04-15', '2026-04', '2026-04', 'manual', 'TEST.T1', 'schema_test', 't1_imbalanced_${Date.now()}', 'T1 imbalanced', 'test');`,
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 1, '2610', 1000, 0);`,
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 2, '5351', 0, 999);`,
         'COMMIT;',
@@ -106,9 +109,10 @@ describe('accounting schema (PR 1)', () => {
 
     it('T1: deferred balanced-entry check accepts balanced entries', async () => {
       const id = '22222222-2222-2222-2222-222222222222';
+      const sourceDocId = `t1_balanced_${Date.now()}`;
       const sql = [
         'BEGIN;',
-        `INSERT INTO public.journal_entries (id, posting_date, accounting_period, tax_period, entry_type, narrative, created_by) VALUES ('${id}', '2026-04-15', '2026-04', '2026-04', 'manual', 'T1 balanced', 'test');`,
+        `INSERT INTO public.journal_entries (id, posting_date, accounting_period, tax_period, entry_type, type_id, source_doc_type, source_doc_id, narrative, created_by) VALUES ('${id}', '2026-04-15', '2026-04', '2026-04', 'manual', 'TEST.T1', 'schema_test', '${sourceDocId}', 'T1 balanced', 'test');`,
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 1, '2610', 1000, 0);`,
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 2, '5351', 0, 1000);`,
         'COMMIT;',
@@ -130,6 +134,9 @@ describe('accounting schema (PR 1)', () => {
         accounting_period: '2026-12',
         tax_period: '2026-12',
         entry_type: 'manual',
+        type_id: 'TEST.T2',
+        source_doc_type: 'schema_test',
+        source_doc_id: `t2_hard_${Date.now()}`,
         narrative: 'T2 hard-locked attempt',
         created_by: 'test',
       });
@@ -148,6 +155,9 @@ describe('accounting schema (PR 1)', () => {
         accounting_period: '2026-12',
         tax_period: '2026-12',
         entry_type: 'manual',
+        type_id: 'TEST.T2',
+        source_doc_type: 'schema_test',
+        source_doc_id: `t2_soft_no_flag_${Date.now()}`,
         narrative: 'T2 soft-locked without flag',
         created_by: 'test',
         period_close_adjustment: false,
@@ -167,6 +177,9 @@ describe('accounting schema (PR 1)', () => {
         accounting_period: '2026-12',
         tax_period: '2026-12',
         entry_type: 'period_close',
+        type_id: 'TEST.T2',
+        source_doc_type: 'schema_test',
+        source_doc_id: `t2_soft_with_flag_${Date.now()}`,
         narrative: 'T2 soft-locked with flag',
         created_by: 'test',
         period_close_adjustment: true,
@@ -181,6 +194,9 @@ describe('accounting schema (PR 1)', () => {
         accounting_period: '2026-11',
         tax_period: '2026-11',
         entry_type: 'manual',
+        type_id: 'TEST.T2',
+        source_doc_type: 'schema_test',
+        source_doc_id: `t2_open_${Date.now()}`,
         narrative: 'T2 open sanity',
         created_by: 'test',
       });
@@ -189,9 +205,10 @@ describe('accounting schema (PR 1)', () => {
 
     it('T3: UPDATE / DELETE on journal_entries and journal_lines raise immutability errors', async () => {
       const id = '66666666-6666-6666-6666-666666666666';
+      const sourceDocId = `t3_immutability_${Date.now()}`;
       const insert = [
         'BEGIN;',
-        `INSERT INTO public.journal_entries (id, posting_date, accounting_period, tax_period, entry_type, narrative, created_by) VALUES ('${id}', '2026-04-15', '2026-04', '2026-04', 'manual', 'T3 immutability', 'test');`,
+        `INSERT INTO public.journal_entries (id, posting_date, accounting_period, tax_period, entry_type, type_id, source_doc_type, source_doc_id, narrative, created_by) VALUES ('${id}', '2026-04-15', '2026-04', '2026-04', 'manual', 'TEST.T3', 'schema_test', '${sourceDocId}', 'T3 immutability', 'test');`,
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 1, '2610', 100, 0);`,
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 2, '5351', 0, 100);`,
         'COMMIT;',
@@ -290,10 +307,18 @@ describe('accounting schema (PR 1)', () => {
           .select('country, rate, valid_from');
         expect(vatRates ?? []).toHaveLength(4);
 
+        // Loosened from toHaveLength(2) — PR #2 onwards integration tests
+        // legitimately seed extra test counterparties (tagged with
+        // PR<N>_INTEGRATION_TEST in full_name) and the FK from journal_lines
+        // blocks cleanup. Intent of R4 is "staff can SELECT + the 2 seeded
+        // system counterparties round-trip", not a strict population count.
         const { data: counterparties } = await persona.client
           .from('counterparties')
           .select('id, type, full_name, tin, vat_number');
-        expect(counterparties ?? []).toHaveLength(2);
+        expect((counterparties ?? []).length).toBeGreaterThanOrEqual(2);
+        const ids = (counterparties ?? []).map((c) => c.id);
+        expect(ids).toContain(SYSTEM_COUNTERPARTY.VID);
+        expect(ids).toContain(SYSTEM_COUNTERPARTY.STG_INTERNAL);
 
         const { data: fixedAssets } = await persona.client.from('fixed_assets').select('id');
         expect(fixedAssets ?? []).toHaveLength(0);
