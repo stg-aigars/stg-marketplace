@@ -220,8 +220,8 @@ function PerSellerTable({ rows }: PerSellerTableProps) {
               >
                 <td className="px-3 py-2 align-top text-semantic-text-primary">
                   {row.seller_handle ?? (
-                    <span className="text-semantic-text-muted italic">
-                      (no handle)
+                    <span className="text-semantic-text-muted">
+                      [no handle]
                     </span>
                   )}
                 </td>
