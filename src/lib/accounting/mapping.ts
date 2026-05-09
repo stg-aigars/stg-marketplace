@@ -55,12 +55,18 @@ import type {
 const COMMISSION_RATE = 0.10;
 
 /**
- * Sentinel value distinguishing historical override entries from
- * engine-computed entries in audit queries. Routing condition + posting_context
- * extras both reference this constant — defined here so any future rename lands
- * in one place.
+ * Sentinel values distinguishing historical override entries from engine-computed
+ * entries in audit queries. Each variant routes to a different VatMappingEntry
+ * (H.1, H.2, H.3); the discriminator is `payload.override_type`. Defined here
+ * so any future rename lands in one place.
+ *
+ *   HISTORICAL_FILING       → H.1 — match an as-filed PVN deklarācija exactly
+ *   INPUT_FORFEITED         → H.2 — input VAT not claimed on as-filed return
+ *   PRE_REGISTRATION_GROSS  → H.3 — pre-VAT-reg gross expensing (with optional FX)
  */
-const OVERRIDE_TYPE_HISTORICAL_FILING = 'historical_filing_alignment';
+export const OVERRIDE_TYPE_HISTORICAL_FILING = 'historical_filing_alignment';
+export const OVERRIDE_TYPE_INPUT_FORFEITED = 'input_forfeited';
+export const OVERRIDE_TYPE_PRE_REGISTRATION_GROSS = 'pre_registration_gross';
 
 /** Vendor account code derivation from counterparty.vendor_code (e.g. 'UN' → '5310-UN'). */
 function vendorPayableAccount(vendorCode: string): string {
@@ -73,6 +79,42 @@ function engineInvariant(reason: string, context?: Record<string, unknown>): nev
     code: 'engine_invariant',
     reason,
     context
+  });
+}
+
+/**
+ * Shared scaffolding for pre-computed lines (P.1, H.1, P.7). Caller passes
+ * `payload.lines: Array<{ account_code, debit_cents?, credit_cents?, ... }>`;
+ * the helper validates the array shape and projects each entry into a
+ * ComputedLine. The optional `forwardVat` flag carries through
+ * `vat_rate_snapshot` / `vat_country` (used by H.1 for VID-reportable RC
+ * lines; P.1 and P.7 don't need VAT metadata on close lines).
+ */
+function buildPreComputedLines(
+  raw_lines: unknown,
+  opts: { type_id: string; defaultNarrative: string | null; forwardVat?: boolean }
+): ComputedLine[] {
+  if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
+    throw new Error(`${opts.type_id} requires payload.lines as array with >= 2 entries`);
+  }
+  return raw_lines.map((rawUnknown, idx) => {
+    const raw = rawUnknown as Record<string, unknown>;
+    const account_code = requireString(raw, 'account_code');
+    const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
+    const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
+    const line: ComputedLine = {
+      line_number: idx + 1,
+      account_code,
+      debit_cents,
+      credit_cents,
+      currency: 'EUR',
+      narrative: typeof raw.narrative === 'string' ? raw.narrative : opts.defaultNarrative
+    };
+    if (opts.forwardVat) {
+      line.vat_rate_snapshot = typeof raw.vat_rate_snapshot === 'number' ? raw.vat_rate_snapshot : null;
+      line.vat_country = typeof raw.vat_country === 'string' ? raw.vat_country : null;
+    }
+    return line;
   });
 }
 
@@ -165,6 +207,209 @@ function buildOrderRevenueLines(input: {
   }
 
   return { lines, commission_cents, shipping_value_cents, vat_cents };
+}
+
+/**
+ * Shared scaffolding for incoming reverse-charge vendor invoices (I.2 LV
+ * domestic RC, I.3 EU B2B RC). Produces a 4-line entry where the RC pair
+ * (input + output of the same self-assessed VAT amount) cancels out:
+ *
+ *   1. Dr {expense_account}     invoice_net_cents
+ *   2. Dr {rc_in_account}       rc_vat_cents  (omitted if rc_vat_cents=0)
+ *   3. Cr {payable_account}     invoice_net_cents  (5310-{vendor_code} default; '2610' for same-day pay)
+ *   4. Cr {rc_out_account}      rc_vat_cents  (omitted if rc_vat_cents=0)
+ *
+ * If rc_vat_cents rounds to 0 (e.g. Mollie €0.01 verification — base × 21% < 0.5¢),
+ * the RC pair is omitted entirely. The journal_lines CHECK requires exactly one
+ * of debit_cents/credit_cents to be non-zero, so 0¢ placeholder lines violate it.
+ * Reporting visibility for the zero-RC case still works via vat_country='LV' on
+ * other lines if needed; for I.3 specifically, sub-cent RC has no PVN deklarācija
+ * impact regardless.
+ *
+ * `payable_account` defaults to `5310-{vendor_code}` (vendor payable). Callers
+ * can override with `payload.payable_account` (e.g. '2610' when invoice is paid
+ * same-day, as in Phase 0 Entry 14a where the C&C MacBook was invoiced and
+ * paid on 20.01.2026).
+ */
+function buildVendorRcLines(input: {
+  counterparty: CounterpartyRow;
+  payload: Record<string, unknown>;
+  vat_rate: number;
+  vat_country: 'LV';
+  rc_in_account: string;
+  rc_out_account: string;
+  context_label: string;
+}): { lines: ComputedLine[]; invoice_net_cents: number; rc_vat_cents: number; payable_account: string } {
+  if (!input.counterparty.id) {
+    engineInvariant('vendor RC compute requires counterparty.id');
+  }
+  if (!input.counterparty.vendor_code && typeof input.payload.payable_account !== 'string') {
+    engineInvariant('vendor RC compute requires counterparty.vendor_code OR payload.payable_account override');
+  }
+
+  const invoice_net_cents = requireNumber(input.payload, 'invoice_net_cents');
+  const expense_account = requireString(input.payload, 'expense_account');
+  const payable_account = typeof input.payload.payable_account === 'string'
+    ? input.payload.payable_account
+    : vendorPayableAccount(input.counterparty.vendor_code as string);
+  const rc_vat_cents = roundHalfUpCents(invoice_net_cents * input.vat_rate);
+
+  const lines: ComputedLine[] = [
+    {
+      line_number: 1,
+      account_code: expense_account,
+      debit_cents: invoice_net_cents,
+      credit_cents: 0,
+      currency: 'EUR',
+      counterparty_type: 'vendor',
+      counterparty_id: input.counterparty.id,
+      narrative: `Expense (net of self-assessed RC VAT, ${input.context_label})`
+    }
+  ];
+  if (rc_vat_cents > 0) {
+    lines.push({
+      line_number: 2,
+      account_code: input.rc_in_account,
+      debit_cents: rc_vat_cents,
+      credit_cents: 0,
+      currency: 'EUR',
+      vat_rate_snapshot: input.vat_rate,
+      vat_country: input.vat_country,
+      narrative: `Input VAT (RC self-assessment, ${input.context_label})`
+    });
+  }
+  lines.push({
+    line_number: lines.length + 1,
+    account_code: payable_account,
+    debit_cents: 0,
+    credit_cents: invoice_net_cents,
+    currency: 'EUR',
+    counterparty_type: 'vendor',
+    counterparty_id: input.counterparty.id,
+    narrative: payable_account.startsWith('5310-')
+      ? `Vendor payable — ${input.context_label}`
+      : `Bank — ${input.context_label} (paid)`
+  });
+  if (rc_vat_cents > 0) {
+    lines.push({
+      line_number: lines.length + 1,
+      account_code: input.rc_out_account,
+      debit_cents: 0,
+      credit_cents: rc_vat_cents,
+      currency: 'EUR',
+      vat_rate_snapshot: input.vat_rate,
+      vat_country: input.vat_country,
+      narrative: `Output VAT (RC self-assessment, ${input.context_label})`
+    });
+  }
+
+  return { lines, invoice_net_cents, rc_vat_cents, payable_account };
+}
+
+/**
+ * Shared scaffolding for historical-override cash-only entries (H.2 input
+ * forfeited, H.3 pre-VAT-reg gross). Both have the same posting shape — no
+ * VAT split, no RC pair, just expense + cash credit. The two types differ
+ * only in their `override_type` / `vat_treatment` posting_context labels.
+ *
+ * Payload-conditional FX branch: when `payload.fx_rate` is present (with
+ * `foreign_amount` and `bank_amount_eur`), the entry splits the bank charge
+ * into service value + FX fee (3 lines via decomposeFx). When FX inputs are
+ * absent, falls back to gross-as-paid (2 lines via `payload.gross_cents`).
+ *
+ * Phase 0 callers:
+ *   - H.2 with FX: Cursor (Sep 2025, Oct 2025), Vercel (Dec 2025)
+ *   - H.2 without FX: Proton (Sep 2025), Inbokss (Sep 2025)
+ *   - H.3 with FX: Cursor (Aug 2025, pre-reg)
+ *   - H.3 without FX: VINCIT (Aug 2025), Proton (Aug 2025, EUR-billed)
+ */
+function buildHistoricalCashOnlyLines(input: {
+  payload: Record<string, unknown>;
+  override_type: string;
+  vat_treatment: string;
+  context_label: string;
+}): { lines: ComputedLine[]; posting_context_extras: Record<string, unknown> } {
+  const expense_account = requireString(input.payload, 'expense_account');
+  const cash_account = typeof input.payload.cash_account === 'string'
+    ? input.payload.cash_account
+    : '2610';
+  const has_fx = typeof input.payload.fx_rate === 'number';
+
+  if (has_fx) {
+    const foreign_amount = requireNumber(input.payload, 'foreign_amount');
+    const fx_rate = requireNumber(input.payload, 'fx_rate');
+    const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
+    const fx = decomposeFx({ foreign_amount, fx_rate, bank_amount_eur });
+    const bank_amount_cents = fx.service_value_eur_cents + fx.fx_fee_eur_cents;
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: expense_account,
+        debit_cents: fx.service_value_eur_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: `Expense (${input.context_label}, service value EUR-equivalent)`
+      },
+      {
+        line_number: 2,
+        account_code: '7710',
+        debit_cents: fx.fx_fee_eur_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: `FX fee (VAT-exempt, ${input.context_label})`
+      },
+      {
+        line_number: 3,
+        account_code: cash_account,
+        debit_cents: 0,
+        credit_cents: bank_amount_cents,
+        currency: 'EUR',
+        narrative: cash_account === '2610'
+          ? `Swedbank — card transaction (${input.context_label})`
+          : `${cash_account} — payment (${input.context_label})`
+      }
+    ];
+    return {
+      lines,
+      posting_context_extras: {
+        override_type: input.override_type,
+        vat_treatment: input.vat_treatment,
+        service_value_eur_cents: fx.service_value_eur_cents,
+        fx_fee_eur_cents: fx.fx_fee_eur_cents,
+        bank_amount_cents
+      }
+    };
+  }
+
+  const gross_cents = requireNumber(input.payload, 'gross_cents');
+  const lines: ComputedLine[] = [
+    {
+      line_number: 1,
+      account_code: expense_account,
+      debit_cents: gross_cents,
+      credit_cents: 0,
+      currency: 'EUR',
+      narrative: `Expense (${input.context_label})`
+    },
+    {
+      line_number: 2,
+      account_code: cash_account,
+      debit_cents: 0,
+      credit_cents: gross_cents,
+      currency: 'EUR',
+      narrative: cash_account === '2610'
+        ? `Swedbank — payment (${input.context_label})`
+        : `${cash_account} — payment (${input.context_label})`
+    }
+  ];
+  return {
+    lines,
+    posting_context_extras: {
+      override_type: input.override_type,
+      vat_treatment: input.vat_treatment,
+      gross_cents
+    }
+  };
 }
 
 // =============================================================================
@@ -336,11 +581,21 @@ const I_1: VatMappingEntry = {
     if (input.vat_rate === null) {
       engineInvariant('I.1 compute requires vat_rate');
     }
-    if (!input.counterparty?.vendor_code) {
-      engineInvariant('I.1 compute requires counterparty.vendor_code');
+    // payable_account defaults to vendor payable (5310-{vendor_code}); caller
+    // can override (e.g. '2610' for same-day pay, as in Phase 0 Entry 14b
+    // where the C&C data carrier levy was invoiced and paid 20.01.2026).
+    // When override is absent, vendor_code is required.
+    const payable_override = typeof input.payload.payable_account === 'string'
+      ? input.payload.payable_account
+      : null;
+    if (!payable_override && !input.counterparty?.vendor_code) {
+      engineInvariant('I.1 compute requires counterparty.vendor_code OR payload.payable_account override');
+    }
+    if (!input.counterparty?.id) {
+      engineInvariant('I.1 compute requires counterparty.id');
     }
     const invoice_gross_cents = invoice_net_cents + invoice_vat_cents;
-    const payable_account = vendorPayableAccount(input.counterparty.vendor_code);
+    const payable_account = payable_override ?? vendorPayableAccount(input.counterparty.vendor_code as string);
 
     const lines: ComputedLine[] = [
       {
@@ -371,7 +626,7 @@ const I_1: VatMappingEntry = {
         currency: 'EUR',
         counterparty_type: 'vendor',
         counterparty_id: input.counterparty.id,
-        narrative: 'Vendor payable (gross)'
+        narrative: payable_account.startsWith('5310-') ? 'Vendor payable (gross)' : 'Bank (gross, paid)'
       }
     ];
     return {
@@ -384,6 +639,187 @@ const I_1: VatMappingEntry = {
         payable_account
       }
     };
+  }
+};
+
+// =============================================================================
+// I.2 — LV vendor with domestic reverse charge
+//
+// Used for PVN likums Article 143.7 categories: laptops, mobile phones, tablets,
+// integrated circuit devices, gaming consoles, construction services, scrap
+// metal, certain agricultural products. Vendor invoices at 0%; STG self-
+// assesses 21% LV VAT via the RC-IN/RC-OUT pair (cancels out, net cash VAT=0).
+//
+// I.6 capitalization is a payload convention, not a separate type ID: when the
+// underlying asset is capitalized, caller passes `expense_account: '1230'`
+// (or a sub-account) instead of an expense account. compute() doesn't care
+// about the account semantics.
+// =============================================================================
+
+const I_2: VatMappingEntry = {
+  id: 'I.2',
+  category: 'incoming',
+  entry_type: 'manual',
+  description: 'LV vendor invoice with domestic reverse charge (PVN likums Article 143.7)',
+  legal_basis: 'PVN likums Article 143.7 (domestic RC for specified categories)',
+  routing: {
+    event_type: 'vendor.invoice_received',
+    conditions: {
+      'counterparty.country': 'LV',
+      'payload.vat_treatment': 'domestic_rc'
+    }
+  },
+  vat_base_rule: { source: 'invoice_net' },
+  vat_rate_country: 'LV',
+  reporting: {
+    // PVN deklarācija lines per the actual January 2026 filing (C&C MacBook):
+    // 52 (output, self-assessed standard rate); 62 (input deduction). PVN 1
+    // daļa I attachment with transaction code 'R4' (PVN-1-I code, not ESL —
+    // ESL is for outbound supplies only, and I.2 is incoming domestic).
+    pvn_lines: ['52', '62'],
+    pvn1_pielikums: 'I_dala'
+  },
+  posting_context_required_keys: ['vendor_invoice_number', 'vendor_vat_number', 'invoice_date', 'expense_account', 'vat_treatment'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    if (input.vat_rate === null) {
+      engineInvariant('I.2 compute requires vat_rate');
+    }
+    if (!input.counterparty) {
+      engineInvariant('I.2 compute requires counterparty');
+    }
+    const result = buildVendorRcLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_rate: input.vat_rate,
+      vat_country: 'LV',
+      rc_in_account: '5710-LV-RC-IN',
+      rc_out_account: '5710-LV-RC-OUT',
+      context_label: 'LV domestic RC'
+    });
+    return {
+      lines: result.lines,
+      posting_context_extras: {
+        invoice_net_cents: result.invoice_net_cents,
+        rc_vat_cents: result.rc_vat_cents,
+        vat_rate_snapshot: input.vat_rate,
+        payable_account: result.payable_account
+      }
+    };
+  }
+};
+
+// =============================================================================
+// I.3 — EU B2B vendor with reverse charge
+//
+// Used for B2B services received from VAT-registered vendors in EU member states
+// (other than LV). Place of supply per Article 44 of Directive 2006/112/EC = LV
+// (customer's country); STG self-assesses 21% LV VAT. RC-IN/RC-OUT pair
+// cancels out, net cash VAT=0.
+//
+// Phase 0 example: Mollie €0.01 verification (NL). Sub-cent RC VAT rounds to 0
+// and the RC pair is omitted (helper handles this — see buildVendorRcLines).
+// =============================================================================
+
+const EU_MS_COUNTRIES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HR','HU','IE','IT','LT','LU','MT','NL','PL','PT','RO','SE','SI','SK'] as const;
+
+const I_3: VatMappingEntry = {
+  id: 'I.3',
+  category: 'incoming',
+  entry_type: 'manual',
+  description: 'EU B2B vendor invoice with foreign reverse charge (Hetzner DE, Mollie NL, Maksekeskus EE)',
+  legal_basis: 'Article 44 + Article 196 of Directive 2006/112/EC; PVN likums Article 88(1)',
+  routing: {
+    event_type: 'vendor.invoice_received',
+    conditions: {
+      'counterparty.country': EU_MS_COUNTRIES,
+      'payload.vat_treatment': 'eu_b2b_rc'
+    }
+  },
+  vat_base_rule: { source: 'invoice_net' },
+  vat_rate_country: 'LV',
+  reporting: {
+    pvn_lines: ['55', '64'],
+    pvn1_pielikums: 'II_dala'
+  },
+  posting_context_required_keys: ['vendor_invoice_number', 'vendor_vat_number', 'vendor_country', 'invoice_date', 'expense_account', 'vat_treatment'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    if (input.vat_rate === null) {
+      engineInvariant('I.3 compute requires vat_rate');
+    }
+    if (!input.counterparty) {
+      engineInvariant('I.3 compute requires counterparty');
+    }
+    const result = buildVendorRcLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_rate: input.vat_rate,
+      vat_country: 'LV',
+      rc_in_account: '5710-RC-IN',
+      rc_out_account: '5710-RC-OUT',
+      context_label: 'EU B2B RC'
+    });
+    return {
+      lines: result.lines,
+      posting_context_extras: {
+        invoice_net_cents: result.invoice_net_cents,
+        rc_vat_cents: result.rc_vat_cents,
+        vat_rate_snapshot: input.vat_rate,
+        payable_account: result.payable_account
+      }
+    };
+  }
+};
+
+// =============================================================================
+// I.5 — VAT-exempt domestic financial service (bank fees)
+//
+// PIS commissions, POS terminal fees, foreign-payment commissions, FX
+// conversion fees from Swedbank. PVN likums Article 52 / Article 135(1)(d)
+// of Directive 2006/112/EC — exempt financial services. No VAT split, no PVN
+// deklarācija line.
+//
+// Posts as 2-line: Dr 7710 / Cr 2610. Counterparty optional (bank fees don't
+// have a vendor invoice; the fee_type discriminator in payload identifies
+// the service).
+// =============================================================================
+
+const I_5: VatMappingEntry = {
+  id: 'I.5',
+  category: 'incoming',
+  entry_type: 'manual',
+  description: 'VAT-exempt domestic financial service (Swedbank PIS/POS/foreign-payment/FX commissions)',
+  legal_basis: 'PVN likums Article 52; Article 135(1)(d) of Directive 2006/112/EC',
+  routing: {
+    event_type: 'bank.fee_charged',
+    conditions: {
+      'payload.fee_type': ['pis_commission', 'pos_terminal', 'foreign_payment', 'fx_conversion']
+    }
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['vendor', 'fee_type'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const fee_cents = requireNumber(input.payload, 'fee_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '7710',
+        debit_cents: fee_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Payment processing — bank fee (VAT-exempt)'
+      },
+      {
+        line_number: 2,
+        account_code: '2610',
+        debit_cents: 0,
+        credit_cents: fee_cents,
+        currency: 'EUR',
+        narrative: 'Swedbank — fee debit'
+      }
+    ];
+    return { lines, posting_context_extras: { fee_cents, vat_treatment: 'exempt_financial_service' } };
   }
 };
 
@@ -522,27 +958,10 @@ const P_1: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: ['70'] },
   posting_context_required_keys: ['closing_period', 'net_refund_cents', 'lines'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const raw_lines = input.payload.lines;
-    if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
-      throw new Error('P.1 requires payload.lines as array with >= 2 entries');
-    }
-    const lines: ComputedLine[] = raw_lines.map((rawUnknown, idx) => {
-      const raw = rawUnknown as Record<string, unknown>;
-      const account_code = requireString(raw, 'account_code');
-      const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
-      const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
-      return {
-        line_number: idx + 1,
-        account_code,
-        debit_cents,
-        credit_cents,
-        currency: 'EUR',
-        narrative: typeof raw.narrative === 'string' ? raw.narrative : null
-      };
-    });
-    return { lines, posting_context_extras: {} };
-  }
+  compute: (input: ComputeInput): ComputeOutput => ({
+    lines: buildPreComputedLines(input.payload.lines, { type_id: 'P.1', defaultNarrative: null }),
+    posting_context_extras: {}
+  })
 };
 
 // =============================================================================
@@ -568,31 +987,182 @@ const H_1: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['rc_override_reason', 'rc_base_filed', 'filing_ref', 'rationale', 'override_type', 'lines'],
+  compute: (input: ComputeInput): ComputeOutput => ({
+    lines: buildPreComputedLines(input.payload.lines, {
+      type_id: 'H.1',
+      defaultNarrative: 'Historical override line',
+      forwardVat: true
+    }),
+    posting_context_extras: { override_type: OVERRIDE_TYPE_HISTORICAL_FILING }
+  })
+};
+
+// =============================================================================
+// H.2 — Historical override: post-VAT-reg input forfeited (FX-aware)
+//
+// Used for transactions that occurred AFTER STG's VAT registration date but
+// where input VAT was NOT claimed on the as-filed PVN deklarācija. The
+// transaction is expensed without an RC self-assessment pair to match the
+// as-filed return; the December 2025 H.1 catch-up consolidates RC for
+// October Cursor + December Vercel separately.
+//
+// FX-aware: payload presence of `fx_rate` triggers the 3-line FX shape
+// (Dr expense_account service_value / Dr 7710 fx_fee / Cr 2610 bank_amount).
+// Without FX inputs, falls back to 2-line gross-as-paid via `gross_cents`.
+//
+// Phase 0 callers:
+//   - Entry 7 (Cursor Sep 2025, FX): Dr 7730 €17.23 / Dr 7710 €0.51 / Cr 2610 €17.74
+//   - Entry 8 (Proton Sep 2025, no FX): Dr 7730 €7.99 / Cr 2610 €7.99
+//   - Entry 9 (Inbokss Sep 2025, no FX): Dr 7730 €9.99 / Cr 2610 €9.99
+//   - Entry 10 (Cursor Oct 2025, FX): Dr 7730 €17.12 / Dr 7710 €0.51 / Cr 2610 €17.63
+//   - Entry 11 (Vercel Dec 2025, FX): Dr 7730 €17.04 / Dr 7710 €0.50 / Cr 2610 €17.54
+// =============================================================================
+
+const H_2: VatMappingEntry = {
+  id: 'H.2',
+  category: 'historical',
+  entry_type: 'manual',
+  description: 'Historical override — post-VAT-reg expense with input VAT forfeited (not claimed on as-filed return)',
+  legal_basis: 'Phase 0 backfill alignment to closed filings; user decision documented in posting_context',
+  routing: {
+    event_type: 'historical.override',
+    conditions: { 'payload.override_type': OVERRIDE_TYPE_INPUT_FORFEITED }
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['override_type', 'expense_account', 'user_decision_ref'],
+  compute: (input: ComputeInput): ComputeOutput => buildHistoricalCashOnlyLines({
+    payload: input.payload,
+    override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
+    vat_treatment: OVERRIDE_TYPE_INPUT_FORFEITED,
+    context_label: 'post-VAT-reg, input forfeited'
+  })
+};
+
+// =============================================================================
+// H.3 — Historical override: pre-VAT-reg gross expensing (FX-aware)
+//
+// Used for transactions that occurred BEFORE STG's VAT registration date.
+// STG could not recover input VAT pre-registration, so the entire expense
+// goes at gross to a 7xxx account with no VAT split, no RC pair.
+//
+// FX-aware: payload presence of `fx_rate` triggers the 3-line FX shape
+// (Dr expense_account service_value / Dr 7710 fx_fee / Cr 2610 bank_amount).
+// Without FX inputs, falls back to 2-line gross via `gross_cents`.
+//
+// Phase 0 callers:
+//   - Entry 4 (VINCIT Aug 2025, no FX): Dr 7740 €35 / Cr 2610 €35
+//   - Entry 5 (Cursor Aug 2025, FX): Dr 7730 €17.56 / Dr 7710 €0.52 / Cr 2610 €18.08
+//   - Entry 6 (Proton Aug 2025, no FX): Dr 7730 €7.99 / Cr 2610 €7.99
+// =============================================================================
+
+const H_3: VatMappingEntry = {
+  id: 'H.3',
+  category: 'historical',
+  entry_type: 'manual',
+  description: 'Historical override — pre-VAT-registration gross expensing (FX-aware)',
+  legal_basis: 'Phase 0 backfill alignment; STG VAT registration documented in posting_context.vat_registration_date',
+  routing: {
+    event_type: 'historical.override',
+    conditions: { 'payload.override_type': OVERRIDE_TYPE_PRE_REGISTRATION_GROSS }
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['override_type', 'expense_account', 'vat_registration_date'],
+  compute: (input: ComputeInput): ComputeOutput => buildHistoricalCashOnlyLines({
+    payload: input.payload,
+    override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
+    vat_treatment: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
+    context_label: 'pre-VAT-reg, gross'
+  })
+};
+
+// =============================================================================
+// P.6 — Monthly fixed-asset depreciation
+//
+// Triggered by a monthly cron (post-MVP) per row in fixed_assets where
+// depreciation_start_date <= now() < depreciation_start_date + useful_life_months.
+// Phase 0 backfill emits two P.6 entries: 28.02.2026 (first MacBook
+// depreciation) and 31.03.2026 (second MacBook depreciation).
+//
+// Shape: 2-line. Dr 7610 (depreciation expense) / Cr 1239 (accumulated
+// depreciation, contra-asset).
+// =============================================================================
+
+const P_6: VatMappingEntry = {
+  id: 'P.6',
+  category: 'period_close',
+  entry_type: 'depreciation',
+  description: 'Monthly fixed-asset depreciation',
+  legal_basis: 'Cabinet Regulation 877; CIT Article 12',
+  routing: {
+    event_type: 'cron.monthly_depreciation',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['asset_code', 'month_number', 'of_total'],
   compute: (input: ComputeInput): ComputeOutput => {
-    const raw_lines = input.payload.lines;
-    if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
-      throw new Error('H.1 requires payload.lines as array with >= 2 entries');
-    }
-    const lines: ComputedLine[] = raw_lines.map((rawUnknown, idx) => {
-      const raw = rawUnknown as Record<string, unknown>;
-      const account_code = requireString(raw, 'account_code');
-      const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
-      const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
-      return {
-        line_number: idx + 1,
-        account_code,
-        debit_cents,
-        credit_cents,
+    const depreciation_cents = requireNumber(input.payload, 'depreciation_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '7610',
+        debit_cents: depreciation_cents,
+        credit_cents: 0,
         currency: 'EUR',
-        vat_rate_snapshot: typeof raw.vat_rate_snapshot === 'number' ? raw.vat_rate_snapshot : null,
-        vat_country: typeof raw.vat_country === 'string' ? raw.vat_country : null,
-        narrative: typeof raw.narrative === 'string' ? raw.narrative : 'Historical override line'
-      };
+        narrative: 'Pamatlīdzekļu nolietojums (PP&E depreciation expense)'
+      },
+      {
+        line_number: 2,
+        account_code: '1239',
+        debit_cents: 0,
+        credit_cents: depreciation_cents,
+        currency: 'EUR',
+        narrative: 'Uzkrātais nolietojums (accumulated depreciation)'
+      }
+    ];
+    return { lines, posting_context_extras: { depreciation_cents } };
+  }
+};
+
+// =============================================================================
+// P.7 — Year-end P&L close to retained earnings
+//
+// Zeroes all P&L accounts (6xxx revenue + 7xxx expenses) and routes the net
+// to 3420 (retained earnings — prior years). Caller pre-computes the closing
+// lines (which accounts to clear and the resulting net deficit/surplus). Same
+// pre-computed shape as P.1 and H.1: caller-supplied `lines` array; engine
+// emits verbatim.
+//
+// Phase 0 backfill: 31.12.2025 — closes 2025 expenses (€131.96 net loss) to
+// 3420 prior-years retained earnings. No revenue in 2025 (no completed
+// orders), so the close is one-sided expenses → loss carry-forward.
+// =============================================================================
+
+const P_7: VatMappingEntry = {
+  id: 'P.7',
+  category: 'period_close',
+  entry_type: 'period_close',
+  description: 'Year-end close — P&L accounts zeroed to retained earnings (3420)',
+  legal_basis: 'Cabinet Regulation 877; Latvian Commercial Law (annual report)',
+  routing: {
+    event_type: 'period_close.annual',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'pre_computed' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['for_year', 'lines'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const lines = buildPreComputedLines(input.payload.lines, {
+      type_id: 'P.7',
+      defaultNarrative: 'Year-end close line'
     });
-    return {
-      lines,
-      posting_context_extras: { override_type: OVERRIDE_TYPE_HISTORICAL_FILING }
-    };
+    return { lines, posting_context_extras: {} };
   }
 };
 
@@ -686,16 +1256,123 @@ const C_6: VatMappingEntry = {
 };
 
 // =============================================================================
+// C.7 — Shareholder / related-party loan received
+//
+// Cash inflow from a related party (founder, shareholder, director). Booked
+// as a liability on 5340 (Aizņēmumi no saistītajām personām). Latvian transfer
+// pricing rules under CIT Article 4 require either market-rate interest or
+// documented justification for zero-rate; the loan agreement is captured in
+// posting_context.loan_agreement_ref.
+//
+// Phase 0 backfill: three loans (€50, €100, €2,000) from Aigars Grenins
+// dated 28.07.2025, 02.08.2025, 19.01.2026.
+// =============================================================================
+
+const C_7: VatMappingEntry = {
+  id: 'C.7',
+  category: 'cash_only',
+  entry_type: 'shareholder_loan',
+  description: 'Shareholder / related-party loan received in operating bank',
+  legal_basis: 'Latvian Civil Law (loan agreement); CIT Article 4 (transfer pricing — related parties)',
+  routing: {
+    event_type: 'equity.shareholder_loan_received',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['lender_id', 'loan_agreement_ref'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const loan_cents = requireNumber(input.payload, 'loan_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '2610',
+        debit_cents: loan_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Swedbank — shareholder loan received'
+      },
+      {
+        line_number: 2,
+        account_code: '5340',
+        debit_cents: 0,
+        credit_cents: loan_cents,
+        currency: 'EUR',
+        narrative: 'Aizņēmumi no saistītajām personām (loan from related party)'
+      }
+    ];
+    return { lines, posting_context_extras: { loan_cents } };
+  }
+};
+
+// =============================================================================
+// C.8 — VID VAT refund received
+//
+// Cash inflow from VID (Valsts ieņēmumu dienests) settling a prior-period
+// PVN deklarācija refund position. Clears the VAT receivable on 2380.
+//
+// Phase 0 backfill: 24.02.2026 — €13.05 refund of January 2026 input VAT
+// (laptop RC + data levy + VINCIT B2B).
+// =============================================================================
+
+const C_8: VatMappingEntry = {
+  id: 'C.8',
+  category: 'cash_only',
+  entry_type: 'vat_refund',
+  description: 'VID VAT refund received in operating bank',
+  legal_basis: 'PVN likums (refund of input VAT excess)',
+  routing: {
+    event_type: 'vid.refund_received',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['vid_payment_ref', 'for_period'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const refund_cents = requireNumber(input.payload, 'refund_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '2610',
+        debit_cents: refund_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Swedbank — VID VAT refund received'
+      },
+      {
+        line_number: 2,
+        account_code: '2380',
+        debit_cents: 0,
+        credit_cents: refund_cents,
+        currency: 'EUR',
+        narrative: 'Norēķini ar valsts un pašvaldību budžetu (VAT receivable cleared)'
+      }
+    ];
+    return { lines, posting_context_extras: { refund_cents } };
+  }
+};
+
+// =============================================================================
 // MAPPING_TABLE — readonly export consumed by dispatcher.ts
 // =============================================================================
 
 /**
- * The 9 v3 mapping table type IDs in scope for PR #2. First-match-wins
- * routing in dispatcher.ts evaluates entries in this order against the
- * incoming PostingEvent. Order matters when multiple types share an
- * event_type — e.g. O.2 must precede O.3 because O.2's conditions are
- * stricter (vat_registered + vies_verified_at) and would otherwise fall
- * through to O.3 if not checked first.
+ * v3 mapping table type IDs in scope: 9 from PR #2 + 9 from PR #3 (Phase 0
+ * backfill) = 18 entries. First-match-wins routing in dispatcher.ts evaluates
+ * in this order against the incoming PostingEvent. Order matters when multiple
+ * types share an event_type — e.g. O.2 must precede O.3 because O.2's
+ * conditions are stricter (vat_registered + vies_verified_at) and would
+ * otherwise fall through to O.3 if not checked first.
+ *
+ * H.1, H.2, H.3 share event_type='historical.override' but have mutually
+ * exclusive `payload.override_type` discriminators, so order is for
+ * readability rather than precedence.
+ *
+ * I.6 (asset capitalization) is NOT a routing entry: it's a payload convention
+ * where caller passes `expense_account: '1230'` (or sub-account) on the
+ * underlying I.x type to capitalize instead of expense.
  *
  * When O.4 (EE B2B reverse-charge) and O.5 (EE B2C OSS) ship in a later PR,
  * insert them between O.2 and O.3 in this same most-specific-first order.
@@ -709,16 +1386,25 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   O_2,
   O_3,
   O_1,
-  // Incoming
+  // Incoming (more specific vat_treatment routing first; I_4 country list excludes EU MS so order with I_3 is safe)
   I_4,
+  I_2,
+  I_3,
   I_1,
+  I_5,
   // Period close
   P_1,
-  // Historical
+  P_6,
+  P_7,
+  // Historical (override_type discriminators are mutually exclusive — order is for readability)
   H_1,
+  H_2,
+  H_3,
   // Cash-only
   C_4,
-  C_6
+  C_6,
+  C_7,
+  C_8
 ] as const;
 
 /** Lookup by id. Returns undefined if id not in MAPPING_TABLE. */
