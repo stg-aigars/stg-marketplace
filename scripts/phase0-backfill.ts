@@ -36,6 +36,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 import { dispatch } from '@/lib/accounting/dispatcher';
 import { emit } from '@/lib/accounting/posting-engine';
@@ -309,7 +310,14 @@ async function runMain(): Promise<void> {
 // not when the file is imported by the integration test or another module.
 // Without this, importing `runBackfill` from this file would trigger a full
 // backfill run as a side effect.
-const isDirectInvocation = import.meta.url === `file://${process.argv[1]}`;
+//
+// Use pathToFileURL to URL-encode the script path correctly — `import.meta.url`
+// percent-encodes spaces (and other reserved chars) while `process.argv[1]` is
+// the raw filesystem path. A naive `file://${process.argv[1]}` comparison
+// fails on any path containing spaces (e.g. "Second Turn Games") and silently
+// no-ops the script.
+const isDirectInvocation = process.argv[1] !== undefined
+  && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isDirectInvocation) {
   runMain().catch((err: unknown) => {
     if (err instanceof Phase0ReconciliationError) {
