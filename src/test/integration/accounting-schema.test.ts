@@ -1,62 +1,10 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { createTestServiceClient, createTestAnonClient } from '../helpers/supabase';
 import { dbExec, dbExecOrThrow } from '../helpers/db-exec';
+import { createSignedInClient } from '../helpers/auth-personas';
 import { SYSTEM_COUNTERPARTY } from '@/lib/accounting/system-counterparties';
 
 const supabase = createTestServiceClient();
-
-interface SignedInClient {
-  client: SupabaseClient;
-  userId: string;
-  email: string;
-}
-
-/**
- * Creates a test auth user with the given is_staff flag and signs in to
- * return a SupabaseClient bearing the user's JWT. Inline helper for this
- * PR — if reused in PR #2 or beyond, factor out to
- * src/test/helpers/auth-personas.ts.
- *
- * is_staff is gated by a BEFORE UPDATE trigger (migration 036, F5
- * self-promotion guard) that raises regardless of role, so the flip goes
- * through dbExec with session_replication_role='replica' to bypass row
- * triggers. Other display fields go through the standard client.
- */
-async function createSignedInClient(opts: { isStaff: boolean }): Promise<SignedInClient> {
-  const ts = Date.now();
-  const suffix = Math.random().toString(36).slice(2, 8);
-  const email = `accounting-test-${ts}-${suffix}@stg-test.local`;
-  const password = `TestPassword${ts}!`;
-
-  const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-  if (createErr || !created?.user) {
-    throw new Error(`createUser failed: ${createErr?.message ?? 'unknown'}`);
-  }
-  const userId = created.user.id;
-
-  const { error: profileErr } = await supabase
-    .from('user_profiles')
-    .update({ full_name: 'Accounting Test', country: 'LV' })
-    .eq('id', userId);
-  if (profileErr) throw new Error(`profile update failed: ${profileErr.message}`);
-
-  if (opts.isStaff) {
-    dbExecOrThrow(
-      `SET session_replication_role='replica'; UPDATE public.user_profiles SET is_staff=true WHERE id='${userId}'; SET session_replication_role='origin';`,
-    );
-  }
-
-  const userClient = createTestAnonClient();
-  const { error: signInErr } = await userClient.auth.signInWithPassword({ email, password });
-  if (signInErr) throw new Error(`signIn failed: ${signInErr.message}`);
-
-  return { client: userClient, userId, email };
-}
 
 const ACCOUNTING_TABLES = [
   'accounts',
