@@ -131,8 +131,8 @@ export function PeriodCloseChecklist({ checklist }: Props) {
   const closeModal = () => {
     if (isPending) return; // don't close mid-flight
     setPending(null);
-    setUnsoftReason('');
     setError(null);
+    setUnsoftReason('');
   };
 
   const handleRefresh = () => {
@@ -344,6 +344,7 @@ export function PeriodCloseChecklist({ checklist }: Props) {
             </span>
           </Alert>
           <Textarea
+            id="unsoft-reason"
             label="Reason (required)"
             value={unsoftReason}
             onChange={(e) => setUnsoftReason(e.target.value)}
