@@ -444,6 +444,11 @@ export async function getPeriodCloseChecklist(
   const item1 = await buildItem1(supabase, asOf);
   const item2 = await buildItem2(supabase, periodKey, asOf);
   const item3 = await buildItem3(supabase);
+  // TODO(post-launch): items 4-7 could derive closing balances from item 1's
+  // trial balance (tb.rows) instead of issuing per-account getAccountLedger calls.
+  // Each item currently triggers a full-history fetch + accounts-table roundtrip.
+  // Acceptable for Phase 0 volumes; revisit when any single account's history
+  // exceeds the natural in-memory partition threshold (~10k lines).
   const item4 = await buildItem4(supabase, asOf);
   const item5 = await buildItem5(supabase, asOf);
   const item6 = await buildItem6(supabase, asOf);
@@ -463,6 +468,8 @@ export async function getPeriodCloseChecklist(
 
   let can_hard_lock = false;
   if (period.status === 'soft_locked' && period.locked_at) {
+    // gte (inclusive) is intentional: an entry created at exactly locked_at is
+    // treated as "posted since soft-lock," which is the false-conservative choice.
     const since = await getEntriesPostedSince(supabase, periodKey, period.locked_at);
     can_hard_lock = since.length === 0;
   }

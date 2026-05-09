@@ -287,6 +287,51 @@ function buildHappyPathQueues(
   };
 }
 
+/**
+ * Mock GL lines for account 2610 producing the given closing balance via a
+ * single H.1 historical-debit line. Used in `can_soft_lock` / `can_hard_lock`
+ * test blocks to set up Phase 0 bank state matching the Phase 0 fixture.
+ */
+function buildPhase0Bank2610Lines(closingCents: number): MockResponse {
+  return {
+    data: [
+      {
+        id: 'l1',
+        entry_id: 'e1',
+        line_number: 1,
+        account_code: '2610',
+        debit_cents: closingCents,
+        credit_cents: 0,
+        currency: 'EUR',
+        fx_rate_snapshot: null,
+        vat_rate_snapshot: null,
+        vat_country: null,
+        counterparty_type: null,
+        counterparty_id: null,
+        narrative: null,
+        journal_entries: {
+          id: 'e1',
+          posting_date: '2025-07-15',
+          accounting_period: '2025-07',
+          tax_period: '2025-07',
+          entry_type: 'manual',
+          type_id: 'H.1',
+          source_doc_type: 'historical',
+          source_doc_id: 'h1',
+          reverses_entry_id: null,
+          correction_reason: null,
+          narrative: 'opening',
+          posting_context: {},
+          created_by: 'test',
+          created_at: '2025-07-15T00:00:00Z',
+          period_close_adjustment: false
+        }
+      }
+    ],
+    error: null
+  };
+}
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -709,43 +754,7 @@ describe('getPeriodCloseChecklist — can_soft_lock', () => {
       period_key: '2025-07'
     });
     // Item 2 ledger 2610: closing = 5100 (matches fixture).
-    queues.journal_lines[1] = {
-      data: [
-        {
-          id: 'l1',
-          entry_id: 'e1',
-          line_number: 1,
-          account_code: '2610',
-          debit_cents: 5100,
-          credit_cents: 0,
-          currency: 'EUR',
-          fx_rate_snapshot: null,
-          vat_rate_snapshot: null,
-          vat_country: null,
-          counterparty_type: null,
-          counterparty_id: null,
-          narrative: null,
-          journal_entries: {
-            id: 'e1',
-            posting_date: '2025-07-15',
-            accounting_period: '2025-07',
-            tax_period: '2025-07',
-            entry_type: 'manual',
-            type_id: 'H.1',
-            source_doc_type: 'historical',
-            source_doc_id: 'h1',
-            reverses_entry_id: null,
-            correction_reason: null,
-            narrative: 'opening',
-            posting_context: {},
-            created_by: 'test',
-            created_at: '2025-07-15T00:00:00Z',
-            period_close_adjustment: false
-          }
-        }
-      ],
-      error: null
-    };
+    queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
 
     const client = buildMockClient(queues);
     const result = await getPeriodCloseChecklist(client as never, '2025-07');
@@ -759,43 +768,7 @@ describe('getPeriodCloseChecklist — can_soft_lock', () => {
       period_key: '2025-07'
     });
     // Use the Phase-0-matching ledger so item 2 passes...
-    queues.journal_lines[1] = {
-      data: [
-        {
-          id: 'l1',
-          entry_id: 'e1',
-          line_number: 1,
-          account_code: '2610',
-          debit_cents: 5100,
-          credit_cents: 0,
-          currency: 'EUR',
-          fx_rate_snapshot: null,
-          vat_rate_snapshot: null,
-          vat_country: null,
-          counterparty_type: null,
-          counterparty_id: null,
-          narrative: null,
-          journal_entries: {
-            id: 'e1',
-            posting_date: '2025-07-15',
-            accounting_period: '2025-07',
-            tax_period: '2025-07',
-            entry_type: 'manual',
-            type_id: 'H.1',
-            source_doc_type: 'historical',
-            source_doc_id: 'h1',
-            reverses_entry_id: null,
-            correction_reason: null,
-            narrative: 'opening',
-            posting_context: {},
-            created_by: 'test',
-            created_at: '2025-07-15T00:00:00Z',
-            period_close_adjustment: false
-          }
-        }
-      ],
-      error: null
-    };
+    queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
     // ...but break item 9 (negative wallet).
     queues.wallets[1] = {
       data: [{ user_id: 'u', balance_cents: -100 }],
@@ -814,43 +787,7 @@ describe('getPeriodCloseChecklist — can_soft_lock', () => {
       period_key: '2025-07'
     });
     // Phase-0-matching ledger so item 2 passes; the rest are pass/NA.
-    queues.journal_lines[1] = {
-      data: [
-        {
-          id: 'l1',
-          entry_id: 'e1',
-          line_number: 1,
-          account_code: '2610',
-          debit_cents: 5100,
-          credit_cents: 0,
-          currency: 'EUR',
-          fx_rate_snapshot: null,
-          vat_rate_snapshot: null,
-          vat_country: null,
-          counterparty_type: null,
-          counterparty_id: null,
-          narrative: null,
-          journal_entries: {
-            id: 'e1',
-            posting_date: '2025-07-15',
-            accounting_period: '2025-07',
-            tax_period: '2025-07',
-            entry_type: 'manual',
-            type_id: 'H.1',
-            source_doc_type: 'historical',
-            source_doc_id: 'h1',
-            reverses_entry_id: null,
-            correction_reason: null,
-            narrative: 'opening',
-            posting_context: {},
-            created_by: 'test',
-            created_at: '2025-07-15T00:00:00Z',
-            period_close_adjustment: false
-          }
-        }
-      ],
-      error: null
-    };
+    queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
 
     const client = buildMockClient(queues);
     const result = await getPeriodCloseChecklist(client as never, '2025-07');
