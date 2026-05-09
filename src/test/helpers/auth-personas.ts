@@ -19,6 +19,11 @@ export interface SignedInClient {
   email: string;
 }
 
+// Hoisted to module scope so create + cleanup share one service client per
+// test run (matches the pre-refactor inline behavior in
+// accounting-schema.test.ts).
+const serviceClient = createTestServiceClient();
+
 /**
  * Creates a test auth user with the given is_staff flag and signs in to
  * return a SupabaseClient bearing the user's JWT.
@@ -32,14 +37,13 @@ export async function createSignedInClient(
   opts: SignedInClientOptions = {},
 ): Promise<SignedInClient> {
   const { isStaff = false, emailPrefix = 'accounting-test' } = opts;
-  const supabase = createTestServiceClient();
 
   const ts = Date.now();
   const suffix = Math.random().toString(36).slice(2, 8);
   const email = `${emailPrefix}-${ts}-${suffix}@stg-test.local`;
   const password = `TestPassword${ts}!`;
 
-  const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+  const { data: created, error: createErr } = await serviceClient.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -49,7 +53,7 @@ export async function createSignedInClient(
   }
   const userId = created.user.id;
 
-  const { error: profileErr } = await supabase
+  const { error: profileErr } = await serviceClient
     .from('user_profiles')
     .update({ full_name: 'Accounting Test', country: 'LV' })
     .eq('id', userId);
@@ -75,8 +79,7 @@ export async function createSignedInClient(
  * supabase.auth.admin.deleteUser(persona.userId) directly.
  */
 export async function cleanupSignedInClient(persona: SignedInClient): Promise<void> {
-  const supabase = createTestServiceClient();
-  const { error } = await supabase.auth.admin.deleteUser(persona.userId);
+  const { error } = await serviceClient.auth.admin.deleteUser(persona.userId);
   if (error) {
     throw new Error(`cleanupSignedInClient failed: ${error.message}`);
   }
