@@ -154,6 +154,20 @@ export async function hardLockPeriod(periodKey: string): Promise<PeriodActionRes
 
   let entriesSince;
   try {
+    // TOCTOU race window (deferred to PR #5):
+    //
+    // Between this check returning empty and the UPDATE below landing, a
+    // concurrent insert with period_close_adjustment=true could slip through
+    // the migration 094/098 trigger and land in the period after locked_at.
+    //
+    // Safe in PR #4: no concurrent writer for period_close_adjustment=true
+    // exists yet — that escape is taken only by period-close consolidation
+    // entries (P.1, P.3) which the posting engine will emit starting in PR #5.
+    //
+    // PR #5 should close the race via a SECURITY DEFINER RPC that combines
+    // the entries-since check and the status update in a single conditional
+    // UPDATE: SET status='hard_locked' WHERE ... AND NOT EXISTS
+    // (SELECT 1 FROM journal_entries ...).
     entriesSince = await getEntriesPostedSince(serviceClient, periodKey, period.locked_at);
   } catch (err) {
     console.error('[accounting] hardLockPeriod entries-since read failed:', err);
