@@ -73,6 +73,35 @@ function nonEuVendor(): CounterpartyRow {
   });
 }
 
+function lvVendorRcCapable(): CounterpartyRow {
+  // LV vendor that issues invoices under domestic reverse charge (Article 143.7
+  // categories — laptops, mobile phones, etc.). C&C EE OU Latvijas filiāle
+  // appears in Phase 0 backfill (Entry 14a, MacBook Pro acquisition).
+  return lvSeller({
+    id: '66666666-6666-6666-6666-666666666666',
+    type: 'vendor',
+    full_name: 'C&C EE OU Latvijas filiāle',
+    country: 'LV',
+    tax_status: 'vat_registered',
+    vat_number: 'LV40103177024',
+    vendor_code: 'CC'
+  });
+}
+
+function euB2bVendor(): CounterpartyRow {
+  // EU member-state vendor (NL) — Mollie B2B reverse-charge flow. Phase 0
+  // Entry 16 uses Mollie €0.01 verification charge.
+  return lvSeller({
+    id: '77777777-7777-7777-7777-777777777777',
+    type: 'vendor',
+    full_name: 'Stichting Mollie Payments',
+    country: 'NL',
+    tax_status: 'vat_registered',
+    vat_number: 'NL850853286B01',
+    vendor_code: 'ML'
+  });
+}
+
 // =============================================================================
 // Representative events per type — used for self-match + mutual-exclusivity
 // =============================================================================
@@ -151,6 +180,79 @@ const REPRESENTATIVES: Representative[] = [
     type_id: 'C.6',
     ctx: {
       event_type: 'equity.share_capital_received',
+      counterparty: null,
+      payload: {}
+    }
+  },
+  // PR #3 additions (Phase 0 backfill)
+  {
+    type_id: 'I.2',
+    ctx: {
+      event_type: 'vendor.invoice_received',
+      counterparty: lvVendorRcCapable(),
+      payload: { vat_treatment: 'domestic_rc' }
+    }
+  },
+  {
+    type_id: 'I.3',
+    ctx: {
+      event_type: 'vendor.invoice_received',
+      counterparty: euB2bVendor(),
+      payload: { vat_treatment: 'eu_b2b_rc' }
+    }
+  },
+  {
+    type_id: 'I.5',
+    ctx: {
+      event_type: 'bank.fee_charged',
+      counterparty: null,
+      payload: { fee_type: 'pis_commission' }
+    }
+  },
+  {
+    type_id: 'H.2',
+    ctx: {
+      event_type: 'historical.override',
+      counterparty: null,
+      payload: { override_type: 'input_forfeited' }
+    }
+  },
+  {
+    type_id: 'H.3',
+    ctx: {
+      event_type: 'historical.override',
+      counterparty: null,
+      payload: { override_type: 'pre_registration_gross' }
+    }
+  },
+  {
+    type_id: 'P.6',
+    ctx: {
+      event_type: 'cron.monthly_depreciation',
+      counterparty: null,
+      payload: {}
+    }
+  },
+  {
+    type_id: 'P.7',
+    ctx: {
+      event_type: 'period_close.annual',
+      counterparty: null,
+      payload: {}
+    }
+  },
+  {
+    type_id: 'C.7',
+    ctx: {
+      event_type: 'equity.shareholder_loan_received',
+      counterparty: null,
+      payload: {}
+    }
+  },
+  {
+    type_id: 'C.8',
+    ctx: {
+      event_type: 'vid.refund_received',
       counterparty: null,
       payload: {}
     }
