@@ -38,7 +38,14 @@
  */
 
 import { decomposeFx, requireNumber, requireString, roundHalfUpCents } from './computer';
-import type { ComputeInput, ComputeOutput, ComputedLine, VatMappingEntry } from './types';
+import { PostingValidationError } from './errors';
+import type {
+  ComputeInput,
+  ComputeOutput,
+  ComputedLine,
+  CounterpartyRow,
+  VatMappingEntry
+} from './types';
 
 // =============================================================================
 // Helpers shared across compute()
@@ -47,9 +54,117 @@ import type { ComputeInput, ComputeOutput, ComputedLine, VatMappingEntry } from 
 /** STG commission rate (10%) per CLAUDE.md payment model. */
 const COMMISSION_RATE = 0.10;
 
+/**
+ * Sentinel value distinguishing historical override entries from
+ * engine-computed entries in audit queries. Routing condition + posting_context
+ * extras both reference this constant — defined here so any future rename lands
+ * in one place.
+ */
+const OVERRIDE_TYPE_HISTORICAL_FILING = 'historical_filing_alignment';
+
 /** Vendor account code derivation from counterparty.vendor_code (e.g. 'UN' → '5310-UN'). */
 function vendorPayableAccount(vendorCode: string): string {
   return `5310-${vendorCode}`;
+}
+
+/** Engine-invariant guard. Use whenever a routing-time precondition is unexpectedly violated. */
+function engineInvariant(reason: string, context?: Record<string, unknown>): never {
+  throw new PostingValidationError({
+    code: 'engine_invariant',
+    reason,
+    context
+  });
+}
+
+/**
+ * Shared scaffolding for outgoing order revenue (O.1, O.2, O.3 in PR #2; O.4
+ * and O.5 ship in a later PR with the same shape). Produces three or four
+ * journal_lines:
+ *
+ *   1. Dr 5351 seller wallet for (commission + shipping + vat)
+ *   2. Cr 6310-C commission revenue
+ *   3. Cr 6310-S shipping-mgmt revenue
+ *   4. Cr {vat_account} VAT (omitted when vat_account is null — B2B RC case)
+ *
+ * Caller passes the type-specific VAT routing (account + rate + country); the
+ * helper handles arithmetic, rounding, and counterparty stamping uniformly.
+ */
+function buildOrderRevenueLines(input: {
+  counterparty: CounterpartyRow | null;
+  payload: Record<string, unknown>;
+  vat_country: 'LV' | 'LT' | 'EE';
+  vat_rate: number | null;
+  /** Account that receives the VAT credit. `null` skips the VAT line entirely (B2B reverse-charge). */
+  vat_account: string | null;
+  /** Free-text suffix for line narratives, e.g. "LT B2B RC" or "LT B2C OSS". */
+  context_label: string;
+}): { lines: ComputedLine[]; commission_cents: number; shipping_value_cents: number; vat_cents: number } {
+  if (!input.counterparty?.id) {
+    engineInvariant('order revenue compute requires counterparty');
+  }
+  if (input.vat_rate === null) {
+    engineInvariant('order revenue compute requires vat_rate');
+  }
+
+  const item_value_cents = requireNumber(input.payload, 'item_value_cents');
+  const shipping_value_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
+  const commission_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
+  const revenue_base = commission_cents + shipping_value_cents;
+  const vat_cents = input.vat_account === null
+    ? 0
+    : roundHalfUpCents(revenue_base * input.vat_rate);
+  const debit_total = revenue_base + vat_cents;
+
+  const lines: ComputedLine[] = [
+    {
+      line_number: 1,
+      account_code: '5351',
+      debit_cents: debit_total,
+      credit_cents: 0,
+      currency: 'EUR',
+      counterparty_type: 'seller',
+      counterparty_id: input.counterparty.id,
+      narrative: `Seller wallet — commission + shipping${input.vat_account ? ' + VAT' : ''} (${input.context_label})`
+    },
+    {
+      line_number: 2,
+      account_code: '6310-C',
+      debit_cents: 0,
+      credit_cents: commission_cents,
+      currency: 'EUR',
+      vat_rate_snapshot: input.vat_rate,
+      vat_country: input.vat_country,
+      counterparty_type: 'seller',
+      counterparty_id: input.counterparty.id,
+      narrative: `Commission revenue (${input.context_label})`
+    },
+    {
+      line_number: 3,
+      account_code: '6310-S',
+      debit_cents: 0,
+      credit_cents: shipping_value_cents,
+      currency: 'EUR',
+      vat_rate_snapshot: input.vat_rate,
+      vat_country: input.vat_country,
+      counterparty_type: 'seller',
+      counterparty_id: input.counterparty.id,
+      narrative: `Shipping-mgmt revenue (${input.context_label})`
+    }
+  ];
+
+  if (input.vat_account !== null) {
+    lines.push({
+      line_number: 4,
+      account_code: input.vat_account,
+      debit_cents: 0,
+      credit_cents: vat_cents,
+      currency: 'EUR',
+      vat_country: input.vat_country,
+      narrative: `Output VAT (${input.context_label})`
+    });
+  }
+
+  return { lines, commission_cents, shipping_value_cents, vat_cents };
 }
 
 // =============================================================================
@@ -74,70 +189,20 @@ const O_1: VatMappingEntry = {
   },
   posting_context_required_keys: ['order_id', 'seller_id', 'invoice_number'],
   compute: (input: ComputeInput): ComputeOutput => {
-    const item_value_cents = requireNumber(input.payload, 'item_value_cents');
-    const shipping_value_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
-    if (input.vat_rate === null) {
-      throw new Error('O.1 compute called without vat_rate; engine bug');
-    }
-    if (!input.counterparty?.id) {
-      throw new Error('O.1 compute called without counterparty; engine bug');
-    }
-    const commission_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
-    const revenue_base = commission_cents + shipping_value_cents;
-    const vat_cents = roundHalfUpCents(revenue_base * input.vat_rate);
-    const debit_total = revenue_base + vat_cents;
-
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: '5351',
-        debit_cents: debit_total,
-        credit_cents: 0,
-        currency: 'EUR',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Seller wallet — commission + shipping + VAT debit'
-      },
-      {
-        line_number: 2,
-        account_code: '6310-C',
-        debit_cents: 0,
-        credit_cents: commission_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: input.vat_rate,
-        vat_country: 'LV',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Commission revenue (10%)'
-      },
-      {
-        line_number: 3,
-        account_code: '6310-S',
-        debit_cents: 0,
-        credit_cents: shipping_value_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: input.vat_rate,
-        vat_country: 'LV',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Shipping-mgmt revenue'
-      },
-      {
-        line_number: 4,
-        account_code: '5710-LV-OUT',
-        debit_cents: 0,
-        credit_cents: vat_cents,
-        currency: 'EUR',
-        vat_country: 'LV',
-        narrative: 'LV output VAT'
-      }
-    ];
+    const result = buildOrderRevenueLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_country: 'LV',
+      vat_rate: input.vat_rate,
+      vat_account: '5710-LV-OUT',
+      context_label: 'LV B2C, 21%'
+    });
     return {
-      lines,
+      lines: result.lines,
       posting_context_extras: {
-        commission_cents,
-        shipping_value_cents,
-        vat_cents,
+        commission_cents: result.commission_cents,
+        shipping_value_cents: result.shipping_value_cents,
+        vat_cents: result.vat_cents,
         vat_rate_snapshot: input.vat_rate
       }
     };
@@ -171,56 +236,21 @@ const O_2: VatMappingEntry = {
   },
   posting_context_required_keys: ['order_id', 'seller_id', 'seller_vat_number', 'vies_verified_at', 'invoice_number'],
   compute: (input: ComputeInput): ComputeOutput => {
-    const item_value_cents = requireNumber(input.payload, 'item_value_cents');
-    const shipping_value_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
-    if (!input.counterparty?.id) {
-      throw new Error('O.2 compute called without counterparty; engine bug');
-    }
-    const commission_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
-    const revenue_base = commission_cents + shipping_value_cents;
     // No VAT line — recipient self-assesses LT VAT on their own return.
     // ESL visibility via vat_country='LT' + vat_rate_snapshot=0 on credit lines.
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: '5351',
-        debit_cents: revenue_base,
-        credit_cents: 0,
-        currency: 'EUR',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Seller wallet — commission + shipping (B2B RC)'
-      },
-      {
-        line_number: 2,
-        account_code: '6310-C',
-        debit_cents: 0,
-        credit_cents: commission_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: 0,
-        vat_country: 'LT',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Commission revenue (LT B2B RC, 0%)'
-      },
-      {
-        line_number: 3,
-        account_code: '6310-S',
-        debit_cents: 0,
-        credit_cents: shipping_value_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: 0,
-        vat_country: 'LT',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Shipping-mgmt revenue (LT B2B RC, 0%)'
-      }
-    ];
+    const result = buildOrderRevenueLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_country: 'LT',
+      vat_rate: 0,
+      vat_account: null,
+      context_label: 'LT B2B RC, 0%'
+    });
     return {
-      lines,
+      lines: result.lines,
       posting_context_extras: {
-        commission_cents,
-        shipping_value_cents,
+        commission_cents: result.commission_cents,
+        shipping_value_cents: result.shipping_value_cents,
         vat_cents: 0,
         vat_rate_snapshot: 0,
         esl_eligible: true
@@ -254,70 +284,20 @@ const O_3: VatMappingEntry = {
   },
   posting_context_required_keys: ['order_id', 'seller_id', 'invoice_number', 'consumption_ms'],
   compute: (input: ComputeInput): ComputeOutput => {
-    const item_value_cents = requireNumber(input.payload, 'item_value_cents');
-    const shipping_value_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
-    if (input.vat_rate === null) {
-      throw new Error('O.3 compute called without vat_rate; engine bug');
-    }
-    if (!input.counterparty?.id) {
-      throw new Error('O.3 compute called without counterparty; engine bug');
-    }
-    const commission_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
-    const revenue_base = commission_cents + shipping_value_cents;
-    const vat_cents = roundHalfUpCents(revenue_base * input.vat_rate);
-    const debit_total = revenue_base + vat_cents;
-
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: '5351',
-        debit_cents: debit_total,
-        credit_cents: 0,
-        currency: 'EUR',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Seller wallet — commission + shipping + LT VAT (OSS)'
-      },
-      {
-        line_number: 2,
-        account_code: '6310-C',
-        debit_cents: 0,
-        credit_cents: commission_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: input.vat_rate,
-        vat_country: 'LT',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Commission revenue (LT B2C OSS)'
-      },
-      {
-        line_number: 3,
-        account_code: '6310-S',
-        debit_cents: 0,
-        credit_cents: shipping_value_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: input.vat_rate,
-        vat_country: 'LT',
-        counterparty_type: 'seller',
-        counterparty_id: input.counterparty.id,
-        narrative: 'Shipping-mgmt revenue (LT B2C OSS)'
-      },
-      {
-        line_number: 4,
-        account_code: '5711',
-        debit_cents: 0,
-        credit_cents: vat_cents,
-        currency: 'EUR',
-        vat_country: 'LT',
-        narrative: 'OSS-LT VAT (B2C; remit via Union return)'
-      }
-    ];
+    const result = buildOrderRevenueLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_country: 'LT',
+      vat_rate: input.vat_rate,
+      vat_account: '5711',
+      context_label: 'LT B2C OSS'
+    });
     return {
-      lines,
+      lines: result.lines,
       posting_context_extras: {
-        commission_cents,
-        shipping_value_cents,
-        vat_cents,
+        commission_cents: result.commission_cents,
+        shipping_value_cents: result.shipping_value_cents,
+        vat_cents: result.vat_cents,
         vat_rate_snapshot: input.vat_rate,
         oss_consumption_ms: 'LT'
       }
@@ -354,10 +334,10 @@ const I_1: VatMappingEntry = {
     const invoice_vat_cents = requireNumber(input.payload, 'invoice_vat_cents', { allowZero: true });
     const expense_account = requireString(input.payload, 'expense_account');
     if (input.vat_rate === null) {
-      throw new Error('I.1 compute called without vat_rate; engine bug');
+      engineInvariant('I.1 compute requires vat_rate');
     }
     if (!input.counterparty?.vendor_code) {
-      throw new Error('I.1 compute called without counterparty.vendor_code; engine bug');
+      engineInvariant('I.1 compute requires counterparty.vendor_code');
     }
     const invoice_gross_cents = invoice_net_cents + invoice_vat_cents;
     const payable_account = vendorPayableAccount(input.counterparty.vendor_code);
@@ -448,7 +428,7 @@ const I_4: VatMappingEntry = {
     const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
     const expense_account = requireString(input.payload, 'expense_account');
     if (input.vat_rate === null) {
-      throw new Error('I.4 compute called without vat_rate; engine bug');
+      engineInvariant('I.4 compute requires vat_rate');
     }
     const fx = decomposeFx({ foreign_amount: usd_amount, fx_rate, bank_amount_eur });
     const rc_vat_cents = roundHalfUpCents(fx.service_value_eur_cents * input.vat_rate);
@@ -582,7 +562,7 @@ const H_1: VatMappingEntry = {
   legal_basis: 'Phase 0 backfill alignment to closed filings; user decision documented in posting_context.rationale',
   routing: {
     event_type: 'historical.override',
-    conditions: { 'payload.override_type': 'historical_filing_alignment' }
+    conditions: { 'payload.override_type': OVERRIDE_TYPE_HISTORICAL_FILING }
   },
   vat_base_rule: { source: 'pre_computed' },
   vat_rate_country: null,
@@ -611,7 +591,7 @@ const H_1: VatMappingEntry = {
     });
     return {
       lines,
-      posting_context_extras: { override_type: 'historical_filing_alignment' }
+      posting_context_extras: { override_type: OVERRIDE_TYPE_HISTORICAL_FILING }
     };
   }
 };
@@ -637,7 +617,7 @@ const C_4: VatMappingEntry = {
   compute: (input: ComputeInput): ComputeOutput => {
     const withdrawal_cents = requireNumber(input.payload, 'withdrawal_cents');
     if (!input.counterparty?.id) {
-      throw new Error('C.4 compute called without counterparty; engine bug');
+      engineInvariant('C.4 compute requires counterparty');
     }
     const lines: ComputedLine[] = [
       {

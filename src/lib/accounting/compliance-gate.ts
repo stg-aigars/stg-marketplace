@@ -2,7 +2,8 @@
  * KYC / compliance gate (PR #2).
  *
  * Triggered for type C.4 (wallet withdrawal) only. Reads
- * counterparties.legal_compliance_status and rejects unless 'ok'.
+ * counterparties.legal_compliance_status (passed in by caller — engine has
+ * already loaded the row) and rejects unless 'ok' or 'dormant'.
  *
  * Status meanings (from migration 093 CHECK constraint):
  *
@@ -15,17 +16,19 @@
  *                      sellers can withdraw if KYC is otherwise clean. Documented
  *                      decision in plan-first preamble §(f).
  *
- * Accepted TOCTOU race: TS check happens before the RPC. Status could flip
- * between check and RPC commit. Window is milliseconds; compliance
- * transitions originate from staff actions or daily cron (never real-time
- * fraud signals); any stale-status withdrawal is reversible via manual
- * posting with audit-trail evidence.
+ * Accepted TOCTOU race: gate reads the snapshot loaded earlier in emit().
+ * Status could flip between snapshot and RPC commit. Window is milliseconds;
+ * compliance transitions originate from staff actions or daily cron (never
+ * real-time fraud signals); any stale-status withdrawal is reversible via
+ * manual posting with audit-trail evidence.
+ *
+ * The gate is a pure function — engine passes in the already-loaded row,
+ * which avoids a redundant DB roundtrip and makes the function
+ * unit-testable without a Supabase mock.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-
 import { PostingComplianceGateError, type PostingComplianceGateCode } from './errors';
-import type { CounterpartyComplianceStatus } from './types';
+import type { CounterpartyComplianceStatus, CounterpartyRow } from './types';
 
 const BLOCKING_STATUSES: ReadonlyArray<CounterpartyComplianceStatus> = [
   'pending_kyc',
@@ -47,32 +50,15 @@ const STATUS_TO_CODE: Record<string, PostingComplianceGateCode> = {
   suspended: 'suspended'
 };
 
-export async function assertPayoutAllowed(
-  supabase: SupabaseClient,
-  counterparty_id: string
-): Promise<void> {
-  const { data, error } = await supabase
-    .from('counterparties')
-    .select('legal_compliance_status')
-    .eq('id', counterparty_id)
-    .maybeSingle();
-
-  if (error) {
+export function assertPayoutAllowed(counterparty: CounterpartyRow | null): void {
+  if (!counterparty) {
     throw new PostingComplianceGateError({
       code: 'counterparty_not_found',
-      reason: `Counterparty SELECT failed for ${counterparty_id}: ${error.message}`,
-      context: { counterparty_id }
-    });
-  }
-  if (!data) {
-    throw new PostingComplianceGateError({
-      code: 'counterparty_not_found',
-      reason: `Counterparty ${counterparty_id} not found`,
-      context: { counterparty_id }
+      reason: 'C.4 wallet withdrawal requires a counterparty; received null'
     });
   }
 
-  const status = data.legal_compliance_status as CounterpartyComplianceStatus;
+  const status = counterparty.legal_compliance_status;
   if (status === 'ok' || status === 'dormant') {
     return; // payout allowed
   }
@@ -80,14 +66,14 @@ export async function assertPayoutAllowed(
     throw new PostingComplianceGateError({
       code: STATUS_TO_CODE[status] ?? 'kyc_gate',
       reason: `Withdrawal blocked: legal_compliance_status='${status}'`,
-      context: { counterparty_id, status }
+      context: { counterparty_id: counterparty.id, status }
     });
   }
   // Defensive — unreachable given the CHECK constraint, but a future status
   // value added without updating this function would land here.
   throw new PostingComplianceGateError({
     code: 'kyc_gate',
-    reason: `Unhandled legal_compliance_status='${status}'`,
-    context: { counterparty_id, status }
+    reason: `Unhandled legal_compliance_status='${status as string}'`,
+    context: { counterparty_id: counterparty.id, status }
   });
 }

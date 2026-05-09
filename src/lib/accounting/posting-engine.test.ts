@@ -227,12 +227,8 @@ describe('emit — KYC gate (C.4 only)', () => {
   it('rejects C.4 when seller has pending_kyc status', async () => {
     const blockedSeller = { ...lvSellerCounterparty, legal_compliance_status: 'pending_kyc' };
     const client = buildMockClient({
-      // First counterparties query: load for dispatch
-      counterparties: [
-        { data: blockedSeller, error: null },
-        // Second counterparties query: compliance gate
-        { data: { legal_compliance_status: 'pending_kyc' }, error: null }
-      ]
+      // Single counterparties query — engine loads once, KYC gate reuses the row
+      counterparties: [{ data: blockedSeller, error: null }]
     });
     const result = await emit(client as never, {
       event_type: 'seller.withdrawal_requested',
@@ -260,10 +256,7 @@ describe('emit — KYC gate (C.4 only)', () => {
 
   it('passes C.4 when seller has ok status', async () => {
     const client = buildMockClient({
-      counterparties: [
-        { data: lvSellerCounterparty, error: null },
-        { data: { legal_compliance_status: 'ok' }, error: null }
-      ],
+      counterparties: [{ data: lvSellerCounterparty, error: null }],
       journal_entries: [{ data: null, error: null }] // idempotency: fresh
     });
     const result = await emit(client as never, {

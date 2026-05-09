@@ -1,32 +1,39 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import { assertPayoutAllowed } from './compliance-gate';
 import { PostingComplianceGateError } from './errors';
-import type { CounterpartyComplianceStatus } from './types';
+import type { CounterpartyComplianceStatus, CounterpartyRow } from './types';
 
-function makeMockSupabase(maybeSingleResult: { data: unknown; error: unknown }): {
-  from: ReturnType<typeof vi.fn>;
-} {
-  const builder = {
-    select: vi.fn(),
-    eq: vi.fn(),
-    maybeSingle: vi.fn().mockResolvedValue(maybeSingleResult)
+function counterparty(status: CounterpartyComplianceStatus): CounterpartyRow {
+  return {
+    id: '11111111-1111-4111-8111-111111111111',
+    type: 'seller',
+    user_id: null,
+    full_name: 'Test',
+    country: 'LV',
+    tax_status: 'private',
+    tin: null,
+    vat_number: null,
+    vies_verified_at: null,
+    iban: null,
+    iban_validated_at: null,
+    legal_compliance_status: status,
+    kyc_status: 'not_required',
+    kyc_verified_at: null,
+    vendor_code: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z'
   };
-  builder.select.mockReturnValue(builder);
-  builder.eq.mockReturnValue(builder);
-  return { from: vi.fn().mockReturnValue(builder) };
 }
 
 describe('assertPayoutAllowed', () => {
   describe('payout allowed', () => {
-    it("passes for status='ok'", async () => {
-      const supabase = makeMockSupabase({ data: { legal_compliance_status: 'ok' }, error: null });
-      await expect(assertPayoutAllowed(supabase as never, 'some-uuid')).resolves.toBeUndefined();
+    it("passes for status='ok'", () => {
+      expect(() => assertPayoutAllowed(counterparty('ok'))).not.toThrow();
     });
 
-    it("passes for status='dormant' (not a compliance block — see plan §f)", async () => {
-      const supabase = makeMockSupabase({ data: { legal_compliance_status: 'dormant' }, error: null });
-      await expect(assertPayoutAllowed(supabase as never, 'some-uuid')).resolves.toBeUndefined();
+    it("passes for status='dormant' (not a compliance block — see plan §f)", () => {
+      expect(() => assertPayoutAllowed(counterparty('dormant'))).not.toThrow();
     });
   });
 
@@ -39,17 +46,16 @@ describe('assertPayoutAllowed', () => {
     ];
 
     for (const [status, expectedCode] of blockedCases) {
-      it(`rejects status='${status}' with code='${expectedCode}'`, async () => {
-        const supabase = makeMockSupabase({ data: { legal_compliance_status: status }, error: null });
+      it(`rejects status='${status}' with code='${expectedCode}'`, () => {
         try {
-          await assertPayoutAllowed(supabase as never, 'some-uuid');
+          assertPayoutAllowed(counterparty(status));
           throw new Error('should have thrown');
         } catch (e) {
           expect(e).toBeInstanceOf(PostingComplianceGateError);
           if (e instanceof PostingComplianceGateError) {
             expect(e.code).toBe(expectedCode);
             expect(e.reason).toContain(status);
-            expect(e.context.counterparty_id).toBe('some-uuid');
+            expect(e.context.counterparty_id).toBe('11111111-1111-4111-8111-111111111111');
             expect(e.context.status).toBe(status);
           }
         }
@@ -57,30 +63,15 @@ describe('assertPayoutAllowed', () => {
     }
   });
 
-  describe('counterparty lookup failures', () => {
-    it('rejects with counterparty_not_found when row missing', async () => {
-      const supabase = makeMockSupabase({ data: null, error: null });
+  describe('null counterparty', () => {
+    it('rejects with counterparty_not_found when null is passed', () => {
       try {
-        await assertPayoutAllowed(supabase as never, 'missing-uuid');
+        assertPayoutAllowed(null);
         throw new Error('should have thrown');
       } catch (e) {
         expect(e).toBeInstanceOf(PostingComplianceGateError);
         if (e instanceof PostingComplianceGateError) {
           expect(e.code).toBe('counterparty_not_found');
-        }
-      }
-    });
-
-    it('rejects with counterparty_not_found when supabase errors', async () => {
-      const supabase = makeMockSupabase({ data: null, error: { message: 'connection lost' } });
-      try {
-        await assertPayoutAllowed(supabase as never, 'some-uuid');
-        throw new Error('should have thrown');
-      } catch (e) {
-        expect(e).toBeInstanceOf(PostingComplianceGateError);
-        if (e instanceof PostingComplianceGateError) {
-          expect(e.code).toBe('counterparty_not_found');
-          expect(e.reason).toContain('connection lost');
         }
       }
     });

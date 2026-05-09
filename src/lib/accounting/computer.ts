@@ -113,6 +113,25 @@ export function decomposeFx(input: {
   );
   const bank_amount_eur_cents = roundHalfUpCents(input.bank_amount_eur * 100);
   const fx_fee_eur_cents = bank_amount_eur_cents - service_value_eur_cents;
+  // Guard: a negative FX fee means the caller's inputs are inconsistent
+  // (bank charged less than the implied conversion-only EUR — would only happen
+  // with a wrong fx_rate, wrong bank_amount, or a refund/reversal mis-routed
+  // through I.4). Without this guard, the negative cents lands in `debit_cents`
+  // for account 7710 and trips the `journal_lines.debit_cents >= 0` CHECK with
+  // a generic SQL error rather than a typed validation failure.
+  if (fx_fee_eur_cents < 0) {
+    throw new PostingValidationError({
+      code: 'invalid_payload_value',
+      reason: `FX decomposition produced negative fx_fee_eur_cents=${fx_fee_eur_cents} (bank_amount=${input.bank_amount_eur} < implied service_value=${service_value_eur_cents / 100}). Check fx_rate and bank_amount inputs.`,
+      context: {
+        foreign_amount: input.foreign_amount,
+        fx_rate: input.fx_rate,
+        bank_amount_eur: input.bank_amount_eur,
+        service_value_eur_cents,
+        fx_fee_eur_cents
+      }
+    });
+  }
   return { service_value_eur_cents, fx_fee_eur_cents };
 }
 

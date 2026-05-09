@@ -58,6 +58,21 @@ import type {
 
 const POSTGRES_UNIQUE_VIOLATION = '23505';
 
+/** Default `created_by` stamped on engine-emitted entries when the caller does not supply one. */
+const DEFAULT_CREATED_BY = 'posting_engine';
+
+/**
+ * Lower-case UUID v1-v8 shape check. Used before stamping `actorId` on the
+ * audit_log row, since `audit_log.actor_id` is `uuid REFERENCES auth.users`
+ * — non-UUID values silently fail the FK constraint. Synthetic actors
+ * (cron, posting_engine, system) must be encoded via `actorType` + metadata,
+ * not via `actorId`.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isUuid(value: string | undefined): value is string {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
 export async function emit(
   supabase: SupabaseClient,
   event: PostingEvent
@@ -77,7 +92,8 @@ export async function emit(
     validateRequiredKeys(entry, event.payload);
 
     // KYC gate runs only for type C.4. Throws PostingComplianceGateError on
-    // block; engine surfaces as { status: 'failed', error } below.
+    // block; engine surfaces as { status: 'failed', error } below. Reuses the
+    // already-loaded counterparty (no extra DB roundtrip).
     if (entry.id === 'C.4') {
       if (!event.counterparty_id) {
         throw new PostingValidationError({
@@ -85,7 +101,7 @@ export async function emit(
           reason: 'C.4 requires event.counterparty_id'
         });
       }
-      await assertPayoutAllowed(supabase, event.counterparty_id);
+      assertPayoutAllowed(counterparty);
     }
 
     const vat_rate = await resolveVatRate(supabase, entry, event.posting_date);
@@ -125,7 +141,7 @@ export async function emit(
       source_doc_id: event.source_doc_id,
       narrative: event.narrative,
       posting_context: merged_posting_context,
-      created_by: event.created_by ?? 'posting_engine',
+      created_by: event.created_by ?? DEFAULT_CREATED_BY,
       period_close_adjustment: event.period_close_adjustment ?? false
     };
     const rpcLines = lines;
@@ -169,8 +185,11 @@ export async function emit(
     }
 
     // Fire-and-forget audit. Regulatory-retention; failures → Sentry warning.
+    // actorId must be a UUID (audit_log.actor_id is uuid REFERENCES auth.users) or
+    // omitted entirely (helper coerces undefined → null). The synthetic 'posting_engine'
+    // identity is encoded via actorType='system' + metadata.created_by, never as actorId.
     void logAuditEvent({
-      actorId: event.created_by ?? 'posting_engine',
+      actorId: isUuid(event.created_by) ? event.created_by : undefined,
       actorType: 'system',
       action: 'accounting.posted',
       resourceType: 'journal_entry',
@@ -180,7 +199,8 @@ export async function emit(
         source_doc_type: event.source_doc_type,
         source_doc_id: event.source_doc_id,
         accounting_period: event.accounting_period,
-        tax_period: event.tax_period
+        tax_period: event.tax_period,
+        created_by: event.created_by ?? DEFAULT_CREATED_BY
       },
       retentionClass: 'regulatory'
     }).catch((err: unknown) => {
@@ -241,6 +261,18 @@ function validateEventShape(event: PostingEvent): void {
   }
 }
 
+/**
+ * Columns the engine reads off a counterparty: dispatcher routing
+ * (country/tax_status/vies_verified_at), vendor invoice posting (vendor_code),
+ * KYC gate (legal_compliance_status), and entry-row provenance (id).
+ *
+ * Explicit projection (vs `select('*')`) keeps the wire payload small and
+ * follows the project's hydration-drift convention — adding a new
+ * counterparties column does not silently flow into engine flows that don't
+ * need it. New columns the engine genuinely needs must be added here.
+ */
+const COUNTERPARTY_COLUMNS = 'id, type, country, tax_status, vies_verified_at, vendor_code, legal_compliance_status' as const;
+
 async function loadCounterparty(
   supabase: SupabaseClient,
   counterparty_id: string | undefined
@@ -248,7 +280,7 @@ async function loadCounterparty(
   if (!counterparty_id) return null;
   const { data, error } = await supabase
     .from('counterparties')
-    .select('*')
+    .select(COUNTERPARTY_COLUMNS)
     .eq('id', counterparty_id)
     .maybeSingle();
   if (error) {

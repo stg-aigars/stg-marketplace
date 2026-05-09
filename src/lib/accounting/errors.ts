@@ -48,7 +48,14 @@ export type PostingValidationCode =
   | 'vat_rate_not_found'
   | 'invalid_payload_value'
   | 'counterparty_not_found'
-  | 'unbalanced_lines';
+  | 'unbalanced_lines'
+  /**
+   * Reserved for engine-internal invariant violations (compute() called
+   * without vat_rate, counterparty unexpectedly null after dispatch, etc.).
+   * Distinguishable from caller-input failures so on-call paging / metrics
+   * can route differently.
+   */
+  | 'engine_invariant';
 
 export class PostingValidationError extends PostingErrorBase<PostingValidationCode> {
   constructor(opts: PostingErrorOptions<PostingValidationCode>) {

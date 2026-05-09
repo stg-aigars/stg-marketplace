@@ -135,6 +135,24 @@ describe('decomposeFx', () => {
         decomposeFx({ foreign_amount: 20, fx_rate: 1.16, bank_amount_eur: 0 })
       ).toThrow(PostingValidationError);
     });
+
+    it('throws when fx_fee would be negative (bank_amount < implied service_value)', () => {
+      // foreign_amount=20, fx_rate=1.0 → service=2000 cents (€20.00)
+      // bank_amount=10.00 → 1000 cents → fee = 1000 - 2000 = -1000 (negative)
+      // This input set is semantically inconsistent; engine must reject before
+      // the negative cents value lands in journal_lines.debit_cents (CHECK >= 0).
+      expect(() =>
+        decomposeFx({ foreign_amount: 20, fx_rate: 1.0, bank_amount_eur: 10.0 })
+      ).toThrow(/negative fx_fee_eur_cents/);
+    });
+
+    it('accepts fx_fee=0 (perfect conversion, no FX margin)', () => {
+      // foreign_amount=10, fx_rate=1.0 → service=1000 cents
+      // bank_amount=10.00 → 1000 cents → fee = 0 (allowed)
+      const result = decomposeFx({ foreign_amount: 10, fx_rate: 1.0, bank_amount_eur: 10.0 });
+      expect(result.service_value_eur_cents).toBe(1000);
+      expect(result.fx_fee_eur_cents).toBe(0);
+    });
   });
 });
 
