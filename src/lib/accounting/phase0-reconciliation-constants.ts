@@ -90,12 +90,11 @@ export const CLOSING_TRIAL_BALANCE_2026_03_31: ReadonlyArray<{
  * statement ingestion.
  */
 export function getPhase0BankCloseForPeriod(periodKey: string): number | null {
+  if (!/^\d{4}-\d{2}$/.test(periodKey)) return null;
   const [yearStr, monthStr] = periodKey.split('-');
-  if (!yearStr || !monthStr) return null;
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
-  if (Number.isNaN(year) || Number.isNaN(month)) return null;
   const lastDay = new Date(year, month, 0).getDate();
-  const dateStr = `${yearStr}-${monthStr.padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  const dateStr = `${yearStr}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
   return BANK_WALK_CHECKPOINTS.find(c => c.date === dateStr)?.expected_cents ?? null;
 }

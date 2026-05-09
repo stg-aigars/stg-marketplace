@@ -123,5 +123,8 @@ describe('getPhase0BankCloseForPeriod', () => {
     expect(getPhase0BankCloseForPeriod('')).toBeNull();
     expect(getPhase0BankCloseForPeriod('2026')).toBeNull();
     expect(getPhase0BankCloseForPeriod('2026-XX')).toBeNull();
+    expect(getPhase0BankCloseForPeriod('2026-1')).toBeNull();
+    expect(getPhase0BankCloseForPeriod('2026-01-15')).toBeNull();
+    expect(getPhase0BankCloseForPeriod('2026-13')).toBeNull();
   });
 });
