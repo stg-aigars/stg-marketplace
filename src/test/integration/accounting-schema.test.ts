@@ -1,34 +1,10 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { execSync } from 'child_process';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createTestServiceClient, createTestAnonClient } from '../helpers/supabase';
+import { dbExec, dbExecOrThrow } from '../helpers/db-exec';
 import { SYSTEM_COUNTERPARTY } from '@/lib/accounting/system-counterparties';
 
 const supabase = createTestServiceClient();
-const CONTAINER = 'supabase_db_stg-marketplace';
-
-interface DbExecResult {
-  stdout: string;
-  stderr: string;
-  code: number;
-}
-
-function dbExec(sql: string): DbExecResult {
-  try {
-    const out = execSync(
-      `docker exec ${CONTAINER} psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "${sql.replace(/"/g, '\\"')}"`,
-      { stdio: ['pipe', 'pipe', 'pipe'] },
-    );
-    return { stdout: out.toString(), stderr: '', code: 0 };
-  } catch (e) {
-    const err = e as { stdout?: Buffer; stderr?: Buffer; status?: number };
-    return {
-      stdout: err.stdout?.toString() ?? '',
-      stderr: err.stderr?.toString() ?? '',
-      code: err.status ?? 1,
-    };
-  }
-}
 
 interface SignedInClient {
   client: SupabaseClient;
@@ -41,6 +17,11 @@ interface SignedInClient {
  * return a SupabaseClient bearing the user's JWT. Inline helper for this
  * PR — if reused in PR #2 or beyond, factor out to
  * src/test/helpers/auth-personas.ts.
+ *
+ * is_staff is gated by a BEFORE UPDATE trigger (migration 036, F5
+ * self-promotion guard) that raises regardless of role, so the flip goes
+ * through dbExec with session_replication_role='replica' to bypass row
+ * triggers. Other display fields go through the standard client.
  */
 async function createSignedInClient(opts: { isStaff: boolean }): Promise<SignedInClient> {
   const ts = Date.now();
@@ -58,11 +39,6 @@ async function createSignedInClient(opts: { isStaff: boolean }): Promise<SignedI
   }
   const userId = created.user.id;
 
-  // The on_auth_user_created trigger creates the user_profiles row.
-  // Update display fields via the standard client; is_staff is gated by a
-  // BEFORE UPDATE trigger (migration 036, F5 self-promotion guard) that
-  // raises regardless of role, so the is_staff flip goes through dbExec
-  // with session_replication_role='replica' to bypass row triggers.
   const { error: profileErr } = await supabase
     .from('user_profiles')
     .update({ full_name: 'Accounting Test', country: 'LV' })
@@ -70,17 +46,12 @@ async function createSignedInClient(opts: { isStaff: boolean }): Promise<SignedI
   if (profileErr) throw new Error(`profile update failed: ${profileErr.message}`);
 
   if (opts.isStaff) {
-    const result = dbExec(
+    dbExecOrThrow(
       `SET session_replication_role='replica'; UPDATE public.user_profiles SET is_staff=true WHERE id='${userId}'; SET session_replication_role='origin';`,
     );
-    if (result.code !== 0) {
-      throw new Error(`is_staff promotion failed: ${result.stderr || result.stdout}`);
-    }
   }
 
-  const TEST_URL = process.env.SUPABASE_TEST_URL ?? 'http://127.0.0.1:54321';
-  const TEST_ANON_KEY = process.env.SUPABASE_TEST_ANON_KEY ?? '';
-  const userClient = createClient(TEST_URL, TEST_ANON_KEY);
+  const userClient = createTestAnonClient();
   const { error: signInErr } = await userClient.auth.signInWithPassword({ email, password });
   if (signInErr) throw new Error(`signIn failed: ${signInErr.message}`);
 
@@ -101,19 +72,16 @@ const ACCOUNTING_TABLES = [
 describe('accounting schema (PR 1)', () => {
   beforeAll(() => {
     // Sanity: confirm seeds landed.
-    const result = dbExec("SELECT count(*)::int AS n FROM accounts;");
-    if (result.code !== 0) {
-      throw new Error(`accounts seed missing — did migrations 093-096 apply? ${result.stderr}`);
-    }
+    dbExecOrThrow('SELECT count(*)::int AS n FROM accounts;');
   });
 
   describe('triggers', () => {
     afterEach(() => {
       // Clean up any test entries/lines (TRUNCATE doesn't fire row triggers
       // so it bypasses the immutability guard).
-      dbExec('TRUNCATE TABLE public.journal_lines, public.journal_entries CASCADE;');
+      dbExecOrThrow('TRUNCATE TABLE public.journal_lines, public.journal_entries CASCADE;');
       // Reset any test-mutated period statuses back to open.
-      dbExec(
+      dbExecOrThrow(
         "UPDATE public.periods SET status='open' WHERE period_key IN ('2026-12','2026-11') AND period_type='month';",
       );
     });
@@ -145,15 +113,14 @@ describe('accounting schema (PR 1)', () => {
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 2, '5351', 0, 1000);`,
         'COMMIT;',
       ].join(' ');
-      const result = dbExec(sql);
-      expect(result.code).toBe(0);
+      dbExecOrThrow(sql);
 
       const { data: rows } = await supabase.from('journal_entries').select('id').eq('id', id);
       expect(rows ?? []).toHaveLength(1);
     });
 
     it('T2: hard_locked period rejects insert with explicit error', async () => {
-      dbExec(
+      dbExecOrThrow(
         "UPDATE public.periods SET status='hard_locked' WHERE period_key='2026-12' AND period_type='month';",
       );
 
@@ -171,7 +138,7 @@ describe('accounting schema (PR 1)', () => {
     });
 
     it('T2: soft_locked period rejects insert without period_close_adjustment flag', async () => {
-      dbExec(
+      dbExecOrThrow(
         "UPDATE public.periods SET status='soft_locked' WHERE period_key='2026-12' AND period_type='month';",
       );
 
@@ -190,7 +157,7 @@ describe('accounting schema (PR 1)', () => {
     });
 
     it('T2: soft_locked period allows insert with period_close_adjustment=true', async () => {
-      dbExec(
+      dbExecOrThrow(
         "UPDATE public.periods SET status='soft_locked' WHERE period_key='2026-12' AND period_type='month';",
       );
 
@@ -229,7 +196,7 @@ describe('accounting schema (PR 1)', () => {
         `INSERT INTO public.journal_lines (entry_id, line_number, account_code, debit_cents, credit_cents) VALUES ('${id}', 2, '5351', 0, 100);`,
         'COMMIT;',
       ].join(' ');
-      expect(dbExec(insert).code).toBe(0);
+      dbExecOrThrow(insert);
 
       const upd = dbExec(`UPDATE public.journal_entries SET narrative='changed' WHERE id='${id}';`);
       expect(upd.code).not.toBe(0);

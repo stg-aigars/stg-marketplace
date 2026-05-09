@@ -15,7 +15,9 @@
  *     this TIN.
  *
  * STG_INTERNAL = Second Turn Games SIA (the platform itself).
- *   - vat_number = 'LV50203665371'
+ *   - vat_number = 'LV50203665371' (canonical source: LEGAL_ENTITY_VAT_NUMBER
+ *     in src/lib/constants.ts; duplicated here in the seed because SQL
+ *     migrations cannot import TypeScript)
  *   - Used for period-close consolidations, year-end P&L close, monthly
  *     depreciation entries — i.e. journal entries that have no external
  *     counterparty.

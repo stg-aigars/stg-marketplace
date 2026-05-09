@@ -309,5 +309,10 @@ create index idx_jl_account_entry
 create index idx_jl_vat
   on public.journal_lines(account_code, vat_country, vat_rate_snapshot)
   include (debit_cents, credit_cents);
+-- Lead with counterparty_id since it is unique across types and most queries
+-- (DAC7 per-seller, seller wallet view, vendor balance) filter on it directly
+-- without a counterparty_type predicate. account_code as the second column
+-- supports the common per-counterparty-per-account aggregation shape.
 create index idx_jl_counterparty
-  on public.journal_lines(counterparty_type, counterparty_id, account_code);
+  on public.journal_lines(counterparty_id, account_code)
+  where counterparty_id is not null;

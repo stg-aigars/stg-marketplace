@@ -38,15 +38,13 @@ as $$
 declare
   v_dr bigint;
   v_cr bigint;
-  v_entry_id uuid;
 begin
-  v_entry_id := new.entry_id;
   select coalesce(sum(debit_cents), 0), coalesce(sum(credit_cents), 0)
     into v_dr, v_cr
     from public.journal_lines
-    where entry_id = v_entry_id;
+    where entry_id = new.entry_id;
   if v_dr <> v_cr then
-    raise exception 'Unbalanced journal entry %: dr=% cr=%', v_entry_id, v_dr, v_cr
+    raise exception 'Unbalanced journal entry %: dr=% cr=%', new.entry_id, v_dr, v_cr
       using errcode = '23514';
   end if;
   return null;
