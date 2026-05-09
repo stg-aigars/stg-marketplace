@@ -636,9 +636,12 @@ const I_2: VatMappingEntry = {
   vat_base_rule: { source: 'invoice_net' },
   vat_rate_country: 'LV',
   reporting: {
+    // PVN deklarācija lines per the actual January 2026 filing (C&C MacBook):
+    // 52 (output, self-assessed standard rate); 62 (input deduction). PVN 1
+    // daļa I attachment with transaction code 'R4' (PVN-1-I code, not ESL —
+    // ESL is for outbound supplies only, and I.2 is incoming domestic).
     pvn_lines: ['52', '62'],
-    pvn1_pielikums: 'I_dala',
-    esl_transaction_code: 'R4'
+    pvn1_pielikums: 'I_dala'
   },
   posting_context_required_keys: ['vendor_invoice_number', 'vendor_vat_number', 'invoice_date', 'expense_account', 'vat_treatment'],
   compute: (input: ComputeInput): ComputeOutput => {
