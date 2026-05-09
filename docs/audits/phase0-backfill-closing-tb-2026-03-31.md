@@ -47,7 +47,9 @@ This snapshot is the PR #4 trial-balance / P&L view's known-good baseline. PR #5
 
 ## Source documents
 
-- Phase 0 v2 spec: `stg-phase-0-backfill-execution-v2.md` (with PR #281's corrections: H.2 is FX-aware; Entry 11 routes to H.2 not I.4; account naming uses 5710-* not 5721-* and 2380 not 2310-VID).
+> **This snapshot supersedes the spec docs as the source of truth for current GL state.** `stg-phase-0-backfill-execution-v2.md` and `stg-vat-mapping-table-v3.md` are historical artifacts of what was *planned* and have known corrections (H.2 is FX-aware; Entry 11 routes to H.2 not I.4; account naming is `5710-*` / `2380` not `5721-*` / `2310-VID`; `esl_transaction_code` removed from incoming types I.2 and I.4). See CLAUDE.md `Phase 0 backfill (PR #3)` section for the full diff. Future contributors should treat this snapshot as the regression baseline; the spec docs as design history.
+
+- Phase 0 v2 spec: `stg-phase-0-backfill-execution-v2.md` — historical, with corrections noted above.
 - Backfill data table: [scripts/phase0-backfill-data.ts](../../scripts/phase0-backfill-data.ts).
 - Reconciliation harness: [scripts/phase0-backfill-reconcile.ts](../../scripts/phase0-backfill-reconcile.ts).
 - Runner script: [scripts/phase0-backfill.ts](../../scripts/phase0-backfill.ts).
