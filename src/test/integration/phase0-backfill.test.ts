@@ -1,5 +1,5 @@
 /**
- * Phase 0 backfill integration test (PR #3, commit 3 of 3).
+ * Phase 0 backfill integration test.
  *
  * Exercises the full backfill end-to-end against a real local Supabase via
  * idempotency-driven isolation. Two tests, run in declaration order:

@@ -1,7 +1,7 @@
 /**
- * Phase 0 backfill — reconciliation harness (PR #3, commit 2 of 3).
+ * Phase 0 backfill — reconciliation harness.
  *
- * Verifies that all 22 backfill emits produced the expected GL state. Three
+ * Verifies that all 23 backfill emits produced the expected GL state. Three
  * layers of assertion, run in order:
  *
  *   1. Bank-walk: 9 month-end checkpoints on `2610` net debit. Each checkpoint
@@ -28,6 +28,8 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+import { SOURCE_DOC_TYPE } from './phase0-backfill-data';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -196,7 +198,7 @@ async function loadAllBackfillLines(supabase: SupabaseClient): Promise<BackfillL
         posting_context
       )
     `)
-    .eq('journal_entries.source_doc_type', 'phase0_backfill');
+    .eq('journal_entries.source_doc_type', SOURCE_DOC_TYPE);
 
   if (error) {
     throw new Error(`reconcile: failed to load backfill journal_lines: ${error.message}`);
@@ -226,17 +228,14 @@ async function loadAllBackfillLines(supabase: SupabaseClient): Promise<BackfillL
 
 function assertBankWalkCheckpoints(lines: ReadonlyArray<BackfillLine>): void {
   for (const checkpoint of BANK_WALK_CHECKPOINTS) {
-    const observed = sumNetDebit(
-      lines.filter((l) => l.account_code === '2610' && l.posting_date <= checkpoint.date)
-    );
+    const subset = lines.filter((l) => l.account_code === '2610' && l.posting_date <= checkpoint.date);
+    const observed = sumNetDebit(subset);
     if (observed !== checkpoint.expected_cents) {
       throw new Phase0ReconciliationError({
         checkpoint: `bank-walk 2610 @ ${checkpoint.date}`,
         expected_cents: checkpoint.expected_cents,
         observed_cents: observed,
-        top_contributors: topContributors(
-          lines.filter((l) => l.account_code === '2610' && l.posting_date <= checkpoint.date)
-        )
+        top_contributors: topContributors(subset)
       });
     }
   }
@@ -244,17 +243,14 @@ function assertBankWalkCheckpoints(lines: ReadonlyArray<BackfillLine>): void {
 
 function assertVatCheckpoint2026_01_31(lines: ReadonlyArray<BackfillLine>): void {
   for (const expected of VAT_CHECKPOINT_2026_01_31) {
-    const observed = sumNetDebit(
-      lines.filter((l) => l.account_code === expected.account && l.posting_date <= '2026-01-31')
-    );
+    const subset = lines.filter((l) => l.account_code === expected.account && l.posting_date <= '2026-01-31');
+    const observed = sumNetDebit(subset);
     if (observed !== expected.expected_cents) {
       throw new Phase0ReconciliationError({
         checkpoint: `VAT-state ${expected.account} @ 2026-01-31`,
         expected_cents: expected.expected_cents,
         observed_cents: observed,
-        top_contributors: topContributors(
-          lines.filter((l) => l.account_code === expected.account && l.posting_date <= '2026-01-31')
-        )
+        top_contributors: topContributors(subset)
       });
     }
   }
@@ -263,17 +259,14 @@ function assertVatCheckpoint2026_01_31(lines: ReadonlyArray<BackfillLine>): void
 function assertClosingTrialBalance2026_03_31(lines: ReadonlyArray<BackfillLine>): void {
   // Per-account assertions
   for (const expected of CLOSING_TRIAL_BALANCE_2026_03_31) {
-    const observed = sumNetDebit(
-      lines.filter((l) => l.account_code === expected.account && l.posting_date <= '2026-03-31')
-    );
+    const subset = lines.filter((l) => l.account_code === expected.account && l.posting_date <= '2026-03-31');
+    const observed = sumNetDebit(subset);
     if (observed !== expected.expected_cents) {
       throw new Phase0ReconciliationError({
         checkpoint: `closing TB ${expected.account} @ 2026-03-31`,
         expected_cents: expected.expected_cents,
         observed_cents: observed,
-        top_contributors: topContributors(
-          lines.filter((l) => l.account_code === expected.account && l.posting_date <= '2026-03-31')
-        )
+        top_contributors: topContributors(subset)
       });
     }
   }

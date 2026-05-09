@@ -1,7 +1,7 @@
 /**
- * Phase 0 backfill — runner script (PR #3, commit 3 of 3).
+ * Phase 0 backfill — runner script.
  *
- * Replays 22 historical journal entries (May 2025 → March 2026) through the
+ * Replays 23 historical journal entries (May 2025 → March 2026) through the
  * posting engine to populate the GL with STG's pre-launch financial state.
  * Source-of-truth: stg-phase-0-backfill-execution-v2.md.
  *
@@ -63,7 +63,7 @@ export interface BackfillRunResult {
 }
 
 /**
- * Run the full backfill: counterparty UPSERT + 22 emits. Stops on first
+ * Run the full backfill: counterparty UPSERT + 23 emits. Stops on first
  * failure (with the failed entry recorded). Reconciliation is the caller's
  * responsibility (runMain calls it; the integration test calls
  * `assertMatchesExpectedClosingState` directly so it can assert on the
@@ -270,12 +270,8 @@ async function runMain(): Promise<void> {
     return;
   }
 
-  // Default: full run
-  console.log('Seeding vendor counterparties (VINCIT, C&C, Mollie)...');
-  await seedCounterparties(supabase);
-  console.log(`Seeded ${BACKFILL_COUNTERPARTIES.length} vendor counterparties. ✓\n`);
-
-  console.log('Emitting 22 backfill entries through the posting engine...');
+  // Default: full run. runBackfill seeds counterparties as its first step.
+  console.log(`Seeding ${BACKFILL_COUNTERPARTIES.length} vendor counterparties + emitting ${BACKFILL_ENTRIES.length} entries...`);
   const startedAt = Date.now();
   const result = await runBackfill(supabase);
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1);

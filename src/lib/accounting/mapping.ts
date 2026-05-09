@@ -64,9 +64,9 @@ const COMMISSION_RATE = 0.10;
  *   INPUT_FORFEITED         → H.2 — input VAT not claimed on as-filed return
  *   PRE_REGISTRATION_GROSS  → H.3 — pre-VAT-reg gross expensing (with optional FX)
  */
-const OVERRIDE_TYPE_HISTORICAL_FILING = 'historical_filing_alignment';
-const OVERRIDE_TYPE_INPUT_FORFEITED = 'input_forfeited';
-const OVERRIDE_TYPE_PRE_REGISTRATION_GROSS = 'pre_registration_gross';
+export const OVERRIDE_TYPE_HISTORICAL_FILING = 'historical_filing_alignment';
+export const OVERRIDE_TYPE_INPUT_FORFEITED = 'input_forfeited';
+export const OVERRIDE_TYPE_PRE_REGISTRATION_GROSS = 'pre_registration_gross';
 
 /** Vendor account code derivation from counterparty.vendor_code (e.g. 'UN' → '5310-UN'). */
 function vendorPayableAccount(vendorCode: string): string {
@@ -79,6 +79,42 @@ function engineInvariant(reason: string, context?: Record<string, unknown>): nev
     code: 'engine_invariant',
     reason,
     context
+  });
+}
+
+/**
+ * Shared scaffolding for pre-computed lines (P.1, H.1, P.7). Caller passes
+ * `payload.lines: Array<{ account_code, debit_cents?, credit_cents?, ... }>`;
+ * the helper validates the array shape and projects each entry into a
+ * ComputedLine. The optional `forwardVat` flag carries through
+ * `vat_rate_snapshot` / `vat_country` (used by H.1 for VID-reportable RC
+ * lines; P.1 and P.7 don't need VAT metadata on close lines).
+ */
+function buildPreComputedLines(
+  raw_lines: unknown,
+  opts: { type_id: string; defaultNarrative: string | null; forwardVat?: boolean }
+): ComputedLine[] {
+  if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
+    throw new Error(`${opts.type_id} requires payload.lines as array with >= 2 entries`);
+  }
+  return raw_lines.map((rawUnknown, idx) => {
+    const raw = rawUnknown as Record<string, unknown>;
+    const account_code = requireString(raw, 'account_code');
+    const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
+    const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
+    const line: ComputedLine = {
+      line_number: idx + 1,
+      account_code,
+      debit_cents,
+      credit_cents,
+      currency: 'EUR',
+      narrative: typeof raw.narrative === 'string' ? raw.narrative : opts.defaultNarrative
+    };
+    if (opts.forwardVat) {
+      line.vat_rate_snapshot = typeof raw.vat_rate_snapshot === 'number' ? raw.vat_rate_snapshot : null;
+      line.vat_country = typeof raw.vat_country === 'string' ? raw.vat_country : null;
+    }
+    return line;
   });
 }
 
@@ -922,27 +958,10 @@ const P_1: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: ['70'] },
   posting_context_required_keys: ['closing_period', 'net_refund_cents', 'lines'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const raw_lines = input.payload.lines;
-    if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
-      throw new Error('P.1 requires payload.lines as array with >= 2 entries');
-    }
-    const lines: ComputedLine[] = raw_lines.map((rawUnknown, idx) => {
-      const raw = rawUnknown as Record<string, unknown>;
-      const account_code = requireString(raw, 'account_code');
-      const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
-      const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
-      return {
-        line_number: idx + 1,
-        account_code,
-        debit_cents,
-        credit_cents,
-        currency: 'EUR',
-        narrative: typeof raw.narrative === 'string' ? raw.narrative : null
-      };
-    });
-    return { lines, posting_context_extras: {} };
-  }
+  compute: (input: ComputeInput): ComputeOutput => ({
+    lines: buildPreComputedLines(input.payload.lines, { type_id: 'P.1', defaultNarrative: null }),
+    posting_context_extras: {}
+  })
 };
 
 // =============================================================================
@@ -968,32 +987,14 @@ const H_1: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['rc_override_reason', 'rc_base_filed', 'filing_ref', 'rationale', 'override_type', 'lines'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const raw_lines = input.payload.lines;
-    if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
-      throw new Error('H.1 requires payload.lines as array with >= 2 entries');
-    }
-    const lines: ComputedLine[] = raw_lines.map((rawUnknown, idx) => {
-      const raw = rawUnknown as Record<string, unknown>;
-      const account_code = requireString(raw, 'account_code');
-      const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
-      const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
-      return {
-        line_number: idx + 1,
-        account_code,
-        debit_cents,
-        credit_cents,
-        currency: 'EUR',
-        vat_rate_snapshot: typeof raw.vat_rate_snapshot === 'number' ? raw.vat_rate_snapshot : null,
-        vat_country: typeof raw.vat_country === 'string' ? raw.vat_country : null,
-        narrative: typeof raw.narrative === 'string' ? raw.narrative : 'Historical override line'
-      };
-    });
-    return {
-      lines,
-      posting_context_extras: { override_type: OVERRIDE_TYPE_HISTORICAL_FILING }
-    };
-  }
+  compute: (input: ComputeInput): ComputeOutput => ({
+    lines: buildPreComputedLines(input.payload.lines, {
+      type_id: 'H.1',
+      defaultNarrative: 'Historical override line',
+      forwardVat: true
+    }),
+    posting_context_extras: { override_type: OVERRIDE_TYPE_HISTORICAL_FILING }
+  })
 };
 
 // =============================================================================
@@ -1034,7 +1035,7 @@ const H_2: VatMappingEntry = {
   compute: (input: ComputeInput): ComputeOutput => buildHistoricalCashOnlyLines({
     payload: input.payload,
     override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
-    vat_treatment: 'input_forfeited',
+    vat_treatment: OVERRIDE_TYPE_INPUT_FORFEITED,
     context_label: 'post-VAT-reg, input forfeited'
   })
 };
@@ -1073,7 +1074,7 @@ const H_3: VatMappingEntry = {
   compute: (input: ComputeInput): ComputeOutput => buildHistoricalCashOnlyLines({
     payload: input.payload,
     override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
-    vat_treatment: 'pre_registration_gross',
+    vat_treatment: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
     context_label: 'pre-VAT-reg, gross'
   })
 };
@@ -1157,23 +1158,9 @@ const P_7: VatMappingEntry = {
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['for_year', 'lines'],
   compute: (input: ComputeInput): ComputeOutput => {
-    const raw_lines = input.payload.lines;
-    if (!Array.isArray(raw_lines) || raw_lines.length < 2) {
-      throw new Error('P.7 requires payload.lines as array with >= 2 entries');
-    }
-    const lines: ComputedLine[] = raw_lines.map((rawUnknown, idx) => {
-      const raw = rawUnknown as Record<string, unknown>;
-      const account_code = requireString(raw, 'account_code');
-      const debit_cents = typeof raw.debit_cents === 'number' ? raw.debit_cents : 0;
-      const credit_cents = typeof raw.credit_cents === 'number' ? raw.credit_cents : 0;
-      return {
-        line_number: idx + 1,
-        account_code,
-        debit_cents,
-        credit_cents,
-        currency: 'EUR',
-        narrative: typeof raw.narrative === 'string' ? raw.narrative : 'Year-end close line'
-      };
+    const lines = buildPreComputedLines(input.payload.lines, {
+      type_id: 'P.7',
+      defaultNarrative: 'Year-end close line'
     });
     return { lines, posting_context_extras: {} };
   }

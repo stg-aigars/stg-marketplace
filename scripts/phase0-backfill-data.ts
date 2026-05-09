@@ -1,7 +1,7 @@
 /**
- * Phase 0 backfill — data table (PR #3, commit 2 of 3).
+ * Phase 0 backfill — data table.
  *
- * 22 historical journal entries reconstructing STG's GL state from SIA founding
+ * 23 historical journal entries reconstructing STG's GL state from SIA founding
  * (May 2025) through 31.03.2026 closing balance. Each entry is a pre-built
  * `PostingEvent` ready for the engine's `emit(supabase, event)`. Source-of-truth
  * is `stg-phase-0-backfill-execution-v2.md` — every numeric and date below
@@ -20,7 +20,7 @@
  *     for January P.1).
  *
  * Both prefixes share the `phase0_` root, so audit queries
- * `WHERE source_doc_id LIKE 'phase0_%'` capture all 22 emits.
+ * `WHERE source_doc_id LIKE 'phase0_%'` capture all 23 emits.
  *
  * Account-naming translation (codebase wins; spec doc is stale historical):
  *   - 5721-* → 5710-* (per CLAUDE.md, the spec's 5721-* naming was
@@ -32,8 +32,13 @@
  * can filter and so audit queries are cheap.
  */
 
-import type { PostingEvent } from '@/lib/accounting/types';
+import {
+  OVERRIDE_TYPE_HISTORICAL_FILING,
+  OVERRIDE_TYPE_INPUT_FORFEITED,
+  OVERRIDE_TYPE_PRE_REGISTRATION_GROSS
+} from '@/lib/accounting/mapping';
 import { SYSTEM_COUNTERPARTY } from '@/lib/accounting/system-counterparties';
+import type { PostingEvent } from '@/lib/accounting/types';
 
 // ---------------------------------------------------------------------------
 // BackfillEntry — wrapper around PostingEvent with metadata for the runner
@@ -116,7 +121,7 @@ const VINCIT_ID = BACKFILL_COUNTERPARTIES[0].id;
 const CC_ID = BACKFILL_COUNTERPARTIES[1].id;
 const MOLLIE_ID = BACKFILL_COUNTERPARTIES[2].id;
 
-const SOURCE_DOC_TYPE = 'phase0_backfill';
+export const SOURCE_DOC_TYPE = 'phase0_backfill';
 
 /** Common tag injected into every entry's payload (becomes posting_context). */
 function tag(entry_number: string, extras: Record<string, unknown> = {}): Record<string, unknown> {
@@ -128,7 +133,7 @@ function tag(entry_number: string, extras: Record<string, unknown> = {}): Record
 }
 
 // ---------------------------------------------------------------------------
-// BACKFILL_ENTRIES — 22 emits in posting-date order
+// BACKFILL_ENTRIES — 23 emits in posting-date order
 // ---------------------------------------------------------------------------
 
 export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
@@ -205,7 +210,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-08',
       narrative: 'VINCIT ONLINE SIA €35.00 (pre-VAT-reg gross expensing)',
       payload: tag('4', {
-        override_type: 'pre_registration_gross',
+        override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
         gross_cents: 3500,
         expense_account: '7740',
         vat_registration_date: '2025-08-08',
@@ -226,7 +231,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-08',
       narrative: 'Cursor AI $20.00 (€18.08 EUR billed, FX 1.138952; pre-VAT-reg)',
       payload: tag('5', {
-        override_type: 'pre_registration_gross',
+        override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
         expense_account: '7730',
         vat_registration_date: '2025-08-08',
         // FX inputs trigger 3-line decomposition (Dr 7730 €17.56 / Dr 7710 €0.52 / Cr 2610 €18.08)
@@ -253,7 +258,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-08',
       narrative: 'Proton AG €7.99 (CH supplier, EUR-billed; pre-VAT-reg)',
       payload: tag('6', {
-        override_type: 'pre_registration_gross',
+        override_type: OVERRIDE_TYPE_PRE_REGISTRATION_GROSS,
         gross_cents: 799,
         expense_account: '7730',
         vat_registration_date: '2025-08-08',
@@ -279,7 +284,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-09',
       narrative: 'Cursor $20.00 (€17.74 EUR billed, FX 1.160766; post-VAT-reg, input forfeited per Sep 2025 zero return)',
       payload: tag('7', {
-        override_type: 'input_forfeited',
+        override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
         expense_account: '7730',
         user_decision_ref: 'drop_september_precizeta_2026-05-08',
         // FX inputs trigger 3-line decomposition (Dr 7730 €17.23 / Dr 7710 €0.51 / Cr 2610 €17.74)
@@ -306,7 +311,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-09',
       narrative: 'Proton AG €7.99 (CH supplier, EUR-billed; input forfeited)',
       payload: tag('8', {
-        override_type: 'input_forfeited',
+        override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
         gross_cents: 799,
         expense_account: '7730',
         user_decision_ref: 'drop_september_precizeta_2026-05-08',
@@ -327,7 +332,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-09',
       narrative: 'Inbokss SIA €9.99 (LV B2B mailbox; €1.73 input VAT not claimed per Sep zero return)',
       payload: tag('9', {
-        override_type: 'input_forfeited',
+        override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
         gross_cents: 999,
         expense_account: '7730',
         user_decision_ref: 'drop_september_precizeta_2026-05-08',
@@ -353,7 +358,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-10',
       narrative: 'Cursor $20.00 (€17.63 EUR billed, FX 1.168224; RC consolidated into Dec 2025 H.1 catch-up)',
       payload: tag('10', {
-        override_type: 'input_forfeited',
+        override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
         expense_account: '7730',
         user_decision_ref: 'rolled_to_december_h1_catchup_2026-05-08',
         foreign_amount: 20.00,
@@ -382,7 +387,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-12',
       narrative: 'Vercel $20.00 (€17.54 EUR billed, FX 1.173709; RC consolidated into Dec 2025 H.1 catch-up)',
       payload: tag('11', {
-        override_type: 'input_forfeited',
+        override_type: OVERRIDE_TYPE_INPUT_FORFEITED,
         expense_account: '7730',
         user_decision_ref: 'rolled_to_december_h1_catchup_2026-05-08',
         foreign_amount: 20.00,
@@ -408,7 +413,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       tax_period: '2025-12',
       narrative: 'December 2025 PVN deklarācija RC catch-up €7.38 on declared base €35.17 (rolled Oct Cursor + Dec Vercel; FX €1.01 incorrectly included in base per as-filed return)',
       payload: tag('12', {
-        override_type: 'historical_filing_alignment',
+        override_type: OVERRIDE_TYPE_HISTORICAL_FILING,
         rc_override_reason: 'match_as_filed_2025_december',
         // Decimal values per v3 mapping table §H.1; required by H.1's posting_context_required_keys
         rc_base_computed: 34.16,  // Cursor service €17.12 + Vercel service €17.04, FX-fee-excluded
