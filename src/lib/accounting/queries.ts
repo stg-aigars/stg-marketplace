@@ -1,0 +1,613 @@
+/**
+ * Accounting read-side queries (PR #4).
+ *
+ * The posting engine in posting-engine.ts is the only writer. This module is
+ * its read counterpart — pure data primitives consumed by the staff UI in
+ * Tasks 5–12 (trial balance, account ledger, journal entry detail, wallet
+ * integrity, recent activity dashboard, period-close checklist).
+ *
+ * Conventions:
+ *   - All monetary values are integer cents (number in TS, bigint in DB). No
+ *     floats. Sign convention: net_debit_cents = debit_cents - credit_cents
+ *     (positive = debit normal — assets, expenses).
+ *   - includeBackfill=false filters journal_entries.posting_context.backfill
+ *     entries (Phase 0 historical catch-up). Default is true (show everything)
+ *     so backfill rows are visible by default and the UI surfaces a toggle.
+ *   - Σ debit = Σ credit must hold for every entry and the trial balance as a
+ *     whole. is_balanced surfaces violations loudly — they should never occur
+ *     against a healthy GL (the deferred constraint trigger from migration
+ *     094 prevents inserts that don't balance), but the UI shows the flag
+ *     anyway so a corrupted row is caught visually.
+ */
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+import type {
+  AccountRow,
+  AccountType,
+  JournalEntryRow,
+  JournalLineRow,
+  PeriodRow,
+  PeriodType
+} from './types';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface TrialBalanceRow {
+  account_code: string;
+  account_name_lv: string;
+  account_name_en: string;
+  account_type: AccountRow['type'];
+  debit_cents: number;
+  credit_cents: number;
+  /** Signed: debit_cents - credit_cents. Positive = debit normal. */
+  net_debit_cents: number;
+}
+
+export interface TrialBalance {
+  as_of: string;
+  rows: TrialBalanceRow[];
+  total_debit_cents: number;
+  total_credit_cents: number;
+  is_balanced: boolean;
+}
+
+export interface AccountLedgerLine {
+  line: JournalLineRow;
+  entry: JournalEntryRow;
+  /** Signed; positive = debit. Same convention across all account types. */
+  running_balance_cents: number;
+}
+
+export interface AccountLedger {
+  account: AccountRow;
+  range: { from: string; to: string };
+  opening_balance_cents: number;
+  lines: AccountLedgerLine[];
+  closing_balance_cents: number;
+}
+
+export interface JournalEntryDetail {
+  entry: JournalEntryRow;
+  lines: Array<JournalLineRow & { account_name_lv: string; account_name_en: string }>;
+  total_debit_cents: number;
+  total_credit_cents: number;
+  is_balanced: boolean;
+}
+
+export interface WalletIntegrityCheck {
+  as_of: string;
+  gl_5351_sum_cents: number;
+  wallet_table_sum_cents: number;
+  delta_cents: number;
+  is_reconciled: boolean;
+  per_seller_deltas: Array<{
+    seller_id: string;
+    seller_handle: string | null;
+    gl_balance_cents: number;
+    wallet_balance_cents: number;
+    delta_cents: number;
+  }>;
+}
+
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/** Embedded shape returned by PostgREST `journal_entries!inner(...)` join. */
+interface EmbeddedEntryFields {
+  posting_date: string;
+  posting_context: Record<string, unknown> | null;
+}
+
+interface JoinedLineRow {
+  account_code: string;
+  debit_cents: number;
+  credit_cents: number;
+  journal_entries: EmbeddedEntryFields | null;
+}
+
+/**
+ * True if the embedded entry is a Phase 0 backfill entry. Used to filter
+ * trial balance and account ledger when includeBackfill=false.
+ *
+ * Match shape: `posting_context.backfill === true` (boolean). Anything else
+ * (null context, missing key, false, "true" as string) is treated as
+ * non-backfill — the backfill script in scripts/phase0-backfill-data.ts
+ * always writes the boolean true.
+ */
+function isBackfillEntry(entry: EmbeddedEntryFields | null | undefined): boolean {
+  if (!entry || !entry.posting_context) return false;
+  return entry.posting_context.backfill === true;
+}
+
+function throwIfError(error: { message: string } | null, context: string): void {
+  if (error) {
+    throw new Error(`${context}: ${error.message}`);
+  }
+}
+
+// =============================================================================
+// getTrialBalance
+// =============================================================================
+
+/**
+ * Aggregate all journal lines whose entries have posting_date <= asOf into a
+ * per-account trial balance. Joins accounts(name_lv, name_en, type) so the UI
+ * doesn't need a second roundtrip.
+ *
+ * Σ debit must equal Σ credit across the whole GL. is_balanced surfaces any
+ * violation — the deferred constraint trigger from migration 094 makes this
+ * impossible against a healthy GL, but the flag is shown to staff anyway so
+ * a corrupted row would be caught visually.
+ */
+export async function getTrialBalance(
+  supabase: SupabaseClient,
+  asOf: string,
+  options: { includeBackfill?: boolean } = {}
+): Promise<TrialBalance> {
+  const includeBackfill = options.includeBackfill ?? true;
+
+  const { data: lineRows, error: linesError } = await supabase
+    .from('journal_lines')
+    .select(
+      'account_code, debit_cents, credit_cents, journal_entries!inner(posting_date, posting_context)'
+    )
+    .lte('journal_entries.posting_date', asOf);
+
+  throwIfError(linesError, 'getTrialBalance: journal_lines SELECT failed');
+
+  const lines = (lineRows ?? []) as unknown as JoinedLineRow[];
+
+  // Aggregate per account_code, filtering out backfill entries when requested.
+  const totals = new Map<string, { debit_cents: number; credit_cents: number }>();
+  for (const row of lines) {
+    if (!includeBackfill && isBackfillEntry(row.journal_entries)) continue;
+    const current = totals.get(row.account_code) ?? { debit_cents: 0, credit_cents: 0 };
+    current.debit_cents += row.debit_cents;
+    current.credit_cents += row.credit_cents;
+    totals.set(row.account_code, current);
+  }
+
+  // Empty trial balance — early return without an accounts roundtrip.
+  if (totals.size === 0) {
+    return {
+      as_of: asOf,
+      rows: [],
+      total_debit_cents: 0,
+      total_credit_cents: 0,
+      is_balanced: true
+    };
+  }
+
+  const codes = Array.from(totals.keys());
+  const { data: accountRows, error: accountsError } = await supabase
+    .from('accounts')
+    .select('code, name_lv, name_en, type')
+    .in('code', codes);
+
+  throwIfError(accountsError, 'getTrialBalance: accounts SELECT failed');
+
+  const accountsByCode = new Map<
+    string,
+    { name_lv: string; name_en: string; type: AccountType }
+  >();
+  for (const acc of (accountRows ?? []) as Array<{
+    code: string;
+    name_lv: string;
+    name_en: string;
+    type: AccountType;
+  }>) {
+    accountsByCode.set(acc.code, { name_lv: acc.name_lv, name_en: acc.name_en, type: acc.type });
+  }
+
+  const rows: TrialBalanceRow[] = codes.map((code) => {
+    const sums = totals.get(code) ?? { debit_cents: 0, credit_cents: 0 };
+    const acc = accountsByCode.get(code);
+    return {
+      account_code: code,
+      account_name_lv: acc?.name_lv ?? '',
+      account_name_en: acc?.name_en ?? '',
+      account_type: acc?.type ?? 'asset',
+      debit_cents: sums.debit_cents,
+      credit_cents: sums.credit_cents,
+      net_debit_cents: sums.debit_cents - sums.credit_cents
+    };
+  });
+
+  // Sort by account_code lexicographically so reports are stable across runs.
+  rows.sort((a, b) => a.account_code.localeCompare(b.account_code));
+
+  const total_debit_cents = rows.reduce((acc, r) => acc + r.debit_cents, 0);
+  const total_credit_cents = rows.reduce((acc, r) => acc + r.credit_cents, 0);
+
+  return {
+    as_of: asOf,
+    rows,
+    total_debit_cents,
+    total_credit_cents,
+    is_balanced: total_debit_cents === total_credit_cents
+  };
+}
+
+// =============================================================================
+// getAccountLedger
+// =============================================================================
+
+/**
+ * Per-account ledger over a date range. Opening = sum of net_debit before
+ * range.from; closing = opening + sum of in-range net_debit. Running balance
+ * is uniform sign convention (positive = debit) regardless of account type;
+ * callers translate for credit-normal accounts (liabilities/equity/revenue).
+ */
+export async function getAccountLedger(
+  supabase: SupabaseClient,
+  accountCode: string,
+  range: { from: string; to: string },
+  options: { includeBackfill?: boolean } = {}
+): Promise<AccountLedger> {
+  const includeBackfill = options.includeBackfill ?? true;
+
+  const { data: accountData, error: accountError } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('code', accountCode)
+    .maybeSingle();
+
+  throwIfError(accountError, 'getAccountLedger: accounts SELECT failed');
+  if (!accountData) {
+    throw new Error(`getAccountLedger: account ${accountCode} not found`);
+  }
+  const account = accountData as AccountRow;
+
+  // Pull every line for this account, joined with its entry header for
+  // posting_date / posting_context filtering and date sorting. Two sweeps:
+  // one for opening balance (lines before range.from), one for in-range.
+  // We do this in a single query and partition in memory rather than two
+  // queries, since the line count per account in the seed window is small
+  // (Phase 0 + initial production = ~hundreds at most).
+  const { data: lineRows, error: linesError } = await supabase
+    .from('journal_lines')
+    .select(
+      '*, journal_entries!inner(id, posting_date, accounting_period, tax_period, entry_type, type_id, source_doc_type, source_doc_id, reverses_entry_id, correction_reason, narrative, posting_context, created_by, created_at, period_close_adjustment)'
+    )
+    .eq('account_code', accountCode)
+    .lte('journal_entries.posting_date', range.to)
+    .order('posting_date', { foreignTable: 'journal_entries', ascending: true });
+
+  throwIfError(linesError, 'getAccountLedger: journal_lines SELECT failed');
+
+  type JoinedRow = JournalLineRow & { journal_entries: JournalEntryRow };
+  const allRows = ((lineRows ?? []) as unknown as JoinedRow[]).filter((row) => {
+    if (!row.journal_entries) return false;
+    if (!includeBackfill && isBackfillEntry(row.journal_entries)) return false;
+    return true;
+  });
+
+  // Stable secondary sort by created_at then line_number. PostgREST already
+  // sorted by posting_date ASC; we re-sort the in-memory array to apply the
+  // tiebreakers deterministically.
+  allRows.sort((a, b) => {
+    const dateCmp = a.journal_entries.posting_date.localeCompare(
+      b.journal_entries.posting_date
+    );
+    if (dateCmp !== 0) return dateCmp;
+    const createdCmp = a.journal_entries.created_at.localeCompare(
+      b.journal_entries.created_at
+    );
+    if (createdCmp !== 0) return createdCmp;
+    return a.line_number - b.line_number;
+  });
+
+  let opening_balance_cents = 0;
+  const inRange: JoinedRow[] = [];
+  for (const row of allRows) {
+    const date = row.journal_entries.posting_date;
+    if (date < range.from) {
+      opening_balance_cents += row.debit_cents - row.credit_cents;
+    } else {
+      inRange.push(row);
+    }
+  }
+
+  let running = opening_balance_cents;
+  const lines: AccountLedgerLine[] = inRange.map((row) => {
+    running += row.debit_cents - row.credit_cents;
+    // Strip the embedded entry from the line shape — the API contract is
+    // { line, entry, running_balance_cents } as separate fields.
+    const { journal_entries: entry, ...lineCore } = row;
+    return {
+      line: lineCore as JournalLineRow,
+      entry,
+      running_balance_cents: running
+    };
+  });
+
+  return {
+    account,
+    range,
+    opening_balance_cents,
+    lines,
+    closing_balance_cents: running
+  };
+}
+
+// =============================================================================
+// getJournalEntry
+// =============================================================================
+
+/**
+ * One entry with its full line tape and joined account names. is_balanced
+ * surfaces any sum mismatch — should never happen against a healthy GL but
+ * the UI flags it visually so corruption isn't silent.
+ */
+export async function getJournalEntry(
+  supabase: SupabaseClient,
+  entryId: string
+): Promise<JournalEntryDetail> {
+  const { data: entryData, error: entryError } = await supabase
+    .from('journal_entries')
+    .select('*')
+    .eq('id', entryId)
+    .maybeSingle();
+
+  throwIfError(entryError, 'getJournalEntry: journal_entries SELECT failed');
+  if (!entryData) {
+    throw new Error(`getJournalEntry: entry ${entryId} not found`);
+  }
+  const entry = entryData as JournalEntryRow;
+
+  const { data: lineRows, error: linesError } = await supabase
+    .from('journal_lines')
+    .select('*, accounts!inner(name_lv, name_en)')
+    .eq('entry_id', entryId)
+    .order('line_number', { ascending: true });
+
+  throwIfError(linesError, 'getJournalEntry: journal_lines SELECT failed');
+
+  type JoinedLine = JournalLineRow & {
+    accounts: { name_lv: string; name_en: string } | null;
+  };
+  const lines = ((lineRows ?? []) as unknown as JoinedLine[]).map((row) => {
+    const { accounts, ...lineCore } = row;
+    return {
+      ...(lineCore as JournalLineRow),
+      account_name_lv: accounts?.name_lv ?? '',
+      account_name_en: accounts?.name_en ?? ''
+    };
+  });
+
+  const total_debit_cents = lines.reduce((acc, l) => acc + l.debit_cents, 0);
+  const total_credit_cents = lines.reduce((acc, l) => acc + l.credit_cents, 0);
+
+  return {
+    entry,
+    lines,
+    total_debit_cents,
+    total_credit_cents,
+    is_balanced: total_debit_cents === total_credit_cents
+  };
+}
+
+// =============================================================================
+// getWalletIntegrity
+// =============================================================================
+
+/**
+ * Cross-check the GL seller wallet liability (account 5351) against the
+ * canonical wallets.balance_cents totals. delta=0 = reconciled. Per-seller
+ * deltas surface mismatches with seller handle for staff investigation.
+ *
+ * 5351 is credit-normal (liability), so the GL balance is computed as
+ * SUM(credit) - SUM(debit). Wallet table balances are unsigned positive cents
+ * (the wallets.balance_cents CHECK enforces >= 0).
+ *
+ * Phase 0 case (no live wallets): both sums are 0, delta is 0, per_seller_deltas
+ * is empty.
+ */
+export async function getWalletIntegrity(
+  supabase: SupabaseClient
+): Promise<WalletIntegrityCheck> {
+  const as_of = new Date().toISOString();
+
+  // 1. GL side: every line on account 5351, with counterparty for per-seller.
+  const { data: glLineRows, error: glError } = await supabase
+    .from('journal_lines')
+    .select('debit_cents, credit_cents, counterparty_id')
+    .eq('account_code', '5351');
+
+  throwIfError(glError, 'getWalletIntegrity: journal_lines 5351 SELECT failed');
+
+  const glRows = (glLineRows ?? []) as Array<{
+    debit_cents: number;
+    credit_cents: number;
+    counterparty_id: string | null;
+  }>;
+
+  let gl_5351_sum_cents = 0;
+  // GL balance per counterparty_id (signed credit-normal: credit - debit).
+  const glPerCounterparty = new Map<string, number>();
+  for (const row of glRows) {
+    const signed = row.credit_cents - row.debit_cents;
+    gl_5351_sum_cents += signed;
+    if (row.counterparty_id) {
+      glPerCounterparty.set(
+        row.counterparty_id,
+        (glPerCounterparty.get(row.counterparty_id) ?? 0) + signed
+      );
+    }
+  }
+
+  // 2. Wallet table side: every wallet balance.
+  const { data: walletRows, error: walletError } = await supabase
+    .from('wallets')
+    .select('user_id, balance_cents');
+
+  throwIfError(walletError, 'getWalletIntegrity: wallets SELECT failed');
+
+  const wallets = (walletRows ?? []) as Array<{ user_id: string; balance_cents: number }>;
+  const walletByUserId = new Map<string, number>();
+  let wallet_table_sum_cents = 0;
+  for (const w of wallets) {
+    walletByUserId.set(w.user_id, w.balance_cents);
+    wallet_table_sum_cents += w.balance_cents;
+  }
+
+  // 3. Resolve seller counterparties (id → user_id) for the per-seller diff.
+  // Only counterparties that touch 5351 in the GL OR have a wallet row matter.
+  const counterpartyIds = Array.from(glPerCounterparty.keys());
+  const cpUserIdById = new Map<string, string | null>();
+  if (counterpartyIds.length > 0) {
+    const { data: cpRows, error: cpError } = await supabase
+      .from('counterparties')
+      .select('id, user_id')
+      .in('id', counterpartyIds);
+
+    throwIfError(cpError, 'getWalletIntegrity: counterparties SELECT failed');
+
+    for (const cp of (cpRows ?? []) as Array<{ id: string; user_id: string | null }>) {
+      cpUserIdById.set(cp.id, cp.user_id);
+    }
+  }
+
+  // Walk the union of GL counterparties and wallet user_ids. Build a
+  // per-user-id view: GL balance + wallet balance. The "seller_id" field
+  // in the result is the user_id (the canonical identity in user_profiles).
+  const gl_by_user = new Map<string, number>();
+  for (const [cpId, balance] of glPerCounterparty) {
+    const userId = cpUserIdById.get(cpId);
+    if (!userId) continue; // Counterparty not linked to a user — not a seller wallet.
+    gl_by_user.set(userId, (gl_by_user.get(userId) ?? 0) + balance);
+  }
+
+  const allUserIds = new Set<string>([...gl_by_user.keys(), ...walletByUserId.keys()]);
+  const userIdsWithDelta: string[] = [];
+  const perSellerNoHandle: Array<{
+    seller_id: string;
+    gl_balance_cents: number;
+    wallet_balance_cents: number;
+    delta_cents: number;
+  }> = [];
+
+  for (const userId of allUserIds) {
+    const glBalance = gl_by_user.get(userId) ?? 0;
+    const walletBalance = walletByUserId.get(userId) ?? 0;
+    const delta = glBalance - walletBalance;
+    if (delta !== 0) {
+      userIdsWithDelta.push(userId);
+      perSellerNoHandle.push({
+        seller_id: userId,
+        gl_balance_cents: glBalance,
+        wallet_balance_cents: walletBalance,
+        delta_cents: delta
+      });
+    }
+  }
+
+  // Resolve seller handles via public_profiles (full_name is the closest
+  // thing we have to a user-facing handle; null-tolerant).
+  const handlesByUserId = new Map<string, string | null>();
+  if (userIdsWithDelta.length > 0) {
+    const { data: profileRows, error: profileError } = await supabase
+      .from('public_profiles')
+      .select('id, full_name')
+      .in('id', userIdsWithDelta);
+
+    throwIfError(profileError, 'getWalletIntegrity: public_profiles SELECT failed');
+
+    for (const p of (profileRows ?? []) as Array<{ id: string; full_name: string | null }>) {
+      handlesByUserId.set(p.id, p.full_name);
+    }
+  }
+
+  const per_seller_deltas = perSellerNoHandle
+    .map((row) => ({
+      ...row,
+      seller_handle: handlesByUserId.get(row.seller_id) ?? null
+    }))
+    .sort((a, b) => Math.abs(b.delta_cents) - Math.abs(a.delta_cents));
+
+  const delta_cents = gl_5351_sum_cents - wallet_table_sum_cents;
+
+  return {
+    as_of,
+    gl_5351_sum_cents,
+    wallet_table_sum_cents,
+    delta_cents,
+    is_reconciled: delta_cents === 0,
+    per_seller_deltas
+  };
+}
+
+// =============================================================================
+// getPeriodRow
+// =============================================================================
+
+export async function getPeriodRow(
+  supabase: SupabaseClient,
+  periodKey: string,
+  periodType: PeriodType
+): Promise<PeriodRow | null> {
+  const { data, error } = await supabase
+    .from('periods')
+    .select('*')
+    .eq('period_key', periodKey)
+    .eq('period_type', periodType)
+    .maybeSingle();
+
+  throwIfError(error, 'getPeriodRow: periods SELECT failed');
+  return (data as PeriodRow | null) ?? null;
+}
+
+// =============================================================================
+// getEntriesPostedSince
+// =============================================================================
+
+/**
+ * Used by the period-close checklist: when staff is about to hard-lock a
+ * soft-locked period, this confirms whether any entries were posted between
+ * soft-lock and now. created_at (not posting_date) — we're asking "what
+ * entries appeared after the lock", not "what financial events happened".
+ */
+export async function getEntriesPostedSince(
+  supabase: SupabaseClient,
+  periodKey: string,
+  since: string
+): Promise<JournalEntryRow[]> {
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select('*')
+    .eq('accounting_period', periodKey)
+    .gte('created_at', since)
+    .order('created_at', { ascending: true });
+
+  throwIfError(error, 'getEntriesPostedSince: journal_entries SELECT failed');
+  return (data ?? []) as JournalEntryRow[];
+}
+
+// =============================================================================
+// getRecentJournalEntries
+// =============================================================================
+
+/**
+ * Returns the most recent N journal entries by created_at DESC. Used by the
+ * /staff/accounting dashboard's recent activity tile. Sorted by created_at
+ * (when posted) rather than posting_date (financial event date) so backfill
+ * batches show as a clustered block — that's the truthful presentation.
+ */
+export async function getRecentJournalEntries(
+  supabase: SupabaseClient,
+  limit: number
+): Promise<JournalEntryRow[]> {
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  throwIfError(error, 'getRecentJournalEntries: journal_entries SELECT failed');
+  return (data ?? []) as JournalEntryRow[];
+}
