@@ -410,8 +410,9 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       payload: tag('12', {
         override_type: 'historical_filing_alignment',
         rc_override_reason: 'match_as_filed_2025_december',
-        rc_base_computed_cents: 3416,  // €34.16 (Cursor service €17.12 + Vercel service €17.04, FX-fee-excluded)
-        rc_base_filed_cents: 3517,     // €35.17 (the as-filed base, includes €1.01 FX fees)
+        // Decimal values per v3 mapping table §H.1; required by H.1's posting_context_required_keys
+        rc_base_computed: 34.16,  // Cursor service €17.12 + Vercel service €17.04, FX-fee-excluded
+        rc_base_filed: 35.17,     // As-filed base, includes €1.01 FX fees (incorrect but accepted)
         filing_ref: 'EDS_110869581',
         rationale: 'User decision 2026-05-08: accept as-filed; no precizēta. Engine must compute base from service value only going forward (excluding FX fees) per §F.',
         lines: [
@@ -748,11 +749,17 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Sanity assertion: 22 emits expected (20 numbered + 2 closes).
+// Sanity assertion: 23 emits expected.
+//   - 21 numbered entries: 1-20 with slot 14 split into 14a + 14b (the C&C
+//     MacBook invoice's two distinct VAT mechanisms)
+//   - 2 system-generated period closes (P.7 year-end + P.1 January)
+// The plan file's "22" framing counts slots; the implementer-facing count is
+// 23 because 14a/14b are independent emits with their own source_doc_ids.
 // ---------------------------------------------------------------------------
-if (BACKFILL_ENTRIES.length !== 22) {
+export const TOTAL_BACKFILL_ENTRIES = 23;
+if (BACKFILL_ENTRIES.length !== TOTAL_BACKFILL_ENTRIES) {
   throw new Error(
-    `phase0-backfill-data.ts: expected 22 BACKFILL_ENTRIES, got ${BACKFILL_ENTRIES.length}. ` +
-    `If you added/removed an entry, update the reconciliation harness checkpoints accordingly.`
+    `phase0-backfill-data.ts: expected ${TOTAL_BACKFILL_ENTRIES} BACKFILL_ENTRIES, got ${BACKFILL_ENTRIES.length}. ` +
+    `If you added/removed an entry, update TOTAL_BACKFILL_ENTRIES + reconciliation harness checkpoints.`
   );
 }
