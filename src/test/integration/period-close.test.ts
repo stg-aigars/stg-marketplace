@@ -286,18 +286,26 @@ describe('migration 098: enforce_period_status trigger', () => {
   // exception is the cleanest path.
   function buildEntryInsertSql(
     periodKey: string,
-    options: { periodCloseAdjustment?: boolean } = {}
+    options: { periodCloseAdjustment?: boolean; postingContext?: Record<string, unknown> } = {}
   ): string {
-    const { periodCloseAdjustment = false } = options;
+    const { periodCloseAdjustment = false, postingContext } = options;
     const id = '11111111-1111-4111-8111-' + Math.random().toString(16).slice(2, 14).padStart(12, '0');
     const sourceDocId = `period_close_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // Always tag trigger-test entries with test_artifact=true so future
+    // trial-balance / P&L views (which filter on
+    // posting_context->>'test_artifact' = 'true' per CLAUDE.md convention)
+    // exclude these permanent rows. Success-case INSERTs commit and persist
+    // across runs because the journal_entries immutability trigger blocks
+    // DELETE — the only way to keep them out of reports is the tag.
+    const effectiveContext = { test_artifact: true, ...(postingContext ?? {}) };
+    const contextLiteral = JSON.stringify(effectiveContext).replace(/'/g, "''");
     return (
       `INSERT INTO public.journal_entries ` +
       `(id, posting_date, accounting_period, tax_period, entry_type, type_id, ` +
-      `source_doc_type, source_doc_id, narrative, created_by, period_close_adjustment) ` +
+      `source_doc_type, source_doc_id, narrative, created_by, period_close_adjustment, posting_context) ` +
       `VALUES ('${id}', '2027-04-15', '${periodKey}', '${periodKey}', 'manual', 'TEST.MIG098', ` +
       `'period_close_test', '${sourceDocId}', 'period-close trigger test', 'test', ` +
-      `${periodCloseAdjustment ? 'true' : 'false'});`
+      `${periodCloseAdjustment ? 'true' : 'false'}, '${contextLiteral}'::jsonb);`
     );
   }
 
@@ -538,7 +546,12 @@ describe('softLockPeriod server action', () => {
       can_unsoft_lock: false
     });
 
-    const before = new Date().toISOString();
+    // Subtract a defensive 1s window to absorb Node↔Postgres clock skew under
+    // CI load — the audit polling's `created_at >= since` filter would
+    // otherwise miss rows when Node is fractionally ahead. The polling helper
+    // already scopes by actor_id + resource_id, so widening this window does
+    // not admit cross-test audit rows.
+    const before = new Date(Date.now() - 1000).toISOString();
     const result = await softLockPeriod(TEST_PERIODS.ACTION_SOFTLOCK_PASS);
     expect(result).toEqual({ success: true });
 
@@ -653,7 +666,8 @@ describe('hardLockPeriod server action', () => {
     );
 
     mockRequireServerAuth.mockResolvedValue(staffAuthPayload());
-    const before = new Date().toISOString();
+    // Defensive -1000ms window for Node↔Postgres clock skew (see softLock test).
+    const before = new Date(Date.now() - 1000).toISOString();
     const result = await hardLockPeriod(TEST_PERIODS.ACTION_HARDLOCK_PASS);
     expect(result).toEqual({ success: true });
 
@@ -729,7 +743,8 @@ describe('unsoftLockPeriod server action', () => {
     );
 
     mockRequireServerAuth.mockResolvedValue(staffAuthPayload());
-    const before = new Date().toISOString();
+    // Defensive -1000ms window for Node↔Postgres clock skew (see softLock test).
+    const before = new Date(Date.now() - 1000).toISOString();
     const reason = 'needed to fix I.4 RC pair';
     const result = await unsoftLockPeriod(TEST_PERIODS.ACTION_UNSOFTLOCK_PASS, `   ${reason}   `);
     expect(result).toEqual({ success: true });
