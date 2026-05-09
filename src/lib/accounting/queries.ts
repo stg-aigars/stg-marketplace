@@ -83,8 +83,21 @@ export interface WalletIntegrityCheck {
   wallet_table_sum_cents: number;
   delta_cents: number;
   is_reconciled: boolean;
+  /**
+   * Net GL balance of any 5351 lines whose counterparty cannot be resolved
+   * to a user_id (null counterparty_id, missing counterparty row, or
+   * counterparty.user_id IS NULL — e.g. a system counterparty). Such lines
+   * still contribute to gl_5351_sum_cents and therefore delta_cents, but
+   * cannot land in per_seller_deltas. Surfacing them separately keeps the
+   * arithmetic explainable: delta_cents = sum(per_seller_deltas) +
+   * unattributed_gl_cents − (wallet rows without a GL counterpart, captured
+   * inversely in per_seller_deltas as negative deltas). UI in Task 10
+   * surfaces this when non-zero.
+   */
+  unattributed_gl_cents: number;
   per_seller_deltas: Array<{
-    seller_id: string;
+    /** Canonical user_id (user_profiles.id), not the counterparty_id. */
+    seller_user_id: string;
     seller_handle: string | null;
     gl_balance_cents: number;
     wallet_balance_cents: number;
@@ -242,6 +255,12 @@ export async function getTrialBalance(
  * range.from; closing = opening + sum of in-range net_debit. Running balance
  * is uniform sign convention (positive = debit) regardless of account type;
  * callers translate for credit-normal accounts (liabilities/equity/revenue).
+ *
+ * TODO(post-launch): currently fetches the full lifetime of the account
+ * (no opening lower bound) and partitions opening vs in-range in memory.
+ * Justified for Phase 0 + initial activity (small volume); revisit when
+ * any single account exceeds ~10k lines. Switch to two roundtrips:
+ * one for opening balance aggregation, one for in-range lines.
  */
 export async function getAccountLedger(
   supabase: SupabaseClient,
@@ -430,6 +449,12 @@ export async function getWalletIntegrity(
   let gl_5351_sum_cents = 0;
   // GL balance per counterparty_id (signed credit-normal: credit - debit).
   const glPerCounterparty = new Map<string, number>();
+  // GL balance for lines with no counterparty_id at all — accumulated
+  // separately so we don't silently drop them during the per-seller
+  // resolution pass below. Lines with a counterparty_id whose row is
+  // missing or whose user_id is null also flow into unattributed_gl_cents
+  // (handled in the resolution loop further down).
+  let unattributed_gl_cents = 0;
   for (const row of glRows) {
     const signed = row.credit_cents - row.debit_cents;
     gl_5351_sum_cents += signed;
@@ -438,6 +463,8 @@ export async function getWalletIntegrity(
         row.counterparty_id,
         (glPerCounterparty.get(row.counterparty_id) ?? 0) + signed
       );
+    } else {
+      unattributed_gl_cents += signed;
     }
   }
 
@@ -473,20 +500,25 @@ export async function getWalletIntegrity(
     }
   }
 
-  // Walk the union of GL counterparties and wallet user_ids. Build a
-  // per-user-id view: GL balance + wallet balance. The "seller_id" field
-  // in the result is the user_id (the canonical identity in user_profiles).
+  // Walk the GL counterparties and resolve to user_ids. Counterparties
+  // missing from cpUserIdById (deleted row) or whose user_id is null
+  // (system counterparty like VID / STG_INTERNAL) cannot be attributed to
+  // a seller — their balance flows into unattributed_gl_cents so the
+  // global delta_cents stays explainable.
   const gl_by_user = new Map<string, number>();
   for (const [cpId, balance] of glPerCounterparty) {
     const userId = cpUserIdById.get(cpId);
-    if (!userId) continue; // Counterparty not linked to a user — not a seller wallet.
+    if (!userId) {
+      unattributed_gl_cents += balance;
+      continue;
+    }
     gl_by_user.set(userId, (gl_by_user.get(userId) ?? 0) + balance);
   }
 
   const allUserIds = new Set<string>([...gl_by_user.keys(), ...walletByUserId.keys()]);
   const userIdsWithDelta: string[] = [];
   const perSellerNoHandle: Array<{
-    seller_id: string;
+    seller_user_id: string;
     gl_balance_cents: number;
     wallet_balance_cents: number;
     delta_cents: number;
@@ -499,7 +531,7 @@ export async function getWalletIntegrity(
     if (delta !== 0) {
       userIdsWithDelta.push(userId);
       perSellerNoHandle.push({
-        seller_id: userId,
+        seller_user_id: userId,
         gl_balance_cents: glBalance,
         wallet_balance_cents: walletBalance,
         delta_cents: delta
@@ -526,7 +558,7 @@ export async function getWalletIntegrity(
   const per_seller_deltas = perSellerNoHandle
     .map((row) => ({
       ...row,
-      seller_handle: handlesByUserId.get(row.seller_id) ?? null
+      seller_handle: handlesByUserId.get(row.seller_user_id) ?? null
     }))
     .sort((a, b) => Math.abs(b.delta_cents) - Math.abs(a.delta_cents));
 
@@ -538,6 +570,7 @@ export async function getWalletIntegrity(
     wallet_table_sum_cents,
     delta_cents,
     is_reconciled: delta_cents === 0,
+    unattributed_gl_cents,
     per_seller_deltas
   };
 }

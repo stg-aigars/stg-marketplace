@@ -866,19 +866,73 @@ describe('getWalletIntegrity', () => {
 
     // Sorted by abs(delta) desc — A's +200 first.
     expect(result.per_seller_deltas[0]).toMatchObject({
-      seller_id: 'user-A',
+      seller_user_id: 'user-A',
       seller_handle: 'Alice',
       gl_balance_cents: 1000,
       wallet_balance_cents: 800,
       delta_cents: 200
     });
     expect(result.per_seller_deltas[1]).toMatchObject({
-      seller_id: 'user-C',
+      seller_user_id: 'user-C',
       seller_handle: null,
       gl_balance_cents: 0,
       wallet_balance_cents: 100,
       delta_cents: -100
     });
+    // No counterparties were unresolvable in this fixture.
+    expect(result.unattributed_gl_cents).toBe(0);
+  });
+
+  it('routes unattributable GL lines into unattributed_gl_cents instead of dropping them', async () => {
+    // GL has three 5351 lines:
+    //   - cp-A (resolvable to user-A): credit 1000 → matches wallet, no per-seller delta.
+    //   - cp-SYS (system counterparty, user_id=null): credit 300 → unattributable.
+    //   - no counterparty_id at all: credit 50 → unattributable.
+    // Wallet table: user-A has 1000.
+    // Expected: gl_5351_sum_cents=1350, wallet_table_sum_cents=1000,
+    // delta_cents=350, unattributed_gl_cents=350, per_seller_deltas=[].
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            { debit_cents: 0, credit_cents: 1000, counterparty_id: 'cp-A' },
+            { debit_cents: 0, credit_cents: 300, counterparty_id: 'cp-SYS' },
+            { debit_cents: 0, credit_cents: 50, counterparty_id: null }
+          ],
+          error: null
+        }
+      ],
+      wallets: [
+        {
+          data: [{ user_id: 'user-A', balance_cents: 1000 }],
+          error: null
+        }
+      ],
+      counterparties: [
+        {
+          data: [
+            { id: 'cp-A', user_id: 'user-A' },
+            // cp-SYS is a system counterparty (e.g. STG_INTERNAL): present
+            // in counterparties but user_id IS NULL. Must not be silently
+            // dropped from the global delta narrative.
+            { id: 'cp-SYS', user_id: null }
+          ],
+          error: null
+        }
+      ]
+      // No public_profiles query expected — per_seller_deltas is empty.
+    });
+
+    const result = await getWalletIntegrity(client as never);
+
+    expect(result.gl_5351_sum_cents).toBe(1350);
+    expect(result.wallet_table_sum_cents).toBe(1000);
+    expect(result.delta_cents).toBe(350);
+    expect(result.is_reconciled).toBe(false);
+    expect(result.unattributed_gl_cents).toBe(350);
+    // Critically: the unattributable lines do NOT appear in per_seller_deltas,
+    // and user-A reconciles cleanly so it doesn't appear either.
+    expect(result.per_seller_deltas).toEqual([]);
   });
 });
 
