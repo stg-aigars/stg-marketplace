@@ -5,6 +5,7 @@ import { NavTabs } from '@/components/ui';
 const STAFF_TABS = [
   { key: 'overview', label: 'Overview', href: '/staff' },
   { key: 'orders', label: 'Orders', href: '/staff/orders' },
+  { key: 'accounting', label: 'Accounting', href: '/staff/accounting' },
   { key: 'bookkeeping', label: 'Bookkeeping', href: '/staff/bookkeeping' },
   { key: 'withdrawals', label: 'Withdrawals', href: '/staff/withdrawals' },
   { key: 'disputes', label: 'Disputes', href: '/staff/disputes' },
