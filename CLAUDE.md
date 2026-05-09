@@ -214,6 +214,15 @@ Public Q&A on listing detail pages. Flat thread, oldest first, no editing, max 1
 - Collapse: shows first 5 comments, "Show all N comments" toggle
 - Key files: `src/lib/comments/`, `src/components/comments/`
 
+## Accounting Module
+Foundational double-entry GL schema in migrations 093–096 (PR #1; posting engine, audit-log integration, and UI in later PRs). 8 tables: `accounts`, `periods`, `vat_rates`, `counterparties`, `fixed_assets`, `vendor_invoices`, `journal_entries`, `journal_lines`. Hand-written types in `src/lib/accounting/types.ts`.
+- Append-only: `journal_entries` / `journal_lines` blocked from UPDATE/DELETE by triggers; corrections via reversal entries with `reverses_entry_id`
+- Σ debit = Σ credit per entry enforced by a `DEFERRABLE INITIALLY DEFERRED` constraint trigger (first such trigger in this codebase) so multi-line entries can be inserted line-by-line and the balance check runs at COMMIT
+- Period state machine `open` → `soft_locked` → `hard_locked`; soft_locked accepts only entries with `period_close_adjustment=true` (the trigger respects the flag — application layer decides who is authorised to set it). Period seed window 2025-05 → 2030-12 monthly; extending later requires a new migration or a future `cron/seed-periods` route
+- VAT account prefix is `5710` (Latvian SME standard, accountant-confirmed). OSS-LT and OSS-EE are top-level (`5711`, `5712`), not `5710` sub-accounts — separate retention semantics, separate reporting (OSS portal). Architecture v2 §A still names `5721`; that's a stale predecessor convention pending a docs-only reconcile
+- System counterparties (VID, STG_INTERNAL) have pinned UUIDs in `src/lib/accounting/system-counterparties.ts` — do not change those values once journal entries reference them
+- RLS: staff-SELECT only on all 8 tables; service role bypasses RLS. Posting engine is the only writer at the application layer (PR #2)
+
 ## Key Files
 - `src/middleware.ts` - Auth and i18n routing
 - `src/lib/supabase/` - Database clients

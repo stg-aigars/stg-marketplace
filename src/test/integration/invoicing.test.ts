@@ -1,15 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execSync } from 'child_process';
 import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { createTestServiceClient } from '../helpers/supabase';
 import { createTestUser, createTestListing, createTestOrder, cleanupTestData } from '../helpers/factories';
+import { dbExecOrThrow as dbExec } from '../helpers/db-exec';
 
 const supabase = createTestServiceClient();
-const CONTAINER = 'supabase_db_stg-marketplace';
-
-function dbExec(sql: string) {
-  execSync(`docker exec ${CONTAINER} psql -U postgres -d postgres -c "${sql}"`, { stdio: 'pipe' });
-}
 
 describe('invoice numbering', () => {
   beforeEach(() => {
