@@ -215,13 +215,27 @@ Public Q&A on listing detail pages. Flat thread, oldest first, no editing, max 1
 - Key files: `src/lib/comments/`, `src/components/comments/`
 
 ## Accounting Module
-Foundational double-entry GL schema in migrations 093–096 (PR #1; posting engine, audit-log integration, and UI in later PRs). 8 tables: `accounts`, `periods`, `vat_rates`, `counterparties`, `fixed_assets`, `vendor_invoices`, `journal_entries`, `journal_lines`. Hand-written types in `src/lib/accounting/types.ts`.
+Foundational double-entry GL schema in migrations 093–096 (PR #1). Posting engine in migration 097 + `src/lib/accounting/` (PR #2). UI / vendor-invoice intake / period-close workflow in PR #4; marketplace lifecycle integration (cart, completion, withdrawal) in PR #5; Phase 0 backfill in PR #3. 8 tables: `accounts`, `periods`, `vat_rates`, `counterparties`, `fixed_assets`, `vendor_invoices`, `journal_entries`, `journal_lines`. Hand-written types in `src/lib/accounting/types.ts`.
 - Append-only: `journal_entries` / `journal_lines` blocked from UPDATE/DELETE by triggers; corrections via reversal entries with `reverses_entry_id`
 - Σ debit = Σ credit per entry enforced by a `DEFERRABLE INITIALLY DEFERRED` constraint trigger (first such trigger in this codebase) so multi-line entries can be inserted line-by-line and the balance check runs at COMMIT
 - Period state machine `open` → `soft_locked` → `hard_locked`; soft_locked accepts only entries with `period_close_adjustment=true` (the trigger respects the flag — application layer decides who is authorised to set it). Period seed window 2025-05 → 2030-12 monthly; extending later requires a new migration or a future `cron/seed-periods` route
 - VAT account prefix is `5710` (Latvian SME standard, accountant-confirmed). OSS-LT and OSS-EE are top-level (`5711`, `5712`), not `5710` sub-accounts — separate retention semantics, separate reporting (OSS portal). Architecture v2 §A still names `5721`; that's a stale predecessor convention pending a docs-only reconcile
 - System counterparties (VID, STG_INTERNAL) have pinned UUIDs in `src/lib/accounting/system-counterparties.ts` — do not change those values once journal entries reference them
-- RLS: staff-SELECT only on all 8 tables; service role bypasses RLS. Posting engine is the only writer at the application layer (PR #2)
+- RLS: staff-SELECT only on all 8 tables; service role bypasses RLS
+
+### Posting engine (PR #2)
+The posting engine is **the only writer** to `journal_entries` / `journal_lines` at the application layer (architecture v2 §H.4). All marketplace flows that need to post must go through `emit(supabase, event)` in `src/lib/accounting/posting-engine.ts` — never INSERT directly.
+
+- **Hybrid shape:** TypeScript engine owns routing/dispatch/compute/idempotency/KYC gate; PL/pgSQL primitive `insert_journal_entry(p_entry jsonb, p_lines jsonb) returns uuid` (migration 097, `SECURITY DEFINER`, `set search_path=''`) owns the atomic 1-entry-N-lines INSERT under the period-status, balanced-entry, and immutability triggers from PR #1
+- **Inline-callable:** PR #5 parent RPCs compose multi-step transactions with `PERFORM public.insert_journal_entry(...)`. PR #3 backfill calls the same primitive. The engine itself uses `supabase.rpc('insert_journal_entry', ...)`
+- **Idempotency:** UNIQUE `(source_doc_type, source_doc_id, type_id)` index on `journal_entries`; engine does pre-RPC SELECT for the dominant retry case + recovers from race-condition unique_violation via fresh SELECT (READ COMMITTED makes the winner's commit visible)
+- **Mapping table:** `src/lib/accounting/mapping.ts` exports `MAPPING_TABLE: VatMappingEntry[]`, currently 9 type IDs (O.1–O.3, I.1, I.4, P.1, H.1, C.4, C.6). Adding a new type is a `mapping.ts` row + a test — no engine change. First-match-wins routing; mutual-exclusivity test in `dispatcher.test.ts` enforces every event matches exactly one type
+- **VAT rate snapshotting:** engine reads `vat_rates(country, posting_date)` at compute time and writes `vat_rate_snapshot` on every line. Future rate changes apply prospectively
+- **FX decomposition (§F worked example):** `decomposeFx(foreign_amount, fx_rate, bank_amount_eur)` → `{ service_value_eur_cents, fx_fee_eur_cents }`. Cents throughout; the only multiply-then-round operation is `vat_base_cents × vat_rate → vat_amount_cents`. FX fees route to `7710` (VAT-exempt financial service); `decomposeFx` rejects negative fee inputs as caller-data inconsistency
+- **KYC gate:** triggered for type `C.4` (wallet withdrawal) only. `legal_compliance_status` values `pending_kyc`, `dac7_blocked`, `negative_wallet`, `suspended` block; `dormant` does **not** block (marketplace-state signal, not a payout block). `assertPayoutAllowed(counterparty: CounterpartyRow | null)` is a pure function — engine passes the already-loaded row, no extra DB roundtrip
+- **Error codes:** `RAISE EXCEPTION 'POSTING:LABEL …'` in the RPC (default SQLSTATE P0001, callers parse message prefix — mirrors migration 070's `INSUFFICIENT_BALANCE:%` pattern). PR #5 parent RPCs that PERFORM `insert_journal_entry` need to also catch trigger-raised errors (period-status, balanced-entry) which do **not** carry the `POSTING:` prefix — widen the catch contract or wrap in 097
+- **TypeScript errors:** `PostingValidationError` (caller-input), `PostingComplianceGateError` (KYC block), `PostingIdempotencyConflict` (defensive escape hatch, never throws in normal operation). `engine_invariant` code distinguishes engine-internal violations from caller-input failures
+- **Test artifact convention:** integration tests post entries to synthetic period **2027-01** with `posting_context.test_artifact=true`. Entries persist permanently (immutability trigger blocks DELETE, FK from journal_lines blocks counterparty cleanup). PR #4 trial-balance / P&L views should filter on `posting_context->>'test_artifact' = 'true'`
 
 ## Key Files
 - `src/middleware.ts` - Auth and i18n routing
