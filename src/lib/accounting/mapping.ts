@@ -843,9 +843,15 @@ const I_4: VatMappingEntry = {
   vat_base_rule: { source: 'service_value_fx' },
   vat_rate_country: 'LV',
   reporting: {
+    // PVN deklarācija lines 54 (output, RC self-assessment for non-EU service)
+    // and 63 (input deduction). PVN 1 daļa I attachment with transaction code
+    // 'N' (non-EU received-services PVN-1-I marker, not an ESL code — ESL is
+    // for outbound supplies only, and I.4 is incoming). Pattern matches I.2's
+    // domestic-RC handling cleaned up in PR #281: drop the `esl_transaction_code`
+    // field on incoming types entirely; the PVN-1-I 'N' marker can be carried
+    // separately if reporting needs it.
     pvn_lines: ['54', '63'],
-    pvn1_pielikums: 'I_dala',
-    esl_transaction_code: 'N'
+    pvn1_pielikums: 'I_dala'
   },
   posting_context_required_keys: [
     'vendor_invoice_number',

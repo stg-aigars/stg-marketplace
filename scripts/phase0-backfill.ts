@@ -32,8 +32,14 @@
  *     correct fix path, NOT manual DELETE.
  */
 
+// MUST be the first import: side-effect-loads .env.local into process.env
+// BEFORE any `@/lib/*` import evaluates and captures process.env via env.ts.
+// Without this, the engine's audit-log fire-and-forget path throws
+// "supabaseUrl is required" because @/lib/env saw undefined env vars at
+// module-load time. See `_load-env.ts` for full rationale.
+import './_load-env';
+
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
@@ -200,6 +206,8 @@ function parseArgs(): CliMode {
 }
 
 function loadEnv(): { url: string; key: string } {
+  // .env.local is loaded by `./_load-env` at module-eval time (must run BEFORE
+  // any @/lib/* import). This function only validates the result.
   const envPath = path.join(process.cwd(), '.env.local');
   if (!fs.existsSync(envPath)) {
     console.error(
@@ -208,8 +216,6 @@ function loadEnv(): { url: string; key: string } {
     );
     process.exit(1);
   }
-  dotenv.config({ path: envPath });
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
