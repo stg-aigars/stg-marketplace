@@ -58,13 +58,25 @@ async function createSignedInClient(opts: { isStaff: boolean }): Promise<SignedI
   }
   const userId = created.user.id;
 
-  // The on_auth_user_created trigger creates the user_profiles row;
-  // update is_staff and other display fields.
+  // The on_auth_user_created trigger creates the user_profiles row.
+  // Update display fields via the standard client; is_staff is gated by a
+  // BEFORE UPDATE trigger (migration 036, F5 self-promotion guard) that
+  // raises regardless of role, so the is_staff flip goes through dbExec
+  // with session_replication_role='replica' to bypass row triggers.
   const { error: profileErr } = await supabase
     .from('user_profiles')
-    .update({ full_name: 'Accounting Test', country: 'LV', is_staff: opts.isStaff })
+    .update({ full_name: 'Accounting Test', country: 'LV' })
     .eq('id', userId);
   if (profileErr) throw new Error(`profile update failed: ${profileErr.message}`);
+
+  if (opts.isStaff) {
+    const result = dbExec(
+      `SET session_replication_role='replica'; UPDATE public.user_profiles SET is_staff=true WHERE id='${userId}'; SET session_replication_role='origin';`,
+    );
+    if (result.code !== 0) {
+      throw new Error(`is_staff promotion failed: ${result.stderr || result.stdout}`);
+    }
+  }
 
   const TEST_URL = process.env.SUPABASE_TEST_URL ?? 'http://127.0.0.1:54321';
   const TEST_ANON_KEY = process.env.SUPABASE_TEST_ANON_KEY ?? '';
