@@ -82,9 +82,8 @@ function buildInput(
 describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', () => {
   describe('O.1 — LV seller, 21%', () => {
     it('seller wallet debit equals commission_gross + shipping_gross (no VAT on top)', () => {
-      const o1 = findMappingById('O.1');
-      expect(o1).toBeDefined();
-      const result = o1!.compute(
+      const o1 = findMappingById('O.1')!;
+      const result = o1.compute(
         buildInput(lvSeller(), 0.21, {
           item_value_cents: 2500, // €25.00 item
           shipping_value_cents: 350, // €3.50 shipping

@@ -43,7 +43,13 @@
  *    balanced on its own.
  */
 
-import { decomposeFx, requireNumber, requireString, roundHalfUpCents } from './computer';
+import {
+  decomposeFx,
+  requireNumber,
+  requireString,
+  roundHalfUpCents,
+  splitInclusiveVat
+} from './computer';
 import { PostingValidationError } from './errors';
 import type {
   ComputeInput,
@@ -160,16 +166,16 @@ function buildOrderRevenueLines(input: {
   }
 
   const item_value_cents = requireNumber(input.payload, 'item_value_cents');
-  const shipping_value_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
+  const shipping_gross_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
   const commission_gross_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
-  const shipping_gross_cents = shipping_value_cents;
   const debit_total = commission_gross_cents + shipping_gross_cents;
 
   // Inclusive split: vat_rate=0 (B2B RC) collapses to net = gross, vat = 0.
-  const commission_net_cents = roundHalfUpCents(commission_gross_cents / (1 + input.vat_rate));
-  const shipping_net_cents = roundHalfUpCents(shipping_gross_cents / (1 + input.vat_rate));
-  const vat_cents =
-    (commission_gross_cents - commission_net_cents) + (shipping_gross_cents - shipping_net_cents);
+  const commission = splitInclusiveVat(commission_gross_cents, input.vat_rate);
+  const shipping = splitInclusiveVat(shipping_gross_cents, input.vat_rate);
+  const commission_net_cents = commission.net_cents;
+  const shipping_net_cents = shipping.net_cents;
+  const vat_cents = commission.vat_cents + shipping.vat_cents;
 
   // Lines pushed conditionally to satisfy the journal_lines CHECK
   // `(debit_cents = 0) <> (credit_cents = 0)` (exactly one non-zero), mirroring

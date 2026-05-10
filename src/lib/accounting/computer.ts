@@ -71,6 +71,30 @@ export function roundHalfUpCents(value: number): number {
 }
 
 /**
+ * Inclusive VAT decomposition: gross_cents = net_cents + vat_cents, where
+ * the gross amount carries VAT inside it (e.g. STG seller invoice's commission
+ * and shipping lines per Seller Terms §8). Mirrors the shape of decomposeFx —
+ * one divide-then-round + one subtraction so cents stay exact.
+ *
+ *   net_cents = round_half_up(gross_cents / (1 + vat_rate))
+ *   vat_cents = gross_cents - net_cents
+ *
+ * `vat_rate = 0` collapses to net = gross, vat = 0 (B2B reverse-charge case
+ * where the helper still gets called but the VAT line is omitted upstream).
+ *
+ * `services/pricing.ts:calculateVatSplit` does the same arithmetic for the
+ * orders-row decomposition seen by buyers/sellers; the two stay in sync as
+ * long as both use this rounding rule.
+ */
+export function splitInclusiveVat(
+  gross_cents: number,
+  vat_rate: number
+): { net_cents: number; vat_cents: number } {
+  const net_cents = roundHalfUpCents(gross_cents / (1 + vat_rate));
+  return { net_cents, vat_cents: gross_cents - net_cents };
+}
+
+/**
  * §F FX decomposition for I.4 non-EU vendor invoices billed in foreign
  * currency and auto-converted by the bank.
  *
