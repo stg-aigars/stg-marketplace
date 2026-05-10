@@ -1,6 +1,8 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
+import scriptsLoadEnvFirst from "./eslint-rules/scripts-load-env-first.mjs";
+
 /** @type {import('eslint').Linter.Config[]} */
 const config = [
   ...nextCoreWebVitals,
@@ -16,6 +18,15 @@ const config = [
       "react-hooks/purity": "warn",
       "react-hooks/static-components": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
+    },
+  },
+  {
+    files: ["scripts/**/*.ts"],
+    plugins: {
+      stg: { rules: { "scripts-load-env-first": scriptsLoadEnvFirst } },
+    },
+    rules: {
+      "stg/scripts-load-env-first": "warn",
     },
   },
 ];

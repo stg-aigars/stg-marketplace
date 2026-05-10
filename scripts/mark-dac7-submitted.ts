@@ -3,6 +3,8 @@
  * Usage: npx tsx scripts/mark-dac7-submitted.ts --year 2026
  */
 
+import './_load-env';
+
 import { markReportsSubmitted } from '../src/lib/dac7/report';
 
 const args = process.argv.slice(2);

@@ -10,6 +10,8 @@
  *   npx tsx scripts/enrich-top-games.ts --count 10   # test with 10 games
  */
 
+import './_load-env';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';

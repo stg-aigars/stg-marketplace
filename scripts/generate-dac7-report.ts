@@ -3,6 +3,8 @@
  * Usage: npx tsx scripts/generate-dac7-report.ts --year 2026
  */
 
+import './_load-env';
+
 import { generateAnnualReports } from '../src/lib/dac7/report';
 import { generateDpiXml } from '../src/lib/dac7/xml-generator';
 import { writeFileSync, mkdirSync } from 'fs';
