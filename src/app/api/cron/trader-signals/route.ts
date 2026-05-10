@@ -119,7 +119,7 @@ export async function POST(request: Request) {
 
       if (firstCrossing) {
         result.signalsCrossed += 1;
-        void logAuditEvent({
+        void logAuditEvent(supabase, {
           actorType: 'cron',
           action: 'seller.trader_signal_crossed',
           resourceType: 'user',

@@ -98,7 +98,7 @@ export async function softLockPeriod(periodKey: string): Promise<PeriodActionRes
     return { error: 'Could not soft-lock period. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorType: 'user',
     actorId: user.id,
     action: 'accounting.period_status_changed',
@@ -192,7 +192,7 @@ export async function hardLockPeriod(periodKey: string): Promise<PeriodActionRes
     return { error: 'Could not hard-lock period. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorType: 'user',
     actorId: user.id,
     action: 'accounting.period_status_changed',
@@ -256,7 +256,7 @@ export async function unsoftLockPeriod(
     return { error: 'Could not reopen period. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorType: 'user',
     actorId: user.id,
     action: 'accounting.period_status_changed',

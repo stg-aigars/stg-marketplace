@@ -356,6 +356,7 @@ describe('emit — audit log firing', () => {
     // Allow microtask queue to drain so the fire-and-forget call lands.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mockLogAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
         action: 'accounting.posted',
         retentionClass: 'regulatory',

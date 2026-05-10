@@ -157,7 +157,7 @@ export async function actionListingFromNotice(
   });
 
   // Internal audit pair to `dsa_notice.received` — the staff-side decision
-  void logAuditEvent({
+  void logAuditEvent(service, {
     actorType: 'user',
     actorId: user.id,
     action: 'listing.actioned_by_staff',

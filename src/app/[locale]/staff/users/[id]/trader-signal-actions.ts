@@ -76,7 +76,7 @@ export async function sendVerificationRequest(userId: string): Promise<ActionRes
     console.error('[trader-signal-actions] verification email send failed:', err);
   });
 
-  void logAuditEvent({
+  void logAuditEvent(service, {
     actorType: 'user',
     actorId: actor.id,
     action: 'seller.verification_requested',
@@ -150,7 +150,7 @@ export async function dismissTraderSignal(
     return { error: 'Could not record the dismissal. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(service, {
     actorType: 'user',
     actorId: actor.id,
     action: 'seller.trader_signal_dismissed',

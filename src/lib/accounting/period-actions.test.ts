@@ -261,7 +261,7 @@ describe('softLockPeriod', () => {
     expect(typeof captures[0].payload.locked_at).toBe('string');
 
     expect(mockLogAuditEvent).toHaveBeenCalledTimes(1);
-    expect(mockLogAuditEvent).toHaveBeenCalledWith({
+    expect(mockLogAuditEvent).toHaveBeenCalledWith(expect.anything(), {
       actorType: 'user',
       actorId: STAFF_USER_ID,
       action: 'accounting.period_status_changed',
@@ -403,7 +403,7 @@ describe('hardLockPeriod', () => {
     expect(captures[0].payload).toEqual({ status: 'hard_locked' });
 
     expect(mockLogAuditEvent).toHaveBeenCalledTimes(1);
-    expect(mockLogAuditEvent).toHaveBeenCalledWith({
+    expect(mockLogAuditEvent).toHaveBeenCalledWith(expect.anything(), {
       actorType: 'user',
       actorId: STAFF_USER_ID,
       action: 'accounting.period_status_changed',
@@ -524,7 +524,7 @@ describe('unsoftLockPeriod', () => {
     });
 
     expect(mockLogAuditEvent).toHaveBeenCalledTimes(1);
-    expect(mockLogAuditEvent).toHaveBeenCalledWith({
+    expect(mockLogAuditEvent).toHaveBeenCalledWith(expect.anything(), {
       actorType: 'user',
       actorId: STAFF_USER_ID,
       action: 'accounting.period_status_changed',
@@ -551,7 +551,7 @@ describe('unsoftLockPeriod', () => {
     await unsoftLockPeriod(PERIOD_KEY, '   needed to fix I.4   ');
 
     expect(mockLogAuditEvent).toHaveBeenCalledTimes(1);
-    const call = mockLogAuditEvent.mock.calls[0][0] as {
+    const call = mockLogAuditEvent.mock.calls[0][1] as {
       metadata: { transition_reason: string };
     };
     expect(call.metadata.transition_reason).toBe('needed to fix I.4');

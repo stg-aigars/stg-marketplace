@@ -209,7 +209,7 @@ export async function deleteComment(
     return { error: 'Comment already deleted' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorId: user.id,
     actorType: 'user',
     action: 'comment.deleted',

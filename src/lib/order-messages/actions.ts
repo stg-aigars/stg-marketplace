@@ -141,7 +141,7 @@ export async function deleteOrderMessage(
     return { error: 'Message already deleted' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorId: user.id,
     actorType: 'user',
     action: 'order_message.deleted',

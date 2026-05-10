@@ -188,7 +188,7 @@ export async function emit(
     // actorId must be a UUID (audit_log.actor_id is uuid REFERENCES auth.users) or
     // omitted entirely (helper coerces undefined → null). The synthetic 'posting_engine'
     // identity is encoded via actorType='system' + metadata.created_by, never as actorId.
-    void logAuditEvent({
+    void logAuditEvent(supabase, {
       actorId: isUuid(event.created_by) ? event.created_by : undefined,
       actorType: 'system',
       action: 'accounting.posted',
