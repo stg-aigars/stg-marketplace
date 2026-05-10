@@ -87,7 +87,7 @@ export async function creditWallet(
 
   const txn = data as unknown as WalletTransactionRow;
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'system',
     action: 'wallet.credit',
@@ -128,7 +128,7 @@ export async function refundToWallet(
 
   const txn = data as unknown as WalletTransactionRow;
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'system',
     action: 'wallet.refund',
@@ -175,7 +175,7 @@ export async function debitWallet(
 
   const txn = data as unknown as WalletTransactionRow;
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'wallet.debit',
@@ -282,7 +282,7 @@ export async function createWithdrawalRequest(
     throw new Error(`Failed to debit wallet for withdrawal: ${debitError.message}`);
   }
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'wallet.withdrawal_requested',

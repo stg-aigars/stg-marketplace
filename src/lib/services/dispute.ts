@@ -81,7 +81,7 @@ export async function insertAutoEscalatedDispute(params: {
     .single();
 
   if (insertedDispute) {
-    void logAuditEvent({
+    void logAuditEvent(supabase, {
       actorType: 'cron',
       action: 'dispute.opened',
       resourceType: 'dispute',
@@ -163,7 +163,7 @@ export async function openDispute(
     throw new Error(`Failed to create dispute: ${disputeError?.message}`);
   }
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'dispute.opened',
@@ -242,7 +242,7 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
 
   markOrderListingsSold(order);
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'dispute.withdrawn',
@@ -333,7 +333,7 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
   await restoreListingsAfterRefund(supabase, order);
 
   const totalRefunded = cardRefunded + walletRefunded;
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'dispute.seller_accepted_refund',
@@ -463,7 +463,7 @@ export async function escalateDispute(orderId: string, userId: string): Promise<
     throw new Error('Failed to escalate dispute');
   }
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'dispute.escalated',
@@ -554,7 +554,7 @@ export async function staffResolveDispute(
     await restoreListingsAfterRefund(supabase, order);
 
     const totalRefunded = cardRefunded + walletRefunded;
-    void logAuditEvent({
+    void logAuditEvent(supabase, {
       actorId: staffUserId,
       actorType: 'user',
       action: 'dispute.staff_resolved',
@@ -621,7 +621,7 @@ export async function staffResolveDispute(
 
   markOrderListingsSold(order);
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: staffUserId,
     actorType: 'user',
     action: 'dispute.staff_resolved',
