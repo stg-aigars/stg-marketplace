@@ -32,15 +32,22 @@
  *
  * 2. v3 §B.3's full O.x entry combines suspense release + Unisend accrual +
  *    wallet credit + invoice issuance into one balanced 6-line entry. PR #2
- *    ships only the invoice slice — 2 to 4 lines depending on payload:
- *    Dr 5351 always; Cr 6310-C only when commission_net > 0; Cr 6310-S only
- *    when shipping_net > 0 (zero-shipping orders skip the line); Cr 5710-…
- *    only when vat_account is set AND vat_cents > 0 (B2B RC and tiny-amount
- *    sub-cent VAT both skip the VAT line). All conditional pushes mirror
- *    buildVendorRcLines's `rc_vat_cents > 0` guard so journal_lines CHECK
- *    `(debit=0) <> (credit=0)` is never violated. Suspense and Unisend
- *    accruals are PR #5 lifecycle integration concerns. The slice is
- *    balanced on its own.
+ *    ships only the COMMISSION INVOICE slice — 1 to 3 lines depending on
+ *    payload:
+ *      Dr 5351 commission_gross (always)
+ *      Cr 6310-C commission_net (when commission_net > 0)
+ *      Cr 5710-* commission_vat (when vat_account != null AND vat_vat > 0;
+ *        B2B RC and tiny-amount sub-cent VAT both skip the line)
+ *    The wallet (5351) carries item proceeds (credited via PR #5's suspense
+ *    release) minus commission charged here. Buyer-paid SHIPPING never flows
+ *    through 5351 — it lives in the suspense account until released by PR #5,
+ *    at which point shipping logistics revenue (6310-S) and shipping VAT are
+ *    recognized in the same lifecycle entry that releases suspense and
+ *    accrues Unisend payable. This matches the seller-facing wallet promise
+ *    in services/pricing.ts: walletCreditCents = itemsTotalCents − commissionCents
+ *    (no shipping). All conditional pushes mirror buildVendorRcLines's
+ *    `rc_vat_cents > 0` guard so journal_lines CHECK `(debit=0) <> (credit=0)`
+ *    is never violated. The slice is balanced on its own.
  */
 
 import {
@@ -132,21 +139,36 @@ function buildPreComputedLines(
 
 /**
  * Shared scaffolding for outgoing order revenue (O.1, O.2, O.3 in PR #2;
- * O.4, O.5 in PR #4.5e — same shape with EE substituted). Produces three or
- * four journal_lines:
+ * O.4, O.5 in PR #4.5e — same shape with EE substituted).
  *
- *   1. Dr 5351 seller wallet for (commission_gross + shipping_gross)
- *   2. Cr 6310-C commission revenue (NET of VAT)
- *   3. Cr 6310-S shipping-mgmt revenue (NET of VAT)
- *   4. Cr {vat_account} VAT (omitted when vat_account is null — B2B RC case)
+ * SCOPE: this slice represents the COMMISSION INVOICE issuance only. The
+ * seller's wallet (5351) carries item proceeds (credited via PR #5's
+ * suspense-release lifecycle slice) and is debited here for the commission
+ * the seller owes STG. Shipping logistics revenue (6310-S) and shipping VAT
+ * are NOT recognized here — buyer-paid shipping never flows through 5351
+ * per the live `services/pricing.ts` model and Seller Terms §3 ("Your
+ * earnings = item price minus 10% commission, credited to your platform
+ * wallet"). Shipping invoice issuance, suspense release, and Unisend
+ * accrual all happen together in PR #5's lifecycle entry.
+ *
+ * Produces 1 to 3 journal_lines:
+ *   1. Dr 5351 seller wallet for commission_gross
+ *   2. Cr 6310-C commission revenue (net of VAT) — omitted if commission_net=0
+ *   3. Cr {vat_account} commission VAT — omitted if vat_account=null (B2B RC)
+ *      or commission_vat=0 (sub-cent rate × tiny base)
  *
  * VAT model is INCLUSIVE per Seller Terms §8 (src/app/[locale]/seller-terms/page.tsx):
- * the 10% commission and the buyer-paid shipping are GROSS amounts. VAT is
- * decomposed inclusive: net = round(gross / (1 + rate)); vat = gross − net.
+ * the 10% commission is a GROSS amount. VAT is decomposed inclusive via
+ * splitInclusiveVat: net = round(gross / (1 + rate)); vat = gross − net.
  * Σdebit = Σcredit by construction (gross = net + vat per line).
  *
  * Caller passes the type-specific VAT routing (account + rate + country); the
  * helper handles arithmetic, rounding, and counterparty stamping uniformly.
+ *
+ * `shipping_value_cents` payload is still required (validated by per-type
+ * compute callers) so the order's full economics — gross + net + VAT for both
+ * commission and shipping — surface in posting_context for traceability and
+ * for the eventual PR #5 shipping-invoice slice to consume.
  */
 function buildOrderRevenueLines(input: {
   counterparty: CounterpartyRow | null;
@@ -157,7 +179,14 @@ function buildOrderRevenueLines(input: {
   vat_account: string | null;
   /** Free-text suffix for line narratives, e.g. "LT B2B RC" or "LT B2C OSS". */
   context_label: string;
-}): { lines: ComputedLine[]; commission_cents: number; shipping_value_cents: number; vat_cents: number } {
+}): {
+  lines: ComputedLine[];
+  commission_cents: number;
+  shipping_value_cents: number;
+  commission_vat_cents: number;
+  shipping_vat_cents: number;
+  vat_cents: number;
+} {
   if (!input.counterparty?.id) {
     engineInvariant('order revenue compute requires counterparty');
   }
@@ -168,30 +197,30 @@ function buildOrderRevenueLines(input: {
   const item_value_cents = requireNumber(input.payload, 'item_value_cents');
   const shipping_gross_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
   const commission_gross_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
-  const debit_total = commission_gross_cents + shipping_gross_cents;
 
   // Inclusive split: vat_rate=0 (B2B RC) collapses to net = gross, vat = 0.
+  // shipping is decomposed for posting_context surfacing only — it is NOT
+  // emitted as a journal line in this slice (see SCOPE in docblock).
   const commission = splitInclusiveVat(commission_gross_cents, input.vat_rate);
   const shipping = splitInclusiveVat(shipping_gross_cents, input.vat_rate);
   const commission_net_cents = commission.net_cents;
-  const shipping_net_cents = shipping.net_cents;
-  const vat_cents = commission.vat_cents + shipping.vat_cents;
+  const commission_vat_cents = commission.vat_cents;
 
   // Lines pushed conditionally to satisfy the journal_lines CHECK
   // `(debit_cents = 0) <> (credit_cents = 0)` (exactly one non-zero), mirroring
-  // the guard in buildVendorRcLines. Skip zero-credit lines: shipping=0 (no
-  // shipping fee), tiny commission (< 5¢ where round halves to 0), B2B RC
-  // (vat_account=null → no VAT line), or sub-cent VAT rounded to 0.
+  // the guard in buildVendorRcLines. Skip zero-credit lines: tiny commission
+  // (< 5¢ where round halves to 0), B2B RC (vat_account=null → no VAT line),
+  // or sub-cent VAT rounded to 0.
   const lines: ComputedLine[] = [
     {
       line_number: 1,
       account_code: '5351',
-      debit_cents: debit_total,
+      debit_cents: commission_gross_cents,
       credit_cents: 0,
       currency: 'EUR',
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
-      narrative: `Seller wallet — commission + shipping (gross, VAT inclusive) (${input.context_label})`
+      narrative: `Seller wallet — commission charged (gross, VAT inclusive) (${input.context_label})`
     }
   ];
 
@@ -210,30 +239,15 @@ function buildOrderRevenueLines(input: {
     });
   }
 
-  if (shipping_net_cents > 0) {
-    lines.push({
-      line_number: lines.length + 1,
-      account_code: '6310-S',
-      debit_cents: 0,
-      credit_cents: shipping_net_cents,
-      currency: 'EUR',
-      vat_rate_snapshot: input.vat_rate,
-      vat_country: input.vat_country,
-      counterparty_type: 'seller',
-      counterparty_id: input.counterparty.id,
-      narrative: `Shipping-mgmt revenue, net (${input.context_label})`
-    });
-  }
-
-  if (input.vat_account !== null && vat_cents > 0) {
+  if (input.vat_account !== null && commission_vat_cents > 0) {
     lines.push({
       line_number: lines.length + 1,
       account_code: input.vat_account,
       debit_cents: 0,
-      credit_cents: vat_cents,
+      credit_cents: commission_vat_cents,
       currency: 'EUR',
       vat_country: input.vat_country,
-      narrative: `Output VAT, decomposed inclusive (${input.context_label})`
+      narrative: `Output VAT on commission, decomposed inclusive (${input.context_label})`
     });
   }
 
@@ -241,7 +255,13 @@ function buildOrderRevenueLines(input: {
     lines,
     commission_cents: commission_gross_cents,
     shipping_value_cents: shipping_gross_cents,
-    vat_cents
+    commission_vat_cents,
+    shipping_vat_cents: shipping.vat_cents,
+    // Legacy field name preserved for caller posting_context_extras compatibility.
+    // Now means "VAT recognized in this slice" — i.e. commission VAT only.
+    // Shipping VAT is surfaced separately as shipping_vat_cents and recognized
+    // by PR #5's shipping-invoice slice.
+    vat_cents: commission_vat_cents
   };
 }
 
@@ -483,6 +503,8 @@ const O_1: VatMappingEntry = {
       posting_context_extras: {
         commission_cents: result.commission_cents,
         shipping_value_cents: result.shipping_value_cents,
+        commission_vat_cents: result.commission_vat_cents,
+        shipping_vat_cents: result.shipping_vat_cents,
         vat_cents: result.vat_cents,
         vat_rate_snapshot: input.vat_rate
       }
@@ -532,6 +554,8 @@ const O_2: VatMappingEntry = {
       posting_context_extras: {
         commission_cents: result.commission_cents,
         shipping_value_cents: result.shipping_value_cents,
+        commission_vat_cents: 0,
+        shipping_vat_cents: 0,
         vat_cents: 0,
         vat_rate_snapshot: 0,
         esl_eligible: true
@@ -578,6 +602,8 @@ const O_3: VatMappingEntry = {
       posting_context_extras: {
         commission_cents: result.commission_cents,
         shipping_value_cents: result.shipping_value_cents,
+        commission_vat_cents: result.commission_vat_cents,
+        shipping_vat_cents: result.shipping_vat_cents,
         vat_cents: result.vat_cents,
         vat_rate_snapshot: input.vat_rate,
         oss_consumption_ms: 'LT'
@@ -628,6 +654,8 @@ const O_4: VatMappingEntry = {
       posting_context_extras: {
         commission_cents: result.commission_cents,
         shipping_value_cents: result.shipping_value_cents,
+        commission_vat_cents: 0,
+        shipping_vat_cents: 0,
         vat_cents: 0,
         vat_rate_snapshot: 0,
         esl_eligible: true
@@ -674,6 +702,8 @@ const O_5: VatMappingEntry = {
       posting_context_extras: {
         commission_cents: result.commission_cents,
         shipping_value_cents: result.shipping_value_cents,
+        commission_vat_cents: result.commission_vat_cents,
+        shipping_vat_cents: result.shipping_vat_cents,
         vat_cents: result.vat_cents,
         vat_rate_snapshot: input.vat_rate,
         oss_consumption_ms: 'EE'

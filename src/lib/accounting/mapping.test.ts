@@ -1,16 +1,22 @@
 /**
- * Mapping compute() unit tests — VAT-inclusive arithmetic for order revenue.
+ * Mapping compute() unit tests — commission-invoice slice for order revenue.
  *
- * Per the seller agreement (src/app/[locale]/seller-terms/page.tsx §8) and
- * src/lib/services/pricing.ts:
- *   - The 10% commission on item price is GROSS (VAT included, not added on top)
- *   - The shipping fee buyer pays is GROSS (VAT included)
- *   - Seller's STG invoice = commission_gross + shipping_gross
- *   - VAT is decomposed inclusive: net = round(gross / (1 + rate)); vat = gross − net
+ * Per the seller agreement (src/app/[locale]/seller-terms/page.tsx §3 + §8)
+ * and src/lib/services/pricing.ts:
+ *   - Seller wallet credit = item price − 10% commission. Shipping does NOT
+ *     pass through the wallet — buyer-paid shipping flows separately to STG.
+ *   - The 10% commission is GROSS (VAT included, not added on top).
+ *   - VAT decomposes inclusive: net = round(gross / (1 + rate)); vat = gross − net.
  *
- * The seller wallet debit must equal the SUM of gross commission and gross
- * shipping — never larger. Adding VAT on top would silently overcharge the
- * seller and contradict the published terms.
+ * SCOPE OF THE SLICE: this PR ships only the commission-invoice slice. The
+ * journal entry produced here debits the wallet for the commission gross and
+ * credits commission revenue + commission VAT. Shipping logistics revenue
+ * (6310-S), shipping VAT, suspense release, Unisend accrual, and the wallet's
+ * item-proceeds credit are all PR #5 lifecycle integration concerns.
+ *
+ * Tests assert: wallet debit = commission_gross only; commission VAT is
+ * decomposed inclusive; B2B RC produces no VAT line; sub-cent / zero amounts
+ * never violate the journal_lines CHECK `(debit=0) <> (credit=0)`.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -79,32 +85,32 @@ function buildInput(
   return { counterparty, vat_rate, payload, posting_date: '2027-01-15' };
 }
 
-describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', () => {
+describe('buildOrderRevenueLines — commission-invoice slice', () => {
   describe('O.1 — LV seller, 21%', () => {
-    it('seller wallet debit equals commission_gross + shipping_gross (no VAT on top)', () => {
+    it('seller wallet debit equals commission_gross — shipping never touches 5351', () => {
       const o1 = findMappingById('O.1')!;
       const result = o1.compute(
         buildInput(lvSeller(), 0.21, {
           item_value_cents: 2500, // €25.00 item
-          shipping_value_cents: 350, // €3.50 shipping
+          shipping_value_cents: 350, // €3.50 shipping (does not affect wallet)
           order_id: 'order_test',
           seller_id: 'seller_test',
           invoice_number: 'INV-2027-00001'
         })
       );
       const wallet = result.lines.find((l) => l.account_code === '5351');
-      expect(wallet).toBeDefined();
-      // Inclusive model: seller debit is exactly 10% of item + buyer-paid shipping.
-      // 250 (commission gross, 10% of 2500) + 350 (shipping gross) = 600.
-      expect(wallet!.debit_cents).toBe(600);
+      // 10% of €25.00 = €2.50 commission. Wallet sees only commission.
+      expect(wallet!.debit_cents).toBe(250);
+      // 6310-S (shipping revenue) is NOT in this slice — recognized in PR #5.
+      expect(result.lines.find((l) => l.account_code === '6310-S')).toBeUndefined();
     });
 
     it('decomposes commission gross €2.50 into €2.07 net + €0.43 VAT', () => {
-      const o1 = findMappingById('O.1');
-      const result = o1!.compute(
+      const o1 = findMappingById('O.1')!;
+      const result = o1.compute(
         buildInput(lvSeller(), 0.21, {
           item_value_cents: 2500,
-          shipping_value_cents: 0,
+          shipping_value_cents: 350,
           order_id: 'o',
           seller_id: 's',
           invoice_number: 'i'
@@ -116,31 +122,11 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
       expect(vat!.credit_cents).toBe(43); // 250 − 207
     });
 
-    it('decomposes shipping gross €3.50 into €2.89 net (per-line split)', () => {
-      // Use item=2500 alongside shipping=350 so we can isolate the shipping
-      // line's per-line decomposition (item_value_cents=0 would fail
-      // requireNumber, and a zero-credit commission line would violate the
-      // journal_lines CHECK).
-      const o1 = findMappingById('O.1');
-      const result = o1!.compute(
-        buildInput(lvSeller(), 0.21, {
-          item_value_cents: 2500,
-          shipping_value_cents: 350,
-          order_id: 'o',
-          seller_id: 's',
-          invoice_number: 'i'
-        })
-      );
-      const shipping = result.lines.find((l) => l.account_code === '6310-S');
-      // 350 gross / 1.21 ≈ 289.26 → 289 net (per-line). Per-line VAT = 350 − 289 = 61.
-      expect(shipping!.credit_cents).toBe(289);
-    });
-
     it('seller-terms worked example: €2.00 LV commission = €1.65 net + €0.35 VAT', () => {
       // Seller terms §8: "For a €2.00 commission in Latvia, that's €1.65 net plus €0.35 VAT"
       // €2.00 commission = 10% of €20.00 item.
-      const o1 = findMappingById('O.1');
-      const result = o1!.compute(
+      const o1 = findMappingById('O.1')!;
+      const result = o1.compute(
         buildInput(lvSeller(), 0.21, {
           item_value_cents: 2000,
           shipping_value_cents: 0,
@@ -151,13 +137,13 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
       );
       const commission = result.lines.find((l) => l.account_code === '6310-C');
       const vat = result.lines.find((l) => l.account_code === '5710-LV-OUT');
-      expect(commission!.credit_cents).toBe(165); // €1.65
-      expect(vat!.credit_cents).toBe(35); // €0.35
+      expect(commission!.credit_cents).toBe(165);
+      expect(vat!.credit_cents).toBe(35);
     });
 
-    it('entry remains balanced: Σdebit = Σcredit', () => {
-      const o1 = findMappingById('O.1');
-      const result = o1!.compute(
+    it('entry is balanced: Σdebit = Σcredit', () => {
+      const o1 = findMappingById('O.1')!;
+      const result = o1.compute(
         buildInput(lvSeller(), 0.21, {
           item_value_cents: 2500,
           shipping_value_cents: 350,
@@ -170,12 +156,33 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
       const credits = result.lines.reduce((sum, l) => sum + l.credit_cents, 0);
       expect(debits).toBe(credits);
     });
+
+    it('exposes shipping_value_cents and shipping_vat_cents in posting_context for PR #5', () => {
+      const o1 = findMappingById('O.1')!;
+      const result = o1.compute(
+        buildInput(lvSeller(), 0.21, {
+          item_value_cents: 2500,
+          shipping_value_cents: 350,
+          order_id: 'o',
+          seller_id: 's',
+          invoice_number: 'i'
+        })
+      );
+      // Shipping economics surface in posting_context so the PR #5 shipping
+      // invoice slice and audit trail can read them, even though they don't
+      // produce journal lines in this slice.
+      expect(result.posting_context_extras.shipping_value_cents).toBe(350);
+      // 350 / 1.21 ≈ 289.26 → 289 net; vat = 61
+      expect(result.posting_context_extras.shipping_vat_cents).toBe(61);
+      expect(result.posting_context_extras.commission_vat_cents).toBe(43);
+      expect(result.posting_context_extras.vat_cents).toBe(43); // commission VAT only
+    });
   });
 
   describe('O.3 — LT B2C OSS, 21%', () => {
-    it('seller wallet debit equals commission_gross + shipping_gross', () => {
-      const o3 = findMappingById('O.3');
-      const result = o3!.compute(
+    it('seller wallet debit equals commission_gross only', () => {
+      const o3 = findMappingById('O.3')!;
+      const result = o3.compute(
         buildInput(ltSellerB2C(), 0.21, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -186,12 +193,12 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const wallet = result.lines.find((l) => l.account_code === '5351');
-      expect(wallet!.debit_cents).toBe(800); // 250 + 550
+      expect(wallet!.debit_cents).toBe(250);
     });
 
-    it('routes VAT to OSS-LT (account 5711)', () => {
-      const o3 = findMappingById('O.3');
-      const result = o3!.compute(
+    it('routes commission VAT to OSS-LT (account 5711), no shipping VAT', () => {
+      const o3 = findMappingById('O.3')!;
+      const result = o3.compute(
         buildInput(ltSellerB2C(), 0.21, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -202,19 +209,16 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const vat = result.lines.find((l) => l.account_code === '5711');
-      // Per-line decomposition (cleaner for invoice display):
-      //   commission: 250 / 1.21 ≈ 206.6 → 207 net; vat = 43
-      //   shipping:   550 / 1.21 ≈ 454.5 → 455 net; vat = 95
-      // total vat = 43 + 95 = 138
-      expect(vat).toBeDefined();
-      expect(vat!.credit_cents).toBe(138);
+      // Commission only: 250 / 1.21 ≈ 206.6 → 207 net; vat = 43.
+      // Shipping VAT (95) goes to PR #5's shipping slice, not here.
+      expect(vat!.credit_cents).toBe(43);
     });
   });
 
   describe('O.5 — EE B2C OSS, 24%', () => {
-    it('seller wallet debit equals commission_gross + shipping_gross', () => {
-      const o5 = findMappingById('O.5');
-      const result = o5!.compute(
+    it('seller wallet debit equals commission_gross only', () => {
+      const o5 = findMappingById('O.5')!;
+      const result = o5.compute(
         buildInput(eeSellerB2C(), 0.24, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -225,12 +229,12 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const wallet = result.lines.find((l) => l.account_code === '5351');
-      expect(wallet!.debit_cents).toBe(800);
+      expect(wallet!.debit_cents).toBe(250);
     });
 
-    it('routes VAT to OSS-EE (account 5712) at 24%', () => {
-      const o5 = findMappingById('O.5');
-      const result = o5!.compute(
+    it('routes commission VAT to OSS-EE (5712) at 24%', () => {
+      const o5 = findMappingById('O.5')!;
+      const result = o5.compute(
         buildInput(eeSellerB2C(), 0.24, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -241,19 +245,15 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const vat = result.lines.find((l) => l.account_code === '5712');
-      // Per-line decomposition (cleaner for invoice display):
-      //   commission: 250 / 1.24 ≈ 201.6 → 202 net; vat = 48
-      //   shipping:   550 / 1.24 ≈ 443.5 → 444 net; vat = 106
-      // total vat = 48 + 106 = 154
-      expect(vat).toBeDefined();
-      expect(vat!.credit_cents).toBe(154);
+      // 250 / 1.24 ≈ 201.6 → 202 net; vat = 48
+      expect(vat!.credit_cents).toBe(48);
     });
   });
 
   describe('O.2 — LT B2B reverse charge (no VAT line)', () => {
-    it('seller wallet debit equals commission_gross + shipping_gross (vat_rate=0)', () => {
-      const o2 = findMappingById('O.2');
-      const result = o2!.compute(
+    it('seller wallet debit equals commission_gross (vat_rate=0)', () => {
+      const o2 = findMappingById('O.2')!;
+      const result = o2.compute(
         buildInput(ltSellerB2B(), 0, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -265,12 +265,12 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const wallet = result.lines.find((l) => l.account_code === '5351');
-      expect(wallet!.debit_cents).toBe(800);
+      expect(wallet!.debit_cents).toBe(250);
     });
 
-    it('credits commission and shipping at gross (no VAT to decompose)', () => {
-      const o2 = findMappingById('O.2');
-      const result = o2!.compute(
+    it('credits commission at gross with no VAT line, no shipping line', () => {
+      const o2 = findMappingById('O.2')!;
+      const result = o2.compute(
         buildInput(ltSellerB2B(), 0, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -282,52 +282,20 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const commission = result.lines.find((l) => l.account_code === '6310-C');
-      const shipping = result.lines.find((l) => l.account_code === '6310-S');
+      expect(commission!.credit_cents).toBe(250);
+      expect(commission!.vat_country).toBe('LT');
+      expect(result.lines.find((l) => l.account_code === '6310-S')).toBeUndefined();
       const vatLines = result.lines.filter(
         (l) => l.account_code.startsWith('5710') || l.account_code === '5711' || l.account_code === '5712'
       );
-      expect(commission!.credit_cents).toBe(250);
-      expect(shipping!.credit_cents).toBe(550);
       expect(vatLines).toHaveLength(0);
     });
   });
 
-  describe('zero-credit line guard (journal_lines CHECK)', () => {
-    it('omits 6310-S line when shipping_value_cents = 0', () => {
-      // The journal_lines CHECK requires (debit=0) <> (credit=0) — exactly one
-      // non-zero. A zero-shipping order would emit a credit=0 line on 6310-S
-      // and be rejected by the DB trigger at insert time. The helper must
-      // skip the line, mirroring buildVendorRcLines's rc_vat_cents > 0 guard.
-      const o1 = findMappingById('O.1')!;
-      const result = o1.compute(
-        buildInput(lvSeller(), 0.21, {
-          item_value_cents: 2500,
-          shipping_value_cents: 0,
-          order_id: 'o',
-          seller_id: 's',
-          invoice_number: 'i'
-        })
-      );
-      const shippingLine = result.lines.find((l) => l.account_code === '6310-S');
-      expect(shippingLine).toBeUndefined();
-      // Every emitted line still satisfies the CHECK invariant.
-      for (const line of result.lines) {
-        expect((line.debit_cents === 0) !== (line.credit_cents === 0)).toBe(true);
-      }
-      // Entry remains balanced.
-      const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
-      const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
-      expect(debits).toBe(credits);
-      // Wallet debit = commission_gross only (250).
-      const wallet = result.lines.find((l) => l.account_code === '5351')!;
-      expect(wallet.debit_cents).toBe(250);
-    });
-  });
-
-  describe('O.4 — EE B2B reverse charge (no VAT line, 24% N/A)', () => {
-    it('seller wallet debit equals commission_gross + shipping_gross (vat_rate=0)', () => {
-      const o4 = findMappingById('O.4');
-      const result = o4!.compute(
+  describe('O.4 — EE B2B reverse charge (no VAT line)', () => {
+    it('seller wallet debit equals commission_gross (vat_rate=0)', () => {
+      const o4 = findMappingById('O.4')!;
+      const result = o4.compute(
         buildInput(eeSellerB2B(), 0, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -339,12 +307,12 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const wallet = result.lines.find((l) => l.account_code === '5351');
-      expect(wallet!.debit_cents).toBe(800);
+      expect(wallet!.debit_cents).toBe(250);
     });
 
-    it('emits no VAT line and tags credit lines with EE country', () => {
-      const o4 = findMappingById('O.4');
-      const result = o4!.compute(
+    it('credits commission at gross with EE country tag, no VAT line', () => {
+      const o4 = findMappingById('O.4')!;
+      const result = o4.compute(
         buildInput(eeSellerB2B(), 0, {
           item_value_cents: 2500,
           shipping_value_cents: 550,
@@ -356,25 +324,25 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         })
       );
       const commission = result.lines.find((l) => l.account_code === '6310-C');
-      const shipping = result.lines.find((l) => l.account_code === '6310-S');
-      const vatLines = result.lines.filter(
-        (l) => l.account_code.startsWith('5710') || l.account_code === '5711' || l.account_code === '5712'
-      );
       expect(commission!.credit_cents).toBe(250);
       expect(commission!.vat_country).toBe('EE');
-      expect(shipping!.credit_cents).toBe(550);
-      expect(shipping!.vat_country).toBe('EE');
+      const vatLines = result.lines.filter(
+        (l) => l.account_code.startsWith('5710') || l.account_code === '5711' || l.account_code === '5712'
+      );
       expect(vatLines).toHaveLength(0);
     });
   });
 
-  describe('rounding invariant', () => {
-    it('vat = gross − net for any combination (no off-by-one)', () => {
+  describe('journal_lines CHECK invariants', () => {
+    it('every emitted line has exactly one of debit/credit non-zero', () => {
+      // Cover several payload shapes incl. zero shipping (which used to
+      // produce a zero-credit 6310-S line — now eliminated entirely since
+      // shipping is no longer in this slice).
       const cases = [
-        { item: 1999, ship: 0, rate: 0.21 }, // weird item price
+        { item: 2500, ship: 0, rate: 0.21 },
         { item: 2500, ship: 350, rate: 0.21 },
         { item: 12345, ship: 0, rate: 0.24 },
-        { item: 100, ship: 100, rate: 0.21 } // tiny amounts
+        { item: 100, ship: 100, rate: 0.21 } // tiny — tests sub-cent guards
       ];
       const o1 = findMappingById('O.1')!;
       for (const c of cases) {
@@ -387,15 +355,36 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
             invoice_number: 'i'
           })
         );
+        for (const line of result.lines) {
+          expect((line.debit_cents === 0) !== (line.credit_cents === 0)).toBe(true);
+        }
+      }
+    });
+
+    it('wallet debit = commission_gross across rates and amounts (no shipping leakage)', () => {
+      const cases = [
+        { item: 1999, rate: 0.21 },
+        { item: 2500, rate: 0.21 },
+        { item: 12345, rate: 0.24 },
+        { item: 100, rate: 0.21 }
+      ];
+      const o1 = findMappingById('O.1')!;
+      for (const c of cases) {
+        const result = o1.compute(
+          buildInput(lvSeller(), c.rate, {
+            item_value_cents: c.item,
+            shipping_value_cents: 999, // arbitrary; should NOT affect wallet
+            order_id: 'o',
+            seller_id: 's',
+            invoice_number: 'i'
+          })
+        );
         const wallet = result.lines.find((l) => l.account_code === '5351')!;
-        const credits = result.lines.reduce((sum, l) => sum + l.credit_cents, 0);
-        // Wallet debit = sum of all credits (balanced entry)
-        expect(wallet.debit_cents).toBe(credits);
-        // Wallet debit = commission_gross + shipping_gross (inclusive promise).
-        // Use roundHalfUpCents (production rounding) — Math.round agrees on
-        // these inputs but isn't a contract guarantee.
-        const expectedGross = roundHalfUpCents(c.item * 0.1) + c.ship;
-        expect(wallet.debit_cents).toBe(expectedGross);
+        expect(wallet.debit_cents).toBe(roundHalfUpCents(c.item * 0.1));
+        // Balanced
+        const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+        const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+        expect(debits).toBe(credits);
       }
     });
   });
