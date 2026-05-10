@@ -16,7 +16,8 @@ import {
   getPeriodRow,
   getRecentJournalEntries,
   getTrialBalance,
-  getWalletIntegrity
+  getWalletIntegrity,
+  getWalletIntegrityAsOf
 } from './queries';
 
 // =============================================================================
@@ -1064,6 +1065,295 @@ describe('getWalletIntegrity', () => {
     // Critically: the unattributable lines do NOT appear in per_seller_deltas,
     // and user-A reconciles cleanly so it doesn't appear either.
     expect(result.per_seller_deltas).toEqual([]);
+  });
+});
+
+// =============================================================================
+// getWalletIntegrityAsOf
+// =============================================================================
+//
+// Period-scoped variant. Mirrors getWalletIntegrity's tests with the asOf
+// boundary added: `journal_entries!inner(posting_date)` join + lte filter on
+// the GL side, and `wallet_transactions` ordered DESC by created_at on the
+// wallet side (taking the first row per user_id as their period-bounded
+// balance_after_cents).
+
+describe('getWalletIntegrityAsOf', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns delta=0 and empty deltas when no GL 5351 lines and no wallet_transactions ≤ asOf (Phase 0 case)', async () => {
+    const client = buildMockClient({
+      journal_lines: [{ data: [], error: null }],
+      wallet_transactions: [{ data: [], error: null }]
+    });
+
+    const result = await getWalletIntegrityAsOf(client as never, '2026-03-31');
+
+    expect(result.as_of).toBe('2026-03-31');
+    expect(result.gl_5351_sum_cents).toBe(0);
+    expect(result.wallet_table_sum_cents).toBe(0);
+    expect(result.delta_cents).toBe(0);
+    expect(result.is_reconciled).toBe(true);
+    expect(result.unattributed_gl_cents).toBe(0);
+    expect(result.per_seller_deltas).toEqual([]);
+  });
+
+  it('reconciles for a single seller balanced as of asOf', async () => {
+    // user-A: GL credit 1000 ≤ asOf via cp-A; wallet_tx balance_after_cents=1000
+    // ≤ asOf. delta=0.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            {
+              debit_cents: 0,
+              credit_cents: 1000,
+              counterparty_id: 'cp-A',
+              journal_entries: { posting_date: '2026-04-15' }
+            }
+          ],
+          error: null
+        }
+      ],
+      wallet_transactions: [
+        {
+          data: [
+            {
+              user_id: 'user-A',
+              balance_after_cents: 1000,
+              created_at: '2026-04-15T10:00:00Z'
+            }
+          ],
+          error: null
+        }
+      ],
+      counterparties: [
+        { data: [{ id: 'cp-A', user_id: 'user-A' }], error: null }
+      ]
+    });
+
+    const result = await getWalletIntegrityAsOf(client as never, '2026-04-30');
+    expect(result.gl_5351_sum_cents).toBe(1000);
+    expect(result.wallet_table_sum_cents).toBe(1000);
+    expect(result.delta_cents).toBe(0);
+    expect(result.is_reconciled).toBe(true);
+    expect(result.per_seller_deltas).toEqual([]);
+  });
+
+  it('surfaces per-seller deltas when one user diverges and another reconciles', async () => {
+    // user-A: GL 1000 + wallet 1000 → balanced (excluded from per_seller_deltas).
+    // user-B: GL 500, no wallet row → +500 delta.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            {
+              debit_cents: 0,
+              credit_cents: 1000,
+              counterparty_id: 'cp-A',
+              journal_entries: { posting_date: '2026-04-10' }
+            },
+            {
+              debit_cents: 0,
+              credit_cents: 500,
+              counterparty_id: 'cp-B',
+              journal_entries: { posting_date: '2026-04-12' }
+            }
+          ],
+          error: null
+        }
+      ],
+      wallet_transactions: [
+        {
+          data: [
+            {
+              user_id: 'user-A',
+              balance_after_cents: 1000,
+              created_at: '2026-04-10T10:00:00Z'
+            }
+          ],
+          error: null
+        }
+      ],
+      counterparties: [
+        {
+          data: [
+            { id: 'cp-A', user_id: 'user-A' },
+            { id: 'cp-B', user_id: 'user-B' }
+          ],
+          error: null
+        }
+      ],
+      public_profiles: [
+        { data: [{ id: 'user-B', full_name: 'Bob' }], error: null }
+      ]
+    });
+
+    const result = await getWalletIntegrityAsOf(client as never, '2026-04-30');
+    expect(result.gl_5351_sum_cents).toBe(1500);
+    expect(result.wallet_table_sum_cents).toBe(1000);
+    expect(result.delta_cents).toBe(500);
+    expect(result.is_reconciled).toBe(false);
+    expect(result.per_seller_deltas).toHaveLength(1);
+    expect(result.per_seller_deltas[0]).toMatchObject({
+      seller_user_id: 'user-B',
+      seller_handle: 'Bob',
+      gl_balance_cents: 500,
+      wallet_balance_cents: 0,
+      delta_cents: 500
+    });
+  });
+
+  it('respects the asOf boundary on wallet_transactions: the function relies on the .lte() filter to exclude post-asOf rows', async () => {
+    // The mock builder's chain is loose — .lte() is mocked to return the
+    // builder, so date filtering happens server-side in production. Here we
+    // simulate by feeding only the rows we expect the server to return for
+    // ≤ asOf and asserting the function takes the first (most recent ≤ asOf)
+    // balance_after_cents per user_id.
+    //
+    // Scenario: user-A had balance 500 on 2026-03-15 (≤ asOf=2026-03-31).
+    // A later transaction on 2026-04-20 brought the balance to 1000 — that
+    // row is filtered out by the server-side .lte() before reaching us.
+    // Function must use 500, not 1000.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            {
+              debit_cents: 0,
+              credit_cents: 500,
+              counterparty_id: 'cp-A',
+              journal_entries: { posting_date: '2026-03-15' }
+            }
+          ],
+          error: null
+        }
+      ],
+      wallet_transactions: [
+        {
+          // Server returned only the row dated ≤ asOf (DESC by created_at).
+          // The post-asOf 2026-04-20 row was excluded by the .lte() filter.
+          data: [
+            {
+              user_id: 'user-A',
+              balance_after_cents: 500,
+              created_at: '2026-03-15T10:00:00Z'
+            }
+          ],
+          error: null
+        }
+      ],
+      counterparties: [
+        { data: [{ id: 'cp-A', user_id: 'user-A' }], error: null }
+      ]
+    });
+
+    const result = await getWalletIntegrityAsOf(client as never, '2026-03-31');
+    expect(result.wallet_table_sum_cents).toBe(500);
+    expect(result.delta_cents).toBe(0);
+    expect(result.is_reconciled).toBe(true);
+  });
+
+  it('routes 5351 GL lines with null counterparty_id into unattributed_gl_cents (period-scoped)', async () => {
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            // Resolvable line: cp-A → user-A, balanced against wallet.
+            {
+              debit_cents: 0,
+              credit_cents: 1000,
+              counterparty_id: 'cp-A',
+              journal_entries: { posting_date: '2026-04-10' }
+            },
+            // Null counterparty_id: must flow into unattributed_gl_cents.
+            {
+              debit_cents: 0,
+              credit_cents: 50,
+              counterparty_id: null,
+              journal_entries: { posting_date: '2026-04-12' }
+            }
+          ],
+          error: null
+        }
+      ],
+      wallet_transactions: [
+        {
+          data: [
+            {
+              user_id: 'user-A',
+              balance_after_cents: 1000,
+              created_at: '2026-04-10T10:00:00Z'
+            }
+          ],
+          error: null
+        }
+      ],
+      counterparties: [
+        { data: [{ id: 'cp-A', user_id: 'user-A' }], error: null }
+      ]
+    });
+
+    const result = await getWalletIntegrityAsOf(client as never, '2026-04-30');
+    expect(result.gl_5351_sum_cents).toBe(1050);
+    expect(result.wallet_table_sum_cents).toBe(1000);
+    expect(result.delta_cents).toBe(50);
+    expect(result.is_reconciled).toBe(false);
+    expect(result.unattributed_gl_cents).toBe(50);
+    // user-A reconciles cleanly so no per-seller delta entry.
+    expect(result.per_seller_deltas).toEqual([]);
+  });
+
+  it('takes the LATEST balance_after_cents per user when multiple wallet_transactions ≤ asOf exist', async () => {
+    // Same user has two wallet_transactions ≤ asOf; the function must take
+    // the most recent. The server orders DESC by created_at — the mock feeds
+    // rows in that order so the first row per user_id is the latest.
+    //
+    // user-A: tx1 on 2026-03-10 (balance 200), tx2 on 2026-03-20 (balance 800).
+    // GL credit 800 → reconciled at asOf=2026-03-31 only if we use 800, not 200.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            {
+              debit_cents: 0,
+              credit_cents: 800,
+              counterparty_id: 'cp-A',
+              journal_entries: { posting_date: '2026-03-20' }
+            }
+          ],
+          error: null
+        }
+      ],
+      wallet_transactions: [
+        {
+          // DESC by created_at: latest first. Function must pick this one.
+          data: [
+            {
+              user_id: 'user-A',
+              balance_after_cents: 800,
+              created_at: '2026-03-20T10:00:00Z'
+            },
+            {
+              user_id: 'user-A',
+              balance_after_cents: 200,
+              created_at: '2026-03-10T10:00:00Z'
+            }
+          ],
+          error: null
+        }
+      ],
+      counterparties: [
+        { data: [{ id: 'cp-A', user_id: 'user-A' }], error: null }
+      ]
+    });
+
+    const result = await getWalletIntegrityAsOf(client as never, '2026-03-31');
+    expect(result.wallet_table_sum_cents).toBe(800);
+    expect(result.delta_cents).toBe(0);
+    expect(result.is_reconciled).toBe(true);
   });
 });
 

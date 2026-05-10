@@ -25,7 +25,8 @@ import {
   getAccountLedger,
   getJournalEntry,
   getTrialBalance,
-  getWalletIntegrity
+  getWalletIntegrity,
+  getWalletIntegrityAsOf
 } from '@/lib/accounting/queries';
 import {
   BANK_WALK_CHECKPOINTS,
@@ -293,5 +294,169 @@ describe('accounting read-only UI tie-out', () => {
       integrity.gl_5351_sum_cents - integrity.wallet_table_sum_cents
     );
     expect(integrity.is_reconciled).toBe(integrity.delta_cents === 0);
+  });
+});
+
+// =============================================================================
+// PR #4.5a — Period-scoped wallet integrity
+// =============================================================================
+//
+// The Phase 0 historical periods (2025-07 → 2026-03) precede any live wallet
+// activity. Item 3 of the period-close checklist must therefore pass for
+// every Phase 0 period, regardless of present-day wallet drift caused by
+// post-Phase-0 manual operational entries (e.g. the production 0.90€ wallet
+// that exists outside the GL).
+//
+// Two assertions:
+//   1. Phase 0 lock invariant — for each Phase 0 period, the period-scoped
+//      check returns delta=0 / is_reconciled=true.
+//   2. Period-scoped vs global divergence — when a synthetic post-Phase-0
+//      wallet exists, getWalletIntegrity (global) sees the drift but
+//      getWalletIntegrityAsOf('2026-03-31') does not.
+
+describe('period-scoped wallet integrity (PR #4.5a)', () => {
+  // Hardcode the last day of each Phase 0 monthly period — fixed set, no need
+  // to import the private lastDayOfMonthlyPeriod helper. Each pair is the
+  // period_key + corresponding YYYY-MM-DD asOf string used by the checklist.
+  const PHASE_0_PERIODS: ReadonlyArray<{ periodKey: string; asOf: string }> = [
+    { periodKey: '2025-07', asOf: '2025-07-31' },
+    { periodKey: '2025-08', asOf: '2025-08-31' },
+    { periodKey: '2025-09', asOf: '2025-09-30' },
+    { periodKey: '2025-10', asOf: '2025-10-31' },
+    { periodKey: '2025-11', asOf: '2025-11-30' },
+    { periodKey: '2025-12', asOf: '2025-12-31' },
+    { periodKey: '2026-01', asOf: '2026-01-31' },
+    { periodKey: '2026-02', asOf: '2026-02-28' },
+    { periodKey: '2026-03', asOf: '2026-03-31' }
+  ];
+
+  it.each(PHASE_0_PERIODS)(
+    'Phase 0 period $periodKey: getWalletIntegrityAsOf(asOf=$asOf) reconciles to delta=0',
+    async ({ periodKey, asOf }) => {
+      const result = await getWalletIntegrityAsOf(staffPersona.client, asOf);
+
+      if (result.delta_cents !== 0) {
+        const breakdown = result.per_seller_deltas
+          .map(
+            (p) =>
+              `${p.seller_handle ?? p.seller_user_id}: gl=${p.gl_balance_cents}, ` +
+              `wallet=${p.wallet_balance_cents}, delta=${p.delta_cents}`
+          )
+          .join('; ');
+        throw new Error(
+          `Phase 0 period ${periodKey} expected wallet integrity delta=0, ` +
+            `got delta=${result.delta_cents}; ` +
+            `gl_5351_sum=${result.gl_5351_sum_cents}, ` +
+            `wallet_table_sum=${result.wallet_table_sum_cents}, ` +
+            `unattributed=${result.unattributed_gl_cents}; ` +
+            `per_seller=[${breakdown}]`
+        );
+      }
+
+      expect(result.delta_cents).toBe(0);
+      expect(result.is_reconciled).toBe(true);
+      expect(result.as_of).toBe(asOf);
+    }
+  );
+
+  it('global getWalletIntegrity sees synthetic post-Phase-0 wallet drift; period-scoped at 2026-03-31 does not', async () => {
+    // Mirrors the production 0.90€ entry: a wallet_transaction dated AFTER
+    // 2026-03-31 with no corresponding 5351 GL line. Global view sees the
+    // -90 cent drift; period-scoped view at 2026-03-31 excludes it because
+    // the wallet_transaction's created_at is post-asOf.
+
+    const serviceClient = createTestServiceClient();
+    const SYNTHETIC_TX_AMOUNT_CENTS = 90;
+    const POST_PHASE_0_DATE = '2026-04-20T12:00:00Z';
+
+    // Create a synthetic seller persona for the test. Use createSignedInClient
+    // so the user_profiles row exists (FK target for wallets / wallet_transactions).
+    const syntheticSeller = await createSignedInClient({
+      isStaff: false,
+      emailPrefix: 'wallet-integrity-divergence-test'
+    });
+
+    let walletId: string | null = null;
+    let walletTxId: string | null = null;
+
+    try {
+      // Insert a wallet for the synthetic seller. Service role bypasses RLS;
+      // wallets has no INSERT policy for users. balance_cents = 90.
+      const { data: walletRow, error: walletInsertErr } = await serviceClient
+        .from('wallets')
+        .insert({
+          user_id: syntheticSeller.userId,
+          balance_cents: SYNTHETIC_TX_AMOUNT_CENTS
+        })
+        .select('id')
+        .single();
+      if (walletInsertErr || !walletRow) {
+        throw new Error(
+          `wallets insert failed: ${walletInsertErr?.message ?? 'unknown'}`
+        );
+      }
+      walletId = walletRow.id as string;
+
+      // Insert a wallet_transaction dated post-2026-03-31. No corresponding
+      // 5351 GL line — this is the divergence we want the global check to
+      // surface and the period-scoped check at 2026-03-31 to miss.
+      const { data: txRow, error: txInsertErr } = await serviceClient
+        .from('wallet_transactions')
+        .insert({
+          wallet_id: walletId,
+          user_id: syntheticSeller.userId,
+          type: 'credit',
+          amount_cents: SYNTHETIC_TX_AMOUNT_CENTS,
+          balance_after_cents: SYNTHETIC_TX_AMOUNT_CENTS,
+          description: 'PR #4.5a divergence test — synthetic post-Phase-0 wallet',
+          created_at: POST_PHASE_0_DATE
+        })
+        .select('id')
+        .single();
+      if (txInsertErr || !txRow) {
+        throw new Error(
+          `wallet_transactions insert failed: ${txInsertErr?.message ?? 'unknown'}`
+        );
+      }
+      walletTxId = txRow.id as string;
+
+      // Global check: should see the synthetic 90 cents on the wallet side
+      // with no GL counterpart → delta = gl - wallet = -90 (or whatever the
+      // pre-existing global delta was, shifted by -90).
+      const globalBefore = await getWalletIntegrity(staffPersona.client);
+
+      // Period-scoped check at 2026-03-31: the synthetic wallet_transaction's
+      // created_at is 2026-04-20 (post-asOf), so it must be excluded.
+      const periodScoped = await getWalletIntegrityAsOf(
+        staffPersona.client,
+        '2026-03-31'
+      );
+
+      // The period-scoped check should match the Phase 0 invariant:
+      // delta_cents = 0 (no Phase 0 wallet activity, no synthetic
+      // wallet_transaction visible at 2026-03-31).
+      expect(periodScoped.delta_cents).toBe(0);
+      expect(periodScoped.is_reconciled).toBe(true);
+
+      // The global check, by contrast, must reflect the synthetic drift.
+      // We compare relative to the period-scoped baseline: global delta
+      // should be lower by exactly SYNTHETIC_TX_AMOUNT_CENTS (wallet side
+      // grew by 90, GL side did not).
+      expect(globalBefore.delta_cents).toBe(
+        periodScoped.delta_cents - SYNTHETIC_TX_AMOUNT_CENTS
+      );
+      expect(globalBefore.delta_cents).toBe(-SYNTHETIC_TX_AMOUNT_CENTS);
+    } finally {
+      // Cleanup: order matters because of FK from wallet_transactions →
+      // wallets (RESTRICT). Drop the tx first, then the wallet, then the
+      // synthetic auth user (which cascades user_profiles).
+      if (walletTxId) {
+        await serviceClient.from('wallet_transactions').delete().eq('id', walletTxId);
+      }
+      if (walletId) {
+        await serviceClient.from('wallets').delete().eq('id', walletId);
+      }
+      await cleanupSignedInClient(syntheticSeller);
+    }
   });
 });
