@@ -112,9 +112,9 @@ describe('creditSellerWallet — flag-branch contract', () => {
     expect(trackServer).not.toHaveBeenCalled();
   });
 
-  it('flag-ON: calls completeOrderWithGL, does NOT call legacy creditWallet', async () => {
+  it('flag-ON: calls completeOrderWithGL with completionSource, does NOT call legacy creditWallet', async () => {
     vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
-    await creditSellerWallet('order_uuid_test', orderFixture);
+    await creditSellerWallet('order_uuid_test', orderFixture, 'auto_complete');
     expect(completeOrderWithGL).toHaveBeenCalledTimes(1);
     expect(completeOrderWithGL).toHaveBeenCalledWith(
       expect.anything(),
@@ -126,9 +126,20 @@ describe('creditSellerWallet — flag-branch contract', () => {
         shipping_cost_cents: 500,
         order_number: 'STG-2027-00001',
         cart_group_id: 'cart_uuid_test'
-      })
+      }),
+      'auto_complete'
     );
     expect(creditWallet).not.toHaveBeenCalled();
+  });
+
+  it('flag-ON: completion source defaults to delivery_confirmed when not specified', async () => {
+    vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
+    await creditSellerWallet('order_uuid_test', orderFixture);
+    expect(completeOrderWithGL).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'delivery_confirmed'
+    );
   });
 
   it('skips both paths when seller_wallet_credit_cents is zero', async () => {

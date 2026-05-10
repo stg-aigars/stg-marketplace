@@ -238,7 +238,7 @@ export async function withdrawDispute(orderId: string, userId: string): Promise<
   }
 
   // Credit seller wallet (same as normal completion — shared helper)
-  await creditSellerWallet(orderId, order);
+  await creditSellerWallet(orderId, order, 'dispute_no_refund');
 
   markOrderListingsSold(order);
 
@@ -617,7 +617,7 @@ export async function staffResolveDispute(
   if (orderError || !updatedOrder) throw new Error('Failed to complete order');
 
   // Credit seller wallet (shared helper)
-  await creditSellerWallet(orderId, order);
+  await creditSellerWallet(orderId, order, 'dispute_no_refund');
 
   markOrderListingsSold(order);
 

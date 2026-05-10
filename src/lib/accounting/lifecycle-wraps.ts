@@ -23,9 +23,10 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { trackServer } from '@/lib/analytics/track-server';
+import { logAuditEvent } from '@/lib/services/audit';
 
 import { lookupVatRate, roundHalfUpCents, splitInclusiveVat } from './computer';
-import { assembleEntryForRpc } from './posting-engine';
+import { assembleEntryForRpc, type AssembledEntry } from './posting-engine';
 import {
   buildOrderCompletionEvent,
   buildRefundEvent,
@@ -36,6 +37,47 @@ import type { ComputedLine } from './types';
 
 const COMMISSION_RATE = 0.1;
 
+/**
+ * Fire `accounting.posted` regulatory audit event for a GL entry written
+ * via a parent RPC. Mirrors the pattern in `posting-engine.ts:emit()`,
+ * but called from the service-layer wrap because parent RPCs use
+ * `PERFORM insert_journal_entry` in PL/pgSQL — the engine's TS-side
+ * audit fire never runs along that path. Without this, lifecycle GL
+ * writes would be missing from `audit_log` (the same gap that caused
+ * the Phase 0 backfill audit drop documented in CLAUDE.md).
+ *
+ * Fire-and-forget; failures log but never block the caller.
+ */
+function fireAccountingPostedAudit(
+  supabase: SupabaseClient,
+  entryId: string,
+  assembled: AssembledEntry,
+  actorId: string | undefined
+): void {
+  const entry = assembled.rpcEntry;
+  const isUuidActor =
+    typeof actorId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(actorId);
+  void logAuditEvent(supabase, {
+    actorId: isUuidActor ? actorId : undefined,
+    actorType: 'system',
+    action: 'accounting.posted',
+    resourceType: 'journal_entry',
+    resourceId: entryId,
+    metadata: {
+      type_id: assembled.type_id,
+      source_doc_type: entry.source_doc_type as string,
+      source_doc_id: entry.source_doc_id as string,
+      accounting_period: entry.accounting_period as string,
+      tax_period: entry.tax_period as string,
+      created_by: (entry.created_by as string | undefined) ?? 'lifecycle_wrap'
+    },
+    retentionClass: 'regulatory'
+  }).catch((err: unknown) => {
+    console.error(`accounting.posted audit write failed (entry_id=${entryId}): ${String(err)}`);
+  });
+}
+
 interface OrderForCompletion {
   id: string;
   seller_id: string;
@@ -45,6 +87,8 @@ interface OrderForCompletion {
   order_number: string;
   cart_group_id: string | null;
 }
+
+export type CompletionSource = 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
 
 interface CompleteOrderWithGLResult {
   wallet_txn_id: string | null;
@@ -152,7 +196,8 @@ async function resolveSellerCounterparty(
  */
 export async function completeOrderWithGL(
   supabase: SupabaseClient,
-  order: OrderForCompletion
+  order: OrderForCompletion,
+  completionSource: CompletionSource = 'delivery_confirmed'
 ): Promise<CompleteOrderWithGLResult> {
   const counterpartyId = await resolveSellerCounterparty(supabase, order.seller_id);
 
@@ -165,7 +210,7 @@ export async function completeOrderWithGL(
     item_value_cents: order.items_total_cents,
     shipping_value_cents: order.shipping_cost_cents,
     invoice_number: order.order_number,
-    completion_source: 'delivery_confirmed',
+    completion_source: completionSource,
     posting_date: today,
     accounting_period: period,
     tax_period: period
@@ -185,6 +230,10 @@ export async function completeOrderWithGL(
   }
 
   const result = data as CompleteOrderWithGLResult;
+
+  if (result.journal_entry_id) {
+    fireAccountingPostedAudit(supabase, result.journal_entry_id, assembled, order.seller_id);
+  }
 
   if (result.orphan) {
     void trackServer(
@@ -407,7 +456,7 @@ export async function refundOrderWithGL(
     throw new Error(`refundOrderWithGL antecedent lookup failed for order ${order.id}: ${antecedentErr.message}`);
   }
 
-  let refundEntryRpc: { rpcEntry: Record<string, unknown>; rpcLines: ComputedLine[] } | null = null;
+  let refundEntryRpc: AssembledEntry | null = null;
 
   if (antecedent) {
     const refundType: RefundType =
@@ -447,7 +496,7 @@ export async function refundOrderWithGL(
   // C.5 cash leg fires when actual STG cash left the books. Wallet-only
   // refunds (card_refunded == 0) skip C.5: the buyer's wallet is credited
   // intra-platform; no Swedbank/EveryPay cash movement to record.
-  let cashLegRpc: { rpcEntry: Record<string, unknown>; rpcLines: ComputedLine[] } | null = null;
+  let cashLegRpc: AssembledEntry | null = null;
   if (refundResult.card_refunded > 0) {
     const fundingSource = order.payment_method === 'bank_link' ? 'bank' : 'everypay';
     const cashLegEvent = buildRefundCashLegEvent({
@@ -478,6 +527,13 @@ export async function refundOrderWithGL(
   }
 
   const result = data as RefundOrderWithGLResult;
+
+  if (result.refund_entry_id && refundEntryRpc) {
+    fireAccountingPostedAudit(supabase, result.refund_entry_id, refundEntryRpc, order.seller_id);
+  }
+  if (result.cash_leg_entry_id && cashLegRpc) {
+    fireAccountingPostedAudit(supabase, result.cash_leg_entry_id, cashLegRpc, order.seller_id);
+  }
 
   if (result.orphan) {
     void trackServer(

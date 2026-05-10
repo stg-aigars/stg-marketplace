@@ -21,7 +21,7 @@ import {
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
-import { completeOrderWithGL } from '@/lib/accounting/lifecycle-wraps';
+import { completeOrderWithGL, type CompletionSource } from '@/lib/accounting/lifecycle-wraps';
 import { updateDac7StatsOnCompletion } from '@/lib/dac7/service';
 import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
 
@@ -334,7 +334,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   const updatedOrder = await transitionOrder(orderId, 'completed', userId, 'buyer', undefined, order);
 
   // Credit seller wallet with earnings (idempotent — safe to retry)
-  await creditSellerWallet(orderId, order);
+  await creditSellerWallet(orderId, order, 'delivery_confirmed');
 
   // Issue invoice — after wallet credit so the financial operation isn't blocked.
   // If this fails, the order is complete with wallet credited; reconciliation cron retries.
@@ -408,7 +408,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   });
 
   // Credit seller wallet (idempotent)
-  await creditSellerWallet(orderId, order);
+  await creditSellerWallet(orderId, order, 'auto_complete');
 
   // Issue invoice (fire-and-forget — reconciliation cron retries if this fails)
   void issueInvoice(orderId).catch((err) => console.error('[Invoicing] Failed to issue invoice:', err));
@@ -484,7 +484,8 @@ export async function creditSellerWallet(
     | 'shipping_cost_cents'
     | 'seller_country'
     | 'cart_group_id'
-  >
+  >,
+  completionSource: CompletionSource = 'delivery_confirmed'
 ): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
 
@@ -493,15 +494,19 @@ export async function creditSellerWallet(
   // runs the byte-identical pre-PR-#5 flow below.
   if (isAccountingEngineEnabled()) {
     const supabase = createServiceClient();
-    await completeOrderWithGL(supabase, {
-      id: orderId,
-      seller_id: order.seller_id,
-      seller_country: order.seller_country as 'LV' | 'LT' | 'EE',
-      items_total_cents: order.items_total_cents,
-      shipping_cost_cents: order.shipping_cost_cents,
-      order_number: order.order_number,
-      cart_group_id: order.cart_group_id
-    });
+    await completeOrderWithGL(
+      supabase,
+      {
+        id: orderId,
+        seller_id: order.seller_id,
+        seller_country: order.seller_country as 'LV' | 'LT' | 'EE',
+        items_total_cents: order.items_total_cents,
+        shipping_cost_cents: order.shipping_cost_cents,
+        order_number: order.order_number,
+        cart_group_id: order.cart_group_id
+      },
+      completionSource
+    );
     return;
   }
 
