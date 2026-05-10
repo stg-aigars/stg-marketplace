@@ -310,6 +310,14 @@ const REPRESENTATIVES: Representative[] = [
     }
   },
   {
+    type_id: 'O.9',
+    ctx: {
+      event_type: 'order.partial_refunded',
+      counterparty: lvSeller(),
+      payload: {}
+    }
+  },
+  {
     type_id: 'C.1',
     ctx: {
       event_type: 'everypay.payment_confirmed',

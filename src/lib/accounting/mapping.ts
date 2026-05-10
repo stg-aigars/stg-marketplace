@@ -788,6 +788,177 @@ const O_8: VatMappingEntry = {
 };
 
 // =============================================================================
+// O.9 — Outbound credit note, partial refund with proportional split (PR #5)
+//
+// Trigger: order.partial_refunded.
+// Computes the proportional reversal of commission and shipping-mgmt revenue
+// (and their VAT) when the buyer is partially refunded. Posts the same shape
+// as O.7 / O.8 but with caller-supplied original totals + refund amounts —
+// engine derives the proportional gross splits, then VAT-inclusive
+// decomposes net + VAT per accountant-signoff v1.2.
+//
+// Math (per docs/legal_audit/accountant-completion-entry-signoff.md):
+//   partial_commission_gross = round_half_up(original_commission_gross × refund_item / original_item)
+//   partial_commission_net   = round_half_up(partial_commission_gross / (1 + vat_rate))
+//   partial_commission_vat   = partial_commission_gross − partial_commission_net
+//   (same shape for shipping if refund_shipping > 0)
+//   total_vat                = partial_commission_vat + partial_shipping_vat
+//   total_seller_credit      = partial_commission_gross + partial_shipping_gross
+//
+// Lines (always at least 2, balanced):
+//   Dr 6310-C partial_commission_net (omitted when 0 — typically gross=0 only)
+//   Dr 6310-S partial_shipping_net   (omitted when shipping not refunded)
+//   Dr {vat_account} total_vat       (omitted for B2B RC vat_account=null or sub-cent)
+//   Cr 5351 total_seller_credit      (always present — wallet sees gross refund)
+//
+// Period routing (current vs prior): caller decides via the parent RPC at
+// commit 7; O.9 emits the lines, the engine assigns accounting_period and
+// tax_period from the PostingEvent. The dispatcher routes O.9 by
+// event_type='order.partial_refunded' regardless of period.
+// =============================================================================
+
+const O_9: VatMappingEntry = {
+  id: 'O.9',
+  category: 'outgoing',
+  entry_type: 'refund',
+  description: 'Outbound credit note, partial refund (proportional split of commission and shipping with VAT-inclusive decomposition)',
+  legal_basis: 'Articles 73, 90 of Directive 2006/112/EC; PVN likums credit-note rules; accountant signoff v1.2 (10 May 2026)',
+  routing: {
+    event_type: 'order.partial_refunded',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'pre_computed' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: [
+    'order_id', 'original_invoice_number', 'credit_note_number',
+    'original_item_value_cents', 'original_commission_gross_cents', 'original_shipping_value_cents',
+    'refund_item_cents', 'refund_shipping_cents', 'vat_rate', 'vat_country'
+  ],
+  compute: (input: ComputeInput): ComputeOutput => {
+    if (!input.counterparty?.id) {
+      engineInvariant('O.9 compute requires counterparty');
+    }
+
+    const original_item_value_cents = requireNumber(input.payload, 'original_item_value_cents');
+    const original_commission_gross_cents = requireNumber(input.payload, 'original_commission_gross_cents', { allowZero: true });
+    const original_shipping_value_cents = requireNumber(input.payload, 'original_shipping_value_cents', { allowZero: true });
+    const refund_item_cents = requireNumber(input.payload, 'refund_item_cents', { allowZero: true });
+    const refund_shipping_cents = requireNumber(input.payload, 'refund_shipping_cents', { allowZero: true });
+    const vat_rate = requireNumber(input.payload, 'vat_rate', { allowZero: true });
+    const vat_country = requireString(input.payload, 'vat_country');
+    const vat_account = typeof input.payload.vat_account === 'string' ? input.payload.vat_account : null;
+
+    if (refund_item_cents > original_item_value_cents) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `O.9 refund_item_cents (${refund_item_cents}) cannot exceed original_item_value_cents (${original_item_value_cents})`,
+        context: { refund_item_cents, original_item_value_cents }
+      });
+    }
+    if (refund_shipping_cents > original_shipping_value_cents) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `O.9 refund_shipping_cents (${refund_shipping_cents}) cannot exceed original_shipping_value_cents (${original_shipping_value_cents})`,
+        context: { refund_shipping_cents, original_shipping_value_cents }
+      });
+    }
+
+    // Proportional gross amounts: scale original by refund/original ratio at cent boundary.
+    const partial_commission_gross_cents = original_item_value_cents > 0
+      ? roundHalfUpCents(original_commission_gross_cents * (refund_item_cents / original_item_value_cents))
+      : 0;
+    const partial_shipping_gross_cents = original_shipping_value_cents > 0
+      ? roundHalfUpCents(original_shipping_value_cents * (refund_shipping_cents / original_shipping_value_cents))
+      : 0;
+
+    // VAT-inclusive decomposition per accountant-signoff v1.2.
+    const partial_commission = splitInclusiveVat(partial_commission_gross_cents, vat_rate);
+    const partial_shipping = splitInclusiveVat(partial_shipping_gross_cents, vat_rate);
+
+    const total_vat_cents = partial_commission.vat_cents + partial_shipping.vat_cents;
+    const total_seller_credit_cents = partial_commission_gross_cents + partial_shipping_gross_cents;
+
+    if (total_seller_credit_cents === 0) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: 'O.9 partial refund computes to zero — no journal lines to emit (refund amount too small to cover proportional commission/shipping)',
+        context: { refund_item_cents, refund_shipping_cents, original_commission_gross_cents, original_shipping_value_cents }
+      });
+    }
+
+    const lines: ComputedLine[] = [];
+
+    if (partial_commission.net_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: '6310-C',
+        debit_cents: partial_commission.net_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        vat_rate_snapshot: vat_rate,
+        vat_country: vat_country,
+        counterparty_type: 'seller',
+        counterparty_id: input.counterparty.id,
+        narrative: 'Partial reversal of commission revenue (O.9)'
+      });
+    }
+
+    if (partial_shipping.net_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: '6310-S',
+        debit_cents: partial_shipping.net_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        vat_rate_snapshot: vat_rate,
+        vat_country: vat_country,
+        counterparty_type: 'seller',
+        counterparty_id: input.counterparty.id,
+        narrative: 'Partial reversal of shipping-mgmt revenue (O.9)'
+      });
+    }
+
+    if (vat_account !== null && total_vat_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: vat_account,
+        debit_cents: total_vat_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        vat_country: vat_country,
+        narrative: 'Partial reversal of output VAT (O.9)'
+      });
+    }
+
+    lines.push({
+      line_number: lines.length + 1,
+      account_code: '5351',
+      debit_cents: 0,
+      credit_cents: total_seller_credit_cents,
+      currency: 'EUR',
+      counterparty_type: 'seller',
+      counterparty_id: input.counterparty.id,
+      narrative: 'Seller wallet — partial refund of commission/shipping (O.9)'
+    });
+
+    return {
+      lines,
+      posting_context_extras: {
+        partial_commission_gross_cents,
+        partial_commission_net_cents: partial_commission.net_cents,
+        partial_commission_vat_cents: partial_commission.vat_cents,
+        partial_shipping_gross_cents,
+        partial_shipping_net_cents: partial_shipping.net_cents,
+        partial_shipping_vat_cents: partial_shipping.vat_cents,
+        total_vat_cents,
+        total_seller_credit_cents
+      }
+    };
+  }
+};
+
+// =============================================================================
 // I.1 — LV vendor with standard VAT
 // =============================================================================
 
@@ -1804,7 +1975,7 @@ const C_8: VatMappingEntry = {
 /**
  * v3 mapping table type IDs in scope: 9 from PR #2 + 9 from PR #3 (Phase 0
  * backfill) + 2 from PR #4.5e (EE catalog gap) + 6 from PR #5 commit 3 (O.7,
- * O.8, C.1, C.2, C.3, C.5) = 26 entries. PR #5 commit 4 adds O.9 → 27.
+ * O.8, C.1, C.2, C.3, C.5) + 1 from PR #5 commit 4 (O.9) = 27 entries.
  * First-match-wins routing in dispatcher.ts evaluates in this order against
  * the incoming PostingEvent. Order matters when multiple types share an
  * event_type — e.g. O.2 must precede O.3 because O.2's conditions are
@@ -1844,9 +2015,10 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   O_5,
   O_3,
   O_1,
-  // Outgoing — refund credit notes (PR #5 commit 3; PR #5 commit 4 adds O.9)
+  // Outgoing — refund credit notes (O.7 / O.8 full; O.9 partial proportional split)
   O_7,
   O_8,
+  O_9,
   // Incoming (more specific vat_treatment routing first; I_4 country list excludes EU MS so order with I_3 is safe)
   I_4,
   I_2,
