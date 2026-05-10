@@ -292,7 +292,7 @@ const REPRESENTATIVES: Representative[] = [
       payload: {}
     }
   },
-  // PR #5 commit 3 additions (O.7 / O.8 refund credit notes; C.1 / C.2 / C.3 / C.5 cash legs)
+  // PR #5 additions — refund credit notes (O.7 / O.8 / O.9) and cash-only flows (C.1 / C.2 / C.3 / C.5)
   {
     type_id: 'O.7',
     ctx: {

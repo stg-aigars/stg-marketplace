@@ -713,17 +713,15 @@ const O_5: VatMappingEntry = {
 };
 
 // =============================================================================
-// O.7 — Outbound credit note, current-period refund (PR #5)
+// O.7 — Outbound credit note, current-period refund
 //
 // Trigger: order.refunded AND payload.tax_period_alignment='current'.
 // Routing mirrors the original O.1–O.5; reverses the original posting in
 // full or in part, nets in the same period. PVN deklarācija nets in the
 // same line(s) as the original; ESL/OSS reversal flows to the next return.
 //
-// PR #5 commit 3 ships the routing entry with a pre-computed-lines compute()
-// (caller in order_refund_with_gl reads the original O.x entry and produces
-// the reversal lines). The reversal-line builder lives in the parent RPC at
-// commit 7; this slot at commit 3 is the dispatch hook.
+// Pre-computed-lines compute() — caller (order_refund_with_gl) reads the
+// original O.x entry and produces the reversal lines via payload.lines.
 // =============================================================================
 
 const O_7: VatMappingEntry = {
@@ -750,7 +748,7 @@ const O_7: VatMappingEntry = {
 };
 
 // =============================================================================
-// O.8 — Outbound credit note, cross-period refund (PR #5)
+// O.8 — Outbound credit note, cross-period refund
 //
 // Trigger: order.refunded AND payload.tax_period_alignment='prior'.
 // Special handling: current accounting_period and tax_period; references
@@ -761,7 +759,7 @@ const O_7: VatMappingEntry = {
 // of Implementing Regulation 282/2011 — three-year correction window).
 //
 // Same compute pattern as O.7 — caller pre-computes reversal lines based on
-// the original O.x entry; parent RPC at commit 7 wires the routing.
+// the original O.x entry.
 // =============================================================================
 
 const O_8: VatMappingEntry = {
@@ -788,7 +786,7 @@ const O_8: VatMappingEntry = {
 };
 
 // =============================================================================
-// O.9 — Outbound credit note, partial refund with proportional split (PR #5)
+// O.9 — Outbound credit note, partial refund with proportional split
 //
 // Trigger: order.partial_refunded.
 // Computes the proportional reversal of commission and shipping-mgmt revenue
@@ -811,10 +809,10 @@ const O_8: VatMappingEntry = {
 //   Dr {vat_account} total_vat       (omitted for B2B RC vat_account=null or sub-cent)
 //   Cr 5351 total_seller_credit      (always present — wallet sees gross refund)
 //
-// Period routing (current vs prior): caller decides via the parent RPC at
-// commit 7; O.9 emits the lines, the engine assigns accounting_period and
-// tax_period from the PostingEvent. The dispatcher routes O.9 by
-// event_type='order.partial_refunded' regardless of period.
+// Period routing (current vs prior): caller decides; O.9 emits the lines,
+// the engine assigns accounting_period and tax_period from the PostingEvent.
+// The dispatcher routes O.9 by event_type='order.partial_refunded'
+// regardless of period.
 // =============================================================================
 
 const O_9: VatMappingEntry = {
@@ -864,13 +862,13 @@ const O_9: VatMappingEntry = {
       });
     }
 
-    // Proportional gross amounts: scale original by refund/original ratio at cent boundary.
+    // Commission scales by refund_item / original_item ratio because commission
+    // is a derived 10% of item_value. Shipping is buyer-paid pass-through (no
+    // platform margin), so partial shipping refund maps 1:1 to refund_shipping.
     const partial_commission_gross_cents = original_item_value_cents > 0
       ? roundHalfUpCents(original_commission_gross_cents * (refund_item_cents / original_item_value_cents))
       : 0;
-    const partial_shipping_gross_cents = original_shipping_value_cents > 0
-      ? roundHalfUpCents(original_shipping_value_cents * (refund_shipping_cents / original_shipping_value_cents))
-      : 0;
+    const partial_shipping_gross_cents = refund_shipping_cents;
 
     // VAT-inclusive decomposition per accountant-signoff v1.2.
     const partial_commission = splitInclusiveVat(partial_commission_gross_cents, vat_rate);
@@ -1581,7 +1579,7 @@ const P_7: VatMappingEntry = {
 };
 
 // =============================================================================
-// C.1 — Buyer cart payment, EveryPay card path (PR #5)
+// C.1 — Buyer cart payment, EveryPay card path
 //
 // Trigger: everypay.payment_confirmed AND payment_method='card'.
 // Cash leg only — money lands in 2630 EveryPay clearing pending the daily
@@ -1628,7 +1626,7 @@ const C_1: VatMappingEntry = {
 };
 
 // =============================================================================
-// C.2 — Buyer cart payment, PIS / bank-link path (PR #5)
+// C.2 — Buyer cart payment, PIS / bank-link path
 //
 // Trigger: everypay.payment_confirmed AND payment_method='bank_link'.
 // PIS settles direct to STG's IBAN (no 2630 EveryPay clearing involved); no
@@ -1674,13 +1672,13 @@ const C_2: VatMappingEntry = {
 };
 
 // =============================================================================
-// C.3 — EveryPay daily settlement to bank (PR #5)
+// C.3 — EveryPay daily settlement to bank
 //
 // Trigger: everypay.daily_settlement_received. Moves accumulated card cart
 // payments from 2630 EveryPay clearing to 2610 Swedbank when EveryPay
-// settles the merchant batch. Staff manual action ships in PR #5 commit 11
-// (/staff/accounting/everypay-settlement form); future automation via webhook
-// reuses the same compute() with a different trigger.
+// settles the merchant batch. Currently driven by a staff manual action;
+// future automation via webhook reuses the same compute() with a different
+// trigger.
 // =============================================================================
 
 const C_3: VatMappingEntry = {
@@ -1769,10 +1767,10 @@ const C_4: VatMappingEntry = {
 };
 
 // =============================================================================
-// C.5 — Cash-only refund (full or partial buyer refund) (PR #5)
+// C.5 — Cash-only refund (full or partial buyer refund)
 //
 // Trigger: order.refund_initiated. Cash leg only — VAT reversal flows via
-// O.7 / O.8 / O.9 (paired emit at refund time per round-3 §C(a)).
+// O.7 / O.8 / O.9 (paired emit at refund time).
 // Funding source determines the credit account: 'everypay' → Cr 2630;
 // 'bank' → Cr 2610. Caller-driven via payload.funding_source.
 // =============================================================================
@@ -1973,14 +1971,12 @@ const C_8: VatMappingEntry = {
 // =============================================================================
 
 /**
- * v3 mapping table type IDs in scope: 9 from PR #2 + 9 from PR #3 (Phase 0
- * backfill) + 2 from PR #4.5e (EE catalog gap) + 6 from PR #5 commit 3 (O.7,
- * O.8, C.1, C.2, C.3, C.5) + 1 from PR #5 commit 4 (O.9) = 27 entries.
- * First-match-wins routing in dispatcher.ts evaluates in this order against
- * the incoming PostingEvent. Order matters when multiple types share an
- * event_type — e.g. O.2 must precede O.3 because O.2's conditions are
- * stricter (vat_registered + vies_verified_at) and would otherwise fall
- * through to O.3 if not checked first.
+ * v3 mapping table — 27 type IDs in scope. First-match-wins routing in
+ * dispatcher.ts evaluates in this order against the incoming PostingEvent.
+ * Order matters when multiple types share an event_type — e.g. O.2 must
+ * precede O.3 because O.2's conditions are stricter (vat_registered +
+ * vies_verified_at) and would otherwise fall through to O.3 if not checked
+ * first.
  *
  * Outgoing-order types group B2B reverse-charge (O.2 LT, O.4 EE) before B2C
  * OSS (O.5 EE, O.3 LT) before LV catch-all (O.1). Within each group, country

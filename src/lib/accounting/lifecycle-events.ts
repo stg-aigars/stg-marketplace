@@ -1,13 +1,9 @@
 /**
- * Event-builder helpers for PR #5 marketplace lifecycle integration.
+ * Event-builder helpers for marketplace lifecycle integration.
  *
  * Each function takes pre-loaded marketplace data (orders, counterparties,
  * payment intents — fetched by the caller) and produces a PostingEvent shape
  * ready to pass to engine.emit() or to a parent RPC's payload.
- *
- * Per round-3 §A.8: pure functions; depend ONLY on types and pre-loaded data
- * shapes. No imports from flag-checked service files. Safe to land at
- * commit 4 ahead of the service-layer wraps in commits 6-8.
  *
  * Coverage map (event_type → which v3 mapping entry catches it):
  *
@@ -18,37 +14,41 @@
  *   buildRefundEvent (full)        → 'order.refunded'             → O.7 / O.8
  *                                    by payload.tax_period_alignment
  *   buildRefundEvent (partial)     → 'order.partial_refunded'     → O.9
- *                                    (no other discriminator needed)
  *   buildRefundCashLegEvent        → 'order.refund_initiated'     → C.5
- *                                    by payload.funding_source for routing
  *   buildWithdrawalCompletionEvent → 'seller.withdrawal_requested' → C.4
- *                                    (Shape 2 timing: fires at completion,
- *                                     not at request — see CLAUDE.md /
- *                                     round-2 brief §3.3)
- *
- * The event_type for withdrawal completion is intentionally
- * 'seller.withdrawal_requested' — that's the v3 catalog routing for C.4 — even
- * though under STG's manual-SEPA Shape 2 the wrap fires at staff completion
- * time, not at request time. The engine cares about routing semantics; the
- * wrap site decides timing.
+ *                                    (Shape 2 timing: fires at staff
+ *                                     completion, not at request — STG's
+ *                                     manual-SEPA reality has days-long lag
+ *                                     between request and bank send. The
+ *                                     event_type still matches v3 catalog
+ *                                     routing for C.4; the wrap site decides
+ *                                     timing.)
  */
 
 import type { PostingEvent } from './types';
+
+/**
+ * Shared temporal/audit fields every PostingEvent builder needs. Extending
+ * Build*EventInput from this drops 5× duplication and keeps all builders in
+ * sync if PostingEvent grows another required temporal key.
+ */
+interface PostingPeriodInput {
+  posting_date: string;
+  accounting_period: string;
+  tax_period: string;
+  actor_id?: string;
+}
 
 // ---------------------------------------------------------------------------
 // buildCartPaymentEvent — C.1 (card) / C.2 (PIS)
 // ---------------------------------------------------------------------------
 
-export interface BuildCartPaymentEventInput {
+export interface BuildCartPaymentEventInput extends PostingPeriodInput {
   cart_payment_id: string;
   everypay_payment_id: string;
   payment_method: 'card' | 'bank_link';
   gross_cart_cents: number;
-  posting_date: string;
-  accounting_period: string;
-  tax_period: string;
   callback_payload: Record<string, unknown>;
-  actor_id?: string;
 }
 
 /**
@@ -80,7 +80,7 @@ export function buildCartPaymentEvent(input: BuildCartPaymentEventInput): Postin
 // buildOrderCompletionEvent — O.1 / O.2 / O.3 / O.4 / O.5
 // ---------------------------------------------------------------------------
 
-export interface BuildOrderCompletionEventInput {
+export interface BuildOrderCompletionEventInput extends PostingPeriodInput {
   order_id: string;
   seller_counterparty_id: string;
   /** Buyer's gross item value (excludes shipping). */
@@ -90,12 +90,8 @@ export interface BuildOrderCompletionEventInput {
   /** STG's anticipated cost owed to Unisend for this order's shipping. Accrued at completion via Cr 5410-UN. */
   unisend_cost_cents: number;
   invoice_number: string;
-  posting_date: string;
-  accounting_period: string;
-  tax_period: string;
   /** Drives narrative + posting_context.completion_trigger; routing is by counterparty fields. */
   completion_source: 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
-  actor_id?: string;
 }
 
 /**
@@ -105,8 +101,7 @@ export interface BuildOrderCompletionEventInput {
  *
  * The 6-line completion entry shape is per
  * `docs/legal_audit/accountant-completion-entry-signoff.md` v1.2 (VAT-inclusive
- * decomposition). Engine produces the full entry via `buildOrderRevenueLines`
- * (PR #5 commit 6 expands it from 4 → 6 lines).
+ * decomposition). Engine produces the full entry via `buildOrderRevenueLines`.
  */
 export function buildOrderCompletionEvent(input: BuildOrderCompletionEventInput): PostingEvent {
   return {
@@ -137,7 +132,7 @@ export function buildOrderCompletionEvent(input: BuildOrderCompletionEventInput)
 
 export type RefundType = 'full_current' | 'full_prior' | 'partial';
 
-export interface BuildRefundEventInput {
+export interface BuildRefundEventInput extends PostingPeriodInput {
   order_id: string;
   seller_counterparty_id: string;
   refund_type: RefundType;
@@ -157,10 +152,6 @@ export interface BuildRefundEventInput {
   original_period?: string;
   /** Pre-computed reversal lines for full refunds (O.7 / O.8). */
   lines?: ReadonlyArray<unknown>;
-  posting_date: string;
-  accounting_period: string;
-  tax_period: string;
-  actor_id?: string;
 }
 
 /**
@@ -173,7 +164,7 @@ export interface BuildRefundEventInput {
  *   - 'partial'      → event_type='order.partial_refunded'     (→ O.9)
  *
  * Full refunds use pre-computed reversal lines (caller reads original O.x
- * entry; parent RPC at commit 7 wires this). Partial refunds rely on O.9's
+ * entry and passes the lines via payload). Partial refunds rely on O.9's
  * proportional split compute() — caller passes original totals + refund
  * amounts via payload (no pre-computed lines).
  *
@@ -244,15 +235,11 @@ export function buildRefundEvent(input: BuildRefundEventInput): PostingEvent {
 // buildRefundCashLegEvent — C.5
 // ---------------------------------------------------------------------------
 
-export interface BuildRefundCashLegEventInput {
+export interface BuildRefundCashLegEventInput extends PostingPeriodInput {
   order_id: string;
   refund_reference: string;
   refund_cents: number;
   funding_source: 'everypay' | 'bank';
-  posting_date: string;
-  accounting_period: string;
-  tax_period: string;
-  actor_id?: string;
 }
 
 /**
@@ -283,17 +270,13 @@ export function buildRefundCashLegEvent(input: BuildRefundCashLegEventInput): Po
 // buildWithdrawalCompletionEvent — C.4 (Shape 2 timing)
 // ---------------------------------------------------------------------------
 
-export interface BuildWithdrawalCompletionEventInput {
+export interface BuildWithdrawalCompletionEventInput extends PostingPeriodInput {
   withdrawal_request_id: string;
   seller_counterparty_id: string;
   withdrawal_cents: number;
   withdrawal_ref: string;
   seller_iban: string;
   bank_confirmation_ref?: string;
-  posting_date: string;
-  accounting_period: string;
-  tax_period: string;
-  actor_id?: string;
 }
 
 /**
