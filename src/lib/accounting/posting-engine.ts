@@ -49,6 +49,7 @@ import {
 import { checkIdempotency } from './idempotency';
 import type {
   ComputeInput,
+  ComputedLine,
   CounterpartyRow,
   DispatchContext,
   PostingEvent,
@@ -73,82 +74,112 @@ function isUuid(value: string | undefined): value is string {
   return typeof value === 'string' && UUID_RE.test(value);
 }
 
+/**
+ * Result of `assembleEntryForRpc` — the inputs that `insert_journal_entry`
+ * needs (rpcEntry + rpcLines) plus the dispatched type_id for idempotency
+ * lookup. Used by both `emit()` (the engine's own RPC call site) and PR #5
+ * lifecycle parent RPCs (e.g. `complete_order_with_event_atomic`) that
+ * compose the GL emit with marketplace state mutations in a single
+ * transaction. The lifecycle wrap calls this helper, then passes the result
+ * to the parent RPC along with the order id; the parent RPC PERFORMs
+ * `insert_journal_entry(p_event, p_lines)` inline.
+ */
+export interface AssembledEntry {
+  rpcEntry: Record<string, unknown>;
+  rpcLines: ComputedLine[];
+  type_id: string;
+}
+
+/**
+ * Engine-internal assembly: validate the event shape, load counterparty,
+ * dispatch to a VatMappingEntry, validate required keys, run the KYC gate
+ * (C.4 only), resolve the VAT rate, run compute(), assert balance, and
+ * build the rpcEntry shape that `insert_journal_entry` expects.
+ *
+ * Throws PostingValidationError / PostingComplianceGateError on failure;
+ * caller (either `emit` or a lifecycle wrap) handles surfacing.
+ */
+export async function assembleEntryForRpc(
+  supabase: SupabaseClient,
+  event: PostingEvent
+): Promise<AssembledEntry> {
+  validateEventShape(event);
+
+  const counterparty = await loadCounterparty(supabase, event.counterparty_id);
+
+  const ctx: DispatchContext = {
+    event_type: event.event_type,
+    counterparty,
+    payload: event.payload
+  };
+  const entry = dispatch(ctx);
+
+  validateRequiredKeys(entry, event.payload);
+
+  // KYC gate runs only for type C.4. Throws PostingComplianceGateError on
+  // block. Reuses the already-loaded counterparty (no extra DB roundtrip).
+  if (entry.id === 'C.4') {
+    if (!event.counterparty_id) {
+      throw new PostingValidationError({
+        code: 'missing_required_key',
+        reason: 'C.4 requires event.counterparty_id'
+      });
+    }
+    assertPayoutAllowed(counterparty);
+  }
+
+  const vat_rate = await resolveVatRate(supabase, entry, event.posting_date);
+
+  const computeInput: ComputeInput = {
+    payload: event.payload,
+    counterparty,
+    vat_rate,
+    posting_date: event.posting_date
+  };
+  const { lines, posting_context_extras } = entry.compute(computeInput);
+  assertBalanced(lines);
+
+  const merged_posting_context = {
+    ...event.payload,
+    ...posting_context_extras
+  };
+  const rpcEntry: Record<string, unknown> = {
+    posting_date: event.posting_date,
+    accounting_period: event.accounting_period,
+    tax_period: event.tax_period,
+    entry_type: entry.entry_type,
+    type_id: entry.id,
+    source_doc_type: event.source_doc_type,
+    source_doc_id: event.source_doc_id,
+    narrative: event.narrative,
+    posting_context: merged_posting_context,
+    created_by: event.created_by ?? DEFAULT_CREATED_BY,
+    period_close_adjustment: event.period_close_adjustment ?? false
+  };
+  return { rpcEntry, rpcLines: lines, type_id: entry.id };
+}
+
 export async function emit(
   supabase: SupabaseClient,
   event: PostingEvent
 ): Promise<PostingResult> {
   try {
-    validateEventShape(event);
-
-    const counterparty = await loadCounterparty(supabase, event.counterparty_id);
-
-    const ctx: DispatchContext = {
-      event_type: event.event_type,
-      counterparty,
-      payload: event.payload
-    };
-    const entry = dispatch(ctx);
-
-    validateRequiredKeys(entry, event.payload);
-
-    // KYC gate runs only for type C.4. Throws PostingComplianceGateError on
-    // block; engine surfaces as { status: 'failed', error } below. Reuses the
-    // already-loaded counterparty (no extra DB roundtrip).
-    if (entry.id === 'C.4') {
-      if (!event.counterparty_id) {
-        throw new PostingValidationError({
-          code: 'missing_required_key',
-          reason: 'C.4 requires event.counterparty_id'
-        });
-      }
-      assertPayoutAllowed(counterparty);
-    }
-
-    const vat_rate = await resolveVatRate(supabase, entry, event.posting_date);
-
-    const computeInput: ComputeInput = {
-      payload: event.payload,
-      counterparty,
-      vat_rate,
-      posting_date: event.posting_date
-    };
-    const { lines, posting_context_extras } = entry.compute(computeInput);
-    assertBalanced(lines);
+    const assembled = await assembleEntryForRpc(supabase, event);
 
     // Idempotency dedup (cheap path).
     const idem = await checkIdempotency(
       supabase,
       event.source_doc_type,
       event.source_doc_id,
-      entry.id
+      assembled.type_id
     );
     if (idem.status === 'idempotent_skip') {
       return idem;
     }
 
-    // Build RPC payload.
-    const merged_posting_context = {
-      ...event.payload,
-      ...posting_context_extras
-    };
-    const rpcEntry = {
-      posting_date: event.posting_date,
-      accounting_period: event.accounting_period,
-      tax_period: event.tax_period,
-      entry_type: entry.entry_type,
-      type_id: entry.id,
-      source_doc_type: event.source_doc_type,
-      source_doc_id: event.source_doc_id,
-      narrative: event.narrative,
-      posting_context: merged_posting_context,
-      created_by: event.created_by ?? DEFAULT_CREATED_BY,
-      period_close_adjustment: event.period_close_adjustment ?? false
-    };
-    const rpcLines = lines;
-
     const { data: entryId, error } = await supabase.rpc('insert_journal_entry', {
-      p_entry: rpcEntry,
-      p_lines: rpcLines
+      p_entry: assembled.rpcEntry,
+      p_lines: assembled.rpcLines
     });
 
     if (error) {
@@ -159,7 +190,7 @@ export async function emit(
           supabase,
           event.source_doc_type,
           event.source_doc_id,
-          entry.id
+          assembled.type_id
         );
         if (recovery.status === 'idempotent_skip') {
           return recovery;
@@ -171,7 +202,7 @@ export async function emit(
           context: {
             source_doc_type: event.source_doc_type,
             source_doc_id: event.source_doc_id,
-            type_id: entry.id
+            type_id: assembled.type_id
           }
         });
         Sentry.captureException(conflict, { level: 'fatal' });
@@ -195,7 +226,7 @@ export async function emit(
       resourceType: 'journal_entry',
       resourceId: entryId,
       metadata: {
-        type_id: entry.id,
+        type_id: assembled.type_id,
         source_doc_type: event.source_doc_type,
         source_doc_id: event.source_doc_id,
         accounting_period: event.accounting_period,

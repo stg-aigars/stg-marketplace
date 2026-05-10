@@ -20,6 +20,8 @@ import {
   sendOrderDeclinedToBuyer,
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
+import { completeOrderWithGL } from '@/lib/accounting/lifecycle-wraps';
 import { updateDac7StatsOnCompletion } from '@/lib/dac7/service';
 import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
 
@@ -470,8 +472,38 @@ export function markOrderListingsSold(order: Pick<OrderWithRelations, 'order_ite
  * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
  * Idempotent via creditWallet's order_id + type='credit' check.
  */
-export async function creditSellerWallet(orderId: string, order: Pick<OrderWithRelations, 'seller_id' | 'seller_wallet_credit_cents' | 'listings' | 'order_number'>): Promise<void> {
+export async function creditSellerWallet(
+  orderId: string,
+  order: Pick<
+    OrderWithRelations,
+    | 'seller_id'
+    | 'seller_wallet_credit_cents'
+    | 'listings'
+    | 'order_number'
+    | 'items_total_cents'
+    | 'shipping_cost_cents'
+    | 'seller_country'
+    | 'cart_group_id'
+  >
+): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
+
+  // Flag-ON path: parent RPC composes wallet credit + status update + GL emit
+  // atomically per round-3 §A.3 + accountant signoff v1.4. Flag-OFF (default)
+  // runs the byte-identical pre-PR-#5 flow below.
+  if (isAccountingEngineEnabled()) {
+    const supabase = createServiceClient();
+    await completeOrderWithGL(supabase, {
+      id: orderId,
+      seller_id: order.seller_id,
+      seller_country: order.seller_country as 'LV' | 'LT' | 'EE',
+      items_total_cents: order.items_total_cents,
+      shipping_cost_cents: order.shipping_cost_cents,
+      order_number: order.order_number,
+      cart_group_id: order.cart_group_id
+    });
+    return;
+  }
 
   const gameSummary = getOrderGameSummary(
     'order_items' in order ? (order as OrderWithRelations).order_items : undefined,
