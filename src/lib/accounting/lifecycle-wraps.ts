@@ -23,60 +23,20 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { trackServer } from '@/lib/analytics/track-server';
-import { logAuditEvent } from '@/lib/services/audit';
+import { SELLER_COMMISSION_RATE } from '@/lib/pricing/constants';
 
 import { lookupVatRate, roundHalfUpCents, splitInclusiveVat } from './computer';
-import { assembleEntryForRpc, type AssembledEntry } from './posting-engine';
+import {
+  assembleEntryForRpc,
+  fireAccountingPostedAudit
+} from './posting-engine';
 import {
   buildOrderCompletionEvent,
   buildRefundEvent,
   buildRefundCashLegEvent,
   type RefundType
 } from './lifecycle-events';
-import type { ComputedLine } from './types';
-
-const COMMISSION_RATE = 0.1;
-
-/**
- * Fire `accounting.posted` regulatory audit event for a GL entry written
- * via a parent RPC. Mirrors the pattern in `posting-engine.ts:emit()`,
- * but called from the service-layer wrap because parent RPCs use
- * `PERFORM insert_journal_entry` in PL/pgSQL — the engine's TS-side
- * audit fire never runs along that path. Without this, lifecycle GL
- * writes would be missing from `audit_log` (the same gap that caused
- * the Phase 0 backfill audit drop documented in CLAUDE.md).
- *
- * Fire-and-forget; failures log but never block the caller.
- */
-function fireAccountingPostedAudit(
-  supabase: SupabaseClient,
-  entryId: string,
-  assembled: AssembledEntry,
-  actorId: string | undefined
-): void {
-  const entry = assembled.rpcEntry;
-  const isUuidActor =
-    typeof actorId === 'string' &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(actorId);
-  void logAuditEvent(supabase, {
-    actorId: isUuidActor ? actorId : undefined,
-    actorType: 'system',
-    action: 'accounting.posted',
-    resourceType: 'journal_entry',
-    resourceId: entryId,
-    metadata: {
-      type_id: assembled.type_id,
-      source_doc_type: entry.source_doc_type as string,
-      source_doc_id: entry.source_doc_id as string,
-      accounting_period: entry.accounting_period as string,
-      tax_period: entry.tax_period as string,
-      created_by: (entry.created_by as string | undefined) ?? 'lifecycle_wrap'
-    },
-    retentionClass: 'regulatory'
-  }).catch((err: unknown) => {
-    console.error(`accounting.posted audit write failed (entry_id=${entryId}): ${String(err)}`);
-  });
-}
+import type { ComputedLine, CounterpartyRow } from './types';
 
 interface OrderForCompletion {
   id: string;
@@ -132,20 +92,29 @@ interface CompleteOrderWithGLResult {
  * See CLAUDE.md "Accounting Module" → "counterparty.tax_status default" for
  * the canonical statement.
  */
+/**
+ * Columns the engine reads off a counterparty: dispatcher routing
+ * (country/tax_status/vies_verified_at), KYC gate (legal_compliance_status),
+ * vendor invoice posting (vendor_code), and entry-row provenance (id).
+ * Mirrors `posting-engine.ts:COUNTERPARTY_COLUMNS` so callers can skip
+ * the engine's internal load by pre-fetching the full row.
+ */
+const COUNTERPARTY_COLUMNS = 'id, type, country, tax_status, vies_verified_at, vendor_code, legal_compliance_status' as const;
+
 async function resolveSellerCounterparty(
   supabase: SupabaseClient,
   sellerId: string
-): Promise<string> {
+): Promise<CounterpartyRow> {
   const { data: existing, error: lookupErr } = await supabase
     .from('counterparties')
-    .select('id')
+    .select(COUNTERPARTY_COLUMNS)
     .eq('user_id', sellerId)
     .eq('type', 'seller')
     .maybeSingle();
   if (lookupErr) {
     throw new Error(`resolveSellerCounterparty lookup failed for ${sellerId}: ${lookupErr.message}`);
   }
-  if (existing) return existing.id as string;
+  if (existing) return existing as CounterpartyRow;
 
   // Lazy-init: snapshot user_profiles fields available today.
   const { data: profile, error: profileErr } = await supabase
@@ -168,12 +137,12 @@ async function resolveSellerCounterparty(
       legal_compliance_status: 'ok',
       kyc_status: 'not_required'
     })
-    .select('id')
+    .select(COUNTERPARTY_COLUMNS)
     .single();
   if (insertErr || !created) {
     throw new Error(`resolveSellerCounterparty: counterparty insert failed for ${sellerId}: ${insertErr?.message ?? 'no row returned'}`);
   }
-  return created.id as string;
+  return created as CounterpartyRow;
 }
 
 /**
@@ -199,14 +168,14 @@ export async function completeOrderWithGL(
   order: OrderForCompletion,
   completionSource: CompletionSource = 'delivery_confirmed'
 ): Promise<CompleteOrderWithGLResult> {
-  const counterpartyId = await resolveSellerCounterparty(supabase, order.seller_id);
+  const counterparty = await resolveSellerCounterparty(supabase, order.seller_id);
 
   const today = new Date().toISOString().split('T')[0];
   const period = today.substring(0, 7);
 
   const event = buildOrderCompletionEvent({
     order_id: order.id,
-    seller_counterparty_id: counterpartyId,
+    seller_counterparty_id: counterparty.id,
     item_value_cents: order.items_total_cents,
     shipping_value_cents: order.shipping_cost_cents,
     invoice_number: order.order_number,
@@ -216,7 +185,7 @@ export async function completeOrderWithGL(
     tax_period: period
   });
 
-  const assembled = await assembleEntryForRpc(supabase, event);
+  const assembled = await assembleEntryForRpc(supabase, event, counterparty);
 
   const { data, error } = await supabase.rpc('complete_order_with_event_atomic', {
     p_order_id: order.id,
@@ -339,7 +308,7 @@ function buildOrderRefundReversalLines(input: {
   vat_account: string | null;
   context_label: string;
 }): ComputedLine[] {
-  const commission_gross = roundHalfUpCents(input.item_value_cents * COMMISSION_RATE);
+  const commission_gross = roundHalfUpCents(input.item_value_cents * SELLER_COMMISSION_RATE);
   const seller_net = input.item_value_cents - commission_gross;
   const gross_cart = input.item_value_cents + input.shipping_value_cents;
   const commission = splitInclusiveVat(commission_gross, input.vat_rate);
@@ -438,26 +407,28 @@ export async function refundOrderWithGL(
   order: OrderForRefund,
   refundResult: RefundExecutionResult
 ): Promise<RefundOrderWithGLResult> {
-  const counterpartyId = await resolveSellerCounterparty(supabase, order.seller_id);
-
   const today = new Date().toISOString().split('T')[0];
   const period = today.substring(0, 7);
 
-  // Look up the antecedent O.x completion entry (if any) to route refund-side
-  // dispatch and to derive vat_country / vat_account from its type_id.
-  const { data: antecedent, error: antecedentErr } = await supabase
-    .from('journal_entries')
-    .select('id, type_id, tax_period')
-    .eq('source_doc_type', 'order')
-    .eq('source_doc_id', order.id)
-    .in('type_id', ['O.1', 'O.2', 'O.3', 'O.4', 'O.5'])
-    .maybeSingle();
-  if (antecedentErr) {
-    throw new Error(`refundOrderWithGL antecedent lookup failed for order ${order.id}: ${antecedentErr.message}`);
+  // Resolve counterparty + look up the antecedent O.x in parallel: independent
+  // queries against different tables; running serially burns a round-trip.
+  const [counterparty, antecedentResult] = await Promise.all([
+    resolveSellerCounterparty(supabase, order.seller_id),
+    supabase
+      .from('journal_entries')
+      .select('id, type_id, tax_period')
+      .eq('source_doc_type', 'order')
+      .eq('source_doc_id', order.id)
+      .in('type_id', ['O.1', 'O.2', 'O.3', 'O.4', 'O.5'])
+      .maybeSingle()
+  ]);
+  if (antecedentResult.error) {
+    throw new Error(`refundOrderWithGL antecedent lookup failed for order ${order.id}: ${antecedentResult.error.message}`);
   }
+  const antecedent = antecedentResult.data;
 
-  let refundEntryRpc: AssembledEntry | null = null;
-
+  // Build both events first; assemble in parallel below.
+  let refundEvent: ReturnType<typeof buildRefundEvent> | null = null;
   if (antecedent) {
     const refundType: RefundType =
       antecedent.tax_period === period ? 'full_current' : 'full_prior';
@@ -468,7 +439,7 @@ export async function refundOrderWithGL(
     const effectiveVatRate = routing.vat_account === null ? 0 : (lookedUpRate ?? 0);
 
     const lines = buildOrderRefundReversalLines({
-      counterparty_id: counterpartyId,
+      counterparty_id: counterparty.id,
       item_value_cents: order.items_total_cents,
       shipping_value_cents: order.shipping_cost_cents,
       vat_rate: effectiveVatRate,
@@ -477,10 +448,10 @@ export async function refundOrderWithGL(
       context_label: `${routing.vat_country}, refund of ${order.order_number}`
     });
 
-    const refundEvent = buildRefundEvent({
+    refundEvent = buildRefundEvent({
       refund_type: refundType,
       order_id: order.id,
-      seller_counterparty_id: counterpartyId,
+      seller_counterparty_id: counterparty.id,
       original_invoice_number: order.invoice_number ?? order.order_number,
       credit_note_number: order.credit_note_number ?? `STG-CN-PENDING-${order.order_number}`,
       original_invoice_id: refundType === 'full_prior' ? antecedent.id : undefined,
@@ -490,16 +461,15 @@ export async function refundOrderWithGL(
       accounting_period: period,
       tax_period: period
     });
-    refundEntryRpc = await assembleEntryForRpc(supabase, refundEvent);
   }
 
   // C.5 cash leg fires when actual STG cash left the books. Wallet-only
   // refunds (card_refunded == 0) skip C.5: the buyer's wallet is credited
   // intra-platform; no Swedbank/EveryPay cash movement to record.
-  let cashLegRpc: AssembledEntry | null = null;
+  let cashLegEvent: ReturnType<typeof buildRefundCashLegEvent> | null = null;
   if (refundResult.card_refunded > 0) {
     const fundingSource = order.payment_method === 'bank_link' ? 'bank' : 'everypay';
-    const cashLegEvent = buildRefundCashLegEvent({
+    cashLegEvent = buildRefundCashLegEvent({
       order_id: order.id,
       refund_reference: `STG-RF-${period}-${order.order_number}`,
       refund_cents: refundResult.card_refunded,
@@ -508,8 +478,15 @@ export async function refundOrderWithGL(
       accounting_period: period,
       tax_period: period
     });
-    cashLegRpc = await assembleEntryForRpc(supabase, cashLegEvent);
   }
+
+  // Assemble both events in parallel. The cash leg has no counterparty
+  // (refund clearing flow is intra-platform); pass null to skip the
+  // engine's optional counterparty load.
+  const [refundEntryRpc, cashLegRpc] = await Promise.all([
+    refundEvent ? assembleEntryForRpc(supabase, refundEvent, counterparty) : Promise.resolve(null),
+    cashLegEvent ? assembleEntryForRpc(supabase, cashLegEvent, null) : Promise.resolve(null)
+  ]);
 
   const { data, error } = await supabase.rpc('order_refund_with_event_atomic', {
     p_order_id: order.id,

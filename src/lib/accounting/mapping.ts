@@ -50,6 +50,8 @@
  *    is never violated. The slice is balanced on its own.
  */
 
+import { SELLER_COMMISSION_RATE as COMMISSION_RATE } from '@/lib/pricing/constants';
+
 import {
   decomposeFx,
   requireNumber,
@@ -69,9 +71,6 @@ import type {
 // =============================================================================
 // Helpers shared across compute()
 // =============================================================================
-
-/** STG commission rate (10%) per CLAUDE.md payment model. */
-const COMMISSION_RATE = 0.10;
 
 /**
  * Sentinel values distinguishing historical override entries from engine-computed
