@@ -47,7 +47,7 @@ export interface AnalyticsEventMap {
   };
   newsletter_subscribed: Record<string, never>;
   homepage_feature_tab_clicked: { tab: 'browse' | 'sell' | 'ship' | 'payments' };
-  'accounting.orphan_completion_emit_skipped': {
+  'accounting.orphan_emit_skipped': {
     orphan_type: 'completion' | 'refund';
     order_id: string;
     cart_payment_id: string | null;

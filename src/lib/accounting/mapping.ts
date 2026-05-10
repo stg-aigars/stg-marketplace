@@ -772,7 +772,8 @@ const O_7: VatMappingEntry = {
   compute: (input: ComputeInput): ComputeOutput => {
     const lines = buildPreComputedLines(input.payload.lines, {
       type_id: 'O.7',
-      defaultNarrative: 'Credit note line — current-period refund'
+      defaultNarrative: 'Credit note line — current-period refund',
+      forwardVat: true
     });
     return { lines, posting_context_extras: {} };
   }
@@ -810,7 +811,8 @@ const O_8: VatMappingEntry = {
   compute: (input: ComputeInput): ComputeOutput => {
     const lines = buildPreComputedLines(input.payload.lines, {
       type_id: 'O.8',
-      defaultNarrative: 'Credit note line — cross-period refund'
+      defaultNarrative: 'Credit note line — cross-period refund',
+      forwardVat: true
     });
     return { lines, posting_context_extras: {} };
   }
