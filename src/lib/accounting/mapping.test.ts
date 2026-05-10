@@ -60,6 +60,17 @@ function eeSellerB2C(): CounterpartyRow {
   return { ...lvSeller(), id: '99999999-9999-9999-9999-999999999999', country: 'EE' };
 }
 
+function eeSellerB2B(): CounterpartyRow {
+  return {
+    ...lvSeller(),
+    id: '88888888-8888-8888-8888-888888888888',
+    country: 'EE',
+    tax_status: 'vat_registered',
+    vat_number: 'EE100247025',
+    vies_verified_at: '2026-01-01T00:00:00Z'
+  };
+}
+
 function buildInput(
   counterparty: CounterpartyRow,
   vat_rate: number | null,
@@ -311,6 +322,50 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
       // Wallet debit = commission_gross only (250).
       const wallet = result.lines.find((l) => l.account_code === '5351')!;
       expect(wallet.debit_cents).toBe(250);
+    });
+  });
+
+  describe('O.4 — EE B2B reverse charge (no VAT line, 24% N/A)', () => {
+    it('seller wallet debit equals commission_gross + shipping_gross (vat_rate=0)', () => {
+      const o4 = findMappingById('O.4');
+      const result = o4!.compute(
+        buildInput(eeSellerB2B(), 0, {
+          item_value_cents: 2500,
+          shipping_value_cents: 550,
+          order_id: 'o',
+          seller_id: 's',
+          seller_vat_number: 'EE100247025',
+          vies_verified_at: '2026-01-01T00:00:00Z',
+          invoice_number: 'i'
+        })
+      );
+      const wallet = result.lines.find((l) => l.account_code === '5351');
+      expect(wallet!.debit_cents).toBe(800);
+    });
+
+    it('emits no VAT line and tags credit lines with EE country', () => {
+      const o4 = findMappingById('O.4');
+      const result = o4!.compute(
+        buildInput(eeSellerB2B(), 0, {
+          item_value_cents: 2500,
+          shipping_value_cents: 550,
+          order_id: 'o',
+          seller_id: 's',
+          seller_vat_number: 'EE100247025',
+          vies_verified_at: '2026-01-01T00:00:00Z',
+          invoice_number: 'i'
+        })
+      );
+      const commission = result.lines.find((l) => l.account_code === '6310-C');
+      const shipping = result.lines.find((l) => l.account_code === '6310-S');
+      const vatLines = result.lines.filter(
+        (l) => l.account_code.startsWith('5710') || l.account_code === '5711' || l.account_code === '5712'
+      );
+      expect(commission!.credit_cents).toBe(250);
+      expect(commission!.vat_country).toBe('EE');
+      expect(shipping!.credit_cents).toBe(550);
+      expect(shipping!.vat_country).toBe('EE');
+      expect(vatLines).toHaveLength(0);
     });
   });
 

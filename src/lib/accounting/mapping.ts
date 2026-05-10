@@ -32,9 +32,15 @@
  *
  * 2. v3 §B.3's full O.x entry combines suspense release + Unisend accrual +
  *    wallet credit + invoice issuance into one balanced 6-line entry. PR #2
- *    ships only the invoice slice (4 lines: Dr 5351, Cr 6310-C, Cr 6310-S,
- *    Cr 5710-…) because suspense and Unisend accruals are PR #5 lifecycle
- *    integration concerns. The slice is balanced on its own.
+ *    ships only the invoice slice — 2 to 4 lines depending on payload:
+ *    Dr 5351 always; Cr 6310-C only when commission_net > 0; Cr 6310-S only
+ *    when shipping_net > 0 (zero-shipping orders skip the line); Cr 5710-…
+ *    only when vat_account is set AND vat_cents > 0 (B2B RC and tiny-amount
+ *    sub-cent VAT both skip the VAT line). All conditional pushes mirror
+ *    buildVendorRcLines's `rc_vat_cents > 0` guard so journal_lines CHECK
+ *    `(debit=0) <> (credit=0)` is never violated. Suspense and Unisend
+ *    accruals are PR #5 lifecycle integration concerns. The slice is
+ *    balanced on its own.
  */
 
 import { decomposeFx, requireNumber, requireString, roundHalfUpCents } from './computer';
