@@ -27,6 +27,8 @@
  * compute aggregations in JS. Single roundtrip, simple JSONB-free queries.
  */
 
+import './_load-env';
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {

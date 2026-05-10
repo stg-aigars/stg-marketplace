@@ -21,6 +21,8 @@
  *     # bypass the user_profiles-is-anonymized safety check (only for known-broken cases)
  */
 
+import './_load-env';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
