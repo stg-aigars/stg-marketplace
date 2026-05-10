@@ -59,8 +59,16 @@ vi.mock('@/lib/services/unisend/shipping', () => ({
   cancelOrderShipment: vi.fn()
 }));
 
+// trackServer is fired inside completeOrderWithGL on the orphan path.
+// Mocking at module level lets the flag-OFF test assert telemetry is
+// transitively not called when the wrap path is bypassed entirely.
+vi.mock('@/lib/analytics/track-server', () => ({
+  trackServer: vi.fn()
+}));
+
 import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
 import { completeOrderWithGL } from '@/lib/accounting/lifecycle-wraps';
+import { trackServer } from '@/lib/analytics/track-server';
 import { creditWallet } from '@/lib/services/wallet';
 import type { OrderWithRelations } from '@/lib/orders/types';
 import { creditSellerWallet } from './order-transitions';
@@ -93,11 +101,15 @@ describe('creditSellerWallet — flag-branch contract', () => {
     vi.clearAllMocks();
   });
 
-  it('flag-OFF: calls legacy creditWallet, does NOT call completeOrderWithGL', async () => {
+  it('flag-OFF: calls legacy creditWallet, does NOT call completeOrderWithGL or fire telemetry', async () => {
     vi.mocked(isAccountingEngineEnabled).mockReturnValue(false);
     await creditSellerWallet('order_uuid_test', orderFixture);
     expect(creditWallet).toHaveBeenCalledTimes(1);
     expect(completeOrderWithGL).not.toHaveBeenCalled();
+    // Per Finding 2 from commit 6 review: explicit telemetry-quiet
+    // assertion on the flag-OFF path. trackServer fires from inside
+    // completeOrderWithGL only; flag-OFF bypasses the wrap entirely.
+    expect(trackServer).not.toHaveBeenCalled();
   });
 
   it('flag-ON: calls completeOrderWithGL, does NOT call legacy creditWallet', async () => {

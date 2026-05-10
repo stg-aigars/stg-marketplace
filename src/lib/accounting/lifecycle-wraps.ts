@@ -51,12 +51,33 @@ interface CompleteOrderWithGLResult {
  * identity columns (country, vat_number, iban) are duplicated from
  * user_profiles for audit immutability."
  *
- * Today's user_profiles schema only carries `country` and `full_name` (no
- * tax_status, vat_number, vies_verified_at, iban). The created counterparty
- * defaults to `tax_status='private'` — B2B reverse-charge (O.2/O.4) won't
- * fire until those columns ship on user_profiles in a future PR. That gap
- * is a marketplace concern, not an accounting one — the catalog supports
- * B2B RC; it just has no source data for vat_registered status today.
+ * SILENT-DRIFT WARNING — counterparty.tax_status default = 'private':
+ *
+ * Today's user_profiles schema only carries `country` and `full_name`. The
+ * accounting catalog supports B2B reverse-charge routing (O.2 LT, O.4 EE),
+ * but those types require counterparty.tax_status='vat_registered' AND a
+ * non-null vies_verified_at — neither of which user_profiles can source
+ * today. Every counterparty created here defaults to `tax_status='private'`,
+ * meaning B2B sellers (if any exist on the marketplace) post their
+ * completions to O.3 (LT B2C OSS) or O.5 (EE B2C OSS) instead of O.2 / O.4.
+ *
+ * This is a marketplace data-model gap, not an accounting bug. The catalog
+ * is correct; it has no source data for vat_registered status. When
+ * `user_profiles.tax_status`, `user_profiles.vat_number`,
+ * `user_profiles.vies_verified_at` ship in a future PR (alongside the
+ * collection UX), this resolver gets updated to source those fields.
+ * Because counterparty identity is snapshotted at first-transaction time
+ * per migration 093's contract, existing counterparties are NOT
+ * retroactively updated — the marketplace fix would also need to amend
+ * each affected seller's counterparty (or accept the historical drift).
+ *
+ * If a seller's tax classification changes between transactions, that's
+ * the SAME concern the snapshot model already accepts: counterparty
+ * snapshots a point-in-time identity; subsequent UX-driven changes to the
+ * source of truth (user_profiles) require an explicit reconciliation step.
+ *
+ * See CLAUDE.md "Accounting Module" → "counterparty.tax_status default" for
+ * the canonical statement.
  */
 async function resolveSellerCounterparty(
   supabase: SupabaseClient,
