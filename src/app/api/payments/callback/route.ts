@@ -123,7 +123,7 @@ async function handleCartCallback(
     console.error(
       `[Payments] Cart order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but group has "${group.order_number}"`
     );
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'cart order_reference mismatch');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart order_reference mismatch');
     return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
   }
 
@@ -146,7 +146,7 @@ async function handleCartCallback(
   const expectedAmount = (expectedEverypayAmountCents / 100).toFixed(2);
   if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
     console.error(`[Payments] Cart amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'cart amount mismatch');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart amount mismatch');
     return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
   }
 

@@ -146,7 +146,7 @@ async function processOrderEvents(
         statusChanged = true;
         newStatus = 'delivered';
 
-        void logAuditEvent({
+        void logAuditEvent(supabase, {
           actorType: 'cron',
           action: 'order.status_changed',
           resourceType: 'order',
@@ -224,7 +224,7 @@ async function processOrderEvents(
         statusChanged = true;
         newStatus = 'shipped';
 
-        void logAuditEvent({
+        void logAuditEvent(supabase, {
           actorType: 'cron',
           action: 'order.status_changed',
           resourceType: 'order',
@@ -324,7 +324,7 @@ async function processOrderEvents(
             auditTrigger: 'tracking_returning',
           });
 
-          void logAuditEvent({
+          void logAuditEvent(supabase, {
             actorType: 'cron',
             action: 'order.parcel_returning',
             resourceType: 'order',

@@ -232,7 +232,7 @@ export async function POST(request: Request) {
         if (error) console.error('[Payments] CRITICAL: Failed to store cart payment reference:', error);
       });
 
-    void logAuditEvent({
+    void logAuditEvent(serviceClient, {
       actorId: user.id,
       actorType: 'user',
       action: 'payment.cart_created',

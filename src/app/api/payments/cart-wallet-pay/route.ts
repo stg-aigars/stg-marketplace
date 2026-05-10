@@ -212,7 +212,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorId: user.id,
     actorType: 'user',
     action: 'payment.cart_wallet_completed',
