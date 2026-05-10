@@ -185,7 +185,16 @@ export function buildRefundEvent(input: BuildRefundEventInput): PostingEvent {
     return {
       event_type: 'order.partial_refunded',
       source_doc_type: 'order',
-      source_doc_id: input.order_id,
+      // Per-credit-note idempotency: a single order can have multiple partial
+      // refunds over time (e.g., €30 today, €20 next week). Each must produce
+      // its own O.9 journal entry. Using order_id as source_doc_id would
+      // collide on the (source_doc_type, source_doc_id, type_id) UNIQUE index
+      // (migration 097) and the engine would silently return the first refund
+      // on the second call. credit_note_number is unique per refund event by
+      // construction. (Full refunds O.7/O.8 below correctly keep source_doc_id
+      // = order_id — an order is fully refunded only once; retries of the same
+      // call should idempotency-skip.)
+      source_doc_id: input.credit_note_number,
       posting_date: input.posting_date,
       accounting_period: input.accounting_period,
       tax_period: input.tax_period,

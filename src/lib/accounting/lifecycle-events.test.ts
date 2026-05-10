@@ -256,6 +256,60 @@ describe('buildRefundEvent', () => {
     const matched = dispatch(ctxFromEvent(event, lvSeller()));
     expect(matched.id).toBe('O.9');
   });
+
+  it('partial refund source_doc_id is credit_note_number (per-refund idempotency, not per-order)', () => {
+    // Two partial refunds of the same order produce DISTINCT source_doc_id values.
+    // Without this, the journal_entries (source_doc_type, source_doc_id, type_id)
+    // UNIQUE index from migration 097 would collide and silently suppress the
+    // second refund. Lock the shape to prevent regression — the parent RPC at
+    // commit 7 depends on this.
+    const baseInput = {
+      order_id: 'order_repeat',
+      seller_counterparty_id: lvSeller().id,
+      original_invoice_number: 'STG-2027-00010',
+      refund_type: 'partial' as const,
+      original_item_value_cents: 10000,
+      original_commission_gross_cents: 1000,
+      original_shipping_value_cents: 0,
+      refund_shipping_cents: 0,
+      vat_rate: 0.21,
+      vat_country: 'LV' as const,
+      vat_account: '5710-LV-OUT',
+      posting_date: '2027-01-20',
+      accounting_period: '2027-01',
+      tax_period: '2027-01'
+    };
+    const refund_a = buildRefundEvent({
+      ...baseInput,
+      credit_note_number: 'STG-CN-2027-00010-A',
+      refund_item_cents: 3000
+    });
+    const refund_b = buildRefundEvent({
+      ...baseInput,
+      credit_note_number: 'STG-CN-2027-00010-B',
+      refund_item_cents: 2000
+    });
+    expect(refund_a.source_doc_id).toBe('STG-CN-2027-00010-A');
+    expect(refund_b.source_doc_id).toBe('STG-CN-2027-00010-B');
+    expect(refund_a.source_doc_id).not.toBe(refund_b.source_doc_id);
+  });
+
+  it('full refund source_doc_id stays order_id (single full refund per order; retry idempotency)', () => {
+    // O.7/O.8 keep source_doc_id=order_id intentionally — an order is fully
+    // refunded only once; idempotency on retry returns the original entry.
+    const event = buildRefundEvent({
+      order_id: 'order_full',
+      seller_counterparty_id: lvSeller().id,
+      original_invoice_number: 'STG-2027-00011',
+      credit_note_number: 'STG-CN-2027-00011',
+      refund_type: 'full_current',
+      posting_date: '2027-01-20',
+      accounting_period: '2027-01',
+      tax_period: '2027-01',
+      lines: [{ account_code: '6310-C', debit_cents: 826, credit_cents: 0 }]
+    });
+    expect(event.source_doc_id).toBe('order_full');
+  });
 });
 
 // ---------------------------------------------------------------------------
