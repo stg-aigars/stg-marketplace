@@ -124,12 +124,13 @@ const periodHardLocked = {
  *
  * For a period NOT covered by the Phase 0 fixture (manual_pending on item 2
  * → no 2610 ledger query):
- *   periods:         [getPeriodRow]
- *   journal_lines:   [item1 TB, item3 5351, item4 5590, item5 2351,
- *                     item6 5410-UN, item6 5410-EP, item7 2630, item8 5710-*]
- *   accounts:        [item4 5590, item5 2351, item6 UN, item6 EP, item7 2630]
- *   wallets:         [item3 wallet table, item9 lt(0) check]
- *   journal_entries: [item8 P.1/P.3 lookup, getEntriesPostedSince]
+ *   periods:               [getPeriodRow]
+ *   journal_lines:         [item1 TB, item3 5351, item4 5590, item5 2351,
+ *                           item6 5410-UN, item6 5410-EP, item7 2630, item8 5710-*]
+ *   accounts:              [item4 5590, item5 2351, item6 UN, item6 EP, item7 2630]
+ *   wallet_transactions:   [item3 per-user balance_after_cents AS OF asOf]
+ *   wallets:               [item9 lt(0) check]
+ *   journal_entries:       [item8 P.1/P.3 lookup, getEntriesPostedSince]
  *
  * For a period IN the Phase 0 fixture (item 2 queries 2610 ledger):
  *   journal_lines insertion order shifts — item 2's ledger query lands
@@ -264,9 +265,11 @@ function buildHappyPathQueues(
       { data: accountRow5410EP, error: null },
       { data: accountRow2630, error: null }
     ],
+    wallet_transactions: [
+      // Item 3 per-user balance_after_cents lookup (period-scoped).
+      { data: [], error: null }
+    ],
     wallets: [
-      // Item 3 wallets table for integrity check.
-      { data: [], error: null },
       // Item 9 negative-balance check.
       { data: [], error: null }
     ],
@@ -718,8 +721,9 @@ describe('getPeriodCloseChecklist — item 9 (wallets non-negative)', () => {
 
   it('fails when one or more wallets have negative balances', async () => {
     const queues = buildHappyPathQueues(periodOpen);
-    // wallets queue: [0] = item 3 (full set), [1] = item 9 (lt 0 filter).
-    queues.wallets[1] = {
+    // wallets queue: [0] = item 9 (lt 0 filter); item 3 now reads
+    // wallet_transactions, not wallets.
+    queues.wallets[0] = {
       data: [
         { user_id: 'user-1', balance_cents: -500 },
         { user_id: 'user-2', balance_cents: -100 }
@@ -769,8 +773,9 @@ describe('getPeriodCloseChecklist — can_soft_lock', () => {
     });
     // Use the Phase-0-matching ledger so item 2 passes...
     queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
-    // ...but break item 9 (negative wallet).
-    queues.wallets[1] = {
+    // ...but break item 9 (negative wallet). wallets[0] is now item 9's
+    // lt(0) check (item 3 reads wallet_transactions, not wallets).
+    queues.wallets[0] = {
       data: [{ user_id: 'u', balance_cents: -100 }],
       error: null
     };

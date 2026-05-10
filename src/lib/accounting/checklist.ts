@@ -28,7 +28,7 @@ import {
   getEntriesPostedSince,
   getPeriodRow,
   getTrialBalance,
-  getWalletIntegrity
+  getWalletIntegrityAsOf
 } from './queries';
 import type { PeriodStatus, PeriodType } from './types';
 
@@ -197,9 +197,12 @@ async function buildItem2(
   };
 }
 
-/** Item 3 — Wallet integrity: GL 5351 vs wallets.balance_cents. */
-async function buildItem3(supabase: SupabaseClient): Promise<ChecklistItem> {
-  const integrity = await getWalletIntegrity(supabase);
+/** Item 3 — Wallet integrity: GL 5351 vs wallet table, period-scoped to asOf. */
+async function buildItem3(
+  supabase: SupabaseClient,
+  asOf: string
+): Promise<ChecklistItem> {
+  const integrity = await getWalletIntegrityAsOf(supabase, asOf);
   const reconciled =
     integrity.delta_cents === 0 && integrity.unattributed_gl_cents === 0;
   if (reconciled) {
@@ -443,7 +446,7 @@ export async function getPeriodCloseChecklist(
   // ordering and clear failure-source attribution. Volumes are tiny.
   const item1 = await buildItem1(supabase, asOf);
   const item2 = await buildItem2(supabase, periodKey, asOf);
-  const item3 = await buildItem3(supabase);
+  const item3 = await buildItem3(supabase, asOf);
   // TODO(post-launch): items 4-7 could derive closing balances from item 1's
   // trial balance (tb.rows) instead of issuing per-account getAccountLedger calls.
   // Each item currently triggers a full-history fetch + accounts-table roundtrip.

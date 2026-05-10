@@ -602,6 +602,193 @@ export async function getWalletIntegrity(
 }
 
 // =============================================================================
+// getWalletIntegrityAsOf
+// =============================================================================
+
+/**
+ * Period-scoped variant of getWalletIntegrity — answers "as of date X, was the
+ * GL 5351 liability in balance with seller wallet state at that time?" Used by
+ * the period-close checklist (item 3) to gate soft-lock on period-scoped
+ * reconciliation, not global present-tense reconciliation.
+ *
+ * Trust level: balance_after_cents is a denormalized snapshot maintained by the
+ * wallet RPCs at write time (same denormalization pattern as wallets.balance_cents
+ * in getWalletIntegrity). Both functions trust the denormalization; if we ever
+ * distrust either, they migrate together to compute from raw
+ * wallet_transactions.amount_cents + type. Don't change just one side.
+ *
+ * Phase 0 case (no live wallet_transactions ≤ 2026-03-31): both sums are 0,
+ * delta is 0, per_seller_deltas is empty.
+ */
+export async function getWalletIntegrityAsOf(
+  supabase: SupabaseClient,
+  asOf: string
+): Promise<WalletIntegrityCheck> {
+  // 1. GL side: every line on account 5351 with posting_date <= asOf, with
+  // counterparty for per-seller. The `journal_entries!inner(posting_date)`
+  // join + .lte('journal_entries.posting_date', asOf) mirrors getTrialBalance
+  // and getAccountLedger.
+  const { data: glLineRows, error: glError } = await supabase
+    .from('journal_lines')
+    .select('debit_cents, credit_cents, counterparty_id, journal_entries!inner(posting_date)')
+    .eq('account_code', '5351')
+    .lte('journal_entries.posting_date', asOf);
+
+  throwIfError(glError, 'getWalletIntegrityAsOf: journal_lines 5351 SELECT failed');
+
+  const glRows = (glLineRows ?? []) as Array<{
+    debit_cents: number;
+    credit_cents: number;
+    counterparty_id: string | null;
+  }>;
+
+  let gl_5351_sum_cents = 0;
+  // GL balance per counterparty_id (signed credit-normal: credit - debit).
+  const glPerCounterparty = new Map<string, number>();
+  // GL balance for lines with no counterparty_id at all — accumulated
+  // separately so we don't silently drop them during the per-seller
+  // resolution pass below. Lines with a counterparty_id whose row is
+  // missing or whose user_id is null also flow into unattributed_gl_cents
+  // (handled in the resolution loop further down).
+  let unattributed_gl_cents = 0;
+  for (const row of glRows) {
+    const signed = row.credit_cents - row.debit_cents;
+    gl_5351_sum_cents += signed;
+    if (row.counterparty_id) {
+      glPerCounterparty.set(
+        row.counterparty_id,
+        (glPerCounterparty.get(row.counterparty_id) ?? 0) + signed
+      );
+    } else {
+      unattributed_gl_cents += signed;
+    }
+  }
+
+  // 2. Wallet table side: per-user balance_after_cents AS OF asOf. Read every
+  // wallet_transactions row with created_at <= asOf, ordered DESC, then take
+  // the FIRST (most recent) balance_after_cents per user_id. Users with no
+  // rows ≤ asOf have wallet balance = 0 (lazily-created wallet pattern from
+  // migration 018).
+  //
+  // balance_after_cents is a denormalized snapshot maintained by the wallet
+  // RPCs (migrations 070/071) — same trust level as wallets.balance_cents in
+  // getWalletIntegrity. See JSDoc above for the joint-migration discipline.
+  const { data: walletTxRows, error: walletError } = await supabase
+    .from('wallet_transactions')
+    .select('user_id, balance_after_cents, created_at')
+    .lte('created_at', asOf)
+    .order('created_at', { ascending: false });
+
+  throwIfError(walletError, 'getWalletIntegrityAsOf: wallet_transactions SELECT failed');
+
+  const walletTxs = (walletTxRows ?? []) as Array<{
+    user_id: string;
+    balance_after_cents: number;
+    created_at: string;
+  }>;
+  const walletByUserId = new Map<string, number>();
+  let wallet_table_sum_cents = 0;
+  // Rows are DESC by created_at — first row per user_id is the most recent
+  // ≤ asOf, which is the canonical "balance as of asOf" for that user.
+  for (const tx of walletTxs) {
+    if (walletByUserId.has(tx.user_id)) continue;
+    walletByUserId.set(tx.user_id, tx.balance_after_cents);
+    wallet_table_sum_cents += tx.balance_after_cents;
+  }
+
+  // 3. Resolve seller counterparties (id → user_id) for the per-seller diff.
+  // Identical to getWalletIntegrity from this point on.
+  const counterpartyIds = Array.from(glPerCounterparty.keys());
+  const cpUserIdById = new Map<string, string | null>();
+  if (counterpartyIds.length > 0) {
+    const { data: cpRows, error: cpError } = await supabase
+      .from('counterparties')
+      .select('id, user_id')
+      .in('id', counterpartyIds);
+
+    throwIfError(cpError, 'getWalletIntegrityAsOf: counterparties SELECT failed');
+
+    for (const cp of (cpRows ?? []) as Array<{ id: string; user_id: string | null }>) {
+      cpUserIdById.set(cp.id, cp.user_id);
+    }
+  }
+
+  // Walk the GL counterparties and resolve to user_ids. Counterparties
+  // missing from cpUserIdById (deleted row) or whose user_id is null
+  // (system counterparty like VID / STG_INTERNAL) cannot be attributed to
+  // a seller — their balance flows into unattributed_gl_cents so the
+  // global delta_cents stays explainable.
+  const gl_by_user = new Map<string, number>();
+  for (const [cpId, balance] of glPerCounterparty) {
+    const userId = cpUserIdById.get(cpId);
+    if (!userId) {
+      unattributed_gl_cents += balance;
+      continue;
+    }
+    gl_by_user.set(userId, (gl_by_user.get(userId) ?? 0) + balance);
+  }
+
+  const allUserIds = new Set<string>([...gl_by_user.keys(), ...walletByUserId.keys()]);
+  const userIdsWithDelta: string[] = [];
+  const perSellerNoHandle: Array<{
+    seller_user_id: string;
+    gl_balance_cents: number;
+    wallet_balance_cents: number;
+    delta_cents: number;
+  }> = [];
+
+  for (const userId of allUserIds) {
+    const glBalance = gl_by_user.get(userId) ?? 0;
+    const walletBalance = walletByUserId.get(userId) ?? 0;
+    const delta = glBalance - walletBalance;
+    if (delta !== 0) {
+      userIdsWithDelta.push(userId);
+      perSellerNoHandle.push({
+        seller_user_id: userId,
+        gl_balance_cents: glBalance,
+        wallet_balance_cents: walletBalance,
+        delta_cents: delta
+      });
+    }
+  }
+
+  // Resolve seller handles via public_profiles (full_name is the closest
+  // thing we have to a user-facing handle; null-tolerant).
+  const handlesByUserId = new Map<string, string | null>();
+  if (userIdsWithDelta.length > 0) {
+    const { data: profileRows, error: profileError } = await supabase
+      .from('public_profiles')
+      .select('id, full_name')
+      .in('id', userIdsWithDelta);
+
+    throwIfError(profileError, 'getWalletIntegrityAsOf: public_profiles SELECT failed');
+
+    for (const p of (profileRows ?? []) as Array<{ id: string; full_name: string | null }>) {
+      handlesByUserId.set(p.id, p.full_name);
+    }
+  }
+
+  const per_seller_deltas = perSellerNoHandle
+    .map((row) => ({
+      ...row,
+      seller_handle: handlesByUserId.get(row.seller_user_id) ?? null
+    }))
+    .sort((a, b) => Math.abs(b.delta_cents) - Math.abs(a.delta_cents));
+
+  const delta_cents = gl_5351_sum_cents - wallet_table_sum_cents;
+
+  return {
+    as_of: asOf,
+    gl_5351_sum_cents,
+    wallet_table_sum_cents,
+    delta_cents,
+    is_reconciled: delta_cents === 0,
+    unattributed_gl_cents,
+    per_seller_deltas
+  };
+}
+
+// =============================================================================
 // getPeriodRow
 // =============================================================================
 
