@@ -389,3 +389,206 @@ describe('buildOrderRevenueLines — commission-invoice slice', () => {
     });
   });
 });
+
+// ===========================================================================
+// O.9 — Partial refund (proportional split; PR #5 commit 4)
+//
+// Math per docs/legal_audit/accountant-completion-entry-signoff.md v1.2:
+//   partial_commission_gross = round_half_up(original_commission_gross × refund_item / original_item)
+//   partial_commission_net   = round_half_up(partial_commission_gross / (1 + vat_rate))
+//   partial_commission_vat   = partial_commission_gross − partial_commission_net
+// Lines: Dr 6310-C net + Dr {vat_account} vat + Cr 5351 gross. Σ Dr = Σ Cr.
+// ===========================================================================
+
+describe('O.9 — partial refund proportional split (VAT-inclusive)', () => {
+  it('€33.33 partial of a €100 LV order — one-third VAT recompute', () => {
+    // Original: item €100, commission gross €10 (10% of item), 21% LV VAT.
+    // Partial refund: €33.33 of item only.
+    // Ratio: 33.33/100 = 0.3333 → commission_gross 333¢ → net 275¢ + vat 58¢.
+    const o9 = findMappingById('O.9')!;
+    const result = o9.compute(
+      buildInput(lvSeller(), null, {
+        order_id: 'order_test',
+        original_invoice_number: 'STG-2027-00001',
+        credit_note_number: 'STG-CN-2027-00001',
+        original_item_value_cents: 10000,
+        original_commission_gross_cents: 1000,
+        original_shipping_value_cents: 0,
+        refund_item_cents: 3333,
+        refund_shipping_cents: 0,
+        vat_rate: 0.21,
+        vat_country: 'LV',
+        vat_account: '5710-LV-OUT'
+      })
+    );
+    const debit_commission = result.lines.find((l) => l.account_code === '6310-C')!;
+    const debit_vat = result.lines.find((l) => l.account_code === '5710-LV-OUT')!;
+    const credit_wallet = result.lines.find((l) => l.account_code === '5351')!;
+    expect(debit_commission.debit_cents).toBe(275);
+    expect(debit_vat.debit_cents).toBe(58);
+    expect(credit_wallet.credit_cents).toBe(333);
+    // No 6310-S line — shipping not refunded.
+    expect(result.lines.find((l) => l.account_code === '6310-S')).toBeUndefined();
+    // Balanced.
+    const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(debits).toBe(credits);
+    expect(debits).toBe(333);
+  });
+
+  it('€50 partial of a €105 LT B2C OSS order — cross-rate VAT routes to 5711', () => {
+    // Original: item €100 + shipping €5 = €105 cart, commission €10 gross,
+    // 21% LT VAT (LT B2C OSS routing). Partial refund: €50 of item; buyer keeps shipping.
+    // Ratio: 50/100 = 0.5 → commission_gross 500¢ → net 413¢ + vat 87¢.
+    // VAT account is 5711 (OSS-LT) not 5710-LV-OUT.
+    const o9 = findMappingById('O.9')!;
+    const result = o9.compute(
+      buildInput(ltSellerB2C(), null, {
+        order_id: 'order_test',
+        original_invoice_number: 'STG-2027-00002',
+        credit_note_number: 'STG-CN-2027-00002',
+        original_item_value_cents: 10000,
+        original_commission_gross_cents: 1000,
+        original_shipping_value_cents: 500,
+        refund_item_cents: 5000,
+        refund_shipping_cents: 0,
+        vat_rate: 0.21,
+        vat_country: 'LT',
+        vat_account: '5711'
+      })
+    );
+    const debit_commission = result.lines.find((l) => l.account_code === '6310-C')!;
+    const debit_vat = result.lines.find((l) => l.account_code === '5711')!;
+    const credit_wallet = result.lines.find((l) => l.account_code === '5351')!;
+    expect(debit_commission.debit_cents).toBe(413);
+    expect(debit_vat.debit_cents).toBe(87);
+    expect(credit_wallet.credit_cents).toBe(500);
+    // No 6310-S — shipping not refunded.
+    expect(result.lines.find((l) => l.account_code === '6310-S')).toBeUndefined();
+    // No 5710-LV-OUT — OSS routing does not use the LV-domestic VAT account.
+    expect(result.lines.find((l) => l.account_code === '5710-LV-OUT')).toBeUndefined();
+    // Balanced.
+    const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(debits).toBe(credits);
+    expect(debits).toBe(500);
+  });
+
+  it('€1.00 minimum-partial edge case — integer-cents discipline preserved', () => {
+    // Original: item €100, commission €10 gross, 21% LV VAT.
+    // Partial refund: €1.00 (= 100 cents).
+    // Ratio: 100/10000 = 0.01 → commission_gross 10¢ → net 8¢ + vat 2¢.
+    const o9 = findMappingById('O.9')!;
+    const result = o9.compute(
+      buildInput(lvSeller(), null, {
+        order_id: 'order_test',
+        original_invoice_number: 'STG-2027-00003',
+        credit_note_number: 'STG-CN-2027-00003',
+        original_item_value_cents: 10000,
+        original_commission_gross_cents: 1000,
+        original_shipping_value_cents: 0,
+        refund_item_cents: 100,
+        refund_shipping_cents: 0,
+        vat_rate: 0.21,
+        vat_country: 'LV',
+        vat_account: '5710-LV-OUT'
+      })
+    );
+    const debit_commission = result.lines.find((l) => l.account_code === '6310-C')!;
+    const debit_vat = result.lines.find((l) => l.account_code === '5710-LV-OUT')!;
+    const credit_wallet = result.lines.find((l) => l.account_code === '5351')!;
+    expect(debit_commission.debit_cents).toBe(8);
+    expect(debit_vat.debit_cents).toBe(2);
+    expect(credit_wallet.credit_cents).toBe(10);
+    // No zero-amount lines (CHECK constraint on journal_lines).
+    for (const line of result.lines) {
+      expect((line.debit_cents === 0) !== (line.credit_cents === 0)).toBe(true);
+    }
+    // Balanced.
+    const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(debits).toBe(credits);
+  });
+
+  it('€100 of €100 — full amount via partial path matches O.7 happy-path math', () => {
+    // 100% partial: ratio = 1.0 → commission_gross = original_commission_gross.
+    // Should produce the same line amounts as a full refund's reversal of
+    // the original O.x entry — the equivalence O.7 vs O.9-with-full-ratio.
+    const o9 = findMappingById('O.9')!;
+    const result = o9.compute(
+      buildInput(lvSeller(), null, {
+        order_id: 'order_test',
+        original_invoice_number: 'STG-2027-00004',
+        credit_note_number: 'STG-CN-2027-00004',
+        original_item_value_cents: 10000,
+        original_commission_gross_cents: 1000,
+        original_shipping_value_cents: 0,
+        refund_item_cents: 10000,
+        refund_shipping_cents: 0,
+        vat_rate: 0.21,
+        vat_country: 'LV',
+        vat_account: '5710-LV-OUT'
+      })
+    );
+    const debit_commission = result.lines.find((l) => l.account_code === '6310-C')!;
+    const debit_vat = result.lines.find((l) => l.account_code === '5710-LV-OUT')!;
+    const credit_wallet = result.lines.find((l) => l.account_code === '5351')!;
+    // 1000¢ gross → splitInclusiveVat(1000, 0.21) → net=826, vat=174
+    expect(debit_commission.debit_cents).toBe(826);
+    expect(debit_vat.debit_cents).toBe(174);
+    expect(credit_wallet.credit_cents).toBe(1000);
+    // Balanced.
+    const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(debits).toBe(credits);
+    expect(debits).toBe(1000);
+  });
+
+  it('B2B reverse-charge (O.2/O.4 origin) — no VAT line; commission gross = net', () => {
+    // For an LT B2B RC original (vat_rate = 0), gross = net and vat = 0.
+    // The vat_account is null so no VAT line emits. Lines: Dr 6310-C net, Cr 5351 gross.
+    const o9 = findMappingById('O.9')!;
+    const result = o9.compute(
+      buildInput(ltSellerB2B(), null, {
+        order_id: 'order_test',
+        original_invoice_number: 'STG-2027-00005',
+        credit_note_number: 'STG-CN-2027-00005',
+        original_item_value_cents: 10000,
+        original_commission_gross_cents: 1000,
+        original_shipping_value_cents: 0,
+        refund_item_cents: 5000,
+        refund_shipping_cents: 0,
+        vat_rate: 0,
+        vat_country: 'LT',
+        vat_account: null
+      })
+    );
+    const debit_commission = result.lines.find((l) => l.account_code === '6310-C')!;
+    const credit_wallet = result.lines.find((l) => l.account_code === '5351')!;
+    expect(debit_commission.debit_cents).toBe(500);
+    expect(credit_wallet.credit_cents).toBe(500);
+    // No VAT line at all.
+    expect(result.lines.length).toBe(2);
+    // Balanced.
+    const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(debits).toBe(credits);
+  });
+
+  it('rejects refund_item_cents > original_item_value_cents', () => {
+    const o9 = findMappingById('O.9')!;
+    expect(() => o9.compute(
+      buildInput(lvSeller(), null, {
+        order_id: 'o', original_invoice_number: 'i', credit_note_number: 'c',
+        original_item_value_cents: 1000,
+        original_commission_gross_cents: 100,
+        original_shipping_value_cents: 0,
+        refund_item_cents: 2000,  // > original
+        refund_shipping_cents: 0,
+        vat_rate: 0.21,
+        vat_country: 'LV',
+        vat_account: '5710-LV-OUT'
+      })
+    )).toThrow(/refund_item_cents.*cannot exceed/);
+  });
+});

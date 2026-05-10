@@ -713,6 +713,250 @@ const O_5: VatMappingEntry = {
 };
 
 // =============================================================================
+// O.7 — Outbound credit note, current-period refund
+//
+// Trigger: order.refunded AND payload.tax_period_alignment='current'.
+// Routing mirrors the original O.1–O.5; reverses the original posting in
+// full or in part, nets in the same period. PVN deklarācija nets in the
+// same line(s) as the original; ESL/OSS reversal flows to the next return.
+//
+// Pre-computed-lines compute() — caller (order_refund_with_gl) reads the
+// original O.x entry and produces the reversal lines via payload.lines.
+// =============================================================================
+
+const O_7: VatMappingEntry = {
+  id: 'O.7',
+  category: 'outgoing',
+  entry_type: 'refund',
+  description: 'Outbound credit note, current-period refund (mirrors original O.1–O.5)',
+  legal_basis: 'Articles 73, 90 of Directive 2006/112/EC (taxable amount adjustments); PVN likums credit-note rules',
+  routing: {
+    event_type: 'order.refunded',
+    conditions: { 'payload.tax_period_alignment': 'current' }
+  },
+  vat_base_rule: { source: 'pre_computed' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['order_id', 'original_invoice_number', 'credit_note_number', 'lines'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const lines = buildPreComputedLines(input.payload.lines, {
+      type_id: 'O.7',
+      defaultNarrative: 'Credit note line — current-period refund'
+    });
+    return { lines, posting_context_extras: {} };
+  }
+};
+
+// =============================================================================
+// O.8 — Outbound credit note, cross-period refund
+//
+// Trigger: order.refunded AND payload.tax_period_alignment='prior'.
+// Special handling: current accounting_period and tax_period; references
+// original via posting_context.original_invoice_id. PVN deklarācija line 57
+// (decrease of previously declared VAT) for LV-routed originals; OSS-routed
+// (LT/EE) originals refunded after their original quarter route to the
+// current OSS quarterly return with original_period reference (Article 61(2)
+// of Implementing Regulation 282/2011 — three-year correction window).
+//
+// Same compute pattern as O.7 — caller pre-computes reversal lines based on
+// the original O.x entry.
+// =============================================================================
+
+const O_8: VatMappingEntry = {
+  id: 'O.8',
+  category: 'outgoing',
+  entry_type: 'refund',
+  description: 'Outbound credit note, cross-period refund (PVN line 57 / OSS correction window)',
+  legal_basis: 'Articles 73, 90 of Directive 2006/112/EC; Article 61(2) of Implementing Regulation 282/2011 (three-year OSS correction window)',
+  routing: {
+    event_type: 'order.refunded',
+    conditions: { 'payload.tax_period_alignment': 'prior' }
+  },
+  vat_base_rule: { source: 'pre_computed' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: ['57'] },
+  posting_context_required_keys: ['order_id', 'original_invoice_number', 'original_invoice_id', 'original_period', 'credit_note_number', 'lines'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const lines = buildPreComputedLines(input.payload.lines, {
+      type_id: 'O.8',
+      defaultNarrative: 'Credit note line — cross-period refund'
+    });
+    return { lines, posting_context_extras: {} };
+  }
+};
+
+// =============================================================================
+// O.9 — Outbound credit note, partial refund with proportional split
+//
+// Trigger: order.partial_refunded.
+// Computes the proportional reversal of commission and shipping-mgmt revenue
+// (and their VAT) when the buyer is partially refunded. Posts the same shape
+// as O.7 / O.8 but with caller-supplied original totals + refund amounts —
+// engine derives the proportional gross splits, then VAT-inclusive
+// decomposes net + VAT per accountant-signoff v1.2.
+//
+// Math (per docs/legal_audit/accountant-completion-entry-signoff.md):
+//   partial_commission_gross = round_half_up(original_commission_gross × refund_item / original_item)
+//   partial_commission_net   = round_half_up(partial_commission_gross / (1 + vat_rate))
+//   partial_commission_vat   = partial_commission_gross − partial_commission_net
+//   (same shape for shipping if refund_shipping > 0)
+//   total_vat                = partial_commission_vat + partial_shipping_vat
+//   total_seller_credit      = partial_commission_gross + partial_shipping_gross
+//
+// Lines (always at least 2, balanced):
+//   Dr 6310-C partial_commission_net (omitted when 0 — typically gross=0 only)
+//   Dr 6310-S partial_shipping_net   (omitted when shipping not refunded)
+//   Dr {vat_account} total_vat       (omitted for B2B RC vat_account=null or sub-cent)
+//   Cr 5351 total_seller_credit      (always present — wallet sees gross refund)
+//
+// Period routing (current vs prior): caller decides; O.9 emits the lines,
+// the engine assigns accounting_period and tax_period from the PostingEvent.
+// The dispatcher routes O.9 by event_type='order.partial_refunded'
+// regardless of period.
+// =============================================================================
+
+const O_9: VatMappingEntry = {
+  id: 'O.9',
+  category: 'outgoing',
+  entry_type: 'refund',
+  description: 'Outbound credit note, partial refund (proportional split of commission and shipping with VAT-inclusive decomposition)',
+  legal_basis: 'Articles 73, 90 of Directive 2006/112/EC; PVN likums credit-note rules; accountant signoff v1.2 (10 May 2026)',
+  routing: {
+    event_type: 'order.partial_refunded',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'pre_computed' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: [
+    'order_id', 'original_invoice_number', 'credit_note_number',
+    'original_item_value_cents', 'original_commission_gross_cents', 'original_shipping_value_cents',
+    'refund_item_cents', 'refund_shipping_cents', 'vat_rate', 'vat_country'
+  ],
+  compute: (input: ComputeInput): ComputeOutput => {
+    if (!input.counterparty?.id) {
+      engineInvariant('O.9 compute requires counterparty');
+    }
+
+    const original_item_value_cents = requireNumber(input.payload, 'original_item_value_cents');
+    const original_commission_gross_cents = requireNumber(input.payload, 'original_commission_gross_cents', { allowZero: true });
+    const original_shipping_value_cents = requireNumber(input.payload, 'original_shipping_value_cents', { allowZero: true });
+    const refund_item_cents = requireNumber(input.payload, 'refund_item_cents', { allowZero: true });
+    const refund_shipping_cents = requireNumber(input.payload, 'refund_shipping_cents', { allowZero: true });
+    const vat_rate = requireNumber(input.payload, 'vat_rate', { allowZero: true });
+    const vat_country = requireString(input.payload, 'vat_country');
+    const vat_account = typeof input.payload.vat_account === 'string' ? input.payload.vat_account : null;
+
+    if (refund_item_cents > original_item_value_cents) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `O.9 refund_item_cents (${refund_item_cents}) cannot exceed original_item_value_cents (${original_item_value_cents})`,
+        context: { refund_item_cents, original_item_value_cents }
+      });
+    }
+    if (refund_shipping_cents > original_shipping_value_cents) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `O.9 refund_shipping_cents (${refund_shipping_cents}) cannot exceed original_shipping_value_cents (${original_shipping_value_cents})`,
+        context: { refund_shipping_cents, original_shipping_value_cents }
+      });
+    }
+
+    // Commission scales by refund_item / original_item ratio because commission
+    // is a derived 10% of item_value. Shipping is buyer-paid pass-through (no
+    // platform margin), so partial shipping refund maps 1:1 to refund_shipping.
+    const partial_commission_gross_cents = original_item_value_cents > 0
+      ? roundHalfUpCents(original_commission_gross_cents * (refund_item_cents / original_item_value_cents))
+      : 0;
+    const partial_shipping_gross_cents = refund_shipping_cents;
+
+    // VAT-inclusive decomposition per accountant-signoff v1.2.
+    const partial_commission = splitInclusiveVat(partial_commission_gross_cents, vat_rate);
+    const partial_shipping = splitInclusiveVat(partial_shipping_gross_cents, vat_rate);
+
+    const total_vat_cents = partial_commission.vat_cents + partial_shipping.vat_cents;
+    const total_seller_credit_cents = partial_commission_gross_cents + partial_shipping_gross_cents;
+
+    if (total_seller_credit_cents === 0) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: 'O.9 partial refund computes to zero — no journal lines to emit (refund amount too small to cover proportional commission/shipping)',
+        context: { refund_item_cents, refund_shipping_cents, original_commission_gross_cents, original_shipping_value_cents }
+      });
+    }
+
+    const lines: ComputedLine[] = [];
+
+    if (partial_commission.net_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: '6310-C',
+        debit_cents: partial_commission.net_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        vat_rate_snapshot: vat_rate,
+        vat_country: vat_country,
+        counterparty_type: 'seller',
+        counterparty_id: input.counterparty.id,
+        narrative: 'Partial reversal of commission revenue (O.9)'
+      });
+    }
+
+    if (partial_shipping.net_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: '6310-S',
+        debit_cents: partial_shipping.net_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        vat_rate_snapshot: vat_rate,
+        vat_country: vat_country,
+        counterparty_type: 'seller',
+        counterparty_id: input.counterparty.id,
+        narrative: 'Partial reversal of shipping-mgmt revenue (O.9)'
+      });
+    }
+
+    if (vat_account !== null && total_vat_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: vat_account,
+        debit_cents: total_vat_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        vat_country: vat_country,
+        narrative: 'Partial reversal of output VAT (O.9)'
+      });
+    }
+
+    lines.push({
+      line_number: lines.length + 1,
+      account_code: '5351',
+      debit_cents: 0,
+      credit_cents: total_seller_credit_cents,
+      currency: 'EUR',
+      counterparty_type: 'seller',
+      counterparty_id: input.counterparty.id,
+      narrative: 'Seller wallet — partial refund of commission/shipping (O.9)'
+    });
+
+    return {
+      lines,
+      posting_context_extras: {
+        partial_commission_gross_cents,
+        partial_commission_net_cents: partial_commission.net_cents,
+        partial_commission_vat_cents: partial_commission.vat_cents,
+        partial_shipping_gross_cents,
+        partial_shipping_net_cents: partial_shipping.net_cents,
+        partial_shipping_vat_cents: partial_shipping.vat_cents,
+        total_vat_cents,
+        total_seller_credit_cents
+      }
+    };
+  }
+};
+
+// =============================================================================
 // I.1 — LV vendor with standard VAT
 // =============================================================================
 
@@ -1335,6 +1579,147 @@ const P_7: VatMappingEntry = {
 };
 
 // =============================================================================
+// C.1 — Buyer cart payment, EveryPay card path
+//
+// Trigger: everypay.payment_confirmed AND payment_method='card'.
+// Cash leg only — money lands in 2630 EveryPay clearing pending the daily
+// settlement (C.3) that releases it to 2610 Swedbank. No VAT until the order
+// completes (then O.1–O.5 release the suspense and recognise revenue + VAT).
+// =============================================================================
+
+const C_1: VatMappingEntry = {
+  id: 'C.1',
+  category: 'cash_only',
+  entry_type: 'checkout',
+  description: 'Buyer cart payment via EveryPay card — cash arrival to clearing, suspense pending completion',
+  legal_basis: 'Cash-only flow; VAT recognition deferred to O.1–O.5 at completion',
+  routing: {
+    event_type: 'everypay.payment_confirmed',
+    conditions: { 'payload.payment_method': 'card' }
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['cart_payment_id', 'everypay_payment_id'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '2630',
+        debit_cents: gross_cart_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'EveryPay clearing — card cart payment received'
+      },
+      {
+        line_number: 2,
+        account_code: '5590',
+        debit_cents: 0,
+        credit_cents: gross_cart_cents,
+        currency: 'EUR',
+        narrative: 'Suspense — pre-completion'
+      }
+    ];
+    return { lines, posting_context_extras: { gross_cart_cents } };
+  }
+};
+
+// =============================================================================
+// C.2 — Buyer cart payment, PIS / bank-link path
+//
+// Trigger: everypay.payment_confirmed AND payment_method='bank_link'.
+// PIS settles direct to STG's IBAN (no 2630 EveryPay clearing involved); no
+// daily settlement step needed.
+// =============================================================================
+
+const C_2: VatMappingEntry = {
+  id: 'C.2',
+  category: 'cash_only',
+  entry_type: 'checkout',
+  description: 'Buyer cart payment via PIS / bank-link — direct cash arrival to Swedbank, suspense pending completion',
+  legal_basis: 'Cash-only flow; VAT recognition deferred to O.1–O.5 at completion',
+  routing: {
+    event_type: 'everypay.payment_confirmed',
+    conditions: { 'payload.payment_method': 'bank_link' }
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['cart_payment_id', 'everypay_payment_id'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '2610',
+        debit_cents: gross_cart_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Swedbank — PIS cart payment received'
+      },
+      {
+        line_number: 2,
+        account_code: '5590',
+        debit_cents: 0,
+        credit_cents: gross_cart_cents,
+        currency: 'EUR',
+        narrative: 'Suspense — pre-completion'
+      }
+    ];
+    return { lines, posting_context_extras: { gross_cart_cents } };
+  }
+};
+
+// =============================================================================
+// C.3 — EveryPay daily settlement to bank
+//
+// Trigger: everypay.daily_settlement_received. Moves accumulated card cart
+// payments from 2630 EveryPay clearing to 2610 Swedbank when EveryPay
+// settles the merchant batch. Currently driven by a staff manual action;
+// future automation via webhook reuses the same compute() with a different
+// trigger.
+// =============================================================================
+
+const C_3: VatMappingEntry = {
+  id: 'C.3',
+  category: 'cash_only',
+  entry_type: 'settlement',
+  description: 'EveryPay daily settlement — clearing balance moves to Swedbank',
+  legal_basis: 'Cash-only inter-asset transfer; no VAT impact',
+  routing: {
+    event_type: 'everypay.daily_settlement_received',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['everypay_settlement_id', 'batch_date', 'settlement_value_date', 'included_txn_refs'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const settlement_cents = requireNumber(input.payload, 'settlement_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '2610',
+        debit_cents: settlement_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Swedbank — EveryPay daily settlement inbound'
+      },
+      {
+        line_number: 2,
+        account_code: '2630',
+        debit_cents: 0,
+        credit_cents: settlement_cents,
+        currency: 'EUR',
+        narrative: 'EveryPay clearing — settlement clears balance'
+      }
+    ];
+    return { lines, posting_context_extras: { settlement_cents } };
+  }
+};
+
+// =============================================================================
 // C.4 — Wallet withdrawal (KYC gate triggered)
 // =============================================================================
 
@@ -1378,6 +1763,65 @@ const C_4: VatMappingEntry = {
       }
     ];
     return { lines, posting_context_extras: { withdrawal_cents } };
+  }
+};
+
+// =============================================================================
+// C.5 — Cash-only refund (full or partial buyer refund)
+//
+// Trigger: order.refund_initiated. Cash leg only — VAT reversal flows via
+// O.7 / O.8 / O.9 (paired emit at refund time).
+// Funding source determines the credit account: 'everypay' → Cr 2630;
+// 'bank' → Cr 2610. Caller-driven via payload.funding_source.
+// =============================================================================
+
+const C_5: VatMappingEntry = {
+  id: 'C.5',
+  category: 'cash_only',
+  entry_type: 'refund',
+  description: 'Cash-only refund (cash leg of buyer refund; pairs with O.7/O.8/O.9 for VAT reversal)',
+  legal_basis: 'Cash-only flow; VAT reversal deferred to paired O.7/O.8/O.9 emit',
+  routing: {
+    event_type: 'order.refund_initiated',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['order_id', 'refund_reference', 'funding_source'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const refund_cents = requireNumber(input.payload, 'refund_cents');
+    const funding_source = requireString(input.payload, 'funding_source');
+    if (funding_source !== 'everypay' && funding_source !== 'bank') {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `C.5 funding_source must be 'everypay' or 'bank' (got '${funding_source}')`,
+        context: { funding_source }
+      });
+    }
+    const credit_account = funding_source === 'everypay' ? '2630' : '2610';
+    const credit_narrative = funding_source === 'everypay'
+      ? 'EveryPay clearing — refund issued from clearing balance'
+      : 'Swedbank — refund issued from bank';
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '2351',
+        debit_cents: refund_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Refund clearing — buyer refund pending bank settlement'
+      },
+      {
+        line_number: 2,
+        account_code: credit_account,
+        debit_cents: 0,
+        credit_cents: refund_cents,
+        currency: 'EUR',
+        narrative: credit_narrative
+      }
+    ];
+    return { lines, posting_context_extras: { refund_cents, funding_source } };
   }
 };
 
@@ -1527,11 +1971,10 @@ const C_8: VatMappingEntry = {
 // =============================================================================
 
 /**
- * v3 mapping table type IDs in scope: 9 from PR #2 + 9 from PR #3 (Phase 0
- * backfill) + 2 from PR #4.5e (EE catalog gap) = 20 entries. First-match-wins
- * routing in dispatcher.ts evaluates in this order against the incoming
- * PostingEvent. Order matters when multiple types share an event_type — e.g.
- * O.2 must precede O.3 because O.2's conditions are stricter (vat_registered +
+ * v3 mapping table — 27 type IDs in scope. First-match-wins routing in
+ * dispatcher.ts evaluates in this order against the incoming PostingEvent.
+ * Order matters when multiple types share an event_type — e.g. O.2 must
+ * precede O.3 because O.2's conditions are stricter (vat_registered +
  * vies_verified_at) and would otherwise fall through to O.3 if not checked
  * first.
  *
@@ -1541,6 +1984,13 @@ const C_8: VatMappingEntry = {
  * `counterparty.country` and never overlap. The B2B-then-B2C ordering
  * preserves the most-specific-first invariant if a future type ever shares an
  * event_type with these.
+ *
+ * O.7 / O.8 share event_type='order.refunded' but discriminate on
+ * `payload.tax_period_alignment in {'current','prior'}` — exact-match
+ * disjunction; mutual-exclusivity test enforces no overlap.
+ *
+ * C.1 / C.2 share event_type='everypay.payment_confirmed' but discriminate
+ * on `payload.payment_method in {'card','bank_link'}` — same disjunction.
  *
  * H.1, H.2, H.3 share event_type='historical.override' but have mutually
  * exclusive `payload.override_type` discriminators, so order is for
@@ -1555,12 +2005,16 @@ const C_8: VatMappingEntry = {
  * dispatcher.test.ts.
  */
 export const MAPPING_TABLE: readonly VatMappingEntry[] = [
-  // Outgoing (B2B reverse-charge first, then B2C OSS, then LV catch-all)
+  // Outgoing — completion (B2B reverse-charge first, then B2C OSS, then LV catch-all)
   O_2,
   O_4,
   O_5,
   O_3,
   O_1,
+  // Outgoing — refund credit notes (O.7 / O.8 full; O.9 partial proportional split)
+  O_7,
+  O_8,
+  O_9,
   // Incoming (more specific vat_treatment routing first; I_4 country list excludes EU MS so order with I_3 is safe)
   I_4,
   I_2,
@@ -1575,8 +2029,12 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   H_1,
   H_2,
   H_3,
-  // Cash-only
+  // Cash-only (numeric order; predicates discriminate by event_type / payload — no precedence ambiguity)
+  C_1,
+  C_2,
+  C_3,
   C_4,
+  C_5,
   C_6,
   C_7,
   C_8

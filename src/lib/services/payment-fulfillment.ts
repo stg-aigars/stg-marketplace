@@ -36,8 +36,7 @@ export type CartFulfillmentOutcome =
 // ---------------------------------------------------------------------------
 
 export async function attemptAutoRefund(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>,
+  serviceClient: SupabaseClient,
   paymentReference: string,
   amountCents: number,
   reason: string
@@ -71,8 +70,7 @@ export async function fulfillCartPayment(
   group: CartCheckoutGroup,
   paymentReference: string,
   paymentState: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>,
+  serviceClient: SupabaseClient,
   paymentMethod: PaymentMethod = 'card',
   /**
    * cf-ipcountry header from the request that triggered fulfillment. Null when

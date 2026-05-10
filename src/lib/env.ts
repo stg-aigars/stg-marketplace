@@ -185,4 +185,9 @@ export const env = {
   facebook: {
     loginEnabled: process.env.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED === 'true',
   },
+  accounting: {
+    // PR #5 lifecycle integration flag. Default OFF; flipped per the cutover
+    // sequence in round-2 brief §6(f). See `src/lib/accounting/feature-flag.ts`.
+    engineEnabled: process.env.ACCOUNTING_ENGINE_ENABLED === 'true',
+  },
 } as const;

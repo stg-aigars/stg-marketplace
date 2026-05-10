@@ -291,6 +291,63 @@ const REPRESENTATIVES: Representative[] = [
       counterparty: null,
       payload: {}
     }
+  },
+  // PR #5 additions — refund credit notes (O.7 / O.8 / O.9) and cash-only flows (C.1 / C.2 / C.3 / C.5)
+  {
+    type_id: 'O.7',
+    ctx: {
+      event_type: 'order.refunded',
+      counterparty: lvSeller(),
+      payload: { tax_period_alignment: 'current' }
+    }
+  },
+  {
+    type_id: 'O.8',
+    ctx: {
+      event_type: 'order.refunded',
+      counterparty: lvSeller(),
+      payload: { tax_period_alignment: 'prior' }
+    }
+  },
+  {
+    type_id: 'O.9',
+    ctx: {
+      event_type: 'order.partial_refunded',
+      counterparty: lvSeller(),
+      payload: {}
+    }
+  },
+  {
+    type_id: 'C.1',
+    ctx: {
+      event_type: 'everypay.payment_confirmed',
+      counterparty: null,
+      payload: { payment_method: 'card' }
+    }
+  },
+  {
+    type_id: 'C.2',
+    ctx: {
+      event_type: 'everypay.payment_confirmed',
+      counterparty: null,
+      payload: { payment_method: 'bank_link' }
+    }
+  },
+  {
+    type_id: 'C.3',
+    ctx: {
+      event_type: 'everypay.daily_settlement_received',
+      counterparty: null,
+      payload: {}
+    }
+  },
+  {
+    type_id: 'C.5',
+    ctx: {
+      event_type: 'order.refund_initiated',
+      counterparty: null,
+      payload: { funding_source: 'everypay' }
+    }
   }
 ];
 
