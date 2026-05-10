@@ -21,6 +21,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { getPeriodCloseChecklist } from '@/lib/accounting/checklist';
 import {
   getAccountLedger,
   getJournalEntry,
@@ -459,4 +460,38 @@ describe('period-scoped wallet integrity (PR #4.5a)', () => {
       await cleanupSignedInClient(syntheticSeller);
     }
   });
+});
+
+describe('period-close checklist item 8 — H.1 recognition (PR #4.5a.1)', () => {
+  // Phase 0 v2 design files the December 2025 PVN deklarācija RC catch-up via
+  // the H.1 historical-filing-alignment override rather than a P.1 monthly
+  // consolidation. Item 8 must recognize H.1 with override_type =
+  // 'historical_filing_alignment' as a VAT consolidation, otherwise the
+  // 2025-12 lock runbook stays blocked.
+  const PHASE_0_PERIODS: ReadonlyArray<string> = [
+    '2025-07',
+    '2025-08',
+    '2025-09',
+    '2025-10',
+    '2025-11',
+    '2025-12',
+    '2026-01',
+    '2026-02',
+    '2026-03'
+  ];
+
+  it('2025-12 item 8 passes (H.1 historical-filing-alignment recognized as VAT consolidation)', async () => {
+    const checklist = await getPeriodCloseChecklist(staffPersona.client, '2025-12');
+    const item8 = checklist.items.find((i) => i.id === 8);
+    expect(item8?.status).toBe('pass');
+  });
+
+  it.each(PHASE_0_PERIODS)(
+    'Phase 0 period %s: item 8 status is pass or not_applicable (never fail)',
+    async (periodKey) => {
+      const checklist = await getPeriodCloseChecklist(staffPersona.client, periodKey);
+      const item8 = checklist.items.find((i) => i.id === 8);
+      expect(['pass', 'not_applicable']).toContain(item8?.status);
+    }
+  );
 });
