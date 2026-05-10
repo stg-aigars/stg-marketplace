@@ -317,6 +317,7 @@ export async function cleanupTestData() {
 
   // Delete remaining rows in reverse-dependency order (service role bypasses RLS).
   // Use gte/gt with min values to match all rows since supabase-js requires a filter for delete.
+  await supabase.from('withdrawal_requests').delete().gte('created_at', '1970-01-01');
   await supabase.from('wallet_transactions').delete().gte('created_at', '1970-01-01');
   await supabase.from('wallets').delete().gte('created_at', '1970-01-01');
   await supabase.from('order_items').delete().gte('created_at', '1970-01-01');
