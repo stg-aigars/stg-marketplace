@@ -210,7 +210,7 @@ async function buildItem3(
       id: 3,
       label: 'Wallet integrity (GL 5351 vs wallets table)',
       status: 'pass',
-      detail: `GL 5351 ${formatEur(integrity.gl_5351_sum_cents)} = wallet table ${formatEur(integrity.wallet_table_sum_cents)}; no unattributed lines.`,
+      detail: `As of ${asOf}: GL 5351 ${formatEur(integrity.gl_5351_sum_cents)} = wallet table ${formatEur(integrity.wallet_table_sum_cents)}; no unattributed lines.`,
       drillDownHref: '/staff/accounting/wallet-integrity'
     };
   }
@@ -218,7 +218,7 @@ async function buildItem3(
     id: 3,
     label: 'Wallet integrity (GL 5351 vs wallets table)',
     status: 'fail',
-    detail: `Delta ${formatEur(integrity.delta_cents)}; unattributed ${formatEur(integrity.unattributed_gl_cents)}; ${integrity.per_seller_deltas.length} seller(s) mismatched.`,
+    detail: `As of ${asOf}: delta ${formatEur(integrity.delta_cents)}; unattributed ${formatEur(integrity.unattributed_gl_cents)}; ${integrity.per_seller_deltas.length} seller(s) mismatched.`,
     drillDownHref: '/staff/accounting/wallet-integrity'
   };
 }
