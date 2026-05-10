@@ -275,7 +275,7 @@ async function autoCancelOrders(params: AutoCancelParams): Promise<void> {
         invoice_number: null, // Deadline cancellations never had an invoice
       });
 
-      void logAuditEvent({
+      void logAuditEvent(supabase, {
         actorType: 'cron',
         action: `order.auto_cancelled.${reason}`,
         resourceType: 'order',
@@ -443,7 +443,7 @@ async function escalateStaleShippedOrders(
         auditTrigger: 'enforce_deadlines',
       });
 
-      void logAuditEvent({
+      void logAuditEvent(supabase, {
         actorType: 'cron',
         action: 'order.delivery_escalated',
         resourceType: 'order',

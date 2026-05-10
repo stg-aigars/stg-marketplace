@@ -131,9 +131,9 @@ export async function POST(request: Request) {
   // captured so the audit-log row references the persistent record. If the insert fails,
   // we still ack the email-forward path (the notice already shipped to legal) — staff can
   // reconcile from email if the queue insert dropped.
+  const serviceClient = createServiceClient();
   let noticeId: string | null = null;
   try {
-    const serviceClient = createServiceClient();
     const { data: noticeRow, error: insertError } = await serviceClient
       .from('dsa_notices')
       .insert({
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
   // unauthenticated visitors), so 'user' without an actorId would misrepresent the
   // relationship. Reporter identity lives in metadata where it can be queried without
   // conflating with authenticated user-attributed rows.
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorType: 'system',
     action: 'dsa_notice.received',
     resourceType: 'dsa_notice',

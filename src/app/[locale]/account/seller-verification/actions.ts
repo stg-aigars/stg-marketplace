@@ -73,7 +73,7 @@ export async function submitSellerVerification(response: VerificationResponse): 
     return { error: 'Could not save your response. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(service, {
     actorType: 'user',
     actorId: user.id,
     action: 'seller.verification_responded',

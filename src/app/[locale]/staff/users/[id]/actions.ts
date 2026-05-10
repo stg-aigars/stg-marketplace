@@ -72,7 +72,7 @@ export async function updateSellerStatus(
     return { error: 'Could not update status. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(service, {
     actorType: 'user',
     actorId: actor.id,
     action: 'seller.status_changed',

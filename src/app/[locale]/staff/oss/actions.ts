@@ -88,7 +88,7 @@ export async function recordOssSubmission(input: MarkFiledInput): Promise<Action
     return { error: 'Could not record the submission. Please try again.' };
   }
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorType: 'user',
     actorId: user.id,
     action: 'oss.submission_recorded',

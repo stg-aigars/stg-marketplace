@@ -343,7 +343,7 @@ export async function cancelOrderShipment(orderId: string): Promise<void> {
     const unisend = getUnisendClient();
     await unisend.cancelShipment([order.unisend_parcel_id]);
 
-    void logAuditEvent({
+    void logAuditEvent(supabase, {
       actorType: 'system',
       action: 'shipment.cancelled',
       resourceType: 'order',

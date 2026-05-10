@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       }
 
       result.escalated += 1;
-      void logAuditEvent({
+      void logAuditEvent(supabase, {
         actorType: 'cron',
         action: 'seller.verification_unresponsive',
         resourceType: 'user',

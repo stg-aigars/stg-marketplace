@@ -62,7 +62,7 @@ export default async function StaffSuspiciousActivityPage(
   // proves access happened; the originating signal data is in
   // login_activity itself with its own retention).
   if (focusedUserId) {
-    void logAuditEvent({
+    void logAuditEvent(serviceClient, {
       actorId: user.id,
       actorType: 'user',
       action: 'login_activity.staff_viewed',

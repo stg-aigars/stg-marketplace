@@ -36,6 +36,8 @@ export type CartFulfillmentOutcome =
 // ---------------------------------------------------------------------------
 
 export async function attemptAutoRefund(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  serviceClient: SupabaseClient<any, any, any>,
   paymentReference: string,
   amountCents: number,
   reason: string
@@ -43,7 +45,7 @@ export async function attemptAutoRefund(
   try {
     await refundPayment(paymentReference, amountCents);
     console.log(`[Payments] Auto-refunded ${paymentReference}: ${reason}`);
-    void logAuditEvent({
+    void logAuditEvent(serviceClient, {
       actorType: 'system',
       action: 'payment.refunded',
       resourceType: 'payment',
@@ -113,7 +115,7 @@ export async function fulfillCartPayment(
 
   if (!listings) {
     console.error('[Payments] Cart: Failed to fetch listings');
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'failed to fetch listings');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'failed to fetch listings');
     return { outcome: 'failed', error: 'failed to fetch listings' };
   }
 
@@ -134,7 +136,7 @@ export async function fulfillCartPayment(
   }
 
   if (available.length === 0) {
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');
     // Credit back wallet portion if buyer used wallet balance
     if (walletDebit > 0) {
       try {
@@ -172,7 +174,7 @@ export async function fulfillCartPayment(
 
   // Process partial refund if needed
   if (refundCardCents > 0) {
-    await attemptAutoRefund(paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`);
+    await attemptAutoRefund(serviceClient, paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`);
   }
 
   // Group available items by seller — one order per seller
@@ -274,7 +276,7 @@ export async function fulfillCartPayment(
 
     // Full card refund — the EveryPay charge covers all sellers as one payment,
     // so we refund the entire card amount regardless of how many orders were created
-    await attemptAutoRefund(paymentReference, expectedEverypayAmountCents, 'cart order creation failed mid-loop');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart order creation failed mid-loop');
 
     await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
     return { outcome: 'failed', error: error instanceof Error ? error.message : 'unknown' };
@@ -316,7 +318,7 @@ export async function fulfillCartPayment(
     group.buyer_id
   );
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorId: group.buyer_id,
     actorType: 'user',
     action: 'payment.cart_completed',

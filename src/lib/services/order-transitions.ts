@@ -109,7 +109,7 @@ async function transitionOrder(
     throw new Error(`Failed to update order status: ${error?.message ?? 'Order status has changed'}`);
   }
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorId: userId,
     actorType: 'user',
     action: 'order.status_changed',
@@ -396,7 +396,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
     return null;
   }
 
-  void logAuditEvent({
+  void logAuditEvent(supabase, {
     actorType: 'cron',
     action: 'order.status_changed',
     resourceType: 'order',

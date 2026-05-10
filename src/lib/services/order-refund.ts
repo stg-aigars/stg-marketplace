@@ -150,7 +150,7 @@ export async function refundOrder(
     void issueCreditNote(orderId).catch((err) => console.error('[Invoicing] Failed to issue credit note:', err));
   }
 
-  void logAuditEvent({
+  void logAuditEvent(serviceClient, {
     actorType: 'system',
     action: 'order.refunded',
     resourceType: 'order',
