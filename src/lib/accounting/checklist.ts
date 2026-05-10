@@ -22,6 +22,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { OVERRIDE_TYPE_HISTORICAL_FILING } from './mapping';
 import { getPhase0BankCloseForPeriod } from './phase0-reconciliation-constants';
 import {
   getAccountLedger,
@@ -315,30 +316,54 @@ async function buildItem7(
 }
 
 /**
- * Item 8 — VAT consolidation posted: a P.1 or P.3 entry exists with
- * accounting_period = periodKey. `not_applicable` if the period has no
- * 5710-* movement at all (no VAT activity to consolidate).
+ * Item 8 — VAT consolidation posted: a P.1, P.3, or H.1 (historical-filing-
+ * alignment) entry exists with accounting_period = periodKey. H.1 is
+ * structurally a period-level VAT consolidation even though it routes through
+ * the historical override family — Phase 0's December 2025 PVN deklarācija RC
+ * catch-up is the canonical example. Other H-family entries (H.2 input_forfeited,
+ * H.3 pre_registration_gross) are individual transaction overrides and do NOT
+ * count; the override_type filter on the H.1 query enforces this.
+ *
+ * `not_applicable` if the period has no 5710-* movement at all (no VAT
+ * activity to consolidate).
  */
 async function buildItem8(
   supabase: SupabaseClient,
   periodKey: string
 ): Promise<ChecklistItem> {
-  // Check for an existing P.1 or P.3 consolidation entry for this period.
-  const { data: closeEntries, error: closeError } = await supabase
+  // Pass 1: regular monthly/quarterly VAT consolidations.
+  const { data: regularEntries, error: regularError } = await supabase
     .from('journal_entries')
     .select('id, type_id')
     .eq('accounting_period', periodKey)
     .in('type_id', ['P.1', 'P.3']);
 
-  if (closeError) {
-    throw new Error(`buildItem8: journal_entries P.1/P.3 SELECT failed: ${(closeError as { message: string }).message}`);
+  if (regularError) {
+    throw new Error(`buildItem8: journal_entries P.1/P.3 SELECT failed: ${(regularError as { message: string }).message}`);
   }
 
-  const consolidations = (closeEntries ?? []) as Array<{ id: string; type_id: string }>;
+  // Pass 2: H.1 historical-filing-alignment overrides. The override_type
+  // filter is the discriminator that distinguishes this from H.2/H.3, which
+  // share the H.1 type_id family but are per-transaction overrides.
+  const { data: historicalEntries, error: historicalError } = await supabase
+    .from('journal_entries')
+    .select('id, type_id')
+    .eq('accounting_period', periodKey)
+    .eq('type_id', 'H.1')
+    .eq('posting_context->>override_type', OVERRIDE_TYPE_HISTORICAL_FILING);
+
+  if (historicalError) {
+    throw new Error(`buildItem8: journal_entries H.1 SELECT failed: ${(historicalError as { message: string }).message}`);
+  }
+
+  const consolidations = [
+    ...((regularEntries ?? []) as Array<{ id: string; type_id: string }>),
+    ...((historicalEntries ?? []) as Array<{ id: string; type_id: string }>)
+  ];
   if (consolidations.length > 0) {
     return {
       id: 8,
-      label: 'VAT consolidation posted (P.1 / P.3)',
+      label: 'VAT consolidation posted (P.1 / P.3 / H.1)',
       status: 'pass',
       detail: `${consolidations.length} consolidation entr${consolidations.length === 1 ? 'y' : 'ies'} found for ${periodKey}.`
     };
@@ -364,7 +389,7 @@ async function buildItem8(
   if (!hasVatMovement) {
     return {
       id: 8,
-      label: 'VAT consolidation posted (P.1 / P.3)',
+      label: 'VAT consolidation posted (P.1 / P.3 / H.1)',
       status: 'not_applicable',
       detail: `No 5710-* movement in ${periodKey}; nothing to consolidate.`
     };
@@ -372,9 +397,9 @@ async function buildItem8(
 
   return {
     id: 8,
-    label: 'VAT consolidation posted (P.1 / P.3)',
+    label: 'VAT consolidation posted (P.1 / P.3 / H.1)',
     status: 'fail',
-    detail: `5710-* movement exists in ${periodKey} but no P.1 or P.3 consolidation entry posted.`
+    detail: `5710-* movement exists in ${periodKey} but no P.1 / P.3 / H.1 consolidation entry posted.`
   };
 }
 

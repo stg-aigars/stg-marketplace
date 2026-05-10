@@ -130,7 +130,7 @@ const periodHardLocked = {
  *   accounts:              [item4 5590, item5 2351, item6 UN, item6 EP, item7 2630]
  *   wallet_transactions:   [item3 per-user balance_after_cents AS OF asOf]
  *   wallets:               [item9 lt(0) check]
- *   journal_entries:       [item8 P.1/P.3 lookup, getEntriesPostedSince]
+ *   journal_entries:       [item8 P.1/P.3 lookup, item8 H.1+override_type lookup, getEntriesPostedSince]
  *
  * For a period IN the Phase 0 fixture (item 2 queries 2610 ledger):
  *   journal_lines insertion order shifts — item 2's ledger query lands
@@ -282,6 +282,8 @@ function buildHappyPathQueues(
     ],
     journal_entries: [
       // Item 8 P.1/P.3 lookup — empty (no consolidation, no movement → NA).
+      { data: [], error: null },
+      // Item 8 H.1+override_type=historical_filing_alignment lookup — empty.
       { data: [], error: null },
       // getEntriesPostedSince — only called when status=soft_locked. Default
       // empty so a soft_locked period passes the can_hard_lock gate.
@@ -691,6 +693,23 @@ describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
     expect(item8?.status).toBe('pass');
   });
 
+  it('passes when an H.1 historical-filing-alignment entry exists for the period (PR #4.5a.1)', async () => {
+    // Phase 0's December 2025 PVN deklarācija RC catch-up is structurally a
+    // period-level VAT consolidation but routes through the H.1 historical
+    // override family rather than P.1. The override_type filter on item 8's
+    // H.1 query is applied server-side; the mock simulates that by returning
+    // only matching rows on journal_entries[1].
+    const queues = buildHappyPathQueues(periodOpen);
+    queues.journal_entries[1] = {
+      data: [{ id: 'h1-uuid', type_id: 'H.1' }],
+      error: null
+    };
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item8 = result.items.find((i) => i.id === 8);
+    expect(item8?.status).toBe('pass');
+  });
+
   it('fails when 5710-* movement exists but no consolidation entry', async () => {
     const queues = buildHappyPathQueues(periodOpen);
     // 2027-01 indices: [7] = item8 5710-* movement check.
@@ -707,7 +726,7 @@ describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
     const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     const item8 = result.items.find((i) => i.id === 8);
     expect(item8?.status).toBe('fail');
-    expect(item8?.detail).toMatch(/no P.1 or P.3 consolidation/);
+    expect(item8?.detail).toMatch(/no P\.1 \/ P\.3 \/ H\.1 consolidation/);
   });
 });
 
@@ -813,7 +832,7 @@ describe('getPeriodCloseChecklist — can_hard_lock', () => {
   it('is false when entries were posted since locked_at', async () => {
     const queues = buildHappyPathQueues(periodSoftLocked);
     // getEntriesPostedSince — last journal_entries response.
-    queues.journal_entries[1] = {
+    queues.journal_entries[2] = {
       data: [
         {
           id: 'late-entry',
