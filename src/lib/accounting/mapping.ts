@@ -165,6 +165,11 @@ function buildOrderRevenueLines(input: {
   const vat_cents =
     (commission_gross_cents - commission_net_cents) + (shipping_gross_cents - shipping_net_cents);
 
+  // Lines pushed conditionally to satisfy the journal_lines CHECK
+  // `(debit_cents = 0) <> (credit_cents = 0)` (exactly one non-zero), mirroring
+  // the guard in buildVendorRcLines. Skip zero-credit lines: shipping=0 (no
+  // shipping fee), tiny commission (< 5¢ where round halves to 0), B2B RC
+  // (vat_account=null → no VAT line), or sub-cent VAT rounded to 0.
   const lines: ComputedLine[] = [
     {
       line_number: 1,
@@ -175,9 +180,12 @@ function buildOrderRevenueLines(input: {
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
       narrative: `Seller wallet — commission + shipping (gross, VAT inclusive) (${input.context_label})`
-    },
-    {
-      line_number: 2,
+    }
+  ];
+
+  if (commission_net_cents > 0) {
+    lines.push({
+      line_number: lines.length + 1,
       account_code: '6310-C',
       debit_cents: 0,
       credit_cents: commission_net_cents,
@@ -187,9 +195,12 @@ function buildOrderRevenueLines(input: {
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
       narrative: `Commission revenue, net (${input.context_label})`
-    },
-    {
-      line_number: 3,
+    });
+  }
+
+  if (shipping_net_cents > 0) {
+    lines.push({
+      line_number: lines.length + 1,
       account_code: '6310-S',
       debit_cents: 0,
       credit_cents: shipping_net_cents,
@@ -199,12 +210,12 @@ function buildOrderRevenueLines(input: {
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
       narrative: `Shipping-mgmt revenue, net (${input.context_label})`
-    }
-  ];
+    });
+  }
 
-  if (input.vat_account !== null) {
+  if (input.vat_account !== null && vat_cents > 0) {
     lines.push({
-      line_number: 4,
+      line_number: lines.length + 1,
       account_code: input.vat_account,
       debit_cents: 0,
       credit_cents: vat_cents,

@@ -188,31 +188,35 @@ describe('TC-1.lv — LV seller O.1', () => {
     expect(entry.entry_type).toBe('order');
     expect(entry.accounting_period).toBe('2027-01');
     expect(entry.posting_context.order_id).toBe('pr2_tc_1_lv_order');
+    // Inclusive VAT model (Seller Terms §8): commission_gross=1000 and
+    // shipping_gross=500 are GROSS (VAT included). Per-line decomposition:
+    //   commission: 1000 / 1.21 ≈ 826.45 → 826 net; vat = 174
+    //   shipping:    500 / 1.21 ≈ 413.22 → 413 net; vat =  87
+    // total vat = 261; seller wallet debit = 1500 (no extra VAT on top).
     expect(entry.posting_context.commission_cents).toBe(1000);
-    expect(entry.posting_context.vat_cents).toBe(315);
+    expect(entry.posting_context.vat_cents).toBe(261);
 
     expect(lines).toHaveLength(4);
-    // commission=1000 + shipping=500 + vat=(1500*0.21=315)=1815 debit
     expect(lines[0].account_code).toBe('5351');
-    expect(lines[0].debit_cents).toBe(1815);
+    expect(lines[0].debit_cents).toBe(1500);
     expect(lines[0].counterparty_id).toBe(TEST_CP.LV_SELLER);
 
     expect(lines[1].account_code).toBe('6310-C');
-    expect(lines[1].credit_cents).toBe(1000);
+    expect(lines[1].credit_cents).toBe(826);
     expect(lines[1].vat_country).toBe('LV');
     expect(Number(lines[1].vat_rate_snapshot)).toBe(0.21);
 
     expect(lines[2].account_code).toBe('6310-S');
-    expect(lines[2].credit_cents).toBe(500);
+    expect(lines[2].credit_cents).toBe(413);
 
     expect(lines[3].account_code).toBe('5710-LV-OUT');
-    expect(lines[3].credit_cents).toBe(315);
+    expect(lines[3].credit_cents).toBe(261);
 
     // Σdr = Σcr
     const total_dr = lines.reduce((s, l) => s + l.debit_cents, 0);
     const total_cr = lines.reduce((s, l) => s + l.credit_cents, 0);
     expect(total_dr).toBe(total_cr);
-    expect(total_dr).toBe(1815);
+    expect(total_dr).toBe(1500);
   });
 });
 
@@ -300,14 +304,16 @@ describe('TC-3.lt.b2c — LT B2C OSS O.3', () => {
 
     expect(lines).toHaveLength(4);
     expect(lines[0].account_code).toBe('5351');
-    expect(lines[0].debit_cents).toBe(1815); // 1500 base + 315 VAT (LT 21%)
+    // Inclusive VAT (LT 21%): same per-line decomposition as TC-1.lv.
+    // commission_gross=1000 + shipping_gross=500; VAT decomposed to 261 (174+87).
+    expect(lines[0].debit_cents).toBe(1500);
 
     expect(lines[1].account_code).toBe('6310-C');
     expect(lines[1].vat_country).toBe('LT');
     expect(Number(lines[1].vat_rate_snapshot)).toBe(0.21);
 
     expect(lines[3].account_code).toBe('5711'); // OSS-LT, NOT 5710-LV-OUT
-    expect(lines[3].credit_cents).toBe(315);
+    expect(lines[3].credit_cents).toBe(261);
   });
 });
 

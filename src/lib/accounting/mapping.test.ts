@@ -15,6 +15,7 @@
 
 import { describe, it, expect } from 'vitest';
 
+import { roundHalfUpCents } from './computer';
 import { findMappingById } from './mapping';
 import type { ComputeInput, CounterpartyRow } from './types';
 
@@ -281,6 +282,38 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
     });
   });
 
+  describe('zero-credit line guard (journal_lines CHECK)', () => {
+    it('omits 6310-S line when shipping_value_cents = 0', () => {
+      // The journal_lines CHECK requires (debit=0) <> (credit=0) — exactly one
+      // non-zero. A zero-shipping order would emit a credit=0 line on 6310-S
+      // and be rejected by the DB trigger at insert time. The helper must
+      // skip the line, mirroring buildVendorRcLines's rc_vat_cents > 0 guard.
+      const o1 = findMappingById('O.1')!;
+      const result = o1.compute(
+        buildInput(lvSeller(), 0.21, {
+          item_value_cents: 2500,
+          shipping_value_cents: 0,
+          order_id: 'o',
+          seller_id: 's',
+          invoice_number: 'i'
+        })
+      );
+      const shippingLine = result.lines.find((l) => l.account_code === '6310-S');
+      expect(shippingLine).toBeUndefined();
+      // Every emitted line still satisfies the CHECK invariant.
+      for (const line of result.lines) {
+        expect((line.debit_cents === 0) !== (line.credit_cents === 0)).toBe(true);
+      }
+      // Entry remains balanced.
+      const debits = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+      const credits = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+      expect(debits).toBe(credits);
+      // Wallet debit = commission_gross only (250).
+      const wallet = result.lines.find((l) => l.account_code === '5351')!;
+      expect(wallet.debit_cents).toBe(250);
+    });
+  });
+
   describe('rounding invariant', () => {
     it('vat = gross − net for any combination (no off-by-one)', () => {
       const cases = [
@@ -304,8 +337,10 @@ describe('buildOrderRevenueLines — VAT-inclusive (matches seller terms §8)', 
         const credits = result.lines.reduce((sum, l) => sum + l.credit_cents, 0);
         // Wallet debit = sum of all credits (balanced entry)
         expect(wallet.debit_cents).toBe(credits);
-        // Wallet debit = commission_gross + shipping_gross (inclusive promise)
-        const expectedGross = Math.round(c.item * 0.1) + c.ship;
+        // Wallet debit = commission_gross + shipping_gross (inclusive promise).
+        // Use roundHalfUpCents (production rounding) — Math.round agrees on
+        // these inputs but isn't a contract guarantee.
+        const expectedGross = roundHalfUpCents(c.item * 0.1) + c.ship;
         expect(wallet.debit_cents).toBe(expectedGross);
       }
     });
