@@ -3,6 +3,7 @@
  * Fire-and-forget pattern — never blocks the main operation.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase';
 
 /**
@@ -38,11 +39,29 @@ interface AuditEvent {
  * Log an audit event to the database.
  * Designed to be called with `void logAuditEvent(...)` — fire and forget.
  * Failures are logged to console but never thrown.
+ *
+ * Accepts an optional service-role `supabase` client as the first argument.
+ * Callers that already hold a service-role client (most do) should pass it —
+ * the audit-write path then shares env state and connection-pool ordering
+ * with the surrounding data write, closing the structural seam that surfaced
+ * during PR #3's Phase 0 backfill (audit insert silently dropped 23 events
+ * while the data insert succeeded). Calling with the options object alone
+ * falls through to a service-role client created at audit-time — back-compat
+ * for SSR-only flows that have no service-role client locally scoped.
  */
-export async function logAuditEvent(event: AuditEvent): Promise<void> {
+export function logAuditEvent(supabase: SupabaseClient, event: AuditEvent): Promise<void>;
+export function logAuditEvent(event: AuditEvent): Promise<void>;
+export async function logAuditEvent(
+  clientOrEvent: SupabaseClient | AuditEvent,
+  maybeEvent?: AuditEvent
+): Promise<void> {
+  const supabase: SupabaseClient = maybeEvent
+    ? (clientOrEvent as SupabaseClient)
+    : createServiceClient();
+  const event: AuditEvent = (maybeEvent ?? clientOrEvent) as AuditEvent;
+
   try {
-    const serviceClient = createServiceClient();
-    const { error } = await serviceClient
+    const { error } = await supabase
       .from('audit_log')
       .insert({
         actor_id: event.actorId ?? null,
