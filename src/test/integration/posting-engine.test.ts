@@ -161,7 +161,7 @@ function expectEntryId(result: PostingResult): string {
 // =============================================================================
 
 describe('TC-1.lv — LV seller O.1', () => {
-  it('creates a 4-line balanced entry with correct VAT routing', async () => {
+  it('creates a 3-line commission-invoice slice (wallet debited only for commission)', async () => {
     const event: PostingEvent = {
       event_type: 'order.completed',
       source_doc_type: 'order',
@@ -188,31 +188,35 @@ describe('TC-1.lv — LV seller O.1', () => {
     expect(entry.entry_type).toBe('order');
     expect(entry.accounting_period).toBe('2027-01');
     expect(entry.posting_context.order_id).toBe('pr2_tc_1_lv_order');
+    // Commission-invoice slice only: wallet sees just the commission. Buyer-
+    // paid shipping (500) does NOT flow through 5351 — it lives in suspense
+    // until PR #5's lifecycle slice releases it together with shipping
+    // logistics revenue. Inclusive VAT (Seller Terms §8): commission_gross=1000
+    // → 1000 / 1.21 ≈ 826.45 → 826 net; vat = 174.
     expect(entry.posting_context.commission_cents).toBe(1000);
-    expect(entry.posting_context.vat_cents).toBe(315);
+    expect(entry.posting_context.commission_vat_cents).toBe(174);
+    expect(entry.posting_context.vat_cents).toBe(174); // commission VAT only
+    expect(entry.posting_context.shipping_value_cents).toBe(500);
+    expect(entry.posting_context.shipping_vat_cents).toBe(87); // for PR #5
 
-    expect(lines).toHaveLength(4);
-    // commission=1000 + shipping=500 + vat=(1500*0.21=315)=1815 debit
+    expect(lines).toHaveLength(3);
     expect(lines[0].account_code).toBe('5351');
-    expect(lines[0].debit_cents).toBe(1815);
+    expect(lines[0].debit_cents).toBe(1000);
     expect(lines[0].counterparty_id).toBe(TEST_CP.LV_SELLER);
 
     expect(lines[1].account_code).toBe('6310-C');
-    expect(lines[1].credit_cents).toBe(1000);
+    expect(lines[1].credit_cents).toBe(826);
     expect(lines[1].vat_country).toBe('LV');
     expect(Number(lines[1].vat_rate_snapshot)).toBe(0.21);
 
-    expect(lines[2].account_code).toBe('6310-S');
-    expect(lines[2].credit_cents).toBe(500);
-
-    expect(lines[3].account_code).toBe('5710-LV-OUT');
-    expect(lines[3].credit_cents).toBe(315);
+    expect(lines[2].account_code).toBe('5710-LV-OUT');
+    expect(lines[2].credit_cents).toBe(174);
 
     // Σdr = Σcr
     const total_dr = lines.reduce((s, l) => s + l.debit_cents, 0);
     const total_cr = lines.reduce((s, l) => s + l.credit_cents, 0);
     expect(total_dr).toBe(total_cr);
-    expect(total_dr).toBe(1815);
+    expect(total_dr).toBe(1000);
   });
 });
 
@@ -221,7 +225,7 @@ describe('TC-1.lv — LV seller O.1', () => {
 // =============================================================================
 
 describe('TC-2.lt.b2b — LT B2B reverse-charge O.2', () => {
-  it('creates a 3-line entry with vat_rate_snapshot=0 and vat_country=LT', async () => {
+  it('creates a 2-line commission-invoice slice (vat_rate=0, no VAT line)', async () => {
     const event: PostingEvent = {
       event_type: 'order.completed',
       source_doc_type: 'order',
@@ -249,20 +253,16 @@ describe('TC-2.lt.b2b — LT B2B reverse-charge O.2', () => {
     expect(entry.type_id).toBe('O.2');
     expect(entry.posting_context.esl_eligible).toBe(true);
 
-    expect(lines).toHaveLength(3);
-    // No VAT line — recipient self-assesses LT VAT.
+    expect(lines).toHaveLength(2);
+    // No VAT line — recipient self-assesses LT VAT. No shipping line —
+    // PR #5's lifecycle slice handles shipping invoice issuance.
     expect(lines[0].account_code).toBe('5351');
-    expect(lines[0].debit_cents).toBe(1500); // commission + shipping; no VAT
+    expect(lines[0].debit_cents).toBe(1000); // commission only
 
     expect(lines[1].account_code).toBe('6310-C');
     expect(lines[1].credit_cents).toBe(1000);
     expect(lines[1].vat_country).toBe('LT');
     expect(Number(lines[1].vat_rate_snapshot)).toBe(0);
-
-    expect(lines[2].account_code).toBe('6310-S');
-    expect(lines[2].credit_cents).toBe(500);
-    expect(lines[2].vat_country).toBe('LT');
-    expect(Number(lines[2].vat_rate_snapshot)).toBe(0);
   });
 });
 
@@ -271,7 +271,7 @@ describe('TC-2.lt.b2b — LT B2B reverse-charge O.2', () => {
 // =============================================================================
 
 describe('TC-3.lt.b2c — LT B2C OSS O.3', () => {
-  it('creates a 4-line entry with VAT routed to OSS-LT (5711)', async () => {
+  it('creates a 3-line commission-invoice slice with VAT routed to OSS-LT (5711)', async () => {
     const event: PostingEvent = {
       event_type: 'order.completed',
       source_doc_type: 'order',
@@ -298,16 +298,20 @@ describe('TC-3.lt.b2c — LT B2C OSS O.3', () => {
     expect(entry.type_id).toBe('O.3');
     expect(entry.posting_context.oss_consumption_ms).toBe('LT');
 
-    expect(lines).toHaveLength(4);
+    expect(lines).toHaveLength(3);
     expect(lines[0].account_code).toBe('5351');
-    expect(lines[0].debit_cents).toBe(1815); // 1500 base + 315 VAT (LT 21%)
+    // Commission-invoice slice only (LT 21%): wallet sees commission_gross=1000.
+    // Shipping (500) is recognized in PR #5's lifecycle slice, not here.
+    // commission VAT: 1000 / 1.21 ≈ 826.45 → 826 net; vat = 174.
+    expect(lines[0].debit_cents).toBe(1000);
 
     expect(lines[1].account_code).toBe('6310-C');
     expect(lines[1].vat_country).toBe('LT');
     expect(Number(lines[1].vat_rate_snapshot)).toBe(0.21);
+    expect(lines[1].credit_cents).toBe(826);
 
-    expect(lines[3].account_code).toBe('5711'); // OSS-LT, NOT 5710-LV-OUT
-    expect(lines[3].credit_cents).toBe(315);
+    expect(lines[2].account_code).toBe('5711'); // OSS-LT, NOT 5710-LV-OUT
+    expect(lines[2].credit_cents).toBe(174);
   });
 });
 
