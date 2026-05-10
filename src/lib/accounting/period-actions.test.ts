@@ -63,13 +63,29 @@ interface UpdateCapture {
   payload: Record<string, unknown>;
 }
 
-function buildMockServiceClient(updateError: { message: string } | null = null): {
+interface RpcCapture {
+  fn: string;
+  args: Record<string, unknown>;
+}
+
+interface RpcResponse {
+  data: unknown;
+  error: { message: string } | null;
+}
+
+function buildMockServiceClient(
+  updateError: { message: string } | null = null,
+  rpcResponse: RpcResponse = { data: null, error: null },
+): {
   client: {
     from: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
   };
   captures: UpdateCapture[];
+  rpcCalls: RpcCapture[];
 } {
   const captures: UpdateCapture[] = [];
+  const rpcCalls: RpcCapture[] = [];
 
   const fromMock = vi.fn((table: string) => {
     const builder: Record<string, ReturnType<typeof vi.fn>> & {
@@ -90,7 +106,14 @@ function buildMockServiceClient(updateError: { message: string } | null = null):
     return builder;
   });
 
-  return { client: { from: fromMock }, captures };
+  const rpcMock = vi.fn((fn: string, args: Record<string, unknown>) => {
+    rpcCalls.push({ fn, args });
+    return {
+      maybeSingle: () => Promise.resolve(rpcResponse),
+    };
+  });
+
+  return { client: { from: fromMock, rpc: rpcMock }, captures, rpcCalls };
 }
 
 // =============================================================================
@@ -356,8 +379,11 @@ describe('hardLockPeriod', () => {
     expect(mockGetEntriesPostedSince).not.toHaveBeenCalled();
   });
 
-  it('returns error when entries have been posted since the soft-lock', async () => {
-    const { client } = buildMockServiceClient();
+  it('returns entries-since error via diagnostic re-read when RPC reports precondition failed and entries were posted', async () => {
+    // RPC returns NULL (precondition failed: e.g. entries posted since
+    // soft-lock); the action's diagnostic re-read finds those entries and
+    // surfaces the precise UX message.
+    const { client } = buildMockServiceClient(null, { data: null, error: null });
     mockRequireServerAuth.mockResolvedValue(STAFF_AUTH(client));
     mockGetPeriodRow.mockResolvedValue(periodSoftLocked);
     mockGetEntriesPostedSince.mockResolvedValue([
@@ -375,8 +401,8 @@ describe('hardLockPeriod', () => {
     expect(mockLogAuditEvent).not.toHaveBeenCalled();
   });
 
-  it('singularises the entries-since error when exactly one entry was posted', async () => {
-    const { client } = buildMockServiceClient();
+  it('singularises the entries-since diagnostic when exactly one entry was posted', async () => {
+    const { client } = buildMockServiceClient(null, { data: null, error: null });
     mockRequireServerAuth.mockResolvedValue(STAFF_AUTH(client));
     mockGetPeriodRow.mockResolvedValue(periodSoftLocked);
     mockGetEntriesPostedSince.mockResolvedValue([{ id: 'e1' }]);
@@ -390,17 +416,47 @@ describe('hardLockPeriod', () => {
     }
   });
 
-  it('hard-locks the period and fires regulatory audit event with correct shape', async () => {
-    const { client, captures } = buildMockServiceClient();
+  it('returns generic state-changed error when RPC reports precondition failed and no entries were posted', async () => {
+    // RPC returns NULL (precondition failed: status drift, e.g. someone else
+    // hard-locked first or the period was unsoft-locked + re-soft-locked at a
+    // different timestamp). The diagnostic re-read finds no entries since,
+    // so the action surfaces the generic reload-and-retry message.
+    const { client } = buildMockServiceClient(null, { data: null, error: null });
     mockRequireServerAuth.mockResolvedValue(STAFF_AUTH(client));
     mockGetPeriodRow.mockResolvedValue(periodSoftLocked);
     mockGetEntriesPostedSince.mockResolvedValue([]);
 
     const result = await hardLockPeriod(PERIOD_KEY);
 
+    expect('error' in result).toBe(true);
+    if ('error' in result) {
+      expect(result.error).toMatch(/state changed|reload and retry/);
+    }
+    expect(mockLogAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it('hard-locks the period via RPC and fires regulatory audit event with correct shape', async () => {
+    const periodHardLockedReturn = { ...periodSoftLocked, status: 'hard_locked' as const };
+    const { client, rpcCalls } = buildMockServiceClient(null, {
+      data: periodHardLockedReturn,
+      error: null,
+    });
+    mockRequireServerAuth.mockResolvedValue(STAFF_AUTH(client));
+    mockGetPeriodRow.mockResolvedValue(periodSoftLocked);
+
+    const result = await hardLockPeriod(PERIOD_KEY);
+
     expect(result).toEqual({ success: true });
-    expect(captures).toHaveLength(1);
-    expect(captures[0].payload).toEqual({ status: 'hard_locked' });
+    expect(rpcCalls).toHaveLength(1);
+    expect(rpcCalls[0].fn).toBe('hard_lock_period_atomic');
+    expect(rpcCalls[0].args).toEqual({
+      p_period_key: PERIOD_KEY,
+      p_period_type: 'month',
+      p_expected_locked_at: periodSoftLocked.locked_at,
+    });
+    // The action does not call .from('periods').update(...) anymore on the
+    // happy path — the RPC owns the UPDATE.
+    expect(mockGetEntriesPostedSince).not.toHaveBeenCalled();
 
     expect(mockLogAuditEvent).toHaveBeenCalledTimes(1);
     expect(mockLogAuditEvent).toHaveBeenCalledWith(expect.anything(), {
@@ -421,11 +477,13 @@ describe('hardLockPeriod', () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith('/staff/accounting');
   });
 
-  it('returns error and skips audit when the periods update fails', async () => {
-    const { client } = buildMockServiceClient({ message: 'connection lost' });
+  it('returns error and skips audit when the RPC fails', async () => {
+    const { client } = buildMockServiceClient(null, {
+      data: null,
+      error: { message: 'connection lost' },
+    });
     mockRequireServerAuth.mockResolvedValue(STAFF_AUTH(client));
     mockGetPeriodRow.mockResolvedValue(periodSoftLocked);
-    mockGetEntriesPostedSince.mockResolvedValue([]);
 
     const result = await hardLockPeriod(PERIOD_KEY);
 

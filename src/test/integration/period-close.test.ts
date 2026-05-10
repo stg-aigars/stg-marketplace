@@ -109,7 +109,10 @@ const TEST_PERIODS = {
   ACTION_SOFTLOCK_FAIL: '2027-06',
   ACTION_HARDLOCK_PASS: '2027-07',
   ACTION_HARDLOCK_REJECT_ENTRIES: '2027-08',
-  ACTION_UNSOFTLOCK_PASS: '2027-09'
+  ACTION_UNSOFTLOCK_PASS: '2027-09',
+  // Migration 099 atomicity tests.
+  ACTION_HARDLOCK_RACE_DOUBLE: '2027-10',
+  ACTION_HARDLOCK_RACE_INSERT: '2027-11'
 } as const;
 
 // All periods this test file may touch; afterEach restores each to 'open'
@@ -125,7 +128,9 @@ const ALL_TOUCHED_PERIODS: ReadonlyArray<{ key: string; type: 'month' | 'quarter
   { key: TEST_PERIODS.ACTION_SOFTLOCK_FAIL, type: 'month' },
   { key: TEST_PERIODS.ACTION_HARDLOCK_PASS, type: 'month' },
   { key: TEST_PERIODS.ACTION_HARDLOCK_REJECT_ENTRIES, type: 'month' },
-  { key: TEST_PERIODS.ACTION_UNSOFTLOCK_PASS, type: 'month' }
+  { key: TEST_PERIODS.ACTION_UNSOFTLOCK_PASS, type: 'month' },
+  { key: TEST_PERIODS.ACTION_HARDLOCK_RACE_DOUBLE, type: 'month' },
+  { key: TEST_PERIODS.ACTION_HARDLOCK_RACE_INSERT, type: 'month' }
 ];
 
 /**
@@ -757,5 +762,138 @@ describe('unsoftLockPeriod server action', () => {
       to_status: 'open',
       transition_reason: reason
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hardLockPeriod atomicity (migration 099)
+// ---------------------------------------------------------------------------
+//
+// Two race scenarios verify the migration 099 fix:
+//
+//   1. Two concurrent hardLockPeriod calls against the same period —
+//      Promise.all([rpc(), rpc()]). The Supabase JS client is fetch-based, so
+//      each call is an independent HTTP request to PostgREST and dispatches
+//      to its own pooled Postgres backend. Genuine concurrency at the DB
+//      level. The atomic RPC's SELECT ... FOR UPDATE serialises the two
+//      transactions on the period row lock; exactly one wins, the other
+//      sees the post-commit hard_locked status (locked_at unchanged but
+//      status='hard_locked' breaks the WHERE on status='soft_locked'),
+//      returns NULL, and the action surfaces the diagnostic re-read message.
+//
+//   2. One hardLockPeriod RPC + one journal_entries INSERT (with
+//      period_close_adjustment=true) against the same period, fired
+//      concurrently. Same fetch-based concurrency model. The migration 099
+//      pair (RPC FOR UPDATE + trigger FOR SHARE) ensures atomicity:
+//      whichever transaction acquires the period lock first runs to
+//      completion before the other proceeds. Either the hard-lock wins
+//      (period becomes hard_locked, INSERT trigger then sees hard_locked
+//      status and rejects) or the INSERT wins (entry lands first, RPC's
+//      EXISTS check sees it post-commit, RPC returns NULL). Never both.
+//
+// Connection-model verification: createTestServiceClient uses
+// @supabase/supabase-js's createClient over fetch — each .rpc() / .from()
+// call is an independent fetch to PostgREST, which holds its own connection
+// pool to Postgres. Two parallel calls become two parallel backend
+// connections. Verified by reading src/test/helpers/supabase.ts during
+// PR #4.5d implementation.
+// ---------------------------------------------------------------------------
+
+describe('hardLockPeriod atomicity (migration 099)', () => {
+  it('two concurrent hardLockPeriod calls produce exactly one success and one precondition-failed', async () => {
+    const lockedAt = '2027-10-01T00:00:00Z';
+    dbExecOrThrow(
+      `UPDATE public.periods SET status='soft_locked', locked_at='${lockedAt}', locked_by='${staffUserId}' ` +
+        `WHERE period_key='${TEST_PERIODS.ACTION_HARDLOCK_RACE_DOUBLE}' AND period_type='month';`
+    );
+
+    mockRequireServerAuth.mockResolvedValue(staffAuthPayload());
+
+    const [resultA, resultB] = await Promise.all([
+      hardLockPeriod(TEST_PERIODS.ACTION_HARDLOCK_RACE_DOUBLE),
+      hardLockPeriod(TEST_PERIODS.ACTION_HARDLOCK_RACE_DOUBLE)
+    ]);
+
+    const successes = [resultA, resultB].filter((r): r is { success: true } => 'success' in r);
+    const failures = [resultA, resultB].filter((r): r is { error: string } => 'error' in r);
+    expect(successes).toHaveLength(1);
+    expect(failures).toHaveLength(1);
+    // The losing call's diagnostic re-read finds no entries (none were
+    // inserted in this test) and surfaces the generic state-changed message.
+    expect(failures[0].error).toMatch(/state changed|reload and retry/);
+
+    const { data: row } = await supabase
+      .from('periods')
+      .select('status')
+      .eq('period_key', TEST_PERIODS.ACTION_HARDLOCK_RACE_DOUBLE)
+      .eq('period_type', 'month')
+      .single();
+    expect(row!.status).toBe('hard_locked');
+  });
+
+  it('concurrent hardLockPeriod + journal_entries INSERT never produce hard_locked-with-late-entry', async () => {
+    // Soft-lock with a far-past locked_at so a fresh INSERT counts as "after
+    // soft-lock" for the EXISTS check inside the RPC.
+    const lockedAt = '2020-01-01T00:00:00Z';
+    dbExecOrThrow(
+      `UPDATE public.periods SET status='soft_locked', locked_at='${lockedAt}', locked_by='${staffUserId}' ` +
+        `WHERE period_key='${TEST_PERIODS.ACTION_HARDLOCK_RACE_INSERT}' AND period_type='month';`
+    );
+
+    mockRequireServerAuth.mockResolvedValue(staffAuthPayload());
+
+    const sourceDocId = `period_close_test_race_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // Use the supabase JS client INSERT (not dbExec) so the INSERT goes
+    // through PostgREST → its own pooled Postgres backend connection,
+    // genuinely parallel with the hardLockPeriod RPC. dbExec is execSync and
+    // would run to completion before the Promise resolved, defeating the
+    // concurrency intent.
+    const insertPromise = supabase.from('journal_entries').insert({
+      posting_date: '2027-11-15',
+      accounting_period: TEST_PERIODS.ACTION_HARDLOCK_RACE_INSERT,
+      tax_period: TEST_PERIODS.ACTION_HARDLOCK_RACE_INSERT,
+      entry_type: 'period_close',
+      type_id: 'TEST.RACE099',
+      source_doc_type: 'period_close_test',
+      source_doc_id: sourceDocId,
+      narrative: 'race-test late entry',
+      created_by: 'test',
+      period_close_adjustment: true,
+      posting_context: { test_artifact: true }
+    });
+
+    const [hardLockResult, insertResult] = await Promise.all([
+      hardLockPeriod(TEST_PERIODS.ACTION_HARDLOCK_RACE_INSERT),
+      insertPromise
+    ]);
+
+    const hardLockSucceeded = 'success' in hardLockResult;
+    const insertSucceeded = insertResult.error === null;
+
+    // Atomicity invariant: never both succeed. Exactly one of the two
+    // transactions wins; the other's failure mode depends on which won.
+    expect(hardLockSucceeded && insertSucceeded).toBe(false);
+    expect(hardLockSucceeded || insertSucceeded).toBe(true);
+
+    const { data: row } = await supabase
+      .from('periods')
+      .select('status')
+      .eq('period_key', TEST_PERIODS.ACTION_HARDLOCK_RACE_INSERT)
+      .eq('period_type', 'month')
+      .single();
+
+    if (hardLockSucceeded) {
+      expect(row!.status).toBe('hard_locked');
+      expect(insertSucceeded).toBe(false);
+      // The trigger raises 23514 with the hard_locked message when it sees
+      // the post-commit hard_locked status under FOR SHARE.
+      expect(insertResult.error?.message ?? '').toMatch(/hard_locked/);
+    } else {
+      expect(row!.status).toBe('soft_locked');
+      expect(insertSucceeded).toBe(true);
+      if ('error' in hardLockResult) {
+        expect(hardLockResult.error).toMatch(/posted since soft-lock/);
+      }
+    }
   });
 });

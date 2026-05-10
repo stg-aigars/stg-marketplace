@@ -152,44 +152,41 @@ export async function hardLockPeriod(periodKey: string): Promise<PeriodActionRes
     return { error: `Period ${periodKey} is soft-locked but has no locked_at timestamp; refusing to hard-lock corrupted state.` };
   }
 
-  let entriesSince;
-  try {
-    // TOCTOU race window (deferred to PR #5):
-    //
-    // Between this check returning empty and the UPDATE below landing, a
-    // concurrent insert with period_close_adjustment=true could slip through
-    // the migration 094/098 trigger and land in the period after locked_at.
-    //
-    // Safe in PR #4: no concurrent writer for period_close_adjustment=true
-    // exists yet — that escape is taken only by period-close consolidation
-    // entries (P.1, P.3) which the posting engine will emit starting in PR #5.
-    //
-    // PR #5 should close the race via a SECURITY DEFINER RPC that combines
-    // the entries-since check and the status update in a single conditional
-    // UPDATE: SET status='hard_locked' WHERE ... AND NOT EXISTS
-    // (SELECT 1 FROM journal_entries ...).
-    entriesSince = await getEntriesPostedSince(serviceClient, periodKey, period.locked_at);
-  } catch (err) {
-    console.error('[accounting] hardLockPeriod entries-since read failed:', err);
-    return { error: 'Could not check for entries posted since soft-lock. Please try again.' };
-  }
+  // Atomic conditional UPDATE under SELECT ... FOR UPDATE on the period row,
+  // paired with FOR SHARE in enforce_period_status (migration 099). Either
+  // succeeds and returns the new row, or any precondition mismatch (status
+  // drift, locked_at drift, entries posted since) returns NULL.
+  const { data: updated, error: rpcError } = await serviceClient
+    .rpc('hard_lock_period_atomic', {
+      p_period_key: periodKey,
+      p_period_type: 'month',
+      p_expected_locked_at: period.locked_at,
+    })
+    .maybeSingle();
 
-  if (entriesSince.length > 0) {
-    const noun = entriesSince.length === 1 ? 'entry' : 'entries';
-    return {
-      error: `${entriesSince.length} ${noun} posted since soft-lock; revert to open and re-soft-lock before hard-locking.`,
-    };
-  }
-
-  const { error } = await serviceClient
-    .from('periods')
-    .update({ status: 'hard_locked' })
-    .eq('period_key', periodKey)
-    .eq('period_type', 'month');
-
-  if (error) {
-    console.error('[accounting] hardLockPeriod update failed:', error.message);
+  if (rpcError) {
+    console.error('[accounting] hardLockPeriod RPC failed:', rpcError.message);
     return { error: 'Could not hard-lock period. Please try again.' };
+  }
+
+  if (!updated) {
+    // Precondition mismatch. Re-read for a precise UX message — informational
+    // only, no race risk and no decision based on it.
+    let entriesSince: Awaited<ReturnType<typeof getEntriesPostedSince>> = [];
+    try {
+      entriesSince = await getEntriesPostedSince(serviceClient, periodKey, period.locked_at);
+    } catch (err) {
+      console.error('[accounting] hardLockPeriod diagnostic re-read failed:', err);
+    }
+    if (entriesSince.length > 0) {
+      const noun = entriesSince.length === 1 ? 'entry' : 'entries';
+      return {
+        error: `${entriesSince.length} ${noun} posted since soft-lock; revert to open and re-soft-lock before hard-locking.`,
+      };
+    }
+    return {
+      error: `Period ${periodKey} state changed during hard-lock; please reload and retry.`,
+    };
   }
 
   void logAuditEvent(serviceClient, {
