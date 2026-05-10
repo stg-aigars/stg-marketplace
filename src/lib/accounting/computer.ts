@@ -27,6 +27,10 @@
  *   - decomposeFx divides cents by a decimal rate; result is rounded once.
  *     The FX fee is then `bank_amount_cents - service_value_cents` (subtraction
  *     preserves cents exactness).
+ *   - buildOrderRevenueLines (mapping.ts) does the inclusive-VAT decomposition
+ *     `gross_cents / (1 + rate) → net_cents`, rounded once via roundHalfUpCents.
+ *     `vat_cents = gross_cents - net_cents` (subtraction preserves exactness),
+ *     same shape as decomposeFx's fee derivation.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
