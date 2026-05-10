@@ -123,10 +123,15 @@ function buildPreComputedLines(
  * O.4, O.5 in PR #4.5e — same shape with EE substituted). Produces three or
  * four journal_lines:
  *
- *   1. Dr 5351 seller wallet for (commission + shipping + vat)
- *   2. Cr 6310-C commission revenue
- *   3. Cr 6310-S shipping-mgmt revenue
+ *   1. Dr 5351 seller wallet for (commission_gross + shipping_gross)
+ *   2. Cr 6310-C commission revenue (NET of VAT)
+ *   3. Cr 6310-S shipping-mgmt revenue (NET of VAT)
  *   4. Cr {vat_account} VAT (omitted when vat_account is null — B2B RC case)
+ *
+ * VAT model is INCLUSIVE per Seller Terms §8 (src/app/[locale]/seller-terms/page.tsx):
+ * the 10% commission and the buyer-paid shipping are GROSS amounts. VAT is
+ * decomposed inclusive: net = round(gross / (1 + rate)); vat = gross − net.
+ * Σdebit = Σcredit by construction (gross = net + vat per line).
  *
  * Caller passes the type-specific VAT routing (account + rate + country); the
  * helper handles arithmetic, rounding, and counterparty stamping uniformly.
@@ -150,12 +155,15 @@ function buildOrderRevenueLines(input: {
 
   const item_value_cents = requireNumber(input.payload, 'item_value_cents');
   const shipping_value_cents = requireNumber(input.payload, 'shipping_value_cents', { allowZero: true });
-  const commission_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
-  const revenue_base = commission_cents + shipping_value_cents;
-  const vat_cents = input.vat_account === null
-    ? 0
-    : roundHalfUpCents(revenue_base * input.vat_rate);
-  const debit_total = revenue_base + vat_cents;
+  const commission_gross_cents = roundHalfUpCents(item_value_cents * COMMISSION_RATE);
+  const shipping_gross_cents = shipping_value_cents;
+  const debit_total = commission_gross_cents + shipping_gross_cents;
+
+  // Inclusive split: vat_rate=0 (B2B RC) collapses to net = gross, vat = 0.
+  const commission_net_cents = roundHalfUpCents(commission_gross_cents / (1 + input.vat_rate));
+  const shipping_net_cents = roundHalfUpCents(shipping_gross_cents / (1 + input.vat_rate));
+  const vat_cents =
+    (commission_gross_cents - commission_net_cents) + (shipping_gross_cents - shipping_net_cents);
 
   const lines: ComputedLine[] = [
     {
@@ -166,31 +174,31 @@ function buildOrderRevenueLines(input: {
       currency: 'EUR',
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
-      narrative: `Seller wallet — commission + shipping${input.vat_account ? ' + VAT' : ''} (${input.context_label})`
+      narrative: `Seller wallet — commission + shipping (gross, VAT inclusive) (${input.context_label})`
     },
     {
       line_number: 2,
       account_code: '6310-C',
       debit_cents: 0,
-      credit_cents: commission_cents,
+      credit_cents: commission_net_cents,
       currency: 'EUR',
       vat_rate_snapshot: input.vat_rate,
       vat_country: input.vat_country,
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
-      narrative: `Commission revenue (${input.context_label})`
+      narrative: `Commission revenue, net (${input.context_label})`
     },
     {
       line_number: 3,
       account_code: '6310-S',
       debit_cents: 0,
-      credit_cents: shipping_value_cents,
+      credit_cents: shipping_net_cents,
       currency: 'EUR',
       vat_rate_snapshot: input.vat_rate,
       vat_country: input.vat_country,
       counterparty_type: 'seller',
       counterparty_id: input.counterparty.id,
-      narrative: `Shipping-mgmt revenue (${input.context_label})`
+      narrative: `Shipping-mgmt revenue, net (${input.context_label})`
     }
   ];
 
@@ -202,11 +210,16 @@ function buildOrderRevenueLines(input: {
       credit_cents: vat_cents,
       currency: 'EUR',
       vat_country: input.vat_country,
-      narrative: `Output VAT (${input.context_label})`
+      narrative: `Output VAT, decomposed inclusive (${input.context_label})`
     });
   }
 
-  return { lines, commission_cents, shipping_value_cents, vat_cents };
+  return {
+    lines,
+    commission_cents: commission_gross_cents,
+    shipping_value_cents: shipping_gross_cents,
+    vat_cents
+  };
 }
 
 /**
