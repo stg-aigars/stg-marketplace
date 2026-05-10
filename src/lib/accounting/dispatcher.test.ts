@@ -51,6 +51,25 @@ function ltSellerB2C(): CounterpartyRow {
   });
 }
 
+function eeSellerB2B(): CounterpartyRow {
+  return lvSeller({
+    id: '88888888-8888-8888-8888-888888888888',
+    country: 'EE',
+    tax_status: 'vat_registered',
+    vat_number: 'EE100247025',
+    vies_verified_at: '2026-01-01T00:00:00Z'
+  });
+}
+
+function eeSellerB2C(): CounterpartyRow {
+  return lvSeller({
+    id: '99999999-9999-9999-9999-999999999999',
+    country: 'EE',
+    tax_status: 'private',
+    vies_verified_at: null
+  });
+}
+
 function lvVendor(): CounterpartyRow {
   return lvSeller({
     id: '44444444-4444-4444-4444-444444444444',
@@ -133,6 +152,22 @@ const REPRESENTATIVES: Representative[] = [
     ctx: {
       event_type: 'order.completed',
       counterparty: ltSellerB2C(),
+      payload: {}
+    }
+  },
+  {
+    type_id: 'O.4',
+    ctx: {
+      event_type: 'order.completed',
+      counterparty: eeSellerB2B(),
+      payload: {}
+    }
+  },
+  {
+    type_id: 'O.5',
+    ctx: {
+      event_type: 'order.completed',
+      counterparty: eeSellerB2C(),
       payload: {}
     }
   },

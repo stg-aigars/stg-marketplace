@@ -119,9 +119,9 @@ function buildPreComputedLines(
 }
 
 /**
- * Shared scaffolding for outgoing order revenue (O.1, O.2, O.3 in PR #2; O.4
- * and O.5 ship in a later PR with the same shape). Produces three or four
- * journal_lines:
+ * Shared scaffolding for outgoing order revenue (O.1, O.2, O.3 in PR #2;
+ * O.4, O.5 in PR #4.5e — same shape with EE substituted). Produces three or
+ * four journal_lines:
  *
  *   1. Dr 5351 seller wallet for (commission + shipping + vat)
  *   2. Cr 6310-C commission revenue
@@ -545,6 +545,102 @@ const O_3: VatMappingEntry = {
         vat_cents: result.vat_cents,
         vat_rate_snapshot: input.vat_rate,
         oss_consumption_ms: 'LT'
+      }
+    };
+  }
+};
+
+// =============================================================================
+// O.4 — EE B2B reverse-charge (VIES-validated)
+// =============================================================================
+
+const O_4: VatMappingEntry = {
+  id: 'O.4',
+  category: 'outgoing',
+  entry_type: 'order',
+  description: 'Commission + shipping mgmt to EE VAT-registered seller (B2B reverse-charge)',
+  legal_basis: 'Article 196 of Directive 2006/112/EC (recipient self-assesses); Article 262 (recapitulative statement)',
+  routing: {
+    event_type: 'order.completed',
+    conditions: {
+      'counterparty.country': 'EE',
+      'counterparty.tax_status': 'vat_registered',
+      'counterparty.vies_verified_at': '!null'
+    }
+  },
+  vat_base_rule: { source: 'item_value' },
+  vat_rate_country: 'EE',
+  reporting: {
+    pvn_lines: ['48.2'],
+    pvn2_esl_required: true,
+    esl_transaction_code: 'S'
+  },
+  posting_context_required_keys: ['order_id', 'seller_id', 'seller_vat_number', 'vies_verified_at', 'invoice_number'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    // No VAT line — recipient self-assesses EE VAT on their own return.
+    // ESL visibility via vat_country='EE' + vat_rate_snapshot=0 on credit lines.
+    const result = buildOrderRevenueLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_country: 'EE',
+      vat_rate: 0,
+      vat_account: null,
+      context_label: 'EE B2B RC, 0%'
+    });
+    return {
+      lines: result.lines,
+      posting_context_extras: {
+        commission_cents: result.commission_cents,
+        shipping_value_cents: result.shipping_value_cents,
+        vat_cents: 0,
+        vat_rate_snapshot: 0,
+        esl_eligible: true
+      }
+    };
+  }
+};
+
+// =============================================================================
+// O.5 — EE B2C OSS (private / sole_proprietor seller)
+// =============================================================================
+
+const O_5: VatMappingEntry = {
+  id: 'O.5',
+  category: 'outgoing',
+  entry_type: 'order',
+  description: 'Commission + shipping mgmt to EE private seller (B2C OSS, Union scheme)',
+  legal_basis: 'Article 58 of Directive 2006/112/EC (B2C electronically supplied services); Articles 369a–x (Union OSS scheme)',
+  routing: {
+    event_type: 'order.completed',
+    conditions: {
+      'counterparty.country': 'EE',
+      'counterparty.tax_status': ['private', 'sole_proprietor']
+    }
+  },
+  vat_base_rule: { source: 'item_value' },
+  vat_rate_country: 'EE',
+  reporting: {
+    pvn_lines: [],
+    oss_required: 'EE'
+  },
+  posting_context_required_keys: ['order_id', 'seller_id', 'invoice_number', 'consumption_ms'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const result = buildOrderRevenueLines({
+      counterparty: input.counterparty,
+      payload: input.payload,
+      vat_country: 'EE',
+      vat_rate: input.vat_rate,
+      vat_account: '5712',
+      context_label: 'EE B2C OSS'
+    });
+    return {
+      lines: result.lines,
+      posting_context_extras: {
+        commission_cents: result.commission_cents,
+        shipping_value_cents: result.shipping_value_cents,
+        vat_cents: result.vat_cents,
+        vat_rate_snapshot: input.vat_rate,
+        oss_consumption_ms: 'EE'
       }
     };
   }
@@ -1366,11 +1462,19 @@ const C_8: VatMappingEntry = {
 
 /**
  * v3 mapping table type IDs in scope: 9 from PR #2 + 9 from PR #3 (Phase 0
- * backfill) = 18 entries. First-match-wins routing in dispatcher.ts evaluates
- * in this order against the incoming PostingEvent. Order matters when multiple
- * types share an event_type — e.g. O.2 must precede O.3 because O.2's
- * conditions are stricter (vat_registered + vies_verified_at) and would
- * otherwise fall through to O.3 if not checked first.
+ * backfill) + 2 from PR #4.5e (EE catalog gap) = 20 entries. First-match-wins
+ * routing in dispatcher.ts evaluates in this order against the incoming
+ * PostingEvent. Order matters when multiple types share an event_type — e.g.
+ * O.2 must precede O.3 because O.2's conditions are stricter (vat_registered +
+ * vies_verified_at) and would otherwise fall through to O.3 if not checked
+ * first.
+ *
+ * Outgoing-order types group B2B reverse-charge (O.2 LT, O.4 EE) before B2C
+ * OSS (O.5 EE, O.3 LT) before LV catch-all (O.1). Within each group, country
+ * ordering is geometrically immaterial — predicates discriminate on
+ * `counterparty.country` and never overlap. The B2B-then-B2C ordering
+ * preserves the most-specific-first invariant if a future type ever shares an
+ * event_type with these.
  *
  * H.1, H.2, H.3 share event_type='historical.override' but have mutually
  * exclusive `payload.override_type` discriminators, so order is for
@@ -1380,16 +1484,15 @@ const C_8: VatMappingEntry = {
  * where caller passes `expense_account: '1230'` (or sub-account) on the
  * underlying I.x type to capitalize instead of expense.
  *
- * When O.4 (EE B2B reverse-charge) and O.5 (EE B2C OSS) ship in a later PR,
- * insert them between O.2 and O.3 in this same most-specific-first order.
- *
  * Test enforces mutual exclusivity: every type's representative event must
  * match exactly one type, AND each type must self-match. See
  * dispatcher.test.ts.
  */
 export const MAPPING_TABLE: readonly VatMappingEntry[] = [
-  // Outgoing (most specific routing first — vat_registered before private)
+  // Outgoing (B2B reverse-charge first, then B2C OSS, then LV catch-all)
   O_2,
+  O_4,
+  O_5,
   O_3,
   O_1,
   // Incoming (more specific vat_treatment routing first; I_4 country list excludes EU MS so order with I_3 is safe)
