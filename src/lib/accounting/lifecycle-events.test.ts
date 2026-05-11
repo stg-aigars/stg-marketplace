@@ -141,7 +141,6 @@ describe('buildOrderCompletionEvent', () => {
     seller_counterparty_id: '11111111-1111-1111-1111-111111111111',
     item_value_cents: 10000,
     shipping_value_cents: 500,
-    unisend_cost_cents: 350,
     invoice_number: 'STG-2027-00001',
     posting_date: '2027-01-15',
     accounting_period: '2027-01',
@@ -157,7 +156,7 @@ describe('buildOrderCompletionEvent', () => {
     expect(event.counterparty_id).toBe('11111111-1111-1111-1111-111111111111');
     expect(event.payload.item_value_cents).toBe(10000);
     expect(event.payload.shipping_value_cents).toBe(500);
-    expect(event.payload.unisend_cost_cents).toBe(350);
+    expect(event.payload.unisend_cost_cents).toBeUndefined();
     expect(event.payload.invoice_number).toBe('STG-2027-00001');
     expect(event.payload.completion_trigger).toBe('delivery_confirmed');
     const matched = dispatch(ctxFromEvent(event, lvSeller()));

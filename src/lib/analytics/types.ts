@@ -47,6 +47,13 @@ export interface AnalyticsEventMap {
   };
   newsletter_subscribed: Record<string, never>;
   homepage_feature_tab_clicked: { tab: 'browse' | 'sell' | 'ship' | 'payments' };
+  'accounting.orphan_emit_skipped': {
+    orphan_type: 'completion' | 'refund';
+    order_id: string;
+    cart_payment_id: string | null;
+    expected_antecedent_type_ids: readonly string[];
+    service_file: string;
+  };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

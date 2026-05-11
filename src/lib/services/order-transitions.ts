@@ -20,6 +20,8 @@ import {
   sendOrderDeclinedToBuyer,
 } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
+import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
+import { completeOrderWithGL, type CompletionSource } from '@/lib/accounting/lifecycle-wraps';
 import { updateDac7StatsOnCompletion } from '@/lib/dac7/service';
 import { getOrderGameSummary, getOrderListingIds } from '@/lib/orders/utils';
 
@@ -332,7 +334,7 @@ export async function completeOrder(orderId: string, userId: string): Promise<Or
   const updatedOrder = await transitionOrder(orderId, 'completed', userId, 'buyer', undefined, order);
 
   // Credit seller wallet with earnings (idempotent — safe to retry)
-  await creditSellerWallet(orderId, order);
+  await creditSellerWallet(orderId, order, 'delivery_confirmed');
 
   // Issue invoice — after wallet credit so the financial operation isn't blocked.
   // If this fails, the order is complete with wallet credited; reconciliation cron retries.
@@ -406,7 +408,7 @@ export async function autoCompleteOrder(orderId: string): Promise<OrderRow | nul
   });
 
   // Credit seller wallet (idempotent)
-  await creditSellerWallet(orderId, order);
+  await creditSellerWallet(orderId, order, 'auto_complete');
 
   // Issue invoice (fire-and-forget — reconciliation cron retries if this fails)
   void issueInvoice(orderId).catch((err) => console.error('[Invoicing] Failed to issue invoice:', err));
@@ -470,8 +472,43 @@ export function markOrderListingsSold(order: Pick<OrderWithRelations, 'order_ite
  * Shared by completeOrder, autoCompleteOrder, withdrawDispute, and staffResolveDispute (no_refund).
  * Idempotent via creditWallet's order_id + type='credit' check.
  */
-export async function creditSellerWallet(orderId: string, order: Pick<OrderWithRelations, 'seller_id' | 'seller_wallet_credit_cents' | 'listings' | 'order_number'>): Promise<void> {
+export async function creditSellerWallet(
+  orderId: string,
+  order: Pick<
+    OrderWithRelations,
+    | 'seller_id'
+    | 'seller_wallet_credit_cents'
+    | 'listings'
+    | 'order_number'
+    | 'items_total_cents'
+    | 'shipping_cost_cents'
+    | 'seller_country'
+    | 'cart_group_id'
+  >,
+  completionSource: CompletionSource = 'delivery_confirmed'
+): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
+
+  // Flag-ON path: parent RPC composes wallet credit + status update + GL emit
+  // atomically per round-3 §A.3 + accountant signoff v1.4. Flag-OFF (default)
+  // runs the byte-identical pre-PR-#5 flow below.
+  if (isAccountingEngineEnabled()) {
+    const supabase = createServiceClient();
+    await completeOrderWithGL(
+      supabase,
+      {
+        id: orderId,
+        seller_id: order.seller_id,
+        seller_country: order.seller_country as 'LV' | 'LT' | 'EE',
+        items_total_cents: order.items_total_cents,
+        shipping_cost_cents: order.shipping_cost_cents,
+        order_number: order.order_number,
+        cart_group_id: order.cart_group_id
+      },
+      completionSource
+    );
+    return;
+  }
 
   const gameSummary = getOrderGameSummary(
     'order_items' in order ? (order as OrderWithRelations).order_items : undefined,

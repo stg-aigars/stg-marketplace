@@ -9,6 +9,8 @@ import { refundPayment } from '@/lib/services/everypay/client';
 import { refundToWallet } from '@/lib/services/wallet';
 import { logAuditEvent } from '@/lib/services/audit';
 import { issueCreditNote } from '@/lib/services/invoicing';
+import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
+import { refundOrderWithGL } from '@/lib/accounting/lifecycle-wraps';
 import type { PaymentMethod } from '@/lib/orders/types';
 
 /** Refund status values written to orders.refund_status. */
@@ -46,6 +48,16 @@ interface RefundableOrder {
   order_number: string;
   refund_status: string | null;
   invoice_number: string | null;
+  // PR #5 commit 7: flag-ON path needs additional fields for the GL emit.
+  // Optional so callers that only have the legacy slice can still invoke
+  // refundOrder under flag-OFF without breaking their type contracts.
+  // Under flag-ON these are required (asserted at the wrap boundary).
+  id?: string;
+  seller_id?: string;
+  items_total_cents?: number;
+  shipping_cost_cents?: number;
+  credit_note_number?: string | null;
+  cart_group_id?: string | null;
 }
 
 /**
@@ -135,19 +147,77 @@ export async function refundOrder(
     return { cardRefunded, walletRefunded };
   }
 
-  await serviceClient
-    .from('orders')
-    .update({
-      refund_status: refundStatus,
-      refund_amount_cents: totalRefunded,
-      refunded_at: new Date().toISOString(),
-    })
-    .eq('id', orderId);
+  // Flag-ON path: parent RPC composes orders.refund_status/refund_amount_cents
+  // update + GL emits (refund-side O.7/O.8 + C.5 cash leg) atomically.
+  // Credit note is issued synchronously so the wrap can pass credit_note_number
+  // through to the refund event payload (used as a human-readable reference;
+  // O.7/O.8 still use source_doc_id=order_id for retry idempotency).
+  // Flag-OFF: existing path runs byte-identical.
+  if (isAccountingEngineEnabled()) {
+    let creditNoteNumber: string | null = null;
+    if (order.invoice_number) {
+      try {
+        creditNoteNumber = await issueCreditNote(orderId);
+      } catch (err) {
+        console.error('[Invoicing] Failed to issue credit note:', err);
+      }
+    }
 
-  // Issue credit note only if an invoice exists (completed orders refunded via dispute).
-  // Cancelled orders (declined, timeout) never had an invoice — no credit note needed.
-  if (order.invoice_number) {
-    void issueCreditNote(orderId).catch((err) => console.error('[Invoicing] Failed to issue credit note:', err));
+    if (
+      order.id !== undefined
+      && order.seller_id !== undefined
+      && order.items_total_cents !== undefined
+      && order.shipping_cost_cents !== undefined
+    ) {
+      await refundOrderWithGL(
+        serviceClient,
+        {
+          id: order.id,
+          seller_id: order.seller_id,
+          order_number: order.order_number,
+          invoice_number: order.invoice_number,
+          credit_note_number: creditNoteNumber ?? order.credit_note_number ?? null,
+          items_total_cents: order.items_total_cents,
+          shipping_cost_cents: order.shipping_cost_cents,
+          total_amount_cents: order.total_amount_cents,
+          payment_method: order.payment_method,
+          cart_group_id: order.cart_group_id ?? null,
+        },
+        {
+          card_refunded: cardRefunded,
+          wallet_refunded: walletRefunded,
+          total_refunded: totalRefunded,
+          refund_status: refundStatus as 'completed' | 'partial' | 'failed',
+        }
+      );
+    } else {
+      console.error(
+        `[Refund] Flag-ON refund missing required fields on order ${orderId}; falling back to legacy update path. Caller must pass the full RefundableOrder shape under flag-ON.`
+      );
+      await serviceClient
+        .from('orders')
+        .update({
+          refund_status: refundStatus,
+          refund_amount_cents: totalRefunded,
+          refunded_at: new Date().toISOString(),
+        })
+        .eq('id', orderId);
+    }
+  } else {
+    await serviceClient
+      .from('orders')
+      .update({
+        refund_status: refundStatus,
+        refund_amount_cents: totalRefunded,
+        refunded_at: new Date().toISOString(),
+      })
+      .eq('id', orderId);
+
+    // Issue credit note only if an invoice exists (completed orders refunded via dispute).
+    // Cancelled orders (declined, timeout) never had an invoice — no credit note needed.
+    if (order.invoice_number) {
+      void issueCreditNote(orderId).catch((err) => console.error('[Invoicing] Failed to issue credit note:', err));
+    }
   }
 
   void logAuditEvent(serviceClient, {

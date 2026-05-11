@@ -85,10 +85,8 @@ export interface BuildOrderCompletionEventInput extends PostingPeriodInput {
   seller_counterparty_id: string;
   /** Buyer's gross item value (excludes shipping). */
   item_value_cents: number;
-  /** Buyer's gross shipping payment (full pass-through; STG accrues unisend_cost separately). */
+  /** Buyer's gross shipping payment. STG records the matching Unisend expense at I.1 vendor invoice receipt time, not at completion (per v1.4 signoff doc). */
   shipping_value_cents: number;
-  /** STG's anticipated cost owed to Unisend for this order's shipping. Accrued at completion via Cr 5410-UN. */
-  unisend_cost_cents: number;
   invoice_number: string;
   /** Drives narrative + posting_context.completion_trigger; routing is by counterparty fields. */
   completion_source: 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
@@ -118,7 +116,6 @@ export function buildOrderCompletionEvent(input: BuildOrderCompletionEventInput)
       seller_id: input.seller_counterparty_id,
       item_value_cents: input.item_value_cents,
       shipping_value_cents: input.shipping_value_cents,
-      unisend_cost_cents: input.unisend_cost_cents,
       invoice_number: input.invoice_number,
       completion_trigger: input.completion_source
     },

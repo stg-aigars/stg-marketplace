@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  unit:
+    name: Unit (pnpm verify)
+    runs-on: ubuntu-latest
+    env:
+      # Dummy env values to satisfy env.ts validateEnv at build time.
+      # Unit tests + build don't call external services; integration job
+      # has real Supabase via CLI. CI uses dummies to avoid GHA secret
+      # provisioning for unit-test-only EveryPay/Resend/Unisend keys.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy_anon_key_for_ci
+      SUPABASE_SERVICE_ROLE_KEY: dummy_service_role_key_for_ci
+      EVERYPAY_API_USERNAME: dummy
+      EVERYPAY_API_SECRET: dummy
+      EVERYPAY_API_URL: https://example.test
+      EVERYPAY_ACCOUNT_NAME: dummy
+      RESEND_API_KEY: dummy
+      RESEND_FROM_EMAIL: ci@example.test
+      UNISEND_API_URL: https://example.test
+      UNISEND_USERNAME: dummy
+      UNISEND_PASSWORD: dummy
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ci_dummy_encryption_key_32_chars
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify (type-check + lint + unit tests + build)
+        run: pnpm verify
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Supabase (applies migrations from supabase/migrations/)
+        run: supabase start
+
+      - name: Generate .env.test from local Supabase
+        run: |
+          # supabase status -o env emits API_URL / ANON_KEY / SERVICE_ROLE_KEY;
+          # STG's env.ts expects NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY /
+          # SUPABASE_SERVICE_ROLE_KEY. Rename via sed.
+          supabase status -o env | sed -E '
+            s/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/;
+            s/^ANON_KEY=/NEXT_PUBLIC_SUPABASE_ANON_KEY=/;
+            s/^SERVICE_ROLE_KEY=/SUPABASE_SERVICE_ROLE_KEY=/;
+          ' > .env.test
+
+          # Append dummy values for non-Supabase env vars that env.ts validates.
+          cat >> .env.test <<'ENV'
+          NEXT_PUBLIC_APP_URL=http://localhost:3000
+          EVERYPAY_API_USERNAME=dummy
+          EVERYPAY_API_SECRET=dummy
+          EVERYPAY_API_URL=https://example.test
+          EVERYPAY_ACCOUNT_NAME=dummy
+          RESEND_API_KEY=dummy
+          RESEND_FROM_EMAIL=ci@example.test
+          UNISEND_API_URL=https://example.test
+          UNISEND_USERNAME=dummy
+          UNISEND_PASSWORD=dummy
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=ci_dummy_encryption_key_32_chars
+          ENV
+
+      - name: Run integration tests
+        run: pnpm test:integration
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup

@@ -49,6 +49,7 @@ import {
 import { checkIdempotency } from './idempotency';
 import type {
   ComputeInput,
+  ComputedLine,
   CounterpartyRow,
   DispatchContext,
   PostingEvent,
@@ -69,8 +70,159 @@ const DEFAULT_CREATED_BY = 'posting_engine';
  * not via `actorId`.
  */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-function isUuid(value: string | undefined): value is string {
+export function isUuid(value: string | undefined): value is string {
   return typeof value === 'string' && UUID_RE.test(value);
+}
+
+/**
+ * Fire `accounting.posted` regulatory audit event for a successful GL
+ * write. Used by both `emit()` (engine call site) and PR #5 lifecycle
+ * wraps (parent-RPC call sites that bypass `emit` to compose marketplace
+ * state mutations + GL emit atomically). Without this called from the
+ * wrap path, GL entries written via `PERFORM insert_journal_entry` would
+ * be missing from `audit_log` (the same gap that caused the Phase 0
+ * backfill audit drop documented in CLAUDE.md).
+ *
+ * Fire-and-forget; failures route to Sentry as `warning`. The GL entry
+ * already succeeded — audit failure is observability, not integrity.
+ *
+ * `actorCreatedBy` accepts the event's `created_by` (or any actor id);
+ * UUID-validated since `audit_log.actor_id` is `uuid REFERENCES auth.users`.
+ * Synthetic identities (cron, posting_engine, system) are encoded via
+ * `actorType='system'` + `metadata.created_by`, never as `actorId`.
+ */
+export function fireAccountingPostedAudit(
+  supabase: SupabaseClient,
+  entryId: string,
+  assembled: AssembledEntry,
+  actorCreatedBy: string | undefined
+): void {
+  const entry = assembled.rpcEntry;
+  void logAuditEvent(supabase, {
+    actorId: isUuid(actorCreatedBy) ? actorCreatedBy : undefined,
+    actorType: 'system',
+    action: 'accounting.posted',
+    resourceType: 'journal_entry',
+    resourceId: entryId,
+    metadata: {
+      type_id: assembled.type_id,
+      source_doc_type: entry.source_doc_type as string,
+      source_doc_id: entry.source_doc_id as string,
+      accounting_period: entry.accounting_period as string,
+      tax_period: entry.tax_period as string,
+      created_by: (entry.created_by as string | undefined) ?? DEFAULT_CREATED_BY
+    },
+    retentionClass: 'regulatory'
+  }).catch((err: unknown) => {
+    Sentry.captureMessage(
+      `accounting.posted audit write failed (entry_id=${entryId}): ${String(err)}`,
+      'warning'
+    );
+  });
+}
+
+/**
+ * Result of `assembleEntryForRpc` — the inputs that `insert_journal_entry`
+ * needs (rpcEntry + rpcLines) plus the dispatched type_id for idempotency
+ * lookup. Used by both `emit()` (the engine's own RPC call site) and PR #5
+ * lifecycle parent RPCs (e.g. `complete_order_with_event_atomic`) that
+ * compose the GL emit with marketplace state mutations in a single
+ * transaction. The lifecycle wrap calls this helper, then passes the result
+ * to the parent RPC along with the order id; the parent RPC PERFORMs
+ * `insert_journal_entry(p_event, p_lines)` inline.
+ */
+export interface AssembledEntry {
+  rpcEntry: Record<string, unknown>;
+  rpcLines: ComputedLine[];
+  type_id: string;
+}
+
+/**
+ * Engine-internal assembly: validate the event shape, load counterparty,
+ * dispatch to a VatMappingEntry, validate required keys, run the KYC gate
+ * (C.4 only), resolve the VAT rate, run compute(), assert balance, and
+ * build the rpcEntry shape that `insert_journal_entry` expects.
+ *
+ * `preloadedCounterparty` is an optimization for callers that already have
+ * the counterparty row in scope (e.g. lifecycle wraps that resolved the
+ * seller counterparty before calling this). When supplied, the engine
+ * skips its internal `loadCounterparty` query — saves one DB round-trip
+ * per emit. The supplied row's `id` must equal `event.counterparty_id`
+ * (validated below).
+ *
+ * Throws PostingValidationError / PostingComplianceGateError on failure;
+ * caller (either `emit` or a lifecycle wrap) handles surfacing.
+ */
+export async function assembleEntryForRpc(
+  supabase: SupabaseClient,
+  event: PostingEvent,
+  preloadedCounterparty?: CounterpartyRow | null
+): Promise<AssembledEntry> {
+  validateEventShape(event);
+
+  let counterparty: CounterpartyRow | null;
+  if (preloadedCounterparty !== undefined) {
+    if (preloadedCounterparty && event.counterparty_id && preloadedCounterparty.id !== event.counterparty_id) {
+      throw new PostingValidationError({
+        code: 'invalid_event_shape',
+        reason: `preloadedCounterparty.id (${preloadedCounterparty.id}) does not match event.counterparty_id (${event.counterparty_id})`
+      });
+    }
+    counterparty = preloadedCounterparty;
+  } else {
+    counterparty = await loadCounterparty(supabase, event.counterparty_id);
+  }
+
+  const ctx: DispatchContext = {
+    event_type: event.event_type,
+    counterparty,
+    payload: event.payload
+  };
+  const entry = dispatch(ctx);
+
+  validateRequiredKeys(entry, event.payload);
+
+  // KYC gate runs only for type C.4. Throws PostingComplianceGateError on
+  // block. Reuses the already-loaded counterparty (no extra DB roundtrip).
+  if (entry.id === 'C.4') {
+    if (!event.counterparty_id) {
+      throw new PostingValidationError({
+        code: 'missing_required_key',
+        reason: 'C.4 requires event.counterparty_id'
+      });
+    }
+    assertPayoutAllowed(counterparty);
+  }
+
+  const vat_rate = await resolveVatRate(supabase, entry, event.posting_date);
+
+  const computeInput: ComputeInput = {
+    payload: event.payload,
+    counterparty,
+    vat_rate,
+    posting_date: event.posting_date
+  };
+  const { lines, posting_context_extras } = entry.compute(computeInput);
+  assertBalanced(lines);
+
+  const merged_posting_context = {
+    ...event.payload,
+    ...posting_context_extras
+  };
+  const rpcEntry: Record<string, unknown> = {
+    posting_date: event.posting_date,
+    accounting_period: event.accounting_period,
+    tax_period: event.tax_period,
+    entry_type: entry.entry_type,
+    type_id: entry.id,
+    source_doc_type: event.source_doc_type,
+    source_doc_id: event.source_doc_id,
+    narrative: event.narrative,
+    posting_context: merged_posting_context,
+    created_by: event.created_by ?? DEFAULT_CREATED_BY,
+    period_close_adjustment: event.period_close_adjustment ?? false
+  };
+  return { rpcEntry, rpcLines: lines, type_id: entry.id };
 }
 
 export async function emit(
@@ -78,77 +230,22 @@ export async function emit(
   event: PostingEvent
 ): Promise<PostingResult> {
   try {
-    validateEventShape(event);
-
-    const counterparty = await loadCounterparty(supabase, event.counterparty_id);
-
-    const ctx: DispatchContext = {
-      event_type: event.event_type,
-      counterparty,
-      payload: event.payload
-    };
-    const entry = dispatch(ctx);
-
-    validateRequiredKeys(entry, event.payload);
-
-    // KYC gate runs only for type C.4. Throws PostingComplianceGateError on
-    // block; engine surfaces as { status: 'failed', error } below. Reuses the
-    // already-loaded counterparty (no extra DB roundtrip).
-    if (entry.id === 'C.4') {
-      if (!event.counterparty_id) {
-        throw new PostingValidationError({
-          code: 'missing_required_key',
-          reason: 'C.4 requires event.counterparty_id'
-        });
-      }
-      assertPayoutAllowed(counterparty);
-    }
-
-    const vat_rate = await resolveVatRate(supabase, entry, event.posting_date);
-
-    const computeInput: ComputeInput = {
-      payload: event.payload,
-      counterparty,
-      vat_rate,
-      posting_date: event.posting_date
-    };
-    const { lines, posting_context_extras } = entry.compute(computeInput);
-    assertBalanced(lines);
+    const assembled = await assembleEntryForRpc(supabase, event);
 
     // Idempotency dedup (cheap path).
     const idem = await checkIdempotency(
       supabase,
       event.source_doc_type,
       event.source_doc_id,
-      entry.id
+      assembled.type_id
     );
     if (idem.status === 'idempotent_skip') {
       return idem;
     }
 
-    // Build RPC payload.
-    const merged_posting_context = {
-      ...event.payload,
-      ...posting_context_extras
-    };
-    const rpcEntry = {
-      posting_date: event.posting_date,
-      accounting_period: event.accounting_period,
-      tax_period: event.tax_period,
-      entry_type: entry.entry_type,
-      type_id: entry.id,
-      source_doc_type: event.source_doc_type,
-      source_doc_id: event.source_doc_id,
-      narrative: event.narrative,
-      posting_context: merged_posting_context,
-      created_by: event.created_by ?? DEFAULT_CREATED_BY,
-      period_close_adjustment: event.period_close_adjustment ?? false
-    };
-    const rpcLines = lines;
-
     const { data: entryId, error } = await supabase.rpc('insert_journal_entry', {
-      p_entry: rpcEntry,
-      p_lines: rpcLines
+      p_entry: assembled.rpcEntry,
+      p_lines: assembled.rpcLines
     });
 
     if (error) {
@@ -159,7 +256,7 @@ export async function emit(
           supabase,
           event.source_doc_type,
           event.source_doc_id,
-          entry.id
+          assembled.type_id
         );
         if (recovery.status === 'idempotent_skip') {
           return recovery;
@@ -171,7 +268,7 @@ export async function emit(
           context: {
             source_doc_type: event.source_doc_type,
             source_doc_id: event.source_doc_id,
-            type_id: entry.id
+            type_id: assembled.type_id
           }
         });
         Sentry.captureException(conflict, { level: 'fatal' });
@@ -184,31 +281,7 @@ export async function emit(
       throw new Error(`RPC insert_journal_entry returned unexpected payload: ${JSON.stringify(entryId)}`);
     }
 
-    // Fire-and-forget audit. Regulatory-retention; failures → Sentry warning.
-    // actorId must be a UUID (audit_log.actor_id is uuid REFERENCES auth.users) or
-    // omitted entirely (helper coerces undefined → null). The synthetic 'posting_engine'
-    // identity is encoded via actorType='system' + metadata.created_by, never as actorId.
-    void logAuditEvent(supabase, {
-      actorId: isUuid(event.created_by) ? event.created_by : undefined,
-      actorType: 'system',
-      action: 'accounting.posted',
-      resourceType: 'journal_entry',
-      resourceId: entryId,
-      metadata: {
-        type_id: entry.id,
-        source_doc_type: event.source_doc_type,
-        source_doc_id: event.source_doc_id,
-        accounting_period: event.accounting_period,
-        tax_period: event.tax_period,
-        created_by: event.created_by ?? DEFAULT_CREATED_BY
-      },
-      retentionClass: 'regulatory'
-    }).catch((err: unknown) => {
-      Sentry.captureMessage(
-        `accounting.posted audit write failed (entry_id=${entryId}): ${String(err)}`,
-        'warning'
-      );
-    });
+    fireAccountingPostedAudit(supabase, entryId, assembled, event.created_by);
 
     return { status: 'created', entry_id: entryId };
   } catch (err) {
