@@ -365,10 +365,20 @@ describe('period-scoped wallet integrity (PR #4.5a)', () => {
     // 2026-03-31 with no corresponding 5351 GL line. Global view sees the
     // -90 cent drift; period-scoped view at 2026-03-31 excludes it because
     // the wallet_transaction's created_at is post-asOf.
+    //
+    // Baseline-relative assertion: vitest runs integration test FILES in
+    // parallel by default, so other files (notably posting-engine.test.ts
+    // posting O.x entries dated 2027) may have already created 5351 GL
+    // residue by the time this test runs. Capture the global delta BEFORE
+    // the synthetic activity and assert the SHIFT, not the absolute value.
 
     const serviceClient = createTestServiceClient();
     const SYNTHETIC_TX_AMOUNT_CENTS = 90;
     const POST_PHASE_0_DATE = '2026-04-20T12:00:00Z';
+
+    // Capture baseline before synthetic activity, so the assertion is robust
+    // to whatever post-Phase-0 5351 state other parallel test files leave.
+    const baseline = await getWalletIntegrity(staffPersona.client);
 
     // Create a synthetic seller persona for the test. Use createSignedInClient
     // so the user_profiles row exists (FK target for wallets / wallet_transactions).
@@ -439,14 +449,12 @@ describe('period-scoped wallet integrity (PR #4.5a)', () => {
       expect(periodScoped.delta_cents).toBe(0);
       expect(periodScoped.is_reconciled).toBe(true);
 
-      // The global check, by contrast, must reflect the synthetic drift.
-      // We compare relative to the period-scoped baseline: global delta
-      // should be lower by exactly SYNTHETIC_TX_AMOUNT_CENTS (wallet side
-      // grew by 90, GL side did not).
-      expect(globalBefore.delta_cents).toBe(
-        periodScoped.delta_cents - SYNTHETIC_TX_AMOUNT_CENTS
-      );
-      expect(globalBefore.delta_cents).toBe(-SYNTHETIC_TX_AMOUNT_CENTS);
+      // The global check, by contrast, must reflect the synthetic drift —
+      // assert as a SHIFT from the baseline rather than an absolute value,
+      // since other parallel test files may have residual 5351 state.
+      // Wallet side grew by 90, GL side did not → globalBefore should be
+      // lower than baseline by exactly SYNTHETIC_TX_AMOUNT_CENTS.
+      expect(globalBefore.delta_cents).toBe(baseline.delta_cents - SYNTHETIC_TX_AMOUNT_CENTS);
     } finally {
       // Cleanup: order matters because of FK from wallet_transactions →
       // wallets (RESTRICT). Drop the tx first, then the wallet, then the
