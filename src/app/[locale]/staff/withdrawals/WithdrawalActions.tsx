@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Alert, Button } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import type { WithdrawalStatus } from '@/lib/wallet/types';
@@ -14,16 +14,25 @@ interface WithdrawalActionsProps {
 export function WithdrawalActions({ withdrawalId, currentStatus }: WithdrawalActionsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Optional bank-side confirmation reference for the outbound SEPA wire.
+  // Captured at completion time; lands in the C.4 GL entry's posting_context
+  // for audit / dispute / fraud forensics. Empty string = not provided
+  // (handler treats as undefined; field absent from posting_context).
+  const [bankConfirmationRef, setBankConfirmationRef] = useState('');
 
   async function handleAction(action: 'approve' | 'reject' | 'complete') {
     setLoading(action);
     setError(null);
 
     try {
+      const body: Record<string, unknown> = { action };
+      if (action === 'complete' && bankConfirmationRef.trim().length > 0) {
+        body.bankConfirmationRef = bankConfirmationRef.trim();
+      }
       const res = await apiFetch(`/api/staff/withdrawals/${withdrawalId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -43,6 +52,15 @@ export function WithdrawalActions({ withdrawalId, currentStatus }: WithdrawalAct
 
   return (
     <div className="space-y-2">
+      {currentStatus === 'approved' && (
+        <Input
+          label="Bank confirmation reference (optional)"
+          value={bankConfirmationRef}
+          onChange={(e) => setBankConfirmationRef(e.target.value)}
+          placeholder="e.g. Swedbank transaction ID"
+          disabled={loading !== null}
+        />
+      )}
       <div className="flex gap-2">
         {currentStatus === 'pending' && (
           <>

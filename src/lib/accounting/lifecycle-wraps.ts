@@ -36,6 +36,7 @@ import {
   buildOrderCompletionEvent,
   buildRefundEvent,
   buildRefundCashLegEvent,
+  buildWithdrawalCompletionEvent,
   type RefundType
 } from './lifecycle-events';
 import type { ComputedLine, CounterpartyRow } from './types';
@@ -685,4 +686,110 @@ export async function cartFulfillmentWithGL(
     partial_refund_journal_entry_id: partial_refund_entry_id,
     idempotent_skip: rpcResult.idempotent_skip
   };
+}
+
+// ---------------------------------------------------------------------------
+// withdrawalCompletionWithGL — flag-ON path for staff withdrawal completion handler
+// ---------------------------------------------------------------------------
+
+export interface WithdrawalCompletionWithGLInput {
+  withdrawal_request_id: string;
+  /** auth.users.id of the seller — used for counterparty resolution. */
+  seller_user_id: string;
+  withdrawal_cents: number;
+  /** STG's SEPA remittance reference (withdrawal_requests.reference_number, format WD-YYYY-NNNNN). */
+  withdrawal_ref: string;
+  /** Seller's IBAN (withdrawal_requests.bank_iban). */
+  seller_iban: string;
+  /**
+   * Bank's confirmation number for the outbound SEPA wire (optional). Lands
+   * only in posting_context per commit-10 Q1 Option B — no withdrawal_requests
+   * column mutation. Undefined values are not written to the payload at all.
+   */
+  bank_confirmation_ref?: string;
+  /** Optional staff notes; coalesces with existing notes inside the RPC. */
+  staff_notes?: string;
+  /** auth.users.id of the staff member triggering completion (for audit/actor_id). */
+  staff_user_id: string;
+}
+
+interface WithdrawalCompletionWithGLResult {
+  journal_entry_id: string | null;
+  idempotent_skip: boolean;
+}
+
+/**
+ * Flag-ON path for `src/app/api/staff/withdrawals/[id]/route.ts` action='complete'.
+ * Resolves the seller counterparty, builds the C.4 event, assembles via the
+ * engine (which fires the TS-layer KYC gate via assertPayoutAllowed for C.4),
+ * then calls `wallet_withdrawal_complete_with_event_atomic` (migration 109) to
+ * compose the GL emit + withdrawal_requests status flip atomically.
+ *
+ * Shape 2 timing: wallet table was debited at request time (via existing
+ * `wallet_withdrawal_debit` RPC, migration 071). This wrap fires at staff-
+ * marked completion time, days later. GL 5351 debit + GL 2610 credit land
+ * here. Between request and completion, wallet table balance is `withdrawal_
+ * cents` BELOW GL 5351 sum — that's the in-flight withdrawal lag that
+ * commit 11b's dashboard adjustment surfaces.
+ *
+ * Error families:
+ *   - `PostingComplianceGateError` — KYC gate blocked (`pending_kyc`,
+ *     `dac7_blocked`, `negative_wallet`, `suspended`). Handler maps to 403.
+ *   - `Error('... LIFECYCLE:INVALID_WITHDRAWAL_STATUS expected approved, got X')`
+ *     — concurrent state mutation between TS check and RPC commit. Handler
+ *     maps to 409.
+ *   - `Error('... LIFECYCLE:WITHDRAWAL_NOT_FOUND ...')` — withdrawal vanished
+ *     between handler fetch and RPC FOR UPDATE. Handler maps to 404.
+ *   - `Error('... LIFECYCLE:EVENT_ID_MISMATCH ...')` — engine bug (wrap built
+ *     an event for a different withdrawal). Should never fire in production;
+ *     500.
+ *   - other engine errors propagate as Error → 500 via Next.js default.
+ */
+export async function withdrawalCompletionWithGL(
+  supabase: SupabaseClient,
+  input: WithdrawalCompletionWithGLInput
+): Promise<WithdrawalCompletionWithGLResult> {
+  const counterparty = await resolveSellerCounterparty(supabase, input.seller_user_id);
+
+  const today = new Date().toISOString().split('T')[0];
+  const period = today.substring(0, 7);
+
+  const event = buildWithdrawalCompletionEvent({
+    withdrawal_request_id: input.withdrawal_request_id,
+    seller_counterparty_id: counterparty.id,
+    withdrawal_cents: input.withdrawal_cents,
+    withdrawal_ref: input.withdrawal_ref,
+    seller_iban: input.seller_iban,
+    bank_confirmation_ref: input.bank_confirmation_ref,
+    posting_date: today,
+    accounting_period: period,
+    tax_period: period,
+    actor_id: input.staff_user_id
+  });
+
+  // assembleEntryForRpc runs the TS-layer KYC gate (assertPayoutAllowed) for
+  // C.4 routing. Throws PostingComplianceGateError on a blocking compliance
+  // status — the wrap doesn't catch; the error surfaces to the handler for
+  // 403 translation.
+  const assembled = await assembleEntryForRpc(supabase, event, counterparty);
+
+  const { data, error } = await supabase.rpc('wallet_withdrawal_complete_with_event_atomic', {
+    p_withdrawal_request_id: input.withdrawal_request_id,
+    p_actor_id: input.staff_user_id,
+    p_event: assembled.rpcEntry,
+    p_lines: assembled.rpcLines as unknown as Record<string, unknown>[],
+    p_staff_notes: input.staff_notes ?? null
+  });
+
+  if (error) {
+    throw new Error(`wallet_withdrawal_complete_with_event_atomic failed (${error.code ?? 'unknown'}): ${error.message}`);
+  }
+
+  const result = data as WithdrawalCompletionWithGLResult;
+
+  if (result.journal_entry_id) {
+    fireAccountingPostedAudit(supabase, result.journal_entry_id, assembled, input.staff_user_id);
+  }
+
+  return result;
 }
