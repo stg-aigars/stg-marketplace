@@ -87,13 +87,18 @@ jobs:
         run: supabase start
 
       - name: Apply migrations
-        # supabase start no longer reliably applies migrations on fresh init
-        # in the current CLI. Explicit `db reset` drops + recreates the schema
-        # from supabase/migrations/* synchronously, ensuring tests see the
-        # full schema. --no-seed skips supabase/seed.sql (none exists today;
-        # the flag is defensive so a future seed.sql addition doesn't change
-        # CI behavior).
-        run: supabase db reset --no-seed
+        # NOT `supabase db reset` and NOT `supabase migration up`. The CLI's
+        # built-in migration runner is intentionally disabled in
+        # supabase/config.toml (`[db.migrations] enabled = false`) because its
+        # prepared-statement runner can't handle PL/pgSQL $$ function bodies
+        # spanning multiple statements in files like 025/032. The team's
+        # workaround is scripts/apply-local-migrations.sh which streams each
+        # migration file through `docker exec psql` instead.
+        #
+        # `supabase start` brings the container up with Supabase's internal
+        # schema (auth, storage, extensions) but no user tables. This script
+        # then applies all 106 migration files synchronously via psql.
+        run: ./scripts/apply-local-migrations.sh
 
       - name: Generate .env.test from local Supabase
         run: |
