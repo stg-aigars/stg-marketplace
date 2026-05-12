@@ -125,9 +125,9 @@ These cause `assertEnv()` to throw if absent on any environment. Production must
 
 | Var | Purpose | Expected current value | When it changes |
 |---|---|---|---|
-| **`ACCOUNTING_ENGINE_ENABLED`** | Feature flag for PR C lifecycle integration | **`false` or unset** (defaults to OFF via `=== 'true'` strict equality) | Flipped to `'true'` during cutover stage 2 (production staff-only burn-in) per the round-3 brief §6(f) + commit 14's runbook. **User-verify in Coolify before merging PR C.** |
+| **`ACCOUNTING_ENGINE_ENABLED`** | Feature flag for PR C lifecycle integration | **RESOLVED 2026-05-12:** var does NOT exist in Coolify (confirmed by user). `process.env.ACCOUNTING_ENGINE_ENABLED === 'true'` evaluates to `false`; engine is OFF. | Flipped to `'true'` during cutover stage 2 by adding the var to Coolify with value `'true'`. Until then, no Coolify-side action needed. |
 
-**If ACCOUNTING_ENGINE_ENABLED is unexpectedly `'true'` in prod today:** PR C wraps would activate immediately on deploy, posting C.1/C.2/C.4/etc. entries for live marketplace traffic. This would NOT be a destructive bug (entries land cleanly via the engine), but it would cutover ahead of schedule. **Verify the var's current value before merging.**
+**Resolution:** the var is unset in Coolify, which makes `env.accounting.engineEnabled === false`. PR C wraps remain dormant on deploy. No pre-merge action required.
 
 ### User-verify checklist (Coolify dashboard)
 
@@ -167,24 +167,28 @@ These cause `assertEnv()` to throw if absent on any environment. Production must
 
 ### Specifically the PR #296 + commit 12 question
 
-**The smoke-test gap on PR #296** means we don't yet have confirmation that the `monthly-depreciation` Coolify cron job was registered in the dashboard. The first opportunity to verify was 2026-05-01 00:30 UTC (would have closed April 2026 by emitting the IT-2026-001 P.6 for April — month 4 of 36).
+**RESOLVED 2026-05-12 (smoke-test verified by user):**
 
-- **Was the April depreciation P.6 emitted by the cron?** Check via Supabase MCP `journal_entries` query: any row with `type_id='P.6'` AND `accounting_period='2026-04'` AND `posting_context->>'emission_source' = 'cron'`. If present: cron is registered + working. If absent: cron is NOT registered in Coolify; April depreciation was instead emitted by the April backfill script (Phase 0 chain handoff per the migration 107 + `phase0_entry_21` convention).
-- **Recommended:** run this query before commit 14's runbook drafting:
+- `monthly-depreciation` cron **IS registered** in Coolify with schedule `30 0 1 * *`.
+- "Execute Now" smoke test ran the cron logic end-to-end against the current state (April 2026 already has 3 P.6 entries posted via Phase 0 chain: `phase0_entry_19/20/21` for Feb/Mar/Apr) — **no duplicate entry was posted** (defensive behavior verified).
+- First scheduled fire: **2026-06-01 00:30 UTC**, closing May 2026 (will emit the first cron-source P.6 for IT-2026-001 month 4 of 36).
 
-```sql
-SELECT type_id, source_doc_id, accounting_period, posting_context->>'emission_source' AS source
-FROM journal_entries
-WHERE type_id = 'P.6' AND accounting_period = '2026-04';
-```
+**Analytical note on the defensive behavior observed:** the user's smoke test confirmed no duplicate posted, but the protective mechanism is **NOT** an explicit period-level skip guard in `monthly-depreciation/route.ts` or `depreciation-logic.ts` (those files have only asset-level skip cases: disposed / before-start / fully-depreciated). The actual protection during "Execute Now" came from the engine's `enforce_period_status` trigger (migration 094) — period 2026-04 is hard-locked, so `insert_journal_entry` rejected the emit with a `check_violation` regardless of the source_doc_id mismatch. The cron returned `failed` for that asset; staff didn't see a duplicate row.
 
-  If `source = 'cron'`: monthly-depreciation cron is operational; we have a reliable depreciation-cron precedent for commit 14's runbook to reference. If `source = 'backfill'` (or no rows): cron registration is still a deferred user-action.
+**Implication for commit 12's monthly-vat-close:** post-cutover periods will NOT all be hard-locked immediately. A retry against a still-open period with a different source_doc_id (e.g., a backfill emission used `phase0_entry_N` and a cron emission would use `close_YYYY_MM`) would BOTH succeed, producing two P.1 entries for the same period. The engine's idempotency UNIQUE is keyed on `(source_doc_type, source_doc_id, type_id)` and doesn't catch cross-source-doc-id collisions within the same period.
+
+**Mitigation in commit 12:** monthly-vat-close adds an explicit cron-level period-skip guard (query `journal_entries WHERE accounting_period = target AND type_id = 'P.1'` before emit; skip with status `skipped_period_already_closed` if found). Layered idempotency: engine UNIQUE catches same-source_doc_id retries; cron-level skip catches different-source_doc_id-same-period scenarios. See route.ts comments for the rationale.
+
+**Potential consistency followup (not commit 12 scope):** PR #296's monthly-depreciation cron could be retrofit with the same period-level skip guard. Today it relies on period hard-lock state to prevent duplicates — works for already-closed periods but not for fresh re-runs of an open period that already has a P.6 emission from a different source. Flag for post-cutover refactor; not urgent because:
+  (a) depreciation P.6 source_doc_id is asset-specific (`depreciation_<asset_code>_<YYYY-MM>`), so backfill collisions would actually share the same source_doc_id if the backfill used the same convention — but backfill used `phase0_entry_N`, so the risk shape exists for depreciation too.
+  (b) the operational cost of the gap is low (a duplicate P.6 is recoverable via reversal; doesn't break period close), and ;
+  (c) post-cutover code-changes will more likely use the cron's convention, reducing collision risk going forward.
 
 ### User-verify checklist (Coolify dashboard)
 
-- [ ] `monthly-depreciation` cron job is registered with schedule `30 0 1 * *` and the canonical curl command
+- [x] `monthly-depreciation` cron job IS registered with schedule `30 0 1 * *` and the canonical curl command (verified 2026-05-12)
 - [ ] If commit 12 merges to main and deploys: **register `monthly-vat-close`** with schedule `0 1 1 * *` and the canonical curl command. First fire expected 2026-06-01 01:00 UTC (closing May 2026).
-- [ ] Other crons from the CLAUDE.md registry are all registered
+- [ ] Other crons from the CLAUDE.md registry are all registered (still pending verification of the 16 other cron routes; the depreciation registration confirms the dashboard discipline is in place)
 
 ---
 
@@ -194,22 +198,19 @@ Items requiring user action, in roughly chronological order:
 
 ### Imminent (next 0-3 weeks)
 
-1. **April 2026 PVN deklarācija filing — DEADLINE Wednesday 20 May 2026 (8 days from today).**
-   - €0.30 net refund position
-   - Output €0.38 → Line 52
-   - Input €0.68 → Line 62
-   - Foreign RC informational €0.40/€0.40 → Lines 56/57
-   - OSS-EE €0.64 separate Q2 channel (deadline 31.07.2026 — NOT this filing)
-   - **30 min via EDS portal.** User action.
+1. **April 2026 PVN deklarācija filing — DONE 2026-05-12 (8 days ahead of deadline).**
+   - €0.30 net refund position submitted via EDS portal
+   - **EDS document reference: 114368574**
+   - Filed against April period 2026-04 (hard-locked, items 1-9 reconciled per PR D)
 
-2. **Verify monthly-depreciation cron in Coolify (smoke test gap from PR #296).**
-   - Run the Supabase query in §4 to verify if April P.6 was emitted by cron or backfill.
-   - If cron-emitted: confirm Coolify registration; no action needed.
-   - If backfill-emitted (or no rows): register the cron in Coolify per CLAUDE.md schedule + curl command. **Target completion: before 1 June** (so the cron fires for May 2026 depreciation correctly).
+2. **monthly-depreciation cron — RESOLVED 2026-05-12 (smoke-test verified).**
+   - Cron registered in Coolify with `30 0 1 * *` schedule
+   - "Execute Now" smoke test passed: no duplicate entry posted (defensive behavior verified, even if the protective mechanism was the engine's hard-lock trigger rather than an explicit cron-level skip)
+   - First scheduled fire: 2026-06-01 00:30 UTC (May depreciation)
 
-3. **Push commit 12 from local to origin/feature/lifecycle-finale.**
-   - Standard fast-forward push (1 commit ahead: `7d7b446`).
-   - **NEW: agent-executed per the updated pushing-discipline carve-out.** Will execute after this audit lands.
+3. **Push commit 12 from local to origin/feature/lifecycle-finale — DONE 2026-05-12.**
+   - Origin advanced 24a2709 → a6e618d (commit 12 + this audit)
+   - Standard fast-forward push, agent-executed per the updated pushing-discipline carve-out
 
 ### Medium-term (3-6 weeks)
 
