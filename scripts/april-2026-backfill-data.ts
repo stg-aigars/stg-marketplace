@@ -1,10 +1,11 @@
 /**
  * April 2026 backfill — data table.
  *
- * Ten journal entries reconstructing STG's marketplace + vendor GL activity
- * for April 2026 ahead of the PVN deklarācija filing deadline (20 May 2026).
- * Continues the chain established by `phase0-backfill-data.ts` (Phase 0
- * closed 31.03.2026 hard-locked). Source-of-truth: round 2 preamble
+ * Eleven journal entries reconstructing STG's marketplace + vendor GL activity
+ * for April 2026 ahead of the PVN deklarācija filing deadline (20 May 2026):
+ * 9 marketplace+vendor entries + 1 depreciation + 1 P.1 VAT consolidation
+ * close. Continues the chain established by `phase0-backfill-data.ts`
+ * (Phase 0 closed 31.03.2026 hard-locked). Source-of-truth: round 2 preamble
  * 12.05.2026 (TB signed off by user; see commit message of the runner).
  *
  * Entry numbering convention:
@@ -13,12 +14,16 @@
  *     continues the Phase 0 monthly-depreciation chain (Entries 19, 20 in
  *     phase0-backfill-data.ts were Feb + Mar). User-confirmed naming so the
  *     future depreciation cron can take over from N=22 onward.
+ *   - `close_2026_04`: April P.1 VAT consolidation (clears 5710-LV-IN +
+ *     5710-LV-OUT, books €0.30 net refund to 2380). Mirrors Phase 0's
+ *     `close_2026_01` convention (less the `phase0_close_` prefix; future
+ *     monthly closes continue `close_2026_05`, `close_2026_06`, …).
  *
  * Audit queries `WHERE source_doc_id LIKE 'april_2026_entry_%'` catch the 9
  * marketplace/vendor entries; `source_doc_id = 'phase0_entry_21'` catches
- * the depreciation. `posting_context.backfill = true` is set on all 10
- * entries so PR #4 trial-balance / P&L views can filter and so audit queries
- * stay cheap.
+ * the depreciation; `source_doc_id = 'close_2026_04'` catches the P.1.
+ * `posting_context.backfill = true` is set on all 11 entries so PR #4
+ * trial-balance / P&L views can filter and so audit queries stay cheap.
  *
  * Conventions established here (carry forward to May 2026 backfill +
  * PR #4b vendor-invoice intake):
@@ -484,13 +489,60 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
         of_total: 36
       })
     }
+  },
+
+  // -------------------------------------------------------------------------
+  // 2026-04-30: April P.1 VAT consolidation (refund position)
+  // Clears 5710-LV-IN €0.68 (Unisend input) + 5710-LV-OUT €0.38 (9UC5 output);
+  // books net €0.30 refund receivable to 2380. Mirrors Phase 0's close_2026_01
+  // shape. Foreign RC pair (5710-RC-IN/OUT) NOT cleared — stays on balance
+  // sheet long-term per Phase 0 convention.
+  // -------------------------------------------------------------------------
+  {
+    entry_number: 'close_2026_04',
+    description: 'April 2026 VAT consolidation — €0.30 refund due from VID',
+    event: {
+      event_type: 'period_close.monthly_refund',
+      source_doc_type: 'period_close',
+      source_doc_id: 'close_2026_04',
+      posting_date: '2026-04-30',
+      accounting_period: '2026-04',
+      tax_period: '2026-04',
+      narrative: 'April 2026 VAT consolidation — clears 5710-LV-IN €0.68 + 5710-LV-OUT €0.38; net refund €0.30 to 2380',
+      counterparty_id: SYSTEM_COUNTERPARTY.STG_INTERNAL,
+      payload: tag('close_2026_04', {
+        closing_period: '2026-04',
+        net_refund_cents: 30,
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 38,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT — 9UC5 (April close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 68,
+            narrative: 'Clear LV input VAT — Unisend (April close)'
+          },
+          {
+            account_code: '2380',
+            debit_cents: 30,
+            credit_cents: 0,
+            narrative: 'VID receivable — April 2026 PVN deklarācija refund position'
+          }
+        ]
+      })
+    }
   }
 ];
 
 // ---------------------------------------------------------------------------
-// Sanity assertion: 10 emits expected (9 marketplace+vendor + 1 depreciation).
+// Sanity assertion: 11 emits expected (9 marketplace+vendor + 1 depreciation
+// + 1 P.1 close).
 // ---------------------------------------------------------------------------
-export const TOTAL_BACKFILL_ENTRIES = 10;
+export const TOTAL_BACKFILL_ENTRIES = 11;
 if (BACKFILL_ENTRIES.length !== TOTAL_BACKFILL_ENTRIES) {
   throw new Error(
     `april-2026-backfill-data.ts: expected ${TOTAL_BACKFILL_ENTRIES} BACKFILL_ENTRIES, ` +
