@@ -880,3 +880,139 @@ export async function getRecentJournalEntries(
   const filtered = rows.filter((row) => !isTestArtifactEntry(row));
   return filtered.slice(0, limit);
 }
+
+// =============================================================================
+// getInFlightCartReceiptsTotal — PR D (period-close checklist item 4 gate)
+// =============================================================================
+
+/**
+ * Sum of expected 5590 suspense balance contributed by in-flight cart receipts
+ * as of `asOf`. Used by `buildItem4` in checklist.ts to reconcile the actual
+ * GL 5590 closing balance against marketplace state, replacing the legacy
+ * "5590 closing = 0" gate (which fails for every cart that spans a month
+ * boundary post-PR-C-cutover).
+ *
+ * Algorithm:
+ *   1. Find cart_group_ids with a C.1 or C.2 entry posted on or before asOf
+ *      (the GL antecedent that credited 5590 at cart fulfillment).
+ *   2. Load candidate orders pointing at those cart groups.
+ *   3. For each candidate, look up any release entries in journal_entries:
+ *        - O.1–O.5 / O.7 / O.8 → full release; contribute 0
+ *        - O.9 → partial release; subtract `posting_context.refund_cents`
+ *          (the canonical per-entry total — mapping.ts derives this from
+ *          refund_item_cents + refund_shipping_cents) summed across all O.9
+ *          entries for the order
+ *   4. Sum (gross_cart − partial_refunds) across not-fully-released candidates.
+ *
+ * **Type-catalog coupling assumptions (named here so future PRs touching the
+ * type catalog know to look at this query):**
+ *
+ *   (A) **Cart-receipt assumption.** This query assumes cart receipts come
+ *       from C.1 (card) or C.2 (bank_link). If a future payment method
+ *       introduces a new cart-receipt type ID (e.g., a stablecoin rail or a
+ *       wallet-only-cart receipt entry), update this query and the in-flight
+ *       predicate to include that type id under the C.1/C.2 sentinel filter.
+ *
+ *   (B) **Release-type assumption.** This query assumes O.1–O.5, O.7, O.8,
+ *       O.9 are the only journal-entry types that release 5590 suspense for
+ *       an order. If a future type does so (e.g., O.10 account-closure
+ *       releases unclaimed suspense as STG revenue), add it to the appropriate
+ *       release-type list below. The "fully released" branch covers types
+ *       that drain the full gross_cart; the "partial refund" branch covers
+ *       types that drain a payload-specified amount.
+ *
+ * Returns integer cents; always >= 0. Wallet-only carts (cart-wallet-pay
+ * route, no C.1/C.2 antecedent) are excluded naturally by step 1.
+ */
+export async function getInFlightCartReceiptsTotal(
+  supabase: SupabaseClient,
+  asOf: string
+): Promise<number> {
+  // Assumption (A) — cart receipts come from C.1 (card) or C.2 (bank_link).
+  // See JSDoc above. Add new cart-receipt type IDs here when introduced.
+  const CART_RECEIPT_TYPE_IDS = ['C.1', 'C.2'] as const;
+  // Assumption (B) — release types that drain 5590 for an order. See JSDoc.
+  const FULL_RELEASE_TYPE_IDS = ['O.1', 'O.2', 'O.3', 'O.4', 'O.5', 'O.7', 'O.8'] as const;
+  const PARTIAL_RELEASE_TYPE_ID = 'O.9' as const;
+  const ALL_RELEASE_TYPE_IDS = [...FULL_RELEASE_TYPE_IDS, PARTIAL_RELEASE_TYPE_ID] as const;
+
+  // Step 1 — cart-receipt antecedents posted by asOf.
+  const { data: cartReceipts, error: receiptsError } = await supabase
+    .from('journal_entries')
+    .select('source_doc_id')
+    .eq('source_doc_type', 'cart_payment')
+    .in('type_id', CART_RECEIPT_TYPE_IDS)
+    .lte('posting_date', asOf);
+  throwIfError(receiptsError, 'getInFlightCartReceiptsTotal: cart_receipts SELECT failed');
+  if (!cartReceipts || cartReceipts.length === 0) return 0;
+
+  // De-duplicate cart_group_ids (a single cart could have multiple C.x rows
+  // if a future flow ever splits them; defensive). source_doc_id is text.
+  const cartGroupIds = Array.from(
+    new Set(cartReceipts.map((r) => (r as { source_doc_id: string }).source_doc_id))
+  );
+
+  // Step 2 — candidate orders pointing at those cart groups.
+  const { data: orders, error: ordersError } = await supabase
+    .from('orders')
+    .select('id, items_total_cents, shipping_cost_cents, cart_group_id')
+    .in('cart_group_id', cartGroupIds);
+  throwIfError(ordersError, 'getInFlightCartReceiptsTotal: orders SELECT failed');
+  if (!orders || orders.length === 0) return 0;
+
+  const orderIds = orders.map((o) => (o as { id: string }).id);
+
+  // Step 3 — release entries for those orders.
+  const { data: releases, error: releasesError } = await supabase
+    .from('journal_entries')
+    .select('source_doc_id, type_id, posting_context')
+    .eq('source_doc_type', 'order')
+    .in('source_doc_id', orderIds)
+    .in('type_id', ALL_RELEASE_TYPE_IDS)
+    .lte('posting_date', asOf);
+  throwIfError(releasesError, 'getInFlightCartReceiptsTotal: releases SELECT failed');
+
+  // Bucket releases by source_doc_id (order id, stored as text on the journal
+  // entry) for O(1) per-order lookup during aggregation.
+  type ReleaseRow = {
+    source_doc_id: string;
+    type_id: string;
+    posting_context: Record<string, unknown> | null;
+  };
+  const releasesByOrder = new Map<string, ReleaseRow[]>();
+  for (const r of (releases ?? []) as ReleaseRow[]) {
+    const arr = releasesByOrder.get(r.source_doc_id) ?? [];
+    arr.push(r);
+    releasesByOrder.set(r.source_doc_id, arr);
+  }
+
+  // Step 4 — per-order aggregation.
+  let total = 0;
+  for (const orderRaw of orders) {
+    const order = orderRaw as {
+      id: string;
+      items_total_cents: number;
+      shipping_cost_cents: number;
+    };
+    const grossCart = order.items_total_cents + order.shipping_cost_cents;
+    const releases = releasesByOrder.get(order.id) ?? [];
+    const fullyReleased = releases.some((r) =>
+      (FULL_RELEASE_TYPE_IDS as readonly string[]).includes(r.type_id)
+    );
+    if (fullyReleased) continue;
+
+    // Partial refunds (O.9) — sum `posting_context.refund_cents` across all
+    // O.9 entries for this order. mapping.ts derives this field as
+    // refund_item_cents + refund_shipping_cents at compute time.
+    const partialRefundCents = releases
+      .filter((r) => r.type_id === PARTIAL_RELEASE_TYPE_ID)
+      .reduce((sum, r) => {
+        const ctx = r.posting_context ?? {};
+        const v = Number(ctx.refund_cents ?? 0);
+        return sum + (Number.isFinite(v) ? v : 0);
+      }, 0);
+
+    total += Math.max(0, grossCart - partialRefundCents);
+  }
+  return total;
+}

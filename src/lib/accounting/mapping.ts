@@ -982,7 +982,15 @@ const O_9: VatMappingEntry = {
         partial_shipping_net_cents: partial_shipping.net_cents,
         partial_shipping_vat_cents: partial_shipping.vat_cents,
         total_vat_cents,
-        total_seller_credit_cents
+        total_seller_credit_cents,
+        /**
+         * Per-entry refund total (refund_item_cents + refund_shipping_cents).
+         * For cumulative refund across all O.9 entries on an order, SUM across
+         * entries. Surfaced as a top-level posting_context key so consumers
+         * (e.g. PR D's `getInFlightCartReceiptsTotal`) can read one canonical
+         * field rather than re-deriving the sum from item/shipping splits.
+         */
+        refund_cents: refund_item_cents + refund_shipping_cents
       }
     };
   }

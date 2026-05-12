@@ -27,6 +27,7 @@ import { getPhase0BankCloseForPeriod } from './phase0-reconciliation-constants';
 import {
   getAccountLedger,
   getEntriesPostedSince,
+  getInFlightCartReceiptsTotal,
   getPeriodRow,
   getTrialBalance,
   getWalletIntegrityAsOf
@@ -224,25 +225,69 @@ async function buildItem3(
   };
 }
 
-/** Item 4 — Suspense cleared: 5590 closing = 0. */
+/**
+ * Item 4 — Suspense reconciled (5590).
+ *
+ * Pre-PR-D this gate was "5590 closing = 0". That worked while
+ * ACCOUNTING_ENGINE_ENABLED was OFF (no marketplace flow ever credited 5590).
+ * Post-PR-C-cutover, every cart paid in month N but completed in month N+1
+ * leaves outstanding 5590 balance at month-end — the zero check would fail
+ * unconditionally for any non-trivial volume.
+ *
+ * The new gate reconciles the actual GL 5590 closing balance against the
+ * expected balance derived from marketplace state for in-flight cart
+ * receipts. Pass iff `closing === expected`. Failure detail names the delta
+ * direction and three plausible failure modes so staff can act on the gap.
+ *
+ * Trivial-pass property: pre-cutover there are zero C.1/C.2 entries, so
+ * `expected_in_flight === 0` AND `closing === 0` AND the gate passes the
+ * same way it did before.
+ */
 async function buildItem4(
   supabase: SupabaseClient,
   asOf: string
 ): Promise<ChecklistItem> {
-  const balance = await getAccountClosingBalance(supabase, '5590', asOf);
-  if (balance === 0) {
+  // `closing` is net-debit-cents (positive=debit, negative=credit) per
+  // getAccountClosingBalance's convention. 5590 is a suspense account that
+  // carries a credit balance during in-flight cart periods — so `closing` is
+  // typically <= 0 and `-closing` is the suspense magnitude.
+  // `expected_in_flight` is a positive magnitude (cents) representing the
+  // expected suspense. Compare on the magnitude side so the semantics are
+  // obvious in the failure message.
+  const [closing, expected_in_flight] = await Promise.all([
+    getAccountClosingBalance(supabase, '5590', asOf),
+    getInFlightCartReceiptsTotal(supabase, asOf)
+  ]);
+  const actual_suspense = -closing;  // flip net-debit to suspense magnitude
+
+  if (actual_suspense === expected_in_flight) {
+    if (expected_in_flight === 0) {
+      return {
+        id: 4,
+        label: 'Suspense reconciled (5590)',
+        status: 'pass',
+        detail: '5590 closing balance is zero; no in-flight cart receipts.'
+      };
+    }
     return {
       id: 4,
-      label: 'Suspense cleared (5590)',
+      label: 'Suspense reconciled (5590)',
       status: 'pass',
-      detail: '5590 closing balance is zero.'
+      detail: `5590 holds ${formatEur(actual_suspense)} in suspense, matching expected in-flight cart receipts ${formatEur(expected_in_flight)}.`
     };
   }
+
+  const delta = actual_suspense - expected_in_flight;
+  const direction = delta > 0 ? 'over-states' : 'under-states';
   return {
     id: 4,
-    label: 'Suspense cleared (5590)',
+    label: 'Suspense reconciled (5590)',
     status: 'fail',
-    detail: `5590 closing balance ${formatEur(balance)}; clear before close.`,
+    detail:
+      `5590 holds ${formatEur(actual_suspense)} in suspense, ${direction} expected in-flight cart receipts ` +
+      `${formatEur(expected_in_flight)} by ${formatEur(Math.abs(delta))}. Possible causes: orphan completion ` +
+      `(C.1/C.2 fired but order completion-side missing antecedent), unreleased suspense (release ` +
+      `entry not yet posted), or partial-refund accounting drift.`,
     drillDownHref: '/staff/accounting/account-ledger/5590'
   };
 }
