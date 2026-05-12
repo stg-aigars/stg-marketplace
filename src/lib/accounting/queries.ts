@@ -87,6 +87,31 @@ export interface WalletIntegrityCheck {
   gl_5351_sum_cents: number;
   wallet_table_sum_cents: number;
   delta_cents: number;
+  /**
+   * Sum of withdrawal_requests.amount_cents where status='approved' AND
+   * completed_at IS NULL — i.e., withdrawals where the wallet table has
+   * already been debited (at request time via wallet_withdrawal_debit,
+   * migration 071) but the C.4 GL emit hasn't fired yet (Shape 2 lazy
+   * timing per PR C commit 10).
+   *
+   * **Post-PR-C-commit-11b reconciliation contract:** the expected delta
+   * during normal operations is `delta_cents === in_flight_withdrawals_cents`
+   * (GL larger than wallets by the in-flight amount, since wallet table
+   * was debited but GL 5351 wasn't yet). `is_reconciled` reflects this new
+   * contract; pre-11b it meant `delta === 0`.
+   *
+   * For getWalletIntegrityAsOf, this is the as-of-asOf in-flight count:
+   * withdrawals reviewed_at <= asOf AND (completed_at IS NULL OR
+   * completed_at > asOf). Captures the historical lag window correctly.
+   */
+  in_flight_withdrawals_cents: number;
+  /**
+   * True iff `delta_cents === in_flight_withdrawals_cents` AND
+   * `unattributed_gl_cents === 0`. Pre-11b this meant `delta === 0` AND
+   * `unattributed === 0`; 11b changes the contract to account for Shape-2
+   * lag introduced by commit 10. Consumers reading is_reconciled get the
+   * new semantics transparently.
+   */
   is_reconciled: boolean;
   /**
    * Net GL balance of any 5351 lines whose counterparty cannot be resolved
@@ -108,6 +133,49 @@ export interface WalletIntegrityCheck {
     wallet_balance_cents: number;
     delta_cents: number;
   }>;
+  /**
+   * In-flight withdrawals older than STALE_IN_FLIGHT_DAYS (default 7).
+   * Operational anomaly signal — SEPA outbounds typically complete within
+   * 1-2 business days; >7d suggests staff forgot to mark completed after
+   * sending the wire, OR the wire was never sent and the approval is stale.
+   * Empty array when none; UI renders a warning card only when populated.
+   *
+   * The threshold is a calibrated guess; revisit after ~3 months of
+   * cutover data (see `pr_c_followups.md`).
+   */
+  stale_in_flight_withdrawals: Array<{
+    withdrawal_request_id: string;
+    user_id: string;
+    amount_cents: number;
+    /** When staff approved (withdrawal_requests.reviewed_at). */
+    reviewed_at: string;
+    days_in_flight: number;
+  }>;
+}
+
+/**
+ * Days an in-flight withdrawal can sit before surfacing on the
+ * wallet-integrity dashboard as a stale anomaly. Tunable via a single
+ * edit when post-launch data informs the right threshold (see
+ * `pr_c_followups.md` for the post-launch review protocol).
+ *
+ * Reasoning at 11b landing (2026-05-12): SEPA outbound SLA is 1-2 business
+ * days domestic; >5 days is anomalous in normal conditions; 7 days catches
+ * the "almost certainly needs attention" cases without false-positives
+ * during weekend gaps or holiday clusters.
+ */
+export const STALE_IN_FLIGHT_DAYS = 7;
+
+/**
+ * Helper: compute days between two ISO timestamps. Used for
+ * `days_in_flight` in `stale_in_flight_withdrawals`. Rounds down so
+ * "reviewed exactly 7 days ago" reports as 7, not 6.99.
+ */
+function daysBetween(fromIso: string, toIso: string): number {
+  const fromMs = Date.parse(fromIso);
+  const toMs = Date.parse(toIso);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return 0;
+  return Math.floor((toMs - fromMs) / (24 * 60 * 60 * 1000));
 }
 
 
@@ -590,14 +658,47 @@ export async function getWalletIntegrity(
 
   const delta_cents = gl_5351_sum_cents - wallet_table_sum_cents;
 
+  // PR C commit 11b — Shape 2 lazy timing for withdrawals: wallet table is
+  // debited at request time (wallet_withdrawal_debit, migration 071) but
+  // GL 5351 is NOT debited until staff marks completion (commit 10's C.4
+  // emission). Between those events, gl_5351 leads wallet_table by the
+  // in-flight withdrawal amount — the reconciled invariant becomes
+  // `delta_cents === in_flight_withdrawals_cents`, NOT `delta === 0`.
+  const { data: inFlightRows, error: inFlightError } = await supabase
+    .from('withdrawal_requests')
+    .select('id, user_id, amount_cents, reviewed_at')
+    .eq('status', 'approved')
+    .is('completed_at', null);
+  throwIfError(inFlightError, 'getWalletIntegrity: withdrawal_requests SELECT failed');
+
+  type InFlightRow = { id: string; user_id: string; amount_cents: number; reviewed_at: string | null };
+  const in_flight = (inFlightRows ?? []) as InFlightRow[];
+  const in_flight_withdrawals_cents = in_flight.reduce((s, w) => s + w.amount_cents, 0);
+
+  const stale_in_flight_withdrawals = in_flight
+    .filter((w) => {
+      if (!w.reviewed_at) return false;
+      return daysBetween(w.reviewed_at, as_of) >= STALE_IN_FLIGHT_DAYS;
+    })
+    .map((w) => ({
+      withdrawal_request_id: w.id,
+      user_id: w.user_id,
+      amount_cents: w.amount_cents,
+      reviewed_at: w.reviewed_at as string,
+      days_in_flight: daysBetween(w.reviewed_at as string, as_of)
+    }))
+    .sort((a, b) => b.days_in_flight - a.days_in_flight);
+
   return {
     as_of,
     gl_5351_sum_cents,
     wallet_table_sum_cents,
     delta_cents,
-    is_reconciled: delta_cents === 0,
+    in_flight_withdrawals_cents,
+    is_reconciled: delta_cents === in_flight_withdrawals_cents,
     unattributed_gl_cents,
-    per_seller_deltas
+    per_seller_deltas,
+    stale_in_flight_withdrawals
   };
 }
 
@@ -777,14 +878,61 @@ export async function getWalletIntegrityAsOf(
 
   const delta_cents = gl_5351_sum_cents - wallet_table_sum_cents;
 
+  // PR C commit 11b — Shape 2 lazy timing for withdrawals applied period-
+  // scoped. "In-flight as of asOf" = withdrawals reviewed_at <= asOf AND
+  // (completed_at IS NULL OR completed_at > asOf). Captures the lag-window
+  // population at that moment in time, not "now". checklist.ts item 3
+  // gates soft-lock on the AsOf invariant; the same is_reconciled contract
+  // change applies — `delta === in_flight_withdrawals_cents` is now reconciled.
+  const { data: inFlightRows, error: inFlightError } = await supabase
+    .from('withdrawal_requests')
+    .select('id, user_id, amount_cents, reviewed_at, completed_at')
+    .eq('status', 'approved')
+    .lte('reviewed_at', asOf);
+  throwIfError(inFlightError, 'getWalletIntegrityAsOf: withdrawal_requests SELECT failed');
+
+  type InFlightRow = {
+    id: string;
+    user_id: string;
+    amount_cents: number;
+    reviewed_at: string | null;
+    completed_at: string | null;
+  };
+  // Filter for in-flight-AS-OF-asOf: completed_at must be null OR > asOf.
+  // Server-side `.is('completed_at', null)` is too restrictive — a
+  // withdrawal completed AFTER asOf was still in-flight at asOf.
+  const inFlightAtAsOf = ((inFlightRows ?? []) as InFlightRow[]).filter(
+    (w) => !w.completed_at || w.completed_at > asOf
+  );
+  const in_flight_withdrawals_cents = inFlightAtAsOf.reduce(
+    (s, w) => s + w.amount_cents,
+    0
+  );
+
+  const stale_in_flight_withdrawals = inFlightAtAsOf
+    .filter((w) => {
+      if (!w.reviewed_at) return false;
+      return daysBetween(w.reviewed_at, asOf) >= STALE_IN_FLIGHT_DAYS;
+    })
+    .map((w) => ({
+      withdrawal_request_id: w.id,
+      user_id: w.user_id,
+      amount_cents: w.amount_cents,
+      reviewed_at: w.reviewed_at as string,
+      days_in_flight: daysBetween(w.reviewed_at as string, asOf)
+    }))
+    .sort((a, b) => b.days_in_flight - a.days_in_flight);
+
   return {
     as_of: asOf,
     gl_5351_sum_cents,
     wallet_table_sum_cents,
     delta_cents,
-    is_reconciled: delta_cents === 0,
+    in_flight_withdrawals_cents,
+    is_reconciled: delta_cents === in_flight_withdrawals_cents,
     unattributed_gl_cents,
-    per_seller_deltas
+    per_seller_deltas,
+    stale_in_flight_withdrawals
   };
 }
 

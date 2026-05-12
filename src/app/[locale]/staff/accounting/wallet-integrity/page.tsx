@@ -34,8 +34,16 @@ export default async function WalletIntegrityPage() {
         <code className="font-mono text-semantic-text-primary">5351</code>{' '}
         (seller wallet liability, credit-normal) against the canonical{' '}
         <code className="font-mono text-semantic-text-primary">wallets</code>{' '}
-        table. Delta should be zero. Per-seller mismatches surface for staff
-        investigation.
+        table. Under Shape-2 lazy timing (PR C commit 10), the wallet table is
+        debited at withdrawal-request time but GL 5351 lags until staff marks
+        completion — so the GL/wallet delta legitimately equals the in-flight
+        withdrawal total during normal operations. Reconciled when{' '}
+        <code className="font-mono text-semantic-text-primary">
+          delta === in_flight_withdrawals
+        </code>
+        . Stale in-flight withdrawals (≥ 7 days) surface as operational
+        anomalies for investigation; per-seller mismatches surface in the
+        table below.
       </p>
 
       <WalletIntegrityCheck data={data} />

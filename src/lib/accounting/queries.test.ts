@@ -60,13 +60,14 @@ function buildMockClient(tableResponses: Record<string, MockResponse[]>): {
       select: vi.fn(),
       eq: vi.fn(),
       in: vi.fn(),
+      is: vi.fn(),
       lte: vi.fn(),
       gte: vi.fn(),
       order: vi.fn(),
       limit: vi.fn(),
       maybeSingle: vi.fn()
     };
-    for (const fn of ['select', 'eq', 'in', 'lte', 'gte', 'order', 'limit'] as const) {
+    for (const fn of ['select', 'eq', 'in', 'is', 'lte', 'gte', 'order', 'limit'] as const) {
       builder[fn].mockReturnValue(builder);
     }
     builder.maybeSingle.mockImplementation(() => dequeue());
@@ -1065,6 +1066,155 @@ describe('getWalletIntegrity', () => {
     // Critically: the unattributable lines do NOT appear in per_seller_deltas,
     // and user-A reconciles cleanly so it doesn't appear either.
     expect(result.per_seller_deltas).toEqual([]);
+  });
+
+  // ===========================================================================
+  // PR C commit 11b — Shape-2 lazy timing for withdrawals
+  // ===========================================================================
+  //
+  // wallet_table is debited at request time (wallet_withdrawal_debit,
+  // migration 071); GL 5351 is debited at completion time (commit 10 C.4).
+  // Between request and completion, gl_5351 leads wallet_table by the
+  // in-flight withdrawal amount. The reconciled invariant becomes
+  // `delta_cents === in_flight_withdrawals_cents`, NOT `delta === 0`.
+
+  describe('in-flight withdrawals (Shape 2)', () => {
+    it('returns in_flight_withdrawals_cents=0 + empty stale list when no approved withdrawals exist', async () => {
+      const client = buildMockClient({
+        journal_lines: [{ data: [], error: null }],
+        wallets: [{ data: [], error: null }],
+        withdrawal_requests: [{ data: [], error: null }],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.in_flight_withdrawals_cents).toBe(0);
+      expect(result.stale_in_flight_withdrawals).toEqual([]);
+      expect(result.is_reconciled).toBe(true); // delta=0 matches in_flight=0
+    });
+
+    it('reconciles when delta_cents matches in_flight_withdrawals_cents (new contract)', async () => {
+      // Pre-cutover wallet credit of €100 to user-A (Cr 5351 100€).
+      // Then withdrawal request of €30 — wallet table debits to 70€,
+      // GL 5351 still credit 100€ (no C.4 fired yet). delta = +30€.
+      // Reconciled invariant: delta === in_flight === 30€.
+      const client = buildMockClient({
+        journal_lines: [
+          {
+            data: [{ debit_cents: 0, credit_cents: 10000, counterparty_id: 'cp-A' }],
+            error: null,
+          },
+        ],
+        wallets: [
+          { data: [{ user_id: 'user-A', balance_cents: 7000 }], error: null },
+        ],
+        counterparties: [
+          { data: [{ id: 'cp-A', user_id: 'user-A' }], error: null },
+        ],
+        public_profiles: [
+          { data: [{ id: 'user-A', full_name: 'Test Seller' }], error: null },
+        ],
+        withdrawal_requests: [
+          {
+            data: [
+              {
+                id: 'wd-1',
+                user_id: 'user-A',
+                amount_cents: 3000,
+                reviewed_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+              },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.gl_5351_sum_cents).toBe(10000);
+      expect(result.wallet_table_sum_cents).toBe(7000);
+      expect(result.delta_cents).toBe(3000);
+      expect(result.in_flight_withdrawals_cents).toBe(3000);
+      expect(result.is_reconciled).toBe(true);
+      // user-A's delta != 0 so it surfaces in per_seller_deltas — that's the
+      // expected legacy per-seller view; the reconciliation banner uses
+      // is_reconciled (which is now true with the Shape-2 contract).
+      expect(result.per_seller_deltas).toHaveLength(1);
+      expect(result.per_seller_deltas[0]!.delta_cents).toBe(3000);
+    });
+
+    it('flags is_reconciled=false when delta does NOT equal in_flight (true discrepancy)', async () => {
+      // GL credit 100€, wallet balance 60€, in-flight 30€ — but delta is 40€,
+      // not 30€. 10€ discrepancy beyond the in-flight expectation.
+      const client = buildMockClient({
+        journal_lines: [
+          {
+            data: [{ debit_cents: 0, credit_cents: 10000, counterparty_id: 'cp-A' }],
+            error: null,
+          },
+        ],
+        wallets: [{ data: [{ user_id: 'user-A', balance_cents: 6000 }], error: null }],
+        counterparties: [{ data: [{ id: 'cp-A', user_id: 'user-A' }], error: null }],
+        public_profiles: [{ data: [{ id: 'user-A', full_name: 'Test' }], error: null }],
+        withdrawal_requests: [
+          {
+            data: [
+              {
+                id: 'wd-1',
+                user_id: 'user-A',
+                amount_cents: 3000,
+                reviewed_at: new Date().toISOString(),
+              },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.delta_cents).toBe(4000);
+      expect(result.in_flight_withdrawals_cents).toBe(3000);
+      expect(result.is_reconciled).toBe(false);
+    });
+
+    it('detects stale in-flight withdrawals beyond STALE_IN_FLIGHT_DAYS threshold (7d)', async () => {
+      const stale = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days
+      const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(); // 2 days
+      const client = buildMockClient({
+        journal_lines: [{ data: [], error: null }],
+        wallets: [{ data: [], error: null }],
+        withdrawal_requests: [
+          {
+            data: [
+              { id: 'wd-stale', user_id: 'user-X', amount_cents: 5000, reviewed_at: stale },
+              { id: 'wd-recent', user_id: 'user-Y', amount_cents: 3000, reviewed_at: recent },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.in_flight_withdrawals_cents).toBe(8000);
+      expect(result.stale_in_flight_withdrawals).toHaveLength(1);
+      expect(result.stale_in_flight_withdrawals[0]!.withdrawal_request_id).toBe('wd-stale');
+      expect(result.stale_in_flight_withdrawals[0]!.days_in_flight).toBeGreaterThanOrEqual(7);
+    });
+
+    it('sums multiple in-flight withdrawals across users correctly', async () => {
+      const recent = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
+      const client = buildMockClient({
+        journal_lines: [{ data: [], error: null }],
+        wallets: [{ data: [], error: null }],
+        withdrawal_requests: [
+          {
+            data: [
+              { id: 'wd-1', user_id: 'user-A', amount_cents: 1000, reviewed_at: recent },
+              { id: 'wd-2', user_id: 'user-B', amount_cents: 2500, reviewed_at: recent },
+              { id: 'wd-3', user_id: 'user-C', amount_cents: 750, reviewed_at: recent },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.in_flight_withdrawals_cents).toBe(4250);
+      expect(result.stale_in_flight_withdrawals).toEqual([]);
+    });
   });
 });
 
