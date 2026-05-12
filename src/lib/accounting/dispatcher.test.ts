@@ -245,6 +245,14 @@ const REPRESENTATIVES: Representative[] = [
     }
   },
   {
+    type_id: 'I.7',
+    ctx: {
+      event_type: 'vendor.payment_made',
+      counterparty: lvVendor(),
+      payload: {}
+    }
+  },
+  {
     type_id: 'H.2',
     ctx: {
       event_type: 'historical.override',
