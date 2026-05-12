@@ -47,7 +47,24 @@ export interface BuildCartPaymentEventInput extends PostingPeriodInput {
   cart_payment_id: string;
   everypay_payment_id: string;
   payment_method: 'card' | 'bank_link';
+  /** Total cart price (item + shipping); becomes the Cr 5590 suspense amount. */
   gross_cart_cents: number;
+  /**
+   * Portion paid from buyer's wallet balance. Defaults to 0 when buyer paid
+   * entirely via EveryPay. When > 0, the compute() emits a 3-line entry with
+   * Dr 5351 (buyer counterparty) for the wallet portion + Dr 2630/2610 for
+   * the EveryPay portion + Cr 5590 for the gross. PR C commit 9 / Q3 Option α.
+   */
+  buyer_wallet_cents?: number;
+  /**
+   * Buyer's auth.users.id. Required when `buyer_wallet_cents > 0` — stamped
+   * into posting_context so the wallet-integrity dashboard can attribute the
+   * Dr 5351 line back to a user (journal_lines.counterparty_id stays null
+   * because the counterparties.type CHECK doesn't include 'buyer' today;
+   * counterparty_type='buyer' marks the role and buyer_id carries the
+   * attribution). Omitted when buyer paid entirely via EveryPay.
+   */
+  buyer_id?: string;
   callback_payload: Record<string, unknown>;
 }
 
@@ -57,6 +74,7 @@ export interface BuildCartPaymentEventInput extends PostingPeriodInput {
  * at order completion.
  */
 export function buildCartPaymentEvent(input: BuildCartPaymentEventInput): PostingEvent {
+  const buyer_wallet_cents = input.buyer_wallet_cents ?? 0;
   return {
     event_type: 'everypay.payment_confirmed',
     source_doc_type: 'cart_payment',
@@ -65,12 +83,81 @@ export function buildCartPaymentEvent(input: BuildCartPaymentEventInput): Postin
     accounting_period: input.accounting_period,
     tax_period: input.tax_period,
     narrative: `Cart payment confirmed (${input.payment_method}) — pre-completion suspense`,
+    emission_source: 'lifecycle',
     payload: {
       payment_method: input.payment_method,
       gross_cart_cents: input.gross_cart_cents,
+      buyer_wallet_cents,
+      ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
       cart_payment_id: input.cart_payment_id,
       everypay_payment_id: input.everypay_payment_id,
       callback_payload: input.callback_payload
+    },
+    created_by: input.actor_id
+  };
+}
+
+// ---------------------------------------------------------------------------
+// buildCartPartialRefundCashLegEvent — C.9
+// ---------------------------------------------------------------------------
+
+export interface BuildCartPartialRefundCashLegEventInput extends PostingPeriodInput {
+  cart_payment_id: string;
+  everypay_payment_id: string;
+  payment_method: 'card' | 'bank_link';
+  /** Total refund amount in cents (EveryPay leg + buyer-wallet leg). */
+  refund_cents: number;
+  /**
+   * Portion of the refund credited back to buyer wallet (defaults to 0 when
+   * unavailable items were paid entirely via EveryPay). Compute emits a 3-line
+   * entry when > 0: Dr 5590 / Cr bank_rail (EveryPay portion) / Cr 5351-buyer
+   * (wallet portion). When 0, the entry stays 2 lines.
+   */
+  buyer_wallet_refund_cents?: number;
+  /**
+   * Buyer's auth.users.id. Required when `buyer_wallet_refund_cents > 0`;
+   * stamped into posting_context for wallet-integrity attribution.
+   */
+  buyer_id?: string;
+  /**
+   * Stable per-refund identifier for idempotency. Using cart_payment_id alone
+   * would collide on (source_doc_type, source_doc_id, type_id) UNIQUE if a
+   * cart ever ends up with two partial-refund emits — unlikely in practice
+   * (the partial-refund step fires once during fulfillCartPayment), but the
+   * defensive shape mirrors the credit_note_number pattern for O.9.
+   */
+  refund_reference: string;
+}
+
+/**
+ * Builds the C.9 cart-time partial-refund cash-leg event. Fires alongside
+ * C.1/C.2 when fulfillCartPayment auto-refunds part of a cart because one or
+ * more listings became unavailable. Pairs with the C.1/C.2 emission in the
+ * same atomic transaction (both PERFORM'd by the cart parent RPC, or both
+ * emitted in sequence by the wrap when the partial-refund discriminator
+ * branches at the wrap layer — see lifecycle-wraps.ts).
+ */
+export function buildCartPartialRefundCashLegEvent(
+  input: BuildCartPartialRefundCashLegEventInput
+): PostingEvent {
+  const buyer_wallet_refund_cents = input.buyer_wallet_refund_cents ?? 0;
+  return {
+    event_type: 'cart.partial_refund_cash_leg',
+    source_doc_type: 'cart_partial_refund',
+    source_doc_id: input.refund_reference,
+    posting_date: input.posting_date,
+    accounting_period: input.accounting_period,
+    tax_period: input.tax_period,
+    narrative: `Cart partial refund (${input.payment_method}) — ${input.refund_reference}`,
+    emission_source: 'lifecycle',
+    payload: {
+      cart_payment_id: input.cart_payment_id,
+      everypay_payment_id: input.everypay_payment_id,
+      payment_method: input.payment_method,
+      refund_cents: input.refund_cents,
+      buyer_wallet_refund_cents,
+      ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
+      refund_reference: input.refund_reference
     },
     created_by: input.actor_id
   };
@@ -110,6 +197,7 @@ export function buildOrderCompletionEvent(input: BuildOrderCompletionEventInput)
     accounting_period: input.accounting_period,
     tax_period: input.tax_period,
     narrative: `Order completion — invoice ${input.invoice_number} (${input.completion_source})`,
+    emission_source: 'lifecycle',
     counterparty_id: input.seller_counterparty_id,
     payload: {
       order_id: input.order_id,
@@ -172,6 +260,7 @@ export function buildRefundEvent(input: BuildRefundEventInput): PostingEvent {
   if (input.refund_type === 'partial') {
     return {
       event_type: 'order.partial_refunded',
+      emission_source: 'lifecycle',
       source_doc_type: 'order',
       // Per-credit-note idempotency: a single order can have multiple partial
       // refunds over time (e.g., €30 today, €20 next week). Each must produce
@@ -208,6 +297,7 @@ export function buildRefundEvent(input: BuildRefundEventInput): PostingEvent {
   const tax_period_alignment = input.refund_type === 'full_current' ? 'current' : 'prior';
   return {
     event_type: 'order.refunded',
+    emission_source: 'lifecycle',
     source_doc_type: 'order',
     source_doc_id: input.order_id,
     posting_date: input.posting_date,
@@ -247,6 +337,7 @@ export interface BuildRefundCashLegEventInput extends PostingPeriodInput {
 export function buildRefundCashLegEvent(input: BuildRefundCashLegEventInput): PostingEvent {
   return {
     event_type: 'order.refund_initiated',
+    emission_source: 'lifecycle',
     source_doc_type: 'refund',
     source_doc_id: input.refund_reference,
     posting_date: input.posting_date,
@@ -288,6 +379,7 @@ export interface BuildWithdrawalCompletionEventInput extends PostingPeriodInput 
 export function buildWithdrawalCompletionEvent(input: BuildWithdrawalCompletionEventInput): PostingEvent {
   return {
     event_type: 'seller.withdrawal_requested',
+    emission_source: 'lifecycle',
     source_doc_type: 'withdrawal_request',
     source_doc_id: input.withdrawal_request_id,
     posting_date: input.posting_date,

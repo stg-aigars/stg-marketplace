@@ -128,8 +128,12 @@ export function buildDepreciationEvent(asset: FixedAssetRow, target: TargetPerio
     accounting_period: target.period_key,
     tax_period: target.period_key,
     narrative,
+    // emission_source moved from payload to the typed PostingEvent field
+    // (PR C commit 9 / Q6 Option A). The engine merges it into posting_context
+    // automatically; the resulting journal_entries.posting_context.emission_source
+    // value is byte-identical to the prior payload-inject convention.
+    emission_source: 'cron',
     payload: {
-      emission_source: 'cron',
       asset_code: asset.asset_code,
       month_number,
       of_total: asset.useful_life_months,

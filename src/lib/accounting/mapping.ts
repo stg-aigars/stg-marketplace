@@ -1701,6 +1701,112 @@ const P_7: VatMappingEntry = {
 // completes (then O.1–O.5 release the suspense and recognise revenue + VAT).
 // =============================================================================
 
+/**
+ * Shared compute for C.1 / C.2. Both types follow identical accounting shape
+ * — only the bank-rail debit account differs (2630 EveryPay clearing for
+ * card, 2610 Swedbank for PIS / bank-link). Factored out so the buyer-wallet
+ * 3-line variant (PR C commit 9 / Q3 Option α) lives in one place rather
+ * than being duplicated across C.1 / C.2.
+ *
+ * Required payload keys:
+ *   - gross_cart_cents     — total cart price (items + shipping); credits 5590
+ *   - buyer_wallet_cents   — optional, defaults to 0; portion paid from buyer
+ *                            wallet balance (debits 5351 with counterparty_type='buyer')
+ *   - buyer_id             — required only when buyer_wallet_cents > 0; the
+ *                            buyer's auth.users.id, recorded in posting_context
+ *                            for wallet-integrity attribution. (No counterparty
+ *                            row is lazy-created here — counterparties.type
+ *                            CHECK doesn't include 'buyer' today, so the line's
+ *                            counterparty_id stays null and counterparty_type
+ *                            carries the role label.)
+ *
+ * Entry shape:
+ *   buyer_wallet_cents == 0 → 2 lines (legacy): Dr bank_rail / Cr 5590
+ *   buyer_wallet_cents  > 0 → 3 lines: Dr bank_rail + Dr 5351 buyer / Cr 5590
+ *
+ * The 2-line case is byte-identical to the original C.1/C.2 compute pre-PR-C,
+ * so existing dispatcher tests and the wallet-free reconciliation path are
+ * preserved.
+ */
+function computeCartPayment(
+  input: ComputeInput,
+  bankAccountCode: '2630' | '2610',
+  bankNarrative: string
+): ComputeOutput {
+  const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
+  const buyer_wallet_cents = requireNumber(input.payload, 'buyer_wallet_cents', {
+    allowZero: true
+  });
+  if (buyer_wallet_cents > gross_cart_cents) {
+    throw new PostingValidationError({
+      code: 'invalid_payload_value',
+      reason: `buyer_wallet_cents (${buyer_wallet_cents}) cannot exceed gross_cart_cents (${gross_cart_cents})`,
+      context: { gross_cart_cents, buyer_wallet_cents }
+    });
+  }
+  const everypay_charge_cents = gross_cart_cents - buyer_wallet_cents;
+
+  const lines: ComputedLine[] = [];
+
+  // Bank-rail debit fires unless EveryPay charge is zero (full-wallet-pay
+  // cart). Zero-amount lines violate the journal_lines CHECK constraint, so
+  // we skip when the charge is zero.
+  if (everypay_charge_cents > 0) {
+    lines.push({
+      line_number: lines.length + 1,
+      account_code: bankAccountCode,
+      debit_cents: everypay_charge_cents,
+      credit_cents: 0,
+      currency: 'EUR',
+      narrative: bankNarrative
+    });
+  }
+
+  // Buyer wallet debit (only when buyer used wallet balance). buyer_id is
+  // the auth.users.id; counterparty_id stays null because counterparties.type
+  // CHECK doesn't include 'buyer' today, but counterparty_type='buyer' marks
+  // the line role + posting_context.buyer_id carries attribution for the
+  // wallet-integrity dashboard. Lazy-init of a buyer counterparty is a
+  // schema-migration follow-up.
+  if (buyer_wallet_cents > 0) {
+    // requireString validates non-empty; the FK on journal_lines.counterparty_id
+    // is null-permissive so we keep counterparty_id=null even though we ARE
+    // resolving an attribution id.
+    requireString(input.payload, 'buyer_id');
+    lines.push({
+      line_number: lines.length + 1,
+      account_code: '5351',
+      debit_cents: buyer_wallet_cents,
+      credit_cents: 0,
+      currency: 'EUR',
+      counterparty_type: 'buyer',
+      counterparty_id: null,
+      narrative: 'Buyer wallet — debit for cart payment'
+    });
+  }
+
+  // Suspense credit — always fires (no buyer-wallet-and-no-everypay edge case
+  // routes here today, but if it did, both Dr lines summing to gross would
+  // balance against this single Cr line).
+  lines.push({
+    line_number: lines.length + 1,
+    account_code: '5590',
+    debit_cents: 0,
+    credit_cents: gross_cart_cents,
+    currency: 'EUR',
+    narrative: 'Suspense — pre-completion'
+  });
+
+  return {
+    lines,
+    posting_context_extras: {
+      gross_cart_cents,
+      buyer_wallet_cents,
+      everypay_charge_cents
+    }
+  };
+}
+
 const C_1: VatMappingEntry = {
   id: 'C.1',
   category: 'cash_only',
@@ -1715,28 +1821,8 @@ const C_1: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['cart_payment_id', 'everypay_payment_id'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: '2630',
-        debit_cents: gross_cart_cents,
-        credit_cents: 0,
-        currency: 'EUR',
-        narrative: 'EveryPay clearing — card cart payment received'
-      },
-      {
-        line_number: 2,
-        account_code: '5590',
-        debit_cents: 0,
-        credit_cents: gross_cart_cents,
-        currency: 'EUR',
-        narrative: 'Suspense — pre-completion'
-      }
-    ];
-    return { lines, posting_context_extras: { gross_cart_cents } };
-  }
+  compute: (input: ComputeInput): ComputeOutput =>
+    computeCartPayment(input, '2630', 'EveryPay clearing — card cart payment received')
 };
 
 // =============================================================================
@@ -1761,28 +1847,8 @@ const C_2: VatMappingEntry = {
   vat_rate_country: null,
   reporting: { pvn_lines: [] },
   posting_context_required_keys: ['cart_payment_id', 'everypay_payment_id'],
-  compute: (input: ComputeInput): ComputeOutput => {
-    const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
-    const lines: ComputedLine[] = [
-      {
-        line_number: 1,
-        account_code: '2610',
-        debit_cents: gross_cart_cents,
-        credit_cents: 0,
-        currency: 'EUR',
-        narrative: 'Swedbank — PIS cart payment received'
-      },
-      {
-        line_number: 2,
-        account_code: '5590',
-        debit_cents: 0,
-        credit_cents: gross_cart_cents,
-        currency: 'EUR',
-        narrative: 'Suspense — pre-completion'
-      }
-    ];
-    return { lines, posting_context_extras: { gross_cart_cents } };
-  }
+  compute: (input: ComputeInput): ComputeOutput =>
+    computeCartPayment(input, '2610', 'Swedbank — PIS cart payment received')
 };
 
 // =============================================================================
@@ -2081,11 +2147,138 @@ const C_8: VatMappingEntry = {
 };
 
 // =============================================================================
+// C.9 — Cart-time partial refund cash leg
+//
+// Fires when fulfillCartPayment auto-refunds part of a cart because one or
+// more listings became unavailable between cart creation and EveryPay
+// confirmation (typical race: reservation timeout, seller-side withdrawal,
+// concurrent sale). The C.1/C.2 entry records the full EveryPay charge against
+// 2630/2610 Dr and 5590 Cr; this entry reverses the unavailable portion by
+// debiting 5590 (no revenue ever recognised for these listings) and crediting
+// the bank rail (the EveryPay refund call returns the cash to the same
+// clearing account it landed in).
+//
+// Single type ID with payment_method discrimination inside compute() — the
+// reverse-shape mirror of C.1/C.2 (which split into two type IDs sharing an
+// event_type). Net effect: 2630 / 2610 reflects actual Swedbank-rail movement
+// (+full_charge - refunded_portion = +kept_portion), and 5590 carries only
+// the kept-portion suspense for completion-time release. Distinct from C.5
+// (post-completion refund cash leg via 2351 refund clearing) because no
+// revenue / O.x has been emitted yet — the unavailable portion never reached
+// recognition.
+// =============================================================================
+
+const C_9: VatMappingEntry = {
+  id: 'C.9',
+  category: 'cash_only',
+  entry_type: 'refund',
+  description: 'Cart-time partial refund cash leg — reverses unavailable portion of a cart payment at fulfillment (mirror of C.1/C.2 multi-leg)',
+  legal_basis: 'Cash-only flow paired with C.1/C.2; no revenue recognised for the refunded portion (no completion ever fires)',
+  routing: {
+    event_type: 'cart.partial_refund_cash_leg',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['cart_payment_id', 'everypay_payment_id', 'payment_method'],
+  /**
+   * Required payload keys:
+   *   - refund_cents              — total refund amount (EveryPay leg + buyer wallet leg)
+   *   - payment_method            — 'card' | 'bank_link' (drives 2630 vs 2610 selection)
+   *   - buyer_wallet_refund_cents — optional, defaults to 0; portion of the refund
+   *                                  credited back to buyer wallet
+   *   - buyer_id                  — required only when buyer_wallet_refund_cents > 0;
+   *                                  attribution for the Cr 5351 buyer line
+   *
+   * Entry shape:
+   *   buyer_wallet_refund_cents == 0 → 2 lines: Dr 5590 / Cr bank_rail
+   *   buyer_wallet_refund_cents  > 0 → 3 lines: Dr 5590 / Cr bank_rail / Cr 5351-buyer
+   *
+   * The 2-line case is identical to a simple EveryPay-only partial refund;
+   * the 3-line case mirrors the C.1/C.2 multi-leg shape in reverse.
+   */
+  compute: (input: ComputeInput): ComputeOutput => {
+    const refund_cents = requireNumber(input.payload, 'refund_cents');
+    const payment_method = requireString(input.payload, 'payment_method');
+    const buyer_wallet_refund_cents = requireNumber(input.payload, 'buyer_wallet_refund_cents', {
+      allowZero: true
+    });
+    if (payment_method !== 'card' && payment_method !== 'bank_link') {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `C.9 payment_method must be 'card' or 'bank_link' (got '${payment_method}')`,
+        context: { payment_method }
+      });
+    }
+    if (buyer_wallet_refund_cents > refund_cents) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `buyer_wallet_refund_cents (${buyer_wallet_refund_cents}) cannot exceed refund_cents (${refund_cents})`,
+        context: { refund_cents, buyer_wallet_refund_cents }
+      });
+    }
+    const everypay_refund_cents = refund_cents - buyer_wallet_refund_cents;
+
+    const credit_account = payment_method === 'card' ? '2630' : '2610';
+    const credit_narrative = payment_method === 'card'
+      ? 'EveryPay clearing — partial refund returned to clearing'
+      : 'Swedbank — partial refund returned to bank';
+
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '5590',
+        debit_cents: refund_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Suspense — releases unavailable-portion (no completion will fire)'
+      }
+    ];
+
+    if (everypay_refund_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: credit_account,
+        debit_cents: 0,
+        credit_cents: everypay_refund_cents,
+        currency: 'EUR',
+        narrative: credit_narrative
+      });
+    }
+
+    if (buyer_wallet_refund_cents > 0) {
+      requireString(input.payload, 'buyer_id');
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: '5351',
+        debit_cents: 0,
+        credit_cents: buyer_wallet_refund_cents,
+        currency: 'EUR',
+        counterparty_type: 'buyer',
+        counterparty_id: null,
+        narrative: 'Buyer wallet — credit-back for unavailable items'
+      });
+    }
+
+    return {
+      lines,
+      posting_context_extras: {
+        refund_cents,
+        payment_method,
+        buyer_wallet_refund_cents,
+        everypay_refund_cents
+      }
+    };
+  }
+};
+
+// =============================================================================
 // MAPPING_TABLE — readonly export consumed by dispatcher.ts
 // =============================================================================
 
 /**
- * v3 mapping table — 27 type IDs in scope. First-match-wins routing in
+ * v3 mapping table — 28 type IDs in scope. First-match-wins routing in
  * dispatcher.ts evaluates in this order against the incoming PostingEvent.
  * Order matters when multiple types share an event_type — e.g. O.2 must
  * precede O.3 because O.2's conditions are stricter (vat_registered +
@@ -2152,7 +2345,8 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   C_5,
   C_6,
   C_7,
-  C_8
+  C_8,
+  C_9
 ] as const;
 
 /** Lookup by id. Returns undefined if id not in MAPPING_TABLE. */

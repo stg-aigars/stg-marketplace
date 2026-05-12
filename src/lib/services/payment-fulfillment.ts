@@ -17,6 +17,8 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
+import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
+import { cartFulfillmentWithGL } from '@/lib/accounting/lifecycle-wraps';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import type { PaymentMethod } from '@/lib/orders/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -78,6 +80,15 @@ export async function fulfillCartPayment(
    * this group for fraud-investigation forensics; see migration 086.
    */
   requestCountryAtOrder: string | null = null,
+  /**
+   * Raw EveryPay callback payload. Threaded into the C.1/C.2 GL entry's
+   * posting_context so the original payment-confirmation data is preserved
+   * for audit, dispute, and fraud forensics under flag-ON. Optional for
+   * back-compat with callers that don't forward the raw payload yet; when
+   * omitted, a minimal shape is reconstructed from paymentReference and
+   * paymentState.
+   */
+  callbackPayload?: Record<string, unknown>,
 ): Promise<CartFulfillmentOutcome> {
   // Idempotency: check if orders already exist for this group
   const { data: existingOrders } = await serviceClient
@@ -294,11 +305,37 @@ export async function fulfillCartPayment(
     }
   }
 
-  // Mark group as completed
-  await serviceClient
-    .from('cart_checkout_groups')
-    .update({ status: 'completed' })
-    .eq('id', group.id);
+  // Mark group as completed. Under flag-ON, the wrap delegates to the
+  // cart_complete_payment_with_event_atomic RPC which atomically composes
+  // the status flip + paid_at stamp + C.1/C.2 GL emit (plus paired C.9 when
+  // a partial refund fired above). Under flag-OFF, runs byte-identical to
+  // pre-PR-C behaviour.
+  if (isAccountingEngineEnabled()) {
+    await cartFulfillmentWithGL(serviceClient, {
+      cart_group_id: group.id,
+      buyer_id: group.buyer_id,
+      payment_method: paymentMethod === 'bank_link' ? 'bank_link' : 'card',
+      gross_cart_cents: group.total_amount_cents,
+      buyer_wallet_cents: walletDebit,
+      everypay_payment_reference: paymentReference,
+      callback_payload: callbackPayload ?? {
+        payment_reference: paymentReference,
+        payment_state: paymentState,
+      },
+      partial_refund:
+        refundCardCents + refundWalletCents > 0
+          ? {
+              refund_cents: refundCardCents + refundWalletCents,
+              buyer_wallet_refund_cents: refundWalletCents,
+            }
+          : undefined,
+    });
+  } else {
+    await serviceClient
+      .from('cart_checkout_groups')
+      .update({ status: 'completed' })
+      .eq('id', group.id);
+  }
 
   // Send emails (non-blocking)
   void sendCartOrderEmails(

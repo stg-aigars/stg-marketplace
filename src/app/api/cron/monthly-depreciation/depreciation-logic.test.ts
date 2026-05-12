@@ -147,14 +147,17 @@ describe('buildDepreciationEvent', () => {
     expect(result.event.posting_date).toBe('2026-05-31');
     expect(result.event.accounting_period).toBe('2026-05');
     expect(result.event.tax_period).toBe('2026-05');
+    expect(result.event.emission_source).toBe('cron');
     expect(result.event.payload).toMatchObject({
-      emission_source: 'cron',
       asset_code: 'IT-2026-001',
       month_number: 4,
       of_total: 36,
       depreciation_cents: 4198,
     });
     expect(result.event.payload.backfill).toBeUndefined();
+    // emission_source migrated from payload to the typed PostingEvent field
+    // (PR C commit 9 / Q6 Option A); engine merges it into posting_context.
+    expect(result.event.payload.emission_source).toBeUndefined();
   });
 
   it('skips a disposed asset', () => {

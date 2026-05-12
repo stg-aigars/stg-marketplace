@@ -160,6 +160,7 @@ async function handleCartCallback(
     serviceClient,
     paymentMethod,
     requestCountryAtOrder,
+    paymentStatus as unknown as Record<string, unknown>,
   );
 
   switch (result.outcome) {

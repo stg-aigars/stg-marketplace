@@ -32,6 +32,7 @@ vi.mock('@/lib/env', () => ({
     cron: { secret: 'test-secret' },
     app: { adminEmail: 'admin@test.com' },
     resend: { fromEmail: 'noreply@test.com' },
+    accounting: { engineEnabled: false },
   },
 }));
 vi.mock('@/lib/services/everypay', () => ({

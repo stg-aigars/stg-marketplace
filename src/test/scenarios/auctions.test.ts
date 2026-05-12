@@ -25,7 +25,10 @@ vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(),
 }));
 vi.mock('@/lib/env', () => ({
-  env: { cron: { secret: 'test-secret' } },
+  env: {
+    cron: { secret: 'test-secret' },
+    accounting: { engineEnabled: false },
+  },
 }));
 vi.mock('@/lib/notifications', () => ({
   notify: (...args: unknown[]) => mockNotify(...args),

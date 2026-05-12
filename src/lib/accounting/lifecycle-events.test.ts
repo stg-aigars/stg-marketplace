@@ -17,6 +17,7 @@ import { describe, it, expect } from 'vitest';
 
 import { dispatch } from './dispatcher';
 import {
+  buildCartPartialRefundCashLegEvent,
   buildCartPaymentEvent,
   buildOrderCompletionEvent,
   buildRefundEvent,
@@ -128,6 +129,86 @@ describe('buildCartPaymentEvent', () => {
       actor_id: 'actor_uuid_1'
     });
     expect(event.created_by).toBe('actor_uuid_1');
+  });
+
+  it('stamps emission_source=lifecycle on the event', () => {
+    const event = buildCartPaymentEvent({
+      cart_payment_id: 'c', everypay_payment_id: 'e', payment_method: 'card',
+      gross_cart_cents: 100, posting_date: '2027-01-15',
+      accounting_period: '2027-01', tax_period: '2027-01', callback_payload: {}
+    });
+    expect(event.emission_source).toBe('lifecycle');
+  });
+
+  it('defaults buyer_wallet_cents to 0 when omitted', () => {
+    const event = buildCartPaymentEvent({
+      cart_payment_id: 'c', everypay_payment_id: 'e', payment_method: 'card',
+      gross_cart_cents: 5000, posting_date: '2027-01-15',
+      accounting_period: '2027-01', tax_period: '2027-01', callback_payload: {}
+    });
+    expect(event.payload.buyer_wallet_cents).toBe(0);
+    expect(event.payload.buyer_id).toBeUndefined();
+  });
+
+  it('threads buyer_wallet_cents + buyer_id into payload when provided', () => {
+    const event = buildCartPaymentEvent({
+      cart_payment_id: 'c', everypay_payment_id: 'e', payment_method: 'card',
+      gross_cart_cents: 10000, buyer_wallet_cents: 3000,
+      buyer_id: 'b0000000-0000-0000-0000-000000000001',
+      posting_date: '2027-01-15', accounting_period: '2027-01', tax_period: '2027-01',
+      callback_payload: {}
+    });
+    expect(event.payload.buyer_wallet_cents).toBe(3000);
+    expect(event.payload.buyer_id).toBe('b0000000-0000-0000-0000-000000000001');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildCartPartialRefundCashLegEvent
+// ---------------------------------------------------------------------------
+
+describe('buildCartPartialRefundCashLegEvent', () => {
+  const base = {
+    cart_payment_id: 'cart_pay_abc',
+    everypay_payment_id: 'ep_xyz',
+    refund_reference: 'cart_partial_abc_ep_xyz',
+    posting_date: '2027-01-15',
+    accounting_period: '2027-01',
+    tax_period: '2027-01'
+  };
+
+  it('routes to C.9 with emission_source=lifecycle', () => {
+    const event = buildCartPartialRefundCashLegEvent({
+      ...base,
+      payment_method: 'card',
+      refund_cents: 3000
+    });
+    expect(event.event_type).toBe('cart.partial_refund_cash_leg');
+    expect(event.source_doc_type).toBe('cart_partial_refund');
+    expect(event.source_doc_id).toBe('cart_partial_abc_ep_xyz');
+    expect(event.emission_source).toBe('lifecycle');
+    const matched = dispatch(ctxFromEvent(event, null));
+    expect(matched.id).toBe('C.9');
+  });
+
+  it('defaults buyer_wallet_refund_cents to 0 when omitted', () => {
+    const event = buildCartPartialRefundCashLegEvent({
+      ...base, payment_method: 'bank_link', refund_cents: 1500
+    });
+    expect(event.payload.buyer_wallet_refund_cents).toBe(0);
+    expect(event.payload.buyer_id).toBeUndefined();
+  });
+
+  it('threads buyer_wallet_refund_cents + buyer_id when wallet was refunded', () => {
+    const event = buildCartPartialRefundCashLegEvent({
+      ...base,
+      payment_method: 'card',
+      refund_cents: 4000,
+      buyer_wallet_refund_cents: 1000,
+      buyer_id: 'b0000000-0000-0000-0000-000000000004'
+    });
+    expect(event.payload.buyer_wallet_refund_cents).toBe(1000);
+    expect(event.payload.buyer_id).toBe('b0000000-0000-0000-0000-000000000004');
   });
 });
 

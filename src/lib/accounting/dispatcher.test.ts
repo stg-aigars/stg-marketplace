@@ -356,6 +356,15 @@ const REPRESENTATIVES: Representative[] = [
       counterparty: null,
       payload: { funding_source: 'everypay' }
     }
+  },
+  // PR C commit 9 — C.9 cart-time partial refund cash leg
+  {
+    type_id: 'C.9',
+    ctx: {
+      event_type: 'cart.partial_refund_cash_leg',
+      counterparty: null,
+      payload: { payment_method: 'card' }
+    }
   }
 ];
 

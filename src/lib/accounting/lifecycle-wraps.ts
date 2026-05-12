@@ -31,6 +31,8 @@ import {
   fireAccountingPostedAudit
 } from './posting-engine';
 import {
+  buildCartPartialRefundCashLegEvent,
+  buildCartPaymentEvent,
   buildOrderCompletionEvent,
   buildRefundEvent,
   buildRefundCashLegEvent,
@@ -527,4 +529,160 @@ export async function refundOrderWithGL(
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// cartFulfillmentWithGL — flag-ON path for payment-fulfillment.ts:fulfillCartPayment
+// ---------------------------------------------------------------------------
+
+export interface CartFulfillmentWithGLInput {
+  cart_group_id: string;
+  buyer_id: string;
+  payment_method: 'card' | 'bank_link';
+  /** Total cart price (item + shipping) at time of fulfillment. Becomes Cr 5590. */
+  gross_cart_cents: number;
+  /** Portion paid from buyer's wallet balance; 0 when paid entirely via EveryPay. */
+  buyer_wallet_cents: number;
+  everypay_payment_reference: string;
+  callback_payload: Record<string, unknown>;
+  /**
+   * When a cart has unavailable listings at fulfillment, fulfillCartPayment
+   * auto-refunds the unavailable portion (both EveryPay-rail and buyer-wallet-
+   * rail). Pass the refund split here so the wrap emits a paired C.9 cash-leg
+   * entry alongside the C.1/C.2. Zero or omitted when the full cart fulfilled.
+   *
+   *   refund_cents          — total refund (EveryPay leg + wallet leg)
+   *   buyer_wallet_refund_cents — portion credited back to buyer wallet
+   *
+   * everypay_refund_cents is derived as (refund_cents − buyer_wallet_refund_cents).
+   */
+  partial_refund?: {
+    refund_cents: number;
+    buyer_wallet_refund_cents: number;
+  };
+}
+
+interface CartFulfillmentWithGLResult {
+  cart_journal_entry_id: string | null;
+  partial_refund_journal_entry_id: string | null;
+  idempotent_skip: boolean;
+}
+
+/**
+ * Flag-ON path for payment-fulfillment.ts:fulfillCartPayment. Builds the
+ * C.1 (card) or C.2 (bank_link) cart-payment cash-leg event, dispatches +
+ * computes via the engine assembly helper, and calls
+ * `cart_complete_payment_with_event_atomic` (migration 108) to compose the
+ * cart_checkout_groups status flip + paid_at stamp + GL emit atomically.
+ *
+ * When `partial_refund_cents > 0` (some listings were unavailable at
+ * fulfillment and EveryPay auto-refunded), this also emits a paired C.9
+ * cart-time partial-refund cash leg via the engine's standard emit() path.
+ * The C.9 is NOT inside the cart parent RPC's transaction (the RPC takes a
+ * single event/lines payload) — it fires after the C.1/C.2 commits, with the
+ * same READ COMMITTED semantics + UNIQUE-on-source_doc protection as the
+ * engine's own emit() path. If C.1/C.2 succeeds but C.9 fails, the cart is
+ * marked completed in marketplace state and the C.1/C.2 GL entry is durable;
+ * a follow-up retry can re-emit C.9 (idempotency keyed on the refund_reference).
+ *
+ * Returns IDs for both entries (null when an emit was skipped — idempotent
+ * retry, or zero partial refund). Caller may log either for observability.
+ */
+export async function cartFulfillmentWithGL(
+  supabase: SupabaseClient,
+  input: CartFulfillmentWithGLInput
+): Promise<CartFulfillmentWithGLResult> {
+  const today = new Date().toISOString().split('T')[0];
+  const period = today.substring(0, 7);
+
+  const cartEvent = buildCartPaymentEvent({
+    cart_payment_id: input.cart_group_id,
+    everypay_payment_id: input.everypay_payment_reference,
+    payment_method: input.payment_method,
+    gross_cart_cents: input.gross_cart_cents,
+    buyer_wallet_cents: input.buyer_wallet_cents,
+    buyer_id: input.buyer_wallet_cents > 0 ? input.buyer_id : undefined,
+    callback_payload: input.callback_payload,
+    posting_date: today,
+    accounting_period: period,
+    tax_period: period,
+    actor_id: input.buyer_id
+  });
+
+  // Cart entries are cash-only — no counterparty load. Pass null to skip
+  // the engine's optional counterparty load.
+  const assembled = await assembleEntryForRpc(supabase, cartEvent, null);
+
+  const { data, error } = await supabase.rpc('cart_complete_payment_with_event_atomic', {
+    p_cart_group_id: input.cart_group_id,
+    p_actor_id: input.buyer_id,
+    p_event: assembled.rpcEntry,
+    p_lines: assembled.rpcLines as unknown as Record<string, unknown>[]
+  });
+
+  if (error) {
+    throw new Error(`cart_complete_payment_with_event_atomic failed (${error.code ?? 'unknown'}): ${error.message}`);
+  }
+
+  const rpcResult = data as { journal_entry_id: string | null; idempotent_skip: boolean };
+
+  if (rpcResult.journal_entry_id) {
+    fireAccountingPostedAudit(supabase, rpcResult.journal_entry_id, assembled, input.buyer_id);
+  }
+
+  // Paired C.9 partial-refund cash leg (when applicable). Lives outside the
+  // parent RPC's transaction; engine's idempotency keys on
+  // (source_doc_type='cart_partial_refund', source_doc_id=refund_reference,
+  // type_id='C.9'), so a retry after a transient failure is safe.
+  let partial_refund_entry_id: string | null = null;
+  if (input.partial_refund && input.partial_refund.refund_cents > 0) {
+    const refund_reference = `cart_partial_${input.cart_group_id}_${input.everypay_payment_reference}`;
+    const refundEvent = buildCartPartialRefundCashLegEvent({
+      cart_payment_id: input.cart_group_id,
+      everypay_payment_id: input.everypay_payment_reference,
+      payment_method: input.payment_method,
+      refund_cents: input.partial_refund.refund_cents,
+      buyer_wallet_refund_cents: input.partial_refund.buyer_wallet_refund_cents,
+      buyer_id: input.partial_refund.buyer_wallet_refund_cents > 0 ? input.buyer_id : undefined,
+      refund_reference,
+      posting_date: today,
+      accounting_period: period,
+      tax_period: period,
+      actor_id: input.buyer_id
+    });
+
+    const refundAssembled = await assembleEntryForRpc(supabase, refundEvent, null);
+
+    const { data: refundEntryId, error: refundError } = await supabase.rpc('insert_journal_entry', {
+      p_entry: refundAssembled.rpcEntry,
+      p_lines: refundAssembled.rpcLines
+    });
+
+    if (refundError) {
+      // 23505 (unique_violation) is the idempotent-retry case: a prior call
+      // already inserted this C.9. Recover via SELECT — winner's committed
+      // row is visible under READ COMMITTED.
+      if (refundError.code === '23505') {
+        const { data: recovered } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .eq('source_doc_type', 'cart_partial_refund')
+          .eq('source_doc_id', refund_reference)
+          .eq('type_id', 'C.9')
+          .maybeSingle();
+        partial_refund_entry_id = (recovered?.id as string | undefined) ?? null;
+      } else {
+        throw new Error(`C.9 partial-refund emit failed (${refundError.code ?? 'unknown'}): ${refundError.message}`);
+      }
+    } else if (typeof refundEntryId === 'string') {
+      partial_refund_entry_id = refundEntryId;
+      fireAccountingPostedAudit(supabase, refundEntryId, refundAssembled, input.buyer_id);
+    }
+  }
+
+  return {
+    cart_journal_entry_id: rpcResult.journal_entry_id,
+    partial_refund_journal_entry_id: partial_refund_entry_id,
+    idempotent_skip: rpcResult.idempotent_skip
+  };
 }
