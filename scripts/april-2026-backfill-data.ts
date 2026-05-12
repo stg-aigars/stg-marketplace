@@ -78,7 +78,9 @@ export interface BackfillCounterparty {
 const HETZNER_CP_ID = 'a8888888-8888-4888-8888-888888888888';
 const UNISEND_CP_ID = 'a9999999-9999-4999-8999-999999999999';
 const DELETED_EE_SELLER_CP_ID = 'dce90524-0000-4000-8854-ce905240ee01';  // ce905240… EE
-const DELETED_LV_SELLER_CP_ID = 'd630f6e7-0000-4000-9b56-630f6e7flv01';  // 630f6e7f… LV
+// UUID must be all valid hex (0-9a-f); embeds 630f6e7f's distinctive bytes
+// in blocks 1 and 5 for traceability. Block 4 starts with '9' (valid v4 variant).
+const DELETED_LV_SELLER_CP_ID = 'd630f6e7-0000-4000-95cb-630f6e7f1001';
 
 // Original (now-orphaned) auth.users.id values. Stored on each referencing
 // entry's posting_context.deleted_seller_user_id for traceability — the FK
