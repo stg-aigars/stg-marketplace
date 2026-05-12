@@ -1458,26 +1458,40 @@ const I_4: VatMappingEntry = {
 };
 
 // =============================================================================
-// P.1 — Monthly VAT consolidation (refund position)
+// P.1 — Monthly VAT consolidation (refund OR payable position)
 //
 // Caller pre-computes the close: which 5710-* sub-accounts to clear and the
-// resulting net refund. Engine emits the lines verbatim. This shape matches
-// v3 §D's P.1 spec: no engine-side VAT computation; the consolidation is the
-// closing arithmetic done by accounting workflow.
+// resulting net direction (refund vs payable). Engine emits the lines verbatim.
+// This shape matches v3 §D's P.1 spec: no engine-side VAT computation; the
+// consolidation is the closing arithmetic done by accounting workflow.
+//
+// Routing event_type was `period_close.monthly_refund` pre-PR-C-commit-12;
+// renamed to `period_close.monthly_vat` (direction-agnostic) when the
+// monthly-vat-close cron landed in commit 12 to support both refund and
+// payable position emissions. April backfill's `close_2026_04` entry was
+// posted with the legacy event_type; that historical record is unchanged
+// (event_type is NOT persisted to journal_entries — only type_id='P.1' is).
 //
 // payload.lines: array of { account_code, debit_cents?, credit_cents? }
+//   Refund: Dr 5710-LV-OUT + Dr 2380 + Cr 5710-LV-IN
+//   Payable: Dr 5710-LV-OUT + Cr 5710-LV-IN + Cr 5710-09 (PVN klīringa konts)
+//   Zero-net (both sides nonzero but equal): Dr 5710-LV-OUT + Cr 5710-LV-IN
 // payload.closing_period: 'YYYY-MM' (audit metadata)
-// payload.net_refund_cents: number (audit metadata; informational)
+// payload.net_refund_cents: legacy key (positive = refund, negative = payable);
+//   preserved post-rename so historical and future entries share the same
+//   queryable shape. Q12-7a (commit 12): kept rather than renamed.
+// payload.net_payable_to_vid_cents: sibling representation (positive = payable,
+//   negative = refund). Added in commit 12 for direction-explicit queries.
 // =============================================================================
 
 const P_1: VatMappingEntry = {
   id: 'P.1',
   category: 'period_close',
   entry_type: 'period_close',
-  description: 'Monthly VAT consolidation, refund position (input VAT > output VAT)',
+  description: 'Monthly VAT consolidation (refund or payable position)',
   legal_basis: 'PVN likums (period close); Cabinet Regulation 877',
   routing: {
-    event_type: 'period_close.monthly_refund',
+    event_type: 'period_close.monthly_vat',
     conditions: {}
   },
   vat_base_rule: { source: 'pre_computed' },

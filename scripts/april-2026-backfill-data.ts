@@ -502,7 +502,15 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
     entry_number: 'close_2026_04',
     description: 'April 2026 VAT consolidation — €0.30 refund due from VID',
     event: {
-      event_type: 'period_close.monthly_refund',
+      // event_type renamed from 'period_close.monthly_refund' →
+      // 'period_close.monthly_vat' in PR C commit 12 (direction-agnostic
+      // routing to support both refund and payable positions). The April
+      // backfill's already-posted prod entry was emitted under the legacy
+      // name; this script's reference now uses the new name so the script
+      // continues to dispatch correctly if re-run (event_type isn't
+      // persisted to journal_entries — only type_id='P.1' is — so the
+      // historical prod entry is unaffected by the rename).
+      event_type: 'period_close.monthly_vat',
       source_doc_type: 'period_close',
       source_doc_id: 'close_2026_04',
       posting_date: '2026-04-30',

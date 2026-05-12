@@ -1164,3 +1164,183 @@ export async function getInFlightCartReceiptsTotal(
   }
   return total;
 }
+
+// =============================================================================
+// getNetVatPositionForPeriod — PR C commit 12 (monthly-vat-close cron)
+// =============================================================================
+
+/**
+ * Net VAT position result for a single monthly period. Computed from
+ * 5710-LV-IN + 5710-LV-OUT cumulative movement within the period; drives
+ * the P.1 closing entry's line shape.
+ *
+ * Sign convention follows the credit-normal liability shape of the 5710-*
+ * accounts (per `accounting_conventions §1`): cents fields are
+ * non-negative magnitudes; `net_payable_to_vid_cents` is signed
+ * (positive = payable, negative = refund).
+ */
+export interface NetVatPosition {
+  /** YYYY-MM */
+  period_key: string;
+  /**
+   * True iff BOTH `lv_in_cents === 0` AND `lv_out_cents === 0` — no VAT
+   * activity at all in the period. Cron skips emit; checklist item 8 stays
+   * `not_applicable`. DISTINCT from the "both nonzero but equal" zero-net
+   * case where P.1 still fires to clear both sub-accounts.
+   */
+  has_no_movement: boolean;
+  /** Period-cumulative credit-normal balance of 5710-LV-IN. Non-negative magnitude. */
+  lv_in_cents: number;
+  /** Period-cumulative credit-normal balance of 5710-LV-OUT. Non-negative magnitude. */
+  lv_out_cents: number;
+  /**
+   * Signed: positive = payable to VID, negative = refund from VID, zero = net-zero.
+   * Equals `lv_out_cents − lv_in_cents`.
+   */
+  net_payable_to_vid_cents: number;
+  /** Pre-computed P.1 lines ready for emit. Shape depends on net direction. */
+  lines: Array<{
+    account_code: string;
+    debit_cents: number;
+    credit_cents: number;
+    narrative: string;
+  }>;
+}
+
+/**
+ * Compute the net VAT position for a monthly period by reading cumulative
+ * 5710-LV-IN + 5710-LV-OUT movement from the GL. Used by the
+ * /api/cron/monthly-vat-close cron to determine P.1 emit shape.
+ *
+ * **Type-catalog coupling (per `accounting_conventions §2`):**
+ *
+ *   (A) **VAT account coupling.** This query only reads `5710-LV-IN` and
+ *       `5710-LV-OUT` — the LV domestic VAT pair. If a future PR adds a new
+ *       VAT sub-account that should be cleared at P.1 time (unlikely —
+ *       OSS-LT and OSS-EE go through quarterly P.3; foreign RC stays
+ *       uncleared per April Fix 3), update both this query AND the line-
+ *       construction logic below.
+ *
+ *   (B) **RC exclusion by design.** RC sub-accounts (foreign and domestic)
+ *       are EXCLUDED by the account-code filter. Foreign RC (5710-RC-IN /
+ *       5710-RC-OUT) stays on balance sheet per Phase 0/April convention;
+ *       domestic RC (5710-LV-RC-IN / 5710-LV-RC-OUT) washes within the
+ *       period via Article 143.7 reverse-charge mechanics — neither needs
+ *       P.1 closing. Do NOT add them to LV_VAT_ACCOUNTS without an
+ *       accountant signoff on a new clearing convention.
+ *
+ * **Clearing account choice (Q12-8 sign-off):** payable position credits
+ * `5710-09` (PVN klīringa konts / VAT settlement clearing — seeded in
+ * migration 096); refund position debits `2380` (VID receivable). No new
+ * chart-of-accounts entry needed.
+ */
+const LV_VAT_ACCOUNTS = ['5710-LV-IN', '5710-LV-OUT'] as const;
+
+export async function getNetVatPositionForPeriod(
+  supabase: SupabaseClient,
+  target: { period_key: string; posting_date: string }
+): Promise<NetVatPosition> {
+  const { data: rows, error } = await supabase
+    .from('journal_lines')
+    .select(
+      'account_code, debit_cents, credit_cents, journal_entries!inner(accounting_period)'
+    )
+    .in('account_code', LV_VAT_ACCOUNTS)
+    .eq('journal_entries.accounting_period', target.period_key);
+  throwIfError(error, `getNetVatPositionForPeriod: journal_lines SELECT failed for ${target.period_key}`);
+
+  // Aggregate signed credit-normal balance per account: sum(credit) - sum(debit).
+  // For LV-IN and LV-OUT (credit-normal liabilities), a normal period sees
+  // POSITIVE net-credit accumulation. We surface these as non-negative
+  // magnitudes (`lv_in_cents`, `lv_out_cents`) per the NetVatPosition
+  // convention; the line-construction logic emits the inverse-direction
+  // closing line (Dr X to clear a Cr-normal balance).
+  let lv_in_cents = 0;
+  let lv_out_cents = 0;
+  for (const row of (rows ?? []) as Array<{ account_code: string; debit_cents: number; credit_cents: number }>) {
+    const netCredit = row.credit_cents - row.debit_cents;
+    if (row.account_code === '5710-LV-IN') lv_in_cents += netCredit;
+    else if (row.account_code === '5710-LV-OUT') lv_out_cents += netCredit;
+  }
+
+  const has_no_movement = lv_in_cents === 0 && lv_out_cents === 0;
+
+  if (has_no_movement) {
+    return {
+      period_key: target.period_key,
+      has_no_movement: true,
+      lv_in_cents: 0,
+      lv_out_cents: 0,
+      net_payable_to_vid_cents: 0,
+      lines: []
+    };
+  }
+
+  const lines: NetVatPosition['lines'] = [];
+
+  // Line construction per the April backfill close_2026_04 canonical shape:
+  //   Dr 5710-LV-OUT (drains credit-normal accumulation of output VAT)
+  //   Cr 5710-LV-IN  (drains debit-normal accumulation — input VAT, despite
+  //                   the chart-of-accounts "liability" label, operates as
+  //                   debit-normal receivable in practice; debits accumulate
+  //                   when STG pays input VAT, so net `credit-debit` is
+  //                   NEGATIVE during normal operation; we Cr by abs() to
+  //                   restore zero)
+  //   Dr 2380 / Cr 5710-09 (third leg by direction, see below)
+  //
+  // Closing logic: reverse the period-cumulative net direction per account.
+  // The Math.abs() on lv_in_cents normalizes for the sign convention; we
+  // surface non-negative magnitudes to the caller via NetVatPosition.
+
+  if (lv_out_cents !== 0) {
+    lines.push({
+      account_code: '5710-LV-OUT',
+      debit_cents: lv_out_cents,
+      credit_cents: 0,
+      narrative: `Clear LV output VAT (${target.period_key} close)`
+    });
+  }
+
+  lines.push({
+    account_code: '5710-LV-IN',
+    debit_cents: 0,
+    credit_cents: Math.abs(lv_in_cents),
+    narrative: `Clear LV input VAT (${target.period_key} close)`
+  });
+
+  // Line 3 — direction-dependent third leg (only when net is nonzero).
+  // Compute net using the April convention: refund magnitude = |LV-IN| − LV-OUT.
+  const refundMagnitude = Math.abs(lv_in_cents) - lv_out_cents;
+  if (refundMagnitude > 0) {
+    // Refund position — input VAT (recoverable) exceeded output VAT collected.
+    lines.push({
+      account_code: '2380',
+      debit_cents: refundMagnitude,
+      credit_cents: 0,
+      narrative: `VID receivable — ${target.period_key} net refund due from VID`
+    });
+  } else if (refundMagnitude < 0) {
+    // Payable position — output VAT collected exceeded input VAT.
+    lines.push({
+      account_code: '5710-09',
+      debit_cents: 0,
+      credit_cents: Math.abs(refundMagnitude),
+      narrative: `PVN klīringa konts — ${target.period_key} net payable to VID`
+    });
+  }
+  // refundMagnitude === 0 → 2-line zero-net entry (no third leg)
+
+  // Surface non-negative magnitudes for the caller (Q12-7a sign convention):
+  // net_payable_to_vid_cents = lv_out − abs(lv_in). Refund = negative,
+  // payable = positive, zero-net = 0.
+  const signed_net_payable = lv_out_cents - Math.abs(lv_in_cents);
+
+  return {
+    period_key: target.period_key,
+    has_no_movement: false,
+    lv_in_cents: Math.abs(lv_in_cents),
+    lv_out_cents,
+    net_payable_to_vid_cents: signed_net_payable,
+    lines
+  };
+}

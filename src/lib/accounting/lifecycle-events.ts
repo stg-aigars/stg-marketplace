@@ -25,6 +25,7 @@
  *                                     timing.)
  */
 
+import { SYSTEM_COUNTERPARTY } from './system-counterparties';
 import type { PostingEvent } from './types';
 
 /**
@@ -461,6 +462,107 @@ export function buildEverypaySettlementEvent(
       settlement_value_date: input.settlement_value_date,
       included_txn_refs: input.included_txn_refs,
       ...(input.posting_context_notes ? { staff_notes: input.posting_context_notes } : {})
+    },
+    created_by: input.actor_id
+  };
+}
+
+// ---------------------------------------------------------------------------
+// buildVatClosingEvent — P.1 (monthly-vat-close cron emission)
+// ---------------------------------------------------------------------------
+
+/**
+ * Pre-computed P.1 line as it appears in the event payload. The cron's
+ * net-VAT-position helper produces these; the engine's
+ * buildPreComputedLines projects them verbatim into ComputedLine[].
+ */
+export interface VatClosingLine {
+  account_code: string;
+  debit_cents: number;
+  credit_cents: number;
+  narrative: string;
+}
+
+export interface BuildVatClosingEventInput {
+  /** YYYY-MM — the period being closed. Drives source_doc_id + period fields. */
+  closing_period: string;
+  /** YYYY-MM-DD — typically the last day of `closing_period`. */
+  posting_date: string;
+  /**
+   * Net direction in cents:
+   *   positive = refund position (VID owes STG; net VAT receivable on 2380)
+   *   negative = payable position (STG owes VID; net VAT clearing on 5710-09)
+   *   zero     = both LV-IN and LV-OUT nonzero but equal (2-line clear-only entry)
+   *
+   * Sign convention: kept legacy-compatible with the April backfill's
+   * `net_refund_cents` key. Positive=refund, negative=payable mirrors the
+   * historical entries. The sibling `net_payable_to_vid_cents` field below
+   * gives the direction-explicit representation for new queries.
+   * (PR C commit 12 Q12-7a: kept legacy key for queryable consistency with
+   * historical entries.)
+   */
+  net_refund_cents: number;
+  /**
+   * Direction-explicit sibling: positive = payable to VID, negative = refund
+   * from VID. Negation of `net_refund_cents`. Surfaced so new queries can
+   * read direction without knowing the sign-flip convention.
+   */
+  net_payable_to_vid_cents: number;
+  /** Pre-computed P.1 lines (refund / payable / zero-net shape). Engine emits verbatim. */
+  lines: ReadonlyArray<VatClosingLine>;
+  /** Optional human-readable narrative override; cron defaults are usually sufficient. */
+  narrative?: string;
+  actor_id?: string;
+}
+
+/**
+ * Builds the P.1 monthly VAT consolidation event for the
+ * /api/cron/monthly-vat-close cron route (PR C commit 12).
+ *
+ * `emission_source='cron'` discriminates from `'backfill'` (Phase 0
+ * close_2026_01, April close_2026_04 — both emitted with the legacy
+ * `event_type='period_close.monthly_refund'`; routing predicate renamed to
+ * `period_close.monthly_vat` in commit 12 to support both directions).
+ *
+ * Counterparty is the pinned STG_INTERNAL system counterparty (matches the
+ * April backfill convention — period-close consolidations have no external
+ * counterparty).
+ *
+ * Idempotency: `source_doc_id = close_<YYYY-MM>`; engine UNIQUE on
+ * (source_doc_type='period_close', source_doc_id, type_id='P.1'). Re-firing
+ * the cron returns idempotent_skip.
+ */
+export function buildVatClosingEvent(input: BuildVatClosingEventInput): PostingEvent {
+  const direction =
+    input.net_refund_cents > 0 ? 'refund' :
+    input.net_refund_cents < 0 ? 'payable' : 'zero-net';
+  const defaultNarrative =
+    direction === 'refund'
+      ? `${input.closing_period} VAT consolidation — €${(input.net_refund_cents / 100).toFixed(2)} refund due from VID`
+      : direction === 'payable'
+        ? `${input.closing_period} VAT consolidation — €${(Math.abs(input.net_refund_cents) / 100).toFixed(2)} payable to VID`
+        : `${input.closing_period} VAT consolidation — net-zero close (LV-IN/OUT clearing)`;
+
+  // source_doc_id uses underscore separator (close_YYYY_MM) to match the
+  // April backfill `close_2026_04` and Phase 0 `close_2026_01` convention.
+  // closing_period arrives as YYYY-MM (hyphen); normalize for the doc id.
+  const sourceDocId = `close_${input.closing_period.replace('-', '_')}`;
+
+  return {
+    event_type: 'period_close.monthly_vat',
+    source_doc_type: 'period_close',
+    source_doc_id: sourceDocId,
+    posting_date: input.posting_date,
+    accounting_period: input.closing_period,
+    tax_period: input.closing_period,
+    narrative: input.narrative ?? defaultNarrative,
+    emission_source: 'cron',
+    counterparty_id: SYSTEM_COUNTERPARTY.STG_INTERNAL,
+    payload: {
+      closing_period: input.closing_period,
+      net_refund_cents: input.net_refund_cents,
+      net_payable_to_vid_cents: input.net_payable_to_vid_cents,
+      lines: input.lines
     },
     created_by: input.actor_id
   };

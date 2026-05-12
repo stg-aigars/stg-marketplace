@@ -891,3 +891,162 @@ describe('C.9 — cart-time partial refund cash leg', () => {
     ).toThrow(/cannot exceed refund_cents/);
   });
 });
+
+// =============================================================================
+// PR C commit 12 — P.1 monthly VAT consolidation (refund + payable + zero-net)
+// =============================================================================
+//
+// Compute() is shape-agnostic — it emits caller-supplied lines verbatim via
+// buildPreComputedLines. These tests assert that the three canonical shapes
+// (refund / payable / zero-net-both-nonzero) all produce balanced entries
+// and preserve line ordering for downstream readability.
+
+describe('P.1 — monthly VAT consolidation', () => {
+  const P_1 = () => findMappingById('P.1')!;
+
+  it('emits refund-position shape (Dr 5710-LV-OUT + Dr 2380 + Cr 5710-LV-IN) — April pattern', () => {
+    // Mirrors April backfill close_2026_04: lv_out=38, lv_in=68, refund=30.
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-04',
+        net_refund_cents: 30,
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 38,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT (April close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 68,
+            narrative: 'Clear LV input VAT (April close)'
+          },
+          {
+            account_code: '2380',
+            debit_cents: 30,
+            credit_cents: 0,
+            narrative: 'VID receivable — net refund'
+          }
+        ]
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '5710-LV-OUT', debit_cents: 38, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 68 });
+    expect(result.lines[2]).toMatchObject({ account_code: '2380', debit_cents: 30, credit_cents: 0 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(sumDr).toBe(68);
+  });
+
+  it('emits payable-position shape (Dr 5710-LV-OUT + Cr 5710-LV-IN + Cr 5710-09)', () => {
+    // Hypothetical payable month: lv_out=15000, lv_in=2000, net payable=13000.
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-07',
+        net_refund_cents: -13000, // negative = payable per Q12-7a legacy convention
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 15000,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT (July close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 2000,
+            narrative: 'Clear LV input VAT (July close)'
+          },
+          {
+            account_code: '5710-09',
+            debit_cents: 0,
+            credit_cents: 13000,
+            narrative: 'PVN klīringa konts — net payable to VID'
+          }
+        ]
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[2]).toMatchObject({ account_code: '5710-09', credit_cents: 13000 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(sumDr).toBe(15000);
+  });
+
+  it('emits 2-line zero-net shape (both sides nonzero but equal magnitudes) — Q12-5', () => {
+    // Period had real VAT activity but lv_in === lv_out exactly. Distinct
+    // from the "skip emit" case (both zero — handled upstream in the cron,
+    // not here). P.1 still fires to clear both sub-accounts to zero.
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-08',
+        net_refund_cents: 0,
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 500,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT (August close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 500,
+            narrative: 'Clear LV input VAT (August close)'
+          }
+        ]
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '5710-LV-OUT', debit_cents: 500 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', credit_cents: 500 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(sumDr).toBe(500);
+  });
+
+  it('rejects payload.lines with less than 2 entries (engine balance invariant)', () => {
+    expect(() =>
+      P_1().compute(
+        buildInput(null as unknown as CounterpartyRow, null, {
+          closing_period: '2026-09',
+          net_refund_cents: 0,
+          lines: [
+            { account_code: '5710-LV-OUT', debit_cents: 100, credit_cents: 0 }
+          ]
+        })
+      )
+    ).toThrow();
+  });
+
+  it('preserves line ordering from payload (auditability)', () => {
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-10',
+        net_refund_cents: 0,
+        lines: [
+          { account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 100, narrative: 'A' },
+          { account_code: '5710-LV-OUT', debit_cents: 100, credit_cents: 0, narrative: 'B' }
+        ]
+      })
+    );
+
+    // Line 1 corresponds to payload[0]; line 2 to payload[1]. Ordering
+    // preservation is important for audit readability — the array order
+    // staff sees in the dashboard matches the payload they emitted.
+    expect(result.lines[0]!.narrative).toBe('A');
+    expect(result.lines[1]!.narrative).toBe('B');
+  });
+});

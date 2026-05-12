@@ -23,8 +23,10 @@ import {
   buildOrderCompletionEvent,
   buildRefundEvent,
   buildRefundCashLegEvent,
+  buildVatClosingEvent,
   buildWithdrawalCompletionEvent
 } from './lifecycle-events';
+import { SYSTEM_COUNTERPARTY } from './system-counterparties';
 import type { CounterpartyRow, DispatchContext, PostingEvent } from './types';
 
 // ---------------------------------------------------------------------------
@@ -557,5 +559,115 @@ describe('buildEverypaySettlementEvent', () => {
     });
     expect(event.narrative).toContain('(1 txn)');
     expect(event.narrative).not.toContain('(1 txns)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildVatClosingEvent — P.1 (monthly-vat-close cron, PR C commit 12)
+// ---------------------------------------------------------------------------
+
+describe('buildVatClosingEvent', () => {
+  const refundShape = {
+    closing_period: '2026-05',
+    posting_date: '2026-05-31',
+    net_refund_cents: 30,
+    net_payable_to_vid_cents: -30,
+    lines: [
+      { account_code: '5710-LV-OUT', debit_cents: 38, credit_cents: 0, narrative: 'Clear LV output VAT' },
+      { account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 68, narrative: 'Clear LV input VAT' },
+      { account_code: '2380', debit_cents: 30, credit_cents: 0, narrative: 'VID receivable' }
+    ]
+  };
+
+  const payableShape = {
+    closing_period: '2026-07',
+    posting_date: '2026-07-31',
+    net_refund_cents: -13000,
+    net_payable_to_vid_cents: 13000,
+    lines: [
+      { account_code: '5710-LV-OUT', debit_cents: 15000, credit_cents: 0, narrative: 'Clear LV output VAT' },
+      { account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 2000, narrative: 'Clear LV input VAT' },
+      { account_code: '5710-09', debit_cents: 0, credit_cents: 13000, narrative: 'PVN klīringa konts — net payable' }
+    ]
+  };
+
+  it('routes to P.1 via the renamed event_type', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.event_type).toBe('period_close.monthly_vat');
+    const matched = dispatch(ctxFromEvent(event, null));
+    expect(matched.id).toBe('P.1');
+  });
+
+  it('stamps emission_source=cron on the event', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.emission_source).toBe('cron');
+  });
+
+  it('uses STG_INTERNAL system counterparty (matches April backfill convention)', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.counterparty_id).toBe(SYSTEM_COUNTERPARTY.STG_INTERNAL);
+  });
+
+  it('derives source_doc_id from closing_period (close_<YYYY-MM> pattern)', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.source_doc_id).toBe('close_2026_05');
+    expect(event.source_doc_type).toBe('period_close');
+  });
+
+  it('threads accounting_period + tax_period from closing_period', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.accounting_period).toBe('2026-05');
+    expect(event.tax_period).toBe('2026-05');
+  });
+
+  it('threads BOTH net_refund_cents (legacy) AND net_payable_to_vid_cents (sibling) into payload (Q12-7a)', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.payload.net_refund_cents).toBe(30);
+    expect(event.payload.net_payable_to_vid_cents).toBe(-30);
+
+    const payableEvent = buildVatClosingEvent(payableShape);
+    expect(payableEvent.payload.net_refund_cents).toBe(-13000);
+    expect(payableEvent.payload.net_payable_to_vid_cents).toBe(13000);
+  });
+
+  it('threads payload.lines verbatim from input', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.payload.lines).toEqual(refundShape.lines);
+  });
+
+  it('default narrative reads "refund due from VID" for refund position', () => {
+    const event = buildVatClosingEvent(refundShape);
+    expect(event.narrative).toContain('refund due from VID');
+    expect(event.narrative).toContain('€0.30');
+  });
+
+  it('default narrative reads "payable to VID" for payable position', () => {
+    const event = buildVatClosingEvent(payableShape);
+    expect(event.narrative).toContain('payable to VID');
+    expect(event.narrative).toContain('€130.00');
+  });
+
+  it('default narrative reads "net-zero close" for zero-net (both nonzero, equal)', () => {
+    const event = buildVatClosingEvent({
+      closing_period: '2026-08',
+      posting_date: '2026-08-31',
+      net_refund_cents: 0,
+      net_payable_to_vid_cents: 0,
+      lines: [
+        { account_code: '5710-LV-OUT', debit_cents: 500, credit_cents: 0, narrative: 'A' },
+        { account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 500, narrative: 'B' }
+      ]
+    });
+    expect(event.narrative).toContain('net-zero close');
+  });
+
+  it('accepts a caller-supplied narrative override', () => {
+    const event = buildVatClosingEvent({ ...refundShape, narrative: 'Custom audit narrative' });
+    expect(event.narrative).toBe('Custom audit narrative');
+  });
+
+  it('threads actor_id through to created_by for audit attribution', () => {
+    const event = buildVatClosingEvent({ ...refundShape, actor_id: 'cron' });
+    expect(event.created_by).toBe('cron');
   });
 });
