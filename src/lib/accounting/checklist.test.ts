@@ -130,7 +130,11 @@ const periodHardLocked = {
  *   accounts:              [item4 5590, item5 2351, item6 UN, item6 EP, item7 2630]
  *   wallet_transactions:   [item3 per-user balance_after_cents AS OF asOf]
  *   wallets:               [item9 lt(0) check]
- *   journal_entries:       [item8 P.1/P.3 lookup, item8 H.1+override_type lookup, getEntriesPostedSince]
+ *   journal_entries:       [item4 cart-receipts C.1/C.2 lookup (PR D),
+ *                           item4 release lookup (skipped when no candidates),
+ *                           item8 P.1/P.3 lookup, item8 H.1+override_type lookup,
+ *                           getEntriesPostedSince]
+ *   orders:                [item4 candidate orders (skipped when no cart receipts)]
  *
  * For a period IN the Phase 0 fixture (item 2 queries 2610 ledger):
  *   journal_lines insertion order shifts — item 2's ledger query lands
@@ -281,12 +285,21 @@ function buildHappyPathQueues(
       { data: [], error: null }
     ],
     journal_entries: [
+      // Item 4 cart-receipts (C.1/C.2) lookup (PR D) — empty in the happy
+      // path. When empty, getInFlightCartReceiptsTotal short-circuits and
+      // does not issue the orders SELECT or the releases SELECT.
+      { data: [], error: null },
       // Item 8 P.1/P.3 lookup — empty (no consolidation, no movement → NA).
       { data: [], error: null },
       // Item 8 H.1+override_type=historical_filing_alignment lookup — empty.
       { data: [], error: null },
       // getEntriesPostedSince — only called when status=soft_locked. Default
       // empty so a soft_locked period passes the can_hard_lock gate.
+      { data: [], error: null }
+    ],
+    // Item 4 candidate orders (PR D). Only consulted when journal_entries[0]
+    // (cart-receipts) returns non-empty. Default empty for the happy path.
+    orders: [
       { data: [], error: null }
     ]
   };
@@ -621,8 +634,17 @@ describe('getPeriodCloseChecklist — items 4-7 (single-account closing = 0)', (
     const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     const item4 = result.items.find((i) => i.id === 4);
     expect(item4?.status).toBe('fail');
-    expect(item4?.detail).toMatch(/closing balance/);
+    // PR D reworded the detail from "5590 closing balance ..." to
+    // "5590 holds ... in suspense, over/under-states expected ...".
+    expect(item4?.detail).toMatch(/in suspense/);
+    expect(item4?.detail).toMatch(/over-states|under-states/);
   });
+
+  // PR D — Item 4 reconciliation gate. The existing fail test above asserts
+  // the legacy "5590 != 0" failure path; it continues to pass because the
+  // new gate also fails when balance != expected (and expected = 0 with no
+  // in-flight C.1/C.2 in the happy queue). The T1–T11 block below covers
+  // the new reconciliation semantics directly.
 
   it('fails item 6 when sum of 5410-* closing balances != 0', async () => {
     const queues = buildHappyPathQueues(periodOpen);
@@ -673,6 +695,384 @@ describe('getPeriodCloseChecklist — items 4-7 (single-account closing = 0)', (
   });
 });
 
+// =============================================================================
+// PR D — Item 4 reconciliation gate (T1–T11)
+// =============================================================================
+//
+// Covers the new buildItem4 semantics that replaced "5590 closing = 0" with
+// "5590 closing = expected_in_flight_total". Each scenario sets up a specific
+// combination of journal_entries C.1/C.2 + orders rows + journal_entries
+// release rows + journal_lines 5590 ledger so the gate either passes
+// (balance == expected) or fails (with the new descriptive failure detail).
+
+// -----------------------------------------------------------------------------
+// Helper — build a 5590 journal_line for a given net credit balance
+// -----------------------------------------------------------------------------
+//
+// Item 4 calls getAccountClosingBalance(supabase, '5590', asOf) which under
+// the hood loads journal_lines + the 5590 account row, and computes the
+// signed net-debit-cents closing balance. To set up a specific 5590 balance,
+// we install a single Cr 5590 line of the desired magnitude. (Net-debit
+// convention: a credit line produces a negative closing balance; suspense
+// 5590 carries credit balance during in-flight cart periods.)
+
+function buildSuspenseCreditLine(closingCreditCents: number) {
+  return {
+    id: 'l-5590',
+    entry_id: 'e-5590',
+    line_number: 1,
+    account_code: '5590',
+    debit_cents: 0,
+    credit_cents: closingCreditCents,
+    currency: 'EUR',
+    fx_rate_snapshot: null,
+    vat_rate_snapshot: null,
+    vat_country: null,
+    counterparty_type: null,
+    counterparty_id: null,
+    narrative: null,
+    journal_entries: {
+      id: 'e-5590',
+      posting_date: '2027-01-15',
+      accounting_period: '2027-01',
+      tax_period: '2027-01',
+      entry_type: 'checkout',
+      type_id: 'C.1',
+      source_doc_type: 'cart_payment',
+      source_doc_id: 'cart-group-1',
+      reverses_entry_id: null,
+      correction_reason: null,
+      narrative: 'cart payment',
+      posting_context: {},
+      created_by: 'test',
+      created_at: '2027-01-15T00:00:00Z',
+      period_close_adjustment: false
+    }
+  };
+}
+
+/**
+ * Set up an in-flight cart scenario by mutating the queue. Splices in the
+ * PR D-introduced journal_entries[1] release-lookup response and overrides
+ * orders[0] and journal_entries[0]. Net 5590 closing balance is installed
+ * separately via journal_lines[2] (item 4 5590 ledger query).
+ */
+function setupInFlightCarts(
+  queues: ReturnType<typeof buildHappyPathQueues>,
+  opts: {
+    cartReceipts: Array<{ source_doc_id: string }>;
+    orders: Array<{
+      id: string;
+      items_total_cents: number;
+      shipping_cost_cents: number;
+      cart_group_id: string;
+    }>;
+    releases?: Array<{
+      source_doc_id: string;
+      type_id: string;
+      posting_context?: Record<string, unknown>;
+    }>;
+    /** Net Cr 5590 closing balance (cents). Defaults to sum of order gross_carts. */
+    suspenseCreditCents?: number;
+  }
+) {
+  queues.journal_entries[0] = { data: opts.cartReceipts, error: null };
+
+  // When cart receipts are non-empty, the release lookup fires AFTER the
+  // orders SELECT and BEFORE item 8's queries. Splice the release response
+  // in at index 1.
+  const releaseRows = (opts.releases ?? []).map((r) => ({
+    source_doc_id: r.source_doc_id,
+    type_id: r.type_id,
+    posting_context: r.posting_context ?? {}
+  }));
+  queues.journal_entries.splice(1, 0, { data: releaseRows, error: null });
+
+  queues.orders![0] = { data: opts.orders, error: null };
+
+  const totalGross = opts.orders.reduce(
+    (s, o) => s + o.items_total_cents + o.shipping_cost_cents,
+    0
+  );
+  const suspense = opts.suspenseCreditCents ?? totalGross;
+  if (suspense > 0) {
+    queues.journal_lines[2] = { data: [buildSuspenseCreditLine(suspense)], error: null };
+  }
+}
+
+describe('getPeriodCloseChecklist — item 4 reconciliation gate (PR D)', () => {
+  // T1 — Empty in-flight (no C.1/C.2 in GL). Trivial-pass property:
+  // pre-cutover behavior with the new gate must remain a clean pass.
+  it('T1: passes when there are no C.1/C.2 entries and 5590 balance is zero', async () => {
+    const client = buildMockClient(buildHappyPathQueues(periodOpen));
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+    expect(item4?.label).toBe('Suspense reconciled (5590)');
+    expect(item4?.detail).toContain('no in-flight cart receipts');
+  });
+
+  // T2 — One in-flight cart, no completion yet. Single-seller cart, single
+  // order, balance matches gross_cart.
+  it('T2: passes with one in-flight cart matching its 5590 contribution', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-group-1' }],
+      orders: [
+        {
+          id: 'order-1',
+          items_total_cents: 5000,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-group-1'
+        }
+      ]
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+    expect(item4?.detail).toMatch(/matching expected in-flight cart receipts/);
+  });
+
+  // T3 — Multiple in-flight carts (different sellers, different carts).
+  it('T3: passes with multiple in-flight carts summing to total 5590 balance', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [
+        { source_doc_id: 'cart-group-A' },
+        { source_doc_id: 'cart-group-B' }
+      ],
+      orders: [
+        { id: 'order-A1', items_total_cents: 4000, shipping_cost_cents: 350, cart_group_id: 'cart-group-A' },
+        { id: 'order-B1', items_total_cents: 6500, shipping_cost_cents: 350, cart_group_id: 'cart-group-B' }
+      ]
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T4 — Partial fulfillment cart: kept-portion-only orders exist in DB
+  // (the unavailable portion never produced an order row). GL's 5590
+  // closing already reflects only kept-portion suspense because the C.9
+  // emit fired at fulfillment for the unavailable portion.
+  it('T4: passes when partial-fulfillment cart shows only kept-portion orders', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-group-partial' }],
+      orders: [
+        {
+          id: 'order-kept',
+          items_total_cents: 5000,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-group-partial'
+        }
+        // The unavailable seller's order was never created; refunded portion
+        // was reversed by C.9 (not modeled here — assume it's reflected in
+        // the actual 5590 balance which only carries the kept-portion gross).
+      ]
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T5 — Buyer-wallet contribution: cart total = €100, paid €70 EveryPay +
+  // €30 wallet. Under PR C commit 9 Option α the C.1 entry credits 5590 by
+  // the FULL cart total (€100, not just €70). Expected_in_flight matches
+  // because orders.items_total + shipping = full cart.
+  it('T5: passes when buyer-wallet cart has 5590 = full cart total (not EveryPay portion)', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-wallet' }],
+      orders: [
+        {
+          id: 'order-wallet',
+          items_total_cents: 9500,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-wallet'
+        }
+      ],
+      // Suspense holds 9850 (full cart_total) per Q3 Option α — buyer wallet
+      // portion is Dr 5351-buyer at C.1 time, not deducted from 5590.
+      suspenseCreditCents: 9850
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T6 — Period-boundary straddling. Two assertions: (a) at the in-flight
+  // period end, the order contributes; (b) after release in next period,
+  // it doesn't. We only model (a) here — for (b) we'd need separate test
+  // setup with the release entry's posting_date <= asOf. Combined into one
+  // describe block as two distinct `it` cases.
+  it('T6a: order paid in N but not yet released is in-flight at end-of-N', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-straddle' }],
+      orders: [
+        {
+          id: 'order-straddle',
+          items_total_cents: 7500,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-straddle'
+        }
+      ]
+      // No release entry → asOf check before completion → contributes.
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  it('T6b: order released by asOf does not contribute (passes with 5590=0)', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-released' }],
+      orders: [
+        {
+          id: 'order-released',
+          items_total_cents: 7500,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-released'
+        }
+      ],
+      releases: [{ source_doc_id: 'order-released', type_id: 'O.1' }],
+      suspenseCreditCents: 0  // Released — 5590 closing back to zero.
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T7 — Multi-seller cart, one order completed and one in-flight. Only
+  // the remaining order contributes; the completed order is excluded via
+  // its O.1–O.5 release entry.
+  it('T7: multi-seller cart with one completed + one in-flight contributes only the in-flight order', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-multi' }],
+      orders: [
+        { id: 'order-done', items_total_cents: 4000, shipping_cost_cents: 350, cart_group_id: 'cart-multi' },
+        { id: 'order-pending', items_total_cents: 6500, shipping_cost_cents: 350, cart_group_id: 'cart-multi' }
+      ],
+      releases: [{ source_doc_id: 'order-done', type_id: 'O.3' }],
+      // Only order-pending contributes: 6500 + 350 = 6850
+      suspenseCreditCents: 6850
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T8 — Order with O.9 partial refund: contribution = gross_cart − refund.
+  // 5590 closing reflects same amount because the O.9 Dr 5590 already
+  // released the partial-refund portion.
+  it('T8: order with O.9 partial refund contributes gross_cart minus refund_cents', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-partial-refund' }],
+      orders: [
+        {
+          id: 'order-partial',
+          items_total_cents: 10000,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-partial-refund'
+        }
+      ],
+      releases: [
+        {
+          source_doc_id: 'order-partial',
+          type_id: 'O.9',
+          posting_context: { refund_cents: 3000 }
+        }
+      ],
+      // 10350 gross - 3000 refunded = 7350 expected. Matching 5590 closing.
+      suspenseCreditCents: 7350
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T9 — Orphan / drift failure: balance ≠ expected. Verifies the failure
+  // detail names the delta direction and lists plausible causes.
+  it('T9: fails with descriptive detail when 5590 over-states expected (orphan completion drift)', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-drift' }],
+      orders: [
+        {
+          id: 'order-drift',
+          items_total_cents: 5000,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-drift'
+        }
+      ],
+      // Expected = 5350; GL holds 8000 (orphan completion drift — synthetic).
+      suspenseCreditCents: 8000
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('fail');
+    expect(item4?.detail).toMatch(/over-states/);
+    expect(item4?.detail).toMatch(/orphan completion/);
+    expect(item4?.detail).toMatch(/€53\.50/);  // expected
+    expect(item4?.detail).toMatch(/€80\.00/);  // balance
+    expect(item4?.detail).toMatch(/€26\.50/);  // delta
+  });
+
+  // T10 — Cancelled-pre-refund order (status=cancelled but no O.7/8/9 yet):
+  // the GL-driven predicate keeps it in expected_in_flight because there's
+  // no release entry. 5590 still holds the suspense. Reconciled.
+  it('T10: cancelled-pre-refund order keeps contributing until refund-side release entry posts', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupInFlightCarts(queues, {
+      cartReceipts: [{ source_doc_id: 'cart-cancelled' }],
+      orders: [
+        {
+          id: 'order-cancelled',
+          items_total_cents: 5000,
+          shipping_cost_cents: 350,
+          cart_group_id: 'cart-cancelled'
+        }
+      ]
+      // No release entry — even if orders.status='cancelled', no O.7/8/9 has
+      // fired yet, so the predicate counts it as in-flight.
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+  });
+
+  // T11 — Wallet-only cart (no C.1/C.2 antecedent): cart-wallet-pay route
+  // bypasses fulfillCartPayment entirely. The order exists but has no GL
+  // backing; predicate excludes it from expected_in_flight via the cart-
+  // receipt EXISTS check. 5590 balance is unchanged (zero).
+  it('T11: wallet-only cart (no C.1/C.2) is excluded from expected_in_flight', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    // No cart-receipts in GL → getInFlightCartReceiptsTotal short-circuits
+    // to 0 without ever querying orders. journal_entries[0] stays empty per
+    // the happy-path baseline. 5590 closing stays at 0.
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item4 = result.items.find((i) => i.id === 4);
+    expect(item4?.status).toBe('pass');
+    expect(item4?.detail).toContain('no in-flight cart receipts');
+  });
+});
+
+
 describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
   it('returns not_applicable when no 5710-* movement and no consolidation entry', async () => {
     const client = buildMockClient(buildHappyPathQueues(periodOpen));
@@ -683,7 +1083,8 @@ describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
 
   it('passes when a P.1 consolidation entry exists for the period', async () => {
     const queues = buildHappyPathQueues(periodOpen);
-    queues.journal_entries[0] = {
+    // Index 1 since PR D's item-4 cart-receipts query occupies [0].
+    queues.journal_entries[1] = {
       data: [{ id: 'p1-uuid', type_id: 'P.1' }],
       error: null
     };
@@ -698,9 +1099,10 @@ describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
     // period-level VAT consolidation but routes through the H.1 historical
     // override family rather than P.1. The override_type filter on item 8's
     // H.1 query is applied server-side; the mock simulates that by returning
-    // only matching rows on journal_entries[1].
+    // only matching rows on journal_entries[2] (index shifted +1 by PR D's
+    // item-4 cart-receipts query at [0]).
     const queues = buildHappyPathQueues(periodOpen);
-    queues.journal_entries[1] = {
+    queues.journal_entries[2] = {
       data: [{ id: 'h1-uuid', type_id: 'H.1' }],
       error: null
     };
@@ -832,7 +1234,8 @@ describe('getPeriodCloseChecklist — can_hard_lock', () => {
   it('is false when entries were posted since locked_at', async () => {
     const queues = buildHappyPathQueues(periodSoftLocked);
     // getEntriesPostedSince — last journal_entries response.
-    queues.journal_entries[2] = {
+    // Index 3 since PR D's item-4 cart-receipts query occupies [0].
+    queues.journal_entries[3] = {
       data: [
         {
           id: 'late-entry',
