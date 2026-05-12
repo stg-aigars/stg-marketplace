@@ -1262,6 +1262,80 @@ const I_5: VatMappingEntry = {
 };
 
 // =============================================================================
+// I.7 — Vendor payment settlement (cash leg of two-entry vendor invoice pattern)
+//
+// Trigger: vendor.payment_made. Settles a vendor AP row created by I.1 / I.2 /
+// I.3 / I.4. No VAT impact — VAT was recognized (input deduction or RC self-
+// assessment) at invoice receipt; this is pure cash settlement.
+//
+// Convention (April 2026 backfill onward): every vendor invoice posts as two
+// entries — receipt (I.1/I.2/I.3/I.4 with payable_account defaulted to
+// 5310-{vendor_code}) plus a separate I.7 payment. Phase 0's same-day-pay
+// collapse (passing payable_account='2610' to I.1/I.2 to merge invoice + payment
+// into one entry) remains supported for back-compat; new flows should prefer
+// the two-entry shape so the AP sub-ledger reflects unpaid liabilities at any
+// point in time. PR #4b's vendor-invoice intake architecture is designed
+// against this two-entry shape.
+//
+// Required payload keys: vendor_invoice_number (cross-reference to the invoice
+// this settles), payable_account (the 5310-XX AP being cleared). Optional:
+// bank_account (defaults to '2610' Swedbank operating).
+// =============================================================================
+
+const I_7: VatMappingEntry = {
+  id: 'I.7',
+  category: 'incoming',
+  entry_type: 'vendor_payment',
+  description: 'Vendor payment settlement — debits AP, credits bank (cash leg of two-entry invoice flow)',
+  legal_basis: 'Settlement of liability recognised at I.1/I.2/I.3/I.4; no VAT impact',
+  routing: {
+    event_type: 'vendor.payment_made',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['vendor_invoice_number', 'payable_account'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const payment_cents = requireNumber(input.payload, 'payment_cents');
+    const payable_account = requireString(input.payload, 'payable_account');
+    const vendor_invoice_number = requireString(input.payload, 'vendor_invoice_number');
+    const bank_account = typeof input.payload.bank_account === 'string'
+      ? input.payload.bank_account
+      : '2610';
+    if (!input.counterparty?.id) {
+      engineInvariant('I.7 compute requires counterparty');
+    }
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: payable_account,
+        debit_cents: payment_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        counterparty_type: 'vendor',
+        counterparty_id: input.counterparty.id,
+        narrative: `Vendor payable settled — invoice ${vendor_invoice_number}`
+      },
+      {
+        line_number: 2,
+        account_code: bank_account,
+        debit_cents: 0,
+        credit_cents: payment_cents,
+        currency: 'EUR',
+        narrative: bank_account === '2610'
+          ? 'Swedbank — outbound vendor payment'
+          : 'Bank — outbound vendor payment'
+      }
+    ];
+    return {
+      lines,
+      posting_context_extras: { payment_cents, payable_account, bank_account }
+    };
+  }
+};
+
+// =============================================================================
 // I.4 — Non-EU vendor B2B reverse-charge with FX decomposition (§F)
 // =============================================================================
 
@@ -2053,6 +2127,7 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   I_3,
   I_1,
   I_5,
+  I_7,
   // Period close
   P_1,
   P_6,

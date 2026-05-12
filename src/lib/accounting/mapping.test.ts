@@ -550,3 +550,120 @@ describe('O.9 — partial refund proportional split (VAT-inclusive)', () => {
     )).toThrow(/refund_item_cents.*cannot exceed/);
   });
 });
+
+// =============================================================================
+// I.7 — vendor payment settlement (cash leg of two-entry vendor invoice pattern)
+// =============================================================================
+
+function lvVendor(): CounterpartyRow {
+  return {
+    ...lvSeller(),
+    id: '44444444-4444-4444-4444-444444444444',
+    type: 'vendor',
+    full_name: 'Unisend Latvia SIA',
+    country: 'LV',
+    tax_status: 'vat_registered',
+    vendor_code: 'UN'
+  };
+}
+
+describe('I.7 — vendor payment settlement', () => {
+  const I_7 = findMappingById('I.7');
+
+  it('exists in MAPPING_TABLE', () => {
+    expect(I_7).toBeDefined();
+    expect(I_7?.routing.event_type).toBe('vendor.payment_made');
+    expect(I_7?.vat_rate_country).toBeNull();
+    expect(I_7?.reporting.pvn_lines).toEqual([]);
+  });
+
+  it('produces 2-line entry: Dr payable_account / Cr 2610 (default bank)', () => {
+    const out = I_7!.compute(buildInput(lvVendor(), null, {
+      payment_cents: 191,
+      payable_account: '5310-HE',
+      vendor_invoice_number: '084000791607'
+    }));
+    expect(out.lines).toHaveLength(2);
+    expect(out.lines[0]).toMatchObject({
+      account_code: '5310-HE',
+      debit_cents: 191,
+      credit_cents: 0,
+      counterparty_type: 'vendor',
+      counterparty_id: lvVendor().id
+    });
+    expect(out.lines[1]).toMatchObject({
+      account_code: '2610',
+      debit_cents: 0,
+      credit_cents: 191
+    });
+    expect(out.posting_context_extras).toMatchObject({
+      payment_cents: 191,
+      payable_account: '5310-HE',
+      bank_account: '2610'
+    });
+  });
+
+  it('honors bank_account override (e.g. 2630 EveryPay clearing)', () => {
+    const out = I_7!.compute(buildInput(lvVendor(), null, {
+      payment_cents: 100,
+      payable_account: '5310-UN',
+      vendor_invoice_number: 'UN-2601206',
+      bank_account: '2630'
+    }));
+    expect(out.lines[1].account_code).toBe('2630');
+    expect(out.posting_context_extras).toMatchObject({ bank_account: '2630' });
+  });
+
+  it('balanced: Σ Dr = Σ Cr = payment_cents', () => {
+    const out = I_7!.compute(buildInput(lvVendor(), null, {
+      payment_cents: 390,
+      payable_account: '5310-UN',
+      vendor_invoice_number: 'UN-2601206'
+    }));
+    const totalDr = out.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const totalCr = out.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(totalDr).toBe(390);
+    expect(totalCr).toBe(390);
+  });
+
+  it('every line has exactly one of debit/credit non-zero (journal_lines CHECK)', () => {
+    const out = I_7!.compute(buildInput(lvVendor(), null, {
+      payment_cents: 191,
+      payable_account: '5310-HE',
+      vendor_invoice_number: '084000791607'
+    }));
+    for (const line of out.lines) {
+      expect((line.debit_cents === 0) !== (line.credit_cents === 0)).toBe(true);
+    }
+  });
+
+  it('throws when counterparty is missing (engine invariant)', () => {
+    expect(() => I_7!.compute({
+      counterparty: null,
+      vat_rate: null,
+      posting_date: '2026-04-07',
+      payload: { payment_cents: 191, payable_account: '5310-HE', vendor_invoice_number: '084000791607' }
+    })).toThrow(/I\.7 compute requires counterparty/);
+  });
+
+  it('throws when payment_cents is missing', () => {
+    expect(() => I_7!.compute(buildInput(lvVendor(), null, {
+      payable_account: '5310-HE',
+      vendor_invoice_number: '084000791607'
+    }))).toThrow();
+  });
+
+  it('throws when payable_account is missing', () => {
+    expect(() => I_7!.compute(buildInput(lvVendor(), null, {
+      payment_cents: 191,
+      vendor_invoice_number: '084000791607'
+    }))).toThrow();
+  });
+
+  it('throws when vendor_invoice_number is missing', () => {
+    expect(() => I_7!.compute(buildInput(lvVendor(), null, {
+      payment_cents: 191,
+      payable_account: '5310-HE'
+    }))).toThrow();
+  });
+});

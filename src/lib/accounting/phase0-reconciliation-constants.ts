@@ -15,6 +15,10 @@
 /**
  * Bank-walk checkpoints: expected net debit balance on `2610` at each
  * month-end, matching Swedbank statements per the v2 backfill spec.
+ *
+ * 2026-04 onwards is extended ad-hoc per monthly backfill as a stopgap until
+ * PR #4b ships general bank-statement ingestion. Each new month-end checkpoint
+ * is added in the matching backfill PR.
  */
 export const BANK_WALK_CHECKPOINTS: ReadonlyArray<{
   date: string;
@@ -28,7 +32,11 @@ export const BANK_WALK_CHECKPOINTS: ReadonlyArray<{
   { date: '2025-12-31', expected_cents: 1904 },     // + 11: -€17.54 (12 + close are non-2610)
   { date: '2026-01-31', expected_cents: 43185 },    // + 13,14a,14b,15,16,17: +2000 -1511.40 -3.45 -71.76 -0.01 -0.57
   { date: '2026-02-28', expected_cents: 44490 },    // + 18: +€13.05 (19 is non-2610)
-  { date: '2026-03-31', expected_cents: 44490 }     // (entry 20 is non-2610)
+  { date: '2026-03-31', expected_cents: 44490 },    // (entry 20 is non-2610)
+  // April 2026 backfill (PR #293): +4.20 +3.10 -1.91 -0.08 -0.90 = +€4.41 net (HVFJ + 9UC5
+  // cart receipts, Hetzner payment, Swedbank POS fee, HVFJ wallet withdrawal). Unisend
+  // invoice booked but payment forward-flagged to May (not in this checkpoint).
+  { date: '2026-04-30', expected_cents: 44931 }
 ];
 
 /**
