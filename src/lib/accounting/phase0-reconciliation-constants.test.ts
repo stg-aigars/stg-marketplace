@@ -9,14 +9,21 @@ import {
 
 describe('BANK_WALK_CHECKPOINTS', () => {
   it('locks the closing balance at 31.03.2026 to €444.90 (44490 cents)', () => {
-    // Regression anchor against the audit snapshot
-    // (docs/audits/phase0-backfill-closing-tb-2026-03-31.md).
-    const last = BANK_WALK_CHECKPOINTS[BANK_WALK_CHECKPOINTS.length - 1];
-    expect(BANK_WALK_CHECKPOINTS[8]?.expected_cents).toBe(44490);
-    expect(last?.date).toBe('2026-03-31');
+    // Regression anchor against the Phase 0 audit snapshot
+    // (docs/audits/phase0-backfill-closing-tb-2026-03-31.md). Lookup by date
+    // rather than by position — the array is extended ad-hoc as monthly
+    // backfills land (April 2026 added 30.04 = €449.31 in PR #293).
+    const march31 = BANK_WALK_CHECKPOINTS.find((c) => c.date === '2026-03-31');
+    expect(march31?.expected_cents).toBe(44490);
   });
 
-  it('exposes all 9 month-end checkpoints in order', () => {
+  it('locks the closing balance at 30.04.2026 to €449.31 (44931 cents)', () => {
+    // April 2026 backfill checkpoint (PR #293; docs/audits/april-2026-closing-tb-2026-04-30.md).
+    const april30 = BANK_WALK_CHECKPOINTS.find((c) => c.date === '2026-04-30');
+    expect(april30?.expected_cents).toBe(44931);
+  });
+
+  it('exposes all month-end checkpoints in chronological order', () => {
     expect(BANK_WALK_CHECKPOINTS.map((c) => c.date)).toEqual([
       '2025-07-31',
       '2025-08-31',
@@ -26,11 +33,12 @@ describe('BANK_WALK_CHECKPOINTS', () => {
       '2025-12-31',
       '2026-01-31',
       '2026-02-28',
-      '2026-03-31'
+      '2026-03-31',
+      '2026-04-30'
     ]);
   });
 
-  it('locks each checkpoint balance to the v2 spec values', () => {
+  it('locks each checkpoint balance to its month-end Swedbank statement value', () => {
     expect(BANK_WALK_CHECKPOINTS.map((c) => c.expected_cents)).toEqual([
       5100,
       8993,
@@ -40,7 +48,8 @@ describe('BANK_WALK_CHECKPOINTS', () => {
       1904,
       43185,
       44490,
-      44490
+      44490,
+      44931
     ]);
   });
 });
