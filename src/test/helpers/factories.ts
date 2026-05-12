@@ -4,8 +4,6 @@ import type { ListingCondition, ListingStatus, ListingType } from '@/lib/listing
 
 const supabase = createTestServiceClient();
 
-let userCounter = 0;
-
 // ---------------------------------------------------------------------------
 // Test user
 // ---------------------------------------------------------------------------
@@ -23,9 +21,12 @@ interface TestUser {
 }
 
 export async function createTestUser(opts: CreateTestUserOptions = {}): Promise<TestUser> {
-  userCounter++;
-  const email = `test-${Date.now()}-${userCounter}@stg-test.local`;
-  const fullName = opts.fullName ?? `Test User ${userCounter}`;
+  // UUID-derived suffix — Date.now()+counter collides under vi.useFakeTimers
+  // when prior test runs' cleanup didn't fully drain @stg-test.local users
+  // (FK cascade through listings/orders can silently block auth deletion).
+  const suffix = crypto.randomUUID();
+  const email = `test-${suffix}@stg-test.local`;
+  const fullName = opts.fullName ?? `Test User ${suffix.slice(0, 8)}`;
   const country = opts.country ?? 'LV';
 
   // Create auth user via Supabase Admin API
