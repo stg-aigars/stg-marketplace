@@ -28,13 +28,23 @@
  *   2. BL-rail cart receipts via C.2: event_type='everypay.payment_confirmed',
  *      payment_method='bank_link'. Required posting_context keys: cart_payment_id,
  *      everypay_payment_id (sourced from cart_checkout_groups.everypay_payment_reference).
- *   3. Deleted-seller counterparty lazy-create: counterparties.user_id FK is
- *      ON DELETE SET NULL, so we cannot link the CP back to a deleted auth.users
- *      row. user_id is set to null; traceability via full_name suffix
- *      ("Deleted seller ce905240…") plus posting_context.deleted_seller_user_id
- *      on every line that references the deleted CP. legal_compliance_status='ok'
+ *   3. Seller counterparty lazy-create: counterparties.user_id FK is to
+ *      auth.users(id) ON DELETE SET NULL. Both April sellers' auth.users rows
+ *      exist (anonymize-not-delete pattern per account_deletion_architecture.md),
+ *      so we set user_id to the real auth.users.id. full_name mirrors
+ *      user_profiles.full_name exactly ("Aigars Grēniņš" for the LV seller,
+ *      "Deleted User" for the anonymized EE seller). legal_compliance_status='ok'
  *      preserves the historical state at withdrawal completion time (E8 KYC
  *      gate fires naturally via the engine; 'ok' lets it through).
+ *
+ *      Historical note: an earlier draft of this file framed both sellers as
+ *      "deleted" with user_id=null, based on a misread of an empty
+ *      user_profiles SELECT result that itself was poisoned by a prior failed
+ *      query in the same transaction. Production journal entries for E4 + E6 + E8
+ *      retain the legacy posting_context.deleted_seller_user_id key from that
+ *      draft (immutable per journal_entries trigger); the constants below still
+ *      drive that key for re-run idempotency parity with production. The
+ *      counterparty rows themselves were corrected via DB UPDATE on 2026-05-12.
  */
 
 import './_load-env';
@@ -62,8 +72,12 @@ export interface BackfillEntry {
 export interface BackfillCounterparty {
   readonly id: string;
   readonly type: 'vendor' | 'seller';
-  /** Stable trace token for orphaned auth.users.id (deleted-seller path only) */
-  readonly original_user_id: string | null;
+  /**
+   * Real auth.users.id for sellers (FK target is auth.users, not user_profiles).
+   * Null for vendors (no user linkage). The counterparty seed UPSERT writes
+   * this directly to counterparties.user_id.
+   */
+  readonly user_id: string | null;
   readonly full_name: string;
   readonly country: string;
   readonly tax_status: 'private' | 'vat_registered' | null;
@@ -73,27 +87,32 @@ export interface BackfillCounterparty {
   readonly legal_compliance_status: 'ok';
 }
 
-// Deterministic UUIDs. Vendors continue Phase 0's `a` prefix; deleted sellers
-// use a `d` prefix with the user_id's first 8 chars embedded for traceability.
+// Deterministic UUIDs. Vendors continue Phase 0's `a` prefix; seller CPs use
+// a `d` prefix with the user_id's first 8 chars embedded for trace-from-UUID.
+// (The `d` prefix was a relic of the earlier "deleted-seller" framing; kept
+// for production stability since these UUIDs are already on journal_lines.)
 const HETZNER_CP_ID = 'a8888888-8888-4888-8888-888888888888';
 const UNISEND_CP_ID = 'a9999999-9999-4999-8999-999999999999';
-const DELETED_EE_SELLER_CP_ID = 'dce90524-0000-4000-8854-ce905240ee01';  // ce905240… EE
+const EE_SELLER_CP_ID = 'dce90524-0000-4000-8854-ce905240ee01';  // ce905240… EE (anonymized)
 // UUID must be all valid hex (0-9a-f); embeds 630f6e7f's distinctive bytes
 // in blocks 1 and 5 for traceability. Block 4 starts with '9' (valid v4 variant).
-const DELETED_LV_SELLER_CP_ID = 'd630f6e7-0000-4000-95cb-630f6e7f1001';
+const LV_SELLER_CP_ID = 'd630f6e7-0000-4000-95cb-630f6e7f1001';
 
-// Original (now-orphaned) auth.users.id values. Stored on each referencing
-// entry's posting_context.deleted_seller_user_id for traceability — the FK
-// won't let us put them on counterparties.user_id (ON DELETE SET NULL).
-const ORIGINAL_USER_ID_EE_SELLER = 'ce905240-8088-4854-85cd-e515ba30372e';
-const ORIGINAL_USER_ID_LV_SELLER = '630f6e7f-95cb-41fa-a98f-a4d199aa32fe';
+// Real auth.users.id values. counterparty.user_id FK is to auth.users (ON
+// DELETE SET NULL); both rows exist (anonymize-not-delete per
+// account_deletion_architecture.md), so we link directly. The
+// posting_context.deleted_seller_user_id key on entries 4/6/8 retains these
+// values for production parity (the key name is a legacy misnomer from the
+// earlier draft; the data itself is correct).
+const USER_ID_EE_SELLER = 'ce905240-8088-4854-85cd-e515ba30372e';
+const USER_ID_LV_SELLER = '630f6e7f-95cb-41fa-a98f-a4d199aa32fe';
 
 export const BACKFILL_COUNTERPARTIES: readonly BackfillCounterparty[] = [
   {
     // Entry 1 + 2: Hetzner I.3 EU B2B RC + I.7 payment
     id: HETZNER_CP_ID,
     type: 'vendor',
-    original_user_id: null,
+    user_id: null,
     full_name: 'Hetzner Online GmbH',
     country: 'DE',
     tax_status: 'vat_registered',
@@ -106,7 +125,7 @@ export const BACKFILL_COUNTERPARTIES: readonly BackfillCounterparty[] = [
     // Entry 9: Unisend I.1 LV standard VAT (May payment forward-flagged)
     id: UNISEND_CP_ID,
     type: 'vendor',
-    original_user_id: null,
+    user_id: null,
     full_name: 'Unisend Latvia SIA',
     country: 'LV',
     tax_status: 'vat_registered',
@@ -116,11 +135,13 @@ export const BACKFILL_COUNTERPARTIES: readonly BackfillCounterparty[] = [
     legal_compliance_status: 'ok'
   },
   {
-    // Entries 4 + 8: HVFJ O.5 + ce905240 C.4 withdrawal
-    id: DELETED_EE_SELLER_CP_ID,
+    // Entries 4 + 8: HVFJ O.5 + ce905240 C.4 withdrawal.
+    // ce905240 is an anonymized test account (auth.users.email pattern
+    // `deleted-…@deleted.local`); user_profiles.full_name = "Deleted User".
+    id: EE_SELLER_CP_ID,
     type: 'seller',
-    original_user_id: ORIGINAL_USER_ID_EE_SELLER,
-    full_name: `Deleted seller ce905240… (EE)`,
+    user_id: USER_ID_EE_SELLER,
+    full_name: 'Deleted User',
     country: 'EE',
     tax_status: 'private',
     vat_number: null,
@@ -129,11 +150,14 @@ export const BACKFILL_COUNTERPARTIES: readonly BackfillCounterparty[] = [
     legal_compliance_status: 'ok'
   },
   {
-    // Entry 6: 9UC5 O.1 — LV seller (also deleted, per Round 1 verification)
-    id: DELETED_LV_SELLER_CP_ID,
+    // Entry 6: 9UC5 O.1 — LV seller.
+    // 630f6e7f is Aigars's real auth account (auth.users.email
+    // `aigars.grenins@gmail.com`); user_profiles.full_name = "Aigars Grēniņš".
+    // €0.90 wallet balance is a real obligation from the 9UC5 order completion.
+    id: LV_SELLER_CP_ID,
     type: 'seller',
-    original_user_id: ORIGINAL_USER_ID_LV_SELLER,
-    full_name: `Deleted seller 630f6e7f… (LV)`,
+    user_id: USER_ID_LV_SELLER,
+    full_name: 'Aigars Grēniņš',
     country: 'LV',
     tax_status: 'private',
     vat_number: null,
@@ -288,16 +312,16 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       accounting_period: '2026-04',
       tax_period: '2026-04',
       narrative: `HVFJ STG-20260415-HVFJ — EE B2C OSS completion (item €1.00 + ship €3.20 = €4.20 gross_cart; seller_net €0.90; VAT €0.64 to OSS-EE)`,
-      counterparty_id: DELETED_EE_SELLER_CP_ID,
+      counterparty_id: EE_SELLER_CP_ID,
       payload: tag('4', {
         order_id: HVFJ_ORDER_ID,
         order_number: 'STG-20260415-HVFJ',
-        seller_id: DELETED_EE_SELLER_CP_ID,
+        seller_id: EE_SELLER_CP_ID,
         invoice_number: HVFJ_INVOICE_NUMBER,
         consumption_ms: 'EE',
         item_value_cents: 100,
         shipping_value_cents: 320,
-        deleted_seller_user_id: ORIGINAL_USER_ID_EE_SELLER
+        deleted_seller_user_id: USER_ID_EE_SELLER
       })
     }
   },
@@ -339,16 +363,16 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       accounting_period: '2026-04',
       tax_period: '2026-04',
       narrative: `9UC5 STG-20260415-9UC5 — LV B2C completion (item €1.00 + ship €2.10 = €3.10 gross_cart; seller_net €0.90; VAT €0.38 to 5710-LV-OUT)`,
-      counterparty_id: DELETED_LV_SELLER_CP_ID,
+      counterparty_id: LV_SELLER_CP_ID,
       payload: tag('6', {
         order_id: NINE_UC5_ORDER_ID,
         order_number: 'STG-20260415-9UC5',
-        seller_id: DELETED_LV_SELLER_CP_ID,
+        seller_id: LV_SELLER_CP_ID,
         invoice_number: NINE_UC5_INVOICE_NUMBER,
         consumption_ms: 'LV',
         item_value_cents: 100,
         shipping_value_cents: 210,
-        deleted_seller_user_id: ORIGINAL_USER_ID_LV_SELLER
+        deleted_seller_user_id: USER_ID_LV_SELLER
       })
     }
   },
@@ -390,15 +414,15 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       accounting_period: '2026-04',
       tax_period: '2026-04',
       narrative: 'WD-2026-00001 €0.90 — HVFJ seller wallet withdrawal (KYC gate static-OK for pre-deletion historical state)',
-      counterparty_id: DELETED_EE_SELLER_CP_ID,
+      counterparty_id: EE_SELLER_CP_ID,
       payload: tag('8', {
         withdrawal_cents: 90,
-        seller_id: DELETED_EE_SELLER_CP_ID,
+        seller_id: EE_SELLER_CP_ID,
         withdrawal_ref: WD_REFERENCE_NUMBER,
         withdrawal_request_id: WD_REQUEST_ID,
         seller_iban: WD_SELLER_IBAN,
         bank_value_date: '2026-04-20',
-        deleted_seller_user_id: ORIGINAL_USER_ID_EE_SELLER
+        deleted_seller_user_id: USER_ID_EE_SELLER
       })
     }
   },

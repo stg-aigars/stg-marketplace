@@ -161,13 +161,13 @@ export async function preflightVerifyPeriods(supabase: SupabaseClient): Promise<
 }
 
 /**
- * UPSERT counterparties (Hetzner, Unisend, two deleted-seller placeholders).
- * Idempotent — re-runs leave the rows unchanged.
+ * UPSERT counterparties (Hetzner + Unisend vendors; EE + LV sellers).
+ * Idempotent — re-runs UPSERT the same row by id, leaving content unchanged.
  *
- * Deleted-seller note: counterparties.user_id FK is ON DELETE SET NULL; we
- * cannot link CP back to a deleted auth.users row. user_id stays null;
- * traceability via full_name suffix + posting_context.deleted_seller_user_id
- * on every referencing entry.
+ * Seller counterparties: counterparties.user_id FK targets auth.users(id) with
+ * ON DELETE SET NULL. Both April sellers' auth.users rows exist (anonymize-
+ * not-delete per account_deletion_architecture.md), so cp.user_id carries the
+ * real auth.users.id through to the FK. Vendors pass null (no user linkage).
  */
 export async function seedCounterparties(supabase: SupabaseClient): Promise<void> {
   for (const cp of BACKFILL_COUNTERPARTIES) {
@@ -177,7 +177,7 @@ export async function seedCounterparties(supabase: SupabaseClient): Promise<void
         {
           id: cp.id,
           type: cp.type,
-          user_id: null,  // FK constraint: deleted auth.users → SET NULL; vendors don't have user_id at all
+          user_id: cp.user_id,
           full_name: cp.full_name,
           country: cp.country,
           tax_status: cp.tax_status,
