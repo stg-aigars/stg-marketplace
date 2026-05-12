@@ -71,26 +71,55 @@ jobs:
           cache: pnpm
 
       - name: Setup Supabase CLI
+        # Pinned to match the local development version. `latest` is a moving
+        # target; recent CLI releases changed `supabase start` behavior so
+        # migrations no longer auto-apply on fresh init (see PR #292 history
+        # for context). Bump this version deliberately when the local dev
+        # version moves.
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.98.2
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Start Supabase (applies migrations from supabase/migrations/)
+      - name: Start Supabase containers
         run: supabase start
+
+      - name: Apply migrations
+        # supabase start no longer reliably applies migrations on fresh init
+        # in the current CLI. Explicit `db reset` drops + recreates the schema
+        # from supabase/migrations/* synchronously, ensuring tests see the
+        # full schema. --no-seed skips supabase/seed.sql (none exists today;
+        # the flag is defensive so a future seed.sql addition doesn't change
+        # CI behavior).
+        run: supabase db reset --no-seed
 
       - name: Generate .env.test from local Supabase
         run: |
-          # supabase status -o env emits API_URL / ANON_KEY / SERVICE_ROLE_KEY;
-          # STG's env.ts expects NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY /
-          # SUPABASE_SERVICE_ROLE_KEY. Rename via sed.
+          # supabase status -o env emits API_URL / ANON_KEY / SERVICE_ROLE_KEY.
+          # STG needs TWO naming conventions in .env.test:
+          #   1. NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY /
+          #      SUPABASE_SERVICE_ROLE_KEY — for env.ts validation at module load
+          #      (any @/lib/* import that touches env.ts requires these).
+          #   2. SUPABASE_TEST_URL / SUPABASE_TEST_ANON_KEY / SUPABASE_TEST_SERVICE_ROLE_KEY
+          #      — for src/test/helpers/supabase.ts. The TEST_-prefixed names are a
+          #      deliberate prod-safety boundary (per docs/plans/2026-04-14-integration-test-suite.md):
+          #      test helpers refuse to run without them, so .env.local prod creds
+          #      can never accidentally drive integration tests. If the rename below
+          #      drops the TEST_ aliases, all 11 integration suites fail at import
+          #      time with "supabaseKey is required" (helpers see empty TEST_ vars
+          #      and pass them straight to createClient).
           supabase status -o env | sed -E '
             s/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/;
             s/^ANON_KEY=/NEXT_PUBLIC_SUPABASE_ANON_KEY=/;
             s/^SERVICE_ROLE_KEY=/SUPABASE_SERVICE_ROLE_KEY=/;
           ' > .env.test
+          supabase status -o env | sed -E '
+            s/^API_URL=/SUPABASE_TEST_URL=/;
+            s/^ANON_KEY=/SUPABASE_TEST_ANON_KEY=/;
+            s/^SERVICE_ROLE_KEY=/SUPABASE_TEST_SERVICE_ROLE_KEY=/;
+          ' >> .env.test
 
           # Append dummy values for non-Supabase env vars that env.ts validates.
           cat >> .env.test <<'ENV'
