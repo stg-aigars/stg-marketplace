@@ -398,3 +398,70 @@ export function buildWithdrawalCompletionEvent(input: BuildWithdrawalCompletionE
     created_by: input.actor_id
   };
 }
+
+// ---------------------------------------------------------------------------
+// buildEverypaySettlementEvent — C.3 (staff-manual emission)
+// ---------------------------------------------------------------------------
+
+export interface BuildEverypaySettlementEventInput {
+  /**
+   * Bank statement reference for this settlement. Doubles as both the
+   * source_doc_id (idempotency key) AND the payload's everypay_settlement_id.
+   * Bank statement references are unique per settlement event by issuance,
+   * so the natural-key shape is correct for engine UNIQUE dedup.
+   */
+  bank_statement_reference: string;
+  settlement_cents: number;
+  /** YYYY-MM-DD; EveryPay batch identifier. */
+  batch_date: string;
+  /** YYYY-MM-DD; date Swedbank credited STG (drives posting_date + period). */
+  settlement_value_date: string;
+  /** Cart-payment refs included in this batch. Empty array is acceptable. */
+  included_txn_refs: string[];
+  /** Optional staff freeform note; absent when whitespace-only. */
+  posting_context_notes?: string;
+  /** auth.users.id of the staff member emitting (audit attribution). */
+  actor_id?: string;
+}
+
+/**
+ * Builds the C.3 EveryPay daily settlement event. Fired by the staff
+ * settlement page (PR C commit 11a) — NOT a marketplace lifecycle event,
+ * so the wrap layer calls `emit()` directly instead of routing through a
+ * parent RPC. `emission_source='staff_manual'` discriminates this from
+ * `'lifecycle'` (marketplace flows), `'cron'` (depreciation / P.1), and
+ * `'backfill'` (historical reconstruction).
+ *
+ * The posting_date + accounting_period + tax_period all derive from
+ * `settlement_value_date` — the date Swedbank actually credited STG, which
+ * is what the bank reconciliation gate (checklist item 2) checks against.
+ * If staff records a settlement with a value_date in a hard-locked period,
+ * the engine's enforce_period_status trigger rejects the emit; the staff
+ * page surfaces the error.
+ */
+export function buildEverypaySettlementEvent(
+  input: BuildEverypaySettlementEventInput
+): PostingEvent {
+  const period = input.settlement_value_date.substring(0, 7);
+  return {
+    event_type: 'everypay.daily_settlement_received',
+    source_doc_type: 'everypay_settlement',
+    source_doc_id: input.bank_statement_reference,
+    posting_date: input.settlement_value_date,
+    accounting_period: period,
+    tax_period: period,
+    narrative:
+      `EveryPay daily settlement — ${input.bank_statement_reference}` +
+      ` (${input.included_txn_refs.length} txn${input.included_txn_refs.length === 1 ? '' : 's'})`,
+    emission_source: 'staff_manual',
+    payload: {
+      everypay_settlement_id: input.bank_statement_reference,
+      settlement_cents: input.settlement_cents,
+      batch_date: input.batch_date,
+      settlement_value_date: input.settlement_value_date,
+      included_txn_refs: input.included_txn_refs,
+      ...(input.posting_context_notes ? { staff_notes: input.posting_context_notes } : {})
+    },
+    created_by: input.actor_id
+  };
+}

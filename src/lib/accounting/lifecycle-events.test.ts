@@ -19,6 +19,7 @@ import { dispatch } from './dispatcher';
 import {
   buildCartPartialRefundCashLegEvent,
   buildCartPaymentEvent,
+  buildEverypaySettlementEvent,
   buildOrderCompletionEvent,
   buildRefundEvent,
   buildRefundCashLegEvent,
@@ -470,5 +471,91 @@ describe('buildWithdrawalCompletionEvent', () => {
       tax_period: '2027-01'
     });
     expect(event.payload.bank_confirmation_ref).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildEverypaySettlementEvent — C.3 (staff-manual emission)
+// ---------------------------------------------------------------------------
+
+describe('buildEverypaySettlementEvent', () => {
+  const baseInput = {
+    bank_statement_reference: 'SWB-2027-01-15-001',
+    settlement_cents: 12500,
+    batch_date: '2027-01-14',
+    settlement_value_date: '2027-01-15',
+    included_txn_refs: ['ep-1', 'ep-2', 'ep-3'],
+  };
+
+  it('routes to C.3 via the dispatcher', () => {
+    const event = buildEverypaySettlementEvent(baseInput);
+    expect(event.event_type).toBe('everypay.daily_settlement_received');
+    expect(event.source_doc_type).toBe('everypay_settlement');
+    expect(event.source_doc_id).toBe('SWB-2027-01-15-001');
+    const matched = dispatch(ctxFromEvent(event, null));
+    expect(matched.id).toBe('C.3');
+  });
+
+  it('stamps emission_source=staff_manual on the event', () => {
+    const event = buildEverypaySettlementEvent(baseInput);
+    expect(event.emission_source).toBe('staff_manual');
+  });
+
+  it('derives posting_date + accounting_period + tax_period from settlement_value_date', () => {
+    const event = buildEverypaySettlementEvent({
+      ...baseInput,
+      settlement_value_date: '2027-03-20',
+    });
+    expect(event.posting_date).toBe('2027-03-20');
+    expect(event.accounting_period).toBe('2027-03');
+    expect(event.tax_period).toBe('2027-03');
+  });
+
+  it('threads all C.3 required payload keys', () => {
+    const event = buildEverypaySettlementEvent(baseInput);
+    expect(event.payload).toMatchObject({
+      everypay_settlement_id: 'SWB-2027-01-15-001',
+      settlement_cents: 12500,
+      batch_date: '2027-01-14',
+      settlement_value_date: '2027-01-15',
+      included_txn_refs: ['ep-1', 'ep-2', 'ep-3'],
+    });
+  });
+
+  it('includes staff_notes only when posting_context_notes is provided (commit-10 normalization)', () => {
+    const withNotes = buildEverypaySettlementEvent({
+      ...baseInput,
+      posting_context_notes: 'Reconciled against Swedbank statement #4521',
+    });
+    expect(withNotes.payload.staff_notes).toBe('Reconciled against Swedbank statement #4521');
+
+    const withoutNotes = buildEverypaySettlementEvent(baseInput);
+    expect(withoutNotes.payload.staff_notes).toBeUndefined();
+  });
+
+  it('threads actor_id through to created_by for audit attribution', () => {
+    const event = buildEverypaySettlementEvent({
+      ...baseInput,
+      actor_id: '00000000-0000-4000-8000-000000000001',
+    });
+    expect(event.created_by).toBe('00000000-0000-4000-8000-000000000001');
+  });
+
+  it('accepts empty included_txn_refs (staff records before reconciling refs)', () => {
+    const event = buildEverypaySettlementEvent({
+      ...baseInput,
+      included_txn_refs: [],
+    });
+    expect(event.payload.included_txn_refs).toEqual([]);
+    expect(event.narrative).toContain('(0 txns)');
+  });
+
+  it('pluralises narrative correctly for one ref', () => {
+    const event = buildEverypaySettlementEvent({
+      ...baseInput,
+      included_txn_refs: ['only-one'],
+    });
+    expect(event.narrative).toContain('(1 txn)');
+    expect(event.narrative).not.toContain('(1 txns)');
   });
 });
