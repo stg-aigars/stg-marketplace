@@ -168,8 +168,17 @@ async function loadAllBackfillLines(supabase: SupabaseClient): Promise<BackfillL
   });
 }
 
+// Phase 0 closing date — the integration test only runs the 23 Phase 0
+// entries, so bank-walk reconciliation MUST stop at 31.03.2026. Post-Phase-0
+// checkpoints (e.g. 30.04.2026 from PR #293 April backfill) live in the same
+// BANK_WALK_CHECKPOINTS array because the period-close checklist's
+// getPhase0BankCloseForPeriod helper looks them up across all months — but
+// they don't belong to the Phase 0 reconciler's iteration.
+const PHASE_0_END_DATE = '2026-03-31';
+
 function assertBankWalkCheckpoints(lines: ReadonlyArray<BackfillLine>): void {
   for (const checkpoint of BANK_WALK_CHECKPOINTS) {
+    if (checkpoint.date > PHASE_0_END_DATE) continue;
     const subset = lines.filter((l) => l.account_code === '2610' && l.posting_date <= checkpoint.date);
     const observed = sumNetDebit(subset);
     if (observed !== checkpoint.expected_cents) {
