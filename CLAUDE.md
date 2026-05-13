@@ -80,9 +80,11 @@ Never use 12-hour time format (AM/PM).
 ### Order Status State Machine
 ```
 pending_seller → accepted → shipped → delivered → completed
-                    ↓           ↓         ↓
-                cancelled   cancelled   disputed → resolved
+                    ↓           ↓         ↓             ↓
+                cancelled   cancelled   disputed → refunded
 ```
+
+Status enum is the authoritative reference (`src/lib/orders/types.ts:OrderStatus`): 8 values — `pending_seller | accepted | shipped | delivered | completed | cancelled | disputed | refunded`. `refunded` is a terminal state written by `src/lib/services/dispute.ts` when a dispute resolves with refund OR by the refund flow on cancellation-with-refund paths (see `src/lib/services/order-refund.ts` + the parent RPC `order_refund_with_event_atomic` which sets `status = case when p_refund_status = 'completed' then 'refunded' else status end`).
 
 ### Cancellation Reasons
 Orders store `cancellation_reason` (nullable): `'declined'` (seller), `'response_timeout'` (48h auto), `'shipping_timeout'` (5d auto), `'system'` (cart rollback). Type: `CancellationReason` in `src/lib/orders/types.ts`.
@@ -227,6 +229,8 @@ Foundational double-entry GL schema in migrations 093–096 (PR #1). Posting eng
 - **counterparty.tax_status default — silent-drift caveat (PR #5 commit 6).** `src/lib/accounting/lifecycle-wraps.ts:resolveSellerCounterparty` lazy-inits the seller counterparty from `user_profiles` at first-transaction time. Today's `user_profiles` schema only carries `country` and `full_name` — no `tax_status`, `vat_number`, or `vies_verified_at`. Every lazy-created counterparty therefore defaults to `tax_status='private'`, which means **B2B sellers (if any) route to O.3 (LT B2C OSS) or O.5 (EE B2C OSS) instead of O.2 / O.4 (B2B reverse-charge)**. This is a marketplace data-model gap, not an accounting bug — the catalog supports B2B RC, it just has no source data for vat_registered status today. When `user_profiles.tax_status` (and `vat_number` / `vies_verified_at`) ship alongside the seller-onboarding UX in a future PR, the resolver gets updated to source them. Because migration 093's snapshot contract is "snapshotted at first-transaction time, not read-through," **existing counterparties are NOT retroactively updated** when source columns ship — the marketplace fix would need an explicit reconciliation step amending affected sellers' counterparty rows. Until that lands: B2B RC routing remains catalog-supported but data-unsupported.
 - System counterparties (VID, STG_INTERNAL) have pinned UUIDs in `src/lib/accounting/system-counterparties.ts` — do not change those values once journal entries reference them
 - RLS: staff-SELECT only on all 8 tables; service role bypasses RLS
+- **`emission_source` typed convention.** Every PostingEvent carries a top-level `emission_source` field; the engine merges it into `posting_context` so reporting views can filter by source. Four values: `'lifecycle'` (wrap-emitted from marketplace flows — cart, completion, refund, withdrawal), `'cron'` (monthly-depreciation P.6, monthly-vat-close P.1), `'staff_manual'` (C.3 EveryPay settlement via staff UI), `'backfill'` (historical Phase 0 + April + May entries). Builders set the field; no code path relies on a default. Convention shipped across PR C commits 9-12.
+- **`is_staff_test` cutover gate (two-level).** Stage-2 cutover burn-in writes real GL in production while gating customer traffic to legacy paths. Each lifecycle entity (`orders`, `cart_checkout_groups`, `withdrawal_requests`) carries `is_staff_test boolean not null default false`. Wrap callers gate on `isAccountingEngineEnabled() && entity.is_staff_test` during stage 2; the wrap threads the flag to `posting_context.is_staff_test`. Stage 3 transition removes the `&& entity.is_staff_test` clause at all four caller sites (order-transitions, order-refund, payment-fulfillment, withdrawal route). See `docs/operations/lifecycle-cutover-runbook.md` §1 Gate 9 + §3 for the full discipline + four-site enumeration.
 
 ### Posting engine (PR #2)
 The posting engine is **the only writer** to `journal_entries` / `journal_lines` at the application layer (architecture v2 §H.4). All marketplace flows that need to post must go through `emit(supabase, event)` in `src/lib/accounting/posting-engine.ts` — never INSERT directly.
