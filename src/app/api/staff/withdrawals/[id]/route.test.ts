@@ -74,6 +74,7 @@ interface WithdrawalRowOverrides {
   bank_iban?: string;
   reference_number?: string;
   staff_notes?: string | null;
+  is_staff_test?: boolean;
 }
 
 function withdrawalRow(overrides: WithdrawalRowOverrides = {}) {
@@ -85,6 +86,9 @@ function withdrawalRow(overrides: WithdrawalRowOverrides = {}) {
     bank_iban: 'LV12RIKO0000111122223',
     reference_number: 'WD-2027-00001',
     staff_notes: null,
+    // Default true so flag-ON tests exercise the wrap; flag-OFF tests assert
+    // legacy path regardless of this flag (the outer flag check fires first).
+    is_staff_test: true,
     ...overrides,
   };
 }
@@ -156,6 +160,23 @@ describe('PATCH /api/staff/withdrawals/[id] — action=complete', () => {
       // serviceClient.from() called twice — once for fetch, once for update
       const client = mockCreateServiceClient.mock.results[0]!.value as { from: ReturnType<typeof vi.fn> };
       expect(client.from).toHaveBeenCalledWith('withdrawal_requests');
+    });
+  });
+
+  describe('flag-ON + withdrawal.is_staff_test=false (stage 2 customer traffic gate)', () => {
+    beforeEach(() => {
+      mockIsAccountingEngineEnabled.mockReturnValue(true);
+      mockCreateServiceClient.mockReturnValue(makeClient({
+        fetchResult: { data: withdrawalRow({ is_staff_test: false }), error: null },
+      }));
+    });
+
+    it('takes legacy withdrawal_requests update path; does NOT call the wrap', async () => {
+      const { PATCH } = await import('./route');
+      const res = await PATCH(makeRequest({ action: 'complete' }), makeParams());
+
+      expect(res.status).toBe(200);
+      expect(mockWithdrawalCompletionWithGL).not.toHaveBeenCalled();
     });
   });
 

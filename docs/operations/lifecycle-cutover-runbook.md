@@ -70,7 +70,7 @@ All nine gates must be **TRUE** before stage 1 begins. Verification command or a
 
 ### Gate 9 — `is_staff_test` wrap-layer gating fix landed
 
-**Verify:** grep `is_staff_test` in `src/lib/accounting/lifecycle-wraps.ts` and `src/lib/accounting/posting-engine.ts`; expect at least one read of `orders.is_staff_test` in a wrap or parent RPC, plus propagation to `posting_context.is_staff_test`. **Pre-runbook state: this fix is NOT landed.** Migration 103 declares the column with the documented gating intent, but no application code reads it. The fix is queued as a follow-up commit on `feature/lifecycle-finale` after commit 14, before stage 2 entry. **Halt if not landed before stage 2.**
+**Verify:** grep `is_staff_test` in `src/lib/services/order-transitions.ts`, `order-refund.ts`, `payment-fulfillment.ts`, `src/app/api/staff/withdrawals/[id]/route.ts`. Each call site uses the two-level gate (`isAccountingEngineEnabled() && entity.is_staff_test`); each wrap input shape carries `is_staff_test`; each event builder writes it to `payload.is_staff_test` so it lands in `posting_context.is_staff_test`. **Resolved** in this PR alongside commit 14: migration 110 adds the column to `cart_checkout_groups` + `withdrawal_requests` (migration 103 had it only on `orders`); 4 wrap shapes thread the marker; 5 event builders write to posting_context; 4 caller-site gates installed. Unit tests cover the gate branches (flag-OFF / flag-ON+test=false / flag-ON+test=true) per call site; integration test asserts `posting_context.is_staff_test=true` threading via the C.4 withdrawal scenario.
 
 ---
 

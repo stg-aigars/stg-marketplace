@@ -49,6 +49,14 @@ interface OrderForCompletion {
   shipping_cost_cents: number;
   order_number: string;
   cart_group_id: string | null;
+  /**
+   * Stage-2 cutover gate marker — caller derives from `orders.is_staff_test`.
+   * The wrap threads this to `posting_context.is_staff_test` so PR #4 reporting
+   * views can filter stage-2 burn-in entries from customer-traffic dashboards.
+   * Defaults to false for forward-compat with callers that haven't been
+   * updated yet (most tests pass true to exercise the engine path).
+   */
+  is_staff_test?: boolean;
 }
 
 export type CompletionSource = 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
@@ -184,6 +192,7 @@ export async function completeOrderWithGL(
     invoice_number: order.order_number,
     seller_country: order.seller_country,
     completion_source: completionSource,
+    is_staff_test: order.is_staff_test,
     posting_date: today,
     accounting_period: period,
     tax_period: period
@@ -241,6 +250,8 @@ interface OrderForRefund {
   /** 'card' | 'bank_link' | 'wallet' | null. Drives C.5 funding_source. */
   payment_method: string | null;
   cart_group_id: string | null;
+  /** Stage-2 cutover gate marker — caller derives from `orders.is_staff_test`. */
+  is_staff_test?: boolean;
 }
 
 interface RefundExecutionResult {
@@ -461,6 +472,7 @@ export async function refundOrderWithGL(
       original_invoice_id: refundType === 'full_prior' ? antecedent.id : undefined,
       original_period: refundType === 'full_prior' ? antecedent.tax_period : undefined,
       lines: lines as unknown as ReadonlyArray<unknown>,
+      is_staff_test: order.is_staff_test,
       posting_date: today,
       accounting_period: period,
       tax_period: period
@@ -478,6 +490,7 @@ export async function refundOrderWithGL(
       refund_reference: `STG-RF-${period}-${order.order_number}`,
       refund_cents: refundResult.card_refunded,
       funding_source: fundingSource,
+      is_staff_test: order.is_staff_test,
       posting_date: today,
       accounting_period: period,
       tax_period: period
@@ -562,6 +575,12 @@ export interface CartFulfillmentWithGLInput {
     refund_cents: number;
     buyer_wallet_refund_cents: number;
   };
+  /**
+   * Stage-2 cutover gate marker — caller derives from
+   * `cart_checkout_groups.is_staff_test`. Threaded into posting_context on
+   * both the C.1/C.2 cart event and (when applicable) the paired C.9 cash leg.
+   */
+  is_staff_test?: boolean;
 }
 
 interface CartFulfillmentWithGLResult {
@@ -605,6 +624,7 @@ export async function cartFulfillmentWithGL(
     buyer_wallet_cents: input.buyer_wallet_cents,
     buyer_id: input.buyer_wallet_cents > 0 ? input.buyer_id : undefined,
     callback_payload: input.callback_payload,
+    is_staff_test: input.is_staff_test,
     posting_date: today,
     accounting_period: period,
     tax_period: period,
@@ -647,6 +667,7 @@ export async function cartFulfillmentWithGL(
       buyer_wallet_refund_cents: input.partial_refund.buyer_wallet_refund_cents,
       buyer_id: input.partial_refund.buyer_wallet_refund_cents > 0 ? input.buyer_id : undefined,
       refund_reference,
+      is_staff_test: input.is_staff_test,
       posting_date: today,
       accounting_period: period,
       tax_period: period,
@@ -712,6 +733,11 @@ export interface WithdrawalCompletionWithGLInput {
   staff_notes?: string;
   /** auth.users.id of the staff member triggering completion (for audit/actor_id). */
   staff_user_id: string;
+  /**
+   * Stage-2 cutover gate marker — caller derives from
+   * `withdrawal_requests.is_staff_test`.
+   */
+  is_staff_test?: boolean;
 }
 
 interface WithdrawalCompletionWithGLResult {
@@ -762,6 +788,7 @@ export async function withdrawalCompletionWithGL(
     withdrawal_ref: input.withdrawal_ref,
     seller_iban: input.seller_iban,
     bank_confirmation_ref: input.bank_confirmation_ref,
+    is_staff_test: input.is_staff_test,
     posting_date: today,
     accounting_period: period,
     tax_period: period,

@@ -305,12 +305,13 @@ export async function fulfillCartPayment(
     }
   }
 
-  // Mark group as completed. Under flag-ON, the wrap delegates to the
-  // cart_complete_payment_with_event_atomic RPC which atomically composes
-  // the status flip + paid_at stamp + C.1/C.2 GL emit (plus paired C.9 when
-  // a partial refund fired above). Under flag-OFF, runs byte-identical to
-  // pre-PR-C behaviour.
-  if (isAccountingEngineEnabled()) {
+  // Mark group as completed. Two-level cutover gate:
+  //   - ACCOUNTING_ENGINE_ENABLED=false → legacy update on cart_checkout_groups
+  //   - flag-ON + cart.is_staff_test=false → legacy update (stage 2 customer traffic)
+  //   - flag-ON + cart.is_staff_test=true → engine path with posting_context tag
+  // Stage 3 transition: drop the `&& group.is_staff_test` clause so the engine
+  // path runs unconditionally. See lifecycle-cutover-runbook.md §4.
+  if (isAccountingEngineEnabled() && group.is_staff_test) {
     await cartFulfillmentWithGL(serviceClient, {
       cart_group_id: group.id,
       buyer_id: group.buyer_id,
@@ -329,6 +330,7 @@ export async function fulfillCartPayment(
               buyer_wallet_refund_cents: refundWalletCents,
             }
           : undefined,
+      is_staff_test: true,
     });
   } else {
     await serviceClient

@@ -89,6 +89,14 @@ export interface OrderRow {
   deadline_reminder_sent_at: string | null;
   invoice_number: string | null;
   credit_note_number: string | null;
+  /**
+   * Stage-2 cutover gate marker (migration 103). Staff test orders set
+   * this true so the wrap layer emits GL while real customer orders take
+   * the legacy path. Vestigial post-stage-3 cutover; kept for audit + test
+   * reproducibility. See `docs/operations/lifecycle-cutover-runbook.md` §1
+   * Gate 9 + §3.
+   */
+  is_staff_test: boolean;
   created_at: string;
   updated_at: string;
 }

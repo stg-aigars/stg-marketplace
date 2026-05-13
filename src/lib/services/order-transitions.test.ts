@@ -83,6 +83,7 @@ type CreditSellerWalletOrder = Pick<
   | 'shipping_cost_cents'
   | 'seller_country'
   | 'cart_group_id'
+  | 'is_staff_test'
 >;
 
 const orderFixture: CreditSellerWalletOrder = {
@@ -93,7 +94,8 @@ const orderFixture: CreditSellerWalletOrder = {
   items_total_cents: 10000,
   shipping_cost_cents: 500,
   seller_country: 'LV',
-  cart_group_id: 'cart_uuid_test'
+  cart_group_id: 'cart_uuid_test',
+  is_staff_test: true
 };
 
 describe('creditSellerWallet — flag-branch contract', () => {
@@ -147,5 +149,13 @@ describe('creditSellerWallet — flag-branch contract', () => {
     await creditSellerWallet('order_uuid_test', { ...orderFixture, seller_wallet_credit_cents: 0 });
     expect(completeOrderWithGL).not.toHaveBeenCalled();
     expect(creditWallet).not.toHaveBeenCalled();
+  });
+
+  it('flag-ON + is_staff_test=false: takes legacy creditWallet path (stage 2 customer traffic gate)', async () => {
+    vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
+    await creditSellerWallet('order_uuid_test', { ...orderFixture, is_staff_test: false });
+    expect(creditWallet).toHaveBeenCalledTimes(1);
+    expect(completeOrderWithGL).not.toHaveBeenCalled();
+    expect(trackServer).not.toHaveBeenCalled();
   });
 });

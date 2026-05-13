@@ -166,6 +166,9 @@ function baseCartGroup(overrides: Partial<CartCheckoutGroup> = {}): CartCheckout
     listing_ids: ['listing-1'],
     everypay_payment_reference: 'ep-ref-1',
     status: 'pending',
+    // Default true so flag-ON tests exercise the wrap; flag-OFF tests assert
+    // legacy path regardless of this flag (the outer flag check fires first).
+    is_staff_test: true,
     created_at: '2027-01-15T00:00:00Z',
     ...overrides,
   };
@@ -415,6 +418,27 @@ describe('fulfillCartPayment — ACCOUNTING_ENGINE_ENABLED wrap', () => {
 
       expect(result.outcome).toBe('already_exists');
       expect(mockCartFulfillmentWithGL).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('flag-ON + cart.is_staff_test=false (stage 2 customer traffic gate)', () => {
+    beforeEach(() => {
+      mockIsAccountingEngineEnabled.mockReturnValue(true);
+    });
+
+    it('takes legacy cart_checkout_groups.status update path; does NOT call cartFulfillmentWithGL', async () => {
+      const { fulfillCartPayment } = await import('./payment-fulfillment');
+      const result = await fulfillCartPayment(
+        baseCartGroup({ is_staff_test: false }),
+        'ep-ref-1',
+        'settled',
+        makeClient({ listings: [baseListing()] }),
+        'card',
+      );
+
+      expect(result.outcome).toBe('created');
+      expect(mockCartFulfillmentWithGL).not.toHaveBeenCalled();
+      expect(mockCartCheckoutGroupsUpdate).toHaveBeenCalledWith({ status: 'completed' });
     });
   });
 });

@@ -67,6 +67,13 @@ export interface BuildCartPaymentEventInput extends PostingPeriodInput {
    */
   buyer_id?: string;
   callback_payload: Record<string, unknown>;
+  /**
+   * Staff-test marker — propagated to posting_context so PR #4 reporting
+   * views can filter stage-2 cutover burn-in entries out of customer-traffic
+   * dashboards. Caller derives from `cart_checkout_groups.is_staff_test`.
+   * Defaults to false (real customer traffic).
+   */
+  is_staff_test?: boolean;
 }
 
 /**
@@ -92,7 +99,8 @@ export function buildCartPaymentEvent(input: BuildCartPaymentEventInput): Postin
       ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
       cart_payment_id: input.cart_payment_id,
       everypay_payment_id: input.everypay_payment_id,
-      callback_payload: input.callback_payload
+      callback_payload: input.callback_payload,
+      is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
   };
@@ -128,6 +136,8 @@ export interface BuildCartPartialRefundCashLegEventInput extends PostingPeriodIn
    * defensive shape mirrors the credit_note_number pattern for O.9.
    */
   refund_reference: string;
+  /** Inherits from the parent cart's is_staff_test. Defaults to false. */
+  is_staff_test?: boolean;
 }
 
 /**
@@ -158,7 +168,8 @@ export function buildCartPartialRefundCashLegEvent(
       refund_cents: input.refund_cents,
       buyer_wallet_refund_cents,
       ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
-      refund_reference: input.refund_reference
+      refund_reference: input.refund_reference,
+      is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
   };
@@ -188,6 +199,12 @@ export interface BuildOrderCompletionEventInput extends PostingPeriodInput {
   seller_country: 'LV' | 'LT' | 'EE';
   /** Drives narrative + posting_context.completion_trigger; routing is by counterparty fields. */
   completion_source: 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
+  /**
+   * Staff-test marker — propagated to posting_context for stage-2 cutover
+   * burn-in entry tagging. Caller derives from `orders.is_staff_test`.
+   * Defaults to false (real customer traffic).
+   */
+  is_staff_test?: boolean;
 }
 
 /**
@@ -217,7 +234,8 @@ export function buildOrderCompletionEvent(input: BuildOrderCompletionEventInput)
       shipping_value_cents: input.shipping_value_cents,
       invoice_number: input.invoice_number,
       consumption_ms: input.seller_country,
-      completion_trigger: input.completion_source
+      completion_trigger: input.completion_source,
+      is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
   };
@@ -249,6 +267,8 @@ export interface BuildRefundEventInput extends PostingPeriodInput {
   original_period?: string;
   /** Pre-computed reversal lines for full refunds (O.7 / O.8). */
   lines?: ReadonlyArray<unknown>;
+  /** Inherits from the parent order's is_staff_test. Defaults to false. */
+  is_staff_test?: boolean;
 }
 
 /**
@@ -300,7 +320,8 @@ export function buildRefundEvent(input: BuildRefundEventInput): PostingEvent {
         refund_shipping_cents: input.refund_shipping_cents,
         vat_rate: input.vat_rate,
         vat_country: input.vat_country,
-        vat_account: input.vat_account
+        vat_account: input.vat_account,
+        is_staff_test: input.is_staff_test ?? false
       },
       created_by: input.actor_id
     };
@@ -324,7 +345,8 @@ export function buildRefundEvent(input: BuildRefundEventInput): PostingEvent {
       tax_period_alignment,
       original_invoice_id: input.original_invoice_id,
       original_period: input.original_period,
-      lines: input.lines
+      lines: input.lines,
+      is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
   };
@@ -339,6 +361,8 @@ export interface BuildRefundCashLegEventInput extends PostingPeriodInput {
   refund_reference: string;
   refund_cents: number;
   funding_source: 'everypay' | 'bank';
+  /** Inherits from the parent order's is_staff_test. Defaults to false. */
+  is_staff_test?: boolean;
 }
 
 /**
@@ -360,7 +384,8 @@ export function buildRefundCashLegEvent(input: BuildRefundCashLegEventInput): Po
       order_id: input.order_id,
       refund_reference: input.refund_reference,
       refund_cents: input.refund_cents,
-      funding_source: input.funding_source
+      funding_source: input.funding_source,
+      is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
   };
@@ -377,6 +402,12 @@ export interface BuildWithdrawalCompletionEventInput extends PostingPeriodInput 
   withdrawal_ref: string;
   seller_iban: string;
   bank_confirmation_ref?: string;
+  /**
+   * Staff-test marker — propagated to posting_context for stage-2 cutover
+   * burn-in entry tagging. Caller derives from `withdrawal_requests.is_staff_test`.
+   * Defaults to false (real seller withdrawal).
+   */
+  is_staff_test?: boolean;
 }
 
 /**
@@ -405,7 +436,8 @@ export function buildWithdrawalCompletionEvent(input: BuildWithdrawalCompletionE
       withdrawal_cents: input.withdrawal_cents,
       withdrawal_ref: input.withdrawal_ref,
       seller_iban: input.seller_iban,
-      bank_confirmation_ref: input.bank_confirmation_ref
+      bank_confirmation_ref: input.bank_confirmation_ref,
+      is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
   };

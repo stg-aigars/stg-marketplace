@@ -484,15 +484,19 @@ export async function creditSellerWallet(
     | 'shipping_cost_cents'
     | 'seller_country'
     | 'cart_group_id'
+    | 'is_staff_test'
   >,
   completionSource: CompletionSource = 'delivery_confirmed'
 ): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
 
-  // Flag-ON path: parent RPC composes wallet credit + status update + GL emit
-  // atomically per round-3 §A.3 + accountant signoff v1.4. Flag-OFF (default)
-  // runs the byte-identical pre-PR-#5 flow below.
-  if (isAccountingEngineEnabled()) {
+  // Two-level cutover gate:
+  //   - ACCOUNTING_ENGINE_ENABLED=false → legacy path for all (default)
+  //   - flag-ON + is_staff_test=false → legacy path (stage 2 customer traffic)
+  //   - flag-ON + is_staff_test=true → engine path with posting_context.is_staff_test=true
+  // Stage 3 transition: drop the `&& order.is_staff_test` clause to make the
+  // engine path unconditional once stage 2 burn-in verifies the pipeline.
+  if (isAccountingEngineEnabled() && order.is_staff_test) {
     const supabase = createServiceClient();
     await completeOrderWithGL(
       supabase,
@@ -503,7 +507,8 @@ export async function creditSellerWallet(
         items_total_cents: order.items_total_cents,
         shipping_cost_cents: order.shipping_cost_cents,
         order_number: order.order_number,
-        cart_group_id: order.cart_group_id
+        cart_group_id: order.cart_group_id,
+        is_staff_test: true
       },
       completionSource
     );

@@ -132,6 +132,7 @@ describe('Scenario 9 — withdrawal completion happy path', () => {
       seller_iban: withdrawal.bank_iban,
       bank_confirmation_ref: `BANK-CONF-${Date.now()}`,
       staff_user_id: STAFF_USER_ID,
+      is_staff_test: true,
     });
 
     expect(result.journal_entry_id).toBeTruthy();
@@ -145,6 +146,10 @@ describe('Scenario 9 — withdrawal completion happy path', () => {
     });
     expect(entry.accounting_period).toBe(TEST_PERIOD);
     expect(entry.posting_context.emission_source).toBe('lifecycle');
+    // is_staff_test threads through wrap → builder → engine → posting_context.
+    // PR #4 reporting views will filter on this tag to exclude stage-2 burn-in
+    // entries from customer-traffic dashboards. See runbook §3.
+    expect(entry.posting_context.is_staff_test).toBe(true);
 
     await assertJournalLines(supabase, entry.id, [
       { account_code: '5351', debit_cents: withdrawalCents, credit_cents: 0 },
