@@ -25,7 +25,10 @@ vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(),
 }));
 vi.mock('@/lib/env', () => ({
-  env: { cron: { secret: 'test-secret' } },
+  env: {
+    cron: { secret: 'test-secret' },
+    accounting: { engineEnabled: false },
+  },
 }));
 vi.mock('@/lib/notifications', () => ({
   notify: (...args: unknown[]) => mockNotify(...args),
@@ -481,6 +484,7 @@ describe('auction price tamper-proof (G5)', () => {
       listing_ids: ['listing-auction-1'],
       everypay_payment_reference: 'ep-ref-1',
       status: 'pending' as const,
+      is_staff_test: false,
       created_at: '2026-04-13T10:00:00Z',
     };
 

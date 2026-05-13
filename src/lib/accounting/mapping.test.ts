@@ -667,3 +667,386 @@ describe('I.7 — vendor payment settlement', () => {
     }))).toThrow();
   });
 });
+
+// =============================================================================
+// PR C commit 9 — C.1 / C.2 multi-leg shape + C.9 cart-time partial refund
+// =============================================================================
+
+describe('C.1 — cart payment, EveryPay card', () => {
+  const C_1 = () => findMappingById('C.1')!;
+
+  it('emits 2 lines when buyer paid entirely via EveryPay', () => {
+    const result = C_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        gross_cart_cents: 10000,
+        buyer_wallet_cents: 0,
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '2630', debit_cents: 10000, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5590', debit_cents: 0, credit_cents: 10000 });
+    expect(result.posting_context_extras).toMatchObject({
+      gross_cart_cents: 10000,
+      buyer_wallet_cents: 0,
+      everypay_charge_cents: 10000
+    });
+  });
+
+  it('emits 3 lines (Dr 2630 + Dr 5351 + Cr 5590) when buyer paid partially from wallet', () => {
+    const result = C_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        gross_cart_cents: 10000,
+        buyer_wallet_cents: 3000,
+        buyer_id: 'b0000000-0000-0000-0000-000000000001',
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '2630', debit_cents: 7000, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({
+      account_code: '5351',
+      debit_cents: 3000,
+      credit_cents: 0,
+      counterparty_type: 'buyer',
+      counterparty_id: null
+    });
+    expect(result.lines[2]).toMatchObject({ account_code: '5590', debit_cents: 0, credit_cents: 10000 });
+
+    // Σ Dr (7000 + 3000) = Σ Cr (10000) — balanced
+    const sum_dr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sum_cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sum_dr).toBe(sum_cr);
+    expect(sum_dr).toBe(10000);
+  });
+
+  it('omits the 2630 line when buyer paid 100% from wallet (full-wallet cart)', () => {
+    const result = C_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        gross_cart_cents: 5000,
+        buyer_wallet_cents: 5000,
+        buyer_id: 'b0000000-0000-0000-0000-000000000001',
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '5351', debit_cents: 5000, counterparty_type: 'buyer' });
+    expect(result.lines[1]).toMatchObject({ account_code: '5590', credit_cents: 5000 });
+  });
+
+  it('rejects when buyer_wallet_cents exceeds gross_cart_cents', () => {
+    expect(() =>
+      C_1().compute(
+        buildInput(null as unknown as CounterpartyRow, null, {
+          gross_cart_cents: 5000,
+          buyer_wallet_cents: 6000,
+          buyer_id: 'b0000000-0000-0000-0000-000000000001',
+          payment_method: 'card'
+        })
+      )
+    ).toThrow(/cannot exceed gross_cart_cents/);
+  });
+
+  it('rejects 3-line variant without buyer_id', () => {
+    expect(() =>
+      C_1().compute(
+        buildInput(null as unknown as CounterpartyRow, null, {
+          gross_cart_cents: 10000,
+          buyer_wallet_cents: 3000,
+          payment_method: 'card'
+        })
+      )
+    ).toThrow();
+  });
+});
+
+describe('C.2 — cart payment, PIS / bank-link', () => {
+  const C_2 = () => findMappingById('C.2')!;
+
+  it('emits 2 lines (Dr 2610 + Cr 5590) for full-EveryPay PIS payment', () => {
+    const result = C_2().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        gross_cart_cents: 5000,
+        buyer_wallet_cents: 0,
+        payment_method: 'bank_link'
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '2610', debit_cents: 5000, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5590', debit_cents: 0, credit_cents: 5000 });
+  });
+
+  it('emits 3 lines for PIS with buyer wallet contribution', () => {
+    const result = C_2().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        gross_cart_cents: 5000,
+        buyer_wallet_cents: 1500,
+        buyer_id: 'b0000000-0000-0000-0000-000000000002',
+        payment_method: 'bank_link'
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '2610', debit_cents: 3500 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5351', debit_cents: 1500, counterparty_type: 'buyer' });
+    expect(result.lines[2]).toMatchObject({ account_code: '5590', credit_cents: 5000 });
+  });
+});
+
+describe('C.9 — cart-time partial refund cash leg', () => {
+  const C_9 = () => findMappingById('C.9')!;
+
+  it('emits 2 lines (Dr 5590 + Cr 2630) for EveryPay-only partial refund (card)', () => {
+    const result = C_9().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        refund_cents: 3000,
+        buyer_wallet_refund_cents: 0,
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '5590', debit_cents: 3000, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '2630', debit_cents: 0, credit_cents: 3000 });
+  });
+
+  it('emits 2 lines (Dr 5590 + Cr 2610) for PIS partial refund', () => {
+    const result = C_9().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        refund_cents: 1200,
+        buyer_wallet_refund_cents: 0,
+        payment_method: 'bank_link'
+      })
+    );
+
+    expect(result.lines[1]).toMatchObject({ account_code: '2610', credit_cents: 1200 });
+  });
+
+  it('emits 3 lines (Dr 5590 + Cr 2630 + Cr 5351-buyer) when wallet was refunded too', () => {
+    const result = C_9().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        refund_cents: 4000,
+        buyer_wallet_refund_cents: 1000,
+        buyer_id: 'b0000000-0000-0000-0000-000000000003',
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '5590', debit_cents: 4000 });
+    expect(result.lines[1]).toMatchObject({ account_code: '2630', credit_cents: 3000 });
+    expect(result.lines[2]).toMatchObject({
+      account_code: '5351',
+      credit_cents: 1000,
+      counterparty_type: 'buyer',
+      counterparty_id: null
+    });
+
+    const sum_dr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sum_cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sum_dr).toBe(sum_cr);
+  });
+
+  it('omits the 2630 leg when the refund came entirely from wallet allocation', () => {
+    const result = C_9().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        refund_cents: 800,
+        buyer_wallet_refund_cents: 800,
+        buyer_id: 'b0000000-0000-0000-0000-000000000003',
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '5590', debit_cents: 800 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5351', credit_cents: 800 });
+  });
+
+  it('rejects invalid payment_method', () => {
+    expect(() =>
+      C_9().compute(
+        buildInput(null as unknown as CounterpartyRow, null, {
+          refund_cents: 1000,
+          buyer_wallet_refund_cents: 0,
+          payment_method: 'crypto'
+        })
+      )
+    ).toThrow(/payment_method must be 'card' or 'bank_link'/);
+  });
+
+  it('rejects when buyer_wallet_refund_cents exceeds refund_cents', () => {
+    expect(() =>
+      C_9().compute(
+        buildInput(null as unknown as CounterpartyRow, null, {
+          refund_cents: 1000,
+          buyer_wallet_refund_cents: 1500,
+          buyer_id: 'b0000000-0000-0000-0000-000000000003',
+          payment_method: 'card'
+        })
+      )
+    ).toThrow(/cannot exceed refund_cents/);
+  });
+});
+
+// =============================================================================
+// PR C commit 12 — P.1 monthly VAT consolidation (refund + payable + zero-net)
+// =============================================================================
+//
+// Compute() is shape-agnostic — it emits caller-supplied lines verbatim via
+// buildPreComputedLines. These tests assert that the three canonical shapes
+// (refund / payable / zero-net-both-nonzero) all produce balanced entries
+// and preserve line ordering for downstream readability.
+
+describe('P.1 — monthly VAT consolidation', () => {
+  const P_1 = () => findMappingById('P.1')!;
+
+  it('emits refund-position shape (Dr 5710-LV-OUT + Dr 2380 + Cr 5710-LV-IN) — April pattern', () => {
+    // Mirrors April backfill close_2026_04: lv_out=38, lv_in=68, refund=30.
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-04',
+        net_refund_cents: 30,
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 38,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT (April close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 68,
+            narrative: 'Clear LV input VAT (April close)'
+          },
+          {
+            account_code: '2380',
+            debit_cents: 30,
+            credit_cents: 0,
+            narrative: 'VID receivable — net refund'
+          }
+        ]
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '5710-LV-OUT', debit_cents: 38, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 68 });
+    expect(result.lines[2]).toMatchObject({ account_code: '2380', debit_cents: 30, credit_cents: 0 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(sumDr).toBe(68);
+  });
+
+  it('emits payable-position shape (Dr 5710-LV-OUT + Cr 5710-LV-IN + Cr 5710-09)', () => {
+    // Hypothetical payable month: lv_out=15000, lv_in=2000, net payable=13000.
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-07',
+        net_refund_cents: -13000, // negative = payable per Q12-7a legacy convention
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 15000,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT (July close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 2000,
+            narrative: 'Clear LV input VAT (July close)'
+          },
+          {
+            account_code: '5710-09',
+            debit_cents: 0,
+            credit_cents: 13000,
+            narrative: 'PVN klīringa konts — net payable to VID'
+          }
+        ]
+      })
+    );
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[2]).toMatchObject({ account_code: '5710-09', credit_cents: 13000 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(sumDr).toBe(15000);
+  });
+
+  it('emits 2-line zero-net shape (both sides nonzero but equal magnitudes) — Q12-5', () => {
+    // Period had real VAT activity but lv_in === lv_out exactly. Distinct
+    // from the "skip emit" case (both zero — handled upstream in the cron,
+    // not here). P.1 still fires to clear both sub-accounts to zero.
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-08',
+        net_refund_cents: 0,
+        lines: [
+          {
+            account_code: '5710-LV-OUT',
+            debit_cents: 500,
+            credit_cents: 0,
+            narrative: 'Clear LV output VAT (August close)'
+          },
+          {
+            account_code: '5710-LV-IN',
+            debit_cents: 0,
+            credit_cents: 500,
+            narrative: 'Clear LV input VAT (August close)'
+          }
+        ]
+      })
+    );
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '5710-LV-OUT', debit_cents: 500 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', credit_cents: 500 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(sumDr).toBe(500);
+  });
+
+  it('rejects payload.lines with less than 2 entries (engine balance invariant)', () => {
+    expect(() =>
+      P_1().compute(
+        buildInput(null as unknown as CounterpartyRow, null, {
+          closing_period: '2026-09',
+          net_refund_cents: 0,
+          lines: [
+            { account_code: '5710-LV-OUT', debit_cents: 100, credit_cents: 0 }
+          ]
+        })
+      )
+    ).toThrow();
+  });
+
+  it('preserves line ordering from payload (auditability)', () => {
+    const result = P_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        closing_period: '2026-10',
+        net_refund_cents: 0,
+        lines: [
+          { account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 100, narrative: 'A' },
+          { account_code: '5710-LV-OUT', debit_cents: 100, credit_cents: 0, narrative: 'B' }
+        ]
+      })
+    );
+
+    // Line 1 corresponds to payload[0]; line 2 to payload[1]. Ordering
+    // preservation is important for audit readability — the array order
+    // staff sees in the dashboard matches the payload they emitted.
+    expect(result.lines[0]!.narrative).toBe('A');
+    expect(result.lines[1]!.narrative).toBe('B');
+  });
+});

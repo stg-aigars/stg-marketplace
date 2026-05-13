@@ -32,6 +32,7 @@ vi.mock('@/lib/env', () => ({
     cron: { secret: 'test-secret' },
     app: { adminEmail: 'admin@test.com' },
     resend: { fromEmail: 'noreply@test.com' },
+    accounting: { engineEnabled: false },
   },
 }));
 vi.mock('@/lib/services/everypay', () => ({
@@ -119,6 +120,7 @@ function makeGroup(overrides: Partial<CartCheckoutGroup> = {}): CartCheckoutGrou
     listing_ids: ['listing-1'],
     everypay_payment_reference: 'ep-ref-1',
     status: 'pending',
+    is_staff_test: false,
     created_at: '2026-04-13T11:00:00Z',
     ...overrides,
   };

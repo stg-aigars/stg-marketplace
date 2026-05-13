@@ -190,7 +190,12 @@ const REPRESENTATIVES: Representative[] = [
   {
     type_id: 'P.1',
     ctx: {
-      event_type: 'period_close.monthly_refund',
+      // Renamed from 'period_close.monthly_refund' in PR C commit 12 to
+      // accommodate both refund and payable positions. Historical April
+      // backfill `close_2026_04` was emitted with the legacy event_type
+      // before the rename; type_id='P.1' on that posted entry is unchanged
+      // (event_type isn't persisted to journal_entries).
+      event_type: 'period_close.monthly_vat',
       counterparty: null,
       payload: {}
     }
@@ -355,6 +360,15 @@ const REPRESENTATIVES: Representative[] = [
       event_type: 'order.refund_initiated',
       counterparty: null,
       payload: { funding_source: 'everypay' }
+    }
+  },
+  // PR C commit 9 — C.9 cart-time partial refund cash leg
+  {
+    type_id: 'C.9',
+    ctx: {
+      event_type: 'cart.partial_refund_cash_leg',
+      counterparty: null,
+      payload: { payment_method: 'card' }
     }
   }
 ];

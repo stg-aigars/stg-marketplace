@@ -31,9 +31,12 @@ import {
   fireAccountingPostedAudit
 } from './posting-engine';
 import {
+  buildCartPartialRefundCashLegEvent,
+  buildCartPaymentEvent,
   buildOrderCompletionEvent,
   buildRefundEvent,
   buildRefundCashLegEvent,
+  buildWithdrawalCompletionEvent,
   type RefundType
 } from './lifecycle-events';
 import type { ComputedLine, CounterpartyRow } from './types';
@@ -46,6 +49,14 @@ interface OrderForCompletion {
   shipping_cost_cents: number;
   order_number: string;
   cart_group_id: string | null;
+  /**
+   * Stage-2 cutover gate marker — caller derives from `orders.is_staff_test`.
+   * The wrap threads this to `posting_context.is_staff_test` so PR #4 reporting
+   * views can filter stage-2 burn-in entries from customer-traffic dashboards.
+   * Defaults to false for forward-compat with callers that haven't been
+   * updated yet (most tests pass true to exercise the engine path).
+   */
+  is_staff_test?: boolean;
 }
 
 export type CompletionSource = 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
@@ -179,7 +190,9 @@ export async function completeOrderWithGL(
     item_value_cents: order.items_total_cents,
     shipping_value_cents: order.shipping_cost_cents,
     invoice_number: order.order_number,
+    seller_country: order.seller_country,
     completion_source: completionSource,
+    is_staff_test: order.is_staff_test,
     posting_date: today,
     accounting_period: period,
     tax_period: period
@@ -237,6 +250,8 @@ interface OrderForRefund {
   /** 'card' | 'bank_link' | 'wallet' | null. Drives C.5 funding_source. */
   payment_method: string | null;
   cart_group_id: string | null;
+  /** Stage-2 cutover gate marker — caller derives from `orders.is_staff_test`. */
+  is_staff_test?: boolean;
 }
 
 interface RefundExecutionResult {
@@ -457,6 +472,7 @@ export async function refundOrderWithGL(
       original_invoice_id: refundType === 'full_prior' ? antecedent.id : undefined,
       original_period: refundType === 'full_prior' ? antecedent.tax_period : undefined,
       lines: lines as unknown as ReadonlyArray<unknown>,
+      is_staff_test: order.is_staff_test,
       posting_date: today,
       accounting_period: period,
       tax_period: period
@@ -474,6 +490,7 @@ export async function refundOrderWithGL(
       refund_reference: `STG-RF-${period}-${order.order_number}`,
       refund_cents: refundResult.card_refunded,
       funding_source: fundingSource,
+      is_staff_test: order.is_staff_test,
       posting_date: today,
       accounting_period: period,
       tax_period: period
@@ -524,6 +541,282 @@ export async function refundOrderWithGL(
         service_file: 'order-refund.ts'
       }
     );
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// cartFulfillmentWithGL — flag-ON path for payment-fulfillment.ts:fulfillCartPayment
+// ---------------------------------------------------------------------------
+
+export interface CartFulfillmentWithGLInput {
+  cart_group_id: string;
+  buyer_id: string;
+  payment_method: 'card' | 'bank_link';
+  /** Total cart price (item + shipping) at time of fulfillment. Becomes Cr 5590. */
+  gross_cart_cents: number;
+  /** Portion paid from buyer's wallet balance; 0 when paid entirely via EveryPay. */
+  buyer_wallet_cents: number;
+  everypay_payment_reference: string;
+  callback_payload: Record<string, unknown>;
+  /**
+   * When a cart has unavailable listings at fulfillment, fulfillCartPayment
+   * auto-refunds the unavailable portion (both EveryPay-rail and buyer-wallet-
+   * rail). Pass the refund split here so the wrap emits a paired C.9 cash-leg
+   * entry alongside the C.1/C.2. Zero or omitted when the full cart fulfilled.
+   *
+   *   refund_cents          — total refund (EveryPay leg + wallet leg)
+   *   buyer_wallet_refund_cents — portion credited back to buyer wallet
+   *
+   * everypay_refund_cents is derived as (refund_cents − buyer_wallet_refund_cents).
+   */
+  partial_refund?: {
+    refund_cents: number;
+    buyer_wallet_refund_cents: number;
+  };
+  /**
+   * Stage-2 cutover gate marker — caller derives from
+   * `cart_checkout_groups.is_staff_test`. Threaded into posting_context on
+   * both the C.1/C.2 cart event and (when applicable) the paired C.9 cash leg.
+   */
+  is_staff_test?: boolean;
+}
+
+interface CartFulfillmentWithGLResult {
+  cart_journal_entry_id: string | null;
+  partial_refund_journal_entry_id: string | null;
+  idempotent_skip: boolean;
+}
+
+/**
+ * Flag-ON path for payment-fulfillment.ts:fulfillCartPayment. Builds the
+ * C.1 (card) or C.2 (bank_link) cart-payment cash-leg event, dispatches +
+ * computes via the engine assembly helper, and calls
+ * `cart_complete_payment_with_event_atomic` (migration 108) to compose the
+ * cart_checkout_groups status flip + paid_at stamp + GL emit atomically.
+ *
+ * When `partial_refund_cents > 0` (some listings were unavailable at
+ * fulfillment and EveryPay auto-refunded), this also emits a paired C.9
+ * cart-time partial-refund cash leg via the engine's standard emit() path.
+ * The C.9 is NOT inside the cart parent RPC's transaction (the RPC takes a
+ * single event/lines payload) — it fires after the C.1/C.2 commits, with the
+ * same READ COMMITTED semantics + UNIQUE-on-source_doc protection as the
+ * engine's own emit() path. If C.1/C.2 succeeds but C.9 fails, the cart is
+ * marked completed in marketplace state and the C.1/C.2 GL entry is durable;
+ * a follow-up retry can re-emit C.9 (idempotency keyed on the refund_reference).
+ *
+ * Returns IDs for both entries (null when an emit was skipped — idempotent
+ * retry, or zero partial refund). Caller may log either for observability.
+ */
+export async function cartFulfillmentWithGL(
+  supabase: SupabaseClient,
+  input: CartFulfillmentWithGLInput
+): Promise<CartFulfillmentWithGLResult> {
+  const today = new Date().toISOString().split('T')[0];
+  const period = today.substring(0, 7);
+
+  const cartEvent = buildCartPaymentEvent({
+    cart_payment_id: input.cart_group_id,
+    everypay_payment_id: input.everypay_payment_reference,
+    payment_method: input.payment_method,
+    gross_cart_cents: input.gross_cart_cents,
+    buyer_wallet_cents: input.buyer_wallet_cents,
+    buyer_id: input.buyer_wallet_cents > 0 ? input.buyer_id : undefined,
+    callback_payload: input.callback_payload,
+    is_staff_test: input.is_staff_test,
+    posting_date: today,
+    accounting_period: period,
+    tax_period: period,
+    actor_id: input.buyer_id
+  });
+
+  // Cart entries are cash-only — no counterparty load. Pass null to skip
+  // the engine's optional counterparty load.
+  const assembled = await assembleEntryForRpc(supabase, cartEvent, null);
+
+  const { data, error } = await supabase.rpc('cart_complete_payment_with_event_atomic', {
+    p_cart_group_id: input.cart_group_id,
+    p_actor_id: input.buyer_id,
+    p_event: assembled.rpcEntry,
+    p_lines: assembled.rpcLines as unknown as Record<string, unknown>[]
+  });
+
+  if (error) {
+    throw new Error(`cart_complete_payment_with_event_atomic failed (${error.code ?? 'unknown'}): ${error.message}`);
+  }
+
+  const rpcResult = data as { journal_entry_id: string | null; idempotent_skip: boolean };
+
+  if (rpcResult.journal_entry_id) {
+    fireAccountingPostedAudit(supabase, rpcResult.journal_entry_id, assembled, input.buyer_id);
+  }
+
+  // Paired C.9 partial-refund cash leg (when applicable). Lives outside the
+  // parent RPC's transaction; engine's idempotency keys on
+  // (source_doc_type='cart_partial_refund', source_doc_id=refund_reference,
+  // type_id='C.9'), so a retry after a transient failure is safe.
+  let partial_refund_entry_id: string | null = null;
+  if (input.partial_refund && input.partial_refund.refund_cents > 0) {
+    const refund_reference = `cart_partial_${input.cart_group_id}_${input.everypay_payment_reference}`;
+    const refundEvent = buildCartPartialRefundCashLegEvent({
+      cart_payment_id: input.cart_group_id,
+      everypay_payment_id: input.everypay_payment_reference,
+      payment_method: input.payment_method,
+      refund_cents: input.partial_refund.refund_cents,
+      buyer_wallet_refund_cents: input.partial_refund.buyer_wallet_refund_cents,
+      buyer_id: input.partial_refund.buyer_wallet_refund_cents > 0 ? input.buyer_id : undefined,
+      refund_reference,
+      is_staff_test: input.is_staff_test,
+      posting_date: today,
+      accounting_period: period,
+      tax_period: period,
+      actor_id: input.buyer_id
+    });
+
+    const refundAssembled = await assembleEntryForRpc(supabase, refundEvent, null);
+
+    const { data: refundEntryId, error: refundError } = await supabase.rpc('insert_journal_entry', {
+      p_entry: refundAssembled.rpcEntry,
+      p_lines: refundAssembled.rpcLines
+    });
+
+    if (refundError) {
+      // 23505 (unique_violation) is the idempotent-retry case: a prior call
+      // already inserted this C.9. Recover via SELECT — winner's committed
+      // row is visible under READ COMMITTED.
+      if (refundError.code === '23505') {
+        const { data: recovered } = await supabase
+          .from('journal_entries')
+          .select('id')
+          .eq('source_doc_type', 'cart_partial_refund')
+          .eq('source_doc_id', refund_reference)
+          .eq('type_id', 'C.9')
+          .maybeSingle();
+        partial_refund_entry_id = (recovered?.id as string | undefined) ?? null;
+      } else {
+        throw new Error(`C.9 partial-refund emit failed (${refundError.code ?? 'unknown'}): ${refundError.message}`);
+      }
+    } else if (typeof refundEntryId === 'string') {
+      partial_refund_entry_id = refundEntryId;
+      fireAccountingPostedAudit(supabase, refundEntryId, refundAssembled, input.buyer_id);
+    }
+  }
+
+  return {
+    cart_journal_entry_id: rpcResult.journal_entry_id,
+    partial_refund_journal_entry_id: partial_refund_entry_id,
+    idempotent_skip: rpcResult.idempotent_skip
+  };
+}
+
+// ---------------------------------------------------------------------------
+// withdrawalCompletionWithGL — flag-ON path for staff withdrawal completion handler
+// ---------------------------------------------------------------------------
+
+export interface WithdrawalCompletionWithGLInput {
+  withdrawal_request_id: string;
+  /** auth.users.id of the seller — used for counterparty resolution. */
+  seller_user_id: string;
+  withdrawal_cents: number;
+  /** STG's SEPA remittance reference (withdrawal_requests.reference_number, format WD-YYYY-NNNNN). */
+  withdrawal_ref: string;
+  /** Seller's IBAN (withdrawal_requests.bank_iban). */
+  seller_iban: string;
+  /**
+   * Bank's confirmation number for the outbound SEPA wire (optional). Lands
+   * only in posting_context per commit-10 Q1 Option B — no withdrawal_requests
+   * column mutation. Undefined values are not written to the payload at all.
+   */
+  bank_confirmation_ref?: string;
+  /** Optional staff notes; coalesces with existing notes inside the RPC. */
+  staff_notes?: string;
+  /** auth.users.id of the staff member triggering completion (for audit/actor_id). */
+  staff_user_id: string;
+  /**
+   * Stage-2 cutover gate marker — caller derives from
+   * `withdrawal_requests.is_staff_test`.
+   */
+  is_staff_test?: boolean;
+}
+
+interface WithdrawalCompletionWithGLResult {
+  journal_entry_id: string | null;
+  idempotent_skip: boolean;
+}
+
+/**
+ * Flag-ON path for `src/app/api/staff/withdrawals/[id]/route.ts` action='complete'.
+ * Resolves the seller counterparty, builds the C.4 event, assembles via the
+ * engine (which fires the TS-layer KYC gate via assertPayoutAllowed for C.4),
+ * then calls `wallet_withdrawal_complete_with_event_atomic` (migration 109) to
+ * compose the GL emit + withdrawal_requests status flip atomically.
+ *
+ * Shape 2 timing: wallet table was debited at request time (via existing
+ * `wallet_withdrawal_debit` RPC, migration 071). This wrap fires at staff-
+ * marked completion time, days later. GL 5351 debit + GL 2610 credit land
+ * here. Between request and completion, wallet table balance is `withdrawal_
+ * cents` BELOW GL 5351 sum — that's the in-flight withdrawal lag that
+ * commit 11b's dashboard adjustment surfaces.
+ *
+ * Error families:
+ *   - `PostingComplianceGateError` — KYC gate blocked (`pending_kyc`,
+ *     `dac7_blocked`, `negative_wallet`, `suspended`). Handler maps to 403.
+ *   - `Error('... LIFECYCLE:INVALID_WITHDRAWAL_STATUS expected approved, got X')`
+ *     — concurrent state mutation between TS check and RPC commit. Handler
+ *     maps to 409.
+ *   - `Error('... LIFECYCLE:WITHDRAWAL_NOT_FOUND ...')` — withdrawal vanished
+ *     between handler fetch and RPC FOR UPDATE. Handler maps to 404.
+ *   - `Error('... LIFECYCLE:EVENT_ID_MISMATCH ...')` — engine bug (wrap built
+ *     an event for a different withdrawal). Should never fire in production;
+ *     500.
+ *   - other engine errors propagate as Error → 500 via Next.js default.
+ */
+export async function withdrawalCompletionWithGL(
+  supabase: SupabaseClient,
+  input: WithdrawalCompletionWithGLInput
+): Promise<WithdrawalCompletionWithGLResult> {
+  const counterparty = await resolveSellerCounterparty(supabase, input.seller_user_id);
+
+  const today = new Date().toISOString().split('T')[0];
+  const period = today.substring(0, 7);
+
+  const event = buildWithdrawalCompletionEvent({
+    withdrawal_request_id: input.withdrawal_request_id,
+    seller_counterparty_id: counterparty.id,
+    withdrawal_cents: input.withdrawal_cents,
+    withdrawal_ref: input.withdrawal_ref,
+    seller_iban: input.seller_iban,
+    bank_confirmation_ref: input.bank_confirmation_ref,
+    is_staff_test: input.is_staff_test,
+    posting_date: today,
+    accounting_period: period,
+    tax_period: period,
+    actor_id: input.staff_user_id
+  });
+
+  // assembleEntryForRpc runs the TS-layer KYC gate (assertPayoutAllowed) for
+  // C.4 routing. Throws PostingComplianceGateError on a blocking compliance
+  // status — the wrap doesn't catch; the error surfaces to the handler for
+  // 403 translation.
+  const assembled = await assembleEntryForRpc(supabase, event, counterparty);
+
+  const { data, error } = await supabase.rpc('wallet_withdrawal_complete_with_event_atomic', {
+    p_withdrawal_request_id: input.withdrawal_request_id,
+    p_actor_id: input.staff_user_id,
+    p_event: assembled.rpcEntry,
+    p_lines: assembled.rpcLines as unknown as Record<string, unknown>[],
+    p_staff_notes: input.staff_notes ?? null
+  });
+
+  if (error) {
+    throw new Error(`wallet_withdrawal_complete_with_event_atomic failed (${error.code ?? 'unknown'}): ${error.message}`);
+  }
+
+  const result = data as WithdrawalCompletionWithGLResult;
+
+  if (result.journal_entry_id) {
+    fireAccountingPostedAudit(supabase, result.journal_entry_id, assembled, input.staff_user_id);
   }
 
   return result;

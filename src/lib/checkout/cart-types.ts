@@ -39,6 +39,14 @@ export interface CartCheckoutGroup {
   listing_ids: string[];
   everypay_payment_reference: string | null;
   status: 'pending' | 'completed' | 'expired';
+  /**
+   * Stage-2 cutover gate marker (migration 110). Staff test carts set this
+   * true so the wrap layer emits C.1/C.2 (+ paired C.9) while real customer
+   * carts take the legacy path. Vestigial post-stage-3 cutover; kept for
+   * audit + test reproducibility. See `docs/operations/lifecycle-cutover-
+   * runbook.md` §1 Gate 9 + §3.
+   */
+  is_staff_test: boolean;
   created_at: string;
 }
 

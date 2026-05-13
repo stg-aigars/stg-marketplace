@@ -77,7 +77,8 @@ const cardOnlyOrder = {
   payment_method: 'card' as const,
   everypay_payment_reference: 'ep_pay_ref',
   refund_status: null,
-  cart_group_id: 'cart_uuid_test'
+  cart_group_id: 'cart_uuid_test',
+  is_staff_test: true
 };
 
 describe('refundOrder — flag-branch contract', () => {
@@ -169,5 +170,16 @@ describe('refundOrder — flag-branch contract', () => {
     expect(refundPayment).not.toHaveBeenCalled();
     expect(refundOrderWithGL).not.toHaveBeenCalled();
     expect(issueCreditNote).not.toHaveBeenCalled();
+  });
+
+  it('flag-ON + is_staff_test=false: takes legacy refund path (stage 2 customer traffic gate)', async () => {
+    vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
+    const customerOrder = { ...cardOnlyOrder, is_staff_test: false };
+
+    await refundOrder('order_uuid_test', customerOrder);
+
+    expect(refundPayment).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(refundOrderWithGL).not.toHaveBeenCalled();
   });
 });

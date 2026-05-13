@@ -464,7 +464,8 @@ describe('TC-P1.january2026 — P.1 monthly VAT consolidation', () => {
     // Synthetic refund close: 5710-LV-OUT credit balance €5.00, 5710-LV-IN
     // debit balance €18.05 → net refund €13.05 to 2380.
     const event: PostingEvent = {
-      event_type: 'period_close.monthly_refund',
+      // Renamed from 'period_close.monthly_refund' in PR C commit 12.
+      event_type: 'period_close.monthly_vat',
       source_doc_type: 'period_close',
       source_doc_id: 'pr2_tc_p1_jan2026_close',
       posting_date: '2027-01-31',

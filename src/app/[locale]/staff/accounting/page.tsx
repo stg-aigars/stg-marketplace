@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Vault, LockKey, CalendarBlank, Scales } from '@phosphor-icons/react/ssr';
+import { Vault, LockKey, CalendarBlank, Scales, Bank } from '@phosphor-icons/react/ssr';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -182,6 +182,27 @@ export default async function AccountingDashboardPage() {
             </CardBody>
           </Card>
         </Link>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          Staff actions
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link href="/staff/accounting/everypay-settlement">
+            <Card hoverable>
+              <CardBody className="text-center py-6">
+                <div className="flex items-center justify-center gap-2 text-semantic-text-muted">
+                  <Bank size={16} />
+                  <p className="text-sm">EveryPay settlement</p>
+                </div>
+                <p className="text-base font-semibold text-semantic-brand mt-3">
+                  Record settlement →
+                </p>
+              </CardBody>
+            </Card>
+          </Link>
+        </div>
       </div>
 
       <div>

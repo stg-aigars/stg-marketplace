@@ -69,7 +69,9 @@ export async function POST(request: Request) {
             group.everypay_payment_reference!,
             paymentStatus.payment_state,
             serviceClient,
-            paymentMethod
+            paymentMethod,
+            null,
+            paymentStatus as unknown as Record<string, unknown>,
           );
 
           if (result.outcome === 'created') {

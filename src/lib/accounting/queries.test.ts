@@ -13,6 +13,7 @@ import {
   getAccountLedger,
   getEntriesPostedSince,
   getJournalEntry,
+  getNetVatPositionForPeriod,
   getPeriodRow,
   getRecentJournalEntries,
   getTrialBalance,
@@ -60,13 +61,14 @@ function buildMockClient(tableResponses: Record<string, MockResponse[]>): {
       select: vi.fn(),
       eq: vi.fn(),
       in: vi.fn(),
+      is: vi.fn(),
       lte: vi.fn(),
       gte: vi.fn(),
       order: vi.fn(),
       limit: vi.fn(),
       maybeSingle: vi.fn()
     };
-    for (const fn of ['select', 'eq', 'in', 'lte', 'gte', 'order', 'limit'] as const) {
+    for (const fn of ['select', 'eq', 'in', 'is', 'lte', 'gte', 'order', 'limit'] as const) {
       builder[fn].mockReturnValue(builder);
     }
     builder.maybeSingle.mockImplementation(() => dequeue());
@@ -1066,6 +1068,155 @@ describe('getWalletIntegrity', () => {
     // and user-A reconciles cleanly so it doesn't appear either.
     expect(result.per_seller_deltas).toEqual([]);
   });
+
+  // ===========================================================================
+  // PR C commit 11b — Shape-2 lazy timing for withdrawals
+  // ===========================================================================
+  //
+  // wallet_table is debited at request time (wallet_withdrawal_debit,
+  // migration 071); GL 5351 is debited at completion time (commit 10 C.4).
+  // Between request and completion, gl_5351 leads wallet_table by the
+  // in-flight withdrawal amount. The reconciled invariant becomes
+  // `delta_cents === in_flight_withdrawals_cents`, NOT `delta === 0`.
+
+  describe('in-flight withdrawals (Shape 2)', () => {
+    it('returns in_flight_withdrawals_cents=0 + empty stale list when no approved withdrawals exist', async () => {
+      const client = buildMockClient({
+        journal_lines: [{ data: [], error: null }],
+        wallets: [{ data: [], error: null }],
+        withdrawal_requests: [{ data: [], error: null }],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.in_flight_withdrawals_cents).toBe(0);
+      expect(result.stale_in_flight_withdrawals).toEqual([]);
+      expect(result.is_reconciled).toBe(true); // delta=0 matches in_flight=0
+    });
+
+    it('reconciles when delta_cents matches in_flight_withdrawals_cents (new contract)', async () => {
+      // Pre-cutover wallet credit of €100 to user-A (Cr 5351 100€).
+      // Then withdrawal request of €30 — wallet table debits to 70€,
+      // GL 5351 still credit 100€ (no C.4 fired yet). delta = +30€.
+      // Reconciled invariant: delta === in_flight === 30€.
+      const client = buildMockClient({
+        journal_lines: [
+          {
+            data: [{ debit_cents: 0, credit_cents: 10000, counterparty_id: 'cp-A' }],
+            error: null,
+          },
+        ],
+        wallets: [
+          { data: [{ user_id: 'user-A', balance_cents: 7000 }], error: null },
+        ],
+        counterparties: [
+          { data: [{ id: 'cp-A', user_id: 'user-A' }], error: null },
+        ],
+        public_profiles: [
+          { data: [{ id: 'user-A', full_name: 'Test Seller' }], error: null },
+        ],
+        withdrawal_requests: [
+          {
+            data: [
+              {
+                id: 'wd-1',
+                user_id: 'user-A',
+                amount_cents: 3000,
+                reviewed_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+              },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.gl_5351_sum_cents).toBe(10000);
+      expect(result.wallet_table_sum_cents).toBe(7000);
+      expect(result.delta_cents).toBe(3000);
+      expect(result.in_flight_withdrawals_cents).toBe(3000);
+      expect(result.is_reconciled).toBe(true);
+      // user-A's delta != 0 so it surfaces in per_seller_deltas — that's the
+      // expected legacy per-seller view; the reconciliation banner uses
+      // is_reconciled (which is now true with the Shape-2 contract).
+      expect(result.per_seller_deltas).toHaveLength(1);
+      expect(result.per_seller_deltas[0]!.delta_cents).toBe(3000);
+    });
+
+    it('flags is_reconciled=false when delta does NOT equal in_flight (true discrepancy)', async () => {
+      // GL credit 100€, wallet balance 60€, in-flight 30€ — but delta is 40€,
+      // not 30€. 10€ discrepancy beyond the in-flight expectation.
+      const client = buildMockClient({
+        journal_lines: [
+          {
+            data: [{ debit_cents: 0, credit_cents: 10000, counterparty_id: 'cp-A' }],
+            error: null,
+          },
+        ],
+        wallets: [{ data: [{ user_id: 'user-A', balance_cents: 6000 }], error: null }],
+        counterparties: [{ data: [{ id: 'cp-A', user_id: 'user-A' }], error: null }],
+        public_profiles: [{ data: [{ id: 'user-A', full_name: 'Test' }], error: null }],
+        withdrawal_requests: [
+          {
+            data: [
+              {
+                id: 'wd-1',
+                user_id: 'user-A',
+                amount_cents: 3000,
+                reviewed_at: new Date().toISOString(),
+              },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.delta_cents).toBe(4000);
+      expect(result.in_flight_withdrawals_cents).toBe(3000);
+      expect(result.is_reconciled).toBe(false);
+    });
+
+    it('detects stale in-flight withdrawals beyond STALE_IN_FLIGHT_DAYS threshold (7d)', async () => {
+      const stale = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days
+      const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(); // 2 days
+      const client = buildMockClient({
+        journal_lines: [{ data: [], error: null }],
+        wallets: [{ data: [], error: null }],
+        withdrawal_requests: [
+          {
+            data: [
+              { id: 'wd-stale', user_id: 'user-X', amount_cents: 5000, reviewed_at: stale },
+              { id: 'wd-recent', user_id: 'user-Y', amount_cents: 3000, reviewed_at: recent },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.in_flight_withdrawals_cents).toBe(8000);
+      expect(result.stale_in_flight_withdrawals).toHaveLength(1);
+      expect(result.stale_in_flight_withdrawals[0]!.withdrawal_request_id).toBe('wd-stale');
+      expect(result.stale_in_flight_withdrawals[0]!.days_in_flight).toBeGreaterThanOrEqual(7);
+    });
+
+    it('sums multiple in-flight withdrawals across users correctly', async () => {
+      const recent = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
+      const client = buildMockClient({
+        journal_lines: [{ data: [], error: null }],
+        wallets: [{ data: [], error: null }],
+        withdrawal_requests: [
+          {
+            data: [
+              { id: 'wd-1', user_id: 'user-A', amount_cents: 1000, reviewed_at: recent },
+              { id: 'wd-2', user_id: 'user-B', amount_cents: 2500, reviewed_at: recent },
+              { id: 'wd-3', user_id: 'user-C', amount_cents: 750, reviewed_at: recent },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const result = await getWalletIntegrity(client as never);
+      expect(result.in_flight_withdrawals_cents).toBe(4250);
+      expect(result.stale_in_flight_withdrawals).toEqual([]);
+    });
+  });
 });
 
 // =============================================================================
@@ -1565,5 +1716,194 @@ describe('getRecentJournalEntries', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]?.id).toBe('real-1');
     expect(rows[1]?.id).toBe('real-2');
+  });
+});
+
+// =============================================================================
+// getNetVatPositionForPeriod (PR C commit 12)
+// =============================================================================
+//
+// Reads cumulative 5710-LV-IN + 5710-LV-OUT movement for a period and produces
+// the P.1 closing-entry shape (refund / payable / zero-net). RC sub-accounts
+// excluded by design — Q12-4 sign-off. Tests assert each shape:
+//
+//   has_no_movement → cron skips emit; lines empty
+//   refund (lv_in > lv_out) → 3 lines incl Dr 2380
+//   payable (lv_out > lv_in) → 3 lines incl Cr 5710-09
+//   zero-net (both nonzero, equal) → 2 lines, no third leg
+//   RC-only movement → has_no_movement=true (RC excluded by filter)
+
+describe('getNetVatPositionForPeriod', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns has_no_movement=true when no 5710-LV-* movement at all', async () => {
+    const client = buildMockClient({
+      journal_lines: [{ data: [], error: null }]
+    });
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-08',
+      posting_date: '2026-08-31'
+    });
+    expect(result.has_no_movement).toBe(true);
+    expect(result.lv_in_cents).toBe(0);
+    expect(result.lv_out_cents).toBe(0);
+    expect(result.net_payable_to_vid_cents).toBe(0);
+    expect(result.lines).toEqual([]);
+  });
+
+  it('emits refund-position shape (Dr 5710-LV-OUT + Cr 5710-LV-IN + Dr 2380) — April pattern', async () => {
+    // Mirrors close_2026_04: lv_out collected 38 (Cr-normal +38),
+    // lv_in paid 68 (debit-normal; net Cr-Dr = -68). Refund of 30.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            // LV-OUT: 38 credit, 0 debit → net_credit = +38
+            { account_code: '5710-LV-OUT', debit_cents: 0, credit_cents: 38 },
+            // LV-IN: 0 credit, 68 debit → net_credit = -68 → abs = 68
+            { account_code: '5710-LV-IN', debit_cents: 68, credit_cents: 0 }
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-04',
+      posting_date: '2026-04-30'
+    });
+
+    expect(result.has_no_movement).toBe(false);
+    expect(result.lv_in_cents).toBe(68);
+    expect(result.lv_out_cents).toBe(38);
+    // signed_net_payable = lv_out - abs(lv_in) = 38 - 68 = -30 (refund)
+    expect(result.net_payable_to_vid_cents).toBe(-30);
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '5710-LV-OUT', debit_cents: 38, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', debit_cents: 0, credit_cents: 68 });
+    expect(result.lines[2]).toMatchObject({ account_code: '2380', debit_cents: 30, credit_cents: 0 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+  });
+
+  it('emits payable-position shape (Dr 5710-LV-OUT + Cr 5710-LV-IN + Cr 5710-09)', async () => {
+    // High-volume month: lv_out 15000, lv_in 2000. Net payable 13000.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            { account_code: '5710-LV-OUT', debit_cents: 0, credit_cents: 15000 },
+            { account_code: '5710-LV-IN', debit_cents: 2000, credit_cents: 0 }
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-07',
+      posting_date: '2026-07-31'
+    });
+
+    expect(result.lv_in_cents).toBe(2000);
+    expect(result.lv_out_cents).toBe(15000);
+    // signed_net_payable = 15000 - 2000 = +13000 (payable)
+    expect(result.net_payable_to_vid_cents).toBe(13000);
+
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[2]).toMatchObject({
+      account_code: '5710-09',
+      debit_cents: 0,
+      credit_cents: 13000
+    });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+  });
+
+  it('emits 2-line zero-net shape when both LV-IN and LV-OUT are nonzero but equal (Q12-5)', async () => {
+    // Hypothetical period: lv_out 500 Cr-normal, lv_in 500 Dr-normal (equal magnitudes).
+    // Distinct from "no movement" (both zero) — period had real activity that
+    // happens to net out. P.1 fires to clear both sub-accounts; no third leg.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            { account_code: '5710-LV-OUT', debit_cents: 0, credit_cents: 500 },
+            { account_code: '5710-LV-IN', debit_cents: 500, credit_cents: 0 }
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-09',
+      posting_date: '2026-09-30'
+    });
+
+    expect(result.has_no_movement).toBe(false);
+    expect(result.net_payable_to_vid_cents).toBe(0);
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '5710-LV-OUT', debit_cents: 500 });
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', credit_cents: 500 });
+  });
+
+  it('excludes RC sub-accounts from the SELECT (Q12-4 sign-off)', async () => {
+    // Period had only RC movement (no LV-IN/LV-OUT). The .in() filter on
+    // ['5710-LV-IN', '5710-LV-OUT'] excludes RC accounts at SELECT time,
+    // so the mock returns []. has_no_movement=true even though the period
+    // had real RC activity — that's the intended behavior per April Fix 3
+    // (foreign RC stays on balance sheet; domestic RC washes within period).
+    const client = buildMockClient({
+      journal_lines: [{ data: [], error: null }]
+    });
+
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-10',
+      posting_date: '2026-10-31'
+    });
+
+    expect(result.has_no_movement).toBe(true);
+    expect(result.lines).toEqual([]);
+  });
+
+  it('handles only-LV-OUT movement (input VAT zero, output VAT positive — pure-payable)', async () => {
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            { account_code: '5710-LV-OUT', debit_cents: 0, credit_cents: 2100 }
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-11',
+      posting_date: '2026-11-30'
+    });
+
+    expect(result.lv_in_cents).toBe(0);
+    expect(result.lv_out_cents).toBe(2100);
+    expect(result.net_payable_to_vid_cents).toBe(2100);
+
+    // Lines: Dr 5710-LV-OUT 2100 + Cr 5710-LV-IN 0 + Cr 5710-09 2100.
+    // But Cr 5710-LV-IN 0 would violate journal_lines CHECK (no zero-amount
+    // lines)? Actually buildPreComputedLines DOESN'T filter zero-amount lines
+    // — they pass through. The engine's assertBalanced just checks the sum.
+    // For this edge case the 0-amount LV-IN line is a no-op but balanced.
+    // Real-world: LV-IN=0 means no vendor invoices in the period — rare but
+    // possible for early platform months. The P.1 still fires to mark the
+    // period closed; staff sees the trivial entry.
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', credit_cents: 0 });
   });
 });

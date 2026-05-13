@@ -354,6 +354,26 @@ export interface VatMappingEntry {
   compute: (input: ComputeInput) => ComputeOutput;
 }
 
+/**
+ * Discriminator for the originating system path that produced a journal entry.
+ * Merged into `posting_context.emission_source` by `assembleEntryForRpc`; lets
+ * dashboards / period-close queries filter test-artifact and backfill entries
+ * separately from live lifecycle traffic without resorting to fragile string
+ * matches on `source_doc_type`.
+ *
+ *  - 'lifecycle'    — service-layer wraps (PR #5 / PR C commits 9-11): cart
+ *                     fulfillment, order completion, refund, withdrawal
+ *  - 'cron'         — scheduled jobs (monthly-depreciation, future P.1 monthly
+ *                     close, etc.)
+ *  - 'staff_manual' — staff dashboard actions (C.3 EveryPay settlement,
+ *                     reversal entries, etc.)
+ *  - 'backfill'     — historical reconstruction scripts (Phase 0, April 2026,
+ *                     future month-end backfills). Coexists with
+ *                     `posting_context.backfill = true` legacy tag; new code
+ *                     should set both during the transition window.
+ */
+export type EmissionSource = 'lifecycle' | 'cron' | 'staff_manual' | 'backfill';
+
 /** What callers pass to engine.emit(). */
 export interface PostingEvent {
   /** Routes to a VatMappingEntry. */
@@ -374,6 +394,13 @@ export interface PostingEvent {
   payload: Record<string, unknown>;
   /** Defaults to 'posting_engine' if absent. */
   created_by?: string;
+  /**
+   * Originating system path. Merged into `posting_context.emission_source`
+   * by the engine. Optional for backward compatibility with code that hasn't
+   * been migrated yet; once every emitter passes a value, this should become
+   * required.
+   */
+  emission_source?: EmissionSource;
   /**
    * Optional override. Used by H.x historical entries that target soft-locked
    * periods. Defaults to false. Only authorised application code should set true.

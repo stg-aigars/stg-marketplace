@@ -41,6 +41,13 @@ export interface WithdrawalRequestRow {
   reviewed_by: string | null;
   reviewed_at: string | null;
   completed_at: string | null;
+  /**
+   * Stage-2 cutover gate marker (migration 110). Staff test withdrawals
+   * set this true so the wrap layer emits C.4 (Dr 5351 / Cr 2610) while
+   * real seller withdrawals take the legacy path. See
+   * `docs/operations/lifecycle-cutover-runbook.md` §1 Gate 9 + §3.
+   */
+  is_staff_test: boolean;
   created_at: string;
   updated_at: string;
 }

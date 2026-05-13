@@ -17,6 +17,8 @@ import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unis
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
+import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
+import { cartFulfillmentWithGL } from '@/lib/accounting/lifecycle-wraps';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 import type { PaymentMethod } from '@/lib/orders/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -78,6 +80,15 @@ export async function fulfillCartPayment(
    * this group for fraud-investigation forensics; see migration 086.
    */
   requestCountryAtOrder: string | null = null,
+  /**
+   * Raw EveryPay callback payload. Threaded into the C.1/C.2 GL entry's
+   * posting_context so the original payment-confirmation data is preserved
+   * for audit, dispute, and fraud forensics under flag-ON. Optional for
+   * back-compat with callers that don't forward the raw payload yet; when
+   * omitted, a minimal shape is reconstructed from paymentReference and
+   * paymentState.
+   */
+  callbackPayload?: Record<string, unknown>,
 ): Promise<CartFulfillmentOutcome> {
   // Idempotency: check if orders already exist for this group
   const { data: existingOrders } = await serviceClient
@@ -294,11 +305,39 @@ export async function fulfillCartPayment(
     }
   }
 
-  // Mark group as completed
-  await serviceClient
-    .from('cart_checkout_groups')
-    .update({ status: 'completed' })
-    .eq('id', group.id);
+  // Mark group as completed. Two-level cutover gate:
+  //   - ACCOUNTING_ENGINE_ENABLED=false → legacy update on cart_checkout_groups
+  //   - flag-ON + cart.is_staff_test=false → legacy update (stage 2 customer traffic)
+  //   - flag-ON + cart.is_staff_test=true → engine path with posting_context tag
+  // Stage 3 transition: drop the `&& group.is_staff_test` clause so the engine
+  // path runs unconditionally. See lifecycle-cutover-runbook.md §4.
+  if (isAccountingEngineEnabled() && group.is_staff_test) {
+    await cartFulfillmentWithGL(serviceClient, {
+      cart_group_id: group.id,
+      buyer_id: group.buyer_id,
+      payment_method: paymentMethod === 'bank_link' ? 'bank_link' : 'card',
+      gross_cart_cents: group.total_amount_cents,
+      buyer_wallet_cents: walletDebit,
+      everypay_payment_reference: paymentReference,
+      callback_payload: callbackPayload ?? {
+        payment_reference: paymentReference,
+        payment_state: paymentState,
+      },
+      partial_refund:
+        refundCardCents + refundWalletCents > 0
+          ? {
+              refund_cents: refundCardCents + refundWalletCents,
+              buyer_wallet_refund_cents: refundWalletCents,
+            }
+          : undefined,
+      is_staff_test: true,
+    });
+  } else {
+    await serviceClient
+      .from('cart_checkout_groups')
+      .update({ status: 'completed' })
+      .eq('id', group.id);
+  }
 
   // Send emails (non-blocking)
   void sendCartOrderEmails(

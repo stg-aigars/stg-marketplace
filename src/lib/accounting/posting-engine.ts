@@ -205,9 +205,16 @@ export async function assembleEntryForRpc(
   const { lines, posting_context_extras } = entry.compute(computeInput);
   assertBalanced(lines);
 
-  const merged_posting_context = {
+  // emission_source is a typed top-level field on PostingEvent (not in payload)
+  // — merging it last guarantees it wins any accidental payload collision and
+  // surfaces consistently in posting_context regardless of which builder
+  // produced the event. Omitted when event.emission_source is undefined so we
+  // don't write a literal undefined into the jsonb (which Postgres would
+  // coerce to JSON null).
+  const merged_posting_context: Record<string, unknown> = {
     ...event.payload,
-    ...posting_context_extras
+    ...posting_context_extras,
+    ...(event.emission_source !== undefined ? { emission_source: event.emission_source } : {})
   };
   const rpcEntry: Record<string, unknown> = {
     posting_date: event.posting_date,
