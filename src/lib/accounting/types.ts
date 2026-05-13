@@ -282,7 +282,7 @@ export interface ReportingFlags {
   /** Set to consumption MS for B2C OSS-routed sales (O.3, O.5). */
   oss_required?: 'LT' | 'EE' | null;
   /** ESL transaction code per Article 263 of Directive 2006/112/EC. */
-  esl_transaction_code?: 'S' | 'T' | 'R4' | 'A' | 'N';
+  esl_transaction_code?: 'S' | 'T';
 }
 
 /** Computed journal line (engine-internal, becomes a journal_lines row). */
