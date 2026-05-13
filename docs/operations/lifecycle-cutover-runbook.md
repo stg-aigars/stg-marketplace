@@ -40,9 +40,9 @@ All nine gates must be **TRUE** before stage 1 begins. Verification command or a
 
 **Verify:** `git log main --oneline | head -3` shows the commit 14 SHA at HEAD; Coolify dashboard shows the deploy completed with green status.
 
-### Gate 2 — Migrations 108, 109 applied to production
+### Gate 2 — Migrations 108, 109, 110, 111 applied to production
 
-**Verify:** Supabase MCP `list_migrations` query against project `tfxqbtcdkzdwfgsivvet`; last applied migration ≥ `109_withdrawal_completion_rpc_body`. Cross-reference `deployment-state-audit-2026-05-12.md §1` for the canonical list shape.
+**Verify:** Supabase MCP `list_migrations` query against project `tfxqbtcdkzdwfgsivvet`; last applied migration ≥ `111_refund_idempotency_guard`. Cross-reference `deployment-state-audit-2026-05-12.md §1` for the canonical list shape.
 
 ### Gate 3 — `ACCOUNTING_ENGINE_ENABLED` confirmed unset or `false` in Coolify
 
@@ -62,7 +62,24 @@ All nine gates must be **TRUE** before stage 1 begins. Verification command or a
 
 ### Gate 7 — May 2026 backfill executed; trial balance reconciles for May
 
-**Verify:** running the May backfill script wrote `phase0_entry_N`-style entries for May 2026 historical transactions (including May's P.1 close); the trial balance view shows non-zero May activity with balanced sums. `BANK_WALK_CHECKPOINTS` extended for May 2026 (manual constant edit during backfill prep). Cross-reference `may_backfill_timing` memory + the backfill PR.
+**Verify:** running the May backfill script wrote `phase0_entry_N`-style entries for May 2026 historical transactions (including May's P.1 close). `BANK_WALK_CHECKPOINTS` extended for May 2026 (see §7 monthly recurring tasks for the file path + action). Cross-reference `may_backfill_timing` memory + the backfill PR.
+
+Run this SQL to confirm the period is balanced after backfill:
+
+```sql
+SELECT
+  je.accounting_period,
+  COUNT(*)                       AS entry_count,
+  SUM(jl.debit_cents)            AS total_debits,
+  SUM(jl.credit_cents)           AS total_credits,
+  SUM(jl.debit_cents) - SUM(jl.credit_cents) AS imbalance_cents
+FROM journal_entries je
+JOIN journal_lines jl ON jl.entry_id = je.id
+WHERE je.accounting_period = '2026-05'
+GROUP BY je.accounting_period;
+```
+
+Expected: `total_debits = total_credits` (imbalance_cents = 0), `entry_count > 0` (May has activity). Anything else halts cutover until the backfill is fixed.
 
 ### Gate 8 — Period 2026-04 hard-locked
 
@@ -119,7 +136,7 @@ Cover each commit-13 integration scenario via synthetic staff actions on staging
 2. Each transaction's GL shape matches expected (no `unattributed_gl_cents` anomalies).
 3. Period close: items 1, 3, 4, 5, 6, 8, 9 all `pass`; items 2 + 7 `not_applicable` (acceptable).
 4. Soft-lock → hard-lock cycle completed without errors.
-5. Zero Sentry events from `accounting.*` namespace during the burn-in window.
+5. Zero **unexpected** Sentry events from `accounting.*` namespace during the burn-in window. Expected events from variant testing (KYC gate raising `PostingComplianceGateError` for the synthetic blocked withdrawal; balance-trigger violations from F2 unbalanced-entry test; period-status `check_violation` from F3 soft-lock test) are acceptable provided they match the test plan in §2 above. Any event NOT corresponding to a planned variant is a halt signal.
 
 ### Halt criteria
 
@@ -215,9 +232,13 @@ After each variant completes:
 ### Entry checklist
 
 - [ ] Stage 2 exit criteria all met.
-- [ ] Code edit landed: wrap call sites no longer gate on `orders.is_staff_test`.
-- [ ] Coolify deploy completed; HEAD reflects the gate removal.
-- [ ] Manual smoke test: place a real (non-staff-test) order via the production UI; verify the GL entry lands with `posting_context.is_staff_test=false`.
+- [ ] Code edit landed: wrap call sites no longer gate on `entity.is_staff_test`. The gate clause `&& entity.is_staff_test` must be dropped from **all four** caller sites — verify each is updated:
+  - [ ] `src/lib/services/order-transitions.ts:creditSellerWallet` (gate clause `&& order.is_staff_test`)
+  - [ ] `src/lib/services/order-refund.ts:refundOrder` (gate clause `&& order.is_staff_test`)
+  - [ ] `src/lib/services/payment-fulfillment.ts:fulfillCartPayment` (gate clause `&& group.is_staff_test`)
+  - [ ] `src/app/api/staff/withdrawals/[id]/route.ts` PATCH action=complete (gate clause `&& withdrawal.is_staff_test`)
+- [ ] Coolify deploy completed; HEAD reflects the gate removal at all four sites.
+- [ ] Manual smoke test, all four paths: place a real (non-staff-test) order, refund a completed order, settle a real card cart payment, complete a real seller withdrawal. For each, verify the GL entry lands with `posting_context.is_staff_test=false`. If any path doesn't emit, the gate wasn't fully removed.
 
 ### Monitoring cadence
 
@@ -386,7 +407,7 @@ Recurring tasks the staff must perform monthly post-cutover. Each task has a **t
 
 **Action:**
 1. Pull the previous month's final Swedbank statement (closing balance + final transaction).
-2. Edit `src/lib/accounting/[checkpoints-file-path].ts`: append entry `{ date: 'YYYY-MM-DD', closing_balance_cents: N, source: 'Swedbank statement N' }`.
+2. Edit `src/lib/accounting/phase0-reconciliation-constants.ts` (kept under the `phase0-` name for now per its origin; the file holds ALL dated bank-walk checkpoints, not just Phase 0 — rename folds with any future generalization). Append entry `{ date: 'YYYY-MM-DD', closing_balance_cents: N, source: 'Swedbank statement N' }`.
 3. Commit + push + merge to main; Coolify auto-deploys.
 
 **Verification:** run `/staff/accounting/period-close?period=YYYY-MM` for the just-closed month; item 2 (bank reconciliation) returns `pass`.
@@ -516,7 +537,7 @@ For staff executing the cutover. Cross-references full sections above.
 ### Pre-cutover gates (all must be TRUE)
 
 - [ ] Gate 1: PR C merged to main; Coolify deploy green
-- [ ] Gate 2: Migrations 108, 109 applied to production
+- [ ] Gate 2: Migrations 108, 109, 110, 111 applied to production
 - [ ] Gate 3: `ACCOUNTING_ENGINE_ENABLED` unset or false
 - [ ] Gate 4: `pnpm test:integration` green on main HEAD
 - [ ] Gate 5: `monthly-depreciation` cron registered
@@ -541,8 +562,8 @@ For staff executing the cutover. Cross-references full sections above.
 
 ### Stage 3 — Production global flip
 
-- [ ] Code edit removing `orders.is_staff_test` gate landed + deployed
-- [ ] Manual smoke: real (non-staff-test) order posts GL with `is_staff_test=false`
+- [ ] Code edit removing `&& entity.is_staff_test` clause from all 4 caller sites (order-transitions, order-refund, payment-fulfillment, withdrawal route) landed + deployed
+- [ ] Manual smoke (4 paths): real order completion, refund, cart payment, withdrawal all post GL with `is_staff_test=false`
 - [ ] 7-day aggressive monitoring window
 - [ ] 23-day standard monitoring window
 - [ ] First `monthly-vat-close` cron fire (1 July 2026)
