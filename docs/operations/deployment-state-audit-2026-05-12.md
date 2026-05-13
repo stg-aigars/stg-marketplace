@@ -8,6 +8,8 @@
 
 ---
 
+> **Superseded operational guidance:** the "deferred manual actions queue" in §5 below is **superseded by `lifecycle-cutover-runbook.md`** (added in PR C commit 14). The runbook is the canonical playbook for staff executing the cutover; this audit doc remains the canonical production-state snapshot at PR C in-flight. Read both: this doc answers "what's the production state?"; the runbook answers "how do I cut over?".
+
 ## 0. Bottom line
 
 **What would break if `feature/lifecycle-finale` merged to main today and Coolify deployed it:**
