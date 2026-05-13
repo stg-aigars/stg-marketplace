@@ -75,19 +75,20 @@
 
 GitHub Actions builds production Docker images and pushes them to GHCR; Coolify pulls the image and runs it. The VPS never builds — eliminates the OOM risk that surfaced during PR C deploy (2026-05-13, see `docs/operations/deployment-state-audit-2026-05-12.md` §8).
 
-**Flow (push to main → site live):**
+**Flow (push to main → site live, fully automated):**
 
 1. Push to main → `.github/workflows/build-and-push.yml` fires automatically
 2. GHA builds `Dockerfile` (~3 min on `ubuntu-latest` with layer cache)
 3. Image pushed to `ghcr.io/stg-aigars/stg-marketplace:<commit-sha>` AND `:latest`
-4. **Manual click "Redeploy"** in Coolify dashboard → pulls new image, swaps containers
-5. Total time from merge: ~4–5 min
+4. GHA's final step calls Coolify deploy API (`GET /api/v1/deploy?uuid=<app-uuid>`) → Coolify pulls the new image, swaps containers (rolling restart, no downtime)
+5. Total time from merge: ~4–5 min, **no human-in-the-loop required for routine deploys**
 
 | Layer | Service | Notes |
 |---|---|---|
 | Source | GitHub repo `stg-aigars/stg-marketplace` | Push to main auto-triggers GHA |
 | Build | GitHub Actions (`ubuntu-latest`, ~7 GB RAM) | Workflow: `.github/workflows/build-and-push.yml` |
 | Registry | GHCR (`ghcr.io/stg-aigars/stg-marketplace`) | Tags: per-commit `<sha>` (immutable) + `:latest` (rolling) |
+| Deploy trigger | Coolify deploy API call (GHA workflow's final step) | Bearer-authenticated; queues a Coolify deployment |
 | Deploy | Coolify "Docker Image" type application (UUID `h5craypnckp5yt8v1cwcvi3r`) | Pulls + runs; no build step on VPS |
 
 **Credentials inventory:**
@@ -95,10 +96,10 @@ GitHub Actions builds production Docker images and pushes them to GHCR; Coolify 
 | Credential | Owner / location | Used by | Rotation |
 |---|---|---|---|
 | GHCR PAT (`coolify-ghcr-pull`) | User's personal GitHub account, scope `read:packages`, stored in Bitwarden | Coolify (via `docker login ghcr.io -u stg-aigars` cached at `/root/.docker/config.json` on the VPS) | **Expires 2027-05-13**; rotate annually |
-| Coolify API token (`claude-automation`) | Coolify dashboard → Keys & Tokens → API tokens, scope `root`, stored in Bitwarden | Claude Code (Bearer auth against `http://37.27.24.207:8000/api/v1`) | No UI-side expiry; rotate annually (created 2026-05-13); IP-restricted to user's public IP |
-| GitHub Actions secrets (19 build-arg values) | GitHub repo Settings → Secrets → Actions | `build-and-push.yml` workflow (passes as `--build-arg` to `docker build`) | Must match Coolify env-var values; rotate alongside any env-var rotation |
+| Coolify API token (`claude-automation`) | Coolify dashboard → Keys & Tokens → API tokens, scope `root`, stored in Bitwarden | Two consumers: (1) Claude Code (Bearer auth for operational work against `http://37.27.24.207:8000/api/v1`), (2) `build-and-push.yml` workflow's "Trigger Coolify deploy" step (auto-deploy on push to main) | No UI-side expiry; rotate annually (created 2026-05-13). **IP allowlist open (`0.0.0.0/0`)** since 2026-05-13 — required for GHA's rotating runner IPs to reach the API. Bearer token is the sole auth layer. |
+| GitHub Actions secrets (22 total) | GitHub repo Settings → Secrets → Actions | `build-and-push.yml` workflow | 19 are build-arg env values passed via `--build-arg` to `docker build` (match Coolify env-var values; rotate alongside). 3 are Coolify deploy-trigger values: `COOLIFY_HOST`, `COOLIFY_TOKEN`, `COOLIFY_APP_UUID` |
 
-**Rollback:** every image is tagged with its commit SHA in GHCR. To roll back, change the Coolify app's image tag from `:latest` to a previous SHA (e.g., `b2cc71ff4ec1352d3030f719f7a25338a963a3f6`) and redeploy. Old image is cached locally on the VPS so rollback is ~10 seconds.
+**Rollback (manual; Coolify dashboard access remains required):** routine deploys are fully automated, but **rollback is intentionally a manual operation** — the rare-and-important class of action where human deliberation is the feature, not the bug. Every image is tagged with its commit SHA in GHCR. To roll back, log into the Coolify dashboard, navigate to the marketplace app, change the image tag from `:latest` to a previous SHA (e.g., `b2cc71ff4ec1352d3030f719f7a25338a963a3f6`), then click Redeploy. Old image is cached locally on the VPS so rollback completes in ~10 seconds. The Coolify dashboard access remains the **rollback safety net** — don't lose your Coolify password just because routine deploys no longer use it.
 
 **Coolify API empirical notes:** see [docs/operations/coolify-api-notes.md](operations/coolify-api-notes.md). Endpoints used today (scheduled-task management) are functional but undocumented in Coolify's public OpenAPI spec; capture file records the working request/response shapes.
 
