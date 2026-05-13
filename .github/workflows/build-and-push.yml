@@ -90,3 +90,25 @@ jobs:
             NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
             NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=${{ secrets.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED }}
             NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+
+      # After the image is in GHCR, ask Coolify to pull and deploy it. The
+      # step is tolerant of missing secrets (warns + skips) so the workflow
+      # also works if/when the Coolify side is unreachable or being rotated.
+      # See `docs/operations/coolify-api-notes.md` for the endpoint.
+      - name: Trigger Coolify deploy
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          COOLIFY_HOST: ${{ secrets.COOLIFY_HOST }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
+        run: |
+          if [ -z "$COOLIFY_TOKEN" ] || [ -z "$COOLIFY_APP_UUID" ] || [ -z "$COOLIFY_HOST" ]; then
+            echo "::warning::Coolify deploy trigger skipped (one or more secrets not configured)."
+            echo "Configure repository secrets COOLIFY_HOST, COOLIFY_TOKEN, COOLIFY_APP_UUID to enable auto-deploy."
+            exit 0
+          fi
+          echo "Triggering Coolify deploy for app ${COOLIFY_APP_UUID:0:8}..."
+          response=$(curl -fsS -X GET \
+            "${COOLIFY_HOST}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}" \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}")
+          echo "Coolify response: $response"
