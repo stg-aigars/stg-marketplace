@@ -247,18 +247,148 @@ Items requiring user action, in roughly chronological order:
 
 ## 6. Cross-references
 
-- **PR C in-flight:** `feature/lifecycle-finale` at `7d7b446` (commits 9, 10, 11a, 11b, 12). Remaining: 13 (integration tests), 14 (cutover runbook).
-- **PR D merged:** `655777a` on main (period-close item 4 reconciliation gate).
+- **PR C merged:** squash commit `9516640` on main (2026-05-13). 16 commits squashed; auto-deploy OOM'd — see §8.
+- **PR #299 merged:** squash commit `b2cc71f` on main (2026-05-13). Build-off-VPS pipeline via GitHub Actions + GHCR pull. Resolved the OOM permanently — see §8.
+- **PR D merged:** `655777a` on main (period-close item 4 reconciliation gate). Pre-PR-C-attempt baseline.
 - **Coolify cron registry source of truth:** CLAUDE.md "Cron Routes" section (line ~268).
 - **Env var canonical list:** `src/lib/env.ts:69-99` (validation lists) + `docs/dependencies.md` (operational checklist).
 - **Supabase project ID (prod):** `tfxqbtcdkzdwfgsivvet` per memory `supabase_project.md`.
-- **Audit captured at commit:** `7d7b446` (commit 12 landed locally; not yet pushed at audit-capture time).
+- **GHCR registry path:** `ghcr.io/stg-aigars/stg-marketplace:latest` (rolling) + per-SHA tags. Built by `.github/workflows/build-and-push.yml`.
+- **Audit captured at commit:** `7d7b446` (commit 12 landed locally; not yet pushed at audit-capture time). §8 addendum captured at commit on `post-merge/audit-update-pr-c`.
 
 ---
 
 ## 7. Capture metadata
 
-- **Audited by:** Claude Code (PR C commit 12 implementation cycle)
-- **Audit date:** 2026-05-12
-- **Method:** Supabase MCP `list_migrations` for production schema; local `supabase/migrations/` directory listing for the diff; `src/lib/env.ts` static read for env-var canonical list; `docs/dependencies.md` for operational env checklist; CLAUDE.md "Cron Routes" section for the cron registry. Coolify env var values + cron registrations: NOT programmatically accessible from this environment — flagged as user-verify.
-- **Tooling gap noted:** the agent has no Coolify API access. Future audits could close this by adding a Coolify-side env-var listing endpoint (operational risk: such an endpoint would surface secrets; probably not worth building). The user-verify checklist in §3 and §4 is the canonical workaround.
+- **Audited by:** Claude Code (PR C commit 12 implementation cycle), addendum §8 added by Claude Code (PR C resolution cycle 2026-05-13)
+- **Audit date:** 2026-05-12 (initial); 2026-05-13 (§8 addendum)
+- **Method:** Supabase MCP `list_migrations` for production schema; local `supabase/migrations/` directory listing for the diff; `src/lib/env.ts` static read for env-var canonical list; `docs/dependencies.md` for operational env checklist; CLAUDE.md "Cron Routes" section for the cron registry.
+- **Tooling gap closed in §8:** the original audit noted "agent has no Coolify API access." This was resolved on 2026-05-13 when the user created a Coolify API token (Settings → Keys & Tokens → API tokens) and Claude Code probed the `/api/v1/applications/<uuid>/scheduled-tasks` endpoint (undocumented in the public OpenAPI spec but functional). Future audits can programmatically inspect scheduled tasks, env vars, application states, and deployment history. User-verify checklist remains the canonical workaround for env var **values** (which the API surfaces only as references, not plaintext — by design).
+
+---
+
+## 8. PR C resolution (2026-05-13 addendum)
+
+PR C merged to main on 2026-05-13 at squash commit `9516640`. What followed was a substantially more eventful sequence than the original cutover runbook anticipated. This section captures the resolution so future audits can reconstruct the state transitions.
+
+### 8.1 Coolify auto-deploy OOM failure
+
+Coolify's webhook-triggered auto-build of PR C started at 07:48 UTC on the Hetzner CX23 (2 vCPU / 4 GB RAM). The Next.js `pnpm build` step spawned two parallel node workers totaling ~1.9 GB resident memory. Combined with the existing marketplace container (~250 MB), Docker daemon (~500 MB), and Coolify control-plane containers (~500 MB), the VPS exceeded its 4 GB RAM ceiling. Memory cascaded into the 2 GB swap file; swap saturated; the kernel went into thrash state.
+
+Observable symptoms at 08:15 UTC:
+- Load average: 67.93 / 75.06 / 51.33 (1m/5m/15m) — unprecedented for this box
+- RAM: 89 MB free of 3.7 GB, 37 MB available
+- Swap: 8 KB free of 2 GB
+- `docker ps -a` hung mid-output
+- TCP connections to ports 80/443/8000 accepted at kernel level but received no application response
+
+Cloudflare TLS terminations succeeded but the origin (`37.27.24.207`) timed out the HTTP layer. From an external observer, the marketplace was down.
+
+**Root cause:** the VPS is sized to **run** the marketplace container, not to **build** it concurrently. Each major PR adds compile/type-check work; PR C's +10K LoC was the line that crossed the threshold.
+
+### 8.2 Recovery — manual container start
+
+`systemctl restart docker` (taking ~60s under the thrash state) broke the wedge. RAM returned to 917 MB used / 2.8 GB available; load dropped from 67 → 47 within minutes.
+
+After the restart, the failed PR C build container was `Exited (143)` (SIGTERM from the Docker daemon restart). Critically, the **previous-good** container (image tag `dr6kcc91pkasqj9tlv068s5v:655777a28925b212226b4689e7914c61836b99fc` — PR D's main state) was also in Exited state but its image was still cached on disk. Direct `docker start <container_id>` brought it back up. Traefik (`coolify-proxy`) had stayed running throughout. Site went live again on PR-D state at 08:30 UTC.
+
+**Key constraint added at this point:** Coolify dashboard "Auto Deploy on Webhook" toggle disabled for the marketplace app. Without this, Coolify would have retried the PR C build on its next cycle and OOM'd again.
+
+### 8.3 Strategic decision — build off-VPS
+
+The OOM was reproducible. Three options were considered:
+
+| Option | Setup cost | Coverage |
+|---|---|---|
+| Upgrade Hetzner CX23 → CX31 (8 GB) | 15 min, +€4/mo | Buys ~6 months; same problem recurs at next big PR |
+| Move Docker build to GitHub Actions (~7 GB runners) + Coolify pulls from GHCR | 1.5–2.5 hrs one-time | Permanent — VPS no longer builds anything |
+| Optimize build config (NODE_OPTIONS heap limits, etc.) | Unknown | Brittle |
+
+**Decision: build off-VPS.** The Dockerfile was already multi-stage with a lean runner stage — well-suited to off-VPS building with the runner just pulling pre-built artifacts.
+
+### 8.4 PR #299 ship — build-and-push pipeline
+
+Changes:
+- `Dockerfile`: 19 `ARG` declarations added to the builder stage (mirroring `src/lib/env.ts:validateEnv` required vars), each promoted to `ENV` so `pnpm build` sees them as `process.env`. Runner stage unchanged — no build secrets propagate to the final layer because ARG/ENV don't cross `FROM` boundaries.
+- `.github/workflows/build-and-push.yml`: new workflow. Builds on PR (smoke test, no push) and push to main (build + push to GHCR tagged with both commit SHA and `:latest`). Uses GHA layer cache, `linux/amd64`, `GITHUB_TOKEN` for GHCR auth.
+- **19 GitHub repository secrets added** by user (Settings → Secrets → Actions) mirroring Coolify's env vars. List matches `env.ts` required + optional sets.
+
+PR #299 merged at squash commit `b2cc71f` (2026-05-13 ~09:15 UTC). Post-merge GHA build succeeded in 3m 23s and pushed `ghcr.io/stg-aigars/stg-marketplace:b2cc71ff4ec1352d3030f719f7a25338a963a3f6` + `:latest`.
+
+### 8.5 Coolify application migration
+
+Coolify v4-beta.473 does not allow converting an existing git-sourced application to "Docker Image" type in-place. A new application was created in the same project/environment:
+
+- Type: **Docker Image**
+- Image: `ghcr.io/stg-aigars/stg-marketplace`
+- Tag: `latest`
+- Ports Exposes: `3000` (matches Dockerfile `EXPOSE 3000`)
+- Domain (after swap): `https://secondturn.games,https://www.secondturn.games`
+
+Auth: `docker login ghcr.io -u stg-aigars` run once on the VPS (credential cached at `/root/.docker/config.json` — Coolify auto-uses for pulls). PAT scope: `read:packages` only.
+
+**Old application state:** stopped, retained as hot standby for instant rollback. Will be deleted after 24h of stable operation on the new app.
+
+Application UUIDs:
+- **NEW (live):** `h5craypnckp5yt8v1cwcvi3r` (`docker-image-h5craypnckp5yt8v1cwcvi3r`)
+- **OLD (stopped):** `dr6kcc91pkasqj9tlv068s5v` (`stg-aigars/stg-marketplace:main-dr6kcc91pkasqj9tlv068s5v`)
+
+### 8.6 Scheduled tasks migration via Coolify API
+
+The new application started with zero scheduled tasks. The old application had 18, configured in the Coolify dashboard.
+
+**Tooling discovery:** Coolify v4 exposes `/api/v1/applications/<uuid>/scheduled-tasks` (GET + POST) despite the endpoint not appearing in the public OpenAPI spec. Authentication via Bearer token (Keys & Tokens → API tokens, scope `root`). The API returns full task definitions (name, command, frequency, container, enabled, timeout) and accepts POST with the same shape.
+
+All 18 tasks migrated via a Python script (parallel POSTs, each 201 Created), plus the new **`monthly-vat-close`** cron introduced by PR C. Total tasks on new app: **19** (18 enabled + 1 disabled `expire-offers` retained for parity).
+
+This is the first time the Coolify API has been used in operational work for this project. **Tooling gap from §7 closed.** Future operational work (env var inspection, deploy triggers, application state queries) can use this same token.
+
+### 8.7 Migrations 108–111 applied
+
+After PR C deployment was confirmed live (`curl https://secondturn.games/api/health → 200`), the four database migrations introduced by PR C were applied via Supabase MCP `apply_migration` against project `tfxqbtcdkzdwfgsivvet`:
+
+| Local file | Supabase version | Purpose |
+|---|---|---|
+| `108_cart_payment_rpc_body.sql` | `20260513105451_cart_payment_rpc_body` | Body for `cart_complete_payment_with_event_atomic` + `cart_checkout_groups.paid_at` column |
+| `109_withdrawal_completion_rpc_body.sql` | `20260513105510_withdrawal_completion_rpc_body` | Body for `wallet_withdrawal_complete_with_event_atomic` |
+| `110_is_staff_test_cart_withdrawal.sql` | `20260513105525_is_staff_test_cart_withdrawal` | `is_staff_test` column on `cart_checkout_groups` + `withdrawal_requests` |
+| `111_refund_idempotency_guard.sql` | `20260513105538_refund_idempotency_guard` | Adds early-return idempotency guard to `order_refund_with_event_atomic` |
+
+**Note on naming drift:** Supabase MCP stores migrations with its own timestamp prefix and the descriptive name only — the local `108_` / `109_` etc. numeric prefixes are not preserved. Mapping for future audits: match by name + temporal order.
+
+**Verification:**
+- `cart_checkout_groups.is_staff_test`: boolean NOT NULL default false ✓
+- `cart_checkout_groups.paid_at`: timestamptz nullable ✓
+- `withdrawal_requests.is_staff_test`: boolean NOT NULL default false ✓
+- All 4 parent RPCs present with substantial bodies (1321–2847 chars each, no longer NOT_IMPLEMENTED stubs)
+
+**Safety property:** the migrations were applied while the deployed PR C code was running, but `ACCOUNTING_ENGINE_ENABLED` was still unset (defaults false), so no code path exercised the new RPCs or columns at runtime. The schema-code drift window was zero.
+
+### 8.8 Final state after resolution
+
+- **Site:** live on PR C (`9516640`) via the new Docker Image application
+- **Build pipeline:** GitHub Actions → GHCR → Coolify pull. VPS no longer builds; OOM risk permanently removed regardless of future project growth.
+- **Database:** migrations 108–111 applied; schema in lockstep with deployed code
+- **Crons:** 19 scheduled tasks running on the new app, including the new `monthly-vat-close` (first scheduled fire: 2026-06-01 01:00 UTC, closing May 2026)
+- **Engine state:** `ACCOUNTING_ENGINE_ENABLED` still unset; all flag-gated paths take the byte-identical legacy route. Stage 1 cutover burn-in still pending (no schedule change).
+- **Old app:** stopped, retained as hot standby. **Delete after 2026-05-14** if no rollback needed.
+
+### 8.9 Operational implications going forward
+
+- **Future deploys:** push to main → GHA builds + pushes to GHCR (~3 min, automatic) → manual click "Redeploy" in Coolify for the new app → Coolify pulls + runs (~30 s). The auto-deploy webhook to Coolify is no longer wired; the manual click is intentional discipline until/unless we wire a `workflow_run` → Coolify webhook.
+- **Rollback:** every image is tagged with its commit SHA in GHCR. To roll back, change the Coolify app's image tag from `latest` to a previous SHA (e.g., `b2cc71ff4ec1352d3030f719f7a25338a963a3f6`) and redeploy. Old image is cached locally on the VPS so rollback is ~10 seconds.
+- **Cron management:** Coolify API now usable for bulk operations. Token stored in user's password manager, IP allowlist set to user's current public IP.
+- **VPS sizing:** CX23 (€3.49/mo) stays viable indefinitely. No upgrade pressure from build memory.
+
+### 8.10 Deferred from §5 — status updates
+
+- Item 6 ("PR C merge to main + monthly-vat-close cron registration"): **DONE** (this section).
+- Item 7 ("Cutover stage 1 — staging burn-in"): still pending, original schedule (~mid-late June).
+- Items 8–9 (stages 2–3): still pending, original schedule.
+- Item 10 (May 2026 PVN deklarācija filing — deadline 20 June): unchanged, depends on May backfill output.
+- Items 1–5 (April filing, depreciation cron, commit 12 push, accountant sign-off, May backfill timing): unchanged from §5.
+
+New deferred items from §8:
+- **Delete old Coolify app `dr6kcc91pkasqj9tlv068s5v`** after 24h stability (target ~2026-05-14).
+- **Rotate Coolify API token `claude-automation`** annually (current creation date 2026-05-13).
+- **Rotate GHCR PAT `coolify-ghcr-pull`** annually (current creation date 2026-05-13, expires 2027-05-13).
