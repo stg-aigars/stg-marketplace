@@ -226,6 +226,7 @@ describe('buildOrderCompletionEvent', () => {
     item_value_cents: 10000,
     shipping_value_cents: 500,
     invoice_number: 'STG-2027-00001',
+    seller_country: 'LV' as const,
     posting_date: '2027-01-15',
     accounting_period: '2027-01',
     tax_period: '2027-01',
@@ -243,24 +244,27 @@ describe('buildOrderCompletionEvent', () => {
     expect(event.payload.unisend_cost_cents).toBeUndefined();
     expect(event.payload.invoice_number).toBe('STG-2027-00001');
     expect(event.payload.completion_trigger).toBe('delivery_confirmed');
+    expect(event.payload.consumption_ms).toBe('LV');
     const matched = dispatch(ctxFromEvent(event, lvSeller()));
     expect(matched.id).toBe('O.1');
   });
 
   it('LT B2B vat_registered + VIES routes to O.2', () => {
-    const event = buildOrderCompletionEvent({ ...baseInput, seller_counterparty_id: ltSellerB2B().id });
+    const event = buildOrderCompletionEvent({ ...baseInput, seller_counterparty_id: ltSellerB2B().id, seller_country: 'LT' });
     const matched = dispatch(ctxFromEvent(event, ltSellerB2B()));
     expect(matched.id).toBe('O.2');
   });
 
-  it('LT B2C private routes to O.3', () => {
-    const event = buildOrderCompletionEvent({ ...baseInput, seller_counterparty_id: ltSellerB2C().id });
+  it('LT B2C private routes to O.3; payload.consumption_ms=LT satisfies OSS required-key check', () => {
+    const event = buildOrderCompletionEvent({ ...baseInput, seller_counterparty_id: ltSellerB2C().id, seller_country: 'LT' });
+    expect(event.payload.consumption_ms).toBe('LT');
     const matched = dispatch(ctxFromEvent(event, ltSellerB2C()));
     expect(matched.id).toBe('O.3');
   });
 
-  it('EE B2C private routes to O.5', () => {
-    const event = buildOrderCompletionEvent({ ...baseInput, seller_counterparty_id: eeSellerB2C().id });
+  it('EE B2C private routes to O.5; payload.consumption_ms=EE satisfies OSS required-key check', () => {
+    const event = buildOrderCompletionEvent({ ...baseInput, seller_counterparty_id: eeSellerB2C().id, seller_country: 'EE' });
+    expect(event.payload.consumption_ms).toBe('EE');
     const matched = dispatch(ctxFromEvent(event, eeSellerB2C()));
     expect(matched.id).toBe('O.5');
   });

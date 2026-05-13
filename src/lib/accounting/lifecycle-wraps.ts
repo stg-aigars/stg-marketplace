@@ -182,6 +182,7 @@ export async function completeOrderWithGL(
     item_value_cents: order.items_total_cents,
     shipping_value_cents: order.shipping_cost_cents,
     invoice_number: order.order_number,
+    seller_country: order.seller_country,
     completion_source: completionSource,
     posting_date: today,
     accounting_period: period,

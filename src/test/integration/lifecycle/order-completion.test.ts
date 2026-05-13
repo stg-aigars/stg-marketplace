@@ -215,19 +215,77 @@ describe('Scenario 1 (completion-side) — LV card flow emits O.1 with 5-line sh
 // ---------------------------------------------------------------------------
 // Scenario 2 — completion side: EE B2C OSS → O.5
 // ---------------------------------------------------------------------------
-//
-// SKIPPED — `completeOrderWithGL` (lifecycle-wraps.ts) builds the order
-// completion event WITHOUT a `consumption_ms` payload key, but the O.3 (LT
-// B2C OSS) and O.5 (EE B2C OSS) mapping entries in `mapping.ts` declare it
-// as a required key. The wrap also doesn't surface buyer's country to derive
-// consumption_ms from. Production OSS B2C routes therefore can't post via
-// the wrap as-shipped.
-//
-// This is a real production gap, not a test infrastructure issue —
-// integration coverage cannot land before the wrap is taught to pass
-// `consumption_ms`. Tracked as a commit-13 deferred followup in
-// `pr_c_followups.md`; meanwhile O.3 / O.5 routing is unit-tested via
-// the engine's own dispatcher tests (which inject consumption_ms directly).
+
+describe('Scenario 2 (completion-side) — EE B2C OSS emits O.5 with OSS-EE VAT routing', () => {
+  it('completeOrderWithGL with EE private seller routes VAT to OSS-EE rail (5712)', async () => {
+    const { seller, order } = await buildCartAndOrder({
+      sellerCountry: 'EE',
+      itemsTotalCents: 4_000,
+      shippingCostCents: 350,
+    });
+
+    await createTestWallet({ userId: seller.id, balanceCents: 0 });
+
+    const result = await completeOrderWithGL(supabase, order);
+    expect(result.orphan).toBe(false);
+    expect(result.journal_entry_id).toBeTruthy();
+
+    const entry = await assertJournalEntry(supabase, {
+      source_doc_type: 'order',
+      source_doc_id: order.id,
+      type_id: 'O.5',
+    });
+    // consumption_ms must land in posting_context (mapping declares it required)
+    expect(entry.posting_context.oss_consumption_ms).toBe('EE');
+
+    const { data: lines } = await supabase
+      .from('journal_lines')
+      .select('account_code, credit_cents')
+      .eq('entry_id', entry.id);
+
+    // OSS-EE VAT rail is 5712 per CLAUDE.md accounting module section
+    const vatLine = (lines ?? []).find((l) => l.account_code === '5712');
+    expect(vatLine, 'O.5 should credit 5712 (OSS-EE)').toBeDefined();
+    expect((vatLine?.credit_cents ?? 0)).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 2b — completion side: LT B2C OSS → O.3 (mirror of scenario 2)
+// ---------------------------------------------------------------------------
+
+describe('Scenario 2b (completion-side) — LT B2C OSS emits O.3 with OSS-LT VAT routing', () => {
+  it('completeOrderWithGL with LT private seller routes VAT to OSS-LT rail (5711)', async () => {
+    const { seller, order } = await buildCartAndOrder({
+      sellerCountry: 'LT',
+      itemsTotalCents: 4_000,
+      shippingCostCents: 350,
+    });
+
+    await createTestWallet({ userId: seller.id, balanceCents: 0 });
+
+    const result = await completeOrderWithGL(supabase, order);
+    expect(result.orphan).toBe(false);
+    expect(result.journal_entry_id).toBeTruthy();
+
+    const entry = await assertJournalEntry(supabase, {
+      source_doc_type: 'order',
+      source_doc_id: order.id,
+      type_id: 'O.3',
+    });
+    expect(entry.posting_context.oss_consumption_ms).toBe('LT');
+
+    const { data: lines } = await supabase
+      .from('journal_lines')
+      .select('account_code, credit_cents')
+      .eq('entry_id', entry.id);
+
+    // OSS-LT VAT rail is 5711 per CLAUDE.md accounting module section
+    const vatLine = (lines ?? []).find((l) => l.account_code === '5711');
+    expect(vatLine, 'O.3 should credit 5711 (OSS-LT)').toBeDefined();
+    expect((vatLine?.credit_cents ?? 0)).toBeGreaterThan(0);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Scenario 6 — cutover orphan completion

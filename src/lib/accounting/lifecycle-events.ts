@@ -176,6 +176,16 @@ export interface BuildOrderCompletionEventInput extends PostingPeriodInput {
   /** Buyer's gross shipping payment. STG records the matching Unisend expense at I.1 vendor invoice receipt time, not at completion (per v1.4 signoff doc). */
   shipping_value_cents: number;
   invoice_number: string;
+  /**
+   * Seller's domicile country. Drives the OSS `consumption_ms` payload key
+   * required by mapping rows O.3 (LT B2C OSS) and O.5 (EE B2C OSS) — both
+   * declare `consumption_ms` in `posting_context_required_keys`. STG's
+   * compute hardcodes `oss_consumption_ms` to the seller's country in the
+   * resulting posting_context_extras; passing it here satisfies the
+   * presence-check at `validateRequiredKeys`. Harmless on non-OSS routes
+   * (O.1 / O.2 / O.4) where the key isn't required.
+   */
+  seller_country: 'LV' | 'LT' | 'EE';
   /** Drives narrative + posting_context.completion_trigger; routing is by counterparty fields. */
   completion_source: 'delivery_confirmed' | 'auto_complete' | 'dispute_no_refund';
 }
@@ -206,6 +216,7 @@ export function buildOrderCompletionEvent(input: BuildOrderCompletionEventInput)
       item_value_cents: input.item_value_cents,
       shipping_value_cents: input.shipping_value_cents,
       invoice_number: input.invoice_number,
+      consumption_ms: input.seller_country,
       completion_trigger: input.completion_source
     },
     created_by: input.actor_id
