@@ -15,8 +15,7 @@ interface AuditRow {
 
 interface ResourceAuditTimelineProps {
   /** Server-side service-role Supabase client. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>;
+  serviceClient: SupabaseClient;
   resourceType: string;
   resourceId: string;
   /** Optional secondary filter: include events where actor_id matches the

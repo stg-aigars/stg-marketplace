@@ -82,8 +82,7 @@ async function handleCartCallback(
   group: CartCheckoutGroup,
   paymentReference: string,
   callbackToken: string | null,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  serviceClient: SupabaseClient<any, any, any>,
+  serviceClient: SupabaseClient,
   request: Request,
 ) {
   // Idempotency: check if orders already exist for this group
