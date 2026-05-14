@@ -100,10 +100,6 @@ describe('Language clause — Privacy Policy (EN)', () => {
  * Cookie Policy uses "authoritative" framing matching Privacy §14 (both are
  * notices under EU privacy law, not bilateral contracts). The clause heading
  * is unnumbered to match the existing cookies-page convention.
- *
- * Reads from per-language content modules under _content/.
- * Commit 3 of this PR extends to cover all 4 doc-lang combinations
- * for cookies and adds banner-clause bridge assertions.
  */
 describe('Language clause — Cookie Policy (EN)', () => {
   const source = readPageSource('app/[locale]/cookies/_content/en.tsx');
@@ -123,10 +119,11 @@ describe('Language clause — Cookie Policy (EN)', () => {
 });
 
 /**
- * Translation assertions for the §17/§10/§14 Language clause in each of the
- * nine translation modules. Each row carries the language-specific opening
- * phrase of the clause body and the "English version" framing substring —
- * both must appear in the (normalized) source.
+ * Translation assertions for the Language clause in each translation
+ * module (Terms §17, Seller §10, Privacy §14, Cookie Policy unnumbered;
+ * × LV/LT/ET = 12 entries). Each row carries the language-specific
+ * opening phrase of the clause body and the "English version" framing
+ * substring — both must appear in the (normalized) source.
  */
 
 interface TranslationAssertion {
@@ -214,8 +211,6 @@ const TRANSLATION_ASSERTIONS: TranslationAssertion[] = [
     englishVersionPhrase: 'Ingliskeelne versioon',
     describeLabel: 'Language clause — Privacy Policy (ET)',
   },
-  // Cookie Policy — unnumbered Language section, reuses Privacy phrasings
-  // (both are notices under EU privacy law, authoritative framing).
   {
     doc: 'cookies',
     lang: 'lv',
@@ -262,16 +257,9 @@ for (const t of TRANSLATION_ASSERTIONS) {
 }
 
 /**
- * Banner-clause substring bridge: the framing substring defined in
- * LEGAL_DISCLAIMER_CLAUSE_BRIDGE must appear in both the disclaimer message
- * (LEGAL_DISCLAIMER_MESSAGES) and the corresponding clause body in
- * _content/{lang}.tsx. Catches drift in either direction:
- *
- *   - Editing the clause to a different framing (e.g., "authoritative" → "binding"
- *     on Privacy) without updating the banner.
- *   - Editing the banner without updating the clause.
- *
- * The constants in constants.ts are the single source of truth for both.
+ * LEGAL_DISCLAIMER_CLAUSE_BRIDGE in constants.ts is the single source of
+ * truth for the framing substring; this loop pins both the banner and the
+ * clause body to it.
  */
 
 const DOCS: LegalDocId[] = ['terms', 'seller-terms', 'privacy', 'cookies'];
