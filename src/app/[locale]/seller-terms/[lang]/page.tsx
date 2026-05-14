@@ -1,13 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
-import type { LegalDocLang } from '@/lib/legal/constants';
+import {
+  TRANSLATED_LANGS,
+  type LegalDocLang,
+} from '@/lib/legal/constants';
+import SellerLv from '../_content/lv';
+import SellerLt from '../_content/lt';
+import SellerEt from '../_content/et';
+
+const contentModules = {
+  lv: SellerLv,
+  lt: SellerLt,
+  et: SellerEt,
+} as const;
 
 export function generateStaticParams(): Array<{ lang: string }> {
-  return [];
+  return TRANSLATED_LANGS.map((lang) => ({ lang }));
 }
-
-const contentModules: Partial<Record<Exclude<LegalDocLang, 'en'>, () => React.JSX.Element>> = {};
 
 const titles: Record<string, string> = {
   lv: 'Pārdevēja līgums',

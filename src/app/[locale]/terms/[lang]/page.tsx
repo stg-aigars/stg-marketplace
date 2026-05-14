@@ -1,21 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
-import type { LegalDocLang } from '@/lib/legal/constants';
+import {
+  TRANSLATED_LANGS,
+  type LegalDocLang,
+} from '@/lib/legal/constants';
+import TermsLv from '../_content/lv';
+import TermsLt from '../_content/lt';
+import TermsEt from '../_content/et';
 
-// Commit 2: empty so LV/LT/ET routes 404 cleanly.
-// Commit 3: switches to TRANSLATED_LANGS.map(...) and imports the
-// content modules.
+const contentModules = {
+  lv: TermsLv,
+  lt: TermsLt,
+  et: TermsEt,
+} as const;
+
 export function generateStaticParams(): Array<{ lang: string }> {
-  return [];
+  return TRANSLATED_LANGS.map((lang) => ({ lang }));
 }
-
-// Commit 2: empty. Commit 3 adds:
-//   import TermsLv from '../_content/lv';
-//   import TermsLt from '../_content/lt';
-//   import TermsEt from '../_content/et';
-//   const contentModules = { lv: TermsLv, lt: TermsLt, et: TermsEt } as const;
-const contentModules: Partial<Record<Exclude<LegalDocLang, 'en'>, () => React.JSX.Element>> = {};
 
 const titles: Record<string, string> = {
   lv: 'Lietošanas noteikumi',

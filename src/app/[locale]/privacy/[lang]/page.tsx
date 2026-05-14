@@ -1,13 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
-import type { LegalDocLang } from '@/lib/legal/constants';
+import {
+  TRANSLATED_LANGS,
+  type LegalDocLang,
+} from '@/lib/legal/constants';
+import PrivacyLv from '../_content/lv';
+import PrivacyLt from '../_content/lt';
+import PrivacyEt from '../_content/et';
+
+const contentModules = {
+  lv: PrivacyLv,
+  lt: PrivacyLt,
+  et: PrivacyEt,
+} as const;
 
 export function generateStaticParams(): Array<{ lang: string }> {
-  return [];
+  return TRANSLATED_LANGS.map((lang) => ({ lang }));
 }
-
-const contentModules: Partial<Record<Exclude<LegalDocLang, 'en'>, () => React.JSX.Element>> = {};
 
 const titles: Record<string, string> = {
   lv: 'Privātuma politika',
