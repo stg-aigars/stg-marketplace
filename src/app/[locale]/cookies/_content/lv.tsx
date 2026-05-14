@@ -37,21 +37,21 @@ export default function CookiesLv() {
               </li>
               <li>
                 Mēs neizmantojam reklāmas, atkārtotā mārketinga (<em>retargeting</em>) vai
-                starpvietņu izsekošanas sīkrīkus. Mēs neizvietojam reklāmas un neplānojam to
+                starpvietņu izsekošanas sīkdatnes. Mēs neizvietojam reklāmas un neplānojam to
                 darīt.
               </li>
               <li>
-                Mūsu analītikas rīks (PostHog, ES reģions) darbojas bezsīkrīku režīmā — nekādu
-                sīkrīku, nekādas vietējās krātuves (<em>localStorage</em>), un IP adreses tiek
+                Mūsu analītikas rīks (PostHog, ES reģions) darbojas bezsīkdatņu (<em>cookieless</em>) režīmā — nekādu
+                sīkdatņu, nekādas vietējās krātuves (<em>localStorage</em>), un IP adreses tiek
                 noņemtas mūsu starpniekserverī, pirms notikumu dati pamet serveri.
               </li>
               <li>
                 Cloudflare uztur mūsu DNS un CDN, kā arī nodrošina Turnstile pakalpojumu
                 formās, kurām var uzbrukt roboti. Abi šie pakalpojumi iestata nelielu skaitu
-                sīkrīku, kas uzskaitīti zemāk esošajās tabulās.
+                sīkdatņu, kas uzskaitītas zemāk esošajās tabulās.
               </li>
               <li>
-                Tu vari jebkurā laikā izdzēst sīkrīkus savas pārlūkprogrammas iestatījumos.
+                Tu vari jebkurā laikā izdzēst sīkdatnes savas pārlūkprogrammas iestatījumos.
                 Tas tevi izrakstīs no sistēmas un iztukšos tavu grozu, taču vietne joprojām
                 darbosies.
               </li>
@@ -61,7 +61,7 @@ export default function CookiesLv() {
 
         <section className="space-y-3">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
-            Mūsu domēna sīkrīki
+            Mūsu domēna sīkdatnes
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -80,7 +80,7 @@ export default function CookiesLv() {
                     Nodrošina tavu palikšanu sistēmā. To iestata mūsu autentifikācijas
                     pakalpojumu sniedzējs (Supabase), kad tu piesakies vai reģistrējies. Viena
                     sesija tiek sadalīta numurētos fragmentos, jo pārlūkprogrammas ierobežo
-                    atsevišķu sīkrīku izmēru līdz aptuveni 4 KB, bet OAuth sesijas to pārsniedz.
+                    atsevišķu sīkdatņu izmēru līdz aptuveni 4 KB, bet OAuth sesijas to pārsniedz.
                   </td>
                   <td className="py-2 pr-4 align-top">Sesija / līdz izrakstīšanās brīdim</td>
                   <td className="py-2 align-top">Pirmās puses, stingri nepieciešams</td>
@@ -99,7 +99,7 @@ export default function CookiesLv() {
             </table>
           </div>
           <p className="text-xs text-semantic-text-muted">
-            Konkrētie Supabase sīkrīku nosaukumi atšķiras atkarībā no projekta atsauces
+            Konkrētie Supabase sīkdatņu nosaukumi atšķiras atkarībā no projekta atsauces
             (piemēram,{' '}
             <span className="font-mono">sb-tfxqbtcdkzdwfgsivvet-auth-token.0</span>).
           </p>
@@ -111,7 +111,7 @@ export default function CookiesLv() {
           </h2>
           <p>
             Vietējā krātuve (<em>local storage</em>) un sesijas krātuve
-            (<em>session storage</em>) tehniski nav sīkrīki, taču E-privātuma direktīva
+            (<em>session storage</em>) tehniski nav sīkdatnes, taču E-privātuma direktīva
             attiecas uz jebkuru informāciju, kas tiek glabāta tavā ierīcē. Mēs tos uzskaitām
             tā paša iemesla dēļ. Sesijas krātuve tiek izdzēsta automātiski, kad aizver cilni;
             vietējā krātuve saglabājas, līdz tu to iztīri.
@@ -200,7 +200,7 @@ export default function CookiesLv() {
             izmantojam <strong>Cloudflare Turnstile</strong> neredzamajā režīmā. Turnstile
             ielādē skriptu no{' '}
             <span className="font-mono">challenges.cloudflare.com</span>
-            {' '}un var iestatīt īslaicīgus sīkrīkus{' '}
+            {' '}un var iestatīt īslaicīgas sīkdatnes{' '}
             <span className="font-mono">cloudflare.com</span>
             {' '}domēnā, kamēr tas pārbauda, vai iesniegums nav automatizēts. Tas arī ieraksta
             nelielus vienumus tavas pārlūkprogrammas vietējā krātuvē mūsu domēna ietvaros
@@ -221,8 +221,8 @@ export default function CookiesLv() {
           <p>
             Cloudflare arī veic mūsu datplūsmas starpniecību un nodrošina malu līmeņa
             (<em>edge-level</em>) robotu pārvaldību, kas iestata{' '}
-            <span className="font-mono">cf_clearance</span> sīkrīku iepriekš minētajā
-            sīkrīku tabulā.
+            <span className="font-mono">cf_clearance</span> sīkdatni iepriekš minētajā
+            sīkdatņu tabulā.
           </p>
         </section>
 
@@ -232,26 +232,27 @@ export default function CookiesLv() {
           </h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>Analītikas sīkrīki.</strong> Mūsu analītikas rīks (PostHog, ES reģions)
-              darbojas bezsīkrīku režīmā — nekādu sīkrīku, nekādu vietējās krātuves vienumu.
+              <strong>Analītikas sīkdatnes.</strong> Mūsu analītikas rīks (PostHog, ES
+              reģions) darbojas bezsīkdatņu režīmā — nekādu sīkdatņu, nekādu vietējās
+              krātuves vienumu.
               Notikumi tiek maršrutēti caur pirmās puses apgriezto starpniekserveri
               (<em>reverse proxy</em>), kas noņem klienta IP adreses, pirms pieprasījums
               pamet mūsu serveri.
             </li>
             <li>
-              <strong>Kļūdu izsekošanas sīkrīki.</strong> Sentry ir konfigurēts bez sesiju
+              <strong>Kļūdu izsekošanas sīkdatnes.</strong> Sentry ir konfigurēts bez sesiju
               atkārtošanas (<em>session replay</em>) vai sesiju izsekošanas funkcijām, tāpēc
-              tas neiestata nekādus sīkrīkus tavā pārlūkprogrammā.
+              tas neiestata nekādas sīkdatnes tavā pārlūkprogrammā.
             </li>
             <li>
-              <strong>Reklāmas vai atkārtotā mārketinga sīkrīki.</strong> Mēs neizvietojam
+              <strong>Reklāmas vai atkārtotā mārketinga sīkdatnes.</strong> Mēs neizvietojam
               reklāmas.
             </li>
             <li>
-              <strong>Valodas iestatījumu (<em>locale</em>) sīkrīki.</strong> Tava izvēlētā
-              valoda ir daļa no URL ceļa
-              (<span className="font-mono">/en/</span>, <span className="font-mono">/lv/</span>)
-              nevis saglabāta sīkrīkā.
+              <strong>Valodas iestatījumu (<em>locale</em>) sīkdatnes.</strong> Tava
+              izvēlētā valoda ir daļa no URL ceļa
+              (<span className="font-mono">/en/</span>, <span className="font-mono">/lv/</span>),
+              nevis saglabāta sīkdatnē.
             </li>
           </ul>
         </section>
@@ -261,10 +262,10 @@ export default function CookiesLv() {
             Tava izvēle
           </h2>
           <p>
-            Lielākā daļa pārlūkprogrammu ļauj iztīrīt sīkrīkus un vietējo krātuvi privātuma
+            Lielākā daļa pārlūkprogrammu ļauj iztīrīt sīkdatnes un vietējo krātuvi privātuma
             iestatījumos. To iztīrīšana tevi izrakstīs no sistēmas un iztukšos tavu grozu.
             Tā kā katrs mūsu iestatītais vienums ir vai nu stingri nepieciešams, vai arī
-            tava izvēlēta preference, mēs nerādām piekrišanas paziņojumu (sīkrīku joslu).
+            tava izvēlēta preference, mēs nerādām piekrišanas paziņojumu (sīkdatņu joslu).
           </p>
           <p>
             Visu pārējo informāciju par to, kā mēs apstrādājam tavus datus &mdash; tostarp
