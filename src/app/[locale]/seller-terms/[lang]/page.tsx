@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
 import {
   LEGAL_DOC_TITLES,
-  TRANSLATED_LANGS,
   type LegalDocLang,
 } from '@/lib/legal/constants';
 import SellerLv from '../_content/lv';
@@ -16,9 +15,8 @@ const contentModules = {
   et: SellerEt,
 } as const;
 
-export function generateStaticParams(): Array<{ lang: string }> {
-  return TRANSLATED_LANGS.map((lang) => ({ lang }));
-}
+/** See `app/[locale]/terms/[lang]/page.tsx` for the rationale on `force-dynamic`. */
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,

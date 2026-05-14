@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
 import {
   LEGAL_DOC_TITLES,
-  TRANSLATED_LANGS,
   type LegalDocLang,
 } from '@/lib/legal/constants';
 import TermsLv from '../_content/lv';
@@ -16,9 +15,19 @@ const contentModules = {
   et: TermsEt,
 } as const;
 
-export function generateStaticParams(): Array<{ lang: string }> {
-  return TRANSLATED_LANGS.map((lang) => ({ lang }));
-}
+/**
+ * Render dynamically. The parent `app/[locale]/layout.tsx` calls
+ * `getMessages()` and renders `<AuthProvider>` / `<SiteHeader>` /
+ * `<PostHogProvider>`, all of which consume cookies/headers. Declaring
+ * `generateStaticParams` here marks the route SSG, which forces static-
+ * rendering semantics through the layout chain and triggers
+ * `DYNAMIC_SERVER_USAGE` at runtime when those cookie/header calls fire.
+ * The parent EN `/terms` route is already dynamic — match that.
+ *
+ * Invalid `:lang` values still 404 via the `if (!Content) notFound()`
+ * guard inside the page handler.
+ */
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
