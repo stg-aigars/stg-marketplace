@@ -11,6 +11,7 @@ import type { VersionData, VersionSource } from '@/lib/listings/types';
 import type { CountryCode } from '@/lib/country-utils';
 import { COUNTRY_TO_LANGUAGE } from '@/lib/country-utils';
 import type { EnrichedGame } from './GameSearchStep';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface VersionStepProps {
   gameId: number;
@@ -306,7 +307,7 @@ export function VersionStep({
       <div className="space-y-4">
         {!compact && (
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+            <h2 className={SECTION_HEADING_CLASS}>
               Your edition
             </h2>
             <p className="text-sm text-semantic-text-secondary mt-1">
@@ -450,7 +451,7 @@ export function VersionStep({
     <div className="space-y-4">
       {!compact && (
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Which edition do you have?
           </h2>
           <p className="text-sm text-semantic-text-secondary mt-1">

@@ -11,6 +11,7 @@ import {
   StaffOrderAdditions,
   type RefundAuditEntry,
 } from '@/components/staff/StaffOrderAdditions';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Order Detail — Staff',
@@ -74,7 +75,7 @@ export default async function StaffOrderDetailPage(
       <BackLink href="/staff/orders" label="All orders" />
 
       <div className="flex items-center gap-3 mt-4 mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+        <h2 className={SECTION_HEADING_CLASS}>
           {order.order_number}
         </h2>
         {statusConfig && (

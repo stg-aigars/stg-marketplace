@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { COOKIES_VERSION_DISPLAY } from '@/lib/legal/constants';
-import { LEGAL_SECTION_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export default function CookiesEn() {
   return (
@@ -57,7 +57,7 @@ export default function CookiesEn() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Cookies on our domain
           </h2>
           <div className="overflow-x-auto">
@@ -102,7 +102,7 @@ export default function CookiesEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Items stored in your browser&apos;s local or session storage
           </h2>
           <p>
@@ -182,7 +182,7 @@ export default function CookiesEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Third-party tools on form submissions
           </h2>
           <p>
@@ -215,7 +215,7 @@ export default function CookiesEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             What we do <em>not</em> set
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -241,7 +241,7 @@ export default function CookiesEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Your choices
           </h2>
           <p>
@@ -260,7 +260,7 @@ export default function CookiesEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Language
           </h2>
           <p>

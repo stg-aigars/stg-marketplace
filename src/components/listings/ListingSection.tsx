@@ -1,6 +1,7 @@
 import { SectionLink } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingType } from '@/lib/listings/types';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 /**
  * A listing row shape that maps to ListingCard props.
@@ -60,7 +61,7 @@ export function ListingSection({
               {eyebrow}
             </p>
           )}
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             {heading}
           </h2>
         </div>

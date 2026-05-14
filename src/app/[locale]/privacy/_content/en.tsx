@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { PRIVACY_VERSION_DISPLAY } from '@/lib/legal/constants';
-import { LEGAL_SECTION_HEADING_CLASS, LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -67,7 +68,7 @@ export default function PrivacyEn() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             1. Who we are
           </h2>
           <p>
@@ -99,7 +100,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             2. Data we collect
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -145,7 +146,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             3. Legal basis for processing
           </h2>
           <p>
@@ -214,7 +215,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             4. How we use your data
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -227,7 +228,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             5. Data storage and security
           </h2>
           <p>
@@ -245,7 +246,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             6. Who we share your data with
           </h2>
           <p>
@@ -401,7 +402,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             7. Cookies and local storage
           </h2>
           <p>
@@ -421,7 +422,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             8. Your rights under GDPR
           </h2>
           <p>You have the right to:</p>
@@ -471,7 +472,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             9. Data retention
           </h2>
           <div className="overflow-x-auto">
@@ -566,7 +567,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             10. Data breach notification
           </h2>
           <p>
@@ -577,7 +578,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             11. Children&apos;s data
           </h2>
           <p>
@@ -591,7 +592,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             12. Supervisory authority
           </h2>
           <p>
@@ -610,7 +611,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             13. Changes to this policy
           </h2>
           <p>
@@ -620,7 +621,7 @@ export default function PrivacyEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             14. Language
           </h2>
           <p>

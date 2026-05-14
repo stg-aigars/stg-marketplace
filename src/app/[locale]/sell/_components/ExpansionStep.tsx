@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { X } from '@phosphor-icons/react/ssr';
 import { Input, Card, CardBody, Button } from '@/components/ui';
 import { GameIdentityRow } from '@/components/listings/atoms';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface ExpansionStepProps {
   expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null; alternate_names?: string[] | null }>;
@@ -33,7 +34,7 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+      <h2 className={SECTION_HEADING_CLASS}>
         Select included expansions
       </h2>
 

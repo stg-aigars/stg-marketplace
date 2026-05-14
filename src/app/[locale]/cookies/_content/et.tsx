@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
-import { LEGAL_SECTION_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export default function CookiesEt() {
   return (
@@ -58,7 +58,7 @@ export default function CookiesEt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Meie domeeni küpsised
           </h2>
           <div className="overflow-x-auto">
@@ -104,7 +104,7 @@ export default function CookiesEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Teie brauseri kohalikus või seansipõhises salvestusruumis hoitavad üksused
           </h2>
           <p>
@@ -187,7 +187,7 @@ export default function CookiesEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Kolmandate osapoolte tööriistad vormide esitamisel
           </h2>
           <p>
@@ -221,7 +221,7 @@ export default function CookiesEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Mida me ei seadista
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -250,7 +250,7 @@ export default function CookiesEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Teie valikud
           </h2>
           <p>
@@ -270,7 +270,7 @@ export default function CookiesEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
+          <h2 className={SECTION_HEADING_CLASS}>
             Keel
           </h2>
           <p>

@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { Card, CardBody } from '@/components/ui';
 import { COUNTRIES, getCountryFlag, type CountryCode } from '@/lib/country-utils';
 import { env } from '@/lib/env';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 const STATIC_BYLINES: Record<CountryCode, string> = {
   LV: 'Listings from Latvia.',
@@ -56,7 +57,7 @@ async function CountryRail() {
           <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-3">
             Available across the Baltics
           </p>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Browse by country
           </h2>
         </div>

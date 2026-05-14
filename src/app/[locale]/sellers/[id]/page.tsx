@@ -13,6 +13,7 @@ import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
 import { SellerProfileAnalytics } from '@/components/analytics/SellerProfileAnalytics';
 import type { ListingCondition } from '@/lib/listings/types';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface SellerProfile {
   id: string;
@@ -166,7 +167,7 @@ export default async function SellerProfilePage(
 
       {/* Reviews section */}
       <section className="mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
+        <h2 className={`${SECTION_HEADING_CLASS} mb-4`}>
           Reviews
         </h2>
         {reviews.length === 0 ? (

@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react';
 import { Alert, Button, Card, CardBody, CardHeader, Checkbox } from '@/components/ui';
 import { SELLER_DECLARATION_TEXT } from '@/lib/legal/constants';
 import { acceptSellerTerms } from '@/lib/seller/actions';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 /**
  * Page-level gate rendered on /sell when the signed-in user has not yet
@@ -51,7 +52,7 @@ export function SellerTermsAcceptanceGate({ isReAcceptance }: SellerTermsAccepta
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+        <h2 className={SECTION_HEADING_CLASS}>
           {heading}
         </h2>
         <p className="text-sm text-semantic-text-secondary mt-2">{intro}</p>

@@ -9,6 +9,7 @@ import { apiFetch } from '@/lib/api-fetch';
 import { formatPlayingTime } from '@/lib/bgg/utils';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatExpansionCount } from '@/lib/listings/types';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface GameResult {
   id: number;
@@ -232,7 +233,7 @@ export function GameSearchStep({ selectedGameId, selectedGame: selectedGameProp,
     return (
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Your game
           </h2>
           <p className="text-sm text-semantic-text-secondary mt-1">

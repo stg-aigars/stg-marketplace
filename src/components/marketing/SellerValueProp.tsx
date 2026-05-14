@@ -1,6 +1,7 @@
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Lightning, PiggyBank, Wallet } from '@phosphor-icons/react/ssr';
 import { Card, CardBody } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface SellerValuePropProps {
   variant?: 'default' | 'compact';
@@ -37,7 +38,7 @@ function SellerValueProp({ variant = 'default' }: SellerValuePropProps) {
   const headingWrapperClass = isCompact ? 'mb-3 max-w-2xl' : 'mb-6 max-w-2xl';
   const headingClass = isCompact
     ? 'text-base font-bold tracking-tight text-semantic-text-heading'
-    : 'text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading';
+    : SECTION_HEADING_CLASS;
   const gridGap = isCompact ? 'gap-4' : 'gap-6';
   const cardPadding = isCompact ? 'p-4' : 'p-6';
 

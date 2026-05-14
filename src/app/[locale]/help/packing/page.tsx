@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { BackLink } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'How to Pack Your Board Game',
@@ -20,7 +21,7 @@ export default function PackingGuidePage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-8">
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Before you pack
           </h2>
           <h3 className="text-base font-semibold text-semantic-text-heading">
@@ -41,7 +42,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Choosing your outer packaging
           </h2>
           <p>
@@ -72,7 +73,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Step by step
           </h2>
           <ol className="list-decimal pl-5 space-y-3">
@@ -104,7 +105,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Weather in the Baltics
           </h2>
           <p>
@@ -132,7 +133,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Locker sizes
           </h2>
           <p>
@@ -193,7 +194,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Quick checklist
           </h2>
           <ul className="list-disc pl-5 space-y-1">
@@ -209,7 +210,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Where to find packing materials
           </h2>
           <p>
@@ -234,7 +235,7 @@ export default function PackingGuidePage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             If something goes wrong
           </h2>
           <p>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Button, SectionLink } from '@/components/ui';
 import { WantedListingCard } from '@/components/wanted/WantedListingCard';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 const WANTED_RAIL_MIN_LISTINGS = 3;
 
@@ -41,7 +42,7 @@ export async function WantedRail() {
     <section className="py-8 sm:py-10 lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Wanted in the Baltics this week
           </h2>
           <SectionLink href="/wanted">See all wanted listings</SectionLink>

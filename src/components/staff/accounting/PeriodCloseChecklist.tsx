@@ -30,6 +30,7 @@ import {
   MinusCircle,
   XCircle,
 } from '@phosphor-icons/react/ssr';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 import { Alert, Button, Card, CardBody, Modal, Textarea } from '@/components/ui';
 import {
@@ -190,7 +191,7 @@ export function PeriodCloseChecklist({ checklist }: Props) {
       <Card>
         <CardBody>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+            <h2 className={SECTION_HEADING_CLASS}>
               {checklist.period_key}
             </h2>
             <PeriodStatusBadge status={checklist.period_status} />
