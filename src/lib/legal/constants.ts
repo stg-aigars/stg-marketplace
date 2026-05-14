@@ -135,6 +135,10 @@ export const LEGAL_DISCLAIMER_MESSAGES: Record<
     lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra autoritetinga pirminė versija.',
     et: 'Käesolev tõlge on Teile mugavuse huvides. Ingliskeelne versioon on autoriteetne originaal.',
   },
+  // cookies uses identical wording to privacy: both are notices under EU
+  // privacy law (cookies = e-Privacy Directive 5(3); privacy = GDPR 13/14),
+  // both use "authoritative" framing. If this assumption changes (e.g.
+  // cookies adopts a different framing), break the symmetry here.
   cookies: {
     lv: 'Šis tulkojums ir sniegts tavām ērtībām. Angļu valodas versija ir autoritatīvā oriģinālversija.',
     lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra autoritetinga pirminė versija.',
@@ -167,6 +171,8 @@ export const LEGAL_DISCLAIMER_CLAUSE_BRIDGE: Record<
     lt: 'autoritetinga pirminė versija',
     et: 'autoriteetne originaal',
   },
+  // cookies bridge is identical to privacy bridge — see comment on
+  // LEGAL_DISCLAIMER_MESSAGES.cookies above.
   cookies: {
     lv: 'autoritatīvā oriģinālversija',
     lt: 'autoritetinga pirminė versija',

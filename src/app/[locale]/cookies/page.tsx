@@ -5,6 +5,16 @@ import CookiesEn from './_content/en';
 
 export const metadata: Metadata = {
   title: LEGAL_DOC_TITLES.cookies.en,
+  alternates: {
+    canonical: '/cookies',
+    languages: {
+      en: '/cookies',
+      lv: '/cookies/lv',
+      lt: '/cookies/lt',
+      et: '/cookies/et',
+      'x-default': '/cookies',
+    },
+  },
 };
 
 export default function CookiesPage() {
