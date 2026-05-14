@@ -96,6 +96,32 @@ describe('Language clause — Privacy Policy (EN)', () => {
 });
 
 /**
+ * Cookie Policy uses "authoritative" framing matching Privacy §14 (both are
+ * notices under EU privacy law, not bilateral contracts). The clause heading
+ * is unnumbered to match the existing cookies-page convention.
+ *
+ * Path coupling: reads from `app/[locale]/cookies/page.tsx` for this prereq.
+ * When the cookies translations PR extracts content into `_content/en.tsx`,
+ * update this path (commit 1 of cookies-translations-pr-plan.md).
+ */
+describe('Language clause — Cookie Policy (EN)', () => {
+  const source = readPageSource('app/[locale]/cookies/page.tsx');
+  const normalized = normalize(source);
+
+  it('contains the Language section heading', () => {
+    expect(normalized).toContain('Language </h2>');
+  });
+
+  it('declares the English version authoritative', () => {
+    expect(normalized).toContain('English version is the authoritative original');
+  });
+
+  it('declares the English version shall prevail on conflict', () => {
+    expect(normalized).toContain('English version shall prevail');
+  });
+});
+
+/**
  * Translation assertions for the §17/§10/§14 Language clause in each of the
  * nine translation modules. Each row carries the language-specific opening
  * phrase of the clause body and the "English version" framing substring —

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
-import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { COOKIES_VERSION_DISPLAY } from '@/lib/legal/constants';
 
 export const metadata: Metadata = {
   title: 'Cookie Policy',
@@ -16,7 +16,7 @@ export default function CookiesPage() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Last updated: {TERMS_VERSION_DISPLAY}
+          Last updated: {COOKIES_VERSION_DISPLAY}
         </p>
 
         <Card className="not-prose">
@@ -260,6 +260,18 @@ export default function CookiesPage() {
               Privacy Policy
             </Link>
             .
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+            Language
+          </h2>
+          <p>
+            Translations of this policy may be provided in other languages for your
+            convenience. The English version is the authoritative original. In the
+            event of any discrepancy or conflict between the English version and any
+            translation, the English version shall prevail.
           </p>
         </section>
       </div>

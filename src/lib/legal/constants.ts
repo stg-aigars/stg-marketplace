@@ -1,7 +1,8 @@
-/** Governs the Terms of Service (/terms), Cookie Policy (/cookies), and
- *  Accessibility Statement (/accessibility). Also stamped on the user row at
- *  terms acceptance and recorded on the audit-log resourceId. Update when
- *  any of those pages change materially. */
+/** Governs the Terms of Service (/terms) and Accessibility Statement
+ *  (/accessibility). Also stamped on the user row at terms acceptance and
+ *  recorded on the audit-log resourceId. Update when either of those pages
+ *  changes materially. (Cookies were decoupled into COOKIES_VERSION; the
+ *  /accessibility decoupling remains a follow-up.) */
 export const TERMS_VERSION = '2026-05-13';
 export const TERMS_VERSION_DISPLAY = '13 May 2026';
 
@@ -9,6 +10,15 @@ export const TERMS_VERSION_DISPLAY = '13 May 2026';
  *  — processor list, legal bases, retention periods, data-subject rights. */
 export const PRIVACY_VERSION = '2026-05-13';
 export const PRIVACY_VERSION_DISPLAY = '13 May 2026';
+
+/** Governs the Cookie Policy (/cookies). Decoupled from TERMS_VERSION as of
+ *  2026-05-13. Bump independently when the Cookie Policy content changes —
+ *  new cookies set, new third-party tools, new disclosures. There is no
+ *  acceptance flow for the Cookie Policy (it's a notice under e-Privacy
+ *  Directive Art. 5(3), not a bilateral contract), so this constant is not
+ *  stamped on user rows or audit-log resourceIds. */
+export const COOKIES_VERSION = '2026-05-13';
+export const COOKIES_VERSION_DISPLAY = '13 May 2026';
 
 /** Governs the Seller Agreement (/seller-terms). Update when Seller content
  *  changes — commission rates, operational requirements, wallet mechanics,
