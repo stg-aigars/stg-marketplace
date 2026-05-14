@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { WantedListingCard } from '@/components/wanted/WantedListingCard';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface RelatedWantsProps {
   listingId: string;
@@ -73,7 +74,7 @@ export async function RelatedWants({ listingId, bggGameId, buyerId, gameName, bu
 function WantsSection({ title, wants }: { title: string; wants: WantedRelatedRow[] }) {
   return (
     <section>
-      <h2 className={`${SECTION_HEADING_CLASS} mb-4`}>
+      <h2 className={cn(SECTION_HEADING_CLASS, 'mb-4')}>
         {title}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

@@ -6,6 +6,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 import {
   getPeriodRow,
   getRecentJournalEntries,
@@ -207,7 +208,7 @@ export default async function AccountingDashboardPage() {
       </div>
 
       <div>
-        <h2 className={`${SECTION_HEADING_CLASS} mb-3`}>
+        <h2 className={cn(SECTION_HEADING_CLASS, 'mb-3')}>
           Recent activity
         </h2>
 

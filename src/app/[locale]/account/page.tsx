@@ -4,6 +4,7 @@ import {
   MagnifyingGlass, Heart, GearSix, CaretRight, Receipt,
 } from '@phosphor-icons/react/ssr';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 import { Card, CardBody, Alert } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getDac7Stats } from '@/lib/dac7/service';
@@ -92,7 +93,7 @@ export default async function AccountPage() {
 
       {isSeller && (
         <div className="mb-6">
-          <h2 className={`${SECTION_HEADING_CLASS} mb-3`}>
+          <h2 className={cn(SECTION_HEADING_CLASS, 'mb-3')}>
             Selling
           </h2>
           <div className="space-y-3">
@@ -104,7 +105,7 @@ export default async function AccountPage() {
       )}
 
       <div className="mb-6">
-        <h2 className={`${SECTION_HEADING_CLASS} mb-3`}>
+        <h2 className={cn(SECTION_HEADING_CLASS, 'mb-3')}>
           Buying
         </h2>
         <div className="space-y-3">
