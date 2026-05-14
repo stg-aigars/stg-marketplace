@@ -26,6 +26,20 @@ export const SELLER_TERMS_VERSION_DISPLAY = '13 May 2026';
 export const SELLER_DECLARATION_TEXT =
   'I am at least 18 years old. I confirm that I am a private individual, not acting in the course of a business, trade, or profession. I have read and agree to the Seller Agreement.';
 
+/**
+ * Three legal documents that ship with translations.
+ * The doc id matches both the URL slug (`/terms`, `/seller-terms`, `/privacy`)
+ * and the directory name under `app/[locale]/`.
+ */
+export type LegalDocId = 'terms' | 'seller-terms' | 'privacy';
+
+/**
+ * Four languages each legal document is published in.
+ * English is canonical; LV/LT/ET are translations provided for convenience
+ * (the English version controls in case of conflict per §17/§10/§14).
+ */
+export type LegalDocLang = 'en' | 'lv' | 'lt' | 'et';
+
 /** Sunset date for the transitional PSD2 Art. 3(b) wording in Seller Agreement
  *  §3 (Payment authorisation and flow). The current wording does not
  *  affirmatively claim the exemption — it describes the fund flow and flags

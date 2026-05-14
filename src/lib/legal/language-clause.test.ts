@@ -14,9 +14,9 @@ import { join } from 'node:path';
  * banner, the disclaimer would assert something the contract no longer
  * establishes. This test fails fast in that case.
  *
- * Path coupling: this test reads English content directly from
- * `app/[locale]/{terms,seller-terms,privacy}/page.tsx`. When the translations PR
- * extracts content into `_content/en.tsx` modules, update these paths.
+ * Reads from per-language content modules under `_content/`. Commit 3 of the
+ * translations PR extends this test to cover all 12 doc-lang combinations and
+ * adds banner-clause substring assertions.
  *
  * Whitespace: prose substrings are matched against a normalized copy of the
  * source (collapsed whitespace) so the assertions survive a future Prettier
@@ -35,7 +35,7 @@ function normalize(source: string): string {
 }
 
 describe('Language clause — Terms of Service', () => {
-  const source = readPageSource('app/[locale]/terms/page.tsx');
+  const source = readPageSource('app/[locale]/terms/_content/en.tsx');
   const normalized = normalize(source);
 
   it('contains the §17 Language heading', () => {
@@ -52,7 +52,7 @@ describe('Language clause — Terms of Service', () => {
 });
 
 describe('Language clause — Seller Agreement', () => {
-  const source = readPageSource('app/[locale]/seller-terms/page.tsx');
+  const source = readPageSource('app/[locale]/seller-terms/_content/en.tsx');
   const normalized = normalize(source);
 
   it('contains the §10 Language heading', () => {
@@ -69,7 +69,7 @@ describe('Language clause — Seller Agreement', () => {
 });
 
 describe('Language clause — Privacy Policy', () => {
-  const source = readPageSource('app/[locale]/privacy/page.tsx');
+  const source = readPageSource('app/[locale]/privacy/_content/en.tsx');
   const normalized = normalize(source);
 
   it('contains the §14 Language heading', () => {
