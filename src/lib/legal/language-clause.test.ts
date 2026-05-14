@@ -10,14 +10,14 @@ import {
 } from './constants';
 
 /**
- * Regression guard for the Language clause in each of the three legal documents
- * across all four languages (en/lv/lt/et = 12 doc-lang combinations).
+ * Regression guard for the Language clause in each of the four legal documents
+ * across all four languages (en/lv/lt/et = 16 doc-lang combinations).
  *
- * Rationale: the clause is the contractual basis for the translation-disclaimer
- * banner shown on translated copies (/terms/lv etc.). If a future edit deletes
- * or rewords this clause without coordinating with the translated copies + their
- * disclaimer banner, the disclaimer would assert something the contract no longer
- * establishes. This test fails fast in that case.
+ * Rationale: the clause is the contractual / notice basis for the translation-
+ * disclaimer banner shown on translated copies (/terms/lv etc.). If a future
+ * edit deletes or rewords this clause without coordinating with the translated
+ * copies + their disclaimer banner, the disclaimer would assert something the
+ * underlying document no longer establishes. This test fails fast in that case.
  *
  * Reads from per-language content modules at
  * `app/[locale]/{doc}/_content/{lang}.tsx`.
@@ -29,9 +29,10 @@ import {
  *
  * Banner-clause substring bridge: the "binding/authoritative" framing substring
  * from LEGAL_DISCLAIMER_CLAUSE_BRIDGE must appear in both the banner message
- * (LEGAL_DISCLAIMER_MESSAGES) and the §17/§10/§14 clause body in
- * _content/{lang}.tsx. Drift between the banner and the clause is a test failure,
- * not a production bug.
+ * (LEGAL_DISCLAIMER_MESSAGES) and the corresponding clause body in
+ * _content/{lang}.tsx (Terms §17, Seller §10, Privacy §14, Cookie Policy's
+ * unnumbered Language section). Drift between the banner and the clause is a
+ * test failure, not a production bug.
  */
 
 const SRC_ROOT = join(__dirname, '..', '..');
@@ -213,6 +214,32 @@ const TRANSLATION_ASSERTIONS: TranslationAssertion[] = [
     englishVersionPhrase: 'Ingliskeelne versioon',
     describeLabel: 'Language clause — Privacy Policy (ET)',
   },
+  // Cookie Policy — unnumbered Language section, reuses Privacy phrasings
+  // (both are notices under EU privacy law, authoritative framing).
+  {
+    doc: 'cookies',
+    lang: 'lv',
+    sectionHeading: 'Valoda',
+    clauseOpening: 'Šīs politikas tulkojumi',
+    englishVersionPhrase: 'Angļu valodas versija',
+    describeLabel: 'Language clause — Cookie Policy (LV)',
+  },
+  {
+    doc: 'cookies',
+    lang: 'lt',
+    sectionHeading: 'Kalba',
+    clauseOpening: 'Šios politikos vertimai',
+    englishVersionPhrase: 'Anglų kalbos versija',
+    describeLabel: 'Language clause — Cookie Policy (LT)',
+  },
+  {
+    doc: 'cookies',
+    lang: 'et',
+    sectionHeading: 'Keel',
+    clauseOpening: 'Käesoleva poliitika tõlkeid',
+    englishVersionPhrase: 'Ingliskeelne versioon',
+    describeLabel: 'Language clause — Cookie Policy (ET)',
+  },
 ];
 
 for (const t of TRANSLATION_ASSERTIONS) {
@@ -247,7 +274,7 @@ for (const t of TRANSLATION_ASSERTIONS) {
  * The constants in constants.ts are the single source of truth for both.
  */
 
-const DOCS: LegalDocId[] = ['terms', 'seller-terms', 'privacy'];
+const DOCS: LegalDocId[] = ['terms', 'seller-terms', 'privacy', 'cookies'];
 
 describe('Banner-clause substring bridge', () => {
   for (const doc of DOCS) {

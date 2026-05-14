@@ -1,19 +1,19 @@
 import type { Metadata } from 'next';
-import type { JSX } from 'react';
 import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
 import {
   LEGAL_DOC_TITLES,
   type LegalDocLang,
 } from '@/lib/legal/constants';
+import CookiesLv from '../_content/lv';
+import CookiesLt from '../_content/lt';
+import CookiesEt from '../_content/et';
 
-/**
- * Commit 2: contentModules is empty so LV/LT/ET routes 404 cleanly.
- * Commit 3 imports the three translation modules and wires them up.
- */
-const contentModules: Partial<
-  Record<Exclude<LegalDocLang, 'en'>, () => JSX.Element>
-> = {};
+const contentModules = {
+  lv: CookiesLv,
+  lt: CookiesLt,
+  et: CookiesEt,
+} as const;
 
 /** See `app/[locale]/terms/[lang]/page.tsx` for the rationale on `force-dynamic`. */
 export const dynamic = 'force-dynamic';
