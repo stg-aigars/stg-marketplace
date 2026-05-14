@@ -96,7 +96,7 @@ export const LEGAL_DOC_TITLES: Record<LegalDocId, Record<LegalDocLang, string>> 
   },
   cookies: {
     en: 'Cookie Policy',
-    lv: 'Sīkrīku politika',
+    lv: 'Sīkdatņu politika',
     lt: 'Slapukų politika',
     et: 'Küpsiste eeskirjad',
   },
