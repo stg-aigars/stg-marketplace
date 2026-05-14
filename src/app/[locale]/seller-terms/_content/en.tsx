@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { SELLER_TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
-import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { LEGAL_SECTION_HEADING_CLASS, LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_VAT_NUMBER,
@@ -71,7 +71,7 @@ export default function SellerTermsEn() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             1. Relationship between you and STG
           </h2>
           <p>
@@ -92,7 +92,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             2. Eligibility and private-sellers-only rule
           </h2>
           <p>
@@ -138,7 +138,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             3. Payment authorisation and flow
           </h2>
           <p>
@@ -163,7 +163,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             4. Operational requirements when selling
           </h2>
           <p>When an order is placed for your listing, you must:</p>
@@ -225,7 +225,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             5. Fees and commissions
           </h2>
           <p>
@@ -240,7 +240,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             6. Wallet and payouts
           </h2>
           <p>
@@ -293,7 +293,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section id="suspension-and-risk-controls" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             7. Suspension, termination, and risk controls
           </h2>
           <p>
@@ -351,7 +351,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             8. Tax and invoicing
           </h2>
 
@@ -410,7 +410,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             9. Changes to this Agreement
           </h2>
           <p>
@@ -421,7 +421,7 @@ export default function SellerTermsEn() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             10. Language
           </h2>
           <p>

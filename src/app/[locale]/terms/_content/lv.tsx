@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { ADR_BODIES } from '@/lib/legal/adr-bodies';
-import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { LEGAL_SECTION_HEADING_CLASS, LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -67,7 +67,7 @@ export default function TermsLv() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             1. Par Second Turn Games
           </h2>
           <p>
@@ -91,7 +91,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             2. Atbilstība un konts
           </h2>
           <p>
@@ -112,7 +112,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             3. Paziņojums par patērētāju aizsardzību
           </h2>
           <p>
@@ -132,7 +132,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             4. Pircēja pienākumi
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -147,7 +147,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             5. Pārdošana Second Turn Games
           </h2>
           <p>
@@ -181,7 +181,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             6. Maksas
           </h2>
           <p>
@@ -199,7 +199,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             7. Piegāde
           </h2>
           <p>
@@ -215,7 +215,7 @@ export default function TermsLv() {
         </section>
 
         <section id="cancellations-refunds" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             8. Atcelšana, atmaksa un strīdi
           </h2>
 
@@ -261,7 +261,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             9. Aizliegts saturs un rīcība
           </h2>
           <p>
@@ -277,7 +277,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             10. Lietotāja saturs
           </h2>
           <p>
@@ -290,7 +290,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             11. Tirgus platformas funkcijas
           </h2>
 
@@ -325,7 +325,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             12. Tava konta vai mūsu pakalpojumu izbeigšana
           </h2>
 
@@ -372,7 +372,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             13. Atbildības ierobežojums
           </h2>
           <p>
@@ -407,7 +407,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             14. Piemērojamie tiesību akti un strīdi
           </h2>
           <p>
@@ -480,7 +480,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             15. Izmaiņas šajos noteikumos
           </h2>
           <p>
@@ -504,7 +504,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             16. Kontaktinformācija un Digitālo pakalpojumu akta informācija
           </h2>
           <p>
@@ -571,7 +571,7 @@ export default function TermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             17. Valoda
           </h2>
           <p>

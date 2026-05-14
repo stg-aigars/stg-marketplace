@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { ADR_BODIES } from '@/lib/legal/adr-bodies';
-import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { LEGAL_SECTION_HEADING_CLASS, LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -66,7 +66,7 @@ export default function TermsEt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             1. Second Turn Gamesi tutvustus
           </h2>
           <p>
@@ -89,7 +89,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             2. Sobivus ja konto
           </h2>
           <p>
@@ -110,7 +110,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             3. Teave tarbijakaitse kohta
           </h2>
           <p>
@@ -130,7 +130,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             4. Ostja kohustused
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -146,7 +146,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             5. Müümine Second Turn Gamesis
           </h2>
           <p>
@@ -180,7 +180,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             6. Tasud
           </h2>
           <p>
@@ -198,7 +198,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             7. Saatmine
           </h2>
           <p>
@@ -214,7 +214,7 @@ export default function TermsEt() {
         </section>
 
         <section id="cancellations-refunds" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             8. Tühistamised, tagasimaksed ja vaidlused
           </h2>
 
@@ -262,7 +262,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             9. Keelatud sisu ja käitumine
           </h2>
           <p>
@@ -278,7 +278,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             10. Kasutaja sisu
           </h2>
           <p>
@@ -290,7 +290,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             11. Turuplatsi funktsioonid
           </h2>
 
@@ -326,7 +326,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             12. Konto või meie teenuste lõpetamine
           </h2>
 
@@ -373,7 +373,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             13. Vastutuse piiramine
           </h2>
           <p>
@@ -410,7 +410,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             14. Kohaldatav õigus ja vaidlused
           </h2>
           <p>
@@ -485,7 +485,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             15. Tingimuste muutmine
           </h2>
           <p>
@@ -508,7 +508,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             16. Kontaktandmed ja teave digiteenuste määruse kohta
           </h2>
           <p>
@@ -576,7 +576,7 @@ export default function TermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             17. Keel
           </h2>
           <p>

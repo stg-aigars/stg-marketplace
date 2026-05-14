@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { ADR_BODIES } from '@/lib/legal/adr-bodies';
-import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { LEGAL_SECTION_HEADING_CLASS, LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -67,7 +67,7 @@ export default function TermsLt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             1. Apie „Second Turn Games”
           </h2>
           <p>
@@ -91,7 +91,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             2. Teisė naudotis platforma ir paskyra
           </h2>
           <p>
@@ -113,7 +113,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             3. Pranešimas apie vartotojų apsaugą
           </h2>
           <p>
@@ -133,7 +133,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             4. Pirkėjo įsipareigojimai
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -148,7 +148,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             5. Pardavimas „Second Turn Games” platformoje
           </h2>
           <p>
@@ -182,7 +182,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             6. Mokesčiai
           </h2>
           <p>
@@ -200,7 +200,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             7. Siuntimas
           </h2>
           <p>
@@ -216,7 +216,7 @@ export default function TermsLt() {
         </section>
 
         <section id="cancellations-refunds" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             8. Atšaukimai, grąžinimai ir ginčai
           </h2>
 
@@ -265,7 +265,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             9. Draudžiamas turinys ir elgesys
           </h2>
           <p>
@@ -281,7 +281,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             10. Vartotojo turinys
           </h2>
           <p>
@@ -294,7 +294,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             11. Prekyvietės funkcijos
           </h2>
 
@@ -330,7 +330,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             12. Paskyros arba paslaugų teikimo pabaiga
           </h2>
 
@@ -379,7 +379,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             13. Atsakomybės apribojimas
           </h2>
           <p>
@@ -414,7 +414,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             14. Taikytina teisė ir ginčai
           </h2>
           <p>
@@ -488,7 +488,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             15. Sąlygų pakeitimai
           </h2>
           <p>
@@ -511,7 +511,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             16. Kontaktinė informacija ir informacija pagal Skaitmeninių paslaugų aktą
           </h2>
           <p>
@@ -579,7 +579,7 @@ export default function TermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             17. Kalba
           </h2>
           <p>

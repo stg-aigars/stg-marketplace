@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
-import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
+import { LEGAL_SECTION_HEADING_CLASS, LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
@@ -70,7 +70,7 @@ export default function PrivacyEt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             1. Kes me oleme
           </h2>
           <p>
@@ -103,7 +103,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             2. Kogutavad andmed
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -154,7 +154,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             3. Töötlemise õiguslik alus
           </h2>
           <p>
@@ -225,7 +225,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             4. Kuidas me Teie andmeid kasutame
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -238,7 +238,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             5. Andmete säilitamine ja turvalisus
           </h2>
           <p>
@@ -260,7 +260,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             6. Kellega me Teie andmeid jagame
           </h2>
           <p>
@@ -433,7 +433,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             7. Küpsised ja kohalik salvestusruum
           </h2>
           <p>
@@ -453,7 +453,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             8. Teie õigused GDPR-i alusel
           </h2>
           <p>Teil on õigus:</p>
@@ -492,7 +492,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             9. Andmete säilitamine
           </h2>
           <div className="overflow-x-auto">
@@ -598,7 +598,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             10. Andmetega seotud rikkumisest teavitamine
           </h2>
           <p>
@@ -609,7 +609,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             11. Laste andmed
           </h2>
           <p>
@@ -623,7 +623,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             12. Järelevalveasutus
           </h2>
           <p>
@@ -642,7 +642,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             13. Muudatused poliitikas
           </h2>
           <p>
@@ -652,7 +652,7 @@ export default function PrivacyEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             14. Keel
           </h2>
           <p>

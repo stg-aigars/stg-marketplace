@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { LEGAL_SECTION_HEADING_CLASS } from '@/lib/legal/page-classes';
 
 export default function CookiesLt() {
   return (
@@ -58,7 +59,7 @@ export default function CookiesLt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             Slapukai mūsų domene
           </h2>
           <div className="overflow-x-auto">
@@ -104,7 +105,7 @@ export default function CookiesLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             Jūsų naršyklės vietinėje arba sesijos saugykloje saugomi elementai
           </h2>
           <p>
@@ -188,7 +189,7 @@ export default function CookiesLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             Trečiųjų šalių įrankiai pildant formas
           </h2>
           <p>
@@ -223,7 +224,7 @@ export default function CookiesLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             Ko mes nenustatome
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -253,7 +254,7 @@ export default function CookiesLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             Jūsų pasirinkimai
           </h2>
           <p>
@@ -273,7 +274,7 @@ export default function CookiesLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={LEGAL_SECTION_HEADING_CLASS}>
             Kalba
           </h2>
           <p>
