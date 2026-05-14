@@ -37,11 +37,11 @@ export const SELLER_DECLARATION_TEXT =
   'I am at least 18 years old. I confirm that I am a private individual, not acting in the course of a business, trade, or profession. I have read and agree to the Seller Agreement.';
 
 /**
- * Three legal documents that ship with translations.
- * The doc id matches both the URL slug (`/terms`, `/seller-terms`, `/privacy`)
- * and the directory name under `app/[locale]/`.
+ * Legal documents that ship with translations.
+ * The doc id matches both the URL slug (`/terms`, `/seller-terms`, `/privacy`,
+ * `/cookies`) and the directory name under `app/[locale]/`.
  */
-export type LegalDocId = 'terms' | 'seller-terms' | 'privacy';
+export type LegalDocId = 'terms' | 'seller-terms' | 'privacy' | 'cookies';
 
 /**
  * Four languages each legal document is published in.
@@ -94,6 +94,12 @@ export const LEGAL_DOC_TITLES: Record<LegalDocId, Record<LegalDocLang, string>> 
     lt: 'Privatumo politika',
     et: 'Privaatsuspoliitika',
   },
+  cookies: {
+    en: 'Cookie Policy',
+    lv: 'Sīkrīku politika',
+    lt: 'Slapukų politika',
+    et: 'Küpsiste eeskirjad',
+  },
 };
 
 /**
@@ -129,6 +135,11 @@ export const LEGAL_DISCLAIMER_MESSAGES: Record<
     lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra autoritetinga pirminė versija.',
     et: 'Käesolev tõlge on Teile mugavuse huvides. Ingliskeelne versioon on autoriteetne originaal.',
   },
+  cookies: {
+    lv: 'Šis tulkojums ir sniegts tavām ērtībām. Angļu valodas versija ir autoritatīvā oriģinālversija.',
+    lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra autoritetinga pirminė versija.',
+    et: 'Käesolev tõlge on Teile mugavuse huvides. Ingliskeelne versioon on autoriteetne originaal.',
+  },
 };
 
 /**
@@ -152,6 +163,11 @@ export const LEGAL_DISCLAIMER_CLAUSE_BRIDGE: Record<
     et: 'õiguslikult siduv originaal',
   },
   privacy: {
+    lv: 'autoritatīvā oriģinālversija',
+    lt: 'autoritetinga pirminė versija',
+    et: 'autoriteetne originaal',
+  },
+  cookies: {
     lv: 'autoritatīvā oriģinālversija',
     lt: 'autoritetinga pirminė versija',
     et: 'autoriteetne originaal',

@@ -100,12 +100,12 @@ describe('Language clause — Privacy Policy (EN)', () => {
  * notices under EU privacy law, not bilateral contracts). The clause heading
  * is unnumbered to match the existing cookies-page convention.
  *
- * Path coupling: reads from `app/[locale]/cookies/page.tsx` for this prereq.
- * When the cookies translations PR extracts content into `_content/en.tsx`,
- * update this path (commit 1 of cookies-translations-pr-plan.md).
+ * Reads from per-language content modules under _content/.
+ * Commit 3 of this PR extends to cover all 4 doc-lang combinations
+ * for cookies and adds banner-clause bridge assertions.
  */
 describe('Language clause — Cookie Policy (EN)', () => {
-  const source = readPageSource('app/[locale]/cookies/page.tsx');
+  const source = readPageSource('app/[locale]/cookies/_content/en.tsx');
   const normalized = normalize(source);
 
   it('contains the Language section heading', () => {
