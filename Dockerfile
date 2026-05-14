@@ -15,54 +15,69 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build-time env vars. Mirror the set src/lib/env.ts:validateEnv() requires.
-# NEXT_PUBLIC_* values + NEXT_SERVER_ACTIONS_ENCRYPTION_KEY get baked into the
-# bundle at this step and CANNOT be overridden at runtime; pass real production
-# values. Server-only vars are forwarded so env.ts validation passes during
-# build, but the deployed container still reads them from runtime env at start
-# (Coolify provides those), so their values here only need to be present, not
-# necessarily "real" — passing real values keeps build/runtime in lockstep.
+# Build-time env vars.
+#
+# Two channels, deliberately split:
+#
+#   1. NEXT_PUBLIC_* values are baked into the client JS bundle by Next.js and
+#      are public by design (browser-visible at runtime). They come in as ARG
+#      + ENV — visible in `docker history`, which is fine because the values
+#      themselves are not secret.
+#
+#   2. Server-only secrets (service-role key, EveryPay/Resend/Unisend creds,
+#      CRON_SECRET, NEXT_SERVER_ACTIONS_ENCRYPTION_KEY) MUST NOT land in any
+#      image layer or in the BuildKit cache. They come in as BuildKit secret
+#      mounts and are exported into the environment of the single `pnpm build`
+#      RUN step only — never persisted. See:
+#      https://docs.docker.com/build/building/secrets/
+#
+# Most server-only vars only need to be *present* at build time (env.ts:validateEnv
+# checks presence, not correctness); the deployed container reads real values
+# from runtime env (Coolify provides those). NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+# is the exception: Next.js uses it to encrypt Server Action IDs at build time
+# and they must decrypt at runtime, so the build value MUST match runtime.
+
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG SUPABASE_SERVICE_ROLE_KEY
-ARG EVERYPAY_API_USERNAME
-ARG EVERYPAY_API_SECRET
-ARG EVERYPAY_API_URL
-ARG EVERYPAY_ACCOUNT_NAME
-ARG RESEND_API_KEY
-ARG RESEND_FROM_EMAIL
-ARG UNISEND_API_URL
-ARG UNISEND_USERNAME
-ARG UNISEND_PASSWORD
 ARG NEXT_PUBLIC_APP_URL
-ARG CRON_SECRET
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED
-ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
-    SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY \
-    EVERYPAY_API_USERNAME=$EVERYPAY_API_USERNAME \
-    EVERYPAY_API_SECRET=$EVERYPAY_API_SECRET \
-    EVERYPAY_API_URL=$EVERYPAY_API_URL \
-    EVERYPAY_ACCOUNT_NAME=$EVERYPAY_ACCOUNT_NAME \
-    RESEND_API_KEY=$RESEND_API_KEY \
-    RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL \
-    UNISEND_API_URL=$UNISEND_API_URL \
-    UNISEND_USERNAME=$UNISEND_USERNAME \
-    UNISEND_PASSWORD=$UNISEND_PASSWORD \
     NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
-    CRON_SECRET=$CRON_SECRET \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY \
     NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
-    NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=$NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED \
-    NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+    NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=$NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED
 
-RUN pnpm build
+RUN --mount=type=secret,id=supabase_service_role_key \
+    --mount=type=secret,id=everypay_api_username \
+    --mount=type=secret,id=everypay_api_secret \
+    --mount=type=secret,id=everypay_api_url \
+    --mount=type=secret,id=everypay_account_name \
+    --mount=type=secret,id=resend_api_key \
+    --mount=type=secret,id=resend_from_email \
+    --mount=type=secret,id=unisend_api_url \
+    --mount=type=secret,id=unisend_username \
+    --mount=type=secret,id=unisend_password \
+    --mount=type=secret,id=cron_secret \
+    --mount=type=secret,id=next_server_actions_encryption_key \
+    export SUPABASE_SERVICE_ROLE_KEY="$(cat /run/secrets/supabase_service_role_key)" && \
+    export EVERYPAY_API_USERNAME="$(cat /run/secrets/everypay_api_username)" && \
+    export EVERYPAY_API_SECRET="$(cat /run/secrets/everypay_api_secret)" && \
+    export EVERYPAY_API_URL="$(cat /run/secrets/everypay_api_url)" && \
+    export EVERYPAY_ACCOUNT_NAME="$(cat /run/secrets/everypay_account_name)" && \
+    export RESEND_API_KEY="$(cat /run/secrets/resend_api_key)" && \
+    export RESEND_FROM_EMAIL="$(cat /run/secrets/resend_from_email)" && \
+    export UNISEND_API_URL="$(cat /run/secrets/unisend_api_url)" && \
+    export UNISEND_USERNAME="$(cat /run/secrets/unisend_username)" && \
+    export UNISEND_PASSWORD="$(cat /run/secrets/unisend_password)" && \
+    export CRON_SECRET="$(cat /run/secrets/cron_secret)" && \
+    export NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$(cat /run/secrets/next_server_actions_encryption_key)" && \
+    pnpm build
 
 # Stage 3: Install platform-specific sharp in isolation (avoids npm resolution
 # issues with standalone's complex node_modules tree)

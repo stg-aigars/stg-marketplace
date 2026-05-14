@@ -70,26 +70,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          # NEXT_PUBLIC_* values are baked into the client JS bundle and are
+          # public by design — passing them via build-args is fine.
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-            EVERYPAY_API_USERNAME=${{ secrets.EVERYPAY_API_USERNAME }}
-            EVERYPAY_API_SECRET=${{ secrets.EVERYPAY_API_SECRET }}
-            EVERYPAY_API_URL=${{ secrets.EVERYPAY_API_URL }}
-            EVERYPAY_ACCOUNT_NAME=${{ secrets.EVERYPAY_ACCOUNT_NAME }}
-            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}
-            UNISEND_API_URL=${{ secrets.UNISEND_API_URL }}
-            UNISEND_USERNAME=${{ secrets.UNISEND_USERNAME }}
-            UNISEND_PASSWORD=${{ secrets.UNISEND_PASSWORD }}
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
-            CRON_SECRET=${{ secrets.CRON_SECRET }}
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
             NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=${{ secrets.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED }}
-            NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+          # Server-only secrets go through BuildKit secret mounts: the values
+          # are exposed to the single `pnpm build` RUN step via /run/secrets/<id>
+          # and never persisted in an image layer or in the GHA build cache.
+          # See: https://docs.docker.com/build/building/secrets/
+          secrets: |
+            supabase_service_role_key=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            everypay_api_username=${{ secrets.EVERYPAY_API_USERNAME }}
+            everypay_api_secret=${{ secrets.EVERYPAY_API_SECRET }}
+            everypay_api_url=${{ secrets.EVERYPAY_API_URL }}
+            everypay_account_name=${{ secrets.EVERYPAY_ACCOUNT_NAME }}
+            resend_api_key=${{ secrets.RESEND_API_KEY }}
+            resend_from_email=${{ secrets.RESEND_FROM_EMAIL }}
+            unisend_api_url=${{ secrets.UNISEND_API_URL }}
+            unisend_username=${{ secrets.UNISEND_USERNAME }}
+            unisend_password=${{ secrets.UNISEND_PASSWORD }}
+            cron_secret=${{ secrets.CRON_SECRET }}
+            next_server_actions_encryption_key=${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
 
       # After the image is in GHCR, ask Coolify to pull and deploy it. The
       # step is tolerant of missing secrets (warns + skips) so the workflow
