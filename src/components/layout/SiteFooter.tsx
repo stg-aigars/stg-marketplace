@@ -7,7 +7,7 @@ const LINK_CLASS =
 const CREDIT_LINK_CLASS =
   'underline hover:text-white transition-colors duration-250 ease-out-custom';
 
-const SECTION_HEADING_CLASS =
+const FOOTER_COLUMN_HEADING_CLASS =
   'text-sm font-semibold text-semantic-text-secondary mb-3';
 
 const EXPLORE_LINKS = [
@@ -59,7 +59,7 @@ function SiteFooter() {
                 Every game deserves a second turn.
               </p>
               <div>
-                <p className={SECTION_HEADING_CLASS}>Available in</p>
+                <p className={FOOTER_COLUMN_HEADING_CLASS}>Available in</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
                   {BALTIC_COUNTRIES.map((country) => (
                     <span key={country.name} className="flex items-center gap-1.5">
@@ -73,7 +73,7 @@ function SiteFooter() {
 
             <nav className="grid grid-cols-2 gap-8 sm:justify-end">
               <div>
-                <h3 className={SECTION_HEADING_CLASS}>Explore</h3>
+                <h3 className={FOOTER_COLUMN_HEADING_CLASS}>Explore</h3>
                 <ul className="space-y-2 text-sm text-semantic-text-muted">
                   {EXPLORE_LINKS.map((link) => (
                     <li key={link.href}>
@@ -85,7 +85,7 @@ function SiteFooter() {
                 </ul>
               </div>
               <div>
-                <h3 className={SECTION_HEADING_CLASS}>Legal</h3>
+                <h3 className={FOOTER_COLUMN_HEADING_CLASS}>Legal</h3>
                 <ul className="space-y-2 text-sm text-semantic-text-muted">
                   {LEGAL_LINKS.map((link) => (
                     <li key={link.href}>

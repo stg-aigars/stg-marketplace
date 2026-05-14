@@ -5,6 +5,8 @@ import { Vault, LockKey, CalendarBlank, Scales, Bank } from '@phosphor-icons/rea
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 import {
   getPeriodRow,
   getRecentJournalEntries,
@@ -185,7 +187,7 @@ export default async function AccountingDashboardPage() {
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+        <h2 className={SECTION_HEADING_CLASS}>
           Staff actions
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -206,7 +208,7 @@ export default async function AccountingDashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-3">
+        <h2 className={cn(SECTION_HEADING_CLASS, 'mb-3')}>
           Recent activity
         </h2>
 

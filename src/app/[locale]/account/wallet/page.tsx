@@ -6,6 +6,8 @@ import { Card, CardBody } from '@/components/ui';
 import { createClient } from '@/lib/supabase/server';
 import { TransactionList } from './TransactionList';
 import { WithdrawalForm } from './WithdrawalForm';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Wallet',
@@ -57,7 +59,7 @@ export default async function WalletPage() {
 
       {/* Transaction history */}
       <div className="mt-6">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
+        <h2 className={cn(SECTION_HEADING_CLASS, 'mb-4')}>
           Transaction history
         </h2>
         {transactions.length === 0 ? (

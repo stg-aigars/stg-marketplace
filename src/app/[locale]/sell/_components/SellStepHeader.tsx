@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 type SellStepHeaderProps =
   | {
@@ -39,7 +40,7 @@ export function SellStepHeader(props: SellStepHeaderProps) {
           <span className="truncate">{props.anchorGameName}</span>
         </div>
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             {props.title}
           </h2>
           <p className="text-sm text-semantic-text-secondary mt-1">{props.helper}</p>
@@ -54,7 +55,7 @@ export function SellStepHeader(props: SellStepHeaderProps) {
         {props.icon}
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+        <h2 className={SECTION_HEADING_CLASS}>
           {props.title}
         </h2>
         <p className="text-sm text-semantic-text-secondary mt-1">{props.helper}</p>

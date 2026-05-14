@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
@@ -74,7 +75,7 @@ export default function SellerTermsEt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             1. Teie ja STG vaheline suhe
           </h2>
           <p>
@@ -97,7 +98,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             2. Sobivus ja „ainult eraisikust müüjad” reegel
           </h2>
           <p>
@@ -141,7 +142,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             3. Maksete volitamine ja liikumine
           </h2>
           <p>
@@ -165,7 +166,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             4. Tegevusnõuded müümisel
           </h2>
           <p>Kui Teie kuulutusele esitatakse tellimus, peate:</p>
@@ -231,7 +232,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             5. Tasud ja vahendustasud
           </h2>
           <p>
@@ -245,7 +246,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             6. Rahakott ja väljamaksed
           </h2>
           <p>
@@ -299,7 +300,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section id="suspension-and-risk-controls" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             7. Peatamine, lõpetamine ja riskikontroll
           </h2>
           <p>
@@ -358,7 +359,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             8. Maksud ja arveldamine
           </h2>
 
@@ -418,7 +419,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             9. Lepingumuudatused
           </h2>
           <p>
@@ -430,7 +431,7 @@ export default function SellerTermsEt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             10. Keel
           </h2>
           <p>

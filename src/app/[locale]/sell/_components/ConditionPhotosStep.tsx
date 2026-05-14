@@ -6,6 +6,7 @@ import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
 import type { ListingCondition } from '@/lib/listings/types';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface ConditionPhotosStepProps {
   condition: ListingCondition | null;
@@ -44,7 +45,7 @@ export function ConditionPhotosStep({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+        <h2 className={SECTION_HEADING_CLASS}>
           Describe your copy
         </h2>
         <p className="text-sm text-semantic-text-secondary mt-1">

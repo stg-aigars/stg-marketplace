@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
@@ -75,7 +76,7 @@ export default function SellerTermsLt() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             1. Santykiai tarp Jūsų ir STG
           </h2>
           <p>
@@ -97,7 +98,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             2. Tinkamumas ir taisyklė „tik privatiems pardavėjams”
           </h2>
           <p>
@@ -145,7 +146,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             3. Mokėjimo įgaliojimas ir srautas
           </h2>
           <p>
@@ -170,7 +171,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             4. Veiklos reikalavimai parduodant
           </h2>
           <p>Kai dėl Jūsų skelbimo pateikiamas užsakymas, Jūs privalote:</p>
@@ -239,7 +240,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             5. Mokesčiai ir komisiniai
           </h2>
           <p>
@@ -254,7 +255,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             6. Piniginė ir išmokos
           </h2>
           <p>
@@ -309,7 +310,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section id="suspension-and-risk-controls" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             7. Sustabdymas, nutraukimas ir rizikos valdymas
           </h2>
           <p>
@@ -371,7 +372,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             8. Mokesčiai ir sąskaitų faktūrų išrašymas
           </h2>
 
@@ -435,7 +436,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             9. Šios Sutarties pakeitimai
           </h2>
           <p>
@@ -447,7 +448,7 @@ export default function SellerTermsLt() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             10. Kalba
           </h2>
           <p>

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { apiFetch } from '@/lib/api-fetch';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import {
   DndContext,
   closestCenter,
@@ -213,7 +214,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
         heading !== null && <h2 className="text-base font-semibold text-semantic-text-heading">{heading ?? 'Photos'}</h2>
       ) : (
         <>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Add photos
           </h2>
           <p className="text-sm text-semantic-text-secondary">

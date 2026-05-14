@@ -5,6 +5,7 @@ import {
   DISPUTE_RESOLUTION_TEMPLATES,
   DSA_STATEMENT_TEMPLATES,
 } from '@/lib/staff-templates';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Templates — Staff',
@@ -23,7 +24,7 @@ function TemplateGroup({ title, description, surface, surfaceHref, templates }: 
     <section className="space-y-3">
       <div>
         <div className="flex flex-wrap items-baseline gap-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             {title}
           </h2>
           <Link href={surfaceHref} className="text-sm link-brand">

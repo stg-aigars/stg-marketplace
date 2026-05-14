@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
@@ -74,7 +75,7 @@ export default function SellerTermsLv() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             1. Attiecības starp tevi un STG
           </h2>
           <p>
@@ -96,7 +97,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             2. Atbilstība un noteikums „tikai privātpersonām”
           </h2>
           <p>
@@ -143,7 +144,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             3. Maksājumu autorizācija un plūsma
           </h2>
           <p>
@@ -168,7 +169,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             4. Darbības prasības pārdošanas laikā
           </h2>
           <p>Kad par tavu sludinājumu ir veikts pasūtījums, tev ir:</p>
@@ -234,7 +235,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             5. Maksas un komisijas
           </h2>
           <p>
@@ -248,7 +249,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             6. Maks un izmaksas
           </h2>
           <p>
@@ -303,7 +304,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section id="suspension-and-risk-controls" className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             7. Apturēšana, izbeigšana un riska kontrole
           </h2>
           <p>
@@ -362,7 +363,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             8. Nodokļi un rēķini
           </h2>
 
@@ -421,7 +422,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             9. Izmaiņas šajā Līgumā
           </h2>
           <p>
@@ -433,7 +434,7 @@ export default function SellerTermsLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             10. Valoda
           </h2>
           <p>

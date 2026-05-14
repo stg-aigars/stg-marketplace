@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Accordion, Card, CardBody, type AccordionItem } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Help Center',
 };
-
-const SECTION_HEADING_CLASS =
-  'text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading';
 
 const buyingItems: AccordionItem[] = [
   {

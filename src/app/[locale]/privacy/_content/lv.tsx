@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
@@ -70,7 +71,7 @@ export default function PrivacyLv() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             1. Kas mēs esam
           </h2>
           <p>
@@ -103,7 +104,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             2. Dati, kurus mēs vācam
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -153,7 +154,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             3. Apstrādes juridiskais pamats
           </h2>
           <p>
@@ -223,7 +224,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             4. Kā mēs izmantojam tavus datus
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -236,7 +237,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             5. Datu glabāšana un drošība
           </h2>
           <p>
@@ -256,7 +257,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             6. Ar ko mēs kopīgojam tavus datus
           </h2>
           <p>
@@ -419,7 +420,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             7. Sīkdatnes un vietējā krātuve
           </h2>
           <p>
@@ -439,7 +440,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             8. Tavas tiesības saskaņā ar VDAR
           </h2>
           <p>Tev ir tiesības:</p>
@@ -470,7 +471,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             9. Datu glabāšana
           </h2>
           <div className="overflow-x-auto">
@@ -562,7 +563,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             10. Paziņošana par datu aizsardzības pārkāpumiem
           </h2>
           <p>
@@ -573,7 +574,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             11. Bērnu dati
           </h2>
           <p>
@@ -587,7 +588,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             12. Uzraudzības iestāde
           </h2>
           <p>
@@ -606,7 +607,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             13. Izmaiņas politikā
           </h2>
           <p>
@@ -616,7 +617,7 @@ export default function PrivacyLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             14. Valoda
           </h2>
           <p>

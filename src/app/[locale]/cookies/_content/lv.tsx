@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export default function CookiesLv() {
   return (
@@ -60,7 +61,7 @@ export default function CookiesLv() {
         </Card>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Mūsu domēna sīkdatnes
           </h2>
           <div className="overflow-x-auto">
@@ -106,7 +107,7 @@ export default function CookiesLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Vienumi, kas tiek glabāti tavas pārlūkprogrammas vietējā vai sesijas krātuvē
           </h2>
           <p>
@@ -191,7 +192,7 @@ export default function CookiesLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Trešo pušu rīki formu iesniegšanas laikā
           </h2>
           <p>
@@ -227,7 +228,7 @@ export default function CookiesLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Ko mēs neiestatām
           </h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -258,7 +259,7 @@ export default function CookiesLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Tava izvēle
           </h2>
           <p>
@@ -278,7 +279,7 @@ export default function CookiesLv() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+          <h2 className={SECTION_HEADING_CLASS}>
             Valoda
           </h2>
           <p>

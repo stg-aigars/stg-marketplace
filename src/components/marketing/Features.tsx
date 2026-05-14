@@ -6,6 +6,8 @@ import { Check } from '@phosphor-icons/react/ssr';
 import { SectionLink } from '@/components/ui';
 import { colors } from '@/styles/tokens';
 import { trackClient } from '@/lib/analytics';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 type TabKey = 'browse' | 'sell' | 'ship' | 'payments';
 
@@ -83,7 +85,7 @@ function Features() {
         >
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14">
             <div>
-              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading mb-4">
+              <h3 className={cn(SECTION_HEADING_CLASS, 'mb-4')}>
                 {t(`tabs.${activeKey}.title`)}
               </h3>
               {subhead ? (

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card, CardBody, ConditionBadge } from '@/components/ui';
 import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
+import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Condition guide',
@@ -37,7 +38,7 @@ export default function ConditionGuidePage() {
               <CardBody className="space-y-3">
                 <div className="flex items-center gap-3">
                   <ConditionBadge condition={condition} />
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+                  <h2 className={SECTION_HEADING_CLASS}>
                     {config.label}
                   </h2>
                 </div>
