@@ -73,7 +73,7 @@ export default function PrivacyLt() {
             1. Kas mes esame
           </h2>
           <p>
-            Duomenų valdytojas yra <strong>{LEGAL_ENTITY_NAME}</strong> („STG„, „mes”),
+            Duomenų valdytojas yra <strong>{LEGAL_ENTITY_NAME}</strong> („STG”, „mes”),
             registracijos numeris {LEGAL_ENTITY_REG_NUMBER}, registracijos adresas:{' '}
             {LEGAL_ENTITY_ADDRESS}. Ši politika paaiškina, kokius duomenis renkame ir kodėl,
             vadovaujantis Bendruoju duomenų apsaugos reglamentu (Reglamentas (ES) 2016/679) ir

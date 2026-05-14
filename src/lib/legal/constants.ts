@@ -41,9 +41,9 @@ export type LegalDocId = 'terms' | 'seller-terms' | 'privacy';
 export type LegalDocLang = 'en' | 'lv' | 'lt' | 'et';
 
 /**
- * Languages other than English. Used for `generateStaticParams` on
- * `[lang]/page.tsx` (in Commit 3 — Commit 2 keeps it unused so unknown
- * lang values 404 cleanly during the infrastructure phase).
+ * Languages other than English. Consumed by `[lang]/page.tsx`'s
+ * `generateStaticParams` to prerender the three translated routes per
+ * legal doc; unknown lang values fall through to `notFound()`.
  */
 export const TRANSLATED_LANGS: ReadonlyArray<Exclude<LegalDocLang, 'en'>> = ['lv', 'lt', 'et'] as const;
 
@@ -56,6 +56,34 @@ export const LEGAL_LANG_LABELS: Record<LegalDocLang, string> = {
   lv: 'Latviešu',
   lt: 'Lietuvių',
   et: 'Eesti',
+};
+
+/**
+ * Per-doc-per-lang browser-tab `<title>` values rendered into each route's
+ * `generateMetadata`. Single source of truth — both the EN canonical pages
+ * (`{doc}/page.tsx`) and the translated pages (`{doc}/[lang]/page.tsx`)
+ * pull from here, so the EN title cannot drift between the canonical site
+ * and the translated routes' fallback.
+ */
+export const LEGAL_DOC_TITLES: Record<LegalDocId, Record<LegalDocLang, string>> = {
+  terms: {
+    en: 'Terms of Service',
+    lv: 'Lietošanas noteikumi',
+    lt: 'Paslaugų teikimo sąlygos',
+    et: 'Kasutustingimused',
+  },
+  'seller-terms': {
+    en: 'Seller Agreement',
+    lv: 'Pārdevēja līgums',
+    lt: 'Pardavėjo sutartis',
+    et: 'Müügileping',
+  },
+  privacy: {
+    en: 'Privacy Policy',
+    lv: 'Privātuma politika',
+    lt: 'Privatumo politika',
+    et: 'Privaatsuspoliitika',
+  },
 };
 
 /**

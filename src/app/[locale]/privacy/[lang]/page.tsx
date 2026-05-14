@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LegalDocument } from '@/components/legal/LegalDocument';
 import {
+  LEGAL_DOC_TITLES,
   TRANSLATED_LANGS,
   type LegalDocLang,
 } from '@/lib/legal/constants';
@@ -19,21 +20,16 @@ export function generateStaticParams(): Array<{ lang: string }> {
   return TRANSLATED_LANGS.map((lang) => ({ lang }));
 }
 
-const titles: Record<string, string> = {
-  lv: 'Privātuma politika',
-  lt: 'Privatumo politika',
-  et: 'Privaatsuspoliitika',
-};
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
   const { lang } = await params;
+  const titles = LEGAL_DOC_TITLES.privacy;
 
   return {
-    title: titles[lang] ?? 'Privacy Policy',
+    title: titles[lang as LegalDocLang] ?? titles.en,
     alternates: {
       canonical: `/privacy/${lang}`,
       languages: {

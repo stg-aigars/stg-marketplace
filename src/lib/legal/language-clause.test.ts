@@ -6,6 +6,7 @@ import {
   LEGAL_DISCLAIMER_CLAUSE_BRIDGE,
   TRANSLATED_LANGS,
   type LegalDocId,
+  type LegalDocLang,
 } from './constants';
 
 /**
@@ -103,7 +104,7 @@ describe('Language clause — Privacy Policy (EN)', () => {
 
 interface TranslationAssertion {
   doc: LegalDocId;
-  lang: Exclude<'lv' | 'lt' | 'et', never>;
+  lang: Exclude<LegalDocLang, 'en'>;
   sectionHeading: string;
   clauseOpening: string;
   englishVersionPhrase: string;

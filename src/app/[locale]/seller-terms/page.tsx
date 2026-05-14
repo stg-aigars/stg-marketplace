@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { LegalDocument } from '@/components/legal/LegalDocument';
+import { LEGAL_DOC_TITLES } from '@/lib/legal/constants';
 import SellerTermsEn from './_content/en';
 
 export const metadata: Metadata = {
-  title: 'Seller Agreement',
+  title: LEGAL_DOC_TITLES['seller-terms'].en,
   alternates: {
     canonical: '/seller-terms',
     languages: {

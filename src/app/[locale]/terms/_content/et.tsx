@@ -70,7 +70,7 @@ export default function TermsEt() {
             1. Second Turn Gamesi tutvustus
           </h2>
           <p>
-            {LEGAL_ENTITY_NAME} (edaspidi „STG„, „meie”), registrikood{' '}
+            {LEGAL_ENTITY_NAME} (edaspidi „STG”, „meie”), registrikood{' '}
             {LEGAL_ENTITY_REG_NUMBER}, registreeritud aadressil {LEGAL_ENTITY_ADDRESS},
             haldab kasutajatevahelist kasutatud lauamängude turuplatsi Lätis, Leedus ja
             Eestis. Me ühendame eraviisilised ostjad ja müüjad; müügitehing ise on leping
