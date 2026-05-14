@@ -40,6 +40,86 @@ export type LegalDocId = 'terms' | 'seller-terms' | 'privacy';
  */
 export type LegalDocLang = 'en' | 'lv' | 'lt' | 'et';
 
+/**
+ * Languages other than English. Used for `generateStaticParams` on
+ * `[lang]/page.tsx` (in Commit 3 — Commit 2 keeps it unused so unknown
+ * lang values 404 cleanly during the infrastructure phase).
+ */
+export const TRANSLATED_LANGS: ReadonlyArray<Exclude<LegalDocLang, 'en'>> = ['lv', 'lt', 'et'] as const;
+
+/**
+ * Native-language labels for the language switcher pills.
+ * Order applied across all three legal documents for consistency.
+ */
+export const LEGAL_LANG_LABELS: Record<LegalDocLang, string> = {
+  en: 'English',
+  lv: 'Latviešu',
+  lt: 'Lietuvių',
+  et: 'Eesti',
+};
+
+/**
+ * Disclaimer banner messages shown on translated legal-doc pages
+ * (lv / lt / et only — the EN canonical pages do not render a banner).
+ *
+ * Keyed by both doc and language because Terms/Seller use "legally
+ * binding" framing while Privacy uses "authoritative" framing,
+ * mirroring the §17 / §10 / §14 clause bodies inside each document.
+ *
+ * The substring `LEGAL_DISCLAIMER_CLAUSE_BRIDGE[doc][lang]` (below)
+ * must appear in both this message AND the corresponding clause body
+ * in `_content/{lang}.tsx`. The regression test in
+ * language-clause.test.ts enforces this property — drift between the
+ * banner and the clause is a test failure, not a production bug.
+ */
+export const LEGAL_DISCLAIMER_MESSAGES: Record<
+  LegalDocId,
+  Record<Exclude<LegalDocLang, 'en'>, string>
+> = {
+  terms: {
+    lv: 'Šis tulkojums ir sniegts tavām ērtībām. Angļu valodas versija ir juridiski saistošā oriģinālversija.',
+    lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra teisiškai įpareigojanti pirminė versija.',
+    et: 'Käesolev tõlge on Teile mugavuse huvides. Ingliskeelne versioon on õiguslikult siduv originaal.',
+  },
+  'seller-terms': {
+    lv: 'Šis tulkojums ir sniegts tavām ērtībām. Angļu valodas versija ir juridiski saistošā oriģinālversija.',
+    lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra teisiškai įpareigojanti pirminė versija.',
+    et: 'Käesolev tõlge on Teile mugavuse huvides. Ingliskeelne versioon on õiguslikult siduv originaal.',
+  },
+  privacy: {
+    lv: 'Šis tulkojums ir sniegts tavām ērtībām. Angļu valodas versija ir autoritatīvā oriģinālversija.',
+    lt: 'Šis vertimas pateiktas Jūsų patogumui. Anglų kalbos versija yra autoritetinga pirminė versija.',
+    et: 'Käesolev tõlge on Teile mugavuse huvides. Ingliskeelne versioon on autoriteetne originaal.',
+  },
+};
+
+/**
+ * The "binding/authoritative" framing substring that MUST appear in
+ * both the disclaimer banner message AND the §17 / §10 / §14 clause
+ * body for each (doc, lang) combination. Used by
+ * language-clause.test.ts to catch drift between banner and clause.
+ */
+export const LEGAL_DISCLAIMER_CLAUSE_BRIDGE: Record<
+  LegalDocId,
+  Record<Exclude<LegalDocLang, 'en'>, string>
+> = {
+  terms: {
+    lv: 'juridiski saistošā oriģinālversija',
+    lt: 'teisiškai įpareigojanti pirminė versija',
+    et: 'õiguslikult siduv originaal',
+  },
+  'seller-terms': {
+    lv: 'juridiski saistošā oriģinālversija',
+    lt: 'teisiškai įpareigojanti pirminė versija',
+    et: 'õiguslikult siduv originaal',
+  },
+  privacy: {
+    lv: 'autoritatīvā oriģinālversija',
+    lt: 'autoritetinga pirminė versija',
+    et: 'autoriteetne originaal',
+  },
+};
+
 /** Sunset date for the transitional PSD2 Art. 3(b) wording in Seller Agreement
  *  §3 (Payment authorisation and flow). The current wording does not
  *  affirmatively claim the exemption — it describes the fund flow and flags
