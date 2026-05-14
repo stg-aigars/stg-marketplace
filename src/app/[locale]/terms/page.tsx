@@ -569,6 +569,18 @@ export default function TermsPage() {
           </p>
         </section>
 
+        <section className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-semantic-text-heading">
+            17. Language
+          </h2>
+          <p>
+            Translations of these Terms may be provided in other languages for your
+            convenience. The English version is the legally binding original. In case
+            of any discrepancy or conflict between the English version and any
+            translation, the English version prevails.
+          </p>
+        </section>
+
         <p className="text-sm text-semantic-text-muted pt-4 border-t border-semantic-border-subtle">
           See also our{' '}
           <Link href="/privacy" className="link-brand">
