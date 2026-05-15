@@ -134,12 +134,10 @@ export default async function SellerProfilePage(
   );
   const totalPages = Math.max(1, Math.ceil(totalListingCount / PAGE_SIZE));
 
-  // Out-of-range page → redirect to the canonical URL for the last valid page.
   if (requestedPage > totalPages) {
     redirect(totalPages > 1 ? `/sellers/${id}?page=${totalPages}` : `/sellers/${id}`);
   }
 
-  const page = requestedPage;
   const sellerName = profile.full_name ?? 'Seller';
 
   const { expansionCounts, commentCounts } = await getListingCardCounts(
@@ -149,7 +147,7 @@ export default async function SellerProfilePage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      {page === 1 && <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />}
+      {requestedPage === 1 && <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />}
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
@@ -239,7 +237,7 @@ export default async function SellerProfilePage(
       />
 
       <Pagination
-        currentPage={page}
+        currentPage={requestedPage}
         totalPages={totalPages}
         totalItems={totalListingCount}
         pageSize={PAGE_SIZE}
