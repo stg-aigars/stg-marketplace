@@ -34,15 +34,15 @@ jobs:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ci_dummy_encryption_key_32_chars
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -57,15 +57,15 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -76,7 +76,7 @@ jobs:
         # migrations no longer auto-apply on fresh init (see PR #292 history
         # for context). Bump this version deliberately when the local dev
         # version moves.
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: 2.98.2
 
