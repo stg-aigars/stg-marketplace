@@ -93,9 +93,7 @@ export default async function SellerProfilePage(
     notFound();
   }
 
-  // Fetch rating, reviews, active listings, and total listing count in parallel.
-  // The count query is intentionally separate from the grid query so its semantics
-  // stay decoupled from pagination when the in-page pagination follow-up lands.
+  // Count is queried separately from the grid so it stays accurate if the grid query becomes paginated.
   const [rating, reviews, completedSales, { data: listings }, { count: listingsCount }] = await Promise.all([
     getSellerRating(id),
     getSellerReviews(id, 10),
@@ -116,7 +114,7 @@ export default async function SellerProfilePage(
   ]);
 
   const activeListings = listings ?? [];
-  // Floor: if the count query errors silently, never display fewer than the visible cards.
+  // Floor against a silent count-query failure: never display fewer than the cards visibly on screen.
   const totalListingCount = Math.max(activeListings.length, listingsCount ?? 0);
   const sellerName = profile.full_name ?? 'Seller';
 
