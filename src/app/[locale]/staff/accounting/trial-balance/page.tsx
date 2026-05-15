@@ -6,6 +6,7 @@ import { Scales } from '@phosphor-icons/react/ssr';
 import { getTrialBalance } from '@/lib/accounting/queries';
 import { TrialBalanceTable } from '@/components/staff/accounting/TrialBalanceTable';
 import { BackfillFilterToggle } from '@/components/staff/accounting/BackfillFilterToggle';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Trial balance — Staff',
@@ -46,7 +47,7 @@ export default async function TrialBalancePage(
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Scales size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Trial balance
         </h1>
       </div>

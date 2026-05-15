@@ -19,6 +19,8 @@ import {
   type CountryVatBreakdown,
 } from '@/lib/bookkeeping-utils';
 import { DownloadSimple, MagnifyingGlass, Warning, Receipt } from '@phosphor-icons/react/ssr';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface BookkeepingResponse {
   orders: OrderBookkeepingData[];
@@ -152,7 +154,7 @@ export default function StaffBookkeepingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Bookkeeping
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">
@@ -250,7 +252,7 @@ export default function StaffBookkeepingPage() {
       {countryBreakdown.length > 0 && (
         <Card>
           <CardBody>
-            <h3 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h3 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               VAT by country
             </h3>
             <div className="overflow-x-auto">

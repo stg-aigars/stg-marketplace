@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Bank } from '@phosphor-icons/react/ssr';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { EverypaySettlementForm } from '@/components/staff/accounting/EverypaySettlementForm';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Record EveryPay settlement — Staff',
@@ -28,7 +29,7 @@ export default async function EverypaySettlementPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Bank size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Record EveryPay settlement
         </h1>
       </div>

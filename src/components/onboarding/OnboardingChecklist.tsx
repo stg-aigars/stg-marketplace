@@ -3,6 +3,7 @@ import { CheckCircle, Circle, CaretRight } from '@phosphor-icons/react/ssr';
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui';
 import type { OnboardingState } from '@/lib/services/onboarding';
 import { DismissOnboardingButton } from './DismissOnboardingButton';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface OnboardingChecklistProps {
   state: OnboardingState;
@@ -41,7 +42,7 @@ export function OnboardingChecklist({ state }: OnboardingChecklistProps) {
     <Card className="mb-6">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-semantic-text-heading">
+          <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
             Getting started
           </h2>
           <span className="text-sm text-semantic-text-muted">

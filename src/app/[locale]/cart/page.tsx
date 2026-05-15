@@ -13,6 +13,7 @@ import {
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
 import type { CartItem, CartValidationResult, CartSellerProfile } from '@/lib/checkout/cart-types';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface SellerGroup {
   sellerId: string;
@@ -134,7 +135,7 @@ export default function CartPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Cart
         </h1>
         {count > 1 && (

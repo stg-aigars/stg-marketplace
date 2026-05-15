@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { BackLink } from '@/components/ui';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'How to Pack Your Board Game',
@@ -11,7 +12,7 @@ export default function PackingGuidePage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <BackLink href="/help" label="Help Center" />
 
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-2 mt-4">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-2 mt-4')}>
         How to pack your board game for shipping
       </h1>
       <p className="text-semantic-text-muted mb-6">
@@ -24,7 +25,7 @@ export default function PackingGuidePage() {
           <h2 className={SECTION_HEADING_CLASS}>
             Before you pack
           </h2>
-          <h3 className="text-base font-semibold text-semantic-text-heading">
+          <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
             Secure loose components
           </h3>
           <p>
@@ -32,7 +33,7 @@ export default function PackingGuidePage() {
             inside. If there&apos;s extra space, stuff in a sheet of crumpled paper or a bit of
             cardboard so nothing rattles around.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">
+          <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
             Take a quick photo
           </h3>
           <p>
@@ -48,7 +49,7 @@ export default function PackingGuidePage() {
           <p>
             The game box on its own isn&apos;t enough. It needs an outer layer.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">
+          <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
             Cardboard box (best option)
           </h3>
           <p>
@@ -56,14 +57,14 @@ export default function PackingGuidePage() {
             them at Depo, K-Senukai, or order from Latvijas Pasts and Omniva shops. A box from a
             recent online order works just as well. Reuse is encouraged.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">
+          <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
             Bubble mailer or padded envelope
           </h3>
           <p>
             Fine for card games and slim travel editions. Not great for standard or heavy board
             games, though. Corners tend to get crushed.
           </p>
-          <h3 className="text-base font-semibold text-semantic-text-heading">
+          <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
             What to avoid
           </h3>
           <p>

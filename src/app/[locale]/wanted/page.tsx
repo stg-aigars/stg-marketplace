@@ -10,6 +10,7 @@ import {
   wantedFiltersToSearchParams,
   hasActiveWantedFilters,
 } from '@/lib/wanted/filters';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 const PAGE_SIZE = 24;
 
@@ -78,7 +79,7 @@ export default async function WantedBrowsePage(
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Wanted games
         </h1>
         <Button size="sm" asChild>

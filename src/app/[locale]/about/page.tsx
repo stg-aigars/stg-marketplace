@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Card, CardBody } from '@/components/ui';
 import { TrustBand } from '@/components/marketing/TrustBand';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'About — Second Turn Games',
@@ -15,7 +17,7 @@ export default function AboutPage() {
   return (
     <>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+        <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
           About Second Turn Games
         </h1>
 

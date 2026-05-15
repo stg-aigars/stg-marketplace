@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import type { ListingCondition, VersionData, ListingExpansion } from '@/lib/listings/types';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface EditListingFormProps {
   listing: {
@@ -272,7 +273,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
         ]}
       />
 
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+      <h1 className={PAGE_HEADING_CLASS}>
         Edit listing
       </h1>
 

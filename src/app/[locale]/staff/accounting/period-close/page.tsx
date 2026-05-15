@@ -6,6 +6,7 @@ import { Alert, Button, Card, CardBody } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getPeriodCloseChecklist } from '@/lib/accounting/checklist';
 import { PeriodCloseChecklist } from '@/components/staff/accounting/PeriodCloseChecklist';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Period close — Staff',
@@ -110,7 +111,7 @@ export default async function PeriodClosePage(props: {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <LockKey size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Period close
         </h1>
       </div>

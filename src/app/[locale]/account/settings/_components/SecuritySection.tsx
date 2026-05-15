@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Card, CardBody, Input, Button, Alert, Badge } from '@/components/ui';
 import { updateEmail, changePassword, setPassword } from '@/lib/auth/actions';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface SecuritySectionProps {
   email: string;
@@ -111,7 +113,7 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
   return (
     <Card>
       <CardBody>
-        <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+        <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
           Email and security
         </h2>
 

@@ -4,6 +4,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { Wallet } from '@phosphor-icons/react/ssr';
 import { getWalletIntegrity } from '@/lib/accounting/queries';
 import { WalletIntegrityCheck } from '@/components/staff/accounting/WalletIntegrityCheck';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Wallet integrity — Staff',
@@ -25,7 +26,7 @@ export default async function WalletIntegrityPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Wallet size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Wallet integrity
         </h1>
       </div>

@@ -30,7 +30,8 @@ import {
   MinusCircle,
   XCircle,
 } from '@phosphor-icons/react/ssr';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { CARD_SUBSECTION_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 import { Alert, Button, Card, CardBody, Modal, Textarea } from '@/components/ui';
 import {
@@ -240,7 +241,7 @@ export function PeriodCloseChecklist({ checklist }: Props) {
 
       <Card>
         <CardBody>
-          <h3 className="text-base font-semibold text-semantic-text-heading mb-2">
+          <h3 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>
             Close checklist (9 items)
           </h3>
           <p className="text-xs text-semantic-text-secondary mb-3">

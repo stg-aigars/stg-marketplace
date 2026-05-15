@@ -8,6 +8,7 @@ import { CheckCircle, CaretRight } from '@phosphor-icons/react/ssr';
 import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
 import type { DisputeRow } from '@/lib/orders/types';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Disputes — Staff',
@@ -163,7 +164,7 @@ export default async function StaffDisputesPage(
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Disputes
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

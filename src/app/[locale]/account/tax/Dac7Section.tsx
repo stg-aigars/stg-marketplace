@@ -6,6 +6,8 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { DAC7_REPORT_TRANSACTIONS, DAC7_REPORT_CONSIDERATION_CENTS } from '@/lib/dac7/constants';
 import type { Dac7ProfileData, Dac7SellerAnnualStats } from '@/lib/dac7/types';
 import { Dac7Form } from './Dac7Form';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface Dac7SectionProps {
   dac7Profile: Dac7ProfileData | null;
@@ -21,7 +23,7 @@ export function Dac7Section({ dac7Profile, stats }: Dac7SectionProps) {
     return (
       <Card>
         <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>
             EU tax reporting (DAC7)
           </h2>
           <p className="text-sm text-semantic-text-muted">
@@ -109,7 +111,7 @@ function StatsDisplay({ stats, year }: { stats: Dac7SellerAnnualStats; year: num
   return (
     <Card className="mt-4">
       <CardBody>
-        <h3 className="text-base font-semibold text-semantic-text-heading mb-3">
+        <h3 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
           Your {year} activity
         </h3>
         <div className="grid grid-cols-2 gap-4">

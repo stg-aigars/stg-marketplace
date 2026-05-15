@@ -5,6 +5,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { Alert, Card, CardBody } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { SellerVerificationForm } from './SellerVerificationForm';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Seller verification',
@@ -25,7 +26,7 @@ export default async function SellerVerificationPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           A quick question about your selling
         </h1>
         <p className="text-sm text-semantic-text-muted mt-1">

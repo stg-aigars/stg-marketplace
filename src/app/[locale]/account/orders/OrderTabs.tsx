@@ -11,6 +11,8 @@ import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
 import type { ListingCondition } from '@/lib/listings/types';
 import type { OrderWithDetails } from '@/lib/orders/types';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface WonAuction {
   id: string;
@@ -54,7 +56,7 @@ export function OrderTabs({ purchases, sales, wonAuctions = [], defaultTab = 'pu
       {/* Won auctions awaiting payment — purchases tab only */}
       {activeTab === 'purchases' && wonAuctions.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
             Awaiting payment
           </h2>
           <div className="space-y-3">

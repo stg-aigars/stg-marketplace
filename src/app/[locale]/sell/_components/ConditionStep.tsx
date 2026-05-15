@@ -4,6 +4,7 @@ import { ConditionBadge, InlineArrowLink } from '@/components/ui';
 import { getConditionDetail } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import type { ConditionBadgeKey, ListingCondition } from '@/lib/listings/types';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface ConditionStepProps {
   selectedCondition: ListingCondition | null;
@@ -30,7 +31,7 @@ export function ConditionStep({
   return (
     <div className="space-y-4">
       {!hideHeading && (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Condition</h2>
+        <h2 className={CARD_SUBSECTION_HEADING_CLASS}>Condition</h2>
       )}
 
       <div className="space-y-3">

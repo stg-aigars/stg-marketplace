@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Accordion, Card, CardBody, type AccordionItem } from '@/components/ui';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Help Center',
@@ -330,7 +331,7 @@ const accordionSections: { heading: string; items: AccordionItem[] }[] = [
 export default function HelpPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Help Center
       </h1>
 

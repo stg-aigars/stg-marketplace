@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { Badge, Card, CardBody } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import type { DisputeRow } from '@/lib/orders/types';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface DisputeDetailsProps {
   dispute: DisputeRow;
@@ -29,7 +30,7 @@ export function DisputeDetails({ dispute }: DisputeDetailsProps) {
       <CardBody>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-semantic-text-heading">
+            <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
               Dispute details
             </h2>
             {getStatusBadge()}

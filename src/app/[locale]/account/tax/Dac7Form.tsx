@@ -6,6 +6,8 @@ import { isValidBalticTIN, isValidIBAN, cleanTIN, cleanIBAN } from '@/lib/dac7/v
 import { apiFetch } from '@/lib/api-fetch';
 import { sanitizeApiError } from '@/lib/utils/error-messages';
 import type { Dac7ProfileData } from '@/lib/dac7/types';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface Dac7FormProps {
   dac7Profile: Dac7ProfileData | null;
@@ -82,7 +84,7 @@ export function Dac7Form({ dac7Profile }: Dac7FormProps) {
   return (
     <Card>
       <CardBody>
-        <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+        <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
           {isEditing ? 'Update tax information' : 'Tax reporting information'}
         </h2>
 

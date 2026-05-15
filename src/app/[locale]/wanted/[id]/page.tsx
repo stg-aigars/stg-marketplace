@@ -11,6 +11,8 @@ import { formatDate } from '@/lib/date-utils';
 import { createClient } from '@/lib/supabase/server';
 import { getWantedListingById } from '@/lib/wanted/actions';
 import { RelatedWants } from './RelatedWants';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -183,7 +185,7 @@ export default async function WantedDetailPage(props: Props) {
           {/* Buyer info */}
           <Card>
             <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                 Buyer
               </h2>
               <div className="flex items-center gap-3">
@@ -213,7 +215,7 @@ export default async function WantedDetailPage(props: Props) {
           {listing.notes && (
             <Card>
               <CardBody>
-                <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+                <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>
                   Notes from buyer
                 </h2>
                 <p className="text-semantic-text-secondary whitespace-pre-line">

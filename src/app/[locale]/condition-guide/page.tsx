@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { Card, CardBody, ConditionBadge } from '@/components/ui';
 import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Condition guide',
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export default function ConditionGuidePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-4">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-4')}>
         Condition guide
       </h1>
 

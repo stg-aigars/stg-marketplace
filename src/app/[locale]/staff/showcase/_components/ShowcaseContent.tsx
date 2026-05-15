@@ -39,6 +39,8 @@ import { ReservationCountdown } from '@/components/listings/ReservationCountdown
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 // Lazy-load ShareButtons to avoid hydration mismatch from navigator.share check
 const ShareButtons = dynamic(() => import('@/components/ui/share-buttons').then((m) => m.ShareButtons), { ssr: false });
@@ -145,7 +147,7 @@ const RESERVATION_TIME = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 export function ShowcaseContent() {
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-8">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-8')}>
         Component Showcase
       </h1>
 

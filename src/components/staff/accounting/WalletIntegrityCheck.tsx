@@ -2,6 +2,7 @@ import { Card, CardBody, EmptyState } from '@/components/ui';
 import { CheckCircle, Warning, WarningCircle } from '@phosphor-icons/react/ssr';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import type { WalletIntegrityCheck as WalletIntegrityCheckShape } from '@/lib/accounting/queries';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 /**
  * Server component. Renders a `WalletIntegrityCheck` shape: four summary
@@ -76,7 +77,7 @@ export function WalletIntegrityCheck({ data }: WalletIntegrityCheckProps) {
           <CardBody className="space-y-2">
             <div className="flex items-center gap-2">
               <Warning size={20} className="text-semantic-warning" />
-              <h2 className="text-base font-semibold text-semantic-text-heading">
+              <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
                 Unattributed GL balance
               </h2>
             </div>
@@ -209,7 +210,7 @@ function StaleInFlightTable({ rows }: StaleInFlightTableProps) {
       <CardBody className="space-y-3">
         <div className="flex items-center gap-2">
           <Warning size={20} className="text-semantic-warning" />
-          <h2 className="text-base font-semibold text-semantic-text-heading">
+          <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
             Stale in-flight withdrawals ({rows.length})
           </h2>
         </div>
@@ -307,7 +308,7 @@ function PerSellerTable({ rows }: PerSellerTableProps) {
   return (
     <div className="rounded-lg border border-semantic-border-subtle bg-semantic-bg-elevated shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-semantic-border-subtle">
-        <h2 className="text-base font-semibold text-semantic-text-heading">
+        <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
           Per-seller deltas ({rows.length})
         </h2>
       </div>

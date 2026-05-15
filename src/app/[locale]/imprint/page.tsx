@@ -7,6 +7,8 @@ import {
   LEGAL_ENTITY_REG_NUMBER,
   LEGAL_ENTITY_VAT_NUMBER,
 } from '@/lib/constants';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Imprint',
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
 export default function ImprintPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Imprint
       </h1>
 

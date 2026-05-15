@@ -7,6 +7,8 @@ import { getAllTerminals } from '@/lib/services/unisend/client';
 import type { TerminalCountry, TerminalOption } from '@/lib/services/unisend/types';
 import { Alert, Breadcrumb } from '@/components/ui';
 import { CheckoutForm } from './CheckoutForm';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Checkout',
@@ -89,7 +91,7 @@ export default async function CheckoutPage({
         ]}
       />
 
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mt-4 mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mt-4 mb-6')}>
         Checkout
       </h1>
 

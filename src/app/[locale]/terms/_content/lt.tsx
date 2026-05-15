@@ -1,18 +1,19 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { ADR_BODIES } from '@/lib/legal/adr-bodies';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { LEGAL_SUB_HEADING_CLASS } from '@/lib/legal/page-classes';
 import {
   LEGAL_ENTITY_NAME,
   LEGAL_ENTITY_ADDRESS,
   LEGAL_ENTITY_REG_NUMBER,
 } from '@/lib/constants';
+import { cn } from '@/lib/cn';
 
 export default function TermsLt() {
   return (
     <>
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Paslaugų teikimo sąlygos
       </h1>
 
@@ -23,7 +24,7 @@ export default function TermsLt() {
 
         <Card className="not-prose">
           <CardHeader>
-            <h2 className="text-base font-semibold text-semantic-text-heading">
+            <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
               Trumpa apžvalga
             </h2>
             <p className="text-xs text-semantic-text-muted mt-0.5">

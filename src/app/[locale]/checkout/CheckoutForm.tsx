@@ -21,6 +21,8 @@ import { getShippingPriceCents, type TerminalCountry, type TerminalOption } from
 import type { CountryCode } from '@/lib/country-utils';
 import type { CartValidationResult } from '@/lib/checkout/cart-types';
 import { LEGAL_ENTITY_NAME, LEGAL_ENTITY_ADDRESS } from '@/lib/constants';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 const TerminalSelectorWithMap = dynamic(
   () => import('@/components/checkout/TerminalSelectorWithMap'),
@@ -295,7 +297,7 @@ export function CheckoutForm({
         {/* Card 1: Shipping */}
         <Card>
           <CardBody className="sm:p-6">
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
               Shipping
             </h2>
             {sellerCountry && (
@@ -331,7 +333,7 @@ export function CheckoutForm({
         {/* Card 2: Payment */}
         <Card>
           <CardBody className="sm:p-6">
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
               Payment
             </h2>
 
@@ -419,7 +421,7 @@ export function CheckoutForm({
       <div className="lg:col-span-5 order-1 lg:order-2">
         <Card className="lg:sticky lg:top-[4.5rem]">
           <CardBody className="sm:p-6">
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
               Order summary
             </h2>
 

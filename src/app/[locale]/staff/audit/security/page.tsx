@@ -13,6 +13,8 @@ import {
 } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
 import { ShieldWarning, ShieldCheck, ClockCounterClockwise } from '@phosphor-icons/react/ssr';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Suspicious activity — Staff',
@@ -103,7 +105,7 @@ export default async function StaffSuspiciousActivityPage(
 
       <div className="flex items-center gap-3 mt-4 mb-4">
         <ShieldWarning size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Suspicious login activity
         </h1>
       </div>
@@ -146,7 +148,7 @@ export default async function StaffSuspiciousActivityPage(
         </div>
       )}
 
-      <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+      <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
         Flagged users ({suspicious.length})
       </h2>
 
@@ -192,7 +194,7 @@ export default async function StaffSuspiciousActivityPage(
       {/* Drilled-in view for a specific user */}
       {focusedUserId && (
         <div className="border-t border-semantic-border-subtle pt-6">
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
             Recent activity — {focusedProfile?.full_name ?? focusedProfile?.email ?? focusedUserId}
           </h2>
           {focusedRows.length === 0 ? (

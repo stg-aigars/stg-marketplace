@@ -8,7 +8,7 @@ import type { ListingCondition } from '@/lib/listings/types';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { CARD_SUBSECTION_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface PriceStepProps {
   priceCents: number;
@@ -71,7 +71,7 @@ export function PriceStep({
   return (
     <div className="space-y-6">
       {compact ? (
-        <h2 className="text-base font-semibold text-semantic-text-heading">Price and description</h2>
+        <h2 className={CARD_SUBSECTION_HEADING_CLASS}>Price and description</h2>
       ) : (
         <div>
           <h2 className={SECTION_HEADING_CLASS}>

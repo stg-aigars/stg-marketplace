@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/date-utils';
 import type { WithdrawalStatus } from '@/lib/wallet/types';
 import { WithdrawalActions } from './WithdrawalActions';
 import { SepaRemittanceGuidance } from './SepaRemittanceGuidance';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Withdrawals — Staff',
@@ -57,7 +58,7 @@ export default async function StaffWithdrawalsPage(
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Withdrawal requests
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">
