@@ -100,7 +100,7 @@ export default async function LocaleLayout(
 
   return (
     // translate="no" prevents browser auto-translate from mutating the DOM mid-hydration.
-    <html lang={locale} translate="no">
+    <html lang={locale} translate="no" className="scroll-smooth motion-reduce:scroll-auto">
       <body className={`${plusJakartaSans.variable} ${fraunces.variable} font-sans min-h-screen antialiased`}>
         <NextTopLoader color={colors.semantic.brand} showSpinner={false} shadow={false} />
         <JsonLd data={[

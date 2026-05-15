@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSellerRating, getSellerReviews } from '@/lib/reviews/service';
 import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { formatDate } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { Avatar, Card, CardBody, ShareButtons } from '@/components/ui';
+import { Avatar, Card, CardBody, Pagination, ShareButtons } from '@/components/ui';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { SellerRating } from '@/components/reviews';
@@ -69,9 +69,12 @@ export async function generateMetadata(
   };
 }
 
+const PAGE_SIZE = 12;
+
 export default async function SellerProfilePage(
   props: {
     params: Promise<{ id: string; locale: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
   }
 ) {
   const params = await props.params;
@@ -79,6 +82,12 @@ export default async function SellerProfilePage(
   const {
     id
   } = params;
+
+  const rawPage = (await props.searchParams).page;
+  const parsedPage = typeof rawPage === 'string' ? parseInt(rawPage, 10) : NaN;
+  const requestedPage = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
+  const from = (requestedPage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
   const supabase = await createClient();
 
@@ -104,7 +113,8 @@ export default async function SellerProfilePage(
       .eq('seller_id', id)
       .in('status', ['active', 'reserved'])
       .order('created_at', { ascending: false })
-      .limit(12)
+      .order('id', { ascending: false })
+      .range(from, to)
       .returns<SellerListing[]>(),
     supabase
       .from('listings')
@@ -115,7 +125,19 @@ export default async function SellerProfilePage(
 
   const activeListings = listings ?? [];
   // Floor against a silent count-query failure: never display fewer than the cards visibly on screen.
-  const totalListingCount = Math.max(activeListings.length, listingsCount ?? 0);
+  // Page-aware: on page N the visible cards represent items [from+1 .. from+activeListings.length],
+  // so the floor is `from + activeListings.length`. When the page is out of range the slice is empty,
+  // and the floor falls back to listingsCount alone so the redirect targets the correct last page.
+  const totalListingCount = Math.max(
+    activeListings.length > 0 ? from + activeListings.length : 0,
+    listingsCount ?? 0,
+  );
+  const totalPages = Math.max(1, Math.ceil(totalListingCount / PAGE_SIZE));
+
+  if (requestedPage > totalPages) {
+    redirect(totalPages > 1 ? `/sellers/${id}?page=${totalPages}` : `/sellers/${id}`);
+  }
+
   const sellerName = profile.full_name ?? 'Seller';
 
   const { expansionCounts, commentCounts } = await getListingCardCounts(
@@ -125,7 +147,7 @@ export default async function SellerProfilePage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />
+      {requestedPage === 1 && <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />}
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
@@ -143,7 +165,7 @@ export default async function SellerProfilePage(
             <span>Member since {formatDate(new Date(profile.created_at))}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} />
+            <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} reviewsHref="#reviews" />
             <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
           </div>
           <ShareButtons
@@ -174,7 +196,7 @@ export default async function SellerProfilePage(
       </div>
 
       {/* Reviews section */}
-      <section className="mb-8">
+      <section id="reviews" className="mb-8 scroll-mt-20">
         <h2 className={cn(SECTION_HEADING_CLASS, 'mb-4')}>
           Reviews
         </h2>
@@ -212,6 +234,14 @@ export default async function SellerProfilePage(
             </CardBody>
           </Card>
         }
+      />
+
+      <Pagination
+        currentPage={requestedPage}
+        totalPages={totalPages}
+        totalItems={totalListingCount}
+        pageSize={PAGE_SIZE}
+        buildUrl={(p) => p === 1 ? `/sellers/${id}` : `/sellers/${id}?page=${p}`}
       />
     </div>
   );
