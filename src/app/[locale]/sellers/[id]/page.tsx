@@ -125,7 +125,13 @@ export default async function SellerProfilePage(
 
   const activeListings = listings ?? [];
   // Floor against a silent count-query failure: never display fewer than the cards visibly on screen.
-  const totalListingCount = Math.max(activeListings.length, listingsCount ?? 0);
+  // Page-aware: on page N the visible cards represent items [from+1 .. from+activeListings.length],
+  // so the floor is `from + activeListings.length`. When the page is out of range the slice is empty,
+  // and the floor falls back to listingsCount alone so the redirect targets the correct last page.
+  const totalListingCount = Math.max(
+    activeListings.length > 0 ? from + activeListings.length : 0,
+    listingsCount ?? 0,
+  );
   const totalPages = Math.max(1, Math.ceil(totalListingCount / PAGE_SIZE));
 
   // Out-of-range page → redirect to the canonical URL for the last valid page.
