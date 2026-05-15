@@ -151,10 +151,11 @@ export default async function SellerProfilePage(
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <JsonLd data={buildSellerProfileJsonLd({
+        sellerId: id,
         name: sellerName,
         avatarUrl: profile.avatar_url,
         country: profile.country,
-      })} />
+      }, env.app.url)} />
       {requestedPage === 1 && <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />}
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">

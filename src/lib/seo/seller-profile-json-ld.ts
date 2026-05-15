@@ -14,13 +14,15 @@ import type { WithContext, ProfilePage } from 'schema-dts';
  * with `env.app.url` inside this helper.
  */
 export function buildSellerProfileJsonLd(input: {
+  sellerId: string;
   name: string;
   avatarUrl: string | null;
   country: string | null;
-}): WithContext<ProfilePage> {
+}, baseUrl: string): WithContext<ProfilePage> {
   return {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
+    url: `${baseUrl}/sellers/${input.sellerId}`,
     mainEntity: {
       '@type': 'Person',
       name: input.name,

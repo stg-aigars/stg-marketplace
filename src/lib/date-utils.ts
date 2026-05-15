@@ -58,6 +58,12 @@ export function formatDateTime(date: DateInput, locale?: string): string {
  * Formats a date as full month name + year (e.g., "March 2026").
  * Use for low-precision "member since" / "joined" style fields where the day
  * is unnecessary or mildly privacy-sensitive.
+ *
+ * Uses `LLLL` (standalone month form) rather than `MMMM` (contextual).
+ * Today both render identically in English. When Latvian / Lithuanian lands,
+ * the locale implementer needs to revisit this: Baltic languages inflect month
+ * names by case, and "Member since {month}" is a since-phrase that may want
+ * the genitive form (`MMMM`) rather than the nominative standalone (`LLLL`).
  */
 export function formatMonthYear(date: DateInput): string {
   return format(toDate(date), 'LLLL yyyy');
