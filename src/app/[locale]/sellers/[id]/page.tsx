@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getSellerRating, getSellerReviews } from '@/lib/reviews/service';
 import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
-import { formatDate } from '@/lib/date-utils';
+import { formatMonthYear } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { Avatar, Card, CardBody, Pagination, ShareButtons } from '@/components/ui';
 import { ListingSection } from '@/components/listings/ListingSection';
@@ -12,6 +12,9 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
 import { SellerProfileAnalytics } from '@/components/analytics/SellerProfileAnalytics';
+import { JsonLd } from '@/lib/seo/json-ld';
+import { buildSellerProfileJsonLd } from '@/lib/seo/seller-profile-json-ld';
+import { env } from '@/lib/env';
 import type { ListingCondition } from '@/lib/listings/types';
 import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
@@ -147,6 +150,12 @@ export default async function SellerProfilePage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <JsonLd data={buildSellerProfileJsonLd({
+        sellerId: id,
+        name: sellerName,
+        avatarUrl: profile.avatar_url,
+        country: profile.country,
+      }, env.app.url)} />
       {requestedPage === 1 && <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />}
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
@@ -162,14 +171,14 @@ export default async function SellerProfilePage(
                 {getCountryName(profile.country)}
               </span>
             )}
-            <span>Member since {formatDate(new Date(profile.created_at))}</span>
+            <span>Member since {formatMonthYear(profile.created_at)}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} reviewsHref="#reviews" />
             <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
           </div>
           <ShareButtons
-            url={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/sellers/${id}`}
+            url={`${env.app.url}/sellers/${id}`}
             title={sellerName}
           />
         </div>

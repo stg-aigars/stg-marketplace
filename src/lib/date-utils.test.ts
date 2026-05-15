@@ -6,6 +6,7 @@ import {
   formatDateTime,
   formatDateCompact,
   formatMessageTime,
+  formatMonthYear,
 } from './date-utils';
 
 afterEach(() => {
@@ -78,6 +79,16 @@ describe('formatDateCompact', () => {
     vi.setSystemTime(new Date(2026, 5, 15));
     expect(formatDateCompact(new Date(2025, 11, 25))).toBe('25.12.2025');
     vi.useRealTimers();
+  });
+});
+
+describe('formatMonthYear', () => {
+  it('formats a Date as "March 2026"', () => {
+    expect(formatMonthYear(new Date(2026, 2, 15))).toBe('March 2026');
+  });
+
+  it('accepts ISO string input', () => {
+    expect(formatMonthYear('2026-03-15T10:00:00')).toBe('March 2026');
   });
 });
 
