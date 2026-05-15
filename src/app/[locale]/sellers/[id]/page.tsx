@@ -171,7 +171,7 @@ export default async function SellerProfilePage(
                 {getCountryName(profile.country)}
               </span>
             )}
-            <span>Member since {formatMonthYear(new Date(profile.created_at))}</span>
+            <span>Member since {formatMonthYear(profile.created_at)}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
             <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} reviewsHref="#reviews" />
