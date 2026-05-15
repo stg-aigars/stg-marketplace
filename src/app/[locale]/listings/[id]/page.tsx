@@ -35,6 +35,8 @@ import { CommentForm } from '@/components/comments/CommentForm';
 import { PurchaseSection } from './PurchaseSection';
 import { RelatedListings } from './RelatedListings';
 import { ListingViewAnalytics } from '@/components/analytics/ListingViewAnalytics';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface ListingDetailRow {
   id: string;
@@ -507,7 +509,7 @@ export default async function ListingDetailPage(
           {/* Included expansions */}
           {listingExpansions && expansionCount > 0 && (
             <div className="space-y-3">
-              <h2 className="text-base font-semibold text-semantic-text-heading">
+              <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
                 {expansionCount === 1
                   ? 'Included expansion'
                   : `Included expansions (${expansionCount})`}
@@ -541,7 +543,7 @@ export default async function ListingDetailPage(
           {/* Condition & notes */}
           <Card>
             <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>
                 Condition & notes
               </h2>
               <div className="flex items-center gap-3 mb-3">
@@ -564,7 +566,7 @@ export default async function ListingDetailPage(
           {/* Seller info */}
           <Card>
             <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                 Seller
               </h2>
               <div className="flex items-center gap-3">
@@ -645,7 +647,7 @@ export default async function ListingDetailPage(
           {/* Comments — hide entirely for anonymous users when empty */}
           {(comments.length > 0 || user) && (
             <section id="comments">
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                 Comments{comments.length > 0 ? ` (${comments.length})` : ''}
               </h2>
               <Card>

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { MyListingsTabs } from './MyListingsTabs';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'My Listings',
@@ -55,7 +57,7 @@ export default async function MyListingsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         My Listings
       </h1>
 

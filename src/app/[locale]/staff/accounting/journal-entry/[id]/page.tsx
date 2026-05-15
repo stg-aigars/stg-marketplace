@@ -4,6 +4,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { BackLink } from '@/components/ui';
 import { getJournalEntry } from '@/lib/accounting/queries';
 import { JournalEntryView } from '@/components/staff/accounting/JournalEntryView';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Journal entry — Staff',
@@ -59,7 +60,7 @@ export default async function JournalEntryPage(
         <p className="text-xs uppercase tracking-wider text-semantic-text-muted">
           Journal entry
         </p>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           <span className="font-mono">{data.entry.id.slice(0, 8)}…</span>
         </h1>
       </div>

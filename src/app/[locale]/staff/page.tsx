@@ -7,6 +7,7 @@ import { formatTime } from '@/lib/date-utils';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
 import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';
 import { RefreshButton } from './_components/RefreshButton';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Staff Dashboard',
@@ -157,7 +158,7 @@ export default async function StaffDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Overview
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">
@@ -169,7 +170,7 @@ export default async function StaffDashboardPage() {
         <Card>
           <CardBody>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-semantic-text-heading">
+              <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
                 Action needed
               </h2>
               <div className="flex items-center gap-3 text-xs text-semantic-text-muted">

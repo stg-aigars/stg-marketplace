@@ -11,6 +11,8 @@ import {
 } from '@/lib/dac7/constants';
 import type { Dac7SellerStatus } from '@/lib/dac7/types';
 import { Dac7StaffActions } from './Dac7StaffActions';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'DAC7 Tax Reporting',
@@ -123,7 +125,7 @@ export default async function Dac7StaffPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           DAC7 Tax Reporting
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">
@@ -173,7 +175,7 @@ export default async function Dac7StaffPage() {
       {(actionSellers?.length ?? 0) > 0 && (
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Action required
             </h2>
             <div className="overflow-x-auto">
@@ -225,7 +227,7 @@ export default async function Dac7StaffPage() {
       {(approachingSellers?.length ?? 0) > 0 && (
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Approaching threshold ({approachingSellers?.length})
             </h2>
             <div className="space-y-2">
@@ -254,7 +256,7 @@ export default async function Dac7StaffPage() {
       {/* Section D: Annual Reports + Actions */}
       <Card>
         <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
             Annual reports — {currentYear}
           </h2>
           {(reports?.length ?? 0) > 0 ? (

@@ -18,6 +18,8 @@ import { REVIEW_WINDOW_DAYS } from '@/lib/reviews/constants';
 import { OrderMessageList } from './OrderMessageList';
 import { OrderMessageForm } from './OrderMessageForm';
 import type { OrderMessage } from '@/lib/order-messages/types';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface OrderDetailClientProps {
   order: OrderWithDetails;
@@ -117,7 +119,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
 
       {!isStaff && (
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+          <h1 className={PAGE_HEADING_CLASS}>
             Order {order.order_number}
           </h1>
           {statusConfig && (
@@ -180,7 +182,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
             <CardBody>
               {existingReview ? (
                 <div>
-                  <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+                  <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                     Your review
                   </h2>
                   <ReviewItem review={existingReview} reviewerName="You" />
@@ -249,7 +251,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         {/* Order summary */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
               Order summary
             </h2>
 
@@ -454,7 +456,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         {/* Buyer & Seller */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Participants
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -484,7 +486,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         {/* Messages */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Messages
             </h2>
             <OrderMessageList messages={messages} isStaff={isStaff} />

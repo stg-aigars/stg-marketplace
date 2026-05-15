@@ -13,6 +13,7 @@ import type { DismissRationaleCategory } from './trader-signal-actions';
 import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatDateTime } from '@/lib/date-utils';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'User — Staff',
@@ -119,7 +120,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+          <h1 className={PAGE_HEADING_CLASS}>
             {profile.full_name ?? 'Unnamed user'}
           </h1>
           <p className="text-sm text-semantic-text-muted mt-1">
@@ -134,7 +135,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
       <Card>
         <CardBody className="space-y-4">
-          <h2 className="text-base font-semibold text-semantic-text-heading">Current state</h2>
+          <h2 className={CARD_SUBSECTION_HEADING_CLASS}>Current state</h2>
           <div className="flex flex-wrap gap-2">
             <Badge variant={profile.is_staff ? 'trust' : 'default'}>
               {profile.is_staff ? 'Staff' : 'Regular user'}
@@ -151,7 +152,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
       <Card>
         <CardBody className="space-y-3">
-          <h2 className="text-base font-semibold text-semantic-text-heading">Trader-volume signal</h2>
+          <h2 className={CARD_SUBSECTION_HEADING_CLASS}>Trader-volume signal</h2>
           <div className="text-sm text-semantic-text-secondary space-y-1">
             <div>
               <span className="font-semibold">Rolling 12-month sales:</span>{' '}
@@ -235,7 +236,7 @@ export default async function StaffUserPage({ params }: UserPageProps) {
 
       <Card>
         <CardBody className="space-y-3">
-          <h2 className="text-base font-semibold text-semantic-text-heading">Change seller status</h2>
+          <h2 className={CARD_SUBSECTION_HEADING_CLASS}>Change seller status</h2>
           <p className="text-sm text-semantic-text-muted">
             Suspension blocks new listings (gated server-side in <code>createListing</code>) and
             pauses live <code>active</code> listings via the <code>trg_pause_listings_on_suspension</code> trigger.

@@ -24,6 +24,8 @@ import {
   type Article24fEvidenceRow,
 } from '@/lib/oss/article-24f-evidence';
 import { OssSubmissionForm } from './OssSubmissionForm';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'OSS — Staff',
@@ -156,7 +158,7 @@ export default async function StaffOssPage(props: PageProps) {
     <div className="space-y-6">
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+          <h1 className={PAGE_HEADING_CLASS}>
             VAT OSS — {targetQuarter.label}
           </h1>
           <QuarterPicker now={now} active={targetQuarter.label} />
@@ -186,7 +188,7 @@ export default async function StaffOssPage(props: PageProps) {
 
       <Card>
         <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
             Per-MS declaration
           </h2>
           <p className="text-xs text-semantic-text-muted mb-3">
@@ -237,7 +239,7 @@ export default async function StaffOssPage(props: PageProps) {
       {ytdHasAny && (
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               {targetYear} year-to-date (filed)
             </h2>
             <p className="text-xs text-semantic-text-muted mb-3">
@@ -253,7 +255,7 @@ export default async function StaffOssPage(props: PageProps) {
       {totalOrderCount > 0 && (
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Customer-location evidence (Article 24f)
             </h2>
             <p className="text-xs text-semantic-text-muted mb-3">
@@ -324,7 +326,7 @@ export default async function StaffOssPage(props: PageProps) {
       {adjustmentTotalCount > 0 && (
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Prior-period refund adjustments
             </h2>
             <p className="text-xs text-semantic-text-muted mb-3">
@@ -373,7 +375,7 @@ export default async function StaffOssPage(props: PageProps) {
       {!currentSubmission && totalVatCents > 0 && (
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Mark filed
             </h2>
             <p className="text-sm text-semantic-text-secondary mb-4">
@@ -389,7 +391,7 @@ export default async function StaffOssPage(props: PageProps) {
 
       <Card>
         <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
             Submission history
           </h2>
           {submissions.length === 0 ? (

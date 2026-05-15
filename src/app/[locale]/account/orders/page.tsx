@@ -4,6 +4,8 @@ import { getUserOrders } from '@/lib/services/orders';
 import { getWonAuctionsAwaitingPayment } from '@/lib/auctions/actions';
 import { Alert } from '@/components/ui';
 import { OrderTabs } from './OrderTabs';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Your orders',
@@ -45,7 +47,7 @@ export default async function MyOrdersPage(
         </Alert>
       )}
 
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Your orders
       </h1>
 

@@ -5,7 +5,7 @@ import { Vault, LockKey, CalendarBlank, Scales, Bank } from '@phosphor-icons/rea
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { Card, CardBody } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 import {
   getPeriodRow,
@@ -70,7 +70,7 @@ export default async function AccountingDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Accounting
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

@@ -9,6 +9,8 @@ import { apiFetch } from '@/lib/api-fetch';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import type { UserProfile } from '@/lib/auth/types';
 import type { CountryCode } from '@/lib/country-utils';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface ProfileSettingsSectionProps {
   profile: UserProfile;
@@ -156,7 +158,7 @@ export function ProfileSettingsSection({ profile, returnUrl }: ProfileSettingsSe
   return (
     <Card>
       <CardBody>
-        <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+        <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
           Profile
         </h2>
 

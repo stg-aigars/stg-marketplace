@@ -11,6 +11,8 @@ import { formatDate } from '@/lib/date-utils';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { PayAuctionButton } from '@/components/auctions/PayAuctionButton';
 import type { ListingCondition } from '@/lib/listings/types';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = { title: 'My bids' };
 
@@ -30,7 +32,7 @@ export default async function MyBidsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         My bids
       </h1>
 

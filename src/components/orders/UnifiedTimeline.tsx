@@ -20,6 +20,7 @@ import {
   MapPin,
   XCircle,
 } from '@phosphor-icons/react/ssr';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface UnifiedTimelineProps {
   order: {
@@ -230,7 +231,7 @@ export function UnifiedTimeline({
   return (
     <Card>
       <CardBody>
-        <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+        <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
           Order progress
         </h2>
 

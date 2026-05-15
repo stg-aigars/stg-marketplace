@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Card, CardBody, Badge } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import type { JournalEntryDetail } from '@/lib/accounting/queries';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 /**
  * Server component. Renders a single `JournalEntryDetail` shape: header card
@@ -41,7 +43,7 @@ export function JournalEntryView({ data }: JournalEntryViewProps) {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-base font-semibold text-semantic-text-heading">
+            <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
               {entry.narrative}
             </h2>
             <p className="font-mono text-xs text-semantic-text-muted">
@@ -108,7 +110,7 @@ export function JournalEntryView({ data }: JournalEntryViewProps) {
       <Card>
         <CardBody className="p-0">
           <div className="px-4 py-3 border-b border-semantic-border-subtle">
-            <h2 className="text-base font-semibold text-semantic-text-heading">
+            <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
               Lines ({lines.length})
             </h2>
           </div>
@@ -202,7 +204,7 @@ export function JournalEntryView({ data }: JournalEntryViewProps) {
 
       <Card>
         <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-2">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>
             Posting context
           </h2>
           <pre className="text-xs font-mono whitespace-pre-wrap break-words p-3 rounded bg-semantic-bg-subtle text-semantic-text-secondary overflow-x-auto">

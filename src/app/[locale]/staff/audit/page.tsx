@@ -15,6 +15,7 @@ import {
 import { fetchProfiles, type Profile } from '@/lib/supabase/helpers';
 import { formatDateTime } from '@/lib/date-utils';
 import { ListMagnifyingGlass, FileMagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Audit Log — Staff',
@@ -213,7 +214,7 @@ export default async function StaffAuditPage(
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <ListMagnifyingGlass size={24} className="text-semantic-text-heading" />
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Audit log
         </h1>
         <SectionLink href="/staff/audit/security" className="ml-auto">

@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/date-utils';
 import { getCountryName } from '@/lib/country-utils';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Users — Staff',
@@ -139,7 +140,7 @@ export default async function StaffUsersPage(props: UsersPageProps) {
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Users
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

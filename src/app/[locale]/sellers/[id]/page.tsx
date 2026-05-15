@@ -13,7 +13,7 @@ import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
 import { SellerProfileAnalytics } from '@/components/analytics/SellerProfileAnalytics';
 import type { ListingCondition } from '@/lib/listings/types';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 
 interface SellerProfile {
@@ -123,7 +123,7 @@ export default async function SellerProfilePage(
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+          <h1 className={PAGE_HEADING_CLASS}>
             {sellerName}
           </h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-semantic-text-secondary">

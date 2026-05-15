@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Card, CardBody, Badge, SectionLink } from '@/components/ui';
 import { fetchProfiles, type Profile } from '@/lib/supabase/helpers';
 import { formatDateTime } from '@/lib/date-utils';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface AuditRow {
   id: string;
@@ -104,7 +105,7 @@ export async function ResourceAuditTimeline({
     <Card>
       <CardBody>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-semantic-text-heading">{title}</h2>
+          <h2 className={CARD_SUBSECTION_HEADING_CLASS}>{title}</h2>
           <SectionLink href={fullLogHref}>View all</SectionLink>
         </div>
 

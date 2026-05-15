@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { GearSix } from '@phosphor-icons/react/ssr';
 import { Avatar } from '@/components/ui';
 import { getCountryFlag } from '@/lib/country-utils';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface AccountHeaderProps {
   fullName: string | null;
@@ -18,7 +20,7 @@ export function AccountHeader({ fullName, avatarUrl, country }: AccountHeaderPro
       <div className="flex items-center gap-3 min-w-0">
         <Avatar name={name} src={avatarUrl} size="md" />
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading truncate">
+          <h1 className={cn(PAGE_HEADING_CLASS, 'truncate')}>
             {name}
           </h1>
           {flagClass && (

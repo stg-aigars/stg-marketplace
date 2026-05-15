@@ -5,7 +5,7 @@ import {
   DISPUTE_RESOLUTION_TEMPLATES,
   DSA_STATEMENT_TEMPLATES,
 } from '@/lib/staff-templates';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Templates — Staff',
@@ -39,7 +39,7 @@ function TemplateGroup({ title, description, surface, surfaceHref, templates }: 
           <Card key={template.key}>
             <CardBody>
               <div className="flex flex-wrap items-baseline gap-2 mb-2">
-                <h3 className="text-base font-semibold text-semantic-text-heading">
+                <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
                   {template.label}
                 </h3>
                 <code className="font-mono text-xs text-semantic-text-muted">{template.key}</code>
@@ -66,7 +66,7 @@ export default function StaffTemplatesPage() {
     <div className="space-y-8">
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+          <h1 className={PAGE_HEADING_CLASS}>
             Staff templates
           </h1>
           <Badge variant="default">Read-only</Badge>

@@ -6,6 +6,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { markAllNotificationsRead, deleteNotification } from '@/lib/notifications/actions';
 import type { NotificationRow } from '@/lib/notifications/types';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface NotificationsPageClientProps {
   initialNotifications: NotificationRow[];
@@ -53,7 +54,7 @@ export function NotificationsPageClient({
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Notifications
           {notifications.length > 0 && (
             <span className="ml-2 text-base font-normal text-semantic-text-muted">

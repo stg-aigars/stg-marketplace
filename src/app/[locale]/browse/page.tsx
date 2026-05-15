@@ -16,6 +16,8 @@ import {
 } from '@/lib/listings/filters';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 const PAGE_SIZE = 24;
 
@@ -192,7 +194,7 @@ export default async function BrowsePage(
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {showWelcome && <WelcomeBanner />}
 
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-4">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-4')}>
         Browse games
       </h1>
 

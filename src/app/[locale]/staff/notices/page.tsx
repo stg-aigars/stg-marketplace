@@ -8,6 +8,7 @@ import { formatDateTime } from '@/lib/date-utils';
 import { REPORT_CATEGORY_LABELS } from '@/app/[locale]/report-illegal-content/categories';
 import type { ReportCategory } from '@/app/[locale]/report-illegal-content/categories';
 import { StaffNoticeActions } from './StaffNoticeActions';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'DSA notices — Staff',
@@ -124,7 +125,7 @@ export default async function StaffNoticesPage(props: {
   return (
     <div>
       <div className="mb-2">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           DSA notices
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

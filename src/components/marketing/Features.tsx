@@ -85,6 +85,10 @@ function Features() {
         >
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14">
             <div>
+              {/* h3 by hierarchy (nested under the section h2 above), H2 visual
+                  tier by design — the active tab's title needs panel-level
+                  prominence. Per heading-classes.ts: visual tier is decoupled
+                  from element level. */}
               <h3 className={cn(SECTION_HEADING_CLASS, 'mb-4')}>
                 {t(`tabs.${activeKey}.title`)}
               </h3>

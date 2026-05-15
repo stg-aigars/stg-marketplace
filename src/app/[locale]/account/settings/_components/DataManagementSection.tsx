@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Card, CardBody, Button, Alert, Input, Modal } from '@/components/ui';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface DataManagementSectionProps {
   hasPassword: boolean;
@@ -107,7 +109,7 @@ export function DataManagementSection({ hasPassword }: DataManagementSectionProp
     <>
       <Card>
         <CardBody>
-          <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
             Data and privacy
           </h2>
 

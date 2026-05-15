@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { Card, CardBody, CardHeader } from '@/components/ui';
-import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export default function CookiesLt() {
   return (
     <>
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Slapukų politika
       </h1>
 
@@ -16,7 +17,7 @@ export default function CookiesLt() {
 
         <Card className="not-prose">
           <CardHeader>
-            <h2 className="text-base font-semibold text-semantic-text-heading">
+            <h2 className={CARD_SUBSECTION_HEADING_CLASS}>
               Trumpa apžvalga
             </h2>
             <p className="text-xs text-semantic-text-muted mt-0.5">

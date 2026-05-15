@@ -14,6 +14,7 @@ import type { OrderStatus } from '@/lib/orders/types';
 import { getOrderGameSummary } from '@/lib/orders/utils';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
 import { MagnifyingGlass, Package, CaretRight } from '@phosphor-icons/react/ssr';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'All Orders — Staff',
@@ -135,7 +136,7 @@ export default async function StaffOrdersPage(
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           All orders
         </h1>
         <p className="text-sm text-semantic-text-secondary mt-1">

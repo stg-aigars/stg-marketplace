@@ -5,6 +5,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { getMyWantedListings } from '@/lib/wanted/actions';
 import { Button, EmptyState } from '@/components/ui';
 import { WantedListingsManager } from './WantedListingsManager';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'My wanted games',
@@ -17,7 +18,7 @@ export default async function MyWantedPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           My wanted games
         </h1>
         <Button size="sm" asChild>

@@ -5,6 +5,7 @@ import { Card, CardBody, Button, BackLink } from '@/components/ui';
 import { getAccountLedger } from '@/lib/accounting/queries';
 import { AccountLedgerTable } from '@/components/staff/accounting/AccountLedgerTable';
 import { BackfillFilterToggle } from '@/components/staff/accounting/BackfillFilterToggle';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
   title: 'Account ledger — Staff',
@@ -76,7 +77,7 @@ export default async function AccountLedgerPage(
         <p className="text-xs uppercase tracking-wider text-semantic-text-muted">
           Account ledger
         </p>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           <span className="font-mono">{data.account.code}</span>
           <span className="text-semantic-text-muted"> — </span>
           {data.account.name_en || data.account.name_lv}

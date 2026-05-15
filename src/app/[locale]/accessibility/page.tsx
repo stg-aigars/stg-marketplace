@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
+import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Accessibility Statement',
@@ -9,7 +11,7 @@ export const metadata: Metadata = {
 export default function AccessibilityPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Accessibility Statement
       </h1>
 

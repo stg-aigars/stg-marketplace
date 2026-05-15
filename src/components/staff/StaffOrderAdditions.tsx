@@ -13,6 +13,8 @@ import { formatDateTime } from '@/lib/date-utils';
 import { REFUND_STATUS } from '@/lib/services/order-refund';
 import type { OrderWithDetails, DisputeRow } from '@/lib/orders/types';
 import type { ListingCondition } from '@/lib/listings/types';
+import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export interface RefundAuditEntry {
   created_at: string;
@@ -139,7 +141,7 @@ export function StaffOrderAdditions({
       {order.order_items.length > 0 && (
         <Card>
           <CardBody>
-            <h3 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h3 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Item conditions
             </h3>
             <ul className="space-y-2 text-sm">
@@ -161,7 +163,7 @@ export function StaffOrderAdditions({
       {/* Email and phone — not shown in user view */}
       <Card>
         <CardBody>
-          <h3 className="text-base font-semibold text-semantic-text-heading mb-3">
+          <h3 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
             Contact details
           </h3>
           <div className="space-y-4">
@@ -183,7 +185,7 @@ export function StaffOrderAdditions({
       {showBarcode && (
         <Card>
           <CardBody>
-            <h3 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h3 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Tracking
             </h3>
             <p className="font-mono text-xs text-semantic-text-primary break-all">
@@ -208,7 +210,7 @@ export function StaffOrderAdditions({
       <Card>
         <CardBody>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-semantic-text-heading">
+            <h3 className={CARD_SUBSECTION_HEADING_CLASS}>
               <CreditCard size={16} className="inline mr-1.5 -mt-0.5" />
               Payment internals
             </h3>

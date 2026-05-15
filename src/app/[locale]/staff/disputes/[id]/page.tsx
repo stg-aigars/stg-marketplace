@@ -10,6 +10,8 @@ import { getDisputeStatusConfig } from '@/lib/orders/constants';
 import type { DisputeRow } from '@/lib/orders/types';
 import { StaffDisputeActions } from './StaffDisputeActions';
 import { ResourceAuditTimeline } from '@/components/staff/ResourceAuditTimeline';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Dispute Detail — Staff',
@@ -92,7 +94,7 @@ export default async function StaffDisputeDetailPage(
       <BackLink href="/staff/disputes" label="All disputes" />
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading">
+        <h1 className={PAGE_HEADING_CLASS}>
           Dispute — {typedDispute.orders?.order_number ?? '—'}
         </h1>
         <Badge variant={status.badgeVariant}>{status.label}</Badge>
@@ -108,7 +110,7 @@ export default async function StaffDisputeDetailPage(
         {/* Order info */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Order details
             </h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -148,7 +150,7 @@ export default async function StaffDisputeDetailPage(
         {/* Party history */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Party history
             </h2>
             <p className="text-xs text-semantic-text-muted mb-3">
@@ -175,7 +177,7 @@ export default async function StaffDisputeDetailPage(
         {/* Dispute reason */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Dispute reason
             </h2>
             <p className="text-sm text-semantic-text-primary whitespace-pre-wrap">
@@ -188,7 +190,7 @@ export default async function StaffDisputeDetailPage(
         {typedDispute.photos && typedDispute.photos.length > 0 && (
           <Card>
             <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                 Photos
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -217,7 +219,7 @@ export default async function StaffDisputeDetailPage(
         {/* Timeline */}
         <Card>
           <CardBody>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
               Timeline
             </h2>
             <div className="space-y-2 text-sm">
@@ -245,7 +247,7 @@ export default async function StaffDisputeDetailPage(
         {isResolved && (
           <Card>
             <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-3">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                 Resolution
               </h2>
               <dl className="space-y-2 text-sm">
@@ -288,7 +290,7 @@ export default async function StaffDisputeDetailPage(
         {!isResolved && (
           <Card>
             <CardBody>
-              <h2 className="text-base font-semibold text-semantic-text-heading mb-4">
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-4')}>
                 Resolve dispute
               </h2>
               <StaffDisputeActions orderId={typedDispute.order_id} />

@@ -6,6 +6,8 @@ import {
   LEGAL_ENTITY_REG_NUMBER,
   LEGAL_ENTITY_PHONE,
 } from '@/lib/constants';
+import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-semantic-text-heading mb-6">
+      <h1 className={cn(PAGE_HEADING_CLASS, 'mb-6')}>
         Contact us
       </h1>
 
@@ -25,7 +27,7 @@ export default function ContactPage() {
 
         <div className="border border-semantic-border-subtle rounded-lg p-6 space-y-4">
           <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-1')}>
               Email
             </h2>
             <a
@@ -40,7 +42,7 @@ export default function ContactPage() {
           </div>
 
           <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-1')}>
               Phone
             </h2>
             <a
@@ -54,21 +56,21 @@ export default function ContactPage() {
 
         <div className="border border-semantic-border-subtle rounded-lg p-6 space-y-4">
           <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-1')}>
               Business name
             </h2>
             <p className="text-semantic-text-secondary">{LEGAL_ENTITY_NAME}</p>
           </div>
 
           <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-1')}>
               Registration number
             </h2>
             <p className="text-semantic-text-secondary">{LEGAL_ENTITY_REG_NUMBER}</p>
           </div>
 
           <div>
-            <h2 className="text-base font-semibold text-semantic-text-heading mb-1">
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-1')}>
               Registered address
             </h2>
             <p className="text-semantic-text-secondary">{LEGAL_ENTITY_ADDRESS}</p>
