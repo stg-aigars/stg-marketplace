@@ -93,8 +93,8 @@ export default async function SellerProfilePage(
     notFound();
   }
 
-  // Fetch rating, reviews, and active listings in parallel
-  const [rating, reviews, completedSales, { data: listings }] = await Promise.all([
+  // Count is queried separately from the grid so it stays accurate if the grid query becomes paginated.
+  const [rating, reviews, completedSales, { data: listings }, { count: listingsCount }] = await Promise.all([
     getSellerRating(id),
     getSellerReviews(id, 10),
     getSellerCompletedSales(id),
@@ -106,9 +106,16 @@ export default async function SellerProfilePage(
       .order('created_at', { ascending: false })
       .limit(12)
       .returns<SellerListing[]>(),
+    supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('seller_id', id)
+      .in('status', ['active', 'reserved']),
   ]);
 
   const activeListings = listings ?? [];
+  // Floor against a silent count-query failure: never display fewer than the cards visibly on screen.
+  const totalListingCount = Math.max(activeListings.length, listingsCount ?? 0);
   const sellerName = profile.full_name ?? 'Seller';
 
   const { expansionCounts, commentCounts } = await getListingCardCounts(
@@ -118,7 +125,7 @@ export default async function SellerProfilePage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      <SellerProfileAnalytics sellerId={id} listingCount={activeListings.length} />
+      <SellerProfileAnalytics sellerId={id} listingCount={totalListingCount} />
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
@@ -161,7 +168,7 @@ export default async function SellerProfilePage(
         </div>
         <div className="w-px h-8 bg-semantic-border-subtle" />
         <div>
-          <span className="block text-lg font-extrabold text-semantic-text-heading">{activeListings.length}</span>
+          <span className="block text-lg font-extrabold text-semantic-text-heading">{totalListingCount}</span>
           Listed
         </div>
       </div>
