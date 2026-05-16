@@ -12,7 +12,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { StaleActionGuard } from '@/components/StaleActionGuard';
 import { PendingActionsProvider } from '@/contexts/PendingActionsContext';
 import { PendingActionsBanner } from '@/components/layout/PendingActionsBanner';
-import { LaunchBanner } from '@/components/layout/LaunchBanner';
 import { JsonLd } from '@/lib/seo/json-ld';
 import type { SearchAction } from 'schema-dts';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
@@ -144,7 +143,6 @@ export default async function LocaleLayout(
                 <PendingActionsProvider>
                   <SiteHeader />
                   <PendingActionsBanner />
-                  <LaunchBanner />
                   <main className="min-h-[calc(100vh-theme(spacing.16))]">
                     {children}
                   </main>
