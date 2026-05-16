@@ -25,8 +25,10 @@ import '../globals.css';
 
 // Cookie consent: not required. Browser cookies are Supabase auth session
 // cookies (strictly necessary, exempt under GDPR/ePrivacy). PostHog runs in
-// cookieless_mode: 'always', so no analytics cookies are set. Sentry is
-// server-side only. Revisit if any cookie-based tracking is introduced.
+// cookieless_mode: 'always', so no analytics cookies are set. Sentry runs
+// client+server but writes no browser storage — Session Replay and session
+// tracking are disabled in instrumentation-client.ts. Revisit if any
+// cookie-based tracking is introduced.
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin', 'latin-ext'],
