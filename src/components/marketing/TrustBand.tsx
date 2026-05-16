@@ -8,13 +8,16 @@ import { cn } from '@/lib/cn';
 interface TrustBandProps {
   /** Renders an additional BoardGamePrices slot between BGG and Swedbank.
    * Off by default because BGP's role isn't explained on the homepage; only /about
-   * surrounds the strip with the prose that gives the slot context.
-   * When true, the band switches to a 2x2 grid at sm+ so four slots wrap cleanly
-   * to two rows instead of overflowing a single row. */
+   * surrounds the strip with the prose that gives the slot context. */
   includeBgp?: boolean;
 }
 
 function TrustBand({ includeBgp = false }: TrustBandProps = {}) {
+  const dotClass = cn(
+    'hidden text-semantic-text-muted',
+    includeBgp ? 'sm:hidden' : 'sm:inline-block',
+  );
+
   return (
     <section className="border-y border-semantic-border-subtle bg-semantic-bg-secondary py-3 sm:py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -54,13 +57,7 @@ function TrustBand({ includeBgp = false }: TrustBandProps = {}) {
             </li>
           )}
 
-          <li
-            aria-hidden="true"
-            className={cn(
-              'hidden text-semantic-text-muted',
-              includeBgp ? 'sm:hidden' : 'sm:inline-block',
-            )}
-          >
+          <li aria-hidden="true" className={dotClass}>
             ·
           </li>
 
@@ -77,13 +74,7 @@ function TrustBand({ includeBgp = false }: TrustBandProps = {}) {
             />
           </li>
 
-          <li
-            aria-hidden="true"
-            className={cn(
-              'hidden text-semantic-text-muted',
-              includeBgp ? 'sm:hidden' : 'sm:inline-block',
-            )}
-          >
+          <li aria-hidden="true" className={dotClass}>
             ·
           </li>
 

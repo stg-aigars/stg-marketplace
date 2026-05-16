@@ -14,14 +14,16 @@ import { HomeCta } from '@/components/marketing/HomeCta';
 import { IS_PRELAUNCH } from '@/lib/constants';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
+const HOMEPAGE_TITLE = 'Second Turn Games — Pre-loved board games for the Baltic region';
+const HOMEPAGE_DESCRIPTION =
+  'The Baltic marketplace for pre-loved board games. Buy and sell across Latvia, Lithuania, and Estonia — one shared marketplace, three countries.';
+
 export const metadata: Metadata = {
-  title: 'Second Turn Games — Pre-loved board games for the Baltic region',
-  description:
-    'The Baltic marketplace for pre-loved board games. Buy and sell across Latvia, Lithuania, and Estonia — one shared marketplace, three countries.',
+  title: HOMEPAGE_TITLE,
+  description: HOMEPAGE_DESCRIPTION,
   openGraph: {
-    title: 'Second Turn Games — Pre-loved board games for the Baltic region',
-    description:
-      'The Baltic marketplace for pre-loved board games. Buy and sell across Latvia, Lithuania, and Estonia — one shared marketplace, three countries.',
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
   },
 };
 
