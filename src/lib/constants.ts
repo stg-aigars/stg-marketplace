@@ -44,4 +44,4 @@ export const COUNTRY_TO_EVERYPAY_LOCALE: Record<string, string> = {
   EE: 'et',
 };
 
-export const IS_PRELAUNCH = true;
+export const IS_PRELAUNCH = false;
