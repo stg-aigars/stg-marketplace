@@ -12,7 +12,7 @@ export default function CookiesLt() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Paskutinį kartą atnaujinta: 2026 m. gegužės 13 d.
+          Paskutinį kartą atnaujinta: 2026 m. gegužės 16 d.
         </p>
 
         <Card className="not-prose">
@@ -143,15 +143,6 @@ export default function CookiesLt() {
                   </td>
                   <td className="py-2 pr-4 align-top">Vietinė</td>
                   <td className="py-2 align-top">Griežtai būtinas</td>
-                </tr>
-                <tr className="border-b border-semantic-border-subtle">
-                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
-                  <td className="py-2 pr-4 align-top">
-                    Įsimena, kad uždarėte svetainės pristatymo pranešimą, kad jis vėl
-                    neatsirastų.
-                  </td>
-                  <td className="py-2 pr-4 align-top">Vietinė</td>
-                  <td className="py-2 align-top">Pasirinkimas</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">stg-is-seller</td>

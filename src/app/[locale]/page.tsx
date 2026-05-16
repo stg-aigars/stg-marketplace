@@ -6,7 +6,6 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { HomeHero } from '@/components/marketing/HomeHero';
 import { TrustBand } from '@/components/marketing/TrustBand';
-import { CountryRail } from '@/components/marketing/CountryRail';
 import { Features } from '@/components/marketing/Features';
 import { WantedRail } from '@/components/marketing/WantedRail';
 import { SellerValueProp } from '@/components/marketing/SellerValueProp';
@@ -15,14 +14,16 @@ import { HomeCta } from '@/components/marketing/HomeCta';
 import { IS_PRELAUNCH } from '@/lib/constants';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 
+const HOMEPAGE_TITLE = 'Second Turn Games — Pre-loved board games for the Baltic region';
+const HOMEPAGE_DESCRIPTION =
+  'The Baltic marketplace for pre-loved board games. Buy and sell across Latvia, Lithuania, and Estonia — one shared marketplace, three countries.';
+
 export const metadata: Metadata = {
-  title: 'Second Turn Games — Pre-loved board games for the Baltic region',
-  description:
-    'Buy and sell pre-loved board games across Latvia, Lithuania, and Estonia. Every game deserves a second turn.',
+  title: HOMEPAGE_TITLE,
+  description: HOMEPAGE_DESCRIPTION,
   openGraph: {
-    title: 'Second Turn Games — Pre-loved board games for the Baltic region',
-    description:
-      'Buy and sell pre-loved board games across Latvia, Lithuania, and Estonia. Every game deserves a second turn.',
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
   },
 };
 
@@ -73,7 +74,6 @@ export default async function HomePage() {
     <>
       <HomeHero />
       <TrustBand />
-      <CountryRail />
 
       {showAvailableNowRail && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
