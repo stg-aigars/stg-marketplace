@@ -12,7 +12,7 @@ export default function CookiesLv() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Pēdējās izmaiņas: 2026. gada 13. maijā
+          Pēdējās izmaiņas: 2026. gada 16. maijā
         </p>
 
         <Card className="not-prose">
@@ -146,15 +146,6 @@ export default function CookiesLv() {
                   </td>
                   <td className="py-2 pr-4 align-top">Vietējā</td>
                   <td className="py-2 align-top">Stingri nepieciešams</td>
-                </tr>
-                <tr className="border-b border-semantic-border-subtle">
-                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
-                  <td className="py-2 pr-4 align-top">
-                    Atceras, ka esi aizvēris vietnes palaišanas paziņojumu, lai tas vairs
-                    neparādītos.
-                  </td>
-                  <td className="py-2 pr-4 align-top">Vietējā</td>
-                  <td className="py-2 align-top">Preference</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">stg-is-seller</td>

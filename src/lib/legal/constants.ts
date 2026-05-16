@@ -17,8 +17,8 @@ export const PRIVACY_VERSION_DISPLAY = '13 May 2026';
  *  acceptance flow for the Cookie Policy (it's a notice under e-Privacy
  *  Directive Art. 5(3), not a bilateral contract), so this constant is not
  *  stamped on user rows or audit-log resourceIds. */
-export const COOKIES_VERSION = '2026-05-13';
-export const COOKIES_VERSION_DISPLAY = '13 May 2026';
+export const COOKIES_VERSION = '2026-05-16';
+export const COOKIES_VERSION_DISPLAY = '16 May 2026';
 
 /** Governs the Seller Agreement (/seller-terms). Update when Seller content
  *  changes — commission rates, operational requirements, wallet mechanics,

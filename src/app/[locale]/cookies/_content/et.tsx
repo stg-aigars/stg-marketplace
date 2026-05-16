@@ -12,7 +12,7 @@ export default function CookiesEt() {
 
       <div className="prose prose-sm max-w-none text-semantic-text-secondary space-y-6">
         <p className="text-semantic-text-secondary">
-          Viimati uuendatud: 13. mail 2026
+          Viimati uuendatud: 16. mail 2026
         </p>
 
         <Card className="not-prose">
@@ -143,14 +143,6 @@ export default function CookiesEt() {
                   </td>
                   <td className="py-2 pr-4 align-top">Kohalik</td>
                   <td className="py-2 align-top">Rangelt vajalik</td>
-                </tr>
-                <tr className="border-b border-semantic-border-subtle">
-                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
-                  <td className="py-2 pr-4 align-top">
-                    Jätab meelde, et olete avamisbänneri sulgenud, et see uuesti ei ilmuks.
-                  </td>
-                  <td className="py-2 pr-4 align-top">Kohalik</td>
-                  <td className="py-2 align-top">Eelistus</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">stg-is-seller</td>
