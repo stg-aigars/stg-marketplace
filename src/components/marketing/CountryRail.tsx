@@ -42,9 +42,15 @@ const fetchCountryListingCounts = unstable_cache(
   { revalidate: 300, tags: ['country-listing-counts'] },
 );
 
-function bylineFor(code: CountryCode, count: number | null): string {
-  if (count === null || count === 0) return STATIC_BYLINES[code];
+function bylineFor(code: CountryCode, name: string, count: number | null): string {
+  if (count === 0) return `Be the first to list from ${name} →`;
+  if (count === null) return STATIC_BYLINES[code];
   return count === 1 ? '1 listing' : `${count} listings`;
+}
+
+function destinationFor(code: CountryCode, count: number | null): string {
+  if (count === 0) return '/sell';
+  return `/browse?country=${code}`;
 }
 
 async function CountryRail() {
@@ -66,20 +72,20 @@ async function CountryRail() {
           {COUNTRIES.map((country) => (
             <Link
               key={country.code}
-              href={`/browse?country=${country.code}`}
+              href={destinationFor(country.code, counts[country.code])}
               className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-border-focus focus-visible:ring-offset-2"
             >
               <Card hoverable className="p-6 text-center">
                 <CardBody className="p-0">
                   <span
                     aria-hidden="true"
-                    className={`${getCountryFlag(country.code)} text-5xl`}
+                    className={`${getCountryFlag(country.code)} text-5xl ring-1 ring-semantic-border-subtle rounded-sm`}
                   />
                   <h3 className="text-base font-semibold mt-3 text-semantic-text-heading">
                     {country.name}
                   </h3>
                   <p className="text-sm text-semantic-text-muted mt-1">
-                    {bylineFor(country.code, counts[country.code])}
+                    {bylineFor(country.code, country.name, counts[country.code])}
                   </p>
                 </CardBody>
               </Card>
