@@ -6,7 +6,7 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { HomeHero } from '@/components/marketing/HomeHero';
 import { TrustBand } from '@/components/marketing/TrustBand';
-import { CountryRail } from '@/components/marketing/CountryRail';
+import { BalticReachStrip } from '@/components/marketing/BalticReachStrip';
 import { Features } from '@/components/marketing/Features';
 import { WantedRail } from '@/components/marketing/WantedRail';
 import { SellerValueProp } from '@/components/marketing/SellerValueProp';
@@ -72,8 +72,8 @@ export default async function HomePage() {
   return (
     <>
       <HomeHero />
+      <BalticReachStrip />
       <TrustBand />
-      <CountryRail />
 
       {showAvailableNowRail && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
