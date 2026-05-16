@@ -56,16 +56,6 @@ const nextConfig = {
         ],
       },
       {
-        // Minimal CSP for API routes (middleware matcher excludes /api/*)
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'none'; frame-ancestors 'none'",
-          },
-        ],
-      },
-      {
         source: '/_next/static/(.*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
