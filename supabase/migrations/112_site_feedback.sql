@@ -1,7 +1,5 @@
--- Site feedback queue. Private posture: staff reads via service role at
--- /staff/feedback. Mirrors listing_comments' user_id ON DELETE SET NULL
--- anonymization (don't cascade — feedback stays for triage even if the
--- submitter deletes their account).
+-- user_id ON DELETE SET NULL (mirrors listing_comments): feedback survives
+-- account deletion so staff can still triage it.
 
 CREATE TABLE site_feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,13 +21,8 @@ CREATE INDEX idx_site_feedback_user_id
 
 ALTER TABLE site_feedback ENABLE ROW LEVEL SECURITY;
 
--- No policies on purpose. RLS enabled + zero policies = deny-all for the anon
--- and authenticated roles. The API route at /api/feedback inserts via the
--- service role, which bypasses RLS — so policies for those roles would be dead
--- code and create a false sense of an in-DB guard. The route enforces the
--- "anon submissions must have user_id = null" invariant in application code.
--- Staff reads + status mutations at /staff/feedback also go through the service
--- role.
+-- No policies on purpose: reads + writes go via the service role, so role-scoped
+-- policies would be dead code. See COMMENT ON TABLE for the full access posture.
 
 COMMENT ON TABLE site_feedback IS
   'Private user-feedback queue. RLS enabled with no policies (deny-all to anon and authenticated). All reads + writes go through the service role: writes from /api/feedback, reads + status mutations from /staff/feedback. The application enforces user_id = auth.uid() for signed-in submissions and user_id IS NULL for anon submissions; this is not enforceable via RLS because the service-role insert path bypasses policies.';
