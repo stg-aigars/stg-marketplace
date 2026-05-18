@@ -197,7 +197,7 @@
       "body": "We've got your feedback and we'll take a look."
     },
     "error": {
-      "generic": "Something went wrong. Please try again."
+      "generic": "That didn't go through. Please try once more."
     }
   }
 }

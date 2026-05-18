@@ -25,7 +25,7 @@ interface FeedbackFormProps {
 export function FeedbackForm({ onClose }: FeedbackFormProps) {
   const t = useTranslations('Feedback');
   const locale = useLocale();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [category, setCategory] = useState<FeedbackCategory>('idea');
   const [message, setMessage] = useState('');
@@ -38,7 +38,8 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear the auto-close timer on unmount so onClose can't fire against an
-  // already-torn-down modal (UTF-16 timer would otherwise log a React warning).
+  // already-torn-down modal (an orphaned setTimeout would otherwise trigger
+  // React's state-update-on-unmounted warning in dev).
   useEffect(() => {
     return () => {
       if (successTimerRef.current) {
@@ -98,7 +99,7 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
   if (status === 'success') {
     return (
       <div className="py-8 text-center">
-        <h3 className="text-lg font-semibold text-semantic-text-heading">
+        <h3 className="text-base font-semibold text-semantic-text-heading">
           {t('success.title')}
         </h3>
         <p className="mt-2 text-sm text-semantic-text-secondary">
@@ -135,7 +136,7 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
         </p>
       </div>
 
-      {!user && (
+      {!authLoading && !user && (
         <div>
           <Input
             id="feedback-email"
