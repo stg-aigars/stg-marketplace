@@ -1,5 +1,7 @@
+import * as Sentry from '@sentry/nextjs';
 import createIntlMiddleware from 'next-intl/middleware';
 import { type NextRequest, NextResponse } from 'next/server';
+import type { User } from '@supabase/supabase-js';
 import { routing } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/middleware';
 import { buildCspHeader } from '@/lib/csp';
@@ -48,9 +50,26 @@ export default async function middleware(request: NextRequest) {
   // if inline <Script nonce={...}> components are added in the future
   request.headers.set('x-nonce', nonce);
 
-  // 1. Refresh Supabase session (reads/writes cookies on request)
+  // 1. Refresh Supabase session (reads/writes cookies on request).
+  // Wrap getUser() in a Sentry span and graceful-degrade on throw:
+  // if the network call to Supabase auth fails (undici socket/TLS timeout),
+  // continue with user=null and fall through to the locale+cookie+CSP path
+  // at the bottom. The original behavior was to let the throw propagate,
+  // which produced Traefik "no available server" errors. Protected routes
+  // self-enforce via requireServerAuth, so this is safe.
   const { supabase, response: supabaseResponse } = createClient(request);
-  const { data: { user } } = await supabase.auth.getUser();
+  let user: User | null = null;
+  try {
+    const result = await Sentry.startSpan(
+      { name: 'middleware.auth.getUser', op: 'auth' },
+      async () => supabase.auth.getUser()
+    );
+    user = result.data.user;
+  } catch (err) {
+    Sentry.captureException(err, {
+      tags: { surface: 'middleware', op: 'getUser' },
+    });
+  }
 
   const pathname = stripLocalePrefix(request.nextUrl.pathname);
 
@@ -73,22 +92,32 @@ export default async function middleware(request: NextRequest) {
       return redirect;
     }
 
-    // 4. Redirect OAuth users who haven't confirmed their country
-    if (user) {
-      if (isOAuthUser(user.app_metadata)) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('country_confirmed')
-          .eq('id', user.id)
-          .single();
+    // 4. Redirect OAuth users who haven't confirmed their country.
+    // Same span+graceful-degrade pattern as step 1: on transient DB failure,
+    // don't block the user — fall through to normal locale+cookie+CSP path.
+    if (user && isOAuthUser(user.app_metadata)) {
+      const oauthUser = user;
+      try {
+        const result = await Sentry.startSpan(
+          { name: 'middleware.profile.countryConfirmed', op: 'db' },
+          async () => supabase
+            .from('user_profiles')
+            .select('country_confirmed')
+            .eq('id', oauthUser.id)
+            .single()
+        );
 
-        if (profile && !profile.country_confirmed) {
+        if (result.data && !result.data.country_confirmed) {
           const completeProfileUrl = new URL('/auth/complete-profile', request.url);
           completeProfileUrl.searchParams.set('returnUrl', request.nextUrl.pathname);
           const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(completeProfileUrl));
           setCspHeader(redirect, csp);
           return redirect;
         }
+      } catch (err) {
+        Sentry.captureException(err, {
+          tags: { surface: 'middleware', op: 'countryConfirmedQuery' },
+        });
       }
     }
   }
