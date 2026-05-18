@@ -3,22 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { usePathname } from '@/i18n/navigation';
-import {
-  Button,
-  Select,
-  Textarea,
-  Input,
-  TurnstileWidget,
-  Alert,
-} from '@/components/ui';
-import type { TurnstileWidgetRef, SelectOption } from '@/components/ui';
+import { Button, Textarea, Input, TurnstileWidget, Alert } from '@/components/ui';
+import type { TurnstileWidgetRef } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
-import {
-  FEEDBACK_CATEGORIES,
-  isFeedbackCategory,
-  type FeedbackCategory,
-} from '@/lib/feedback/types';
+import { FEEDBACK_CATEGORIES, type FeedbackCategory } from '@/lib/feedback/types';
 
 const MAX_MESSAGE = 2000;
 const SUCCESS_AUTO_CLOSE_MS = 3000;
@@ -57,11 +46,6 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
 
   const canSubmit =
     !!message.trim() && !!turnstileToken && status !== 'loading';
-
-  const categoryOptions: SelectOption[] = FEEDBACK_CATEGORIES.map((value) => ({
-    value,
-    label: t(`option.${value}`),
-  }));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -118,15 +102,35 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4 pb-4">
       <p className="text-sm text-semantic-text-secondary">{t('intro')}</p>
 
-      <Select
-        id="feedback-category"
-        label={t('label.category')}
-        options={categoryOptions}
-        value={category}
-        onChange={(e) => {
-          if (isFeedbackCategory(e.target.value)) setCategory(e.target.value);
-        }}
-      />
+      <div>
+        <p
+          id="feedback-category-label"
+          className="block text-sm font-medium text-semantic-text-primary mb-1.5"
+        >
+          {t('label.category')}
+        </p>
+        <div
+          role="radiogroup"
+          aria-labelledby="feedback-category-label"
+          className="grid grid-cols-3 gap-2"
+        >
+          {FEEDBACK_CATEGORIES.map((cat) => {
+            const selected = category === cat;
+            return (
+              <Button
+                key={cat}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setCategory(cat)}
+                variant={selected ? 'brand' : 'secondary'}
+              >
+                {t(`option.${cat}`)}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
 
       <div>
         <Textarea
