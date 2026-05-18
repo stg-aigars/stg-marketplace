@@ -1,4 +1,5 @@
 import type { ListingCondition } from '@/lib/listings/types';
+import type { FeedbackCategory } from '@/lib/feedback/types';
 
 export interface AnalyticsEventMap {
   search_performed: { query: string; result_count: number };
@@ -53,6 +54,10 @@ export interface AnalyticsEventMap {
     cart_payment_id: string | null;
     expected_antecedent_type_ids: readonly string[];
     service_file: string;
+  };
+  feedback_submitted: {
+    category: FeedbackCategory;
+    anonymous: boolean;
   };
 }
 

@@ -48,7 +48,9 @@ export type NotificationType =
   | 'dac7.report_available'
   // Moderation (DSA Art. 16/17)
   | 'moderation.notice_received'
-  | 'listing.actioned';
+  | 'listing.actioned'
+  // Site feedback
+  | 'feedback.received';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {
@@ -84,4 +86,7 @@ export interface NotificationContext {
   anonymous?: boolean;
   restrictionType?: 'soft_delete' | 'edit' | 'flag_only';
   redressMechanism?: string;
+  // Site feedback
+  feedbackId?: string;
+  preview?: string;
 }

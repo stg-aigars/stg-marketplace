@@ -250,4 +250,15 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
       `We've acted on a notice about ${ctx.gameName ?? 'your listing'}. Reason: ${ctx.reason ?? 'see details'}.`,
     link: (ctx) => (ctx.listingId ? `/listings/${ctx.listingId}` : '/account/listings'),
   },
+
+  // Site feedback (staff-targeted)
+  'feedback.received': {
+    title: () => 'New site feedback',
+    body: (ctx) => {
+      const cat = ctx.category ?? 'feedback';
+      const preview = (ctx.preview ?? '').slice(0, 140);
+      return preview ? `${cat} — ${preview}` : `${cat}`;
+    },
+    link: () => '/staff/feedback',
+  },
 };
