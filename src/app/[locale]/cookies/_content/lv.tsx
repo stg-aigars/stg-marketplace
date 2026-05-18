@@ -166,6 +166,25 @@ export default function CookiesLv() {
                   <td className="py-2 pr-4 align-top">Sesijas</td>
                   <td className="py-2 align-top">Preference</td>
                 </tr>
+                {/* TODO: translator review — best-effort translations below */}
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:feedback-banner-dismissed:v1</td>
+                  <td className="py-2 pr-4 align-top">
+                    Atceras, ka esi aizvēris beta atsauksmju paziņojuma joslu, lai tā vairs
+                    neparādītos.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Vietējā</td>
+                  <td className="py-2 align-top">Preference</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
+                  <td className="py-2 pr-4 align-top">
+                    Saglabāts, ja iepriekš esi aizvēris pirmslaišanas paziņojuma joslu. Vairs
+                    netiek rakstīts; var palikt no agrākiem apmeklējumiem.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Vietējā</td>
+                  <td className="py-2 align-top">Preference</td>
+                </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">cf.turnstile.*</td>
                   <td className="py-2 pr-4 align-top">

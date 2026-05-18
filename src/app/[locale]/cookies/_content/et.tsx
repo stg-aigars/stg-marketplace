@@ -162,6 +162,24 @@ export default function CookiesEt() {
                   <td className="py-2 pr-4 align-top">Seansipõhine</td>
                   <td className="py-2 align-top">Eelistus</td>
                 </tr>
+                {/* TODO: translator review — best-effort translations below */}
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:feedback-banner-dismissed:v1</td>
+                  <td className="py-2 pr-4 align-top">
+                    Jätab meelde, et sulgesite beeta-tagasiside ribade, et see enam ei ilmuks.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Kohalik</td>
+                  <td className="py-2 align-top">Eelistus</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
+                  <td className="py-2 pr-4 align-top">
+                    Salvestatud, kui sulgesite varem enne käivitamise teateriba. Enam ei
+                    kirjutata; võib püsida varasematest külastustest.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Kohalik</td>
+                  <td className="py-2 align-top">Eelistus</td>
+                </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">cf.turnstile.*</td>
                   <td className="py-2 pr-4 align-top">

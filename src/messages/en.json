@@ -173,8 +173,8 @@
   },
   "Feedback": {
     "trigger": "Feedback",
-    "bannerCopy": "We're listening. Tell us what's working and what isn't.",
-    "bannerCta": "Send feedback",
+    "bannerCopy": "We just launched in beta. If you hit a snag, let us know.",
+    "bannerCta": "Drop a note",
     "modalTitle": "Send feedback",
     "intro": "Bugs, ideas, anything you'd like to see — drop us a line.",
     "label": {

@@ -163,6 +163,25 @@ export default function CookiesLt() {
                   <td className="py-2 pr-4 align-top">Sesijos</td>
                   <td className="py-2 align-top">Pasirinkimas</td>
                 </tr>
+                {/* TODO: translator review — best-effort translations below */}
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:feedback-banner-dismissed:v1</td>
+                  <td className="py-2 pr-4 align-top">
+                    Įsimena, kad uždarėte beta atsiliepimų pranešimo juostą, kad ji daugiau
+                    nepasirodytų.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Vietinė</td>
+                  <td className="py-2 align-top">Pasirinkimas</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:launch-banner-dismissed:v2</td>
+                  <td className="py-2 pr-4 align-top">
+                    Įrašyta, jei anksčiau uždarėte ikipaleidimo pranešimo juostą. Nebėra
+                    rašoma; gali likti nuo ankstesnių apsilankymų.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Vietinė</td>
+                  <td className="py-2 align-top">Pasirinkimas</td>
+                </tr>
                 <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">cf.turnstile.*</td>
                   <td className="py-2 pr-4 align-top">
