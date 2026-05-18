@@ -10,13 +10,11 @@ import { createClient } from '@/lib/supabase/server';
 import { trackServer } from '@/lib/analytics/track-server';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
 import { routing } from '@/i18n/routing';
+import { isFeedbackCategory } from '@/lib/feedback/types';
 
 // No `logAuditEvent` call by design — feedback is operational signal, not
 // compliance-relevant. Matches the newsletter-signup precedent. PostHog
 // `feedback_submitted` is the volume record.
-
-const CATEGORIES = ['idea', 'bug', 'other'] as const;
-type Category = (typeof CATEGORIES)[number];
 
 const MAX = {
   message: 2000,
@@ -60,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   const category = String(body.category ?? '').trim();
-  if (!CATEGORIES.includes(category as Category)) {
+  if (!isFeedbackCategory(category)) {
     return NextResponse.json({ error: 'Please pick a category' }, { status: 400 });
   }
 
@@ -91,7 +89,10 @@ export async function POST(request: Request) {
   }
 
   // pageUrl persists path only — strips query string + hash per the
-  // data-minimization promise documented in the plan.
+  // data-minimization promise documented in the plan. Reject non-http(s)
+  // schemes (e.g. `javascript:`) — they don't throw in `new URL` but their
+  // `.pathname` returns garbage that would become an XSS payload once the
+  // staff queue renders this column as a link.
   let pageUrl: string | null = null;
   const rawPageUrl = typeof body.pageUrl === 'string' ? body.pageUrl.trim() : '';
   if (rawPageUrl) {
@@ -99,7 +100,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid page URL' }, { status: 400 });
     }
     try {
-      pageUrl = new URL(rawPageUrl, env.app.url).pathname;
+      const parsed = new URL(rawPageUrl, env.app.url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return NextResponse.json({ error: 'Invalid page URL' }, { status: 400 });
+      }
+      pageUrl = parsed.pathname;
     } catch {
       return NextResponse.json({ error: 'Invalid page URL' }, { status: 400 });
     }
@@ -158,12 +163,17 @@ export async function POST(request: Request) {
     message,
   ];
 
+  // Strip CRLF + tab from the subject slice — same header-injection vector
+  // that the contactEmail guard above closes for `replyTo`. The DB stores
+  // the original multi-line message; only the subject preview is flattened.
+  const subjectSlice = message.slice(0, 80).replace(/[\r\n\t]+/g, ' ');
+
   void resend.emails
     .send({
       from: `Second Turn Games <${env.resend.fromEmail}>`,
       to: LEGAL_ENTITY_EMAIL,
       replyTo: contactEmail || undefined,
-      subject: `[Site feedback] ${category} — ${message.slice(0, 80)}`,
+      subject: `[Site feedback] ${category} — ${subjectSlice}`,
       text: emailLines.join('\n'),
     })
     .catch((err) => {
@@ -180,7 +190,7 @@ export async function POST(request: Request) {
   // a single PostHog person rather than minting one per event (cookieless EU
   // mode is already coarse-grained on uniqueness — see CLAUDE.md "Analytics").
   void trackServer('feedback_submitted', userId ?? 'anonymous-feedback', {
-    category: category as Category,
+    category,
     anonymous: !userId,
   });
 
