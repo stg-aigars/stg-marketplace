@@ -3,11 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createServiceClient } from '@/lib/supabase';
+import { isFeedbackStatus, type FeedbackStatus } from '@/lib/feedback/types';
 
 type ActionResult = { success: true } | { error: string };
-type FeedbackStatus = 'new' | 'triaged' | 'resolved';
-
-const VALID_STATUSES: readonly FeedbackStatus[] = ['new', 'triaged', 'resolved'];
 
 export async function setFeedbackStatus(
   feedbackId: string,
@@ -16,7 +14,7 @@ export async function setFeedbackStatus(
   const { isStaff, user } = await requireServerAuth();
   if (!isStaff || !user) return { error: 'Not authorized' };
 
-  if (!VALID_STATUSES.includes(status)) {
+  if (!isFeedbackStatus(status)) {
     return { error: 'Invalid status' };
   }
 

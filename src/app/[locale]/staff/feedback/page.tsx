@@ -12,14 +12,18 @@ import {
 import { ChatTeardropDots } from '@phosphor-icons/react/ssr';
 import { formatDateTime } from '@/lib/date-utils';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
-import { FEEDBACK_CATEGORIES, type FeedbackCategory } from '@/lib/feedback/types';
+import {
+  FEEDBACK_CATEGORIES,
+  type FeedbackCategory,
+  type FeedbackStatus,
+} from '@/lib/feedback/types';
 import { FeedbackStatusControl } from './FeedbackStatusControl';
 
 export const metadata: Metadata = {
   title: 'Site feedback — Staff',
 };
 
-type StatusTab = 'new' | 'triaged' | 'resolved' | 'all';
+type StatusTab = FeedbackStatus | 'all';
 type CategoryTab = FeedbackCategory | 'all';
 
 interface FeedbackRow {
@@ -30,11 +34,11 @@ interface FeedbackRow {
   contact_email: string | null;
   page_url: string | null;
   locale: string | null;
-  status: 'new' | 'triaged' | 'resolved';
+  status: FeedbackStatus;
   created_at: string;
 }
 
-const STATUS_BADGE: Record<FeedbackRow['status'], { label: string; variant: 'warning' | 'default' | 'success' }> = {
+const STATUS_BADGE: Record<FeedbackStatus, { label: string; variant: 'warning' | 'default' | 'success' }> = {
   new: { label: 'New', variant: 'warning' },
   triaged: { label: 'Triaged', variant: 'default' },
   resolved: { label: 'Resolved', variant: 'success' },

@@ -1,16 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Select } from '@/components/ui';
+import { FEEDBACK_STATUSES, type FeedbackStatus } from '@/lib/feedback/types';
 import { setFeedbackStatus } from './actions';
 
-type FeedbackStatus = 'new' | 'triaged' | 'resolved';
-
-const STATUS_OPTIONS: { value: FeedbackStatus; label: string }[] = [
-  { value: 'new', label: 'New' },
-  { value: 'triaged', label: 'Triaged' },
-  { value: 'resolved', label: 'Resolved' },
-];
+const STATUS_OPTIONS: { value: FeedbackStatus; label: string }[] = FEEDBACK_STATUSES.map(
+  (value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) }),
+);
 
 interface Props {
   feedbackId: string;
@@ -21,6 +18,12 @@ export function FeedbackStatusControl({ feedbackId, status }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [localStatus, setLocalStatus] = useState<FeedbackStatus>(status);
+
+  // Sync from prop when the parent revalidates (e.g. another staff member
+  // changed the row in a parallel tab) — useState only seeds on first mount.
+  useEffect(() => {
+    setLocalStatus(status);
+  }, [status]);
 
   function handleChange(next: FeedbackStatus) {
     if (next === localStatus) return;
