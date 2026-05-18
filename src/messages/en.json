@@ -170,5 +170,34 @@
     "payButton": "Pay {amount}",
     "obligationNote": "By clicking, you confirm an order with an obligation to pay.",
     "adrNotice": "Out-of-court dispute resolution: <link>{body}</link>."
+  },
+  "Feedback": {
+    "trigger": "Feedback",
+    "bannerCopy": "We're listening. Tell us what's working and what isn't.",
+    "bannerCta": "Send feedback",
+    "modalTitle": "Send feedback",
+    "intro": "Bugs, ideas, anything you'd like to see — drop us a line.",
+    "label": {
+      "category": "Category",
+      "message": "Your feedback",
+      "email": "Your email (optional)"
+    },
+    "option": {
+      "idea": "Idea",
+      "bug": "Bug",
+      "other": "Other"
+    },
+    "messageHelper": "{count}/2000 characters",
+    "helper": {
+      "email": "Leave blank to stay anonymous. We'll only use it to follow up if needed."
+    },
+    "submit": "Send feedback",
+    "success": {
+      "title": "Thanks for the note",
+      "body": "We've got your feedback and we'll take a look."
+    },
+    "error": {
+      "generic": "That didn't go through. Please try once more."
+    }
   }
 }
