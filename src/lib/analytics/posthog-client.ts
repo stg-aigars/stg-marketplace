@@ -12,6 +12,8 @@ export function getPostHogClient() {
       ui_host: 'https://eu.posthog.com',
       cookieless_mode: 'always',
       capture_pageview: false,
+      capture_pageleave: true,
+      capture_performance: { web_vitals: true },
       defaults: '2026-01-30',
     });
     initialized = true;
