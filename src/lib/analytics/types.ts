@@ -54,6 +54,10 @@ export interface AnalyticsEventMap {
     expected_antecedent_type_ids: readonly string[];
     service_file: string;
   };
+  feedback_submitted: {
+    category: 'idea' | 'bug' | 'other';
+    anonymous: boolean;
+  };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

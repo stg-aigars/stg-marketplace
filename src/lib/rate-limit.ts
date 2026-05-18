@@ -110,3 +110,4 @@ export const orderMessageLimiter = rateLimit({ interval: 60_000, maxRequests: 20
 export const orderActionLimiter = rateLimit({ interval: 60_000, maxRequests: 10 });
 export const cartValidateLimiter = rateLimit({ interval: 60_000, maxRequests: 30 });
 export const reportIllegalContentLimiter = rateLimit({ interval: 3_600_000, maxRequests: 3 });
+export const feedbackLimiter = rateLimit({ interval: 3_600_000, maxRequests: 30 });
