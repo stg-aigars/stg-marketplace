@@ -159,6 +159,15 @@ export default function CookiesEn() {
                   <td className="py-2 align-top">Preference</td>
                 </tr>
                 <tr className="border-b border-semantic-border-subtle">
+                  <td className="py-2 pr-4 align-top font-mono text-xs">stg:feedback-banner-dismissed:v1</td>
+                  <td className="py-2 pr-4 align-top">
+                    Remembers that you dismissed the beta-launch feedback banner so it stays
+                    hidden across visits.
+                  </td>
+                  <td className="py-2 pr-4 align-top">Local</td>
+                  <td className="py-2 align-top">Preference</td>
+                </tr>
+                <tr className="border-b border-semantic-border-subtle">
                   <td className="py-2 pr-4 align-top font-mono text-xs">cf.turnstile.*</td>
                   <td className="py-2 pr-4 align-top">
                     Written by the Cloudflare Turnstile widget when bot-protected forms load

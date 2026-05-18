@@ -50,7 +50,7 @@ export function FeedbackBanner() {
             size="sm"
             onClick={dismiss}
             aria-label="Dismiss"
-            className="shrink-0 !p-1"
+            className="shrink-0"
           >
             <X size={16} weight="bold" />
           </Button>
