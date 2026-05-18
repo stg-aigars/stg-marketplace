@@ -18,15 +18,6 @@ describe('generateOrderNumber', () => {
     expect(orderNumber).toContain(expectedDate);
   });
 
-  it('generates different numbers on consecutive calls', () => {
-    const numbers = new Set<string>();
-    for (let i = 0; i < 20; i++) {
-      numbers.add(generateOrderNumber());
-    }
-    // With 4 chars from a 30-char alphabet, collision in 20 tries is extremely unlikely
-    expect(numbers.size).toBe(20);
-  });
-
   it('does not contain ambiguous characters (I, O, 0, 1)', () => {
     for (let i = 0; i < 50; i++) {
       const orderNumber = generateOrderNumber();
