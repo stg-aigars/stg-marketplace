@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { usePathname } from '@/i18n/navigation';
 import {
   Button,
   Select,
@@ -13,7 +14,11 @@ import {
 import type { TurnstileWidgetRef, SelectOption } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
-import { FEEDBACK_CATEGORIES, type FeedbackCategory } from '@/lib/feedback/types';
+import {
+  FEEDBACK_CATEGORIES,
+  isFeedbackCategory,
+  type FeedbackCategory,
+} from '@/lib/feedback/types';
 
 const MAX_MESSAGE = 2000;
 const SUCCESS_AUTO_CLOSE_MS = 3000;
@@ -25,6 +30,7 @@ interface FeedbackFormProps {
 export function FeedbackForm({ onClose }: FeedbackFormProps) {
   const t = useTranslations('Feedback');
   const locale = useLocale();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
 
   const [category, setCategory] = useState<FeedbackCategory>('idea');
@@ -72,8 +78,7 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
           category,
           message: message.trim(),
           contactEmail: !user && email.trim() ? email.trim() : undefined,
-          pageUrl:
-            typeof window !== 'undefined' ? window.location.pathname : undefined,
+          pageUrl: pathname,
           locale,
           turnstileToken,
         }),
@@ -118,7 +123,9 @@ export function FeedbackForm({ onClose }: FeedbackFormProps) {
         label={t('label.category')}
         options={categoryOptions}
         value={category}
-        onChange={(e) => setCategory(e.target.value as FeedbackCategory)}
+        onChange={(e) => {
+          if (isFeedbackCategory(e.target.value)) setCategory(e.target.value);
+        }}
       />
 
       <div>

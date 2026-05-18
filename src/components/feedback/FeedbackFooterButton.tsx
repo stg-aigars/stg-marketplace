@@ -20,13 +20,7 @@ export function FeedbackFooterButton({ className }: FeedbackFooterButtonProps) {
       <button type="button" onClick={() => setOpen(true)} className={className}>
         {t('trigger')}
       </button>
-      {open && (
-        <FeedbackModal
-          open
-          onClose={() => setOpen(false)}
-          title={t('modalTitle')}
-        />
-      )}
+      {open && <FeedbackModal open onClose={() => setOpen(false)} />}
     </>
   );
 }
