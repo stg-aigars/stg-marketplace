@@ -1,5 +1,7 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { LEGAL_ENTITY_EMAIL, LEGAL_ENTITY_NAME } from '@/lib/constants';
+import { FeedbackFooterButton } from '@/components/feedback/FeedbackFooterButton';
 
 const LINK_CLASS =
   'sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom';
@@ -76,11 +78,18 @@ function SiteFooter() {
                 <h3 className={FOOTER_COLUMN_HEADING_CLASS}>Explore</h3>
                 <ul className="space-y-2 text-sm text-semantic-text-muted">
                   {EXPLORE_LINKS.map((link) => (
-                    <li key={link.href}>
-                      <Link href={link.href} className={LINK_CLASS}>
-                        {link.label}
-                      </Link>
-                    </li>
+                    <Fragment key={link.href}>
+                      <li>
+                        <Link href={link.href} className={LINK_CLASS}>
+                          {link.label}
+                        </Link>
+                      </li>
+                      {link.href === '/contact' && (
+                        <li>
+                          <FeedbackFooterButton className={LINK_CLASS} />
+                        </li>
+                      )}
+                    </Fragment>
                   ))}
                 </ul>
               </div>
