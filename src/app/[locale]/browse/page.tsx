@@ -107,13 +107,26 @@ export default async function BrowsePage(
     query = query.or(weightClauses.join(','), { referencedTable: 'games' });
   }
   if (filters.expansionsOnly) {
-    // Show listings that include expansions OR are expansion-only listings
+    // OR across two relations PostgREST can't fuse into one query: listing has
+    // expansion rows OR the listing's own game is an expansion. Both sub-queries
+    // are bounded by active listings count (not the related-table volumes) and
+    // carry an explicit cap so the bound is visible.
+    const EXPANSION_FILTER_CAP = 5000;
     const [{ data: withExpansions }, { data: isExpansion }] = await Promise.all([
-      supabase.from('listing_expansions').select('listing_id, listings!inner(status)').in('listings.status', ['active', 'reserved']),
-      supabase.from('listings').select('id, games!inner(is_expansion)').eq('games.is_expansion', true).in('status', ['active', 'reserved']),
+      supabase
+        .from('listings')
+        .select('id, listing_expansions!inner(listing_id)')
+        .in('status', ['active', 'reserved'])
+        .limit(EXPANSION_FILTER_CAP),
+      supabase
+        .from('listings')
+        .select('id, games!inner(is_expansion)')
+        .eq('games.is_expansion', true)
+        .in('status', ['active', 'reserved'])
+        .limit(EXPANSION_FILTER_CAP),
     ]);
-    const expIds = new Set([
-      ...(withExpansions ?? []).map((r) => r.listing_id),
+    const expIds = new Set<string>([
+      ...(withExpansions ?? []).map((r) => r.id),
       ...(isExpansion ?? []).map((r) => r.id),
     ]);
     if (expIds.size === 0) {
