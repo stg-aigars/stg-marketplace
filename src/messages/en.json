@@ -37,6 +37,11 @@
       "heading": "Recently listed",
       "browseAll": "Browse all games"
     },
+    "wanted": {
+      "eyebrow": "On the hunt",
+      "heading": "Wanted by buyers",
+      "browseAll": "See all wanted listings"
+    },
     "features": {
       "eyebrow": "What you can do",
       "heading": "Built for the Baltic board game scene.",
