@@ -4,16 +4,16 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
-import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
+import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece, Flag } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { getConditionDetail, getConditionLabel } from '@/lib/condition-config';
+import { getConditionLabel } from '@/lib/condition-config';
 import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
-import { formatDate, formatRelativeTime } from '@/lib/date-utils';
+import { formatDate, formatMonthYear, formatRelativeTime } from '@/lib/date-utils';
 import { toBggFullSize, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
@@ -552,11 +552,8 @@ export default async function ListingDetailPage(
                   Condition guide
                 </InlineArrowLink>
               </div>
-              <p className="text-sm text-semantic-text-secondary leading-relaxed">
-                {getConditionDetail(listing.condition)}
-              </p>
               {listing.description && (
-                <p className="text-semantic-text-secondary whitespace-pre-line mt-3 pt-3 border-t border-semantic-border-subtle">
+                <p className="text-semantic-text-secondary whitespace-pre-line">
                   {listing.description}
                 </p>
               )}
@@ -587,7 +584,7 @@ export default async function ListingDetailPage(
                     <span>
                       Member since{' '}
                       {listing.user_profiles?.created_at
-                        ? formatDate(listing.user_profiles.created_at)
+                        ? formatMonthYear(listing.user_profiles.created_at)
                         : 'unknown'}
                     </span>
                     {sellerCompletedSales > 0 && (
@@ -617,19 +614,10 @@ export default async function ListingDetailPage(
                   ),
                 })}
               </p>
-              {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this listing */}
-              <p className="mt-2 text-xs text-semantic-text-muted">
-                <Link
-                  href={`/report-illegal-content?listingId=${listing.id}&contentReference=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`)}`}
-                  className="link-brand"
-                >
-                  Report this listing
-                </Link>
-              </p>
             </CardBody>
           </Card>
 
-          {/* Share + Favorite (utility actions) */}
+          {/* Share + Favorite + Report (utility actions) */}
           <div className="flex items-center gap-3">
             <ShareButtons
               url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`}
@@ -642,6 +630,15 @@ export default async function ListingDetailPage(
                 isAuthenticated={!!user}
               />
             )}
+            {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this listing */}
+            <Button variant="ghost" size="sm" asChild className="ml-auto">
+              <Link
+                href={`/report-illegal-content?listingId=${listing.id}&contentReference=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`)}`}
+              >
+                <Flag size={16} className="mr-1.5" />
+                Report
+              </Link>
+            </Button>
           </div>
 
           {/* Comments — hide entirely for anonymous users when empty */}
