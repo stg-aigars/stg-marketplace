@@ -175,13 +175,14 @@ export default async function SellerProfilePage(
               Member since {formatMonthYear(profile.created_at)}
             </p>
           )}
+          {/* Rating is intentionally not rendered in the header anymore — the
+              Stats bar below has a dedicated Positive % column that carries
+              the same signal without competing with the badges. */}
           <SellerBadgesRow
             positivePct={rating.positivePct}
             ratingCount={rating.ratingCount}
             completedSales={completedSales}
             sellerCreatedAt={profile.created_at}
-            reviewsHref="#reviews"
-            ratingSize="md"
           />
           <ShareButtons
             url={`${env.app.url}/sellers/${id}`}

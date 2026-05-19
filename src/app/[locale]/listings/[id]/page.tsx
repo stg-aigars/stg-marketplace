@@ -24,6 +24,7 @@ import { getBidHistory, getAuctionState } from '@/lib/auctions/actions';
 import { getSellerRating } from '@/lib/reviews/service';
 import { getSellerCompletedSales, getActiveOrReservedListingCount } from '@/lib/services/sellers';
 import { SellerBadgesRow } from '@/components/sellers/SellerBadgesRow';
+import { SellerRating } from '@/components/reviews';
 import { BuyActions } from '@/components/listings/BuyActions';
 import { GameIdentityRow } from '@/components/listings/atoms';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
@@ -616,8 +617,10 @@ export default async function ListingDetailPage(
                 />
               </Link>
 
-              {/* Trust signals — rating + tappable trust & early-member badges
-                  with inline disclosure (state managed inside the client component). */}
+              {/* Tappable trust + early-member badges with inline disclosure
+                  (state managed inside the client component). Rating is intentionally
+                  *not* in this row — it lives with the stats line below where it
+                  reinforces the sales count instead of competing with the badges. */}
               <SellerBadgesRow
                 positivePct={sellerRating.positivePct}
                 ratingCount={sellerRating.ratingCount}
@@ -625,16 +628,34 @@ export default async function ListingDetailPage(
                 sellerCreatedAt={listing.user_profiles?.created_at}
               />
 
-              {/* Stats line — raw counts behind the trust signals. */}
-              <p className="mt-2 text-sm text-semantic-text-muted">
-                {sellerActiveListings} {sellerActiveListings === 1 ? 'listing' : 'listings'}
+              {/* Stats line — listings · sales · rating. Uses flex + items-center
+                  so the SellerRating's inline-flex container vertically aligns with
+                  the surrounding text spans (a plain inline render makes the rating
+                  block appear slightly elevated relative to baseline text). Rating
+                  segment is hidden when ratingCount=0 (SellerRating would otherwise
+                  render "New seller" which reads odd mid-stats-line). */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-semantic-text-muted">
+                <span>
+                  {sellerActiveListings} {sellerActiveListings === 1 ? 'listing' : 'listings'}
+                </span>
                 {sellerCompletedSales > 0 && (
                   <>
-                    {' · '}
-                    {sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'}
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      {sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'}
+                    </span>
                   </>
                 )}
-              </p>
+                {sellerRating.ratingCount > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <SellerRating
+                      positivePct={sellerRating.positivePct}
+                      ratingCount={sellerRating.ratingCount}
+                    />
+                  </>
+                )}
+              </div>
 
               {/* Pre-contract private-seller notice (PTAC §2.5) — compact muted
                   one-liner separated by a divider from the data above. */}
