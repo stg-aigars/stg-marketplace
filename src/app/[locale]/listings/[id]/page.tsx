@@ -634,7 +634,7 @@ export default async function ListingDetailPage(
                   block appear slightly elevated relative to baseline text). Rating
                   segment is hidden when ratingCount=0 (SellerRating would otherwise
                   render "New seller" which reads odd mid-stats-line). */}
-              <div className="mt-2 flex flex-wrap items-center gap-x-1.5 text-sm text-semantic-text-muted">
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-semantic-text-muted">
                 <span>
                   {sellerActiveListings} {sellerActiveListings === 1 ? 'listing' : 'listings'}
                 </span>
