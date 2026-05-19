@@ -16,6 +16,10 @@ interface SellerBadgesRowProps {
   ratingCount: number;
   completedSales: number;
   sellerCreatedAt: string | null | undefined;
+  /** Forwarded to SellerRating — when set, the rating count becomes an anchor link (e.g. "#reviews"). */
+  reviewsHref?: string;
+  /** Forwarded to SellerRating — 'sm' on the listing-detail card, default 'md' on the seller profile page. */
+  ratingSize?: 'sm' | 'md';
 }
 
 // One-sentence "what does this mean" line per visible trust tier. Phrased as a
@@ -37,6 +41,8 @@ function SellerBadgesRow({
   ratingCount,
   completedSales,
   sellerCreatedAt,
+  reviewsHref,
+  ratingSize = 'sm',
 }: SellerBadgesRowProps) {
   const [open, setOpen] = useState<OpenExplainer>(null);
 
@@ -51,7 +57,12 @@ function SellerBadgesRow({
   return (
     <>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <SellerRating positivePct={positivePct} ratingCount={ratingCount} size="sm" />
+        <SellerRating
+          positivePct={positivePct}
+          ratingCount={ratingCount}
+          size={ratingSize}
+          reviewsHref={reviewsHref}
+        />
 
         {trustVisible && (
           <button

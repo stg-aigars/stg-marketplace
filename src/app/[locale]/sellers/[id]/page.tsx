@@ -2,14 +2,13 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSellerRating, getSellerReviews } from '@/lib/reviews/service';
-import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
-import { TrustBadge } from '@/components/sellers/TrustBadge';
+import { getSellerCompletedSales } from '@/lib/services/sellers';
+import { SellerBadgesRow } from '@/components/sellers/SellerBadgesRow';
 import { formatMonthYear } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { Avatar, Card, CardBody, Pagination, ShareButtons } from '@/components/ui';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { getListingCardCounts } from '@/lib/listings/queries';
-import { SellerRating } from '@/components/reviews';
 import { ReviewItem } from '@/components/reviews';
 import { SellerProfileAnalytics } from '@/components/analytics/SellerProfileAnalytics';
 import { JsonLd } from '@/lib/seo/json-ld';
@@ -160,23 +159,30 @@ export default async function SellerProfilePage(
       {/* Seller header */}
       <div className="flex items-center gap-4 mb-6">
         <Avatar name={sellerName} src={profile.avatar_url} size="lg" />
-        <div>
-          <h1 className={PAGE_HEADING_CLASS}>
-            {sellerName}
-          </h1>
-          <div className="flex items-center gap-3 mt-1 text-sm text-semantic-text-secondary">
+        <div className="flex-1 min-w-0">
+          <h1 className={cn(PAGE_HEADING_CLASS, 'flex items-center gap-3')}>
+            <span className="truncate">{sellerName}</span>
             {profile.country && (
-              <span className="flex items-center gap-1">
-                <span className={getCountryFlag(profile.country)} />
-                {getCountryName(profile.country)}
-              </span>
+              <span
+                className={`${getCountryFlag(profile.country)} shrink-0`}
+                title={getCountryName(profile.country)}
+                aria-label={getCountryName(profile.country)}
+              />
             )}
-            <span>Member since {formatMonthYear(profile.created_at)}</span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <SellerRating positivePct={rating.positivePct} ratingCount={rating.ratingCount} reviewsHref="#reviews" />
-            <TrustBadge tier={calculateTrustTier(completedSales, rating.positivePct, rating.ratingCount)} />
-          </div>
+          </h1>
+          {profile.created_at && (
+            <p className="mt-1 text-sm text-semantic-text-muted">
+              Member since {formatMonthYear(profile.created_at)}
+            </p>
+          )}
+          <SellerBadgesRow
+            positivePct={rating.positivePct}
+            ratingCount={rating.ratingCount}
+            completedSales={completedSales}
+            sellerCreatedAt={profile.created_at}
+            reviewsHref="#reviews"
+            ratingSize="md"
+          />
           <ShareButtons
             url={`${env.app.url}/sellers/${id}`}
             title={sellerName}
