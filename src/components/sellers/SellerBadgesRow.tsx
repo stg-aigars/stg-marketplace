@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { SellerRating } from '@/components/reviews';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
 import { EarlyMemberBadge } from '@/components/sellers/EarlyMemberBadge';
 import {
@@ -11,15 +10,18 @@ import {
   type TrustTier,
 } from '@/lib/services/sellers-badges';
 
+/**
+ * Trust + early-member badge row with inline-disclosure explainers.
+ *
+ * Rating (👍 N% positive) lives outside this component so it can sit with
+ * sales/listings counts in the stats line — the badges row stays free of
+ * quantitative chatter and the rating reinforces the sales count instead.
+ */
 interface SellerBadgesRowProps {
   positivePct: number;
   ratingCount: number;
   completedSales: number;
   sellerCreatedAt: string | null | undefined;
-  /** Forwarded to SellerRating — when set, the rating count becomes an anchor link (e.g. "#reviews"). */
-  reviewsHref?: string;
-  /** Forwarded to SellerRating — 'sm' on the listing-detail card, default 'md' on the seller profile page. */
-  ratingSize?: 'sm' | 'md';
 }
 
 // One-sentence "what does this mean" line per visible trust tier. Phrased as a
@@ -41,14 +43,15 @@ function SellerBadgesRow({
   ratingCount,
   completedSales,
   sellerCreatedAt,
-  reviewsHref,
-  ratingSize = 'sm',
 }: SellerBadgesRowProps) {
   const [open, setOpen] = useState<OpenExplainer>(null);
 
   const tier = calculateTrustTier(completedSales, positivePct, ratingCount);
   const trustVisible = TRUST_TIER_CONFIG[tier].show;
   const earlyVisible = isEarlyMember(sellerCreatedAt);
+
+  // Avoid leaving an empty row with mt-3 spacing when the seller has neither badge.
+  if (!trustVisible && !earlyVisible) return null;
 
   function toggle(which: NonNullable<OpenExplainer>) {
     setOpen((prev) => (prev === which ? null : which));
@@ -57,13 +60,6 @@ function SellerBadgesRow({
   return (
     <>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <SellerRating
-          positivePct={positivePct}
-          ratingCount={ratingCount}
-          size={ratingSize}
-          reviewsHref={reviewsHref}
-        />
-
         {trustVisible && (
           <button
             type="button"
