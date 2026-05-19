@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ImageSquare, Tag, Translate, Buildings, CalendarBlank, MagnifyingGlass } from '@phosphor-icons/react/ssr';
-import { Card, CardBody, ShareButtons, Breadcrumb, Avatar, Alert, Badge, Button } from '@/components/ui';
+import { ImageSquare, Tag, Translate, Buildings, CalendarBlank, MagnifyingGlass, CaretRight, Flag } from '@phosphor-icons/react/ssr';
+import { Card, CardBody, ShareButtons, Breadcrumb, Avatar, Alert, Button } from '@/components/ui';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { toBggFullSize, isBggImage, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
-import { formatDate } from '@/lib/date-utils';
+import { formatDate, formatMonthYear, formatRelativeTime } from '@/lib/date-utils';
 import { createClient } from '@/lib/supabase/server';
 import { getWantedListingById } from '@/lib/wanted/actions';
 import { RelatedWants } from './RelatedWants';
@@ -82,6 +82,60 @@ export default async function WantedDetailPage(props: Props) {
 
   const buyerCountryName = getCountryName(listing.country);
   const buyerFlagClass = getCountryFlag(listing.country);
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
+  const hasEditionDetails =
+    hasEdition && (listing.version_name || listing.language || listing.publisher || listing.edition_year);
+
+  // Title card markup, captured once and rendered into two layout slots:
+  // - On mobile, above the game image (`lg:hidden` wrapper)
+  // - On desktop, as the first item in the right column (`hidden lg:block` wrapper)
+  // Mirrors the dual-slot pattern in the listing detail page.
+  const titleCard = (
+    <Card>
+      <CardBody className="space-y-3">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
+          {listing.game_name}
+        </h1>
+
+        <hr className="border-semantic-border-subtle" />
+
+        {hasEditionDetails ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
+            {listing.version_name && (
+              <div className="flex items-center gap-1.5">
+                <Tag size={15} className="flex-shrink-0" />
+                <span>{listing.version_name}</span>
+              </div>
+            )}
+            {listing.language && (
+              <div className="flex items-center gap-1.5">
+                <Translate size={15} className="flex-shrink-0" />
+                <span>{listing.language}</span>
+              </div>
+            )}
+            {listing.publisher && (
+              <div className="flex items-center gap-1.5">
+                <Buildings size={15} className="flex-shrink-0" />
+                <span>{listing.publisher}</span>
+              </div>
+            )}
+            {listing.edition_year && (
+              <div className="flex items-center gap-1.5">
+                <CalendarBlank size={15} className="flex-shrink-0" />
+                <span>{listing.edition_year}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-semantic-text-muted">Any edition</p>
+        )}
+
+        <p className="text-sm text-semantic-text-muted" title={formatDate(listing.created_at)}>
+          Posted {formatRelativeTime(listing.created_at)}
+        </p>
+      </CardBody>
+    </Card>
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -91,6 +145,9 @@ export default async function WantedDetailPage(props: Props) {
           { label: listing.game_name },
         ]}
       />
+
+      {/* Mobile-only: title above image (above-the-fold hierarchy) */}
+      <div className="lg:hidden mb-6">{titleCard}</div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left column: Game image hero + Game details (desktop only) */}
@@ -128,6 +185,9 @@ export default async function WantedDetailPage(props: Props) {
 
         {/* Right column: About this want */}
         <div className="space-y-6">
+          {/* Desktop-only: title card sits first in the right column */}
+          <div className="hidden lg:block">{titleCard}</div>
+
           {!isOwner && (
             <Alert variant="info" icon={<MagnifyingGlass size={20} />} title="Someone is looking for this game">
               <p>If you have a copy, you can list it for sale.</p>
@@ -143,74 +203,6 @@ export default async function WantedDetailPage(props: Props) {
             </Alert>
           )}
 
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-semantic-text-heading">
-              {listing.game_name}
-            </h1>
-            <Badge variant="wanted">Wanted</Badge>
-          </div>
-
-          {/* Edition details — compact icon row */}
-          {hasEdition && (listing.version_name || listing.language || listing.publisher || listing.edition_year) ? (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-semantic-text-muted">
-              {listing.version_name && (
-                <div className="flex items-center gap-1.5">
-                  <Tag size={15} className="flex-shrink-0" />
-                  <span>{listing.version_name}</span>
-                </div>
-              )}
-              {listing.language && (
-                <div className="flex items-center gap-1.5">
-                  <Translate size={15} className="flex-shrink-0" />
-                  <span>{listing.language}</span>
-                </div>
-              )}
-              {listing.publisher && (
-                <div className="flex items-center gap-1.5">
-                  <Buildings size={15} className="flex-shrink-0" />
-                  <span>{listing.publisher}</span>
-                </div>
-              )}
-              {listing.edition_year && (
-                <div className="flex items-center gap-1.5">
-                  <CalendarBlank size={15} className="flex-shrink-0" />
-                  <span>{listing.edition_year}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-semantic-text-muted">Any edition</p>
-          )}
-
-          {/* Buyer info */}
-          <Card>
-            <CardBody>
-              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
-                Buyer
-              </h2>
-              <div className="flex items-center gap-3">
-                <Avatar name={listing.buyer_name || '?'} src={listing.buyer_avatar_url} />
-                <div>
-                  <p className="font-medium text-semantic-text-heading">
-                    {listing.buyer_name || 'Anonymous'}
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
-                    {buyerFlagClass && (
-                      <span className={`${buyerFlagClass}`} title={buyerCountryName} />
-                    )}
-                    <span>{buyerCountryName}</span>
-                    {listing.buyer_created_at && (
-                      <>
-                        <span className="mx-1">&middot;</span>
-                        <span>Member since {formatDate(listing.buyer_created_at)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
           {/* Notes from buyer */}
           {listing.notes && (
             <Card>
@@ -225,10 +217,65 @@ export default async function WantedDetailPage(props: Props) {
             </Card>
           )}
 
-          <ShareButtons
-            url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/wanted/${listing.id}`}
-            title={`Wanted: ${listing.game_name}`}
-          />
+          {/* Buyer info — mirrors seller-card pattern on listing detail */}
+          <Card>
+            <CardBody>
+              <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
+                Buyer
+              </h2>
+
+              <Link
+                href={`/sellers/${listing.buyer_id}`}
+                className="group flex items-center gap-4"
+              >
+                <Avatar
+                  name={listing.buyer_name || '?'}
+                  src={listing.buyer_avatar_url}
+                  size="lg"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="flex items-center gap-2 font-medium text-semantic-text-heading group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+                    <span className="truncate">
+                      {listing.buyer_name || 'Anonymous'}
+                    </span>
+                    {buyerFlagClass && (
+                      <span
+                        className={`${buyerFlagClass} shrink-0`}
+                        title={buyerCountryName}
+                        aria-label={buyerCountryName}
+                      />
+                    )}
+                  </p>
+                  {listing.buyer_created_at && (
+                    <p className="text-sm text-semantic-text-muted">
+                      Member since {formatMonthYear(listing.buyer_created_at)}
+                    </p>
+                  )}
+                </div>
+                <CaretRight
+                  size={20}
+                  className="shrink-0 text-semantic-text-muted group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+                />
+              </Link>
+            </CardBody>
+          </Card>
+
+          {/* Share + Report (utility actions) — mirrors listing detail */}
+          <div className="flex items-center gap-3">
+            <ShareButtons
+              url={`${baseUrl}/wanted/${listing.id}`}
+              title={`Wanted: ${listing.game_name}`}
+            />
+            {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this wanted listing */}
+            <Button variant="ghost" size="sm" asChild className="ml-auto">
+              <Link
+                href={`/report-illegal-content?contentReference=${encodeURIComponent(`${baseUrl}/wanted/${listing.id}`)}`}
+              >
+                <Flag size={16} className="mr-1.5" />
+                Report
+              </Link>
+            </Button>
+          </div>
 
           {/* Game details — mobile only (desktop copy is in the left column) */}
           {hasGameDetails && (
