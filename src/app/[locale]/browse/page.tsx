@@ -67,12 +67,8 @@ export default async function BrowsePage(
 
   const supabase = await createClient();
 
-  // Game-level filters (player count, weight) are pushed onto the joined games
-  // row via games!inner + foreign-table or() so they evaluate against the small
-  // listings set, not the full ~175k-row games catalog. The earlier pre-fetch
-  // shape silently hit PostgREST's default 1000-row cap and dropped listings
-  // whose game id fell outside that arbitrary slice (e.g. Lagerstätten under
-  // the 3-player filter).
+  // Player-count and weight predicates ride the games!inner join — a separate
+  // from('games') pre-fetch silently hits PostgREST's 1000-row default cap.
   let query = supabase
     .from('listings')
     .select(
