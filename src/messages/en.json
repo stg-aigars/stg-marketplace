@@ -118,15 +118,11 @@
         },
         {
           "q": "What if the game arrives damaged or wrong?",
-          "a": "You can open a dispute up to 7 days after delivery. We review evidence from both sides and resolve it."
+          "a": "You can open a dispute up to 2 days after delivery. We review evidence from both sides and resolve it."
         },
         {
           "q": "Are my payment details safe?",
           "a": "Card details never touch our servers. Payments are processed by Swedbank AS."
-        },
-        {
-          "q": "How are sellers verified?",
-          "a": "Every seller passes Swedbank's KYC before payouts. Reputation builds publicly through completed trades and buyer ratings."
         },
         {
           "q": "Where can I buy and sell?",
