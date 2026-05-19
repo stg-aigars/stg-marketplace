@@ -67,43 +67,12 @@ export default async function BrowsePage(
 
   const supabase = await createClient();
 
-  // When game-level filters are active (player count, weight),
-  // pre-fetch matching game IDs in a single query so the main listings query returns
-  // correct counts and pagination works properly.
-  const hasGameFilters =
-    filters.playerCounts.length > 0 ||
-    filters.weightLevels.length > 0;
-
-  let gameFilterIds: number[] | null = null;
-  if (hasGameFilters) {
-    let gamesQuery = supabase.from('games').select('id');
-
-    if (filters.playerCounts.length > 0) {
-      const playerClauses = filters.playerCounts.map((n) =>
-        n === 6
-          ? 'max_players.gte.6'
-          : `and(min_players.lte.${n},max_players.gte.${n})`
-      );
-      gamesQuery = gamesQuery.or(playerClauses.join(','));
-    }
-    if (filters.weightLevels.length > 0) {
-      // Build OR condition for weight ranges
-      const weightClauses = filters.weightLevels.map((level) => {
-        const range = WEIGHT_LEVEL_RANGES[level];
-        return `and(weight.gte.${range.min},weight.lt.${range.max})`;
-      });
-      gamesQuery = gamesQuery.or(weightClauses.join(','));
-    }
-
-    const { data: matchingGames } = await gamesQuery;
-    gameFilterIds = matchingGames?.map((g) => g.id) ?? [];
-  }
-
-  // Build filtered query
+  // Player-count and weight predicates ride the games!inner join — a separate
+  // from('games') pre-fetch silently hits PostgREST's 1000-row default cap.
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)',
+      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, status, listing_type, bid_count, auction_end_at, version_thumbnail, games!inner(image, is_expansion)',
       { count: 'exact' }
     )
     .in('status', ['active', 'reserved']);
@@ -122,6 +91,21 @@ export default async function BrowsePage(
   if (filters.showAuctions) {
     query = query.eq('listing_type', 'auction');
   }
+  if (filters.playerCounts.length > 0) {
+    const playerClauses = filters.playerCounts.map((n) =>
+      n === 6
+        ? 'max_players.gte.6'
+        : `and(min_players.lte.${n},max_players.gte.${n})`
+    );
+    query = query.or(playerClauses.join(','), { referencedTable: 'games' });
+  }
+  if (filters.weightLevels.length > 0) {
+    const weightClauses = filters.weightLevels.map((level) => {
+      const range = WEIGHT_LEVEL_RANGES[level];
+      return `and(weight.gte.${range.min},weight.lt.${range.max})`;
+    });
+    query = query.or(weightClauses.join(','), { referencedTable: 'games' });
+  }
   if (filters.expansionsOnly) {
     // Show listings that include expansions OR are expansion-only listings
     const [{ data: withExpansions }, { data: isExpansion }] = await Promise.all([
@@ -136,15 +120,6 @@ export default async function BrowsePage(
       query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
     } else {
       query = query.in('id', [...expIds]);
-    }
-  }
-
-  // Apply game-level filter (pre-fetched IDs)
-  if (gameFilterIds !== null) {
-    if (gameFilterIds.length === 0) {
-      query = query.in('bgg_game_id', [-1]); // Short-circuit to empty results
-    } else {
-      query = query.in('bgg_game_id', gameFilterIds);
     }
   }
 
