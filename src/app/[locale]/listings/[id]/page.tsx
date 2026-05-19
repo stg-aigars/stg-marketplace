@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
-import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece, CaretRight } from '@phosphor-icons/react/ssr';
+import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece, CaretRight, Flag } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -19,13 +19,11 @@ import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } fr
 import { PhotoGallery } from './PhotoGallery';
 import { ListingNavigation } from './ListingNavigation';
 import { FavoriteButton } from '@/components/listings/FavoriteButton';
-import { SellerRating } from '@/components/reviews';
 import { BidPanel } from '@/components/auctions/BidPanel';
 import { getBidHistory, getAuctionState } from '@/lib/auctions/actions';
 import { getSellerRating } from '@/lib/reviews/service';
-import { getSellerCompletedSales, getActiveOrReservedListingCount, calculateTrustTier, isEarlyMember } from '@/lib/services/sellers';
-import { TrustBadge } from '@/components/sellers/TrustBadge';
-import { EarlyMemberBadge } from '@/components/sellers/EarlyMemberBadge';
+import { getSellerCompletedSales, getActiveOrReservedListingCount } from '@/lib/services/sellers';
+import { SellerBadgesRow } from '@/components/sellers/SellerBadgesRow';
 import { BuyActions } from '@/components/listings/BuyActions';
 import { GameIdentityRow } from '@/components/listings/atoms';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
@@ -609,19 +607,14 @@ export default async function ListingDetailPage(
                 />
               </Link>
 
-              {/* Trust signals — rating + tier badge + early-member badge.
-                  Wraps to two lines on narrow viewports. */}
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <SellerRating
-                  positivePct={sellerRating.positivePct}
-                  ratingCount={sellerRating.ratingCount}
-                  size="sm"
-                />
-                <TrustBadge
-                  tier={calculateTrustTier(sellerCompletedSales, sellerRating.positivePct, sellerRating.ratingCount)}
-                />
-                {isEarlyMember(listing.user_profiles?.created_at) && <EarlyMemberBadge />}
-              </div>
+              {/* Trust signals — rating + tappable trust & early-member badges
+                  with inline disclosure (state managed inside the client component). */}
+              <SellerBadgesRow
+                positivePct={sellerRating.positivePct}
+                ratingCount={sellerRating.ratingCount}
+                completedSales={sellerCompletedSales}
+                sellerCreatedAt={listing.user_profiles?.created_at}
+              />
 
               {/* Stats line — raw counts behind the trust signals. */}
               <p className="mt-2 text-sm text-semantic-text-muted">
@@ -647,20 +640,10 @@ export default async function ListingDetailPage(
                   })}
                 </p>
               </div>
-
-              {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this listing */}
-              <p className="mt-2 text-xs text-semantic-text-muted">
-                <Link
-                  href={`/report-illegal-content?listingId=${listing.id}&contentReference=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`)}`}
-                  className="link-brand"
-                >
-                  Report this listing
-                </Link>
-              </p>
             </CardBody>
           </Card>
 
-          {/* Share + Favorite (utility actions) */}
+          {/* Share + Favorite + Report (utility actions) */}
           <div className="flex items-center gap-3">
             <ShareButtons
               url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`}
@@ -673,6 +656,15 @@ export default async function ListingDetailPage(
                 isAuthenticated={!!user}
               />
             )}
+            {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this listing */}
+            <Button variant="ghost" size="sm" asChild className="ml-auto">
+              <Link
+                href={`/report-illegal-content?listingId=${listing.id}&contentReference=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games'}/listings/${listing.id}`)}`}
+              >
+                <Flag size={16} className="mr-1.5" />
+                Report
+              </Link>
+            </Button>
           </div>
 
           {/* Comments — hide entirely for anonymous users when empty */}

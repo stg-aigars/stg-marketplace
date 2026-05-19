@@ -1,6 +1,6 @@
 import { ShieldCheck } from '@phosphor-icons/react/ssr';
 import { Badge } from '@/components/ui';
-import { type TrustTier, TRUST_TIER_CONFIG } from '@/lib/services/sellers';
+import { type TrustTier, TRUST_TIER_CONFIG } from '@/lib/services/sellers-badges';
 
 interface TrustBadgeProps {
   tier: TrustTier;
