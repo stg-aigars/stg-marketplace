@@ -12,6 +12,15 @@ interface PhotoGalleryProps {
   gameTitle: string;
 }
 
+// Flat-color SVG placeholder matching `bg-semantic-bg-secondary` (#F5F3EF — Nordic warm parchment).
+// Next.js applies a CSS blur(20px) filter on top, but for a flat fill the result is just the
+// same color — gives a "this image slot is here" feel while the real bitmap downloads.
+// Used with placeholder="blur" + blurDataURL on every <Image> in the gallery.
+const BLUR_PLACEHOLDER =
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%23F5F3EF"/></svg>'
+  )}`;
+
 /* Lightbox extracted as a separate component so useTouchGestures mounts/unmounts
    with the overlay — avoids the stale-ref problem where the hook's useEffect runs
    before the container DOM node exists. */
@@ -108,6 +117,8 @@ function Lightbox({
           className="object-contain"
           sizes="90vw"
           unoptimized={isBggImage(activeUrl)}
+          placeholder="blur"
+          blurDataURL={BLUR_PLACEHOLDER}
         />
         {activeUrl === gameImage && (
           <span className="absolute bottom-4 right-4 w-8 h-8 rounded bg-black/90 flex items-center justify-center">
@@ -173,6 +184,8 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority={activeIndex === 0}
             unoptimized={isBggImage(activeUrl)}
+            placeholder="blur"
+            blurDataURL={BLUR_PLACEHOLDER}
           />
           {activeUrl === gameImage && (
             <span className="absolute bottom-2 right-2 w-6 h-6 rounded bg-semantic-bg-secondary flex items-center justify-center">
@@ -202,6 +215,8 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                   className="object-contain"
                   sizes="64px"
                   unoptimized={isBggImage(src)}
+                  placeholder="blur"
+                  blurDataURL={BLUR_PLACEHOLDER}
                 />
               </button>
             ))}
