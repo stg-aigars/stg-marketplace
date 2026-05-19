@@ -53,3 +53,38 @@ export const TRUST_TIER_CONFIG: Record<TrustTier, { label: string; show: boolean
   gold: { label: 'Gold seller', show: true },
   trusted: { label: 'Trusted seller', show: true },
 };
+
+/**
+ * Sellers whose accounts were created before this cutoff get a permanent
+ * "Early member" badge. Anchored to soft-launch + ~3.5 months so the badge
+ * stays meaningful (scarce after 31 Aug 2026 inclusive) while giving genuine
+ * day-zero adopters real social capital.
+ */
+export const EARLY_MEMBER_CUTOFF = '2026-09-01T00:00:00Z';
+
+export function isEarlyMember(createdAt: string | null | undefined): boolean {
+  if (!createdAt) return false;
+  return new Date(createdAt) < new Date(EARLY_MEMBER_CUTOFF);
+}
+
+/**
+ * Count active or reserved listings for a seller. Mirrors the framing used on
+ * the seller public profile page (`/sellers/[id]`), where both `active` and
+ * `reserved` are treated as "currently listed for sale" — a reserved listing
+ * is still on the marketplace, just temporarily on hold for one buyer.
+ */
+export async function getActiveOrReservedListingCount(sellerId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from('listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', sellerId)
+    .in('status', ['active', 'reserved']);
+
+  if (error) {
+    console.error('Failed to get active+reserved listing count:', error);
+    return 0;
+  }
+
+  return count ?? 0;
+}

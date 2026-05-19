@@ -3,7 +3,7 @@ import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass } fr
 import { cn } from '@/lib/cn';
 import type { ConditionBadgeKey } from '@/lib/listings/types';
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted';
+type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted' | 'accent';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const conditionIcons: Record<ConditionBadgeKey, React.FC<any>> = {
@@ -34,6 +34,11 @@ const variantClasses: Record<BadgeVariant, string> = {
   trust: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
   auction: 'bg-aurora-purple/15 text-aurora-purple border-aurora-purple/30',
   wanted: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
+  // Warm-gold accent. Text uses semantic-text-heading (dark polar night) instead
+  // of semantic-accent because the gold is too light for body-text contrast on
+  // its own tint. Promote to a dedicated `accent-text` token if accent badges
+  // proliferate beyond the early-member case.
+  accent: 'bg-semantic-accent-bg text-semantic-text-heading border-semantic-accent',
 };
 
 const conditionClasses: Record<ConditionBadgeKey, string> = {

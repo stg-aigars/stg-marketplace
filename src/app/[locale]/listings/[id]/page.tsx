@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
-import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece } from '@phosphor-icons/react/ssr';
+import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece, CaretRight } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
@@ -13,7 +13,7 @@ import { formatExpansionCount, type ListingCondition, type ListingStatus, type L
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
-import { formatDate, formatRelativeTime } from '@/lib/date-utils';
+import { formatDate, formatMonthYear, formatRelativeTime } from '@/lib/date-utils';
 import { toBggFullSize, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { getShippingPriceCents, getMinShippingPriceCents, isTerminalCountry } from '@/lib/services/unisend/types';
 import { PhotoGallery } from './PhotoGallery';
@@ -23,8 +23,9 @@ import { SellerRating } from '@/components/reviews';
 import { BidPanel } from '@/components/auctions/BidPanel';
 import { getBidHistory, getAuctionState } from '@/lib/auctions/actions';
 import { getSellerRating } from '@/lib/reviews/service';
-import { getSellerCompletedSales, calculateTrustTier } from '@/lib/services/sellers';
+import { getSellerCompletedSales, getActiveOrReservedListingCount, calculateTrustTier, isEarlyMember } from '@/lib/services/sellers';
 import { TrustBadge } from '@/components/sellers/TrustBadge';
+import { EarlyMemberBadge } from '@/components/sellers/EarlyMemberBadge';
 import { BuyActions } from '@/components/listings/BuyActions';
 import { GameIdentityRow } from '@/components/listings/atoms';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
@@ -208,10 +209,11 @@ export default async function ListingDetailPage(
   const isOwner = user?.id === listing.seller_id;
   const isFavorited = favoriteIds.has(id);
 
-  // Fetch seller rating, completed sales, listing expansions, buyer profile, and comments in parallel
-  const [sellerRating, sellerCompletedSales, { data: listingExpansions }, buyerProfileResult, comments] = await Promise.all([
+  // Fetch seller rating, completed sales, active-listings count, listing expansions, buyer profile, and comments in parallel
+  const [sellerRating, sellerCompletedSales, sellerActiveListings, { data: listingExpansions }, buyerProfileResult, comments] = await Promise.all([
     getSellerRating(listing.seller_id),
     getSellerCompletedSales(listing.seller_id),
+    getActiveOrReservedListingCount(listing.seller_id),
     supabase
       .from('listing_expansions')
       .select('bgg_game_id, game_name, version_name, publisher, language, edition_year, games(thumbnail)')
@@ -569,54 +571,83 @@ export default async function ListingDetailPage(
               <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>
                 Seller
               </h2>
-              <div className="flex items-center gap-3">
-                <Avatar name={listing.user_profiles?.full_name ?? '?'} src={listing.user_profiles?.avatar_url} />
-                <div>
-                  <Link
-                    href={`/sellers/${listing.seller_id}`}
-                    className="font-medium text-semantic-text-heading sm:hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
-                  >
-                    {listing.user_profiles?.full_name ?? 'Anonymous'}
-                  </Link>
-                  <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
-                    {sellerFlagClass && (
-                      <span className={`${sellerFlagClass}`} title={sellerCountryName} />
-                    )}
-                    <span>{sellerCountryName}</span>
-                    <span className="mx-1">&middot;</span>
-                    <span>
-                      Member since{' '}
-                      {listing.user_profiles?.created_at
-                        ? formatDate(listing.user_profiles.created_at)
-                        : 'unknown'}
+
+              {/* Identity row — the entire row is the tap target into /sellers/[id].
+                  Inner links are NOT nested here (group-hover gives the affordance);
+                  the name itself is no longer separately linked. */}
+              <Link
+                href={`/sellers/${listing.seller_id}`}
+                className="group flex items-center gap-4"
+              >
+                <Avatar
+                  name={listing.user_profiles?.full_name ?? '?'}
+                  src={listing.user_profiles?.avatar_url}
+                  size="lg"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="flex items-center gap-2 font-medium text-semantic-text-heading group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+                    <span className="truncate">
+                      {listing.user_profiles?.full_name ?? 'Anonymous'}
                     </span>
-                    {sellerCompletedSales > 0 && (
-                      <>
-                        <span className="mx-1">&middot;</span>
-                        <span>{sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'} completed</span>
-                      </>
+                    {sellerFlagClass && (
+                      <span
+                        className={`${sellerFlagClass} shrink-0`}
+                        title={sellerCountryName}
+                        aria-label={sellerCountryName}
+                      />
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <SellerRating
-                      positivePct={sellerRating.positivePct}
-                      ratingCount={sellerRating.ratingCount}
-                      size="sm"
-                    />
-                    <TrustBadge tier={calculateTrustTier(sellerCompletedSales, sellerRating.positivePct, sellerRating.ratingCount)} />
-                  </div>
+                  </p>
+                  {listing.user_profiles?.created_at && (
+                    <p className="text-sm text-semantic-text-muted">
+                      Member since {formatMonthYear(listing.user_profiles.created_at)}
+                    </p>
+                  )}
                 </div>
+                <CaretRight
+                  size={20}
+                  className="shrink-0 text-semantic-text-muted group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
+                />
+              </Link>
+
+              {/* Trust signals — rating + tier badge + early-member badge.
+                  Wraps to two lines on narrow viewports. */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <SellerRating
+                  positivePct={sellerRating.positivePct}
+                  ratingCount={sellerRating.ratingCount}
+                  size="sm"
+                />
+                <TrustBadge
+                  tier={calculateTrustTier(sellerCompletedSales, sellerRating.positivePct, sellerRating.ratingCount)}
+                />
+                {isEarlyMember(listing.user_profiles?.created_at) && <EarlyMemberBadge />}
               </div>
-              {/* Pre-contract private-seller notice (PTAC §2.5) */}
-              <p className="mt-3 text-xs text-semantic-text-muted">
-                {t.rich('sellerStatusNotice', {
-                  link: (chunks) => (
-                    <Link href="/terms#cancellations-refunds" className="link-brand">
-                      {chunks}
-                    </Link>
-                  ),
-                })}
+
+              {/* Stats line — raw counts behind the trust signals. */}
+              <p className="mt-2 text-sm text-semantic-text-muted">
+                {sellerActiveListings} {sellerActiveListings === 1 ? 'listing' : 'listings'}
+                {sellerCompletedSales > 0 && (
+                  <>
+                    {' · '}
+                    {sellerCompletedSales} {sellerCompletedSales === 1 ? 'sale' : 'sales'}
+                  </>
+                )}
               </p>
+
+              {/* Pre-contract private-seller notice (PTAC §2.5) — compact muted
+                  one-liner separated by a divider from the data above. */}
+              <div className="mt-3 pt-3 border-t border-semantic-border-subtle">
+                <p className="text-xs text-semantic-text-muted">
+                  {t.rich('sellerStatusNotice', {
+                    link: (chunks) => (
+                      <Link href="/terms#cancellations-refunds" className="link-brand">
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
+                </p>
+              </div>
+
               {/* DSA Art. 16 — entry to the notice-and-action queue, deep-linked with this listing */}
               <p className="mt-2 text-xs text-semantic-text-muted">
                 <Link
