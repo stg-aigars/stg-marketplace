@@ -16,6 +16,7 @@ import { fetchProfiles, type Profile } from '@/lib/supabase/helpers';
 import { formatDateTime } from '@/lib/date-utils';
 import { ListMagnifyingGlass, FileMagnifyingGlass } from '@phosphor-icons/react/ssr';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { buildStaffFilterUrl } from '../_lib/build-filter-url';
 
 export const metadata: Metadata = {
   title: 'Audit Log — Staff',
@@ -195,16 +196,12 @@ export default async function StaffAuditPage(
     ? await fetchProfiles(serviceClient, userActorIds)
     : new Map();
 
-  const buildUrl = (newPage: number, overrides: Partial<SearchParams> = {}) => {
-    const params = new URLSearchParams();
-    const merged = { ...searchParams, ...overrides };
-    for (const [key, value] of Object.entries(merged)) {
-      if (value && key !== 'page') params.set(key, value);
-    }
-    if (newPage > 1) params.set('page', String(newPage));
-    const qs = params.toString();
-    return qs ? `/staff/audit?${qs}` : '/staff/audit';
-  };
+  const buildUrl = (newPage: number, overrides: Partial<SearchParams> = {}) =>
+    buildStaffFilterUrl(
+      '/staff/audit',
+      { ...searchParams, page: newPage > 1 ? String(newPage) : undefined },
+      overrides,
+    );
 
   const hasFilters = Object.entries(searchParams).some(
     ([key, value]) => key !== 'page' && Boolean(value)

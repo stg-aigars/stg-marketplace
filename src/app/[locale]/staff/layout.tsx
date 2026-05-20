@@ -1,22 +1,7 @@
 import { redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { NavTabs } from '@/components/ui';
-
-const STAFF_TABS = [
-  { key: 'overview', label: 'Overview', href: '/staff' },
-  { key: 'orders', label: 'Orders', href: '/staff/orders' },
-  { key: 'accounting', label: 'Accounting', href: '/staff/accounting' },
-  { key: 'bookkeeping', label: 'Bookkeeping', href: '/staff/bookkeeping' },
-  { key: 'withdrawals', label: 'Withdrawals', href: '/staff/withdrawals' },
-  { key: 'disputes', label: 'Disputes', href: '/staff/disputes' },
-  { key: 'notices', label: 'DSA notices', href: '/staff/notices' },
-  { key: 'dac7', label: 'DAC7', href: '/staff/dac7' },
-  { key: 'oss', label: 'OSS', href: '/staff/oss' },
-  { key: 'users', label: 'Users', href: '/staff/users' },
-  { key: 'audit', label: 'Audit log', href: '/staff/audit' },
-  { key: 'templates', label: 'Templates', href: '/staff/templates' },
-  { key: 'showcase', label: 'Components', href: '/staff/showcase' },
-];
+import { StaffSideNav } from './_components/StaffSideNav';
+import { StaffMobileNav } from './_components/StaffMobileNav';
 
 export default async function StaffLayout({
   children,
@@ -32,15 +17,18 @@ export default async function StaffLayout({
   return (
     <div>
       <div className="bg-frost-ice/5 border-b border-frost-ice/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-muted mb-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-muted">
             Staff dashboard
           </p>
-          <NavTabs tabs={STAFF_TABS} />
+          <StaffMobileNav />
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {children}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:flex lg:gap-8">
+        <StaffSideNav />
+        <div className="flex-1 min-w-0">
+          {children}
+        </div>
       </div>
     </div>
   );
