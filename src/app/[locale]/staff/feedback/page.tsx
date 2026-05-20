@@ -46,8 +46,8 @@ const STATUS_BADGE: Record<FeedbackStatus, { label: string; variant: 'warning' |
 };
 
 // Workflow order for the "all" filter view. Lower = listed first.
-// Alphabetical sort previously put 'resolved' above 'triaged' — wrong
-// triage order.
+// Alphabetical sort on this enum would put 'resolved' above 'triaged' —
+// wrong triage order.
 const STATUS_SORT_ORDER: Record<FeedbackStatus, number> = {
   new: 0,
   triaged: 1,
@@ -72,9 +72,9 @@ export default async function StaffFeedbackPage(props: {
   const activeStatus = (searchParams.status as StatusTab) || 'new';
   const activeCategory = (searchParams.category as CategoryTab) || 'all';
 
-  // Sort by created_at DESC in the DB; status order applied in JS below
-  // via STATUS_SORT_ORDER so the "all" filter view leads with 'new' →
-  // 'triaged' → 'resolved' (workflow order) instead of alphabetical.
+  // DB sorts by created_at DESC only; status order applied in JS via
+  // STATUS_SORT_ORDER so the "all" filter view follows workflow order
+  // (new → triaged → resolved).
   let query = serviceClient
     .from('site_feedback')
     .select('*')

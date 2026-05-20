@@ -4,9 +4,6 @@
  * query string so the canonical view (e.g. `/staff/notices` with filter='open'
  * + binding='any') stays bare. Keys with undefined/empty values are also
  * dropped. If nothing remains, returns the bare basePath.
- *
- * Replaces the inline closures previously duplicated in
- * `/staff/notices`, `/staff/feedback`, and `/staff/audit`.
  */
 function buildStaffFilterUrl<T extends Record<string, string | undefined>>(
   basePath: string,

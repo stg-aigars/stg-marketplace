@@ -42,8 +42,8 @@ const STATUS_BADGE: Record<StaffNoticeRow['status'], { label: string; variant: '
 };
 
 // Workflow order for the "all" filter view. Lower = listed first.
-// Open notices (action needed) must lead; alphabetical sort previously
-// buried them below 'actioned' and 'dismissed'.
+// Action-needed statuses must lead — alphabetical sort on this enum
+// would put 'actioned'/'dismissed' before 'open'/'reviewing'.
 const STATUS_SORT_ORDER: Record<StaffNoticeRow['status'], number> = {
   open: 0,
   reviewing: 1,
@@ -86,9 +86,9 @@ export default async function StaffNoticesPage(props: {
   // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is safe at request time
   const nowMs = Date.now();
 
-  // Sort by created_at DESC in the DB; status order is applied in JS below
-  // via STATUS_SORT_ORDER so the "all" filter view leads with open notices
-  // (workflow order) instead of the alphabetical accident.
+  // DB sorts by created_at DESC only; status order is applied in JS via
+  // STATUS_SORT_ORDER so the "all" filter view leads with open notices
+  // (workflow order, not alphabetical).
   let query = serviceClient
     .from('dsa_notices')
     .select('*, listings(game_name)')
