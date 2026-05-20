@@ -9,6 +9,7 @@ import { REPORT_CATEGORY_LABELS } from '@/app/[locale]/report-illegal-content/ca
 import type { ReportCategory } from '@/app/[locale]/report-illegal-content/categories';
 import { StaffNoticeActions } from './StaffNoticeActions';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { buildStaffFilterUrl } from '../_lib/build-filter-url';
 
 export const metadata: Metadata = {
   title: 'DSA notices — Staff',
@@ -38,6 +39,16 @@ const STATUS_BADGE: Record<StaffNoticeRow['status'], { label: string; variant: '
   reviewing: { label: 'Reviewing', variant: 'default' },
   actioned: { label: 'Actioned', variant: 'success' },
   dismissed: { label: 'Dismissed', variant: 'default' },
+};
+
+// Workflow order for the "all" filter view. Lower = listed first.
+// Open notices (action needed) must lead; alphabetical sort previously
+// buried them below 'actioned' and 'dismissed'.
+const STATUS_SORT_ORDER: Record<StaffNoticeRow['status'], number> = {
+  open: 0,
+  reviewing: 1,
+  actioned: 2,
+  dismissed: 3,
 };
 
 /**
@@ -75,10 +86,12 @@ export default async function StaffNoticesPage(props: {
   // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() is safe at request time
   const nowMs = Date.now();
 
+  // Sort by created_at DESC in the DB; status order is applied in JS below
+  // via STATUS_SORT_ORDER so the "all" filter view leads with open notices
+  // (workflow order) instead of the alphabetical accident.
   let query = serviceClient
     .from('dsa_notices')
     .select('*, listings(game_name)')
-    .order('status', { ascending: true }) // open < reviewing < actioned/dismissed alphabetically
     .order('created_at', { ascending: false })
     .limit(200);
 
@@ -97,7 +110,12 @@ export default async function StaffNoticesPage(props: {
   }
 
   const { data: notices } = await query;
-  const typed = (notices ?? []) as unknown as StaffNoticeRow[];
+  // Array.prototype.sort is stable in modern engines (Node 12+, all current
+  // browsers) so created_at DESC ordering is preserved within each status
+  // group.
+  const typed = ((notices ?? []) as unknown as StaffNoticeRow[]).sort(
+    (a, b) => STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status],
+  );
 
   const filters: { label: string; value: FilterTab }[] = [
     { label: 'Open', value: 'open' },
@@ -112,15 +130,13 @@ export default async function StaffNoticesPage(props: {
     { label: 'Unbound', value: 'unbound' },
   ];
 
-  const buildUrl = (next: { filter?: FilterTab; binding?: BindingTab }) => {
-    const params = new URLSearchParams();
-    const filter = next.filter ?? activeFilter;
-    const binding = next.binding ?? activeBinding;
-    if (filter !== 'open') params.set('filter', filter);
-    if (binding !== 'any') params.set('binding', binding);
-    const qs = params.toString();
-    return qs ? `/staff/notices?${qs}` : '/staff/notices';
-  };
+  const buildUrl = (next: { filter?: FilterTab; binding?: BindingTab }) =>
+    buildStaffFilterUrl(
+      '/staff/notices',
+      { filter: activeFilter, binding: activeBinding },
+      next,
+      { filter: 'open', binding: 'any' },
+    );
 
   return (
     <div>

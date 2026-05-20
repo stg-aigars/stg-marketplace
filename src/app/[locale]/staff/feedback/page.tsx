@@ -18,6 +18,7 @@ import {
   type FeedbackStatus,
 } from '@/lib/feedback/types';
 import { FeedbackStatusControl } from './FeedbackStatusControl';
+import { buildStaffFilterUrl } from '../_lib/build-filter-url';
 
 export const metadata: Metadata = {
   title: 'Site feedback — Staff',
@@ -44,6 +45,15 @@ const STATUS_BADGE: Record<FeedbackStatus, { label: string; variant: 'warning' |
   resolved: { label: 'Resolved', variant: 'success' },
 };
 
+// Workflow order for the "all" filter view. Lower = listed first.
+// Alphabetical sort previously put 'resolved' above 'triaged' — wrong
+// triage order.
+const STATUS_SORT_ORDER: Record<FeedbackStatus, number> = {
+  new: 0,
+  triaged: 1,
+  resolved: 2,
+};
+
 const CATEGORY_LABEL: Record<FeedbackCategory, string> = {
   idea: 'Idea',
   bug: 'Bug',
@@ -62,10 +72,12 @@ export default async function StaffFeedbackPage(props: {
   const activeStatus = (searchParams.status as StatusTab) || 'new';
   const activeCategory = (searchParams.category as CategoryTab) || 'all';
 
+  // Sort by created_at DESC in the DB; status order applied in JS below
+  // via STATUS_SORT_ORDER so the "all" filter view leads with 'new' →
+  // 'triaged' → 'resolved' (workflow order) instead of alphabetical.
   let query = serviceClient
     .from('site_feedback')
     .select('*')
-    .order('status', { ascending: true })
     .order('created_at', { ascending: false })
     .limit(200);
 
@@ -77,7 +89,10 @@ export default async function StaffFeedbackPage(props: {
   }
 
   const { data: rows } = await query;
-  const feedback = (rows ?? []) as unknown as FeedbackRow[];
+  // Stable sort preserves DB-side created_at DESC within each status group.
+  const feedback = ((rows ?? []) as unknown as FeedbackRow[]).sort(
+    (a, b) => STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status],
+  );
 
   const statusFilters: { label: string; value: StatusTab }[] = [
     { label: 'New', value: 'new' },
@@ -91,15 +106,13 @@ export default async function StaffFeedbackPage(props: {
     ...FEEDBACK_CATEGORIES.map((c) => ({ label: CATEGORY_LABEL[c], value: c as CategoryTab })),
   ];
 
-  const buildUrl = (next: { status?: StatusTab; category?: CategoryTab }) => {
-    const params = new URLSearchParams();
-    const status = next.status ?? activeStatus;
-    const category = next.category ?? activeCategory;
-    if (status !== 'new') params.set('status', status);
-    if (category !== 'all') params.set('category', category);
-    const qs = params.toString();
-    return qs ? `/staff/feedback?${qs}` : '/staff/feedback';
-  };
+  const buildUrl = (next: { status?: StatusTab; category?: CategoryTab }) =>
+    buildStaffFilterUrl(
+      '/staff/feedback',
+      { status: activeStatus, category: activeCategory },
+      next,
+      { status: 'new', category: 'all' },
+    );
 
   return (
     <div>
