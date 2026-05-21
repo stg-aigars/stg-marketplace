@@ -4,12 +4,17 @@ import { useState, useRef } from 'react';
 import { Input, Button, TurnstileWidget, Checkbox } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { signUpWithEmail } from '@/lib/auth/actions';
-import { PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth/password-validation';
+import {
+  PASSWORD_REQUIREMENT_MESSAGE,
+  validatePasswordStrength,
+} from '@/lib/auth/password-validation';
 import { OAuthButton } from './OAuthButton';
 import { CountrySelector } from './CountrySelector';
 import { env } from '@/lib/env';
 import { Link } from '@/i18n/navigation';
 import type { CountryCode } from '@/lib/country-utils';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface SignUpFormProps {
   returnUrl?: string;
@@ -24,18 +29,36 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
+  const passwordStrengthError = validatePasswordStrength(password);
+  const emailShapeError = EMAIL_REGEX.test(email.trim())
+    ? null
+    : 'Enter a valid email address';
+
+  // Field-level error shown under the input. Suppressed until the user blurs
+  // the field so we don't red-flag mid-typing.
+  const emailFieldError =
+    emailTouched && email.length > 0 ? emailShapeError : null;
+  const passwordFieldError =
+    passwordTouched && password.length > 0 ? passwordStrengthError : null;
+
   const canSubmit =
-    displayName.trim() &&
-    email.trim() &&
-    password.length >= 8 &&
+    displayName.trim().length > 0 &&
+    !emailShapeError &&
+    !passwordStrengthError &&
     country &&
     acceptedTerms;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    // Surface any pending field-level errors on submit, in case the user
+    // never blurred the field before clicking.
+    setEmailTouched(true);
+    setPasswordTouched(true);
 
     // Defense-in-depth: disabled button can be bypassed via devtools
     if (!country) {
@@ -43,8 +66,13 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (emailShapeError) {
+      setError(emailShapeError);
+      return;
+    }
+
+    if (passwordStrengthError) {
+      setError(passwordStrengthError);
       return;
     }
 
@@ -115,6 +143,8 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
           label="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setEmailTouched(true)}
+          error={emailFieldError ?? undefined}
           required
           autoComplete="email"
         />
@@ -126,13 +156,17 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
             label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => setPasswordTouched(true)}
+            error={passwordFieldError ?? undefined}
             required
             autoComplete="new-password"
             minLength={8}
           />
-          <p className="mt-1.5 text-sm text-semantic-text-muted">
-            {PASSWORD_REQUIREMENT_MESSAGE}
-          </p>
+          {!passwordFieldError && (
+            <p className="mt-1.5 text-sm text-semantic-text-muted">
+              {PASSWORD_REQUIREMENT_MESSAGE}
+            </p>
+          )}
         </div>
 
         <CountrySelector

@@ -56,6 +56,11 @@ export async function signUpWithEmail(
   const turnstile = await verifyTurnstileToken(turnstileToken, ip);
   if (!turnstile.success) return { error: turnstile.error };
 
+  // Supabase's password presets don't enforce letters+numbers+symbols, so the
+  // displayed rule is enforced in app code — same as updatePassword below.
+  const strengthError = validatePasswordStrength(formData.password);
+  if (strengthError) return { error: strengthError };
+
   const supabase = await createClient();
 
   // ?signup=true survives the email confirmation round-trip and is read by the
