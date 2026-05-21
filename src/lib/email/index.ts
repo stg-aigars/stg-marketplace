@@ -183,8 +183,7 @@ export async function sendShippingInstructionsToSeller(params: {
   buyerName: string;
   destinationTerminalName: string;
   destinationTerminalAddress: string;
-  parcelId: string;
-  barcode?: string;
+  barcode: string;
   trackingUrl?: string;
 }): Promise<void> {
   await sendEmail({
@@ -197,7 +196,6 @@ export async function sendShippingInstructionsToSeller(params: {
       buyerName: params.buyerName,
       destinationTerminalName: params.destinationTerminalName,
       destinationTerminalAddress: params.destinationTerminalAddress,
-      parcelId: params.parcelId,
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
       appUrl: env.app.url,

@@ -211,21 +211,26 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       return { success: false, error: `Parcel created but failed to save: ${updateError.message}` };
     }
 
-    // 7. Send shipping instructions email to seller (non-blocking)
-    sendShippingInstructionsToSeller({
-      sellerName: seller.fullName,
-      sellerEmail: seller.email,
-      orderNumber,
-      orderId,
-      buyerName: buyer.fullName,
-      destinationTerminalName: destination.terminalName,
-      destinationTerminalAddress: destination.terminalAddress,
-      parcelId: String(parcelId),
-      barcode,
-      trackingUrl,
-    }).catch((err) => {
-      console.error(`${logPrefix} Failed to send shipping email:`, err);
-    });
+    // 7. Send shipping instructions email to seller (non-blocking).
+    // Parcel is already registered with Unisend and saved to the order, so an empty
+    // barcode here is a partial-success — skip the email rather than fail the flow.
+    if (!barcode || barcode.trim() === '') {
+      console.error(`${logPrefix} Parcel created but barcode is empty — skipping shipping email`);
+    } else {
+      sendShippingInstructionsToSeller({
+        sellerName: seller.fullName,
+        sellerEmail: seller.email,
+        orderNumber,
+        orderId,
+        buyerName: buyer.fullName,
+        destinationTerminalName: destination.terminalName,
+        destinationTerminalAddress: destination.terminalAddress,
+        barcode,
+        trackingUrl,
+      }).catch((err) => {
+        console.error(`${logPrefix} Failed to send shipping email:`, err);
+      });
+    }
 
     // In-app notification — data already available from ShippingContext
     const gameSummary = orderGameSummary(items.map((i) => ({ gameName: i.gameName ?? 'Game' })));
