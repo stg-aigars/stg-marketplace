@@ -33,7 +33,6 @@ export interface ShippingContext {
     country: string | null;
     terminalId: string;
     terminalName: string;
-    terminalAddress: string;
   };
   parcelSize: string | null;
   /** Items in this order (one or more). Used for content declaration and parcel sizing. */
@@ -224,7 +223,6 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
         orderId,
         buyerName: buyer.fullName,
         destinationTerminalName: destination.terminalName,
-        destinationTerminalAddress: destination.terminalAddress,
         barcode,
         trackingUrl,
       }).catch((err) => {
@@ -321,7 +319,6 @@ export async function retryOrderShipping(
       country: order.terminal_country,
       terminalId: order.terminal_id ?? '',
       terminalName: order.terminal_name ?? '',
-      terminalAddress: '',
     },
     parcelSize: null,
     items,

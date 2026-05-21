@@ -236,7 +236,7 @@ async function processOrderEvents(
         const buyerProfile = shipped.buyer_profile as { full_name?: string; email?: string } | null;
         const sellerProfile = shipped.seller_profile as { full_name?: string; email?: string } | null;
         const gameName = getOrderGameSummary(shipped.order_items as OrderItemLike[], shipped.listings as LegacyListingsLike);
-        const terminalName = receivedEvent.location || undefined;
+        const scannedAtTerminal = receivedEvent.location || undefined;
 
         if (buyerProfile?.email) {
           void sendOrderShippedToBuyer({
@@ -247,7 +247,12 @@ async function processOrderEvents(
             gameName,
             barcode: shipped.barcode ?? undefined,
             trackingUrl: shipped.tracking_url ?? undefined,
-            terminalName,
+            scannedAtTerminal,
+            terminalName: shipped.terminal_name ?? undefined,
+            terminalAddress: shipped.terminal_address,
+            terminalCity: shipped.terminal_city,
+            terminalPostalCode: shipped.terminal_postal_code,
+            terminalCountry: shipped.terminal_country,
           }).catch((err) => console.error('[Email] Failed to send auto-ship buyer email:', err));
         }
 
@@ -269,7 +274,6 @@ async function processOrderEvents(
           gameName,
           orderNumber: shipped.order_number,
           orderId,
-          terminalName,
         });
 
         void notify(shipped.seller_id, 'shipping.scanned_seller', {
@@ -278,7 +282,7 @@ async function processOrderEvents(
           gameName,
         });
 
-        console.log(`[Tracking] Auto-shipped order ${orderId} via PARCEL_RECEIVED at ${terminalName ?? 'unknown terminal'}`);
+        console.log(`[Tracking] Auto-shipped order ${orderId} via PARCEL_RECEIVED at ${scannedAtTerminal ?? 'unknown terminal'}`);
       }
     }
 

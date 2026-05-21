@@ -6,6 +6,7 @@
 import { Button, Link, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, theme, templateStyles as s } from './layout';
+import { formatTerminalLines } from '@/lib/terminals/format';
 
 interface OrderShippedBuyerProps {
   buyerName: string;
@@ -14,7 +15,14 @@ interface OrderShippedBuyerProps {
   gameName: string;
   barcode?: string;
   trackingUrl?: string;
+  /** Sender-side scan location reported by tracking, used in the intro prose only. */
+  scannedAtTerminal?: string;
+  /** Buyer's destination terminal (where they collect the parcel). */
   terminalName?: string;
+  terminalAddress?: string | null;
+  terminalCity?: string | null;
+  terminalPostalCode?: string | null;
+  terminalCountry?: string | null;
   appUrl: string;
 }
 
@@ -25,18 +33,32 @@ export function OrderShippedBuyer({
   gameName,
   barcode,
   trackingUrl,
+  scannedAtTerminal,
   terminalName,
+  terminalAddress,
+  terminalCity,
+  terminalPostalCode,
+  terminalCountry,
   appUrl,
 }: OrderShippedBuyerProps) {
   const orderUrl = `${appUrl}/orders/${orderId}`;
+  const pickupLines = terminalName
+    ? formatTerminalLines({
+        name: terminalName,
+        address: terminalAddress,
+        city: terminalCity,
+        postalCode: terminalPostalCode,
+        country: terminalCountry,
+      })
+    : [];
 
   return (
     <EmailLayout preview={`${gameName} has been shipped — ${orderNumber}`}>
       <Text style={s.greeting}>Hi {buyerName},</Text>
 
       <Text style={s.body}>
-        {terminalName
-          ? `Your game is on its way. Your parcel was scanned at ${terminalName}.`
+        {scannedAtTerminal
+          ? `Your game is on its way. Your parcel was scanned at ${scannedAtTerminal}.`
           : 'The seller has sent your parcel and it is on its way.'}
       </Text>
 
@@ -46,6 +68,16 @@ export function OrderShippedBuyer({
 
         <Text style={s.detailLabel}>Game</Text>
         <Text style={s.detailValue}>{gameName}</Text>
+
+        {pickupLines.length > 0 && (
+          <>
+            <Text style={s.detailLabel}>Pickup location</Text>
+            <Text style={s.detailValue}>{pickupLines[0]}</Text>
+            {pickupLines.length > 1 && (
+              <Text style={styles.addressBlock}>{pickupLines.slice(1).join('\n')}</Text>
+            )}
+          </>
+        )}
 
         {barcode && (
           <>
@@ -94,6 +126,13 @@ const styles = {
   link: {
     color: theme.frostDark,
     textDecoration: 'underline' as const,
+  },
+  addressBlock: {
+    color: theme.textMuted,
+    fontSize: '13px',
+    lineHeight: '20px',
+    margin: '-8px 0 12px',
+    whiteSpace: 'pre-line' as const,
   },
 } as const;
 

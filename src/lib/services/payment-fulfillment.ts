@@ -351,6 +351,10 @@ export async function fulfillCartPayment(
       })),
       shippingCents,
       terminalName: group.terminal_name,
+      terminalAddress: group.terminal_address,
+      terminalCity: group.terminal_city,
+      terminalPostalCode: group.terminal_postal_code,
+      terminalCountry: group.terminal_country,
     })),
     group.buyer_id
   );

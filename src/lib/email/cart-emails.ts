@@ -11,6 +11,10 @@ interface CartOrderEmailData {
   items: Array<{ gameName: string; priceCents: number }>;
   shippingCents: number;
   terminalName: string;
+  terminalAddress?: string | null;
+  terminalCity?: string | null;
+  terminalPostalCode?: string | null;
+  terminalCountry?: string | null;
 }
 
 /**
@@ -46,7 +50,7 @@ export async function sendCartOrderEmails(
       const gameName = orderGameSummary(order.items);
       const totalItemsCents = order.items.reduce((sum, i) => sum + i.priceCents, 0);
 
-      const emailData = {
+      const baseEmailData = {
         orderNumber: order.orderNumber,
         orderId: order.orderId,
         gameName,
@@ -57,7 +61,7 @@ export async function sendCartOrderEmails(
 
       if (sellerProfile?.email) {
         sendNewOrderToSeller({
-          ...emailData,
+          ...baseEmailData,
           sellerName: sellerProfile.full_name ?? 'Seller',
           sellerEmail: sellerProfile.email,
           buyerName: buyerProfile?.full_name ?? 'Buyer',
@@ -66,7 +70,11 @@ export async function sendCartOrderEmails(
 
       if (buyerProfile?.email) {
         sendOrderConfirmationToBuyer({
-          ...emailData,
+          ...baseEmailData,
+          terminalAddress: order.terminalAddress,
+          terminalCity: order.terminalCity,
+          terminalPostalCode: order.terminalPostalCode,
+          terminalCountry: order.terminalCountry,
           buyerName: buyerProfile.full_name ?? 'Buyer',
           buyerEmail: buyerProfile.email,
           sellerName: sellerProfile?.full_name ?? 'Seller',

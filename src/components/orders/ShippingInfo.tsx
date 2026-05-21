@@ -1,4 +1,5 @@
 import { Card, CardBody } from '@/components/ui';
+import { formatTerminalLines, formatTerminalCompact } from '@/lib/terminals/format';
 
 interface ShippingInfoProps {
   terminalName: string | null;
@@ -7,22 +8,6 @@ interface ShippingInfoProps {
   terminalPostalCode: string | null;
   terminalCountry: string | null;
   userRole: 'buyer' | 'seller';
-}
-
-function formatTerminalAddress(
-  name: string | null,
-  address: string | null,
-  city: string | null,
-  postalCode: string | null,
-  country: string | null
-): string {
-  if (!name) return '';
-  const parts = [name];
-  if (address) parts.push(address);
-  const cityPostal = [city, postalCode].filter(Boolean).join(', ');
-  if (cityPostal) parts.push(cityPostal);
-  if (country) parts.push(country);
-  return parts.join(' / ');
 }
 
 export function ShippingInfo({
@@ -35,7 +20,17 @@ export function ShippingInfo({
 }: ShippingInfoProps) {
   if (!terminalName) return null;
 
-  const hasAddress = terminalAddress || terminalCity;
+  const fields = {
+    name: terminalName,
+    address: terminalAddress,
+    city: terminalCity,
+    postalCode: terminalPostalCode,
+    country: terminalCountry,
+  };
+
+  const lines = userRole === 'buyer'
+    ? formatTerminalLines(fields)
+    : [formatTerminalCompact(fields)];
 
   return (
     <Card>
@@ -43,11 +38,11 @@ export function ShippingInfo({
         <p className="text-sm text-semantic-text-muted">
           {userRole === 'seller' ? "Buyer's pickup terminal" : 'Your pickup terminal'}
         </p>
-        <p className="text-sm text-semantic-text-primary mt-1">
-          {hasAddress
-            ? formatTerminalAddress(terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry)
-            : terminalName}
-        </p>
+        <div className="text-sm text-semantic-text-primary mt-1 space-y-0.5">
+          {lines.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
+        </div>
       </CardBody>
     </Card>
   );

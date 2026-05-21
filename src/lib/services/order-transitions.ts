@@ -185,7 +185,6 @@ export async function acceptOrder(
       country: order.terminal_country,
       terminalId: order.terminal_id ?? '',
       terminalName: order.terminal_name ?? '',
-      terminalAddress: order.terminal_address ?? '',
     },
     parcelSize: null,
     items,
@@ -284,6 +283,11 @@ export async function markShipped(orderId: string, userId: string): Promise<Orde
     gameName: gameSummary,
     barcode: order.barcode ?? undefined,
     trackingUrl: order.tracking_url ?? undefined,
+    terminalName: order.terminal_name ?? undefined,
+    terminalAddress: order.terminal_address,
+    terminalCity: order.terminal_city,
+    terminalPostalCode: order.terminal_postal_code,
+    terminalCountry: order.terminal_country,
   }).catch((err) => console.error('[Email] Failed to send order-shipped to buyer:', err));
   void notify(order.buyer_id, 'order.shipped', { gameName: gameSummary, orderNumber: order.order_number, orderId });
 

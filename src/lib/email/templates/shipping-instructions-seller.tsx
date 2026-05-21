@@ -13,7 +13,6 @@ interface ShippingInstructionsSellerProps {
   orderId: string;
   buyerName: string;
   destinationTerminalName: string;
-  destinationTerminalAddress: string;
   barcode: string;
   trackingUrl?: string;
   appUrl: string;
@@ -25,7 +24,6 @@ export function ShippingInstructionsSeller({
   orderId,
   buyerName,
   destinationTerminalName,
-  destinationTerminalAddress,
   barcode,
   trackingUrl,
   appUrl,
@@ -53,9 +51,6 @@ export function ShippingInstructionsSeller({
 
         <Text style={s.detailLabel}>Destination terminal</Text>
         <Text style={s.detailValue}>{destinationTerminalName}</Text>
-        {destinationTerminalAddress && (
-          <Text style={styles.terminalAddress}>{destinationTerminalAddress}</Text>
-        )}
 
         {trackingUrl && (
           <>
@@ -98,11 +93,6 @@ const styles = {
     fontWeight: '700' as const,
     letterSpacing: '1px',
     margin: '4px 0 16px',
-  },
-  terminalAddress: {
-    color: theme.textMuted,
-    fontSize: '13px',
-    margin: '-8px 0 12px',
   },
   link: {
     color: theme.frostDark,

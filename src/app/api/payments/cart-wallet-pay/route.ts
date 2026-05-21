@@ -239,6 +239,10 @@ export async function POST(request: Request) {
       })),
       shippingCents: shippingTotalCents,
       terminalName,
+      terminalAddress,
+      terminalCity,
+      terminalPostalCode,
+      terminalCountry,
     }],
     user.id
   );

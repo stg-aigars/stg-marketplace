@@ -9,6 +9,7 @@ import { EmailLayout, theme, templateStyles as s } from './layout';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { OrderTermsSummary } from './_OrderTermsSummary';
 import { getAdrBodyForBuyer } from '@/lib/legal/adr-bodies';
+import { formatTerminalLines } from '@/lib/terminals/format';
 
 interface OrderConfirmationBuyerProps {
   buyerName: string;
@@ -19,6 +20,10 @@ interface OrderConfirmationBuyerProps {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
+  terminalAddress?: string | null;
+  terminalCity?: string | null;
+  terminalPostalCode?: string | null;
+  terminalCountry?: string | null;
   appUrl: string;
   // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
   buyerCountry: string | null;
@@ -35,6 +40,10 @@ export function OrderConfirmationBuyer({
   priceCents,
   shippingCents,
   terminalName,
+  terminalAddress,
+  terminalCity,
+  terminalPostalCode,
+  terminalCountry,
   appUrl,
   buyerCountry,
   termsVersion,
@@ -75,7 +84,23 @@ export function OrderConfirmationBuyer({
         </div>
 
         <Text style={s.detailLabel}>Pickup location</Text>
-        <Text style={s.detailValue}>{terminalName}</Text>
+        {(() => {
+          const [first, ...rest] = formatTerminalLines({
+            name: terminalName,
+            address: terminalAddress,
+            city: terminalCity,
+            postalCode: terminalPostalCode,
+            country: terminalCountry,
+          });
+          return (
+            <>
+              <Text style={s.detailValue}>{first}</Text>
+              {rest.length > 0 && (
+                <Text style={styles.addressBlock}>{rest.join('\n')}</Text>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <Text style={s.body}>
@@ -130,6 +155,13 @@ const styles = {
     fontSize: '16px',
     fontWeight: '700' as const,
     margin: '8px 0 0',
+  },
+  addressBlock: {
+    color: theme.textMuted,
+    fontSize: '13px',
+    lineHeight: '20px',
+    margin: '-8px 0 12px',
+    whiteSpace: 'pre-line' as const,
   },
 } as const;
 

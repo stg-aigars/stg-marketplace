@@ -87,6 +87,10 @@ export async function sendOrderConfirmationToBuyer(params: {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
+  terminalAddress?: string | null;
+  terminalCity?: string | null;
+  terminalPostalCode?: string | null;
+  terminalCountry?: string | null;
   // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
   buyerCountry: string | null;
   termsVersion: string;
@@ -104,6 +108,10 @@ export async function sendOrderConfirmationToBuyer(params: {
       priceCents: params.priceCents,
       shippingCents: params.shippingCents,
       terminalName: params.terminalName,
+      terminalAddress: params.terminalAddress,
+      terminalCity: params.terminalCity,
+      terminalPostalCode: params.terminalPostalCode,
+      terminalCountry: params.terminalCountry,
       appUrl: env.app.url,
       buyerCountry: params.buyerCountry,
       termsVersion: params.termsVersion,
@@ -123,7 +131,12 @@ export async function sendOrderShippedToBuyer(params: {
   gameName: string;
   barcode?: string;
   trackingUrl?: string;
+  scannedAtTerminal?: string;
   terminalName?: string;
+  terminalAddress?: string | null;
+  terminalCity?: string | null;
+  terminalPostalCode?: string | null;
+  terminalCountry?: string | null;
 }): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
@@ -135,7 +148,12 @@ export async function sendOrderShippedToBuyer(params: {
       gameName: params.gameName,
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
+      scannedAtTerminal: params.scannedAtTerminal,
       terminalName: params.terminalName,
+      terminalAddress: params.terminalAddress,
+      terminalCity: params.terminalCity,
+      terminalPostalCode: params.terminalPostalCode,
+      terminalCountry: params.terminalCountry,
       appUrl: env.app.url,
     }),
   });
@@ -182,7 +200,6 @@ export async function sendShippingInstructionsToSeller(params: {
   orderId: string;
   buyerName: string;
   destinationTerminalName: string;
-  destinationTerminalAddress: string;
   barcode: string;
   trackingUrl?: string;
 }): Promise<void> {
@@ -195,7 +212,6 @@ export async function sendShippingInstructionsToSeller(params: {
       orderId: params.orderId,
       buyerName: params.buyerName,
       destinationTerminalName: params.destinationTerminalName,
-      destinationTerminalAddress: params.destinationTerminalAddress,
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
       appUrl: env.app.url,

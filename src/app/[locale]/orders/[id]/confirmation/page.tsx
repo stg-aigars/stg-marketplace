@@ -7,6 +7,7 @@ import { getConditionLabel } from '@/lib/condition-config';
 import type { ListingCondition } from '@/lib/listings/types';
 import { DocumentLayout } from '@/components/documents/DocumentLayout';
 import { DocumentTotals } from '@/components/documents/DocumentTotals';
+import { formatTerminalLines } from '@/lib/terminals/format';
 
 export default async function OrderConfirmationPage(
   props: { params: Promise<{ id: string }> }
@@ -100,11 +101,15 @@ export default async function OrderConfirmationPage(
         <div className="mt-6 rounded-lg bg-semantic-bg-secondary p-4 text-sm print:bg-white">
           <p className="font-medium text-semantic-text-heading">Delivery</p>
           <div className="mt-2 space-y-1 text-semantic-text-secondary">
-            <p>Parcel locker: {order.terminal_name}</p>
-            {order.terminal_address && <p>{order.terminal_address}</p>}
-            {order.terminal_city && order.terminal_postal_code && (
-              <p>{order.terminal_city}, {order.terminal_postal_code}</p>
-            )}
+            {formatTerminalLines({
+              name: order.terminal_name,
+              address: order.terminal_address,
+              city: order.terminal_city,
+              postalCode: order.terminal_postal_code,
+              country: order.terminal_country,
+            }).map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
           </div>
         </div>
       )}
