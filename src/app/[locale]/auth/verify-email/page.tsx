@@ -2,6 +2,7 @@ import { EnvelopeSimple } from '@phosphor-icons/react/ssr';
 import { Card, CardBody } from '@/components/ui';
 import { Link } from '@/i18n/navigation';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { safeReturnUrl } from '@/lib/auth/safe-return-url';
 
 export const metadata = {
   title: 'Check your email',
@@ -14,8 +15,11 @@ export default async function VerifyEmailPage(
 ) {
   const { email, returnUrl } = await props.searchParams;
 
-  const signUpHref = returnUrl
-    ? `/auth/signup?returnUrl=${encodeURIComponent(returnUrl)}`
+  // searchParams arrive from the URL bar — re-sanitize on read so a crafted
+  // value can't leak into the "Sign up again" href that we render.
+  const safeReturn = safeReturnUrl(returnUrl);
+  const signUpHref = safeReturn !== '/'
+    ? `/auth/signup?returnUrl=${encodeURIComponent(safeReturn)}`
     : '/auth/signup';
 
   return (

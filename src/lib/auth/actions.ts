@@ -63,6 +63,14 @@ export async function signUpWithEmail(
 
   const supabase = await createClient();
 
+  // Sanitize at write time so a crafted returnUrl never appears in the
+  // confirmation-email link, the URL bar on the verify-email page, or any
+  // downstream href derived from it. The callback also sanitizes on read as
+  // belt-and-braces. safeReturnUrl collapses any non-relative value to '/' —
+  // we treat that as "no returnUrl" and omit the param entirely.
+  const safeReturn = safeReturnUrl(returnUrl);
+  const hasReturnUrl = safeReturn !== '/';
+
   // ?signup=true survives the email confirmation round-trip and is read by the
   // auth callback to fire analytics.signup_completed. OAuth paths use a
   // created_at freshness check instead and do not need this param.
@@ -70,7 +78,7 @@ export async function signUpWithEmail(
   // originally intended after confirming.
   const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const callbackParams = new URLSearchParams({ signup: 'true' });
-  if (returnUrl) callbackParams.set('returnUrl', returnUrl);
+  if (hasReturnUrl) callbackParams.set('returnUrl', safeReturn);
   const emailRedirectTo = `${appUrl}/auth/callback?${callbackParams.toString()}`;
 
   const { data, error } = await supabase.auth.signUp({
@@ -102,7 +110,7 @@ export async function signUpWithEmail(
   }
 
   const verifyParams = new URLSearchParams({ email: formData.email });
-  if (returnUrl) verifyParams.set('returnUrl', returnUrl);
+  if (hasReturnUrl) verifyParams.set('returnUrl', safeReturn);
   redirect(`/auth/verify-email?${verifyParams.toString()}`);
 }
 
