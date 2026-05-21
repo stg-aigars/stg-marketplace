@@ -54,11 +54,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
     setPasswordError('');
     setPasswordSuccess('');
 
-    if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters');
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       setPasswordError('Passwords do not match');
       return;
@@ -84,11 +79,6 @@ export function SecuritySection({ email, hasPassword, authProvider }: SecuritySe
     e.preventDefault();
     setSetPwError('');
     setSetPwSuccess('');
-
-    if (setNewPw.length < 8) {
-      setSetPwError('Password must be at least 8 characters');
-      return;
-    }
 
     if (setNewPw !== setConfirmPw) {
       setSetPwError('Passwords do not match');

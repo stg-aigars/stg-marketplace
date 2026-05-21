@@ -11,6 +11,7 @@ import { TERMS_VERSION } from '@/lib/legal/constants';
 import { safeReturnUrl } from '@/lib/auth/safe-return-url';
 import { validatePasswordStrength } from '@/lib/auth/password-validation';
 import { logAuditEvent } from '@/lib/services/audit';
+import { env } from '@/lib/env';
 
 type TermsAcceptanceSource = 'signup' | 'oauth_onboarding';
 
@@ -75,7 +76,7 @@ export async function signUpWithEmail(
   // ?signup=true survives the email confirmation round-trip and is read by the
   // auth callback to fire analytics.signup_completed. OAuth paths use a
   // created_at freshness check instead and do not need this param.
-  const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = env.app.origin ?? env.app.url;
   const emailRedirectTo = `${appUrl}/auth/callback?${withReturnUrl({ signup: 'true' })}`;
 
   const { data, error } = await supabase.auth.signUp({
@@ -127,7 +128,7 @@ export async function resetPassword(
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
-  const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = env.app.origin ?? env.app.url;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${appUrl}/auth/callback?type=recovery`,
@@ -306,9 +307,8 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<AuthActionResult> {
-  if (newPassword.length < 8) {
-    return { error: 'New password must be at least 8 characters' };
-  }
+  const strengthError = validatePasswordStrength(newPassword);
+  if (strengthError) return { error: strengthError };
 
   const supabase = await createClient();
 
@@ -341,9 +341,8 @@ export async function changePassword(
 export async function setPassword(
   newPassword: string
 ): Promise<AuthActionResult> {
-  if (newPassword.length < 8) {
-    return { error: 'Password must be at least 8 characters' };
-  }
+  const strengthError = validatePasswordStrength(newPassword);
+  if (strengthError) return { error: strengthError };
 
   const supabase = await createClient();
 
