@@ -1,6 +1,5 @@
 import { Card, CardBody } from '@/components/ui';
 import { UpdatePasswordForm } from '../_components/UpdatePasswordForm';
-import { PASSWORD_REQUIREMENT_MESSAGE } from '@/lib/auth/password-validation';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata = {
@@ -15,9 +14,6 @@ export default function UpdatePasswordPage() {
           <h1 className={PAGE_HEADING_CLASS}>
             Set a new password
           </h1>
-          <p className="mt-2 text-semantic-text-secondary">
-            {PASSWORD_REQUIREMENT_MESSAGE}
-          </p>
         </div>
 
         <Card>

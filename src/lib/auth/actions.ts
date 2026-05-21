@@ -56,6 +56,11 @@ export async function signUpWithEmail(
   const turnstile = await verifyTurnstileToken(turnstileToken, ip);
   if (!turnstile.success) return { error: turnstile.error };
 
+  // Enforce the rule we display to the user — Supabase's preset can drift
+  // from our PASSWORD_RULES, so the app is the source of truth.
+  const strengthError = validatePasswordStrength(formData.password);
+  if (strengthError) return { error: strengthError };
+
   const supabase = await createClient();
 
   // ?signup=true survives the email confirmation round-trip and is read by the

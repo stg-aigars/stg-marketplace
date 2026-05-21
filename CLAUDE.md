@@ -146,6 +146,8 @@ Always use these — do not write inline equivalents:
 | Safe redirect URL | `safeReturnUrl(url)` — prevents open redirects, allows relative paths only | `@/lib/auth/safe-return-url` |
 | Social sharing | `ShareButtons` (copy link + native share; pass full URL from server component) | `@/components/ui` |
 | Phone number input | `PhoneInput` (label, value, onChange, defaultCountry, error; Baltic flag+prefix selector) | `@/components/ui` |
+| Password requirements checklist | `PasswordRequirements` (password; live checklist of the 5 Supabase-mirrored rules, collapses to single "Looks good" success line when all met; render under any password Input) | `@/components/ui` |
+| Field success indicator | `FieldSuccess` (children; small green check + label rendered under a form field to confirm a value is valid; used by `PasswordRequirements`' all-met state and SignUp's email shape check) | `@/components/ui` |
 | Game thumbnail | `GameThumb` (src, alt, size: sm/md/lg/xl; BGG-aware) | `@/components/listings/atoms` |
 | Game title | `GameTitle` (name, size, serif; display font by default) | `@/components/listings/atoms` |
 | Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
