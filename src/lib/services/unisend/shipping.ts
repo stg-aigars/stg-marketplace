@@ -220,7 +220,6 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
       buyerName: buyer.fullName,
       destinationTerminalName: destination.terminalName,
       destinationTerminalAddress: destination.terminalAddress,
-      parcelId: String(parcelId),
       barcode,
       trackingUrl,
     }).catch((err) => {

@@ -1,7 +1,9 @@
 /**
  * Shipping Instructions — Seller
  * Sent when a parcel is created for an accepted T2T order.
- * Tells the seller their parcel ID and how to drop off at any Unisend terminal.
+ * Tells the seller their drop-off code (the Unisend barcode) and how to drop off
+ * at any Unisend terminal. The barcode is the value the kiosk accepts; Unisend's
+ * internal numeric parcelId is for our backend only and is not shown to sellers.
  */
 
 import { Button, Link, Text } from '@react-email/components';
@@ -15,8 +17,7 @@ interface ShippingInstructionsSellerProps {
   buyerName: string;
   destinationTerminalName: string;
   destinationTerminalAddress: string;
-  parcelId: string;
-  barcode?: string;
+  barcode: string;
   trackingUrl?: string;
   appUrl: string;
 }
@@ -28,7 +29,6 @@ export function ShippingInstructionsSeller({
   buyerName,
   destinationTerminalName,
   destinationTerminalAddress,
-  parcelId,
   barcode,
   trackingUrl,
   appUrl,
@@ -51,20 +51,13 @@ export function ShippingInstructionsSeller({
         <Text style={s.detailLabel}>Buyer</Text>
         <Text style={s.detailValue}>{buyerName}</Text>
 
-        <Text style={s.detailLabel}>Your parcel ID</Text>
-        <Text style={styles.parcelId}>{parcelId}</Text>
+        <Text style={s.detailLabel}>Drop-off code</Text>
+        <Text style={styles.dropOffCode}>{barcode}</Text>
 
         <Text style={s.detailLabel}>Destination terminal</Text>
         <Text style={s.detailValue}>{destinationTerminalName}</Text>
         {destinationTerminalAddress && (
           <Text style={styles.terminalAddress}>{destinationTerminalAddress}</Text>
-        )}
-
-        {barcode && (
-          <>
-            <Text style={s.detailLabel}>Tracking code</Text>
-            <Text style={s.detailValue}>{barcode}</Text>
-          </>
         )}
 
         {trackingUrl && (
@@ -84,7 +77,7 @@ export function ShippingInstructionsSeller({
       </Text>
       <Text style={s.stepList}>
         1. Visit any Unisend parcel terminal{'\n'}
-        2. Enter the parcel ID shown above{'\n'}
+        2. Enter the drop-off code shown above to print your shipping label{'\n'}
         3. Place the game in the locker
       </Text>
 
@@ -102,7 +95,7 @@ export function ShippingInstructionsSeller({
 }
 
 const styles = {
-  parcelId: {
+  dropOffCode: {
     color: theme.textHeading,
     fontSize: '28px',
     fontWeight: '700' as const,
