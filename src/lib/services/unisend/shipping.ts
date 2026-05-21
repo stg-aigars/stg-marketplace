@@ -212,11 +212,9 @@ export async function createOrderShipping(ctx: ShippingContext): Promise<Shippin
     }
 
     // 7. Send shipping instructions email to seller (non-blocking).
-    // Guard the empty-barcode case: createAndShipParcel's getBarcodes fallback
-    // can return barcode='' on a Unisend hiccup, and the email's hero "Drop-off
-    // code" block has no fallback — better to skip the email than send one
-    // instructing the seller to enter a blank code at the kiosk.
-    if (!barcode) {
+    // Parcel is already registered with Unisend and saved to the order, so an empty
+    // barcode here is a partial-success — skip the email rather than fail the flow.
+    if (!barcode || barcode.trim() === '') {
       console.error(`${logPrefix} Parcel created but barcode is empty — skipping shipping email`);
     } else {
       sendShippingInstructionsToSeller({

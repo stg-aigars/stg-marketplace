@@ -1,9 +1,6 @@
 /**
  * Shipping Instructions — Seller
  * Sent when a parcel is created for an accepted T2T order.
- * Tells the seller their drop-off code (the Unisend barcode) and how to drop off
- * at any Unisend terminal. The barcode is the value the kiosk accepts; Unisend's
- * internal numeric parcelId is for our backend only and is not shown to sellers.
  */
 
 import { Button, Link, Text } from '@react-email/components';
