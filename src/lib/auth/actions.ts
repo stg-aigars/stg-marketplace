@@ -306,9 +306,8 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<AuthActionResult> {
-  if (newPassword.length < 8) {
-    return { error: 'New password must be at least 8 characters' };
-  }
+  const strengthError = validatePasswordStrength(newPassword);
+  if (strengthError) return { error: strengthError };
 
   const supabase = await createClient();
 
@@ -341,9 +340,8 @@ export async function changePassword(
 export async function setPassword(
   newPassword: string
 ): Promise<AuthActionResult> {
-  if (newPassword.length < 8) {
-    return { error: 'Password must be at least 8 characters' };
-  }
+  const strengthError = validatePasswordStrength(newPassword);
+  if (strengthError) return { error: strengthError };
 
   const supabase = await createClient();
 
