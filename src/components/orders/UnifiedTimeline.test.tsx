@@ -233,7 +233,7 @@ describe('UnifiedTimeline two-line rendering', () => {
     );
 
     expect(screen.getByText('Collected by courier')).toBeDefined();
-    expect(screen.getByText('Typically 2–3 working days')).toBeDefined();
+    expect(screen.getByText('Arriving at locker: typically 2–3 working days')).toBeDefined();
   });
 
   it('post-arrival: ETA copy is gone once RECEIVED_TERMINAL has fired', () => {
@@ -248,8 +248,8 @@ describe('UnifiedTimeline two-line rendering', () => {
       />
     );
 
-    expect(screen.queryByText('Typically 2–3 working days')).toBeNull();
-    expect(screen.queryByText('Typically next working day')).toBeNull();
+    expect(screen.queryByText('Arriving at locker: typically 2–3 working days')).toBeNull();
+    expect(screen.queryByText('Arriving at locker: typically next working day')).toBeNull();
   });
 
   it('icon dots: all rendered at uniform 20px square (rounded-md)', () => {
