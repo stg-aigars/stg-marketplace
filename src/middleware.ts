@@ -73,8 +73,8 @@ export default async function middleware(request: NextRequest) {
 
   const pathname = stripLocalePrefix(request.nextUrl.pathname);
 
-  // 2. Redirect authenticated users away from signin/signup
-  if (user && (pathname === '/auth/signin' || pathname === '/auth/signup')) {
+  // 2. Redirect authenticated users away from signin/signup/verify-email
+  if (user && (pathname === '/auth/signin' || pathname === '/auth/signup' || pathname === '/auth/verify-email')) {
     const homeUrl = new URL('/', request.url);
     const redirect = copySupabaseCookies(supabaseResponse, NextResponse.redirect(homeUrl));
     setCspHeader(redirect, csp);
