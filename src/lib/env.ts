@@ -27,6 +27,7 @@ const serverEnvSchema = {
   APP_ORIGIN: process.env.APP_ORIGIN,
 
   CRON_SECRET: process.env.CRON_SECRET,
+  SUPABASE_WEBHOOK_SECRET: process.env.SUPABASE_WEBHOOK_SECRET,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
 
@@ -83,6 +84,7 @@ export function validateEnv(): ValidationResult {
     'APP_ORIGIN',
     'RESEND_AUDIENCE_ID',
     'RESEND_WEBHOOK_SECRET',
+    'SUPABASE_WEBHOOK_SECRET',
     'ADMIN_EMAIL',
     'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
     'TURNSTILE_SECRET_KEY',
@@ -163,6 +165,9 @@ export const env = {
   },
   cron: {
     secret: process.env.CRON_SECRET,
+  },
+  supabaseWebhook: {
+    secret: process.env.SUPABASE_WEBHOOK_SECRET,
   },
   turnstile: {
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
