@@ -69,6 +69,20 @@ export interface TrackingEventForTimeline {
   location?: string | null;
 }
 
+/**
+ * True once the parcel has reached the destination locker (or been picked up).
+ * Single source of truth for "in transit" vs "at locker" UI branching — used by
+ * the timeline ETA hint and by status banners outside this module.
+ */
+export function hasArrivedAtDestination(events: TrackingEventForTimeline[]): boolean {
+  return events.some(
+    (e) =>
+      e.state_type === 'PARCEL_DELIVERED' ||
+      e.event_type === 'RECEIVED_TERMINAL' ||
+      e.event_type === 'NOTIFICATIONS_INFORMED'
+  );
+}
+
 export function buildOrderTimeline(
   order: OrderForTimeline,
   trackingEvents: TrackingEventForTimeline[]
@@ -87,13 +101,7 @@ export function buildOrderTimeline(
   if (hasTracking) {
     // Dedupe ready-for-pickup: if RECEIVED_TERMINAL exists, NOTIFICATIONS_INFORMED is redundant.
     const hasReceivedTerminal = trackingEvents.some((e) => e.event_type === 'RECEIVED_TERMINAL');
-    // Suppress the in-flight ETA copy once the parcel has arrived at the destination locker.
-    const hasArrivedAtDestination = trackingEvents.some(
-      (e) =>
-        e.state_type === 'PARCEL_DELIVERED' ||
-        e.event_type === 'RECEIVED_TERMINAL' ||
-        e.event_type === 'NOTIFICATIONS_INFORMED'
-    );
+    const arrived = hasArrivedAtDestination(trackingEvents);
     let courierCollectionEntry: TimelineEntry | null = null;
 
     for (const event of trackingEvents) {
@@ -118,16 +126,18 @@ export function buildOrderTimeline(
     }
 
     // ETA attaches only to "Collected by courier" and only while the parcel is still in flight.
+    // Phrased as a forward-looking arrival estimate so readers don't parse it as describing
+    // the past collection event.
     if (
       courierCollectionEntry &&
-      !hasArrivedAtDestination &&
+      !arrived &&
       order.seller_country &&
       order.terminal_country
     ) {
       courierCollectionEntry.detail =
         order.seller_country !== order.terminal_country
-          ? 'Typically 2–3 working days'
-          : 'Typically next working day';
+          ? 'Arriving at locker: typically 2–3 working days'
+          : 'Arriving at locker: typically next working day';
     }
   } else {
     if (order.shipped_at) {

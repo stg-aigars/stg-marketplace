@@ -348,14 +348,14 @@ function TimelineRow({
         <p className={cn('text-sm font-medium', textClass)}>
           {label}
         </p>
-        {showDetailSubtitle && (
-          <p className="text-xs text-semantic-text-muted mt-0.5">
-            {entry.detail}
-          </p>
-        )}
         {entry.timestamp && !entry.isFuture && (
           <p className="text-xs text-semantic-text-muted mt-0.5">
             {formatDateTime(entry.timestamp)}
+          </p>
+        )}
+        {showDetailSubtitle && (
+          <p className="text-xs text-semantic-text-muted mt-0.5">
+            {entry.detail}
           </p>
         )}
       </div>

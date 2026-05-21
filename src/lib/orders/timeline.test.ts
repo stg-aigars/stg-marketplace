@@ -308,7 +308,7 @@ describe('buildOrderTimeline', () => {
 
       const result = buildOrderTimeline(order, events);
       const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
-      expect(courierCollection?.detail).toBe('Typically 2–3 working days');
+      expect(courierCollection?.detail).toBe('Arriving at locker: typically 2–3 working days');
     });
 
     it('domestic in-flight courier collection: detail reads "next working day"', () => {
@@ -325,7 +325,7 @@ describe('buildOrderTimeline', () => {
 
       const result = buildOrderTimeline(order, events);
       const courierCollection = result.find((e) => e.eventType === 'RECEIVED_TERMINAL_OUT');
-      expect(courierCollection?.detail).toBe('Typically next working day');
+      expect(courierCollection?.detail).toBe('Arriving at locker: typically next working day');
     });
 
     it('post-arrival: ETA suppressed once RECEIVED_TERMINAL has fired', () => {

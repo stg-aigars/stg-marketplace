@@ -9,6 +9,7 @@ import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
 import { ShippingInfo } from './ShippingInfo';
 import { UnifiedTimeline } from './UnifiedTimeline';
+import { hasArrivedAtDestination } from '@/lib/orders/timeline';
 import type { TrackingEventRow } from '@/lib/services/tracking';
 import { OrderActions } from './OrderActions';
 import { DisputeDetails } from './DisputeDetails';
@@ -50,16 +51,34 @@ function getCancelledMessage(role: 'buyer' | 'seller', reason: CancellationReaso
 }
 
 /** Contextual status message for the current user */
-function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancellationReason?: CancellationReason | null): string | null {
+function getStatusMessage(
+  status: OrderStatus,
+  role: 'buyer' | 'seller',
+  cancellationReason: CancellationReason | null,
+  parcelArrivedAtLocker: boolean
+): string | null {
   if (status === 'cancelled') {
-    return getCancelledMessage(role, cancellationReason ?? null);
+    return getCancelledMessage(role, cancellationReason);
+  }
+
+  // `shipped` has two sub-states the order column can't distinguish on its own:
+  // the parcel is still in courier transit vs already sitting in the destination locker.
+  // Tracking events resolve this; banner copy follows.
+  if (status === 'shipped') {
+    if (role === 'seller') {
+      return parcelArrivedAtLocker
+        ? 'Waiting for the buyer to pick up the parcel'
+        : 'The parcel is on its way to the buyer';
+    }
+    return parcelArrivedAtLocker
+      ? 'Your game is at your selected terminal — pick it up'
+      : 'Your game is on its way to your selected terminal';
   }
 
   const messages: Record<string, Partial<Record<OrderStatus, string>>> = {
     seller: {
       pending_seller: 'Waiting for you to accept this order',
       accepted: 'Drop your parcel at any compatible parcel locker',
-      shipped: 'Waiting for the buyer to pick up the parcel',
       delivered: 'Buyer has picked up the parcel',
       completed: 'Order complete',
       disputed: 'The buyer reported an issue with this order. Please review and respond.',
@@ -68,7 +87,6 @@ function getStatusMessage(status: OrderStatus, role: 'buyer' | 'seller', cancell
     buyer: {
       pending_seller: 'Waiting for the seller to accept your order',
       accepted: 'The seller is preparing your shipment',
-      shipped: 'Your game is on the way — pick it up at your selected terminal',
       delivered: 'Confirm you received your game in good condition',
       completed: 'Order complete — enjoy your game',
       disputed: 'You reported an issue. The seller has been notified.',
@@ -103,7 +121,8 @@ function BarcodeCard({ barcode }: { barcode: string }) {
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
-  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason);
+  const parcelArrivedAtLocker = hasArrivedAtDestination(trackingEvents);
+  const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason, parcelArrivedAtLocker);
 
   // Derive items from order_items (preferred) or legacy listings join
   const items = order.order_items ?? [];
