@@ -1,20 +1,26 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Input, Button, TurnstileWidget, Checkbox } from '@/components/ui';
+import { CheckCircle } from '@phosphor-icons/react/ssr';
+import {
+  Input,
+  Button,
+  TurnstileWidget,
+  Checkbox,
+  PasswordRequirements,
+} from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { signUpWithEmail } from '@/lib/auth/actions';
-import {
-  PASSWORD_REQUIREMENT_MESSAGE,
-  validatePasswordStrength,
-} from '@/lib/auth/password-validation';
+import { validatePasswordStrength } from '@/lib/auth/password-validation';
 import { OAuthButton } from './OAuthButton';
 import { CountrySelector } from './CountrySelector';
 import { env } from '@/lib/env';
 import { Link } from '@/i18n/navigation';
 import type { CountryCode } from '@/lib/country-utils';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Local part + @ + domain + . + TLD where TLD is ≥2 chars (no single-letter
+// TLDs exist in the live ICANN root zone; `ada@inbox.t` is always a typo).
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@.]{2,}$/;
 
 interface SignUpFormProps {
   returnUrl?: string;
@@ -30,7 +36,6 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const passwordStrengthError = validatePasswordStrength(password);
@@ -38,12 +43,12 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
     ? null
     : 'Enter a valid email address';
 
-  // Field-level error shown under the input. Suppressed until the user blurs
-  // the field so we don't red-flag mid-typing.
+  // Email error is suppressed until the user blurs the field so we don't
+  // red-flag mid-typing. Password feedback uses the always-visible
+  // PasswordRequirements checklist instead — no blur gating needed.
   const emailFieldError =
     emailTouched && email.length > 0 ? emailShapeError : null;
-  const passwordFieldError =
-    passwordTouched && password.length > 0 ? passwordStrengthError : null;
+  const showEmailSuccess = email.length > 0 && !emailShapeError;
 
   const canSubmit =
     displayName.trim().length > 0 &&
@@ -55,10 +60,9 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    // Surface any pending field-level errors on submit, in case the user
-    // never blurred the field before clicking.
+    // Surface any pending email error on submit, in case the user never
+    // blurred the field before clicking.
     setEmailTouched(true);
-    setPasswordTouched(true);
 
     // Defense-in-depth: disabled button can be bypassed via devtools
     if (!country) {
@@ -137,17 +141,25 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
           </p>
         </div>
 
-        <Input
-          id="email"
-          type="email"
-          label="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onBlur={() => setEmailTouched(true)}
-          error={emailFieldError ?? undefined}
-          required
-          autoComplete="email"
-        />
+        <div>
+          <Input
+            id="email"
+            type="email"
+            label="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => setEmailTouched(true)}
+            error={emailFieldError ?? undefined}
+            required
+            autoComplete="email"
+          />
+          {showEmailSuccess && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-semantic-success">
+              <CheckCircle size={16} weight="fill" aria-hidden="true" />
+              Looks good
+            </p>
+          )}
+        </div>
 
         <div>
           <Input
@@ -156,17 +168,11 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
             label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => setPasswordTouched(true)}
-            error={passwordFieldError ?? undefined}
             required
             autoComplete="new-password"
             minLength={8}
           />
-          {!passwordFieldError && (
-            <p className="mt-1.5 text-sm text-semantic-text-muted">
-              {PASSWORD_REQUIREMENT_MESSAGE}
-            </p>
-          )}
+          <PasswordRequirements password={password} />
         </div>
 
         <CountrySelector

@@ -16,6 +16,8 @@ export type { InputProps } from './input';
 export { PhoneInput } from './PhoneInput';
 export type { PhoneInputProps } from './PhoneInput';
 
+export { PasswordRequirements } from './PasswordRequirements';
+
 export { Select } from './select';
 export type { SelectProps, SelectOption } from './select';
 
