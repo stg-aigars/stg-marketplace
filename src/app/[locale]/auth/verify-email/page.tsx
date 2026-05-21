@@ -27,11 +27,10 @@ export default async function VerifyEmailPage(
       <div className="max-w-md mx-auto">
         <Card>
           <CardBody className="text-center py-10">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-semantic-brand/10">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-semantic-brand-bg text-semantic-brand">
               <EnvelopeSimple
                 size={32}
-                weight="duotone"
-                className="text-semantic-brand"
+                weight="regular"
                 aria-hidden="true"
               />
             </div>
@@ -41,18 +40,17 @@ export default async function VerifyEmailPage(
             <p className="mt-3 text-semantic-text-secondary">
               We sent a confirmation link to{' '}
               {email ? (
-                <span className="font-medium text-semantic-text-primary break-all">
+                <span className="font-medium text-semantic-text-primary break-words">
                   {email}
                 </span>
               ) : (
                 'your email address'
               )}
-              . Click it to activate your account and start using Second Turn Games.
+              . Open it to finish setting up your account.
             </p>
 
             <p className="mt-6 text-sm text-semantic-text-muted">
-              Don&apos;t see it? Check your spam folder, or wait a minute — emails
-              can take a moment to arrive.
+              Don&apos;t see it? Check your spam folder, or give it a minute to arrive.
             </p>
           </CardBody>
         </Card>
