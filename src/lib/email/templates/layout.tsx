@@ -288,6 +288,13 @@ const templateStyles = {
     margin: '0 0 24px',
     whiteSpace: 'pre-line' as const,
   },
+  addressBlock: {
+    color: theme.textMuted,
+    fontSize: '13px',
+    lineHeight: '20px',
+    margin: '-8px 0 12px',
+    whiteSpace: 'pre-line' as const,
+  },
   ctaFrost: {
     backgroundColor: theme.frost,
     borderRadius: '8px',

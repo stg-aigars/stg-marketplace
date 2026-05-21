@@ -52,6 +52,13 @@ export function OrderConfirmationBuyer({
   const totalCents = priceCents + shippingCents;
   const orderUrl = `${appUrl}/orders/${orderId}`;
   const adr = getAdrBodyForBuyer(buyerCountry);
+  const [pickupFirstLine, ...pickupSubLines] = formatTerminalLines({
+    name: terminalName,
+    address: terminalAddress,
+    city: terminalCity,
+    postalCode: terminalPostalCode,
+    country: terminalCountry,
+  });
 
   return (
     <EmailLayout preview={`Order confirmed — ${gameName}`}>
@@ -84,23 +91,10 @@ export function OrderConfirmationBuyer({
         </div>
 
         <Text style={s.detailLabel}>Pickup location</Text>
-        {(() => {
-          const [first, ...rest] = formatTerminalLines({
-            name: terminalName,
-            address: terminalAddress,
-            city: terminalCity,
-            postalCode: terminalPostalCode,
-            country: terminalCountry,
-          });
-          return (
-            <>
-              <Text style={s.detailValue}>{first}</Text>
-              {rest.length > 0 && (
-                <Text style={styles.addressBlock}>{rest.join('\n')}</Text>
-              )}
-            </>
-          );
-        })()}
+        <Text style={s.detailValue}>{pickupFirstLine}</Text>
+        {pickupSubLines.length > 0 && (
+          <Text style={s.addressBlock}>{pickupSubLines.join('\n')}</Text>
+        )}
       </div>
 
       <Text style={s.body}>
@@ -155,13 +149,6 @@ const styles = {
     fontSize: '16px',
     fontWeight: '700' as const,
     margin: '8px 0 0',
-  },
-  addressBlock: {
-    color: theme.textMuted,
-    fontSize: '13px',
-    lineHeight: '20px',
-    margin: '-8px 0 12px',
-    whiteSpace: 'pre-line' as const,
   },
 } as const;
 

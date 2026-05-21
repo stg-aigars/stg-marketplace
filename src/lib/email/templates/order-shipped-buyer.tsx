@@ -74,7 +74,7 @@ export function OrderShippedBuyer({
             <Text style={s.detailLabel}>Pickup location</Text>
             <Text style={s.detailValue}>{pickupLines[0]}</Text>
             {pickupLines.length > 1 && (
-              <Text style={styles.addressBlock}>{pickupLines.slice(1).join('\n')}</Text>
+              <Text style={s.addressBlock}>{pickupLines.slice(1).join('\n')}</Text>
             )}
           </>
         )}
@@ -126,13 +126,6 @@ const styles = {
   link: {
     color: theme.frostDark,
     textDecoration: 'underline' as const,
-  },
-  addressBlock: {
-    color: theme.textMuted,
-    fontSize: '13px',
-    lineHeight: '20px',
-    margin: '-8px 0 12px',
-    whiteSpace: 'pre-line' as const,
   },
 } as const;
 
