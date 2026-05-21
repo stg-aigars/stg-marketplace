@@ -63,11 +63,20 @@ export async function signUpWithEmail(
 
   const supabase = await createClient();
 
+  // safeReturnUrl collapses non-relative values to '/' — treat that as absent
+  // and omit the param so we don't forward a sanitized-away open redirect.
+  const safeReturn = safeReturnUrl(returnUrl);
+  const withReturnUrl = (base: Record<string, string>): string => {
+    const p = new URLSearchParams(base);
+    if (safeReturn !== '/') p.set('returnUrl', safeReturn);
+    return p.toString();
+  };
+
   // ?signup=true survives the email confirmation round-trip and is read by the
   // auth callback to fire analytics.signup_completed. OAuth paths use a
   // created_at freshness check instead and do not need this param.
   const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const emailRedirectTo = `${appUrl}/auth/callback?signup=true`;
+  const emailRedirectTo = `${appUrl}/auth/callback?${withReturnUrl({ signup: 'true' })}`;
 
   const { data, error } = await supabase.auth.signUp({
     email: formData.email,
@@ -97,7 +106,7 @@ export async function signUpWithEmail(
     logTermsAccepted(data.user.id, 'signup');
   }
 
-  redirect(returnUrl ? safeReturnUrl(returnUrl) : '/browse?welcome=true');
+  redirect(`/auth/verify-email?${withReturnUrl({ email: formData.email })}`);
 }
 
 export async function signOut(): Promise<void> {

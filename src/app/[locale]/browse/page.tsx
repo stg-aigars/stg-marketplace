@@ -6,7 +6,6 @@ import { ListingCard } from '@/components/listings/ListingCard';
 import { BrowseFilters } from '@/components/listings/BrowseFilters';
 import { BrowseContextWriter } from './BrowseContextWriter';
 import { BrowseSearchAnalytics } from '@/components/analytics/BrowseSearchAnalytics';
-import { WelcomeBanner } from '@/components/WelcomeBanner';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
 import {
   parseFiltersFromParams,
@@ -62,7 +61,6 @@ export default async function BrowsePage(
 ) {
   const searchParams = await props.searchParams;
   const filters = parseFiltersFromParams(searchParams);
-  const showWelcome = searchParams.welcome === 'true';
   const offset = (filters.page - 1) * PAGE_SIZE;
 
   const supabase = await createClient();
@@ -180,8 +178,6 @@ export default async function BrowsePage(
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      {showWelcome && <WelcomeBanner />}
-
       <h1 className={cn(PAGE_HEADING_CLASS, 'mb-4')}>
         Browse games
       </h1>
