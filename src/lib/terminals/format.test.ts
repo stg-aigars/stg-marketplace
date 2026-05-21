@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatTerminalLines, formatTerminalCompact } from './format';
+import { formatTerminalLines } from './format';
 
 describe('formatTerminalLines', () => {
   it('returns empty array when name is missing', () => {
@@ -53,16 +53,5 @@ describe('formatTerminalLines', () => {
       'X',
       'Lithuania',
     ]);
-  });
-});
-
-describe('formatTerminalCompact', () => {
-  it('returns the name', () => {
-    expect(formatTerminalCompact({ name: 'Minska' })).toBe('Minska');
-  });
-
-  it('returns empty string when name is missing', () => {
-    expect(formatTerminalCompact({ name: null })).toBe('');
-    expect(formatTerminalCompact({ name: undefined })).toBe('');
   });
 });

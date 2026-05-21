@@ -1,10 +1,5 @@
 /**
- * Shared terminal-address formatters.
- *
- * Buyer-facing surfaces (in-app pickup card, confirmation page, order-confirmation
- * and order-shipped emails) render the full address. Seller-facing surfaces show
- * just the name — sellers drop at any Unisend terminal, the destination address
- * is informational at most.
+ * Shared terminal-address formatter.
  */
 
 import { getCountryName } from '@/lib/country-utils';
@@ -18,7 +13,18 @@ export interface TerminalAddressFields {
 }
 
 /**
- * Buyer-facing multi-line address, one line per row:
+ * Email/wrapper-layer fields for buyer's pickup terminal. Disambiguating
+ * `terminal*` prefix matches existing wrapper params (buyerName, sellerName, …).
+ */
+export interface TerminalEmailFields {
+  terminalAddress?: string | null;
+  terminalCity?: string | null;
+  terminalPostalCode?: string | null;
+  terminalCountry?: string | null;
+}
+
+/**
+ * Multi-line address, one line per row:
  *   {name}
  *   {address}
  *   {city}, {postalCode}
@@ -33,9 +39,4 @@ export function formatTerminalLines(t: TerminalAddressFields): string[] {
   if (cityPostal) lines.push(cityPostal);
   if (t.country) lines.push(getCountryName(t.country));
   return lines;
-}
-
-/** Seller-facing single-line: just the terminal name. */
-export function formatTerminalCompact(t: TerminalAddressFields): string {
-  return t.name ?? '';
 }

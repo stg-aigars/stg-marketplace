@@ -9,9 +9,9 @@ import { EmailLayout, theme, templateStyles as s } from './layout';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { OrderTermsSummary } from './_OrderTermsSummary';
 import { getAdrBodyForBuyer } from '@/lib/legal/adr-bodies';
-import { formatTerminalLines } from '@/lib/terminals/format';
+import { formatTerminalLines, type TerminalEmailFields } from '@/lib/terminals/format';
 
-interface OrderConfirmationBuyerProps {
+interface OrderConfirmationBuyerProps extends TerminalEmailFields {
   buyerName: string;
   orderNumber: string;
   orderId: string;
@@ -20,10 +20,6 @@ interface OrderConfirmationBuyerProps {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
-  terminalAddress?: string | null;
-  terminalCity?: string | null;
-  terminalPostalCode?: string | null;
-  terminalCountry?: string | null;
   appUrl: string;
   // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
   buyerCountry: string | null;

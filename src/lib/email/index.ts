@@ -42,6 +42,7 @@ import { Dac7Blocked } from './templates/dac7-blocked';
 import { Dac7ReportAvailable } from './templates/dac7-report-available';
 import { SellerVerificationRequest } from './templates/seller-verification-request';
 import { env } from '@/lib/env';
+import type { TerminalEmailFields } from '@/lib/terminals/format';
 
 /**
  * New order notification → seller (when order is created after payment)
@@ -87,15 +88,11 @@ export async function sendOrderConfirmationToBuyer(params: {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
-  terminalAddress?: string | null;
-  terminalCity?: string | null;
-  terminalPostalCode?: string | null;
-  terminalCountry?: string | null;
   // Phase 8: durable-medium delivery (PTAC §5.1, ECJ C-49/11)
   buyerCountry: string | null;
   termsVersion: string;
   sellerTermsVersion: string;
-}): Promise<void> {
+} & TerminalEmailFields): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
     subject: `Order confirmed: ${params.gameName} — ${params.orderNumber}`,
@@ -133,11 +130,7 @@ export async function sendOrderShippedToBuyer(params: {
   trackingUrl?: string;
   scannedAtTerminal?: string;
   terminalName?: string;
-  terminalAddress?: string | null;
-  terminalCity?: string | null;
-  terminalPostalCode?: string | null;
-  terminalCountry?: string | null;
-}): Promise<void> {
+} & TerminalEmailFields): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
     subject: `Shipped: ${params.gameName} — ${params.orderNumber}`,

@@ -3,18 +3,15 @@ import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from './index';
 import { notify } from '@/lib/notifications';
 import { orderGameSummary } from '@/lib/orders/utils';
 import { TERMS_VERSION, SELLER_TERMS_VERSION } from '@/lib/legal/constants';
+import type { TerminalEmailFields } from '@/lib/terminals/format';
 
-interface CartOrderEmailData {
+interface CartOrderEmailData extends TerminalEmailFields {
   orderId: string;
   orderNumber: string;
   sellerId: string;
   items: Array<{ gameName: string; priceCents: number }>;
   shippingCents: number;
   terminalName: string;
-  terminalAddress?: string | null;
-  terminalCity?: string | null;
-  terminalPostalCode?: string | null;
-  terminalCountry?: string | null;
 }
 
 /**

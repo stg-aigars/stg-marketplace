@@ -6,9 +6,9 @@
 import { Button, Link, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, theme, templateStyles as s } from './layout';
-import { formatTerminalLines } from '@/lib/terminals/format';
+import { formatTerminalLines, type TerminalEmailFields } from '@/lib/terminals/format';
 
-interface OrderShippedBuyerProps {
+interface OrderShippedBuyerProps extends TerminalEmailFields {
   buyerName: string;
   orderNumber: string;
   orderId: string;
@@ -19,10 +19,6 @@ interface OrderShippedBuyerProps {
   scannedAtTerminal?: string;
   /** Buyer's destination terminal (where they collect the parcel). */
   terminalName?: string;
-  terminalAddress?: string | null;
-  terminalCity?: string | null;
-  terminalPostalCode?: string | null;
-  terminalCountry?: string | null;
   appUrl: string;
 }
 

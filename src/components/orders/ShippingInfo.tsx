@@ -1,5 +1,5 @@
 import { Card, CardBody } from '@/components/ui';
-import { formatTerminalLines, formatTerminalCompact } from '@/lib/terminals/format';
+import { formatTerminalLines } from '@/lib/terminals/format';
 
 interface ShippingInfoProps {
   terminalName: string | null;
@@ -20,17 +20,15 @@ export function ShippingInfo({
 }: ShippingInfoProps) {
   if (!terminalName) return null;
 
-  const fields = {
-    name: terminalName,
-    address: terminalAddress,
-    city: terminalCity,
-    postalCode: terminalPostalCode,
-    country: terminalCountry,
-  };
-
   const lines = userRole === 'buyer'
-    ? formatTerminalLines(fields)
-    : [formatTerminalCompact(fields)];
+    ? formatTerminalLines({
+        name: terminalName,
+        address: terminalAddress,
+        city: terminalCity,
+        postalCode: terminalPostalCode,
+        country: terminalCountry,
+      })
+    : [terminalName];
 
   return (
     <Card>
