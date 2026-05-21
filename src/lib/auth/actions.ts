@@ -66,8 +66,12 @@ export async function signUpWithEmail(
   // ?signup=true survives the email confirmation round-trip and is read by the
   // auth callback to fire analytics.signup_completed. OAuth paths use a
   // created_at freshness check instead and do not need this param.
+  // returnUrl rides through the same round-trip so the user lands where they
+  // originally intended after confirming.
   const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const emailRedirectTo = `${appUrl}/auth/callback?signup=true`;
+  const callbackParams = new URLSearchParams({ signup: 'true' });
+  if (returnUrl) callbackParams.set('returnUrl', returnUrl);
+  const emailRedirectTo = `${appUrl}/auth/callback?${callbackParams.toString()}`;
 
   const { data, error } = await supabase.auth.signUp({
     email: formData.email,
@@ -97,7 +101,9 @@ export async function signUpWithEmail(
     logTermsAccepted(data.user.id, 'signup');
   }
 
-  redirect(returnUrl ? safeReturnUrl(returnUrl) : '/browse?welcome=true');
+  const verifyParams = new URLSearchParams({ email: formData.email });
+  if (returnUrl) verifyParams.set('returnUrl', returnUrl);
+  redirect(`/auth/verify-email?${verifyParams.toString()}`);
 }
 
 export async function signOut(): Promise<void> {
