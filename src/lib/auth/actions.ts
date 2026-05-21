@@ -63,23 +63,20 @@ export async function signUpWithEmail(
 
   const supabase = await createClient();
 
-  // Sanitize at write time so a crafted returnUrl never appears in the
-  // confirmation-email link, the URL bar on the verify-email page, or any
-  // downstream href derived from it. The callback also sanitizes on read as
-  // belt-and-braces. safeReturnUrl collapses any non-relative value to '/' —
-  // we treat that as "no returnUrl" and omit the param entirely.
+  // safeReturnUrl collapses non-relative values to '/' — treat that as absent
+  // and omit the param so we don't forward a sanitized-away open redirect.
   const safeReturn = safeReturnUrl(returnUrl);
-  const hasReturnUrl = safeReturn !== '/';
+  const withReturnUrl = (base: Record<string, string>): string => {
+    const p = new URLSearchParams(base);
+    if (safeReturn !== '/') p.set('returnUrl', safeReturn);
+    return p.toString();
+  };
 
   // ?signup=true survives the email confirmation round-trip and is read by the
   // auth callback to fire analytics.signup_completed. OAuth paths use a
   // created_at freshness check instead and do not need this param.
-  // returnUrl rides through the same round-trip so the user lands where they
-  // originally intended after confirming.
   const appUrl = process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const callbackParams = new URLSearchParams({ signup: 'true' });
-  if (hasReturnUrl) callbackParams.set('returnUrl', safeReturn);
-  const emailRedirectTo = `${appUrl}/auth/callback?${callbackParams.toString()}`;
+  const emailRedirectTo = `${appUrl}/auth/callback?${withReturnUrl({ signup: 'true' })}`;
 
   const { data, error } = await supabase.auth.signUp({
     email: formData.email,
@@ -109,9 +106,7 @@ export async function signUpWithEmail(
     logTermsAccepted(data.user.id, 'signup');
   }
 
-  const verifyParams = new URLSearchParams({ email: formData.email });
-  if (hasReturnUrl) verifyParams.set('returnUrl', safeReturn);
-  redirect(`/auth/verify-email?${verifyParams.toString()}`);
+  redirect(`/auth/verify-email?${withReturnUrl({ email: formData.email })}`);
 }
 
 export async function signOut(): Promise<void> {
