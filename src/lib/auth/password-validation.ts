@@ -40,9 +40,6 @@ export function checkPasswordRules(password: string): PasswordRuleStatus[] {
   }));
 }
 
-export const PASSWORD_REQUIREMENT_MESSAGE =
-  'At least 8 characters with uppercase, lowercase, a number, and a symbol';
-
 export function validatePasswordStrength(password: string): string | null {
   const failed = PASSWORD_RULES.find((rule) => !rule.test(password));
   if (!failed) return null;

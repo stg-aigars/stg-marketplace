@@ -18,6 +18,8 @@ export type { PhoneInputProps } from './PhoneInput';
 
 export { PasswordRequirements } from './PasswordRequirements';
 
+export { FieldSuccess } from './FieldSuccess';
+
 export { Select } from './select';
 export type { SelectProps, SelectOption } from './select';
 

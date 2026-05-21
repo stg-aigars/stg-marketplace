@@ -1,6 +1,7 @@
 import { CheckCircle, Circle } from '@phosphor-icons/react/ssr';
 import { checkPasswordRules } from '@/lib/auth/password-validation';
 import { cn } from '@/lib/cn';
+import { FieldSuccess } from './FieldSuccess';
 
 interface PasswordRequirementsProps {
   password: string;
@@ -15,17 +16,7 @@ export function PasswordRequirements({
   const allMet = rules.every((r) => r.met);
 
   if (allMet) {
-    return (
-      <p
-        className={cn(
-          'mt-1.5 flex items-center gap-1.5 text-sm text-semantic-success',
-          className
-        )}
-      >
-        <CheckCircle size={16} weight="fill" aria-hidden="true" />
-        Looks good
-      </p>
-    );
+    return <FieldSuccess className={className}>Looks good</FieldSuccess>;
   }
 
   return (

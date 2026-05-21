@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { CheckCircle } from '@phosphor-icons/react/ssr';
 import {
   Input,
   Button,
   TurnstileWidget,
   Checkbox,
   PasswordRequirements,
+  FieldSuccess,
 } from '@/components/ui';
 import type { TurnstileWidgetRef } from '@/components/ui';
 import { signUpWithEmail } from '@/lib/auth/actions';
@@ -153,12 +153,7 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
             required
             autoComplete="email"
           />
-          {showEmailSuccess && (
-            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-semantic-success">
-              <CheckCircle size={16} weight="fill" aria-hidden="true" />
-              Looks good
-            </p>
-          )}
+          {showEmailSuccess && <FieldSuccess>Looks good</FieldSuccess>}
         </div>
 
         <div>
