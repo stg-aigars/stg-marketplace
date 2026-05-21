@@ -42,6 +42,7 @@ import { Dac7Blocked } from './templates/dac7-blocked';
 import { Dac7ReportAvailable } from './templates/dac7-report-available';
 import { SellerVerificationRequest } from './templates/seller-verification-request';
 import { env } from '@/lib/env';
+import type { TerminalEmailFields } from '@/lib/terminals/format';
 
 /**
  * New order notification → seller (when order is created after payment)
@@ -91,7 +92,7 @@ export async function sendOrderConfirmationToBuyer(params: {
   buyerCountry: string | null;
   termsVersion: string;
   sellerTermsVersion: string;
-}): Promise<void> {
+} & TerminalEmailFields): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
     subject: `Order confirmed: ${params.gameName} — ${params.orderNumber}`,
@@ -104,6 +105,10 @@ export async function sendOrderConfirmationToBuyer(params: {
       priceCents: params.priceCents,
       shippingCents: params.shippingCents,
       terminalName: params.terminalName,
+      terminalAddress: params.terminalAddress,
+      terminalCity: params.terminalCity,
+      terminalPostalCode: params.terminalPostalCode,
+      terminalCountry: params.terminalCountry,
       appUrl: env.app.url,
       buyerCountry: params.buyerCountry,
       termsVersion: params.termsVersion,
@@ -123,8 +128,9 @@ export async function sendOrderShippedToBuyer(params: {
   gameName: string;
   barcode?: string;
   trackingUrl?: string;
+  scannedAtTerminal?: string;
   terminalName?: string;
-}): Promise<void> {
+} & TerminalEmailFields): Promise<void> {
   await sendEmail({
     to: params.buyerEmail,
     subject: `Shipped: ${params.gameName} — ${params.orderNumber}`,
@@ -135,7 +141,12 @@ export async function sendOrderShippedToBuyer(params: {
       gameName: params.gameName,
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
+      scannedAtTerminal: params.scannedAtTerminal,
       terminalName: params.terminalName,
+      terminalAddress: params.terminalAddress,
+      terminalCity: params.terminalCity,
+      terminalPostalCode: params.terminalPostalCode,
+      terminalCountry: params.terminalCountry,
       appUrl: env.app.url,
     }),
   });
@@ -182,7 +193,6 @@ export async function sendShippingInstructionsToSeller(params: {
   orderId: string;
   buyerName: string;
   destinationTerminalName: string;
-  destinationTerminalAddress: string;
   barcode: string;
   trackingUrl?: string;
 }): Promise<void> {
@@ -195,7 +205,6 @@ export async function sendShippingInstructionsToSeller(params: {
       orderId: params.orderId,
       buyerName: params.buyerName,
       destinationTerminalName: params.destinationTerminalName,
-      destinationTerminalAddress: params.destinationTerminalAddress,
       barcode: params.barcode,
       trackingUrl: params.trackingUrl,
       appUrl: env.app.url,

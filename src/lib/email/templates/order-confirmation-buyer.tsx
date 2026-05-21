@@ -9,8 +9,9 @@ import { EmailLayout, theme, templateStyles as s } from './layout';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { OrderTermsSummary } from './_OrderTermsSummary';
 import { getAdrBodyForBuyer } from '@/lib/legal/adr-bodies';
+import { formatTerminalLines, type TerminalEmailFields } from '@/lib/terminals/format';
 
-interface OrderConfirmationBuyerProps {
+interface OrderConfirmationBuyerProps extends TerminalEmailFields {
   buyerName: string;
   orderNumber: string;
   orderId: string;
@@ -35,6 +36,10 @@ export function OrderConfirmationBuyer({
   priceCents,
   shippingCents,
   terminalName,
+  terminalAddress,
+  terminalCity,
+  terminalPostalCode,
+  terminalCountry,
   appUrl,
   buyerCountry,
   termsVersion,
@@ -43,6 +48,13 @@ export function OrderConfirmationBuyer({
   const totalCents = priceCents + shippingCents;
   const orderUrl = `${appUrl}/orders/${orderId}`;
   const adr = getAdrBodyForBuyer(buyerCountry);
+  const [pickupFirstLine, ...pickupSubLines] = formatTerminalLines({
+    name: terminalName,
+    address: terminalAddress,
+    city: terminalCity,
+    postalCode: terminalPostalCode,
+    country: terminalCountry,
+  });
 
   return (
     <EmailLayout preview={`Order confirmed — ${gameName}`}>
@@ -75,7 +87,10 @@ export function OrderConfirmationBuyer({
         </div>
 
         <Text style={s.detailLabel}>Pickup location</Text>
-        <Text style={s.detailValue}>{terminalName}</Text>
+        <Text style={s.detailValue}>{pickupFirstLine}</Text>
+        {pickupSubLines.length > 0 && (
+          <Text style={s.addressBlock}>{pickupSubLines.join('\n')}</Text>
+        )}
       </div>
 
       <Text style={s.body}>
