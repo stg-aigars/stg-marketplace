@@ -24,7 +24,7 @@ export function CountrySelector({ value, onChange }: CountrySelectorProps) {
               className={`flex flex-col items-center gap-1 rounded-lg py-3 px-2 text-sm font-medium transition-colors duration-250 ease-out-custom min-h-[44px] ${
                 isSelected
                   ? 'border-2 border-semantic-brand bg-semantic-brand/5 text-semantic-text-primary'
-                  : 'border border-semantic-border-subtle bg-semantic-bg-elevated text-semantic-text-secondary sm:hover:border-semantic-border-default'
+                  : 'border border-semantic-border-subtle bg-semantic-bg-surface text-semantic-text-secondary sm:hover:border-semantic-border-default'
               }`}
             >
               <span className={`${getCountryFlag(country.code)} text-xl`} aria-hidden="true" />
