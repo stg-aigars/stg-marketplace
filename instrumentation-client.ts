@@ -28,9 +28,14 @@ Sentry.init({
     }
 
     // Filter out transient CDN load failures (external network issues, not bugs)
+    // and aborted RSC streams (user navigated mid-prefetch — surfaced as
+    // "Error in input stream" by Next.js's RSC decoder; handled, no user impact).
     if (
       event.exception?.values?.some(
-        (e) => e.type === 'TypeError' && e.value?.includes('Load failed')
+        (e) =>
+          e.type === 'TypeError' &&
+          (e.value?.includes('Load failed') ||
+            e.value?.includes('Error in input stream'))
       )
     ) {
       return null;
