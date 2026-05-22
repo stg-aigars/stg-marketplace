@@ -35,6 +35,14 @@ function redactPii(value: unknown): unknown {
   return value;
 }
 
+function safeHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
+
 async function main() {
   const arg = process.argv[2];
   if (!arg) {
@@ -42,24 +50,9 @@ async function main() {
     process.exit(1);
   }
 
-  const supabaseHost = (() => {
-    try {
-      return new URL(env.supabase.url).host;
-    } catch {
-      return env.supabase.url;
-    }
-  })();
-  const unisendHost = (() => {
-    try {
-      return new URL(env.unisend.apiUrl).host;
-    } catch {
-      return env.unisend.apiUrl;
-    }
-  })();
-
   console.log('--- environment ---');
-  console.log(`supabase: ${supabaseHost}`);
-  console.log(`unisend : ${unisendHost}`);
+  console.log(`supabase: ${safeHost(env.supabase.url)}`);
+  console.log(`unisend : ${safeHost(env.unisend.apiUrl)}`);
   console.log('');
 
   const supabase = createServiceClient();

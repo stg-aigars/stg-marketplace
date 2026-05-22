@@ -22,7 +22,13 @@ export interface ActualTerminal {
   city: string | null;
 }
 
-const POSTAL_CODE_RE = /^[A-Z]{2}-?\d{4,5}$|^\d{4,6}$/;
+/**
+ * Matches Baltic postal codes in Unisend location strings: `LV-1035`,
+ * `EE 86001`, `LT-12345`, or bare 4–6 digit codes. Exported so the simpler
+ * city-extraction path in `UnifiedTimeline` (`extractTerminalCity`) shares
+ * the same definition rather than drifting with a numeric-only regex.
+ */
+export const POSTAL_CODE_RE = /^[A-Z]{2}-?\d{4,5}$|^\d{4,6}$/;
 
 export function parseActualDeliveryTerminal(
   location: string | null | undefined

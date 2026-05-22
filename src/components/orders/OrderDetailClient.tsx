@@ -123,9 +123,6 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
   const statusConfig = ORDER_STATUS_CONFIG[status];
   const parcelArrivedAtLocker = hasArrivedAtDestination(trackingEvents);
   const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason, parcelArrivedAtLocker);
-  // Actual delivery terminal parsed from the RECEIVED_TERMINAL tracking event.
-  // Falls back to undefined when no destination scan exists or the location string
-  // is unparseable — the timeline then renders the generic "Ready for pickup" label.
   const actualDeliveryTerminal = getActualDeliveryTerminal(trackingEvents);
 
   // Derive items from order_items (preferred) or legacy listings join

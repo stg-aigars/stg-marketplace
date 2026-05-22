@@ -335,18 +335,11 @@ export async function initiateShipping(
 }
 
 /**
- * Get full parcel detail by parcelId. DIAGNOSTIC ONLY — the response is the
- * creation-time receiver address echoed back, NOT a live "where the parcel
- * actually is" view. Confirmed empirically against a known-rerouted parcel
- * (2026-05-22): receiver.address.terminalId still returned the buyer's
- * original choice even after the parcel was delivered to a different locker.
- *
- * For actual-delivery-terminal detection, parse the `location` string on the
- * `RECEIVED_TERMINAL` tracking event instead (see `parseActualDeliveryTerminal`
- * in `src/lib/orders/actual-terminal.ts`).
- *
- * Kept for `scripts/probe-unisend-parcel.ts` — useful for future shipping
- * debugging where seeing the full creation payload helps.
+ * Diagnostic only. Returns the creation-time receiver address echoed back,
+ * NOT live delivery state — `receiver.address.terminalId` stays pinned to
+ * the buyer's checkout choice even after Unisend reroutes the parcel. For
+ * the actual delivery terminal, parse the `location` string on the
+ * `RECEIVED_TERMINAL` tracking event instead.
  */
 export async function getParcelDetail(parcelId: number): Promise<unknown> {
   return apiRequest<unknown>(`/api/v2/parcel/${parcelId}`);
