@@ -53,7 +53,7 @@ const LABELS: Record<string, string> = {
   ordered: 'Order placed',
   accepted: 'Seller accepted',
   shipped: 'Shipped',
-  delivered: 'Delivered',
+  delivered: 'Picked up',
   completed: 'Order completed',
   cancelled: 'Order cancelled',
   disputed: 'Dispute opened',
