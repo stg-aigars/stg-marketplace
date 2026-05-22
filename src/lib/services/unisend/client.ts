@@ -334,6 +334,17 @@ export async function initiateShipping(
   );
 }
 
+/**
+ * Diagnostic only. Returns the creation-time receiver address echoed back,
+ * NOT live delivery state — `receiver.address.terminalId` stays pinned to
+ * the buyer's checkout choice even after Unisend reroutes the parcel. For
+ * the actual delivery terminal, parse the `location` string on the
+ * `RECEIVED_TERMINAL` tracking event instead.
+ */
+export async function getParcelDetail(parcelId: number): Promise<unknown> {
+  return apiRequest<unknown>(`/api/v2/parcel/${parcelId}`);
+}
+
 /** Get barcode and tracking info for parcels */
 export async function getBarcodes(parcelIds: number[]): Promise<BarcodeInfo[]> {
   if (parcelIds.length === 0) {
@@ -523,6 +534,7 @@ const unisendClient = {
   getAllTerminals,
   createParcel,
   initiateShipping,
+  getParcelDetail,
   getBarcodes,
   getTrackingEvents,
   getTrackingEventsBulk,

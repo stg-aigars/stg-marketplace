@@ -3,6 +3,7 @@ import { Card, CardBody } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { formatDateTime } from '@/lib/date-utils';
 import { buildOrderTimeline, type TimelineEntry } from '@/lib/orders/timeline';
+import { POSTAL_CODE_RE } from '@/lib/orders/actual-terminal';
 import type { OrderStatus, CancellationReason } from '@/lib/orders/types';
 import type { TrackingEventRow } from '@/lib/services/tracking';
 import { getCountryFlag } from '@/lib/country-utils';
@@ -53,7 +54,7 @@ const LABELS: Record<string, string> = {
   ordered: 'Order placed',
   accepted: 'Seller accepted',
   shipped: 'Shipped',
-  delivered: 'Delivered',
+  delivered: 'Picked up',
   completed: 'Order completed',
   cancelled: 'Order cancelled',
   disputed: 'Dispute opened',
@@ -179,7 +180,7 @@ function extractTerminalCity(rawLocation: string | null | undefined): string | n
     .filter(Boolean);
   if (parts.length === 0) return null;
   const last = parts[parts.length - 1];
-  if (/^\d{4,6}$/.test(last) && parts.length >= 2) {
+  if (POSTAL_CODE_RE.test(last) && parts.length >= 2) {
     return parts[parts.length - 2];
   }
   if (parts.length === 1 && !/\d/.test(last)) {

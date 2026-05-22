@@ -139,13 +139,20 @@ export function buildOrderTimeline(
           ? 'Arriving at locker: typically 2–3 working days'
           : 'Arriving at locker: typically next working day';
     }
-  } else {
-    if (order.shipped_at) {
-      entries.push(milestone('shipped', order.shipped_at, 'Waiting for tracking updates'));
-    }
-    if (order.delivered_at) {
-      entries.push(milestone('delivered', order.delivered_at));
-    }
+  } else if (order.shipped_at) {
+    entries.push(milestone('shipped', order.shipped_at, 'Waiting for tracking updates'));
+  }
+
+  // "Picked up" milestone — covers two paths: the buyer manually marks the
+  // order as delivered (most common; no PARCEL_DELIVERED tracking event from
+  // Unisend), or the cron auto-transitions on PARCEL_DELIVERED. The tracking
+  // event already renders as "Picked up" when present, so skip the milestone
+  // in that case to avoid duplicate rows.
+  const hasParcelDeliveredEvent = trackingEvents.some(
+    (e) => e.state_type === 'PARCEL_DELIVERED'
+  );
+  if (order.delivered_at && !hasParcelDeliveredEvent) {
+    entries.push(milestone('delivered', order.delivered_at));
   }
 
   if (order.completed_at) {

@@ -7,9 +7,9 @@ import { ListingIdentity } from '@/components/listings/atoms';
 import { formatCentsToCurrency, calculateSellerEarnings } from '@/lib/services/pricing';
 import { ORDER_STATUS_CONFIG } from '@/lib/orders/constants';
 import type { OrderStatus, OrderWithDetails, CancellationReason } from '@/lib/orders/types';
-import { ShippingInfo } from './ShippingInfo';
 import { UnifiedTimeline } from './UnifiedTimeline';
 import { hasArrivedAtDestination } from '@/lib/orders/timeline';
+import { getActualDeliveryTerminal } from '@/lib/orders/actual-terminal';
 import type { TrackingEventRow } from '@/lib/services/tracking';
 import { OrderActions } from './OrderActions';
 import { DisputeDetails } from './DisputeDetails';
@@ -71,8 +71,8 @@ function getStatusMessage(
         : 'The parcel is on its way to the buyer';
     }
     return parcelArrivedAtLocker
-      ? 'Your game is at your selected terminal — pick it up'
-      : 'Your game is on its way to your selected terminal';
+      ? 'Your game is ready for pickup at the terminal'
+      : 'Your game is on its way';
   }
 
   const messages: Record<string, Partial<Record<OrderStatus, string>>> = {
@@ -123,6 +123,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
   const statusConfig = ORDER_STATUS_CONFIG[status];
   const parcelArrivedAtLocker = hasArrivedAtDestination(trackingEvents);
   const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason, parcelArrivedAtLocker);
+  const actualDeliveryTerminal = getActualDeliveryTerminal(trackingEvents);
 
   // Derive items from order_items (preferred) or legacy listings join
   const items = order.order_items ?? [];
@@ -253,18 +254,8 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           }}
           trackingEvents={trackingEvents}
           trackingUrl={order.tracking_url}
-          destinationTerminal={order.terminal_name ?? undefined}
-          destinationCity={order.terminal_city ?? undefined}
-        />
-
-        {/* Terminal reference panel */}
-        <ShippingInfo
-          terminalName={order.terminal_name}
-          terminalAddress={order.terminal_address}
-          terminalCity={order.terminal_city}
-          terminalPostalCode={order.terminal_postal_code}
-          terminalCountry={order.terminal_country}
-          userRole={userRole}
+          destinationTerminal={actualDeliveryTerminal?.name}
+          destinationCity={actualDeliveryTerminal?.city ?? undefined}
         />
 
         {/* Order summary */}

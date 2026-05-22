@@ -70,6 +70,59 @@ describe('buildOrderTimeline', () => {
     expect(result[result.length - 1]).toMatchObject({ key: 'completed', isFuture: true });
   });
 
+  it('delivered_at set without PARCEL_DELIVERED tracking event: still shows Picked up milestone', () => {
+    // Real-world scenario: buyer manually marks the order as delivered before
+    // Unisend emits (or our cron catches) a PARCEL_DELIVERED event.
+    const order = makeOrder({
+      status: 'completed',
+      accepted_at: '2026-05-21T07:30:00Z',
+      shipped_at: '2026-05-21T08:01:00Z',
+      delivered_at: '2026-05-22T13:29:00Z',
+      completed_at: '2026-05-22T13:36:00Z',
+    });
+    const events = [
+      trackingEvent('PARCEL_RECEIVED', '2026-05-21T08:01:57Z', undefined, 'ACCEPTED_TERMINAL'),
+      trackingEvent('ON_THE_WAY', '2026-05-21T08:05:40Z', undefined, 'RECEIVED_TERMINAL_OUT'),
+      trackingEvent('ON_THE_WAY', '2026-05-22T11:28:56Z', undefined, 'RECEIVED_TERMINAL'),
+    ];
+
+    const result = buildOrderTimeline(order, events);
+
+    const keys = result.map((e) => e.key);
+    expect(keys).toContain('delivered');
+    expect(keys).toContain('completed');
+    const deliveredEntry = result.find((e) => e.key === 'delivered');
+    expect(deliveredEntry).toMatchObject({
+      type: 'order_milestone',
+      timestamp: '2026-05-22T13:29:00Z',
+    });
+  });
+
+  it('PARCEL_DELIVERED tracking event present: does not double up with delivered milestone', () => {
+    const order = makeOrder({
+      status: 'completed',
+      accepted_at: '2026-04-01T12:00:00Z',
+      shipped_at: '2026-04-02T08:00:00Z',
+      delivered_at: '2026-04-03T14:00:00Z',
+      completed_at: '2026-04-05T10:00:00Z',
+    });
+    const events = [
+      trackingEvent('PARCEL_RECEIVED', '2026-04-02T18:00:00Z'),
+      trackingEvent('PARCEL_DELIVERED', '2026-04-03T14:00:00Z'),
+    ];
+
+    const result = buildOrderTimeline(order, events);
+
+    const deliveredMilestones = result.filter(
+      (e) => e.type === 'order_milestone' && e.key === 'delivered'
+    );
+    expect(deliveredMilestones).toHaveLength(0);
+    const pickedUpTracking = result.filter(
+      (e) => e.type === 'tracking_event' && e.key === 'PARCEL_DELIVERED'
+    );
+    expect(pickedUpTracking).toHaveLength(1);
+  });
+
   it('cancelled order: no future steps, ends at cancellation', () => {
     const order = makeOrder({
       status: 'cancelled',
