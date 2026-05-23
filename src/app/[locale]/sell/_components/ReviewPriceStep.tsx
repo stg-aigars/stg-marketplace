@@ -11,7 +11,6 @@ import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/p
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
-import { cn } from '@/lib/cn';
 import { PricingAssistant } from './PricingAssistant';
 import { SellStepHeader } from './SellStepHeader';
 import type { FormData } from './ListingCreationFlow';
@@ -152,21 +151,17 @@ function PriceInputSection({
               {AUCTION_DURATION_OPTIONS.map((opt) => {
                 const selected = String(auctionDurationDays ?? 7) === opt.value;
                 return (
-                  <button
+                  <Button
                     key={opt.value}
                     type="button"
                     role="radio"
                     aria-checked={selected}
+                    variant={selected ? 'brand' : 'secondary'}
+                    size="md"
                     onClick={() => onDurationChange(parseInt(opt.value, 10))}
-                    className={cn(
-                      'rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-250 ease-out-custom',
-                      selected
-                        ? 'border-2 border-semantic-brand bg-semantic-brand/10 text-semantic-text-primary'
-                        : 'border border-semantic-border-default text-semantic-text-secondary hover:border-semantic-border-strong',
-                    )}
                   >
                     {opt.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
