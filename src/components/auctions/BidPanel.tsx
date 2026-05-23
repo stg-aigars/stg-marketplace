@@ -56,8 +56,6 @@ export function BidPanel({
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
-  const msRemaining = new Date(state.auctionEndAt).getTime() - Date.now();
-  const isWithinOneHour = !isEnded && msRemaining > 0 && msRemaining <= 3600000;
   const canBid = !isPending && !!turnstileToken;
 
   const [inc1, inc2] = getQuickBidIncrements(minBid);
@@ -162,13 +160,10 @@ export function BidPanel({
       <div>
         <p className="text-sm text-semantic-text-muted mb-0.5">Time remaining</p>
         <AuctionCountdown endAt={state.auctionEndAt} size="lg" />
+        <p className="text-xs text-semantic-text-muted mt-1">
+          Bids in the final 24 hours extend the auction by 24 hours.
+        </p>
       </div>
-
-      {isWithinOneHour && (
-        <Alert variant="info">
-          Bids in the last 5 minutes extend the auction by 5 minutes.
-        </Alert>
-      )}
 
       <div>
         <p className="text-sm text-semantic-text-muted">
