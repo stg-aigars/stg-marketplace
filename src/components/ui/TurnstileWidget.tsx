@@ -49,7 +49,12 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
         onError={onError}
         onExpire={handleExpire}
         options={{
-          size: 'invisible',
+          // 'interaction-only' renders zero chrome when Cloudflare doesn't need
+          // user interaction (preserves invisible UX for ~67% who pass silently),
+          // but surfaces the "I'm not a robot" checkbox when Managed mode wants
+          // to escalate a risky visitor. With size:'invisible' the checkbox had
+          // no surface to render on — failing users just hit a wall.
+          appearance: 'interaction-only',
           theme: 'light',
         }}
       />

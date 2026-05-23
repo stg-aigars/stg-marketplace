@@ -141,7 +141,7 @@ Always use these — do not write inline equivalents:
 | Date formatting | `formatDate()` etc. | `@/lib/date-utils` |
 | Country display | Country utilities | `@/lib/country-utils` |
 | Checkbox with label | `Checkbox` (checked, onChange, children, disabled; label-wrapping layout) | `@/components/ui` |
-| Bot protection | `TurnstileWidget` (invisible; auto-resets on expiry; graceful skip when unconfigured) | `@/components/ui` |
+| Bot protection | `TurnstileWidget` (interaction-only appearance — zero chrome for clean traffic, surfaces checkbox when Managed mode escalates risky visitors; auto-resets on expiry; graceful skip when unconfigured) | `@/components/ui` |
 | Brand inline links | `.link-brand` CSS class (teal, underline, branded hover transition) | `globals.css` |
 | Safe redirect URL | `safeReturnUrl(url)` — prevents open redirects, allows relative paths only | `@/lib/auth/safe-return-url` |
 | Social sharing | `ShareButtons` (copy link + native share; pass full URL from server component) | `@/components/ui` |
