@@ -2,20 +2,18 @@
 // Auction Constants
 // ============================================================================
 
-export type AuctionDuration = 1 | 3 | 5 | 7;
+export type AuctionDuration = 7 | 14;
 
-export const AUCTION_DURATIONS: AuctionDuration[] = [1, 3, 5, 7];
+export const AUCTION_DURATIONS: AuctionDuration[] = [7, 14];
 
 export const AUCTION_DURATION_OPTIONS = [
-  { value: '1', label: '1 day' },
-  { value: '3', label: '3 days' },
-  { value: '5', label: '5 days' },
   { value: '7', label: '7 days' },
+  { value: '14', label: '14 days' },
 ];
 
 export const MIN_BID_INCREMENT_CENTS = 100; // €1.00
 
-export const SNIPE_WINDOW_MINUTES = 5;
+export const SOFT_CLOSE_WINDOW_HOURS = 24;
 export const QUIET_WINDOW_MS = 30 * 60 * 1000;
 
 export const PAYMENT_DEADLINE_HOURS = 24;
@@ -99,12 +97,4 @@ export function getMinimumBid(
 export function getQuickBidIncrements(minBidCents: number): [number, number] {
   if (minBidCents < 5000) return [200, 400];   // +€2, +€4 under €50
   return [500, 1000];                            // +€5, +€10 above €50
-}
-
-/** Check if auction is in the snipe protection window. */
-export function isInSnipeWindow(auctionEndAt: string): boolean {
-  const endTime = new Date(auctionEndAt).getTime();
-  const now = Date.now();
-  const minutesRemaining = (endTime - now) / (1000 * 60);
-  return minutesRemaining > 0 && minutesRemaining <= SNIPE_WINDOW_MINUTES;
 }
