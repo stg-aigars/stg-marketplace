@@ -129,6 +129,31 @@ export async function createListing(
   const fieldError = validateListingFields(data, photoUrlPrefix);
   if (fieldError) return { error: fieldError };
 
+  // Verify every referenced photo still exists in storage. The cleanup-photos
+  // cron can sweep uploads from a long-running draft session before submit;
+  // without this guard the listing would persist with dead URLs and render
+  // broken images. URLs are guaranteed by validateListingFields to have the
+  // shape {prefix}/{user_id}/{filename}, so slicing by prefix length yields
+  // the storage file name directly.
+  if (data.photos.length > 0) {
+    const { data: storedFiles, error: listError } = await supabase.storage
+      .from('listing-photos')
+      .list(user.id, { limit: 200 });
+
+    if (listError) {
+      return { error: 'Could not verify your photos. Please try again' };
+    }
+
+    const storedNames = new Set((storedFiles ?? []).map((f) => f.name));
+    const missing = data.photos.some((url) => !storedNames.has(url.slice(photoUrlPrefix.length)));
+
+    if (missing) {
+      return {
+        error: 'One of your photos is no longer available. Please re-upload before submitting.',
+      };
+    }
+  }
+
   // Fetch seller profile to get country + DAC7 status + seller-terms acceptance
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')

@@ -3,7 +3,12 @@ import { createServiceClient } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { extractStoragePath } from '@/lib/listings/storage-utils';
 
-const GRACE_PERIOD_MS = 2 * 60 * 60 * 1000; // 2 hours — covers in-progress uploads
+// Covers a real drafting session, not just an in-progress upload. The sell flow
+// holds photo URLs in client state only; the listing row doesn't exist until
+// submit, so a user who uploads photos then walks away has no DB-visible link
+// keeping the files alive. 2h was too short — users hit this within a single
+// afternoon. Submit-time existence check in createListing catches the residual.
+const GRACE_PERIOD_MS = 48 * 60 * 60 * 1000;
 const BATCH_SIZE = 1000;
 const DELETE_BATCH_SIZE = 100;
 const MAX_DELETIONS = 500;
