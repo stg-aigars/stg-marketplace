@@ -8,7 +8,10 @@ import { NextRequest, NextResponse } from 'next/server';
 // property (client still posts to `/ingest/...` same-origin).
 
 const INGEST_HOST = 'https://eu.i.posthog.com';
-const STATIC_HOST = 'https://eu-assets.i.posthog.com';
+// Both /static/* (SDK chunks, recorder, web-vitals) and /array/* (per-project
+// remote config) are served from the assets origin. Routing /array/* through
+// the ingest host happens to work but bypasses the assets CDN.
+const ASSETS_HOST = 'https://eu-assets.i.posthog.com';
 
 // Headers that should not be forwarded to PostHog or streamed back to the
 // browser. `host` would break the TLS handshake; hop-by-hop and encoding
@@ -40,7 +43,7 @@ async function proxy(
 ): Promise<NextResponse> {
   const { path } = await context.params;
   const segments = path.join('/');
-  const baseHost = path[0] === 'static' ? STATIC_HOST : INGEST_HOST;
+  const baseHost = path[0] === 'static' || path[0] === 'array' ? ASSETS_HOST : INGEST_HOST;
 
   const incoming = new URL(request.url);
   const targetUrl = `${baseHost}/${segments}${incoming.search}`;
