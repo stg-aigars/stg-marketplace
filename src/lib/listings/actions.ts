@@ -11,6 +11,7 @@ import { getConditionLabel } from '@/lib/condition-config';
 import { notify } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
 import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
+import { AUCTION_DURATIONS } from '@/lib/auctions/types';
 import { extractStoragePath } from './storage-utils';
 import {
   LISTING_CONDITIONS,
@@ -210,8 +211,7 @@ export async function createListing(
     if (!data.auction_duration_days || !data.starting_price_cents) {
       return { error: 'Auction duration and starting price are required' };
     }
-    const validDurations = [1, 3, 5, 7];
-    if (!validDurations.includes(data.auction_duration_days)) {
+    if (!(AUCTION_DURATIONS as readonly number[]).includes(data.auction_duration_days)) {
       return { error: 'Invalid auction duration' };
     }
     const endAt = new Date(Date.now() + data.auction_duration_days * 24 * 60 * 60 * 1000).toISOString();
