@@ -134,6 +134,21 @@ function PriceInputSection({
         error={showMinError ? `Minimum price is ${formatCentsToCurrency(MIN_PRICE_CENTS)}` : undefined}
       />
 
+      {isAuction && priceCents >= MIN_PRICE_CENTS && (
+        <div className="bg-semantic-bg-surface rounded-lg px-4 py-3 space-y-1">
+          <p className="text-sm text-semantic-text-secondary">
+            Bids start at{' '}
+            <span className="font-medium text-semantic-text-primary">
+              {formatCentsToCurrency(priceCents)}
+            </span>
+            . Minimum increment: €1.00
+          </p>
+          <p className="text-xs text-semantic-text-muted">
+            Bids are final and cannot be withdrawn. 10% commission applies to the winning bid.
+          </p>
+        </div>
+      )}
+
       {isAuction && onDurationChange && (
         <div className="space-y-3">
           {/* Visual separator from the pricing block above */}
@@ -173,21 +188,6 @@ function PriceInputSection({
               If someone bids in the final 24 hours, the auction extends by 24 hours. It ends when 24 hours pass with no new bid.
             </p>
           </div>
-        </div>
-      )}
-
-      {isAuction && priceCents >= MIN_PRICE_CENTS && (
-        <div className="bg-semantic-bg-surface rounded-lg px-4 py-3 space-y-1">
-          <p className="text-sm text-semantic-text-secondary">
-            Bids start at{' '}
-            <span className="font-medium text-semantic-text-primary">
-              {formatCentsToCurrency(priceCents)}
-            </span>
-            . Minimum increment: €1.00
-          </p>
-          <p className="text-xs text-semantic-text-muted">
-            Bids are final and cannot be withdrawn. 10% commission applies to the winning bid.
-          </p>
         </div>
       )}
 
