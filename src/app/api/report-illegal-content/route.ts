@@ -55,6 +55,7 @@ export async function POST(request: Request) {
   const turnstile = await verifyTurnstileToken(
     typeof body.turnstileToken === 'string' ? body.turnstileToken : undefined,
     getClientIp(request),
+    'report_illegal_content',
   );
   if (!turnstile.success) {
     return NextResponse.json({ error: turnstile.error }, { status: 400 });

@@ -39,7 +39,7 @@ export async function validateSignIn(
   const limitResult = loginLimiter.check(ip ?? 'unknown');
   if (!limitResult.success) return { error: 'Too many login attempts. Please try again later.' };
 
-  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip, 'signin');
   if (!turnstile.success) return { error: turnstile.error };
 
   return {};
@@ -54,7 +54,7 @@ export async function signUpWithEmail(
   const limitResult = signupLimiter.check(ip ?? 'unknown');
   if (!limitResult.success) return { error: 'Too many signup attempts. Please try again later.' };
 
-  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip, 'signup');
   if (!turnstile.success) return { error: turnstile.error };
 
   // Enforce the rule we display to the user — Supabase's preset can drift
@@ -124,7 +124,7 @@ export async function resetPassword(
   const limitResult = passwordResetLimiter.check(ip ?? 'unknown');
   if (!limitResult.success) return { error: 'Too many reset attempts. Please try again later.' };
 
-  const turnstile = await verifyTurnstileToken(turnstileToken, ip);
+  const turnstile = await verifyTurnstileToken(turnstileToken, ip, 'password_reset');
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
