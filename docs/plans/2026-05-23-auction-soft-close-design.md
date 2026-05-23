@@ -1,6 +1,6 @@
 # Auction soft close — design
 
-Status: brainstorm output, not yet an approved implementation plan. Implementation plan to follow.
+Status: brainstorm output + post-brainstorm review pass. Not yet an approved implementation plan.
 
 ## Context
 
@@ -17,29 +17,30 @@ In a thin marketplace, an auction's scheduled end can arrive before enough disco
 Locked in during the 2026-05-23 brainstorm:
 
 1. **Mechanic: soft close on late bids.** Any bid in the final 24 hours of an auction pushes `auction_end_at` to `now + 24h`. The auction ends when 24 hours pass with no qualifying bid.
-2. **Always-on for every auction.** No per-listing seller toggle. One uniform rule, one buyer mental model.
-3. **No hard cap on total duration.** The 24h-silence stop is the only end condition. Risk: motivated bidders can drag an auction out for weeks; accepted at launch volumes, watch in operation (see "Operational watch list" below).
-4. **Duration options reduced to 7 and 14 days.** Drop 1-, 3-, 5-day options. Default = 7 days. Under a 24h soft-close rule, a 1-day auction would enter soft-close mode the moment bidding starts; longer base durations keep the 24h window as a small final slice. Fewer clear options also pair better with a button-group UI than a four-item dropdown.
-5. **Existing 5-min snipe rule is replaced, not stacked.** A bid in the final 5 min is also a bid in the final 24h; the new rule extends by 24h, which is strictly stronger than the current +5min behavior. The `SNIPE_WINDOW_MINUTES` constant is removed.
+2. **Always-on for every auction.** No per-listing seller toggle.
+3. **No hard cap on total duration.** The 24h-silence stop is the only end condition.
+4. **Duration options reduced to 7 and 14 days.** Drop 1-, 3-, 5-day options. Default = 7 days.
+5. **Existing 5-min snipe rule is replaced, not stacked.** A bid in the final 5 min would extend by 24h under the new rule — strictly stronger than the current +5min behavior.
+6. **Boundary semantics.** The condition `auction_end_at - NOW() < INTERVAL '24 hours'` is strict-less-than. A bid placed at exactly T-24h does **not** extend; the boundary belongs to "not in window." This matches the existing 5-min rule's operator choice.
 
 ## Design
 
 ### Seller-facing: review-and-publish step
 
-The auction-specific block on `src/app/[locale]/sell/_components/ReviewPriceStep.tsx` gets its own subsection inside the price-guide card, separated from the market-context block with a divider and an "Auction settings" subheading (`text-base font-semibold`, the standard card-subsection treatment per the design system rules).
+`src/app/[locale]/sell/_components/ReviewPriceStep.tsx` is a flat list of `<hr>`-separated sections, not a Card. Each section uses a small-caps eyebrow label (`text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide`), matching "Game & edition", "Condition", "Photos". The auction settings subsection follows the same pattern — no H2, no new heading hierarchy.
 
-Contents, in order:
+Concretely:
 
-- **Suggested starting bid + "Use price" button** — moved into the auction subsection. It's auction-only logic; currently it renders above the divider. Moving it inside the subsection makes the subsection self-contained.
-- **Starting price input** — unchanged.
-- **Auction duration** — `<Select>` dropdown replaced with a two-tile button group: `[7 days] [14 days]`, default 7. Styled like existing condition tiles (border-2 + brand-teal background on active, border-1 on inactive). Tap-friendly on mobile, both options visible at once.
-- **Soft-close info row** — small muted-background box directly under the duration buttons:
+- The current `PriceInputSection` is split into two visual blocks (still inside the same component if it's cleaner; can be promoted to siblings if not):
+  1. **Pricing block** — `PricingAssistant` (market context, suggested starting bid, Use price button) + starting price input. No eyebrow label needed; this is the leading block of the step.
+  2. **Auction settings block** — eyebrow label `Auction settings`, then duration picker, then soft-close info row. Only renders when `isAuction === true`.
+- A subtle visual separator between the two blocks: same `<hr className="border-semantic-border-subtle" />` pattern the rest of the file uses.
+- **Duration picker:** `<Select>` replaced with an inline two-tile button group: `[7 days] [14 days]`, default 7. Styled like existing condition tiles (border-2 + brand-teal background on active, border-1 on inactive). Inline implementation (not a new shared atom) — single use today, design system rule "extract when 2+ call sites exist" applies. Flag this explicitly in the implementation PR so a reviewer doesn't suggest extraction.
+- **Soft-close info row:** small muted-background box (matching the existing "Bids start at…" info-box pattern at lines 146–158), directly under the duration buttons:
 
-  > Bids in the final 24 hours extend the auction by another 24 hours. The auction ends after 24 hours of no new bids. This gives your listing more time to find buyers.
+  > If someone bids in the final 24 hours, the auction extends by 24 hours. It ends when 24 hours pass with no new bid.
 
-The market-context block (New retail price + BoardGamePrices link) stays above the divider — it's price-discovery data, not an auction setting.
-
-The bottom info box ("Bids are final and cannot be withdrawn. 10% commission applies to the winning bid.") stays as-is — it's a terms reminder, separate from how-extension-works.
+- The existing bottom info box ("Bids are final and cannot be withdrawn. 10% commission applies to the winning bid.") stays unchanged — it's a terms reminder.
 
 ### Engine: bid RPC
 
@@ -59,66 +60,128 @@ IF v_listing.auction_end_at - NOW() < INTERVAL '24 hours' THEN
 END IF;
 ```
 
-When the `IF` passes, `auction_end_at < NOW() + 24h`, so `v_new_end_at = NOW() + 24h` is always later than the current `auction_end_at`. This is a strict extension; the rule never shortens an auction.
+When the IF passes, `auction_end_at < NOW() + 24h`, so `v_new_end_at = NOW() + 24h` is always later than the current `auction_end_at`. The rule is a strict extension, never a shortening. The strict-`<` operator means a bid at exactly `NOW() + 24h = auction_end_at` does not extend (see decision 6).
 
-`auction_original_end_at` continues to record the immutable seller-chosen end. Useful for audit, dispute resolution, and reporting ("scheduled end" vs "actual end").
+When the IF passes (i.e., the RPC is about to change `auction_end_at`), the RPC also resets the ending-soon dedup column:
 
-Stop condition: the existing `end-auctions` cron (1-min cadence) finalizes auctions when `auction_end_at` is reached without a qualifying bid in the prior 24h. No new cron required.
+```sql
+UPDATE public.listings
+SET auction_end_at = v_new_end_at,
+    auction_ending_soon_notified_at = NULL,
+    ...
+WHERE id = v_listing.id;
+```
+
+This atomic reset is the dedup mechanism (see "Notification interaction" below). `auction_original_end_at` is **not** touched — it is the immutable record of "what the seller originally chose," used for audit, dispute resolution, and reporting. The migration must include an explicit comment guarding against future edits ("DO NOT modify or null `auction_original_end_at`; it is the seller's original-deadline audit field").
 
 ### Buyer-facing display
 
-- **Listing detail page (auction).** Existing countdown stays. Adds a one-line explainer under the countdown: "Bids in the final 24 hours extend the auction by 24 hours."
-- **Listing card (browse, homepage, seller page).** `Ends in 2d 14h` continues to reflect live `auction_end_at`. No badge or label added. The detail-page explainer carries the contract. Extensions only ever delay the end, never shorten it, so buyers are never surprised by an *earlier* close than displayed.
+- **Listing detail page (auction):** existing countdown stays. One-line explainer renders under the countdown: "Bids in the final 24 hours extend the auction by 24 hours."
+- **Listing card (browse, homepage, seller page):** `Ends in 2d 14h` continues to reflect live `auction_end_at`. No badge added — the detail-page explainer carries the contract. Extensions only ever delay the end, never shorten it, so buyers are never surprised by an *earlier* close than displayed.
+
+**Caching caveat — verify before merge.** The "ends in" labels on browse / homepage / seller-shop must reflect the live `auction_end_at`. If any of those routes are cached at the edge (Cloudflare) or via Next.js ISR, the displayed deadline can lag the actual one after an extension. No `force-dynamic` or `revalidate` exports were found in those paths, suggesting they render dynamically — but the Cloudflare cache rules need to be verified to confirm `/`, `/browse`, `/seller-shop/*` don't get cached at the edge. Add to pre-merge checklist.
 
 ### Notification interaction
 
-`src/app/api/cron/auction-ending-soon/` fires 30 min before `auction_end_at`. With a dynamic `auction_end_at`, the same auction can have multiple "30 min before" events — once for the original deadline, then once for each extended deadline.
+**Today:** `src/app/api/cron/auction-ending-soon/route.ts` (5-min cadence) finds auctions ending within 30 minutes and not yet stamped via `listings.auction_ending_soon_notified_at`. After sending, it stamps the column. Binary mechanism — once stamped, the cron skips the auction forever.
 
-This is the right behavior: bidders want to know "the new deadline is approaching." Implementation: the notification's dedup key includes a bucket of `auction_end_at` (e.g., the truncated ISO timestamp), so a previously-notified buyer gets a fresh notification before each new deadline without double-firing for the same deadline.
+**Under soft close** this regresses. An extended deadline would mean a buyer who got notified at T-30min of the original deadline gets *no* notification before the extended deadline.
+
+**Fix:** the `place_bid` RPC resets `auction_ending_soon_notified_at` to `NULL` atomically whenever it extends `auction_end_at` (see RPC snippet above). The cron query in `route.ts` is **unchanged** — its semantics stay "find auctions where we haven't notified for the current deadline." The column's meaning shifts from "we have ever notified" to "we have notified for the current deadline," with the meaning carried by the atomic reset on extension.
+
+This is the smallest change, requires no new table or new column, and produces the right behavior: each new deadline triggers a fresh ending-soon round.
+
+Migration includes a `COMMENT ON COLUMN` documenting the new semantics so a future reader understands why the RPC resets it.
 
 ## Files to touch
 
-- **New migration** replacing the snipe block in `place_bid` RPC. Sequential number from the current migrations head.
-- **`src/lib/auctions/types.ts`**
-  - `AuctionDuration` → `7 | 14`
-  - `AUCTION_DURATIONS` → `[7, 14]`
-  - `AUCTION_DURATION_OPTIONS` → `[{ value: '7', label: '7 days' }, { value: '14', label: '14 days' }]`
-  - Remove `SNIPE_WINDOW_MINUTES`
-  - Add `SOFT_CLOSE_WINDOW_HOURS = 24` (UI-copy export; the RPC is server-authoritative for the actual value)
-- **`src/app/[locale]/sell/_components/ReviewPriceStep.tsx`**
-  - Restructure auction block per "Seller-facing" section above
-  - Replace `<Select>` with a button-group (small new atom or inline)
-  - Move suggested-starting-bid inside the auction subsection
-  - Add the soft-close info row
-- **`src/lib/listings/actions.ts`**
-  - Zod schema for `auction_duration_days` becomes `z.union([z.literal(7), z.literal(14)])`
-  - Server validation rejects 1/3/5 even if the UI is bypassed
-- **Listing detail page** — add the one-line soft-close explainer under the countdown for auction listings only
-- **`src/app/api/cron/auction-ending-soon/`** — dedup key includes `auction_end_at` time bucket so extensions trigger fresh notifications without duplicates per deadline
+1. **New migration replacing `place_bid` RPC** (sequential number from migrations head):
+   - Change snipe block from 5min/5min to 24h/24h.
+   - Add `auction_ending_soon_notified_at = NULL` to the UPDATE statement when extending.
+   - `COMMENT ON COLUMN listings.auction_ending_soon_notified_at IS '...nulled atomically by place_bid when auction_end_at is extended; cron treats null as "ready to notify for current deadline".'`
+   - Migration PR description must call out: do not modify or null `auction_original_end_at`.
 
-## In-flight auction handling
+2. **`src/lib/auctions/types.ts`:**
+   - `AuctionDuration` → `7 | 14`
+   - `AUCTION_DURATIONS` → `[7, 14]`
+   - `AUCTION_DURATION_OPTIONS` → `[{ value: '7', label: '7 days' }, { value: '14', label: '14 days' }]`
+   - Remove `SNIPE_WINDOW_MINUTES`
+   - Remove `isInSnipeWindow()` (dead code — 0 callers as of 2026-05-23, only referenced by the constant it imports)
+   - Add `SOFT_CLOSE_WINDOW_HOURS = 24` (UI-copy export; the RPC is server-authoritative for the actual value; see "TS/SQL drift" below)
 
-Not applicable at the time of this design — there are no active auctions on the platform and no new auctions planned today. The migration ships into a clean slate.
+3. **`src/lib/listings/actions.ts`** (lines 209–221):
+   - Existing validation is imperative (`if (!validDurations.includes(...))`), not Zod. Match the existing pattern, do not introduce Zod here.
+   - **Bug-adjacent cleanup:** line 213 hardcodes `const validDurations = [1, 3, 5, 7]` instead of importing `AUCTION_DURATIONS` from types. Replace with the imported constant so the same source of truth covers UI + server. The cleanup keeps the validation correct after the type change to `[7, 14]`.
 
-If this design lands after auctions have been created, the duration-restriction change (1/3/5 dropped) applies to *creation only*; auctions already running with 1/3/5-day durations would keep their scheduled end and finalize normally under the new soft-close rule (which is strictly stronger than the old 5-min rule, so no seller is worse off).
+4. **`src/app/[locale]/sell/_components/ReviewPriceStep.tsx`:**
+   - Restructure auction block per "Seller-facing" section.
+   - Replace `<Select>` (line 138) with inline two-tile button group.
+   - Add eyebrow label + visual separator for the new "Auction settings" subsection.
+   - Add the soft-close info row.
+
+5. **Listing detail page** — add the one-line soft-close explainer under the countdown for auction listings only.
+
+6. **`src/app/api/cron/auction-ending-soon/route.ts`** — no code change. The mechanism updates via the RPC's atomic reset.
+
+## TS/SQL drift mitigation
+
+`SOFT_CLOSE_WINDOW_HOURS` (TS, used only for UI copy) and `INTERVAL '24 hours'` (SQL, server-authoritative) describe the same business rule. If one drifts (e.g., UI copy says 12, RPC still extends 24), the contract breaks silently.
+
+**Regression test:** Vitest spec introspects `pg_proc` for the body of `place_bid` and asserts the interval literal matches `SOFT_CLOSE_WINDOW_HOURS`. Sketch:
+
+```ts
+const { data } = await supabase.rpc('pg_get_functiondef', { funcname: 'place_bid' });
+// or: select pg_get_functiondef('public.place_bid'::regprocedure) directly
+const match = data.match(/INTERVAL '(\d+) hours?'/);
+expect(Number(match[1])).toBe(SOFT_CLOSE_WINDOW_HOURS);
+```
+
+Cheap, catches the exact silent-failure pattern, runs as part of `pnpm test`.
 
 ## Test surface
 
-- **RPC unit:** bid at `T-23h59m` extends `auction_end_at` to `NOW()+24h`; bid at `T-24h01m` does not extend.
-- **Zod schema:** posting `auction_duration_days: 3` is rejected by the server action.
-- **UI:** button-group renders with correct selection state; 7 days is selected by default; clicking 14 days updates the form state.
-- **Notification dedup:** two extensions on a single auction produce two ending-soon fires, each tied to a distinct `auction_end_at` bucket, no duplicates per deadline.
+- **RPC unit:**
+  - Bid at `T-23h59m` extends `auction_end_at` to `NOW() + 24h` AND nulls `auction_ending_soon_notified_at`.
+  - Bid at `T-24h00m` (exact equality) does NOT extend and does NOT null the notification column. The boundary belongs to "not in window."
+  - Bid at `T-24h01m` does NOT extend.
+- **TS/SQL drift:** `pg_proc` introspection test asserts the RPC's interval matches `SOFT_CLOSE_WINDOW_HOURS`.
+- **Server validation:** posting `auction_duration_days: 3` is rejected. Posting 7 and 14 are accepted.
+- **UI:** button-group renders with correct selection state; 7 days is selected by default; clicking 14 days updates form state.
+- **Notification dedup under extension:**
+  - Auction ending in 25 min, never notified → cron sends and stamps.
+  - Bid lands at T-20min, extends deadline by 24h, RPC nulls stamp.
+  - Cron 5min later: auction now ends in ~24h, outside the 30-min window → cron skips (correct).
+  - Time passes; auction now ends in 25min again → cron finds `notified_at = null` → sends and stamps again. ✅
+
+## Pre-merge gate
+
+Run against production at merge time, not at design time:
+
+```sql
+SELECT count(*) AS active_auctions
+FROM listings
+WHERE listing_type = 'auction' AND status = 'active';
+```
+
+- **Result 0:** ship as-is; the "in-flight handling" considerations don't apply.
+- **Result > 0:** reactivate the in-flight section (see below). Auctions in-flight with `duration_days IN (1, 3, 5)` keep their scheduled end; the new 24h soft-close rule applies to all bids placed after the migration runs. No backfill needed; the rule change is a strict improvement for sellers (5min → 24h protection) so no regression.
+
+## Operational watch list (post-launch)
+
+Each metric paired with a threshold for "raise the runbook":
+
+| Metric | Watch threshold |
+|---|---|
+| % of auctions whose actual end > scheduled end | >50% sustained — soft close is firing meaningfully; likely fine, but signals the mechanic is load-bearing |
+| % of auctions running ≥2× their scheduled duration | >10% sustained — runaway-bid case is real, consider adding a "+N days max" cap |
+| Median number of `auction.ending_soon` notifications per auction | >3 — the signal is being eroded; consider a per-deadline minimum gap (e.g., dedup the same recipient within 6h) |
+| Seller payment-timing complaints tied to extended auctions | Any pattern of ≥2 in a month — investigate specific auctions, consider cap |
+
+Review weekly for the first month, then monthly. Threshold breaches are signals, not auto-actions — review the specific auctions before changing the rule.
 
 ## Out of scope / future work
 
 - **Per-listing seller opt-out.** If sellers complain about runaway extensions, consider adding an opt-out toggle. Adding an opt-out later is simpler than retrofitting an opt-in.
-- **Hard cap on total duration.** Watch operationally; if two-bidder tug-of-war extends auctions into multi-week ordeals, add a "+N days max" cap. Cleanest framing: "Auction cannot exceed original deadline + 7 days."
+- **Hard cap on total duration.** Watch operationally per the table above. Cleanest framing: "Auction cannot exceed original deadline + 7 days."
 - **Variable soft-close window per duration.** Today every auction uses 24h. If 14-day auctions develop different bidder dynamics than 7-day, revisit.
 - **Buyer-side "watch this auction" reminder.** Independent of soft close; if soft close lengthens auctions enough that buyers lose track, a watch-and-remind feature would help.
-
-## Operational watch list (post-launch)
-
-- Median total auction duration vs. scheduled duration (drift over time = soft close is firing meaningfully).
-- Auctions running ≥2× their scheduled duration (signal that runaway-bid case is real, may warrant a cap).
-- Seller complaints about payment-timing tied to specific extended auctions.
-- Number of `auction.ending_soon` notifications fired per auction (a single auction generating many "ending soon" pings may degrade the signal).
