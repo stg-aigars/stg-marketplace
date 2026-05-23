@@ -211,7 +211,7 @@ export async function createListing(
     if (!data.auction_duration_days || !data.starting_price_cents) {
       return { error: 'Auction duration and starting price are required' };
     }
-    if (!AUCTION_DURATIONS.includes(data.auction_duration_days as 7 | 14)) {
+    if (!(AUCTION_DURATIONS as readonly number[]).includes(data.auction_duration_days)) {
       return { error: 'Invalid auction duration' };
     }
     const endAt = new Date(Date.now() + data.auction_duration_days * 24 * 60 * 60 * 1000).toISOString();

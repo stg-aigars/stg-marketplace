@@ -10,7 +10,7 @@ import { MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
-import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
+import { AUCTION_DURATIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
 import { SellStepHeader } from './SellStepHeader';
 import type { FormData } from './ListingCreationFlow';
@@ -151,7 +151,6 @@ function PriceInputSection({
 
       {isAuction && onDurationChange && (
         <div className="space-y-3">
-          {/* Visual separator from the pricing block above */}
           <hr className="border-semantic-border-subtle" />
 
           <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
@@ -163,26 +162,25 @@ function PriceInputSection({
               Auction duration
             </label>
             <div role="radiogroup" aria-label="Auction duration" className="grid grid-cols-2 gap-2">
-              {AUCTION_DURATION_OPTIONS.map((opt) => {
-                const selected = String(auctionDurationDays ?? 7) === opt.value;
+              {AUCTION_DURATIONS.map((days) => {
+                const selected = (auctionDurationDays ?? 7) === days;
                 return (
                   <Button
-                    key={opt.value}
+                    key={days}
                     type="button"
                     role="radio"
                     aria-checked={selected}
                     variant={selected ? 'brand' : 'secondary'}
                     size="md"
-                    onClick={() => onDurationChange(parseInt(opt.value, 10))}
+                    onClick={() => onDurationChange(days)}
                   >
-                    {opt.label}
+                    {days} days
                   </Button>
                 );
               })}
             </div>
           </div>
 
-          {/* Soft-close info row */}
           <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
             <p className="text-sm text-semantic-text-secondary">
               If someone bids in the final 24 hours, the auction extends by 24 hours. It ends when 24 hours pass with no new bid.
