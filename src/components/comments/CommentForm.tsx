@@ -16,6 +16,7 @@ export function CommentForm({ listingId }: CommentFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [isActive, setIsActive] = useState(false);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
 
@@ -47,22 +48,27 @@ export function CommentForm({ listingId }: CommentFormProps) {
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
+        onFocus={() => setIsActive(true)}
         placeholder="Ask a question or leave a comment..."
         maxLength={MAX_COMMENT_LENGTH}
         rows={2}
       />
-      <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
-      {error && (
-        <p className="mt-1 text-sm text-semantic-error">{error}</p>
+      {isActive && (
+        <>
+          <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
+          {error && (
+            <p className="mt-1 text-sm text-semantic-error">{error}</p>
+          )}
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-semantic-text-muted">
+              {charCount > 0 && `${charCount}/${MAX_COMMENT_LENGTH}`}
+            </span>
+            <Button type="submit" size="sm" disabled={!content.trim() || submitting || !turnstileToken}>
+              {submitting ? 'Posting...' : 'Post comment'}
+            </Button>
+          </div>
+        </>
       )}
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs text-semantic-text-muted">
-          {charCount > 0 && `${charCount}/${MAX_COMMENT_LENGTH}`}
-        </span>
-        <Button type="submit" size="sm" disabled={!content.trim() || submitting || !turnstileToken}>
-          {submitting ? 'Posting...' : 'Post comment'}
-        </Button>
-      </div>
     </form>
   );
 }
