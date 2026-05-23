@@ -82,7 +82,7 @@ BEGIN
   INSERT INTO bids (listing_id, bidder_id, amount_cents)
   VALUES (p_listing_id, p_bidder_id, p_amount_cents);
 
-  -- Snipe protection: if bid within last 24 hours, extend by 24 hours
+  -- Soft close: if bid within last 24 hours, extend by 24 hours
   v_new_end_at := v_listing.auction_end_at;
   IF v_listing.auction_end_at - NOW() < INTERVAL '24 hours' THEN
     v_new_end_at := NOW() + INTERVAL '24 hours';
