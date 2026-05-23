@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
   const { listingIds, terminalId, terminalName, terminalAddress, terminalCity, terminalPostalCode, terminalCountry, buyerPhone, useWallet, turnstileToken } = parsed;
 
-  const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request));
+  const turnstile = await verifyTurnstileToken(turnstileToken, getClientIp(request), 'cart_create');
   if (!turnstile.success) {
     return NextResponse.json({ error: turnstile.error }, { status: 403 });
   }

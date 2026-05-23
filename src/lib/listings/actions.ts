@@ -103,7 +103,7 @@ export async function createListing(
   data: CreateListingData,
   turnstileToken?: string
 ): Promise<{ listingId: string } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'listing_create');
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
@@ -288,7 +288,7 @@ export async function updateListing(
   data: UpdateListingData,
   turnstileToken?: string
 ): Promise<{ success: true } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'listing_update');
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();

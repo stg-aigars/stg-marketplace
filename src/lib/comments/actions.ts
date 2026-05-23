@@ -20,7 +20,7 @@ export async function postComment(
   content: string,
   turnstileToken?: string
 ): Promise<{ success: true } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'comment_post');
   if (!turnstile.success) return { error: turnstile.error };
 
   const trimmed = content.trim();

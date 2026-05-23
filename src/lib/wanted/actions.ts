@@ -29,7 +29,7 @@ export async function createWantedListing(
   notes?: string,
   turnstileToken?: string
 ): Promise<{ id: string } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp());
+  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'wanted_create');
   if (!turnstile.success) return { error: turnstile.error };
 
   const supabase = await createClient();
