@@ -5,12 +5,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PencilSimple, Eye } from '@phosphor-icons/react/ssr';
 import { GameIdentityRow } from '@/components/listings/atoms';
-import { ConditionBadge, Button, Input, Select } from '@/components/ui';
+import { ConditionBadge, Button, Input } from '@/components/ui';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import { AUCTION_DURATION_OPTIONS } from '@/lib/auctions/types';
+import { cn } from '@/lib/cn';
 import { PricingAssistant } from './PricingAssistant';
 import { SellStepHeader } from './SellStepHeader';
 import type { FormData } from './ListingCreationFlow';
@@ -135,12 +136,49 @@ function PriceInputSection({
       />
 
       {isAuction && onDurationChange && (
-        <Select
-          label="Auction duration"
-          options={AUCTION_DURATION_OPTIONS}
-          value={String(auctionDurationDays ?? 3)}
-          onChange={(e) => onDurationChange(parseInt(e.target.value, 10))}
-        />
+        <div className="space-y-3">
+          {/* Visual separator from the pricing block above */}
+          <hr className="border-semantic-border-subtle" />
+
+          <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+            Auction settings
+          </p>
+
+          <div>
+            <label className="block text-sm font-medium text-semantic-text-secondary mb-2">
+              Auction duration
+            </label>
+            <div role="radiogroup" aria-label="Auction duration" className="grid grid-cols-2 gap-2">
+              {AUCTION_DURATION_OPTIONS.map((opt) => {
+                const selected = String(auctionDurationDays ?? 7) === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => onDurationChange(parseInt(opt.value, 10))}
+                    className={cn(
+                      'rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-250 ease-out-custom',
+                      selected
+                        ? 'border-2 border-semantic-brand bg-semantic-brand/10 text-semantic-text-primary'
+                        : 'border border-semantic-border-default text-semantic-text-secondary hover:border-semantic-border-strong',
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Soft-close info row */}
+          <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
+            <p className="text-sm text-semantic-text-secondary">
+              If someone bids in the final 24 hours, the auction extends by 24 hours. It ends when 24 hours pass with no new bid.
+            </p>
+          </div>
+        </div>
       )}
 
       {isAuction && priceCents >= MIN_PRICE_CENTS && (

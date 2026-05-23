@@ -90,7 +90,7 @@ const initialFormData: FormData = {
   price_cents: 0,
   description: '',
   starting_price_cents: 0,
-  auction_duration_days: 3,
+  auction_duration_days: 7,
 };
 
 type StepId = 'game' | 'edition' | 'details' | 'review';
