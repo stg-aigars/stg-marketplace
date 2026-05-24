@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 
 interface RateLimitOptions {
   interval: number;
@@ -88,6 +89,27 @@ export function applyRateLimit(limiter: RateLimiter, request: Request): NextResp
   const ip = getClientIP(request);
   const result = limiter.check(ip);
   return result.success ? null : rateLimitResponse(result.resetTime);
+}
+
+/**
+ * Per-user rate-limit check for server actions. Emits a `${feature}.rate_limited`
+ * Sentry warning on block so block rates stay visible — matches the observability
+ * shape that `verifyTurnstileToken` provides for the pre-auth surfaces. Returns
+ * null on success, `{ error: errorMessage }` if blocked.
+ */
+export function checkUserRateLimit(
+  limiter: RateLimiter,
+  userId: string,
+  feature: string,
+  errorMessage: string,
+): { error: string } | null {
+  if (limiter.check(userId).success) return null;
+  console.error('[RateLimit] blocked', { feature, userId });
+  Sentry.captureMessage(`${feature}.rate_limited`, {
+    level: 'warning',
+    extra: { feature, userId },
+  });
+  return { error: errorMessage };
 }
 
 // Pre-configured limiters (singletons — persist across requests in same process)

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { listingCreateLimiter, listingUpdateLimiter } from '@/lib/rate-limit';
+import { listingCreateLimiter, listingUpdateLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { sendWantedListingMatchedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
@@ -112,9 +112,8 @@ export async function createListing(
     return { error: 'You must be signed in to create a listing' };
   }
 
-  if (!listingCreateLimiter.check(user.id).success) {
-    return { error: 'Too many listings created. Please wait a moment.' };
-  }
+  const limited = checkUserRateLimit(listingCreateLimiter, user.id, 'listing_create', 'Too many listings created. Please wait a moment.');
+  if (limited) return limited;
 
   // Create-specific validations
   if (!data.bgg_game_id || data.bgg_game_id <= 0) {
@@ -297,9 +296,8 @@ export async function updateListing(
     return { error: 'You must be signed in' };
   }
 
-  if (!listingUpdateLimiter.check(user.id).success) {
-    return { error: 'Too many edits. Please wait a moment.' };
-  }
+  const limited = checkUserRateLimit(listingUpdateLimiter, user.id, 'listing_update', 'Too many edits. Please wait a moment.');
+  if (limited) return limited;
 
   // Fetch listing and verify ownership
   const { data: listing, error: fetchError } = await supabase
