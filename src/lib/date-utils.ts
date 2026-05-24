@@ -1,16 +1,23 @@
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Date formatting utilities for consistent European-style display.
  * Format: dd.MM.yyyy (e.g., 31.08.2026) with 24-hour time.
  * Time separator is locale-aware: colon for most locales (14:30), dot for Latvian (14.30).
+ *
+ * All wall-clock rendering is pinned to Europe/Riga. The production Node
+ * runtime is UTC, so plain `date-fns` `format()` would print UTC; this
+ * module wraps everything in `formatInTimeZone` so server-rendered staff
+ * pages match what a Riga-based operator sees on their clock. Estonia and
+ * Lithuania share the same EET/EEST offset, so one pin covers all three
+ * launch markets.
  */
+
+const RIGA_TZ = 'Europe/Riga';
 
 type DateInput = Date | string | number;
 
-/**
- * Safely converts various date inputs to a Date object
- */
 function toDate(date: DateInput): Date {
   if (date instanceof Date) return date;
   return new Date(date);
@@ -29,21 +36,21 @@ function localizeTime(timeStr: string, locale?: string): string {
  * Formats a date as dd.MM.yyyy (e.g., 31.08.2026)
  */
 export function formatDate(date: DateInput): string {
-  return format(toDate(date), 'dd.MM.yyyy');
+  return formatInTimeZone(toDate(date), RIGA_TZ, 'dd.MM.yyyy');
 }
 
 /**
  * Formats a date as dd.MM (e.g., 31.08) for compact displays
  */
 export function formatDateShort(date: DateInput): string {
-  return format(toDate(date), 'dd.MM');
+  return formatInTimeZone(toDate(date), RIGA_TZ, 'dd.MM');
 }
 
 /**
  * Formats time as HH:mm in 24-hour format (e.g., 14:30 or 14.30 for Latvian)
  */
 export function formatTime(date: DateInput, locale?: string): string {
-  return localizeTime(format(toDate(date), 'HH:mm'), locale);
+  return localizeTime(formatInTimeZone(toDate(date), RIGA_TZ, 'HH:mm'), locale);
 }
 
 /**
@@ -51,7 +58,7 @@ export function formatTime(date: DateInput, locale?: string): string {
  */
 export function formatDateTime(date: DateInput, locale?: string): string {
   const d = toDate(date);
-  return `${format(d, 'dd.MM.yyyy')} ${localizeTime(format(d, 'HH:mm'), locale)}`;
+  return `${formatInTimeZone(d, RIGA_TZ, 'dd.MM.yyyy')} ${localizeTime(formatInTimeZone(d, RIGA_TZ, 'HH:mm'), locale)}`;
 }
 
 /**
@@ -66,7 +73,7 @@ export function formatDateTime(date: DateInput, locale?: string): string {
  * the genitive form (`MMMM`) rather than the nominative standalone (`LLLL`).
  */
 export function formatMonthYear(date: DateInput): string {
-  return format(toDate(date), 'LLLL yyyy');
+  return formatInTimeZone(toDate(date), RIGA_TZ, 'LLLL yyyy');
 }
 
 /**
@@ -74,40 +81,56 @@ export function formatMonthYear(date: DateInput): string {
  */
 export function formatDateCompact(date: DateInput): string {
   const d = toDate(date);
-  if (d.getFullYear() === new Date().getFullYear()) {
-    return format(d, 'dd.MM');
+  const year = formatInTimeZone(d, RIGA_TZ, 'yyyy');
+  const currentYear = formatInTimeZone(new Date(), RIGA_TZ, 'yyyy');
+  if (year === currentYear) {
+    return formatInTimeZone(d, RIGA_TZ, 'dd.MM');
   }
-  return format(d, 'dd.MM.yyyy');
+  return formatInTimeZone(d, RIGA_TZ, 'dd.MM.yyyy');
 }
 
 /**
- * Formats a relative time string (e.g., "5 minutes ago", "2 hours ago")
+ * Formats a relative time string (e.g., "5 minutes ago", "2 hours ago").
+ * Timezone-agnostic — compares timestamps numerically.
  */
 export function formatRelativeTime(date: DateInput, addSuffix = true): string {
   return formatDistanceToNow(toDate(date), { addSuffix });
 }
 
 /**
+ * Returns the Riga-local calendar date as `yyyy-MM-dd` for boundary comparisons.
+ * Using string equality on this representation avoids `date-fns` `isToday` /
+ * `isYesterday`, which test against the runtime's local tz rather than Riga.
+ */
+function rigaCalendarDate(d: Date): string {
+  return formatInTimeZone(d, RIGA_TZ, 'yyyy-MM-dd');
+}
+
+/**
  * Formats a message timestamp with smart relative display:
- * - Today: "14:30"
- * - Yesterday: "Yesterday, 14:30"
+ * - Today (Riga): "14:30"
+ * - Yesterday (Riga): "Yesterday, 14:30"
  * - Within 7 days: "Wed, 14:30"
  * - Older: "31.08 14:30"
  */
 export function formatMessageTime(timestamp: DateInput, locale?: string): string {
   const date = toDate(timestamp);
+  const now = new Date();
+  const today = rigaCalendarDate(now);
+  const yesterday = rigaCalendarDate(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const target = rigaCalendarDate(date);
 
-  if (isToday(date)) {
+  if (target === today) {
     return formatTime(date, locale);
   }
 
-  if (isYesterday(date)) {
+  if (target === yesterday) {
     return `Yesterday, ${formatTime(date, locale)}`;
   }
 
   // Less than 7 days ago
-  if (Date.now() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
-    return `${format(date, 'EEE')}, ${localizeTime(format(date, 'HH:mm'), locale)}`;
+  if (now.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
+    return `${formatInTimeZone(date, RIGA_TZ, 'EEE')}, ${localizeTime(formatInTimeZone(date, RIGA_TZ, 'HH:mm'), locale)}`;
   }
 
   return `${formatDateShort(date)} ${formatTime(date, locale)}`;
