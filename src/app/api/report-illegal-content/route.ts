@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, reportIllegalContentLimiter } from '@/lib/rate-limit';
@@ -9,6 +8,7 @@ import { notifyStaff } from '@/lib/notifications';
 import { createServiceClient } from '@/lib/supabase';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
 import { REPORT_CATEGORY_VALUES } from '@/app/[locale]/report-illegal-content/categories';
+import { resend, EMAIL_REGEX } from '@/lib/email/client';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -20,10 +20,6 @@ const MAX_FIELD = {
   notifierName: 200,
   notifierEmail: 200,
 };
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const resend = new Resend(env.resend.apiKey);
 
 interface Payload {
   contentReference: unknown;

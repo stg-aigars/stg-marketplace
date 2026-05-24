@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, newsletterLimiter } from '@/lib/rate-limit';
 import { verifyTurnstileToken, getClientIp } from '@/lib/turnstile';
 import { trackServer } from '@/lib/analytics/track-server';
-
-const resend = new Resend(env.resend.apiKey);
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { resend, EMAIL_REGEX } from '@/lib/email/client';
 
 export async function POST(request: Request) {
   const csrfError = requireBrowserOrigin(request);
