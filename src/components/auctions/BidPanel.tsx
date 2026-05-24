@@ -53,7 +53,6 @@ export function BidPanel({
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
-  const canBid = !isPending;
 
   const [inc1, inc2] = getQuickBidIncrements(minBid);
   const quickBids = [
@@ -206,7 +205,7 @@ export function BidPanel({
                 size="lg"
                 onClick={() => handleQuickBid(qb.cents, i)}
                 loading={quickBidLoading === i}
-                disabled={!canBid}
+                disabled={isPending}
               >
                 <Lightning size={16} weight="bold" className="mr-1" />
                 Bid {formatCentsToCurrency(qb.cents)}
@@ -228,7 +227,7 @@ export function BidPanel({
               variant="secondary"
               onClick={handleCustomSubmit}
               loading={isPending && quickBidLoading === null}
-              disabled={!canBid}
+              disabled={isPending}
             >
               <Gavel size={18} weight="bold" className="mr-1.5" />
               Place bid

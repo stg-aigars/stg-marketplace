@@ -101,10 +101,6 @@ export const newsletterLimiter = rateLimit({ interval: 60_000, maxRequests: 5 })
 export const thumbnailLimiter = rateLimit({ interval: 10_000, maxRequests: 5 });
 export const gameSearchLimiter = rateLimit({ interval: 60_000, maxRequests: 30 });
 export const commentLimiter = rateLimit({ interval: 60_000, maxRequests: 20 });
-// Per-user limiters for authenticated platform actions. These replace the
-// Turnstile gate on those surfaces: bots that script post-signup abuse hit
-// these instead. Keys are user IDs (passed to .check() in the server action),
-// not IPs — Turnstile was per-form; these are per-user.
 export const listingCreateLimiter = rateLimit({ interval: 60_000, maxRequests: 5 });
 export const listingUpdateLimiter = rateLimit({ interval: 60_000, maxRequests: 10 });
 // Auction final seconds can legitimately produce a flurry of bids; keep this
