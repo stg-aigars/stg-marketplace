@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { bidLimiter } from '@/lib/rate-limit';
+import { bidLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { notify } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import {
@@ -30,9 +30,8 @@ export async function placeBid(
 
   if (!user) return { error: 'You must be signed in' };
 
-  if (!bidLimiter.check(user.id).success) {
-    return { error: 'Too many bids. Please wait a moment.' };
-  }
+  const limited = checkUserRateLimit(bidLimiter, user.id, 'bid', 'Too many bids. Please wait a moment.');
+  if (limited) return limited;
 
   // Call atomic RPC
   const { data, error } = await supabase.rpc('place_bid', {

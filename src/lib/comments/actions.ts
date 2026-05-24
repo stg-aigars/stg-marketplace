@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
-import { commentLimiter } from '@/lib/rate-limit';
+import { commentLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { notify, notifyMany } from '@/lib/notifications';
 import { logAuditEvent } from '@/lib/services/audit';
 import { fetchPublicProfiles } from '@/lib/supabase/helpers';
@@ -27,8 +27,8 @@ export async function postComment(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const limitResult = commentLimiter.check(user.id);
-  if (!limitResult.success) return { error: 'Too many comments. Please wait a moment.' };
+  const limited = checkUserRateLimit(commentLimiter, user.id, 'comment_post', 'Too many comments. Please wait a moment.');
+  if (limited) return limited;
 
   const { data: listing } = await supabase
     .from('listings')

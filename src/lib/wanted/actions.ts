@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
-import { wantedCreateLimiter } from '@/lib/rate-limit';
+import { wantedCreateLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { trackServer } from '@/lib/analytics/track-server';
 import type { WantedListingWithGame, WantedListingWithDetails } from './types';
 import { MAX_NOTE_LENGTH } from './types';
@@ -33,9 +33,8 @@ export async function createWantedListing(
 
   if (!user) return { error: 'You must be signed in' };
 
-  if (!wantedCreateLimiter.check(user.id).success) {
-    return { error: 'Too many wanted listings created. Please wait a moment.' };
-  }
+  const limited = checkUserRateLimit(wantedCreateLimiter, user.id, 'wanted_create', 'Too many wanted listings created. Please wait a moment.');
+  if (limited) return limited;
 
   if (!bggGameId || bggGameId <= 0) return { error: 'Invalid game' };
   if (notes && notes.length > MAX_NOTE_LENGTH) {
