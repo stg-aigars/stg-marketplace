@@ -48,7 +48,8 @@ export function ReportIllegalContentForm() {
     category &&
     explanation.trim() &&
     accuracyConfirmed &&
-    (isCsam || (notifierName.trim() && notifierEmail.trim()));
+    (isCsam || (notifierName.trim() && notifierEmail.trim())) &&
+    !!turnstileToken;
 
   if (status === 'success') {
     return (

@@ -152,6 +152,7 @@ export function CreateWantedForm() {
 
             <Button
               onClick={handleSubmit}
+              disabled={!turnstileToken || isPending}
               loading={isPending}
               size="lg"
               className="w-full"

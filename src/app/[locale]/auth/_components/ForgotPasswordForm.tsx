@@ -69,7 +69,7 @@ export function ForgotPasswordForm() {
 
         <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
 
-        <Button type="submit" size="lg" loading={loading} className="w-full">
+        <Button type="submit" size="lg" loading={loading} disabled={!turnstileToken || loading} className="w-full">
           {loading ? 'Sending...' : 'Send reset link'}
         </Button>
       </form>

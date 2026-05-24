@@ -55,7 +55,8 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
     !emailShapeError &&
     !passwordStrengthError &&
     country &&
-    acceptedTerms;
+    acceptedTerms &&
+    !!turnstileToken;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
