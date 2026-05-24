@@ -211,7 +211,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     (!conditionRequiresPhotos(condition) || photos.length >= 1) &&
     (!conditionRequiresDescription(condition) || description.trim().length > 0);
 
-  const canSubmit = isDirty && isValid && !submitting;
+  const canSubmit = isDirty && isValid && !submitting && !!turnstileToken;
 
   const handleSubmit = async () => {
     if (!canSubmit || !condition) return;
