@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Textarea, TurnstileWidget } from '@/components/ui';
-import type { TurnstileWidgetRef } from '@/components/ui';
+import { Button, Textarea } from '@/components/ui';
 import { postComment } from '@/lib/comments/actions';
 import { MAX_COMMENT_LENGTH } from '@/lib/comments/types';
 
@@ -15,9 +14,7 @@ export function CommentForm({ listingId }: CommentFormProps) {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [isActive, setIsActive] = useState(false);
-  const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,15 +25,13 @@ export function CommentForm({ listingId }: CommentFormProps) {
     setSubmitting(true);
     setError(null);
 
-    const result = await postComment(listingId, trimmed, turnstileToken);
+    const result = await postComment(listingId, trimmed);
     if ('error' in result) {
       setError(result.error);
       setSubmitting(false);
-      turnstileRef.current?.reset();
     } else {
       setContent('');
       setSubmitting(false);
-      turnstileRef.current?.reset();
       router.refresh();
     }
   };
@@ -55,7 +50,6 @@ export function CommentForm({ listingId }: CommentFormProps) {
       />
       {isActive && (
         <>
-          <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
           {error && (
             <p className="mt-1 text-sm text-semantic-error">{error}</p>
           )}
@@ -63,7 +57,7 @@ export function CommentForm({ listingId }: CommentFormProps) {
             <span className="text-xs text-semantic-text-muted">
               {charCount > 0 && `${charCount}/${MAX_COMMENT_LENGTH}`}
             </span>
-            <Button type="submit" size="sm" disabled={!content.trim() || submitting || !turnstileToken}>
+            <Button type="submit" size="sm" disabled={!content.trim() || submitting}>
               {submitting ? 'Posting...' : 'Post comment'}
             </Button>
           </div>

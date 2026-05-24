@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
-import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
 import { commentLimiter } from '@/lib/rate-limit';
 import { notify, notifyMany } from '@/lib/notifications';
 import { logAuditEvent } from '@/lib/services/audit';
@@ -17,12 +16,8 @@ const COMMENTABLE_STATUSES = ['active', 'reserved', 'auction_ended'];
  */
 export async function postComment(
   listingId: string,
-  content: string,
-  turnstileToken?: string
+  content: string
 ): Promise<{ success: true } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'comment_post');
-  if (!turnstile.success) return { error: turnstile.error };
-
   const trimmed = content.trim();
   if (!trimmed || trimmed.length > MAX_COMMENT_LENGTH) {
     return { error: `Comment must be between 1 and ${MAX_COMMENT_LENGTH} characters` };

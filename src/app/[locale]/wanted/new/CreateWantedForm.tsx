@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Button, Alert, Textarea, TurnstileWidget } from '@/components/ui';
-import type { TurnstileWidgetRef } from '@/components/ui';
+import { Card, CardBody, Button, Alert, Textarea } from '@/components/ui';
 import { GameSearchStep, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { createWantedListing } from '@/lib/wanted/actions';
@@ -18,8 +17,6 @@ export function CreateWantedForm() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const router = useRouter();
   const { profile } = useAuth();
   const userCountry = profile?.country ?? null;
@@ -57,13 +54,11 @@ export function CreateWantedForm() {
           editionYear: edition.edition_year,
           versionThumbnail: edition.version_thumbnail,
         } : null,
-        notes.trim() || undefined,
-        turnstileToken
+        notes.trim() || undefined
       );
 
       if ('error' in result) {
         setError(result.error);
-        turnstileRef.current?.reset();
       } else {
         router.push('/account/wanted');
       }
@@ -148,11 +143,9 @@ export function CreateWantedForm() {
               </p>
             </div>
 
-            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
-
             <Button
               onClick={handleSubmit}
-              disabled={!turnstileToken || isPending}
+              disabled={isPending}
               loading={isPending}
               size="lg"
               className="w-full"

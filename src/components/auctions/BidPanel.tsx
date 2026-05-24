@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Gavel, Lightning } from '@phosphor-icons/react/ssr';
-import { Button, Input, Alert, TurnstileWidget, UserIdentity } from '@/components/ui';
-import type { TurnstileWidgetRef } from '@/components/ui';
+import { Button, Input, Alert, UserIdentity } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { formatMessageTime } from '@/lib/date-utils';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
@@ -42,9 +41,7 @@ export function BidPanel({
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [quickBidLoading, setQuickBidLoading] = useState<number | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [showAllBids, setShowAllBids] = useState(false);
-  const turnstileRef = useRef<TurnstileWidgetRef>(null);
   const bidEurRef = useRef(bidEur);
   bidEurRef.current = bidEur;
   const stateRef = useRef(state);
@@ -56,7 +53,6 @@ export function BidPanel({
   const isEnded = state.status !== 'active';
   const hasBid = currentUserId ? bids.some((b) => b.bidder_id === currentUserId) : false;
   const minBid = getMinimumBid(state.currentBidCents, state.startingPriceCents);
-  const canBid = !isPending && !!turnstileToken;
 
   const [inc1, inc2] = getQuickBidIncrements(minBid);
   const quickBids = [
@@ -114,10 +110,9 @@ export function BidPanel({
   }, [minBid]);
 
   async function submitBid(amountCents: number) {
-    const result = await placeBid(listingId, amountCents, turnstileToken);
+    const result = await placeBid(listingId, amountCents);
     if ('error' in result) {
       setError(result.error);
-      turnstileRef.current?.reset();
     } else {
       setSuccess(`Bid of ${formatCentsToCurrency(amountCents)} placed`);
       setBidEur('');
@@ -128,7 +123,6 @@ export function BidPanel({
         highestBidderId: currentUserId,
         auctionEndAt: result.newEndAt,
       }));
-      turnstileRef.current?.reset();
       router.refresh();
       void pollState();
     }
@@ -203,8 +197,6 @@ export function BidPanel({
           {error && <Alert variant="error">{error}</Alert>}
           {success && <Alert variant="success">{success}</Alert>}
 
-          <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {quickBids.map((qb, i) => (
               <Button
@@ -213,7 +205,7 @@ export function BidPanel({
                 size="lg"
                 onClick={() => handleQuickBid(qb.cents, i)}
                 loading={quickBidLoading === i}
-                disabled={!canBid}
+                disabled={isPending}
               >
                 <Lightning size={16} weight="bold" className="mr-1" />
                 Bid {formatCentsToCurrency(qb.cents)}
@@ -235,7 +227,7 @@ export function BidPanel({
               variant="secondary"
               onClick={handleCustomSubmit}
               loading={isPending && quickBidLoading === null}
-              disabled={!canBid}
+              disabled={isPending}
             >
               <Gavel size={18} weight="bold" className="mr-1.5" />
               Place bid

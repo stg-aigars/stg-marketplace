@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Stepper, TurnstileWidget, Card, CardBody, Spinner } from '@/components/ui';
-import type { TurnstileWidgetRef } from '@/components/ui';
+import { Button, Stepper, Card, CardBody, Spinner } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource, ListingExpansion } from '@/lib/listings/types';
 import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
@@ -123,8 +122,6 @@ export function ListingCreationFlow({
   const [selectedGame, setSelectedGame] = useState<EnrichedGame | null>(initialGame ?? null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   // Expansion discovery state
   const [availableExpansions, setAvailableExpansions] = useState<GameExpansion[]>([]);
@@ -359,12 +356,11 @@ export function ListingCreationFlow({
         auction_duration_days: formData.auction_duration_days,
       } : {}),
       ...(expansions.length > 0 ? { expansions } : {}),
-    }, turnstileToken);
+    });
 
     if ('error' in result) {
       setError(result.error);
       setPublishing(false);
-      turnstileRef.current?.reset();
     } else {
       router.push(`/${locale}/listings/${result.listingId}`);
     }
@@ -621,26 +617,22 @@ export function ListingCreationFlow({
         )}
 
         {currentStepId === 'review' && (
-          <>
-            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
-            <ReviewPriceStep
-              formData={formData}
-              onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
-              onPublish={handlePublish}
-              publishing={publishing}
-              turnstileReady={!!turnstileToken}
-              error={error}
-              onEditStep={handleEditStep}
-              lockedPrice={priceLocked ? formData.price_cents : undefined}
-              isAuction={isAuction}
-              auctionDurationDays={formData.auction_duration_days}
-              onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
-              expansions={formData.selected_expansion_ids.map((id) => {
-                const exp = availableExpansions.find((e) => e.id === id);
-                return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };
-              })}
-            />
-          </>
+          <ReviewPriceStep
+            formData={formData}
+            onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
+            onPublish={handlePublish}
+            publishing={publishing}
+            error={error}
+            onEditStep={handleEditStep}
+            lockedPrice={priceLocked ? formData.price_cents : undefined}
+            isAuction={isAuction}
+            auctionDurationDays={formData.auction_duration_days}
+            onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
+            expansions={formData.selected_expansion_ids.map((id) => {
+              const exp = availableExpansions.find((e) => e.id === id);
+              return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };
+            })}
+          />
         )}
         </CardBody>
       </Card>

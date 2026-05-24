@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
-import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { wantedCreateLimiter } from '@/lib/rate-limit';
 import { trackServer } from '@/lib/analytics/track-server';
 import type { WantedListingWithGame, WantedListingWithDetails } from './types';
 import { MAX_NOTE_LENGTH } from './types';
@@ -26,16 +26,17 @@ export async function createWantedListing(
     editionYear: number | null;
     versionThumbnail: string | null;
   } | null,
-  notes?: string,
-  turnstileToken?: string
+  notes?: string
 ): Promise<{ id: string } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'wanted_create');
-  if (!turnstile.success) return { error: turnstile.error };
-
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { error: 'You must be signed in' };
+
+  if (!wantedCreateLimiter.check(user.id).success) {
+    return { error: 'Too many wanted listings created. Please wait a moment.' };
+  }
+
   if (!bggGameId || bggGameId <= 0) return { error: 'Invalid game' };
   if (notes && notes.length > MAX_NOTE_LENGTH) {
     return { error: `Notes must be ${MAX_NOTE_LENGTH} characters or fewer` };
