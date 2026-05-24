@@ -1,14 +1,12 @@
 /**
- * Email service
- * Resend client initialization and generic send helper.
+ * Email service: generic send helper.
  * Skips sends for users with bounced/complained email addresses.
+ * The Resend SDK client itself lives in ./client.
  */
 
-import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { createServiceClient } from '@/lib/supabase';
-
-const resend = new Resend(env.resend.apiKey);
+import { resend } from './client';
 
 const FROM_NAME = 'Second Turn Games';
 

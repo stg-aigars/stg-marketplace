@@ -19,8 +19,8 @@
  * doesn't retry on transient Resend failures. Failures are logged.
  */
 
-import { Resend } from 'resend';
 import { env } from '@/lib/env';
+import { resend } from '@/lib/email/client';
 
 interface SupabaseWebhookPayload {
   type: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -80,7 +80,6 @@ export async function POST(request: Request) {
   ].join('\n');
 
   try {
-    const resend = new Resend(env.resend.apiKey);
     const { error } = await resend.emails.send({
       from: `Second Turn Games <${env.resend.fromEmail}>`,
       to: recipient,

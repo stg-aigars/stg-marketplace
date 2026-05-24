@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { env } from '@/lib/env';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { applyRateLimit, feedbackLimiter } from '@/lib/rate-limit';
@@ -11,6 +10,7 @@ import { trackServer } from '@/lib/analytics/track-server';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
 import { routing } from '@/i18n/routing';
 import { isFeedbackCategory } from '@/lib/feedback/types';
+import { resend, EMAIL_REGEX } from '@/lib/email/client';
 
 // No `logAuditEvent` call by design — feedback is operational signal, not
 // compliance-relevant. Matches the newsletter-signup precedent. PostHog
@@ -21,10 +21,6 @@ const MAX = {
   contactEmail: 200,
   pageUrl: 1000,
 };
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const resend = new Resend(env.resend.apiKey);
 
 interface Payload {
   category: unknown;
