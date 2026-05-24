@@ -12,6 +12,7 @@ import {
   Bell,
   UserCircle,
   Storefront,
+  Tag,
   Wallet,
   Package,
   ShieldStar,
@@ -174,6 +175,7 @@ function SiteHeader() {
                     {isSeller && (
                       <>
                         <DropdownLink href="/account/orders?tab=sales" label="Sales" icon={Storefront} onClose={() => setDropdownOpen(false)} />
+                        <DropdownLink href="/account/listings" label="Listings" icon={Tag} onClose={() => setDropdownOpen(false)} />
                         <DropdownLink href="/account/wallet" label="Wallet" icon={Wallet} onClose={() => setDropdownOpen(false)} />
                         <div className="border-t border-semantic-border-subtle my-1" />
                       </>
@@ -269,6 +271,7 @@ function SiteHeader() {
                 {isSeller && (
                   <>
                     <MobileLink href="/account/orders?tab=sales" label="Sales" icon={Storefront} onClose={() => setMobileOpen(false)} />
+                    <MobileLink href="/account/listings" label="Listings" icon={Tag} onClose={() => setMobileOpen(false)} />
                     <MobileLink href="/account/wallet" label="Wallet" icon={Wallet} onClose={() => setMobileOpen(false)} />
                     <div className="border-t border-semantic-border-subtle my-1" />
                   </>
