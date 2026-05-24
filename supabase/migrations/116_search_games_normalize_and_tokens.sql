@@ -82,8 +82,7 @@ RETURNS TABLE (
 DECLARE
   safe_query TEXT;
   lower_query TEXT;
-  ts_query_str TEXT;
-  ts_query tsquery := NULL;
+  ts_query tsquery;
 BEGIN
   -- Escape ILIKE wildcards using '!' (see migration 046 for the
   -- standard_conforming_strings rationale).
@@ -94,17 +93,13 @@ BEGIN
   -- Each token becomes `t:*` (prefix match), joined with ` & ` (AND). Tokens
   -- are already lowercased by normalize_game_name and contain no tsquery
   -- syntax characters (regex stripped them), so string concatenation is safe.
-  -- ts_query stays NULL when no usable tokens remain, and the IS NOT NULL
-  -- guard in the new CTEs short-circuits to behavior identical to migration
-  -- 102 in that case.
-  ts_query_str := (
-    SELECT string_agg(t || ':*', ' & ')
+  -- When no usable tokens remain, string_agg over an empty set returns NULL
+  -- and to_tsquery is STRICT, so ts_query ends up NULL. The IS NOT NULL guard
+  -- in the new CTEs then short-circuits to behavior identical to migration 102.
+  SELECT to_tsquery('simple'::regconfig, string_agg(t || ':*', ' & '))
+    INTO ts_query
     FROM unnest(string_to_array(public.normalize_game_name(search_query), ' ')) AS t
-    WHERE length(t) >= 2
-  );
-  IF ts_query_str IS NOT NULL THEN
-    ts_query := to_tsquery('simple'::regconfig, ts_query_str);
-  END IF;
+    WHERE length(t) >= 2;
 
   RETURN QUERY
   WITH name_hits AS (
@@ -171,28 +166,28 @@ BEGIN
     -- Tier 6: same shape over alternate names. An alt name qualifies only if
     -- it matches the tsquery (every token present in that single alt name,
     -- any order, prefix-matchable). Driven by the existing
-    -- idx_games_with_alt_names partial index over ~1,277 rows.
+    -- idx_games_with_alt_names partial index over ~1,277 rows. CROSS JOIN
+    -- LATERAL gives us EXISTS semantics (row drops when subquery returns 0)
+    -- while computing the to_tsvector(@@)/JSONB-explode work once per row
+    -- instead of twice (once for EXISTS, once for the scalar matched-name).
     SELECT
       g.id, g.name, g.yearpublished, g.thumbnail, g.player_count, g.min_age,
       g.playing_time, g.weight, g.is_expansion, g.bayesaverage,
-      (
-        SELECT val
-        FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
-        WHERE to_tsvector('simple'::regconfig, public.normalize_game_name(x.val)) @@ ts_query
-        LIMIT 1
-      ) AS matched_alternate_name,
+      alt_match.val AS matched_alternate_name,
       6 AS rank_priority
     FROM public.games g
+    CROSS JOIN LATERAL (
+      SELECT val
+      FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
+      WHERE to_tsvector('simple'::regconfig, public.normalize_game_name(x.val)) @@ ts_query
+      LIMIT 1
+    ) AS alt_match
     WHERE ts_query IS NOT NULL
       AND g.alternate_names IS NOT NULL
       AND (include_expansions OR g.is_expansion = FALSE)
       AND NOT EXISTS (SELECT 1 FROM name_hits nh WHERE nh.id = g.id)
       AND NOT EXISTS (SELECT 1 FROM alt_hits ah WHERE ah.id = g.id)
       AND NOT EXISTS (SELECT 1 FROM normalized_name_hits nnh WHERE nnh.id = g.id)
-      AND EXISTS (
-        SELECT 1 FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
-        WHERE to_tsvector('simple'::regconfig, public.normalize_game_name(x.val)) @@ ts_query
-      )
   ),
   combined AS (
     SELECT * FROM name_hits
