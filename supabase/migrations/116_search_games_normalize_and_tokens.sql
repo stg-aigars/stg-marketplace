@@ -12,12 +12,20 @@
 -- This migration adds:
 --   * IMMUTABLE helper normalize_game_name(text) that lowercases input and
 --     collapses runs of non-alphanumeric characters to a single space.
---   * Trigram GIN index on the normalized name expression so token LIKE
---     lookups don't fall back to sequential scan.
+--   * GIN tsvector index on to_tsvector('simple', normalize_game_name(name)).
+--     The 'simple' tsearch config tokenizes on word boundaries with no
+--     stemming and no stop words — perfect for game titles where every word
+--     is signal.
 --   * Two new CTEs in search_games_by_name (rank tiers 5 + 6) that match when
 --     every query token (after normalization, length >= 2) is present in the
 --     normalized name (rank 5) or in one of the normalized alternate names
---     (rank 6), in any order.
+--     (rank 6), in any order, via @@ tsquery. Each query token gets a `:*`
+--     prefix so partial words still match (e.g. "wing" finds "wingspan").
+--
+-- An earlier draft of this migration used trigram GIN + LIKE ALL (array),
+-- but the planner can't decompose LIKE ALL into per-pattern index lookups
+-- and falls back to seq scan. tsvector @@ tsquery is Postgres's native
+-- token-AND predicate with native GIN index support.
 --
 -- Existing tiers 0-4 are unchanged and rank above the new tiers, so every
 -- query that returns results today returns the same top results. The new
@@ -42,14 +50,15 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.normalize_game_name(TEXT) TO authenticated, anon;
 
--- 2. Trigram GIN index over the normalized expression. CONCURRENTLY is
+-- 2. GIN tsvector index over the normalized expression. CONCURRENTLY is
 -- incompatible with the transaction-wrapped Supabase migration runner (see
 -- migration 101 for the same rationale); games is ~175k rows with low write
 -- volume so the brief AccessExclusive lock during CREATE INDEX is acceptable.
--- pg_trgm lives in the extensions schema (migration 100).
-CREATE INDEX IF NOT EXISTS idx_games_name_normalized_trgm
+-- The 'simple' config and the qualified normalize_game_name reference must
+-- match the @@ predicate in the RPC exactly for the planner to use this index.
+CREATE INDEX IF NOT EXISTS idx_games_name_normalized_tsv
   ON public.games
-  USING gin (public.normalize_game_name(name) extensions.gin_trgm_ops);
+  USING gin (to_tsvector('simple'::regconfig, public.normalize_game_name(name)));
 
 -- 3. Rewrite search_games_by_name. Signature and return shape unchanged;
 -- existing CTEs name_hits / alt_hits unchanged. Two new CTEs appended.
@@ -73,25 +82,29 @@ RETURNS TABLE (
 DECLARE
   safe_query TEXT;
   lower_query TEXT;
-  tok_patterns TEXT[];
+  ts_query_str TEXT;
+  ts_query tsquery := NULL;
 BEGIN
   -- Escape ILIKE wildcards using '!' (see migration 046 for the
   -- standard_conforming_strings rationale).
   safe_query := replace(replace(replace(search_query, '!', '!!'), '%', '!%'), '_', '!_');
   lower_query := lower(search_query);
 
-  -- Build LIKE patterns from normalized tokens, length >= 2 only. Single-char
-  -- tokens degrade the trigram index without adding signal. Empty array would
-  -- make LIKE ALL vacuously true, so the cardinality guard on the new CTEs
-  -- short-circuits behavior to be identical to migration 102 when no usable
-  -- tokens remain. Tokens are already lowercased by normalize_game_name and
-  -- contain no SQL wildcards (regex stripped them), so '%' || t || '%' is
-  -- safe without escaping and we use LIKE (not ILIKE) for cheaper matching.
-  tok_patterns := ARRAY(
-    SELECT '%' || t || '%'
+  -- Build a prefix-match tsquery from normalized tokens, length >= 2 only.
+  -- Each token becomes `t:*` (prefix match), joined with ` & ` (AND). Tokens
+  -- are already lowercased by normalize_game_name and contain no tsquery
+  -- syntax characters (regex stripped them), so string concatenation is safe.
+  -- ts_query stays NULL when no usable tokens remain, and the IS NOT NULL
+  -- guard in the new CTEs short-circuits to behavior identical to migration
+  -- 102 in that case.
+  ts_query_str := (
+    SELECT string_agg(t || ':*', ' & ')
     FROM unnest(string_to_array(public.normalize_game_name(search_query), ' ')) AS t
     WHERE length(t) >= 2
   );
+  IF ts_query_str IS NOT NULL THEN
+    ts_query := to_tsquery('simple'::regconfig, ts_query_str);
+  END IF;
 
   RETURN QUERY
   WITH name_hits AS (
@@ -138,38 +151,39 @@ BEGIN
       )
   ),
   normalized_name_hits AS (
-    -- Tier 5: every normalized token present somewhere in the normalized name,
-    -- in any order. Punctuation-insensitive. The trigram GIN index on the
-    -- normalize_game_name(name) expression powers the LIKE ALL clause.
-    -- Excludes rows already matched by name_hits or alt_hits so dedup holds.
+    -- Tier 5: every normalized query token present in the normalized name, in
+    -- any order, prefix-matchable. Punctuation-insensitive. The GIN tsvector
+    -- index on to_tsvector('simple', normalize_game_name(name)) powers the @@
+    -- predicate. Excludes rows already matched by name_hits or alt_hits.
     SELECT
       g.id, g.name, g.yearpublished, g.thumbnail, g.player_count, g.min_age,
       g.playing_time, g.weight, g.is_expansion, g.bayesaverage,
       NULL::text AS matched_alternate_name,
       5 AS rank_priority
     FROM public.games g
-    WHERE cardinality(tok_patterns) > 0
+    WHERE ts_query IS NOT NULL
       AND (include_expansions OR g.is_expansion = FALSE)
       AND NOT EXISTS (SELECT 1 FROM name_hits nh WHERE nh.id = g.id)
       AND NOT EXISTS (SELECT 1 FROM alt_hits ah WHERE ah.id = g.id)
-      AND public.normalize_game_name(g.name) LIKE ALL (tok_patterns)
+      AND to_tsvector('simple'::regconfig, public.normalize_game_name(g.name)) @@ ts_query
   ),
   normalized_alt_hits AS (
     -- Tier 6: same shape over alternate names. An alt name qualifies only if
-    -- it contains every token (any-order, punctuation-insensitive). Driven by
-    -- the existing idx_games_with_alt_names partial index over ~1,277 rows.
+    -- it matches the tsquery (every token present in that single alt name,
+    -- any order, prefix-matchable). Driven by the existing
+    -- idx_games_with_alt_names partial index over ~1,277 rows.
     SELECT
       g.id, g.name, g.yearpublished, g.thumbnail, g.player_count, g.min_age,
       g.playing_time, g.weight, g.is_expansion, g.bayesaverage,
       (
         SELECT val
         FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
-        WHERE public.normalize_game_name(x.val) LIKE ALL (tok_patterns)
+        WHERE to_tsvector('simple'::regconfig, public.normalize_game_name(x.val)) @@ ts_query
         LIMIT 1
       ) AS matched_alternate_name,
       6 AS rank_priority
     FROM public.games g
-    WHERE cardinality(tok_patterns) > 0
+    WHERE ts_query IS NOT NULL
       AND g.alternate_names IS NOT NULL
       AND (include_expansions OR g.is_expansion = FALSE)
       AND NOT EXISTS (SELECT 1 FROM name_hits nh WHERE nh.id = g.id)
@@ -177,7 +191,7 @@ BEGIN
       AND NOT EXISTS (SELECT 1 FROM normalized_name_hits nnh WHERE nnh.id = g.id)
       AND EXISTS (
         SELECT 1 FROM jsonb_array_elements_text(g.alternate_names) AS x(val)
-        WHERE public.normalize_game_name(x.val) LIKE ALL (tok_patterns)
+        WHERE to_tsvector('simple'::regconfig, public.normalize_game_name(x.val)) @@ ts_query
       )
   ),
   combined AS (
