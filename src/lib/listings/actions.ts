@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
-import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { listingCreateLimiter, listingUpdateLimiter } from '@/lib/rate-limit';
 import { sendWantedListingMatchedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
@@ -100,12 +100,8 @@ function validateListingFields(
 }
 
 export async function createListing(
-  data: CreateListingData,
-  turnstileToken?: string
+  data: CreateListingData
 ): Promise<{ listingId: string } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'listing_create');
-  if (!turnstile.success) return { error: turnstile.error };
-
   const supabase = await createClient();
 
   const {
@@ -114,6 +110,10 @@ export async function createListing(
 
   if (!user) {
     return { error: 'You must be signed in to create a listing' };
+  }
+
+  if (!listingCreateLimiter.check(user.id).success) {
+    return { error: 'Too many listings created. Please wait a moment.' };
   }
 
   // Create-specific validations
@@ -285,12 +285,8 @@ export async function createListing(
 }
 
 export async function updateListing(
-  data: UpdateListingData,
-  turnstileToken?: string
+  data: UpdateListingData
 ): Promise<{ success: true } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'listing_update');
-  if (!turnstile.success) return { error: turnstile.error };
-
   const supabase = await createClient();
 
   const {
@@ -299,6 +295,10 @@ export async function updateListing(
 
   if (!user) {
     return { error: 'You must be signed in' };
+  }
+
+  if (!listingUpdateLimiter.check(user.id).success) {
+    return { error: 'Too many edits. Please wait a moment.' };
   }
 
   // Fetch listing and verify ownership

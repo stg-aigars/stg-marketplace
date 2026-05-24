@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Alert, Breadcrumb, Button, Card, CardBody, Spinner } from '@/components/ui';
-import { TurnstileWidget } from '@/components/ui/TurnstileWidget';
 import { ConditionStep } from '@/app/[locale]/sell/_components/ConditionStep';
 import { PhotoUploadStep } from '@/app/[locale]/sell/_components/PhotoUploadStep';
 import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
@@ -193,7 +192,6 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   // Form state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Dirty detection
   const isDirty =
@@ -211,7 +209,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     (!conditionRequiresPhotos(condition) || photos.length >= 1) &&
     (!conditionRequiresDescription(condition) || description.trim().length > 0);
 
-  const canSubmit = isDirty && isValid && !submitting && !!turnstileToken;
+  const canSubmit = isDirty && isValid && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit || !condition) return;
@@ -238,19 +236,16 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       };
     });
 
-    const result = await updateListing(
-      {
-        id: listing.id,
-        game_name: gameName,
-        ...version,
-        condition,
-        price_cents: priceCents,
-        description: description || null,
-        photos,
-        expansions,
-      },
-      turnstileToken
-    );
+    const result = await updateListing({
+      id: listing.id,
+      game_name: gameName,
+      ...version,
+      condition,
+      price_cents: priceCents,
+      description: description || null,
+      photos,
+      expansions,
+    });
 
     if ('error' in result) {
       setError(result.error);
@@ -405,7 +400,6 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
             )}
           </Button>
         </div>
-        <TurnstileWidget onVerify={setTurnstileToken} />
       </div>
     </div>
   );

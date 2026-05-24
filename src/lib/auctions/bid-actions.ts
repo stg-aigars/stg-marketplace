@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { verifyTurnstileToken, getServerActionIp } from '@/lib/turnstile';
+import { bidLimiter } from '@/lib/rate-limit';
 import { notify } from '@/lib/notifications';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import {
@@ -19,12 +19,8 @@ import type { PlaceBidResult } from './types';
 
 export async function placeBid(
   listingId: string,
-  amountCents: number,
-  turnstileToken?: string
+  amountCents: number
 ): Promise<{ success: true; newEndAt: string; bidCount: number } | { error: string }> {
-  const turnstile = await verifyTurnstileToken(turnstileToken, await getServerActionIp(), 'bid');
-  if (!turnstile.success) return { error: turnstile.error };
-
   if (!Number.isInteger(amountCents) || amountCents < 50) {
     return { error: 'Invalid bid amount' };
   }
@@ -33,6 +29,10 @@ export async function placeBid(
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { error: 'You must be signed in' };
+
+  if (!bidLimiter.check(user.id).success) {
+    return { error: 'Too many bids. Please wait a moment.' };
+  }
 
   // Call atomic RPC
   const { data, error } = await supabase.rpc('place_bid', {
