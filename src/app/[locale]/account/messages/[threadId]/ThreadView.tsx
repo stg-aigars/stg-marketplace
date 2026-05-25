@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BackLink, UserIdentity } from '@/components/ui';
+import { BackLink, Card, CardBody, CardFooter, CardHeader, UserIdentity } from '@/components/ui';
 import { markThreadRead } from '@/lib/messaging/actions';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
@@ -66,56 +66,65 @@ export function ThreadView({
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/account/messages" label="All messages" />
-      <header className="mt-4 mb-6 pb-4 border-b border-semantic-border-default flex items-center justify-between gap-3">
-        <UserIdentity
-          name={counterpartyName}
-          avatarUrl={counterparty?.avatar_url}
-          country={counterparty?.country}
-          size="md"
-          href={counterparty ? `/sellers/${counterparty.id}` : undefined}
-        />
-        {counterparty && (
-          <ThreadMenu counterpartyId={counterparty.id} counterpartyName={counterpartyName} />
-        )}
-      </header>
+      <div className="mb-4">
+        <BackLink href="/account/messages" label="All messages" />
+      </div>
 
-      <ol className="flex flex-col gap-3 mb-6">
-        {messages.length === 0 && pendingMessages.length === 0 ? (
-          <li className="text-sm text-semantic-text-muted text-center py-8">
-            No messages in this conversation yet.
-          </li>
-        ) : (
-          [...messages, ...pendingMessages].map((m) => (
-            <MessageBubble
-              key={m.id}
-              body={m.body}
-              createdAt={m.created_at}
-              isOwnMessage={m.sender_id === currentUserId}
-              listingChip={m.listing_ref_id ? (listingMap[m.listing_ref_id] ?? null) : null}
-            />
-          ))
-        )}
-      </ol>
+      <Card>
+        <CardHeader className="flex items-center justify-between gap-3">
+          <UserIdentity
+            name={counterpartyName}
+            avatarUrl={counterparty?.avatar_url}
+            country={counterparty?.country}
+            size="md"
+            href={counterparty ? `/sellers/${counterparty.id}` : undefined}
+          />
+          {counterparty && (
+            <ThreadMenu counterpartyId={counterparty.id} counterpartyName={counterpartyName} />
+          )}
+        </CardHeader>
 
-      <Composer
-        threadId={threadId}
-        disabled={composerDisabled}
-        disabledReason={composerDisabledReason}
-        onOptimisticSend={(body) => {
-          const now = new Date().toISOString();
-          setPendingMessages((prev) => [
-            ...prev,
-            {
-              id: `pending-${now}`,
-              sender_id: currentUserId,
-              body,
-              listing_ref_id: null,
-              created_at: now,
-            },
-          ]);
-        }}
-      />
+        <CardBody className="min-h-[200px]">
+          {messages.length === 0 && pendingMessages.length === 0 ? (
+            <p className="text-sm text-semantic-text-muted text-center py-8">
+              No messages in this conversation yet.
+            </p>
+          ) : (
+            <ol className="flex flex-col gap-3">
+              {[...messages, ...pendingMessages].map((m) => (
+                <MessageBubble
+                  key={m.id}
+                  body={m.body}
+                  createdAt={m.created_at}
+                  isOwnMessage={m.sender_id === currentUserId}
+                  listingChip={m.listing_ref_id ? (listingMap[m.listing_ref_id] ?? null) : null}
+                />
+              ))}
+            </ol>
+          )}
+        </CardBody>
+
+        <CardFooter>
+          <Composer
+            threadId={threadId}
+            disabled={composerDisabled}
+            disabledReason={composerDisabledReason}
+            onOptimisticSend={(body) => {
+              const now = new Date().toISOString();
+              setPendingMessages((prev) => [
+                ...prev,
+                {
+                  id: `pending-${now}`,
+                  sender_id: currentUserId,
+                  body,
+                  listing_ref_id: null,
+                  created_at: now,
+                },
+              ]);
+            }}
+          />
+        </CardFooter>
+      </Card>
     </div>
   );
 }
