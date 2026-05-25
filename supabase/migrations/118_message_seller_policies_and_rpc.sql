@@ -46,3 +46,44 @@ CREATE POLICY "Users update their own last_read_at"
   FOR UPDATE
   USING (auth.uid() IN (user_a_id, user_b_id))
   WITH CHECK (auth.uid() IN (user_a_id, user_b_id));
+
+CREATE POLICY "Users see messages in their threads"
+  ON public.messages
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.message_threads t
+      WHERE t.id = messages.thread_id
+        AND auth.uid() IN (t.user_a_id, t.user_b_id)
+    )
+  );
+
+CREATE POLICY "Users send messages into live threads with no block"
+  ON public.messages
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() = sender_id
+    AND EXISTS (
+      SELECT 1 FROM public.message_threads t
+      WHERE t.id = messages.thread_id
+        AND t.user_a_id IS NOT NULL
+        AND t.user_b_id IS NOT NULL
+        AND auth.uid() IN (t.user_a_id, t.user_b_id)
+        AND NOT EXISTS (
+          SELECT 1 FROM public.message_blocks b
+          WHERE (b.blocker_id = t.user_a_id AND b.blocked_id = t.user_b_id)
+             OR (b.blocker_id = t.user_b_id AND b.blocked_id = t.user_a_id)
+        )
+    )
+    AND (
+      listing_ref_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.listings l
+        WHERE l.id = messages.listing_ref_id
+          AND l.seller_id = (
+            SELECT CASE WHEN user_a_id = sender_id THEN user_b_id ELSE user_a_id END
+            FROM public.message_threads WHERE id = messages.thread_id
+          )
+      )
+    )
+  );
