@@ -45,6 +45,22 @@ export function AnnouncementForm(props: Props) {
     }
   }
 
+  function runStateAction(
+    action: (id: string) => Promise<{ success: true } | { error: string }>,
+    onSuccess: () => void,
+  ) {
+    if (props.mode !== 'edit') return;
+    setError(null);
+    startTransition(async () => {
+      const result = await action(props.id);
+      if ('error' in result) {
+        setError(humanizeError(result.error));
+        return;
+      }
+      onSuccess();
+    });
+  }
+
   function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -64,7 +80,6 @@ export function AnnouncementForm(props: Props) {
         const result = await updateAnnouncement(props.id, {
           title,
           bodyMarkdown: body,
-          // Only send slug when not locked AND it actually changed
           ...(slugLocked || slug === props.initial.slug ? {} : { slug }),
         });
         if ('error' in result) {
@@ -77,42 +92,16 @@ export function AnnouncementForm(props: Props) {
   }
 
   function handlePublish() {
-    if (props.mode !== 'edit') return;
-    setError(null);
-    startTransition(async () => {
-      const result = await publishAnnouncement(props.id);
-      if ('error' in result) {
-        setError(humanizeError(result.error));
-        return;
-      }
-      router.refresh();
-    });
+    runStateAction(publishAnnouncement, () => router.refresh());
   }
 
   function handleUnpublish() {
-    if (props.mode !== 'edit') return;
-    setError(null);
-    startTransition(async () => {
-      const result = await unpublishAnnouncement(props.id);
-      if ('error' in result) {
-        setError(humanizeError(result.error));
-        return;
-      }
-      router.refresh();
-    });
+    runStateAction(unpublishAnnouncement, () => router.refresh());
   }
 
   function handleDeleteConfirm() {
-    if (props.mode !== 'edit') return;
-    startTransition(async () => {
-      const result = await softDeleteAnnouncement(props.id);
-      if ('error' in result) {
-        setError(humanizeError(result.error));
-        setShowDeleteConfirm(false);
-        return;
-      }
-      router.push('/staff/announcements');
-    });
+    runStateAction(softDeleteAnnouncement, () => router.push('/staff/announcements'));
+    setShowDeleteConfirm(false);
   }
 
   return (

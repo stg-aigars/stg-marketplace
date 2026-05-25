@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type { Announcement } from './types';
 
@@ -10,7 +11,7 @@ export async function listPublishedAnnouncements(limit = 52): Promise<Announceme
   const supabase = await createClient();
   const { data } = await supabase
     .from('announcements')
-    .select('*')
+    .select('id, slug, title, body_markdown, published_at, notified_at, deleted_at, created_by, created_at, updated_at')
     .not('published_at', 'is', null)
     .is('deleted_at', null)
     .order('published_at', { ascending: false })
@@ -19,20 +20,23 @@ export async function listPublishedAnnouncements(limit = 52): Promise<Announceme
 }
 
 /**
- * Detail query — looks up by slug. Returns the row even if unpublished /
- * soft-deleted so the page can render the tombstone instead of 404.
- * (RLS allows anon SELECT only for published rows, so for unpublished /
- * deleted rows this returns null for anon visitors; the page treats null
- * the same as the row-not-found case and renders 404 via notFound().
- * Staff-authenticated calls also can't see deleted rows via this query;
- * that's intentional — staff use the dashboard list, not the public URL.)
+ * Detail query — looks up by slug. RLS gates the SELECT to published_at
+ * IS NOT NULL AND deleted_at IS NULL for every role (no separate staff
+ * SELECT policy), so for unpublished or soft-deleted rows this returns null
+ * regardless of who's asking; the page treats null as 404 via notFound().
+ *
+ * Wrapped in React `cache()` so generateMetadata + the page component share
+ * a single DB fetch per request (Next.js doesn't dedupe arbitrary async
+ * functions — only fetch() calls with identical URLs via the Request cache).
  */
-export async function getPublishedAnnouncementBySlug(slug: string): Promise<Announcement | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('announcements')
-    .select('*')
-    .eq('slug', slug)
-    .maybeSingle();
-  return (data as Announcement | null) ?? null;
-}
+export const getPublishedAnnouncementBySlug = cache(
+  async (slug: string): Promise<Announcement | null> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
+    return (data as Announcement | null) ?? null;
+  },
+);

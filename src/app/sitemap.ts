@@ -65,7 +65,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select('slug, updated_at')
       .not('published_at', 'is', null)
       .is('deleted_at', null)
-      .order('published_at', { ascending: false });
+      .order('published_at', { ascending: false })
+      .limit(1000);
 
     if (announcements) {
       announcementPages = announcements.map((a) => ({

@@ -19,9 +19,6 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const a = await getPublishedAnnouncementBySlug(slug);
-  // RLS already denies unpublished/deleted rows for any role using the
-  // user-scoped client, so `a` being null here means either truly-missing or
-  // unpublished/deleted — both surface as 404 below.
   if (!a) return { title: 'Announcement unavailable', robots: { index: false, follow: false } };
   const description = markdownExcerpt(a.body_markdown, 160);
   return {
@@ -42,13 +39,13 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
   if (!a) notFound();
 
   // Mark-read on view for signed-in viewers. Mirrors markThreadRead from
-  // messaging — clears the bell dot + Messages-style dropdown unread dot
-  // when the user opens the page directly (no bell pass-through).
+  // messaging — clears the bell dot when the user opens the page directly
+  // (no bell pass-through).
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) void markAnnouncementRead(a.id);
+  if (user) void markAnnouncementRead(a.id, user.id);
 
   const url = `${env.app.url}/announcements/${a.slug}`;
 

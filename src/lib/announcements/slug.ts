@@ -1,5 +1,11 @@
 import { ANNOUNCEMENT_SLUG_REGEX, ANNOUNCEMENT_SLUG_RESERVED } from './types';
 
+export type SlugValidationReason =
+  | 'slug_empty'
+  | 'slug_too_long'
+  | 'slug_invalid_chars'
+  | 'slug_reserved';
+
 /**
  * Generate a URL-safe kebab-case slug from a title.
  * Strips diacritics, lowercases, collapses non-alphanumeric runs to '-',
@@ -15,7 +21,9 @@ export function slugifyTitle(title: string): string {
     .slice(0, 80);
 }
 
-export function validateSlug(slug: string): { ok: true } | { ok: false; reason: string } {
+export function validateSlug(
+  slug: string,
+): { ok: true } | { ok: false; reason: SlugValidationReason } {
   if (!slug) return { ok: false, reason: 'slug_empty' };
   if (slug.length > 80) return { ok: false, reason: 'slug_too_long' };
   if (!ANNOUNCEMENT_SLUG_REGEX.test(slug)) return { ok: false, reason: 'slug_invalid_chars' };
