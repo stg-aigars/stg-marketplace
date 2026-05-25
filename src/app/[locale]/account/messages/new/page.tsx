@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { findExistingThread } from '@/lib/messaging/actions';
-import { BackLink, UserIdentity } from '@/components/ui';
+import { BackLink, Card, CardBody, CardHeader, UserIdentity } from '@/components/ui';
 import { ListingChipInline } from '../[threadId]/ListingChipInline';
 import { NewMessageForm } from './NewMessageForm';
 
@@ -73,31 +73,35 @@ export default async function NewMessagePage({ searchParams }: PageProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/account/messages" label="All messages" />
-      <header className="mt-4 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">
-          Message {counterparty.full_name ?? 'this user'}
-        </h1>
-        <UserIdentity
-          name={counterparty.full_name ?? 'Unknown'}
-          avatarUrl={counterparty.avatar_url}
-          country={counterparty.country}
-          size="md"
-        />
-      </header>
+      <div className="mb-4">
+        <BackLink href="/account/messages" label="All messages" />
+      </div>
 
-      {seedListing && (
-        <div className="mb-4">
-          <p className="text-xs text-semantic-text-muted mb-1.5">About:</p>
-          <ListingChipInline listing={seedListing} />
-        </div>
-      )}
+      <Card>
+        <CardHeader>
+          <UserIdentity
+            name={counterparty.full_name ?? 'Unknown'}
+            avatarUrl={counterparty.avatar_url}
+            country={counterparty.country}
+            size="md"
+          />
+        </CardHeader>
 
-      <NewMessageForm
-        otherUserId={to}
-        seedListingId={seedListing?.id}
-        entryPoint={entryPoint}
-      />
+        <CardBody className="space-y-4">
+          {seedListing && (
+            <div>
+              <p className="text-xs text-semantic-text-muted mb-1.5">About:</p>
+              <ListingChipInline listing={seedListing} />
+            </div>
+          )}
+
+          <NewMessageForm
+            otherUserId={to}
+            seedListingId={seedListing?.id}
+            entryPoint={entryPoint}
+          />
+        </CardBody>
+      </Card>
     </div>
   );
 }
