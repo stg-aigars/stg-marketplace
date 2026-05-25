@@ -20,3 +20,20 @@ CREATE TABLE public.message_threads (
 
 CREATE INDEX idx_message_threads_user_a ON public.message_threads (user_a_id, last_message_at DESC);
 CREATE INDEX idx_message_threads_user_b ON public.message_threads (user_b_id, last_message_at DESC);
+
+CREATE TABLE public.messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  thread_id uuid NOT NULL REFERENCES public.message_threads(id) ON DELETE CASCADE,
+  sender_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  body text NOT NULL,
+  listing_ref_id uuid REFERENCES public.listings(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  email_sent_at timestamptz,
+  email_send_attempts int NOT NULL DEFAULT 0,
+  CONSTRAINT messages_body_length CHECK (length(body) BETWEEN 1 AND 2000)
+);
+
+CREATE INDEX idx_messages_thread ON public.messages (thread_id, created_at);
+CREATE INDEX idx_messages_undelivered
+  ON public.messages (created_at)
+  WHERE email_sent_at IS NULL;
