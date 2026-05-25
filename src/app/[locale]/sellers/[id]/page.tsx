@@ -7,6 +7,7 @@ import { SellerBadgesRow } from '@/components/sellers/SellerBadgesRow';
 import { formatMonthYear } from '@/lib/date-utils';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { Avatar, Card, CardBody, Pagination, ShareButtons } from '@/components/ui';
+import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { ReviewItem } from '@/components/reviews';
@@ -104,6 +105,9 @@ export default async function SellerProfilePage(
     notFound();
   }
 
+  // Viewer for the message-seller CTA (anonymous = null → "Sign in to message").
+  const { data: { user: viewer } } = await supabase.auth.getUser();
+
   // Count is queried separately from the grid so it stays accurate if the grid query becomes paginated.
   const [rating, reviews, completedSales, { data: listings }, { count: listingsCount }] = await Promise.all([
     getSellerRating(id),
@@ -188,6 +192,13 @@ export default async function SellerProfilePage(
             url={`${env.app.url}/sellers/${id}`}
             title={sellerName}
           />
+          <div className="mt-3">
+            <MessageSellerCTA
+              viewerId={viewer?.id ?? null}
+              sellerId={id}
+              entryPoint="seller_profile"
+            />
+          </div>
         </div>
       </div>
 
