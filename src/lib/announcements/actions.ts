@@ -1,7 +1,10 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { requireServerAuth } from '@/lib/auth/helpers';
+import { notifyMany } from '@/lib/notifications';
+import { logAuditEvent } from '@/lib/services/audit';
 import { validateSlug, slugifyTitle } from './slug';
 import {
   ANNOUNCEMENT_TITLE_MAX,
@@ -59,6 +62,76 @@ export async function createAnnouncement(args: {
       return { error: 'create_failed' };
     }
     return { success: true, id: data.id };
+  } catch (err) {
+    if (err instanceof Error && err.message === 'forbidden') return { error: 'forbidden' };
+    throw err;
+  }
+}
+
+export async function publishAnnouncement(id: string): Promise<AnnouncementsActionResult> {
+  try {
+    const { user } = await requireStaffServerAuth();
+    const supabase = await createClient();
+
+    const { data: announcement } = await supabase
+      .from('announcements')
+      .select('id, slug, title, notified_at')
+      .eq('id', id)
+      .maybeSingle();
+    if (!announcement) return { error: 'not_found' };
+
+    const now = new Date().toISOString();
+    const isFirstPublish = announcement.notified_at === null;
+
+    const { error: publishErr } = await supabase
+      .from('announcements')
+      .update({
+        published_at: now,
+        ...(isFirstPublish ? { notified_at: now } : {}),
+      })
+      .eq('id', id);
+    if (publishErr) {
+      console.error('[announcements] publishAnnouncement update failed', publishErr);
+      return { error: 'publish_failed' };
+    }
+
+    if (isFirstPublish) {
+      // Fan out to every user_profiles row. notifyMany batches into a single
+      // INSERT. Deleted users (anonymized + banned) keep their profile row;
+      // the resulting notification is harmless (banned user can never read).
+      const { data: profiles } = await supabase.from('user_profiles').select('id');
+      const recipientCount = profiles?.length ?? 0;
+      if (recipientCount > 0 && profiles) {
+        void notifyMany(
+          profiles.map((p) => ({
+            userId: p.id,
+            type: 'announcement.posted',
+            context: {
+              announcementId: id,
+              slug: announcement.slug,
+              title: announcement.title,
+            },
+          })),
+        );
+      }
+
+      void logAuditEvent(supabase, {
+        actorId: user.id,
+        actorType: 'user',
+        action: 'announcement.published',
+        resourceType: 'announcement',
+        resourceId: id,
+        metadata: {
+          slug: announcement.slug,
+          title: announcement.title,
+          recipientsIntended: recipientCount,
+        },
+        retentionClass: 'operational',
+      });
+    }
+
+    revalidatePath('/announcements');
+    return { success: true };
   } catch (err) {
     if (err instanceof Error && err.message === 'forbidden') return { error: 'forbidden' };
     throw err;
