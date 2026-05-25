@@ -87,3 +87,13 @@ CREATE POLICY "Staff delete announcements"
       WHERE id = (SELECT auth.uid()) AND is_staff = true
     )
   );
+
+-- Paired notifications_type_check regex update for the new `announcement.posted`
+-- prefix. Per CLAUDE.md discipline (post-migration 119): every new prefix in
+-- NotificationType MUST ship with a paired regex update in the same migration.
+ALTER TABLE notifications
+  DROP CONSTRAINT IF EXISTS notifications_type_check;
+
+ALTER TABLE notifications
+  ADD CONSTRAINT notifications_type_check
+  CHECK (type ~ '^(order|comment|dispute|shipping|auction|wanted|dac7|moderation|listing|feedback|message|announcement)\.');
