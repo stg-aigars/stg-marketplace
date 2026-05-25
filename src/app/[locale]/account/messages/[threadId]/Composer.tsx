@@ -37,7 +37,7 @@ export function Composer({ threadId, disabled, disabledReason, onOptimisticSend 
     startTransition(async () => {
       onOptimisticSend?.(trimmed);
       const result = await sendMessage({ threadId, body: trimmed });
-      if (!result.ok) {
+      if ('error' in result) {
         setError(
           result.error === 'invalid_body'
             ? 'We couldn’t send your message. Please check the length and try again.'

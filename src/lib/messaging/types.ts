@@ -26,8 +26,15 @@ export type MessagingError =
   | 'cannot_message_user'
   | 'unknown_user';
 
-export type SendFirstMessageResult =
+/** Raw jsonb shape returned by the send_first_message Postgres RPC.
+ *  Translated to the canonical { success } / { error } server-action shape
+ *  in src/lib/messaging/actions.ts. */
+export type SendFirstMessageRpcResult =
   | { ok: true; thread_id: string; message_id: string }
   | { ok: false; error: MessagingError };
+
+export type SendFirstMessageResult =
+  | { success: true; thread_id: string; message_id: string }
+  | { error: MessagingError };
 
 export const MESSAGE_MAX_LENGTH = 2000;

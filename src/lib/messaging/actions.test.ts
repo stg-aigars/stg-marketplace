@@ -64,7 +64,7 @@ describe('sendFirstMessage', () => {
       entryPoint: 'listing_detail',
     });
 
-    expect(result).toEqual({ ok: false, error: 'self_target' });
+    expect(result).toEqual({ error: 'self_target' });
     expect(mockNotify).not.toHaveBeenCalled();
     expect(mockTrackServer).not.toHaveBeenCalled();
   });
@@ -85,7 +85,7 @@ describe('sendFirstMessage', () => {
       entryPoint: 'listing_detail',
     });
 
-    expect(result).toEqual({ ok: true, thread_id: 'thread-1', message_id: 'msg-1' });
+    expect(result).toEqual({ success: true, thread_id: 'thread-1', message_id: 'msg-1' });
     expect(mockNotify).toHaveBeenCalledWith('other-uuid', 'message.received', {
       threadId: 'thread-1',
       listingId: 'listing-1',
@@ -116,7 +116,7 @@ describe('sendFirstMessage', () => {
       entryPoint: 'seller_profile',
     });
 
-    expect(result).toEqual({ ok: false, error: 'cannot_message_user' });
+    expect(result).toEqual({ error: 'cannot_message_user' });
     expect(mockNotify).not.toHaveBeenCalled();
     expect(mockTrackServer).not.toHaveBeenCalled();
   });

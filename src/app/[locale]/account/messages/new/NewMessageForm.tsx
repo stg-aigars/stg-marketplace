@@ -52,7 +52,7 @@ export function NewMessageForm({ otherUserId, seedListingId, entryPoint }: NewMe
         listingRefId: seedListingId,
         entryPoint,
       });
-      if (!result.ok) {
+      if ('error' in result) {
         setError(copyForError(result.error));
         return;
       }

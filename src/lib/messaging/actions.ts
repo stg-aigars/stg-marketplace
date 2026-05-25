@@ -4,7 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { notify } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
-import type { SendFirstMessageResult } from './types';
+import type { SendFirstMessageResult, SendFirstMessageRpcResult } from './types';
+
+type SendMessageResult = { success: true } | { error: string };
 
 export async function findExistingThread(otherUserId: string): Promise<{ threadId: string | null }> {
   const { user } = await requireServerAuth();
@@ -37,11 +39,11 @@ export async function sendFirstMessage(args: {
 
   if (error) {
     console.error('send_first_message RPC error', error);
-    return { ok: false, error: 'cannot_message_user' };
+    return { error: 'cannot_message_user' };
   }
 
-  const result = data as SendFirstMessageResult;
-  if (!result.ok) return result;
+  const rpc = data as SendFirstMessageRpcResult;
+  if (!rpc.ok) return { error: rpc.error };
 
   // Resolve gameName for the recipient notification (notify() doesn't auto-enrich;
   // template falls back gracefully if we omit, but we have the listing id in hand).
@@ -57,35 +59,35 @@ export async function sendFirstMessage(args: {
 
   // Side effects (fire-and-forget per CLAUDE.md pattern)
   void notify(args.otherUserId, 'message.received', {
-    threadId: result.thread_id,
+    threadId: rpc.thread_id,
     listingId: args.listingRefId,
     senderName: profile?.full_name ?? undefined,
     gameName,
   });
   void trackServer('message_thread_started', user.id, {
-    thread_id: result.thread_id,
+    thread_id: rpc.thread_id,
     entry_point: args.entryPoint,
     has_listing_ref: !!args.listingRefId,
   });
   void trackServer('message_sent', user.id, {
-    thread_id: result.thread_id,
+    thread_id: rpc.thread_id,
     is_first_message: true,
     has_listing_ref: !!args.listingRefId,
   });
 
-  return result;
+  return { success: true, thread_id: rpc.thread_id, message_id: rpc.message_id };
 }
 
 export async function sendMessage(args: {
   threadId: string;
   body: string;
   listingRefId?: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+}): Promise<SendMessageResult> {
   const { user, profile } = await requireServerAuth();
   const supabase = await createClient();
 
   if (args.body.length < 1 || args.body.length > 2000) {
-    return { ok: false, error: 'invalid_body' };
+    return { error: 'invalid_body' };
   }
 
   const { data: thread } = await supabase
@@ -94,9 +96,9 @@ export async function sendMessage(args: {
     .eq('id', args.threadId)
     .maybeSingle();
 
-  if (!thread) return { ok: false, error: 'thread_not_found' };
+  if (!thread) return { error: 'thread_not_found' };
   const recipientId = thread.user_a_id === user.id ? thread.user_b_id : thread.user_a_id;
-  if (!recipientId) return { ok: false, error: 'ghost_thread' };
+  if (!recipientId) return { error: 'ghost_thread' };
 
   const { error } = await supabase.from('messages').insert({
     thread_id: args.threadId,
@@ -105,7 +107,7 @@ export async function sendMessage(args: {
     listing_ref_id: args.listingRefId ?? null,
   });
 
-  if (error) return { ok: false, error: 'send_failed' };
+  if (error) return { error: 'send_failed' };
 
   // Resolve gameName for the recipient notification (notify() doesn't auto-enrich).
   let gameName: string | undefined;
@@ -130,7 +132,7 @@ export async function sendMessage(args: {
     has_listing_ref: !!args.listingRefId,
   });
 
-  return { ok: true };
+  return { success: true };
 }
 
 export async function markThreadRead(threadId: string) {
