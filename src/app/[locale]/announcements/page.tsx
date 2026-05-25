@@ -30,7 +30,7 @@ export default async function AnnouncementsListPage() {
             <EmptyState
               icon={Megaphone}
               title="No announcements yet"
-              description="Check back here for platform updates."
+              description="We’ll post platform updates here as they ship."
             />
           </CardBody>
         </Card>

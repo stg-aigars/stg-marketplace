@@ -47,7 +47,7 @@ export default async function StaffAnnouncementsPage() {
             <EmptyState
               icon={Megaphone}
               title="No announcements yet"
-              description="Publish the first one to ping every user's bell."
+              description="Publish the first one to share what shipped."
               action={{ label: 'New announcement', href: '/staff/announcements/new', variant: 'primary' }}
             />
           </CardBody>

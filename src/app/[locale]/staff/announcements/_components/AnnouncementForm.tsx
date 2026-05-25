@@ -157,7 +157,7 @@ export function AnnouncementForm(props: Props) {
             disabled={isPending}
           />
           <p className="mt-1 text-xs text-semantic-text-muted">
-            Headings, bold, italic, links, lists, and code blocks supported. Inline image embeds aren&rsquo;t — link out to external images if needed.
+            Headings, bold, italic, links, lists, and code blocks are supported. Inline images aren&rsquo;t — link out to externally-hosted images instead.
           </p>
         </div>
 
@@ -214,9 +214,9 @@ export function AnnouncementForm(props: Props) {
           title="Delete this announcement?"
         >
           <p className="text-sm text-semantic-text-secondary mb-4">
-            The announcement disappears from the public list. Visitors who follow an old
-            link see a &ldquo;no longer available&rdquo; page. Bell entries are cleared.
-            This is a soft delete and can be reversed by staff if needed.
+            The announcement disappears from the public list and bell entries clear for everyone.
+            Visitors who follow an old link see a &ldquo;no longer available&rdquo; page.
+            This is a soft delete and can be reversed by staff.
           </p>
           <div className="flex justify-end gap-2">
             <Button
