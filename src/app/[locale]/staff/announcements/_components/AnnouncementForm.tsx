@@ -123,7 +123,7 @@ export function AnnouncementForm(props: Props) {
         <Input
           label="Title"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
           required
           maxLength={200}
           disabled={isPending}
