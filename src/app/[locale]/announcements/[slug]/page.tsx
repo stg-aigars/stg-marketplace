@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { BackLink, Breadcrumb, Card, CardBody, ShareButtons } from '@/components/ui';
+import { Breadcrumb, ShareButtons } from '@/components/ui';
 import { AnnouncementMarkdown } from '@/components/announcements/AnnouncementMarkdown';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildAnnouncementJsonLd } from '@/lib/seo/announcement-json-ld';
@@ -19,12 +19,10 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const a = await getPublishedAnnouncementBySlug(slug);
-  if (!a || a.deleted_at || !a.published_at) {
-    return {
-      title: 'Announcement unavailable',
-      robots: { index: false, follow: false },
-    };
-  }
+  // RLS already denies unpublished/deleted rows for any role using the
+  // user-scoped client, so `a` being null here means either truly-missing or
+  // unpublished/deleted — both surface as 404 below.
+  if (!a) return { title: 'Announcement unavailable', robots: { index: false, follow: false } };
   const description = markdownExcerpt(a.body_markdown, 160);
   return {
     title: a.title,
@@ -37,27 +35,11 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const a = await getPublishedAnnouncementBySlug(slug);
 
-  // Row truly missing → 404. Row present but unpublished or soft-deleted →
-  // tombstone (200). Note: anon callers cannot see unpublished/deleted rows
-  // via RLS, so for them this also routes to 404. The tombstone branch fires
-  // for signed-in staff or for anyone who hits the URL with a cached value.
+  // RLS gates the row to published_at IS NOT NULL AND deleted_at IS NULL for
+  // both anon and authenticated callers (no separate staff SELECT policy).
+  // Null here covers all three "row not visible" cases — truly missing,
+  // unpublished, or soft-deleted — and all surface as 404.
   if (!a) notFound();
-  if (a.deleted_at || !a.published_at) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <BackLink href="/announcements" label="All announcements" />
-        <div className="mt-4">
-          <Card>
-            <CardBody>
-              <p className="text-sm text-semantic-text-muted">
-                This announcement is no longer available.
-              </p>
-            </CardBody>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   // Mark-read on view for signed-in viewers. Mirrors markThreadRead from
   // messaging — clears the bell dot + Messages-style dropdown unread dot
@@ -112,5 +94,3 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
   );
 }
 
-// Tombstone branch's robots:noindex is set inside generateMetadata above when
-// the row is unpublished or deleted; published rows inherit default robots.

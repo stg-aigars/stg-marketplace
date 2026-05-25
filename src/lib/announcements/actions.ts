@@ -73,26 +73,42 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
     const { user } = await requireStaffServerAuth();
     const supabase = await createClient();
 
-    const { data: announcement } = await supabase
-      .from('announcements')
-      .select('id, slug, title, notified_at')
-      .eq('id', id)
-      .maybeSingle();
-    if (!announcement) return { error: 'not_found' };
-
     const now = new Date().toISOString();
-    const isFirstPublish = announcement.notified_at === null;
 
-    const { error: publishErr } = await supabase
+    // Atomic first-publish claim: attempt to set notified_at WHERE notified_at
+    // IS NULL. Only the call that wins the race gets a non-empty result, so
+    // only it fires the fan-out + audit. The TOCTOU race that bit a SELECT-
+    // then-check-then-UPDATE pattern can't happen because the WHERE clause is
+    // part of the same UPDATE statement.
+    const { data: claim, error: claimErr } = await supabase
       .from('announcements')
-      .update({
-        published_at: now,
-        ...(isFirstPublish ? { notified_at: now } : {}),
-      })
-      .eq('id', id);
-    if (publishErr) {
-      console.error('[announcements] publishAnnouncement update failed', publishErr);
+      .update({ published_at: now, notified_at: now })
+      .eq('id', id)
+      .is('notified_at', null)
+      .select('id, slug, title');
+    if (claimErr) {
+      console.error('[announcements] publishAnnouncement first-publish claim failed', claimErr);
       return { error: 'publish_failed' };
+    }
+
+    const claimed = (claim ?? [])[0];
+    const isFirstPublish = !!claimed;
+
+    let announcement = claimed;
+    if (!isFirstPublish) {
+      // Re-publish path: row may or may not exist; set published_at + read slug/title for audit hooks.
+      const { data: rePub, error: rePubErr } = await supabase
+        .from('announcements')
+        .update({ published_at: now })
+        .eq('id', id)
+        .select('id, slug, title')
+        .maybeSingle();
+      if (rePubErr) {
+        console.error('[announcements] publishAnnouncement re-publish failed', rePubErr);
+        return { error: 'publish_failed' };
+      }
+      if (!rePub) return { error: 'not_found' };
+      announcement = rePub;
     }
 
     if (isFirstPublish) {
@@ -108,7 +124,7 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
             type: 'announcement.posted',
             context: {
               announcementId: id,
-              slug: announcement.slug,
+              announcementSlug: announcement.slug,
               announcementTitle: announcement.title,
             },
           })),
@@ -139,17 +155,10 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
 }
 
 /**
- * Mark all unread `announcement.posted` notifications for this announcement
- * as read, across all recipients. Called after unpublish + soft-delete so the
- * bell dot clears for everyone — clicked bell rows then route to the tombstone
- * page rather than dangling.
- */
-/**
  * Mark this user's unread `announcement.posted` notification(s) for the given
  * announcement as read. Fired from the detail page's server component on view
- * (signed-in only) so opening an announcement clears the bell dot + dropdown
- * unread dot even when the user didn't pass through the bell. Mirrors
- * markThreadRead from messaging.
+ * (signed-in only) so opening an announcement clears the bell dot even when
+ * the user didn't pass through the bell. Mirrors markThreadRead from messaging.
  */
 export async function markAnnouncementRead(announcementId: string): Promise<void> {
   const supabase = await createClient();
@@ -167,6 +176,12 @@ export async function markAnnouncementRead(announcementId: string): Promise<void
     .eq('metadata->>announcementId', announcementId);
 }
 
+/**
+ * Mark all unread `announcement.posted` notifications for this announcement
+ * as read, across all recipients. Called after unpublish + soft-delete so the
+ * bell dot clears for everyone — clicked bell rows then route to a 404 rather
+ * than dangling on an unpublished URL.
+ */
 async function sweepAnnouncementNotifications(
   supabase: Awaited<ReturnType<typeof createClient>>,
   announcementId: string,
@@ -309,6 +324,10 @@ export async function updateAnnouncement(
       console.error('[announcements] updateAnnouncement failed', error);
       return { error: 'update_failed' };
     }
+    // /announcements is force-static; without this revalidation, edits to a
+    // published announcement's title/body never reflect on the public list
+    // until something else triggers revalidation.
+    revalidatePath('/announcements');
     return { success: true };
   } catch (err) {
     if (err instanceof Error && err.message === 'forbidden') return { error: 'forbidden' };

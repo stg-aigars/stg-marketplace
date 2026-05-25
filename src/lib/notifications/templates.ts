@@ -278,6 +278,6 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
   'announcement.posted': {
     title: () => 'New announcement',
     body: (ctx) => ctx.announcementTitle ?? 'Something new on Second Turn Games.',
-    link: (ctx) => (ctx.slug ? `/announcements/${ctx.slug}` : '/announcements'),
+    link: (ctx) => (ctx.announcementSlug ? `/announcements/${ctx.announcementSlug}` : '/announcements'),
   },
 };

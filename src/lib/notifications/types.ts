@@ -97,6 +97,6 @@ export interface NotificationContext {
   threadId?: string;
   // Platform announcements
   announcementId?: string;
-  slug?: string;
+  announcementSlug?: string;
   announcementTitle?: string;
 }

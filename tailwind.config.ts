@@ -114,6 +114,33 @@ const config: Config = {
         '250': '250ms',
         '350': '350ms',
       },
+      // Override @tailwindcss/typography defaults to use semantic tokens
+      // instead of raw slate-* values. Currently used by AnnouncementMarkdown
+      // for staff-authored markdown bodies — if more prose surfaces appear
+      // (e.g., legal docs, blog posts) they inherit the same brand-aligned
+      // typography automatically.
+      typography: {
+        DEFAULT: {
+          css: {
+            '--tw-prose-body': colors.semantic.textPrimary,
+            '--tw-prose-headings': colors.semantic.textHeading,
+            '--tw-prose-lead': colors.semantic.textSecondary,
+            '--tw-prose-links': colors.semantic.brandActive,
+            '--tw-prose-bold': colors.semantic.textHeading,
+            '--tw-prose-counters': colors.semantic.textMuted,
+            '--tw-prose-bullets': colors.semantic.textMuted,
+            '--tw-prose-hr': colors.semantic.borderDefault,
+            '--tw-prose-quotes': colors.semantic.textSecondary,
+            '--tw-prose-quote-borders': colors.semantic.borderDefault,
+            '--tw-prose-captions': colors.semantic.textMuted,
+            '--tw-prose-code': colors.semantic.textHeading,
+            '--tw-prose-pre-code': colors.semantic.textPrimary,
+            '--tw-prose-pre-bg': colors.semantic.bgSubtle,
+            '--tw-prose-th-borders': colors.semantic.borderDefault,
+            '--tw-prose-td-borders': colors.semantic.borderSubtle,
+          },
+        },
+      },
     },
   },
   plugins: [typographyPlugin],
