@@ -9,10 +9,12 @@ interface ComposerProps {
   threadId: string;
   disabled: boolean;
   disabledReason: string | null;
-  onOptimisticSend?: (body: string) => void;
+  /** Returns the optimistic message id so the composer can roll it back on failure. */
+  onOptimisticSend?: (body: string) => string;
+  onOptimisticRollback?: (id: string) => void;
 }
 
-export function Composer({ threadId, disabled, disabledReason, onOptimisticSend }: ComposerProps) {
+export function Composer({ threadId, disabled, disabledReason, onOptimisticSend, onOptimisticRollback }: ComposerProps) {
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,9 +37,10 @@ export function Composer({ threadId, disabled, disabledReason, onOptimisticSend 
       return;
     }
     startTransition(async () => {
-      onOptimisticSend?.(trimmed);
+      const optimisticId = onOptimisticSend?.(trimmed);
       const result = await sendMessage({ threadId, body: trimmed });
       if ('error' in result) {
+        if (optimisticId) onOptimisticRollback?.(optimisticId);
         setError(
           result.error === 'invalid_body'
             ? 'We couldn’t send your message. Please check the length and try again.'

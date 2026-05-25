@@ -23,7 +23,7 @@ export function MessageBubble({ body, createdAt, isOwnMessage, listingChip }: Me
         className={cn(
           'rounded-md px-4 py-2.5 text-sm whitespace-pre-wrap break-words',
           isOwnMessage
-            ? 'bg-semantic-brand text-white'
+            ? 'bg-semantic-brand text-semantic-text-inverse'
             : 'bg-semantic-bg-subtle text-semantic-text-primary',
         )}
       >

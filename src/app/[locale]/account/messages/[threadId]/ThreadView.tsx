@@ -33,7 +33,6 @@ interface ThreadViewProps {
   threadId: string;
   currentUserId: string;
   counterparty: Counterparty | null;
-  isGhostThread: boolean;
   composerDisabled: boolean;
   composerDisabledReason: string | null;
   messages: ThreadMessage[];
@@ -111,16 +110,21 @@ export function ThreadView({
             disabledReason={composerDisabledReason}
             onOptimisticSend={(body) => {
               const now = new Date().toISOString();
+              const id = `pending-${now}-${Math.random().toString(36).slice(2, 8)}`;
               setPendingMessages((prev) => [
                 ...prev,
                 {
-                  id: `pending-${now}`,
+                  id,
                   sender_id: currentUserId,
                   body,
                   listing_ref_id: null,
                   created_at: now,
                 },
               ]);
+              return id;
+            }}
+            onOptimisticRollback={(id) => {
+              setPendingMessages((prev) => prev.filter((m) => m.id !== id));
             }}
           />
         </CardFooter>

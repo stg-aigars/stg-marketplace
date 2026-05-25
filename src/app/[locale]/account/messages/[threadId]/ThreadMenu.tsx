@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { DotsThreeVertical } from '@phosphor-icons/react/ssr';
 import { Button, Modal } from '@/components/ui';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { blockUser } from '@/lib/messaging/actions';
 
 interface ThreadMenuProps {
@@ -16,6 +18,10 @@ export function ThreadMenu({ counterpartyId, counterpartyName }: ThreadMenuProps
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(() => setMenuOpen(false), menuOpen, menuRef);
+  useEscapeKey(() => setMenuOpen(false), menuOpen);
 
   function handleBlockClick() {
     setMenuOpen(false);
@@ -32,33 +38,26 @@ export function ThreadMenu({ counterpartyId, counterpartyName }: ThreadMenuProps
 
   return (
     <>
-      <div className="relative">
+      <div ref={menuRef} className="relative">
         <button
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
-          className="p-2 rounded-md text-semantic-text-muted sm:hover:text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-semantic-text-muted sm:hover:text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
           aria-label="More options"
           aria-expanded={menuOpen}
         >
           <DotsThreeVertical size={20} weight="bold" />
         </button>
         {menuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setMenuOpen(false)}
-              aria-hidden="true"
-            />
-            <div className="absolute right-0 mt-1 w-44 rounded-md border border-semantic-border-default bg-semantic-bg-elevated shadow-lg z-20 py-1">
-              <button
-                type="button"
-                onClick={handleBlockClick}
-                className="w-full text-left px-3 py-2 text-sm text-semantic-text-primary sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
-              >
-                Block this user
-              </button>
-            </div>
-          </>
+          <div className="absolute right-0 top-full mt-1 w-44 rounded-md border border-semantic-border-default bg-semantic-bg-elevated shadow-lg z-20 py-1">
+            <button
+              type="button"
+              onClick={handleBlockClick}
+              className="w-full text-left px-3 py-2 text-sm text-semantic-text-primary sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
+            >
+              Block this user
+            </button>
+          </div>
         )}
       </div>
 

@@ -90,7 +90,6 @@ export default async function ThreadDetailPage({ params }: PageProps) {
       threadId={threadId}
       currentUserId={user.id}
       counterparty={counterparty}
-      isGhostThread={isGhostThread}
       composerDisabled={isGhostThread || blockedEitherDirection}
       composerDisabledReason={
         isGhostThread
