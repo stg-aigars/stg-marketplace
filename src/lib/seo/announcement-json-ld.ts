@@ -1,3 +1,4 @@
+import type { WithContext, Article } from 'schema-dts';
 import { markdownExcerpt } from '@/lib/announcements/excerpt';
 import type { Announcement } from '@/lib/announcements/types';
 
@@ -7,12 +8,12 @@ import type { Announcement } from '@/lib/announcements/types';
  * schema) capped at 5000 chars — generous for a weekly post; the canonical
  * source remains the page itself.
  */
-export function buildAnnouncementJsonLd(a: Announcement, baseUrl: string) {
+export function buildAnnouncementJsonLd(a: Announcement, baseUrl: string): WithContext<Article> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: a.title,
-    datePublished: a.published_at,
+    datePublished: a.published_at ?? undefined,
     dateModified: a.updated_at,
     author: { '@type': 'Organization', name: 'Second Turn Games' },
     articleBody: markdownExcerpt(a.body_markdown, 5000),
