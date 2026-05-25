@@ -12,6 +12,7 @@ import type { NotificationRow } from '@/lib/notifications/types';
 const TYPE_ICONS: Record<string, PhosphorIcon> = {
   order: Package,
   comment: ChatCircle,
+  message: ChatCircle,
   dispute: Gavel,
   shipping: Truck,
 };

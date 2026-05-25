@@ -22,6 +22,26 @@ export async function getUnreadNotificationCount(): Promise<number> {
 }
 
 /**
+ * Whether the current user has any unread message notifications.
+ * Drives the small dot next to "Messages" in the header dropdown / mobile menu.
+ * Coupled to the bell's notion of "unread" — if user clears the bell, the dot clears.
+ */
+export async function hasUnreadMessages(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { count } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .is('read_at', null)
+    .like('type', 'message.%');
+
+  return (count ?? 0) > 0;
+}
+
+/**
  * Fetch recent notifications for the current user.
  */
 export async function getNotifications(

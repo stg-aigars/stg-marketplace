@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { stripLocalePrefix } from '@/lib/locale-utils';
 import { useCart } from '@/contexts/CartContext';
 import { useUnreadNotificationCount } from '@/hooks/useUnreadNotificationCount';
+import { useHasUnreadMessages } from '@/hooks/useHasUnreadMessages';
 import { usePendingActions } from '@/hooks/usePendingActions';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
@@ -36,6 +37,7 @@ function SiteHeader() {
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const [notificationCount, refreshNotificationCount] = useUnreadNotificationCount();
+  const hasUnreadMessagesValue = useHasUnreadMessages();
   const { count: cartCount } = useCart();
   const { isSeller } = usePendingActions();
 
@@ -182,7 +184,7 @@ function SiteHeader() {
                       </>
                     )}
                     <DropdownLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setDropdownOpen(false)} />
-                    <DropdownLink href="/account/messages" label="Messages" icon={ChatCircle} onClose={() => setDropdownOpen(false)} />
+                    <DropdownLink href="/account/messages" label="Messages" icon={ChatCircle} onClose={() => setDropdownOpen(false)} unreadDot={hasUnreadMessagesValue} />
                     <DropdownLink href="/account" label="Account" icon={UserCircle} onClose={() => setDropdownOpen(false)} />
                     {profile?.is_staff && (
                       <>
@@ -279,7 +281,7 @@ function SiteHeader() {
                   </>
                 )}
                 <MobileLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setMobileOpen(false)} />
-                <MobileLink href="/account/messages" label="Messages" icon={ChatCircle} onClose={() => setMobileOpen(false)} />
+                <MobileLink href="/account/messages" label="Messages" icon={ChatCircle} onClose={() => setMobileOpen(false)} unreadDot={hasUnreadMessagesValue} />
                 <MobileLink href="/account" label="Account" icon={UserCircle} onClose={() => setMobileOpen(false)} />
                 {profile?.is_staff && (
                   <>
@@ -341,11 +343,13 @@ function DropdownLink({
   label,
   icon: Icon,
   onClose,
+  unreadDot,
 }: {
   href: string;
   label: string;
   icon?: PhosphorIcon;
   onClose: () => void;
+  unreadDot?: boolean;
 }) {
   return (
     <Link
@@ -355,7 +359,15 @@ function DropdownLink({
       onClick={onClose}
     >
       {Icon && <Icon size={18} className="shrink-0" />}
-      {label}
+      <span className="flex items-center gap-1.5">
+        {label}
+        {unreadDot && (
+          <span
+            aria-label="Unread"
+            className="w-2 h-2 rounded-full bg-semantic-brand-active"
+          />
+        )}
+      </span>
     </Link>
   );
 }
@@ -365,11 +377,13 @@ function MobileLink({
   label,
   icon: Icon,
   onClose,
+  unreadDot,
 }: {
   href: string;
   label: string;
   icon?: PhosphorIcon;
   onClose: () => void;
+  unreadDot?: boolean;
 }) {
   return (
     <Link
@@ -378,7 +392,15 @@ function MobileLink({
       onClick={onClose}
     >
       {Icon && <Icon size={20} className="shrink-0" />}
-      {label}
+      <span className="flex items-center gap-1.5">
+        {label}
+        {unreadDot && (
+          <span
+            aria-label="Unread"
+            className="w-2 h-2 rounded-full bg-semantic-brand-active"
+          />
+        )}
+      </span>
     </Link>
   );
 }
