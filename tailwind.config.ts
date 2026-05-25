@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import typographyPlugin from "@tailwindcss/typography";
 import { colors, typography, borderRadius, shadows } from "./src/styles/tokens";
 
 const config: Config = {
@@ -115,6 +116,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [typographyPlugin],
 };
 export default config;
