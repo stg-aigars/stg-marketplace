@@ -145,10 +145,22 @@ export async function markThreadRead(threadId: string) {
     .maybeSingle();
   if (!thread) return;
   const column = thread.user_a_id === user.id ? 'user_a_last_read_at' : 'user_b_last_read_at';
+  const now = new Date().toISOString();
   await supabase
     .from('message_threads')
-    .update({ [column]: new Date().toISOString() })
+    .update({ [column]: now })
     .eq('id', threadId);
+
+  // Also mark any unread 'message.received' notifications for this thread as
+  // read — clears the bell badge + the "Messages" dropdown unread dot when
+  // the user opens the thread directly (without going through the bell).
+  await supabase
+    .from('notifications')
+    .update({ read_at: now })
+    .eq('user_id', user.id)
+    .eq('type', 'message.received')
+    .is('read_at', null)
+    .eq('metadata->>threadId', threadId);
 }
 
 export async function toggleMessagingEnabled(newValue: boolean) {
