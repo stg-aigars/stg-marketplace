@@ -3,6 +3,7 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardBody, EmptyState } from '@/components/ui';
 import { ChatCircle } from '@phosphor-icons/react/ssr';
+import { InboxSettings } from '@/components/messaging/InboxSettings';
 import { ThreadList } from './ThreadList';
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export interface ThreadRow {
 }
 
 export default async function MessagesInboxPage() {
-  const { user } = await requireServerAuth();
+  const { user, profile } = await requireServerAuth();
   const supabase = await createClient();
 
   const { data: threadsRaw } = await supabase
@@ -88,20 +89,28 @@ export default async function MessagesInboxPage() {
         )}
       </div>
 
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={ChatCircle}
-          title="No conversations yet"
-          description="Find a game you want and reach out to the seller."
-          action={{ label: 'Browse games', href: '/browse' }}
-        />
-      ) : (
-        <Card>
-          <CardBody className="p-0">
-            <ThreadList threads={rows} />
-          </CardBody>
-        </Card>
-      )}
+      <div className="space-y-4">
+        <InboxSettings messagingEnabled={profile?.messaging_enabled ?? true} />
+
+        {rows.length === 0 ? (
+          <Card>
+            <CardBody>
+              <EmptyState
+                icon={ChatCircle}
+                title="No conversations yet"
+                description="Find a game you want and reach out to the seller."
+                action={{ label: 'Browse games', href: '/browse' }}
+              />
+            </CardBody>
+          </Card>
+        ) : (
+          <Card>
+            <CardBody className="p-0">
+              <ThreadList threads={rows} />
+            </CardBody>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

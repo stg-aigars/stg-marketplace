@@ -3,7 +3,6 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { ProfileSettingsSection } from './_components/ProfileSettingsSection';
 import { SecuritySection } from './_components/SecuritySection';
 import { DataManagementSection } from './_components/DataManagementSection';
-import { MessagingSection } from './_components/MessagingSection';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 
@@ -37,7 +36,6 @@ export default async function AccountSettingsPage(
           hasPassword={hasPassword}
           authProvider={authProvider}
         />
-        <MessagingSection messagingEnabled={profile?.messaging_enabled ?? true} />
         <DataManagementSection hasPassword={hasPassword} />
       </div>
     </div>
