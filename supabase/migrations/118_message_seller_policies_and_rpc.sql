@@ -1,0 +1,10 @@
+-- 118_message_seller_policies_and_rpc.sql
+-- Private 1:1 messaging: INSERT trigger, RLS policies, send_first_message RPC.
+-- Pairs with 117.
+--
+-- Note on trigger posture: on_message_insert is SECURITY DEFINER with
+-- SET search_path = '' so the metadata UPDATE on message_threads bypasses
+-- the table's RLS policies (UPDATE policy is participant-scoped and would
+-- only allow the sender's side to update — but the trigger needs to flip
+-- the sender's own user_{a|b}_last_read_at in the same TX as the insert).
+-- Intended; no UPDATE-via-trigger surface for the user.
