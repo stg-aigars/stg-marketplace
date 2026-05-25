@@ -20,6 +20,7 @@ const STAFF_NAV_GROUPS: StaffNavGroup[] = [
       { key: 'notices', label: 'DSA notices', href: '/staff/notices' },
       { key: 'withdrawals', label: 'Withdrawals', href: '/staff/withdrawals' },
       { key: 'feedback', label: 'Feedback', href: '/staff/feedback' },
+      { key: 'announcements', label: 'Announcements', href: '/staff/announcements' },
     ],
   },
   {
@@ -41,7 +42,6 @@ const STAFF_NAV_GROUPS: StaffNavGroup[] = [
     label: 'Reference',
     items: [
       { key: 'audit', label: 'Audit log', href: '/staff/audit' },
-      { key: 'announcements', label: 'Announcements', href: '/staff/announcements' },
       { key: 'templates', label: 'Templates', href: '/staff/templates' },
     ],
   },
