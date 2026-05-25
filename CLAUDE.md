@@ -289,7 +289,7 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
 ## In-App Notifications
 - Every email event also creates an in-app notification via `notify(userId, type, context)` from `@/lib/notifications`
 - Fire-and-forget pattern (same as `logAuditEvent`) — never blocks the main operation
-- 39 notification types with prefixes: `order.`, `comment.`, `dispute.`, `shipping.`, `auction.`, `wanted.`, `dac7.`
+- 43 notification types with prefixes: `order.`, `comment.`, `dispute.`, `shipping.`, `auction.`, `wanted.`, `dac7.`, `moderation.`, `listing.`, `feedback.`, `message.`. **Every new prefix MUST ship a paired migration adding it to the `notifications_type_check` regex** — `notify()` swallows CHECK violations silently in its internal try/catch, so a missing prefix breaks the affected feature's in-app bell with zero noisy errors. Migration 119 swept the regex after `feedback.`, `moderation.`, `listing.`, and `message.` had drifted for one or more PRs each.
 - Copy centralized in `src/lib/notifications/templates.ts` — integration sites pass type + context, not strings
 - Bell icon in header (desktop dropdown, mobile link to `/account/notifications`)
 - Polling on pathname change for unread count

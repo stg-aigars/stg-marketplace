@@ -37,6 +37,8 @@ export interface UserProfile {
   verification_requested_at: string | null;
   verification_response: VerificationResponse | null;
   verification_responded_at: string | null;
+  // Messaging opt-in — added in migration 117
+  messaging_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

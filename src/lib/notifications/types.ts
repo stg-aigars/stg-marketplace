@@ -50,7 +50,9 @@ export type NotificationType =
   | 'moderation.notice_received'
   | 'listing.actioned'
   // Site feedback
-  | 'feedback.received';
+  | 'feedback.received'
+  // Messaging
+  | 'message.received';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {
@@ -89,4 +91,6 @@ export interface NotificationContext {
   // Site feedback
   feedbackId?: string;
   preview?: string;
+  // Messaging
+  threadId?: string;
 }

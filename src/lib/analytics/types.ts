@@ -59,6 +59,20 @@ export interface AnalyticsEventMap {
     category: FeedbackCategory;
     anonymous: boolean;
   };
+  // Messaging — see docs/plans/2026-05-25-message-seller-design.md
+  // is_first_message semantics: send_first_message RPC fires `true` on BOTH create
+  // and on-conflict-existing branches (user intended a first message either way);
+  // sendMessage in-thread fires `false`.
+  message_thread_started: {
+    thread_id: string;
+    entry_point: 'listing_detail' | 'seller_profile';
+    has_listing_ref: boolean;
+  };
+  message_sent: {
+    thread_id: string;
+    is_first_message: boolean;
+    has_listing_ref: boolean;
+  };
 }
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;

@@ -261,4 +261,16 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     },
     link: () => '/staff/feedback',
   },
+
+  // Messaging — sender/game names resolved at call site (notify() does not enrich).
+  'message.received': {
+    title: () => 'New message',
+    body: (ctx) => {
+      const sender = ctx.senderName ?? 'Someone';
+      return ctx.gameName
+        ? `About ${ctx.gameName}: ${sender} sent you a message.`
+        : `${sender} sent you a message.`;
+    },
+    link: (ctx) => (ctx.threadId ? `/account/messages/${ctx.threadId}` : null),
+  },
 };

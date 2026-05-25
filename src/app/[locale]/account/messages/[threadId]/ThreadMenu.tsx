@@ -1,0 +1,93 @@
+'use client';
+
+import { useState, useTransition, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { DotsThreeVertical } from '@phosphor-icons/react/ssr';
+import { Button, Modal } from '@/components/ui';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { blockUser } from '@/lib/messaging/actions';
+
+interface ThreadMenuProps {
+  counterpartyId: string;
+  counterpartyName: string;
+}
+
+export function ThreadMenu({ counterpartyId, counterpartyName }: ThreadMenuProps) {
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(() => setMenuOpen(false), menuOpen, menuRef);
+  useEscapeKey(() => setMenuOpen(false), menuOpen);
+
+  function handleBlockClick() {
+    setMenuOpen(false);
+    setConfirmOpen(true);
+  }
+
+  function handleConfirmBlock() {
+    startTransition(async () => {
+      await blockUser(counterpartyId);
+      setConfirmOpen(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <div ref={menuRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((prev) => !prev)}
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-semantic-text-muted sm:hover:text-semantic-text-secondary sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
+          aria-label="More options"
+          aria-expanded={menuOpen}
+        >
+          <DotsThreeVertical size={20} weight="bold" />
+        </button>
+        {menuOpen && (
+          <div className="absolute right-0 top-full mt-1 w-44 rounded-md border border-semantic-border-default bg-semantic-bg-elevated shadow-lg z-20 py-1">
+            <button
+              type="button"
+              onClick={handleBlockClick}
+              className="w-full text-left px-3 py-2 text-sm text-semantic-text-primary sm:hover:bg-semantic-bg-subtle transition-colors duration-250 ease-out-custom"
+            >
+              Block this user
+            </button>
+          </div>
+        )}
+      </div>
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={`Block ${counterpartyName}?`}
+      >
+        <p className="text-sm text-semantic-text-secondary mb-4">
+          Neither of you can message the other. You can unblock at any time from your blocked users list.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConfirmOpen(false)}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleConfirmBlock}
+            disabled={isPending}
+          >
+            {isPending ? 'Blocking…' : 'Block'}
+          </Button>
+        </div>
+      </Modal>
+    </>
+  );
+}

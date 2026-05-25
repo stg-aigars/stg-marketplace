@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiece, CaretRight, Flag } from '@phosphor-icons/react/ssr';
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
+import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getConditionLabel } from '@/lib/condition-config';
@@ -669,6 +670,17 @@ export default async function ListingDetailPage(
                     ),
                   })}
                 </p>
+              </div>
+
+              {/* Message-seller CTA — hidden for owner; muted one-liner if seller
+                  opted out or block exists either direction. */}
+              <div className="mt-3">
+                <MessageSellerCTA
+                  viewerId={user?.id ?? null}
+                  sellerId={listing.seller_id}
+                  seedListingId={listing.id}
+                  entryPoint="listing_detail"
+                />
               </div>
             </CardBody>
           </Card>
