@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Checkbox } from '@/components/ui';
+import { Toggle } from '@/components/ui';
 import { toggleMessagingEnabled } from '@/lib/messaging/actions';
 
 interface MessagingToggleProps {
@@ -20,17 +20,21 @@ export function MessagingToggle({ initialValue }: MessagingToggleProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <Checkbox checked={enabled} onChange={handleChange} disabled={isPending}>
-        <span className="block">
-          <span className="block font-medium text-semantic-text-primary">
-            Allow people to send me messages
-          </span>
-          <span className="block mt-1 text-sm text-semantic-text-muted">
-            Existing conversations will continue. You&rsquo;ll stop receiving new ones.
-          </span>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-semantic-text-primary">
+          Allow others to start new conversations with you
         </span>
-      </Checkbox>
+        <Toggle checked={enabled} onChange={handleChange} size="sm" />
+      </div>
+      <p className="text-xs text-semantic-text-muted">
+        Ongoing conversations stay open. You can still reply to anyone who&rsquo;s already messaged you.
+      </p>
+      {isPending && (
+        <p className="text-xs text-semantic-text-muted" aria-live="polite">
+          Saving&hellip;
+        </p>
+      )}
     </div>
   );
 }
