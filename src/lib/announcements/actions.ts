@@ -144,6 +144,29 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
  * bell dot clears for everyone — clicked bell rows then route to the tombstone
  * page rather than dangling.
  */
+/**
+ * Mark this user's unread `announcement.posted` notification(s) for the given
+ * announcement as read. Fired from the detail page's server component on view
+ * (signed-in only) so opening an announcement clears the bell dot + dropdown
+ * unread dot even when the user didn't pass through the bell. Mirrors
+ * markThreadRead from messaging.
+ */
+export async function markAnnouncementRead(announcementId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .eq('type', 'announcement.posted')
+    .is('read_at', null)
+    .eq('metadata->>announcementId', announcementId);
+}
+
 async function sweepAnnouncementNotifications(
   supabase: Awaited<ReturnType<typeof createClient>>,
   announcementId: string,
