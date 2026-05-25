@@ -26,6 +26,24 @@ const ELIGIBILITY_WINDOW_MINUTES = 15;
 const MAX_ATTEMPTS = 10;
 const SENTRY_WARNING_THRESHOLD = 5;
 
+/** Bump each message's email_send_attempts individually. Per-message bump
+ *  preserves asymmetric history when messages joined the bundle at different
+ *  cron cycles (e.g., msg-1 at attempts=3, msg-2 at attempts=0). Loop is
+ *  cheap because typical bundle size is 1-3 messages. */
+async function bumpAttemptsPerMessage(
+  supabase: ReturnType<typeof createServiceClient>,
+  messages: { id: string; email_send_attempts: number }[],
+): Promise<void> {
+  await Promise.all(
+    messages.map((m) =>
+      supabase
+        .from('messages')
+        .update({ email_send_attempts: m.email_send_attempts + 1 })
+        .eq('id', m.id),
+    ),
+  );
+}
+
 interface MessageRow {
   id: string;
   thread_id: string;
@@ -149,7 +167,7 @@ export async function POST(request: Request) {
   const [recipientsRes, sendersRes, listingsRes] = await Promise.all([
     supabase
       .from('user_profiles')
-      .select('id, full_name, email')
+      .select('id, full_name, email, email_bounced_at')
       .in('id', recipientIds),
     supabase
       .from('user_profiles')
@@ -160,9 +178,16 @@ export async function POST(request: Request) {
       : Promise.resolve({ data: [] as { id: string; game_name: string }[], error: null }),
   ]);
 
-  const recipientMap = new Map<string, { full_name: string | null; email: string | null }>();
+  const recipientMap = new Map<
+    string,
+    { full_name: string | null; email: string | null; email_bounced_at: string | null }
+  >();
   (recipientsRes.data ?? []).forEach((r) =>
-    recipientMap.set(r.id, { full_name: r.full_name, email: r.email }),
+    recipientMap.set(r.id, {
+      full_name: r.full_name,
+      email: r.email,
+      email_bounced_at: r.email_bounced_at,
+    }),
   );
   const senderMap = new Map<string, string>();
   (sendersRes.data ?? []).forEach((s) => senderMap.set(s.id, s.full_name ?? 'A buyer or seller'));
@@ -178,6 +203,17 @@ export async function POST(request: Request) {
     if (!recipient?.email) {
       // Skip silently — recipient profile gone or no email. Don't bump attempts
       // (this isn't a Resend failure; the digest just can't be addressed).
+      continue;
+    }
+    if (recipient.email_bounced_at) {
+      // Permanently bounced. Mark messages as "we did what we could" to remove
+      // them from the eligible queue; do NOT bump attempts (this is permanent,
+      // not transient — wasting the 10-attempt budget triggers false Sentry
+      // warnings without ever recovering).
+      await supabase
+        .from('messages')
+        .update({ email_sent_at: new Date().toISOString() })
+        .in('id', bundle.messages.map((m) => m.id));
       continue;
     }
     const senderName = senderMap.get(bundle.messages[0].sender_id!) ?? 'A buyer or seller';
@@ -217,28 +253,23 @@ export async function POST(request: Request) {
           .in('id', messageIds);
         sent += 1;
       } else {
-        // sendEmail returned null — either bounced recipient or Resend error.
-        // Either way, bump attempts so we eventually give up rather than retrying forever.
-        await supabase
-          .from('messages')
-          .update({ email_send_attempts: bundle.messages[0].email_send_attempts + 1 })
-          .in('id', messageIds);
+        // sendEmail returned null — Resend error. Bump each message's own
+        // attempt count individually so per-message attempt history is
+        // preserved when messages joined the bundle at different cron cycles.
+        await bumpAttemptsPerMessage(supabase, bundle.messages);
         failed += 1;
         highestAttemptsSeen = Math.max(
           highestAttemptsSeen,
-          bundle.messages[0].email_send_attempts + 1,
+          ...bundle.messages.map((m) => m.email_send_attempts + 1),
         );
       }
     } catch (err) {
       console.error('[Cron] message-digest bundle send failed:', err);
-      await supabase
-        .from('messages')
-        .update({ email_send_attempts: bundle.messages[0].email_send_attempts + 1 })
-        .in('id', messageIds);
+      await bumpAttemptsPerMessage(supabase, bundle.messages);
       failed += 1;
       highestAttemptsSeen = Math.max(
         highestAttemptsSeen,
-        bundle.messages[0].email_send_attempts + 1,
+        ...bundle.messages.map((m) => m.email_send_attempts + 1),
       );
     }
   }

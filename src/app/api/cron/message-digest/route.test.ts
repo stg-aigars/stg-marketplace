@@ -89,7 +89,12 @@ function messageRow(opts: {
 
 interface SupabaseMockOpts {
   candidateMessages: ReturnType<typeof messageRow>[];
-  recipientProfiles: { id: string; full_name: string | null; email: string | null }[];
+  recipientProfiles: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    email_bounced_at?: string | null;
+  }[];
   senderProfiles: { id: string; full_name: string | null }[];
   listings?: { id: string; game_name: string }[];
   /** Capture all UPDATE calls so tests can assert order + payloads. */
@@ -104,7 +109,18 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
     builder.select = vi.fn(() => builder);
     builder.is = vi.fn(() => builder);
     builder.lt = vi.fn(() => builder);
-    builder.eq = vi.fn(() => builder);
+    // .eq() can terminate an UPDATE (per-message attempts bump uses .eq('id', value))
+    // or just continue a SELECT chain (the messages SELECT uses .eq).
+    builder.eq = vi.fn((_col: string, value: unknown) => {
+      if (state.isUpdate && state.table === 'messages') {
+        const payload = state.updatePayload ?? {};
+        const kind: 'sent' | 'attempts' =
+          'email_sent_at' in payload ? 'sent' : 'attempts';
+        opts.updates.push({ kind, ids: [String(value)] });
+        return Promise.resolve({ data: null, error: null });
+      }
+      return builder;
+    });
     builder.update = vi.fn((payload: Record<string, unknown>) => {
       state.isUpdate = true;
       state.updatePayload = payload;

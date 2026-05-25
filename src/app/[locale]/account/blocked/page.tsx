@@ -40,7 +40,7 @@ export default async function BlockedUsersPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <BackLink href="/account/settings" label="Account settings" />
+      <BackLink href="/account/messages" label="Messages" />
       <h1 className="mt-4 mb-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
         Blocked users
       </h1>
