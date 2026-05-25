@@ -5,6 +5,7 @@ import { BackLink, UserIdentity } from '@/components/ui';
 import { markThreadRead } from '@/lib/messaging/actions';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
+import { ThreadMenu } from './ThreadMenu';
 
 interface Counterparty {
   id: string;
@@ -66,7 +67,7 @@ export function ThreadView({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       <BackLink href="/account/messages" label="All messages" />
-      <header className="mt-4 mb-6 pb-4 border-b border-semantic-border-default">
+      <header className="mt-4 mb-6 pb-4 border-b border-semantic-border-default flex items-center justify-between gap-3">
         <UserIdentity
           name={counterpartyName}
           avatarUrl={counterparty?.avatar_url}
@@ -74,6 +75,9 @@ export function ThreadView({
           size="md"
           href={counterparty ? `/sellers/${counterparty.id}` : undefined}
         />
+        {counterparty && (
+          <ThreadMenu counterpartyId={counterparty.id} counterpartyName={counterpartyName} />
+        )}
       </header>
 
       <ol className="flex flex-col gap-3 mb-6">
