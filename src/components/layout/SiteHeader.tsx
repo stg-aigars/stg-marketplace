@@ -17,6 +17,7 @@ import {
   Package,
   ShieldStar,
   SignOut,
+  ChatCircle,
 } from '@phosphor-icons/react/ssr';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Avatar, Button, CountBadge } from '@/components/ui';
@@ -181,6 +182,7 @@ function SiteHeader() {
                       </>
                     )}
                     <DropdownLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setDropdownOpen(false)} />
+                    <DropdownLink href="/account/messages" label="Messages" icon={ChatCircle} onClose={() => setDropdownOpen(false)} />
                     <DropdownLink href="/account" label="Account" icon={UserCircle} onClose={() => setDropdownOpen(false)} />
                     {profile?.is_staff && (
                       <>
@@ -277,6 +279,7 @@ function SiteHeader() {
                   </>
                 )}
                 <MobileLink href="/account/orders?tab=purchases" label="Purchases" icon={Package} onClose={() => setMobileOpen(false)} />
+                <MobileLink href="/account/messages" label="Messages" icon={ChatCircle} onClose={() => setMobileOpen(false)} />
                 <MobileLink href="/account" label="Account" icon={UserCircle} onClose={() => setMobileOpen(false)} />
                 {profile?.is_staff && (
                   <>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Package, Wallet, Tag, Gavel,
-  MagnifyingGlass, Heart, GearSix, CaretRight, Receipt,
+  MagnifyingGlass, Heart, GearSix, CaretRight, Receipt, ChatCircle,
 } from '@phosphor-icons/react/ssr';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
@@ -57,6 +57,7 @@ export default async function AccountPage() {
 
   const buyingLinks = [
     { href: '/account/orders?tab=purchases', icon: Package, label: 'Purchases', desc: "Orders you've placed", tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
+    { href: '/account/messages', icon: ChatCircle, label: 'Messages', desc: 'Conversations with sellers and buyers', tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
     { href: '/account/bids', icon: Gavel, label: 'Bids', desc: "Auctions you've bid on", tint: 'bg-semantic-purple-bg border-aurora-purple/20 text-aurora-purple' },
     { href: '/account/favorites', icon: Heart, label: 'Favorites', desc: 'Saved for later', tint: 'bg-semantic-primary-bg border-semantic-primary/20 text-semantic-primary' },
     { href: '/account/wanted', icon: MagnifyingGlass, label: 'Wanted', desc: "Games you're looking for", tint: 'bg-semantic-brand-bg border-semantic-brand/20 text-semantic-brand' },
