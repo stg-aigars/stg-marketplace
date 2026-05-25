@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import {
-  Package, ChatCircle, Gavel, Truck, Trash,
+  Package, ChatCircle, Gavel, Truck, Trash, Megaphone,
 } from '@phosphor-icons/react/ssr';
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { formatMessageTime } from '@/lib/date-utils';
@@ -15,6 +15,7 @@ const TYPE_ICONS: Record<string, PhosphorIcon> = {
   message: ChatCircle,
   dispute: Gavel,
   shipping: Truck,
+  announcement: Megaphone,
 };
 
 function getIconPrefix(type: string): string {

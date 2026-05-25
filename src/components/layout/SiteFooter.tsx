@@ -16,6 +16,7 @@ const EXPLORE_LINKS = [
   { href: '/browse', label: 'Browse Games' },
   { href: '/sell', label: 'Sell a Game' },
   { href: '/wanted/new', label: 'Request a Game' },
+  { href: '/announcements', label: "What's New" },
   { href: '/help', label: 'Help' },
   { href: '/condition-guide', label: 'Condition Guide' },
   { href: '/contact', label: 'Contact' },

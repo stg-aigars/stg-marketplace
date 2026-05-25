@@ -52,7 +52,9 @@ export type NotificationType =
   // Site feedback
   | 'feedback.received'
   // Messaging
-  | 'message.received';
+  | 'message.received'
+  // Platform announcements
+  | 'announcement.posted';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {
@@ -93,4 +95,8 @@ export interface NotificationContext {
   preview?: string;
   // Messaging
   threadId?: string;
+  // Platform announcements
+  announcementId?: string;
+  announcementSlug?: string;
+  announcementTitle?: string;
 }

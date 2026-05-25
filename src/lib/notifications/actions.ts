@@ -41,6 +41,7 @@ export async function hasUnreadMessages(): Promise<boolean> {
   return (count ?? 0) > 0;
 }
 
+
 /**
  * Fetch recent notifications for the current user.
  */

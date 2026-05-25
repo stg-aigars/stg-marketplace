@@ -273,4 +273,11 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     },
     link: (ctx) => (ctx.threadId ? `/account/messages/${ctx.threadId}` : null),
   },
+
+  // Platform announcements (fan-out to all users on first publish).
+  'announcement.posted': {
+    title: () => 'New announcement',
+    body: (ctx) => ctx.announcementTitle ?? 'Something new on Second Turn Games.',
+    link: (ctx) => (ctx.announcementSlug ? `/announcements/${ctx.announcementSlug}` : '/announcements'),
+  },
 };
