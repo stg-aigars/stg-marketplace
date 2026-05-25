@@ -29,7 +29,7 @@ export function UnblockButton({ targetId }: UnblockButtonProps) {
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Unblock this user?">
         <p className="text-sm text-semantic-text-secondary mb-4">
-          They will be able to send you messages and start new conversations again.
+          They can message you and start new conversations again.
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={isPending}>

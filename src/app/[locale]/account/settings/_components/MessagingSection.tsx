@@ -14,7 +14,7 @@ export function MessagingSection() {
             href="/account/settings/messaging"
             icon={ChatCircle}
             label="Message settings"
-            description="Choose whether other people can start new conversations with you."
+            description="Choose whether new conversations can reach you."
           />
           <SettingsLinkRow
             href="/account/blocked"

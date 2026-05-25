@@ -74,7 +74,7 @@ export function MessageDigest({
       </table>
 
       <Text style={templateStyles.note}>
-        Reply directly in the app to keep the conversation private to you and {senderName}.
+        Reply in the app to continue the conversation with {senderName}.
       </Text>
     </EmailLayout>
   );

@@ -68,8 +68,7 @@ export function ThreadMenu({ counterpartyId, counterpartyName }: ThreadMenuProps
         title={`Block ${counterpartyName}?`}
       >
         <p className="text-sm text-semantic-text-secondary mb-4">
-          Neither of you will be able to send messages in this or any other conversation.
-          You can unblock at any time from your blocked users list.
+          Neither of you can message the other. You can unblock at any time from your blocked users list.
         </p>
         <div className="flex justify-end gap-2">
           <Button

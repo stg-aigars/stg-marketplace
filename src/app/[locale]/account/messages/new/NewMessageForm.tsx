@@ -15,15 +15,15 @@ interface NewMessageFormProps {
 function copyForError(error: MessagingError): string {
   switch (error) {
     case 'invalid_body':
-      return 'Your message could not be sent. Please check the length and try again.';
+      return 'We couldn’t send your message. Please check the length and try again.';
     case 'invalid_listing_ref':
-      return 'That listing is not part of this conversation. Try removing it.';
+      return 'That listing isn’t part of this conversation. Try removing it.';
     case 'self_target':
-      return 'You cannot message yourself.';
+      return 'You can’t message yourself.';
     case 'unknown_user':
       return 'This user is no longer available.';
     case 'unauthenticated':
-      return 'You need to be signed in to send a message.';
+      return 'Sign in to send a message.';
     case 'cannot_message_user':
     default:
       return 'This seller isn’t accepting new messages right now.';

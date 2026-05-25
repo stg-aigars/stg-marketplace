@@ -45,7 +45,7 @@ export default async function BlockedUsersPage() {
         Blocked users
       </h1>
       <p className="mb-6 text-sm text-semantic-text-muted">
-        Blocked users cannot send you messages or start new conversations with you.
+        Blocked users can&rsquo;t message you or start new conversations.
       </p>
 
       {rows.length === 0 ? (

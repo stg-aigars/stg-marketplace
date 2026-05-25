@@ -94,9 +94,9 @@ export default async function ThreadDetailPage({ params }: PageProps) {
       composerDisabled={isGhostThread || blockedEitherDirection}
       composerDisabledReason={
         isGhostThread
-          ? 'This conversation can no longer accept replies.'
+          ? 'You can’t reply to this conversation.'
           : blockedEitherDirection
-            ? 'Messaging is paused for this conversation.'
+            ? 'Messaging is paused here.'
             : null
       }
       messages={messages ?? []}

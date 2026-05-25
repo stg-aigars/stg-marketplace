@@ -31,7 +31,7 @@ export async function MessageSellerCTA({
         <Link href="/auth/signin" className="link-brand">
           Sign in
         </Link>
-        {' to message the seller.'}
+        {' to send a message.'}
       </p>
     );
   }

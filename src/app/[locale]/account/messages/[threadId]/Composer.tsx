@@ -20,7 +20,7 @@ export function Composer({ threadId, disabled, disabledReason, onOptimisticSend 
   if (disabled) {
     return (
       <div className="rounded-md border border-semantic-border-default bg-semantic-bg-subtle px-4 py-3 text-sm text-semantic-text-muted">
-        {disabledReason ?? 'You can no longer reply to this conversation.'}
+        {disabledReason ?? 'You can’t reply to this conversation.'}
       </div>
     );
   }
@@ -40,8 +40,8 @@ export function Composer({ threadId, disabled, disabledReason, onOptimisticSend 
       if (!result.ok) {
         setError(
           result.error === 'invalid_body'
-            ? 'Your message could not be sent. Please check the length and try again.'
-            : 'Your message could not be sent. Please try again.',
+            ? 'We couldn’t send your message. Please check the length and try again.'
+            : 'We couldn’t send your message. Please try again.',
         );
         return;
       }
