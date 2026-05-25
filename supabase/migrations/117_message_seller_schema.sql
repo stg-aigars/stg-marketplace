@@ -49,3 +49,6 @@ CREATE TABLE public.message_blocks (
 
 CREATE INDEX idx_message_blocks_blocker ON public.message_blocks (blocker_id);
 CREATE INDEX idx_message_blocks_blocked ON public.message_blocks (blocked_id);
+
+ALTER TABLE public.user_profiles
+  ADD COLUMN messaging_enabled boolean NOT NULL DEFAULT true;
