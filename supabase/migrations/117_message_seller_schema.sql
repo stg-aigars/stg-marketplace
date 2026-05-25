@@ -1,0 +1,4 @@
+-- 117_message_seller_schema.sql
+-- Private 1:1 messaging: tables, columns, indexes.
+-- RLS, RPC, and trigger ship in 118.
+-- Design: docs/plans/2026-05-25-message-seller-design.md
