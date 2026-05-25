@@ -109,7 +109,7 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
             context: {
               announcementId: id,
               slug: announcement.slug,
-              title: announcement.title,
+              announcementTitle: announcement.title,
             },
           })),
         );

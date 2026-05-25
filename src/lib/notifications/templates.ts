@@ -277,7 +277,7 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
   // Platform announcements (fan-out to all users on first publish).
   'announcement.posted': {
     title: () => 'New announcement',
-    body: (ctx) => ctx.title ?? 'Something new on Second Turn Games.',
+    body: (ctx) => ctx.announcementTitle ?? 'Something new on Second Turn Games.',
     link: (ctx) => (ctx.slug ? `/announcements/${ctx.slug}` : '/announcements'),
   },
 };

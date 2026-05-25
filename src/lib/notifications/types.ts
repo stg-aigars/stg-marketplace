@@ -98,4 +98,5 @@ export interface NotificationContext {
   // Platform announcements
   announcementId?: string;
   slug?: string;
+  announcementTitle?: string;
 }
