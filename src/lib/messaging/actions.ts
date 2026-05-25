@@ -132,3 +132,41 @@ export async function sendMessage(args: {
 
   return { ok: true };
 }
+
+export async function markThreadRead(threadId: string) {
+  const { user } = await requireServerAuth();
+  const supabase = await createClient();
+  const { data: thread } = await supabase
+    .from('message_threads')
+    .select('user_a_id, user_b_id')
+    .eq('id', threadId)
+    .maybeSingle();
+  if (!thread) return;
+  const column = thread.user_a_id === user.id ? 'user_a_last_read_at' : 'user_b_last_read_at';
+  await supabase
+    .from('message_threads')
+    .update({ [column]: new Date().toISOString() })
+    .eq('id', threadId);
+}
+
+export async function toggleMessagingEnabled(newValue: boolean) {
+  const { user } = await requireServerAuth();
+  const supabase = await createClient();
+  await supabase.from('user_profiles').update({ messaging_enabled: newValue }).eq('id', user.id);
+}
+
+export async function blockUser(targetId: string) {
+  const { user } = await requireServerAuth();
+  const supabase = await createClient();
+  await supabase.from('message_blocks').upsert({ blocker_id: user.id, blocked_id: targetId });
+}
+
+export async function unblockUser(targetId: string) {
+  const { user } = await requireServerAuth();
+  const supabase = await createClient();
+  await supabase
+    .from('message_blocks')
+    .delete()
+    .eq('blocker_id', user.id)
+    .eq('blocked_id', targetId);
+}
