@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/browse`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/wanted`, changeFrequency: 'daily', priority: 0.7 },
     { url: `${baseUrl}/sell`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/announcements`, changeFrequency: 'weekly', priority: 0.5 },
     { url: `${baseUrl}/help`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/help/packing`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/condition-guide`, changeFrequency: 'monthly', priority: 0.3 },
@@ -21,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let listingPages: MetadataRoute.Sitemap = [];
   let sellerPages: MetadataRoute.Sitemap = [];
+  let announcementPages: MetadataRoute.Sitemap = [];
 
   try {
     const supabase = createServiceClient();
@@ -57,9 +59,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         })
       );
     }
+
+    const { data: announcements } = await supabase
+      .from('announcements')
+      .select('slug, updated_at')
+      .not('published_at', 'is', null)
+      .is('deleted_at', null)
+      .order('published_at', { ascending: false });
+
+    if (announcements) {
+      announcementPages = announcements.map((a) => ({
+        url: `${baseUrl}/announcements/${a.slug}`,
+        lastModified: a.updated_at,
+        changeFrequency: 'monthly' as const,
+        priority: 0.4,
+      }));
+    }
   } catch {
     // Sitemap generation should not fail the build if DB is unreachable
   }
 
-  return [...staticPages, ...listingPages, ...sellerPages];
+  return [...staticPages, ...listingPages, ...sellerPages, ...announcementPages];
 }
