@@ -37,7 +37,7 @@ export default async function AccountSettingsPage(
           hasPassword={hasPassword}
           authProvider={authProvider}
         />
-        <MessagingSection />
+        <MessagingSection messagingEnabled={profile?.messaging_enabled ?? true} />
         <DataManagementSection hasPassword={hasPassword} />
       </div>
     </div>

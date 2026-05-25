@@ -48,15 +48,15 @@ export default async function BlockedUsersPage() {
         Blocked users can&rsquo;t message you or start new conversations.
       </p>
 
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={Prohibit}
-          title="No one blocked"
-          description="People you block from message threads will appear here."
-        />
-      ) : (
-        <Card>
-          <CardBody className="p-0">
+      <Card>
+        <CardBody className={rows.length === 0 ? undefined : 'p-0'}>
+          {rows.length === 0 ? (
+            <EmptyState
+              icon={Prohibit}
+              title="No one blocked"
+              description="People you block from message threads will appear here."
+            />
+          ) : (
             <ul className="divide-y divide-semantic-border-default">
               {rows.map((row) => (
                 <li key={row.id} className="flex items-center justify-between gap-3 px-4 py-3">
@@ -69,9 +69,9 @@ export default async function BlockedUsersPage() {
                 </li>
               ))}
             </ul>
-          </CardBody>
-        </Card>
-      )}
+          )}
+        </CardBody>
+      </Card>
     </div>
   );
 }
