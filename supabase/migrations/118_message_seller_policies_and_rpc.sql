@@ -87,3 +87,9 @@ CREATE POLICY "Users send messages into live threads with no block"
       )
     )
   );
+
+CREATE POLICY "Users manage their own blocks"
+  ON public.message_blocks
+  FOR ALL
+  USING (auth.uid() = blocker_id)
+  WITH CHECK (auth.uid() = blocker_id);
