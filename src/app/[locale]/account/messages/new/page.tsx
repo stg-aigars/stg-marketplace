@@ -31,7 +31,7 @@ export default async function NewMessagePage({ searchParams }: PageProps) {
   // If a thread already exists, route to it directly (preserving the seed listing chip on the URL).
   const { threadId } = await findExistingThread(to);
   if (threadId) {
-    const qs = seedListingId ? `?seedListingId=${seedListingId}` : '';
+    const qs = seedListingId ? `?seedListingId=${encodeURIComponent(seedListingId)}` : '';
     redirect(`/account/messages/${threadId}${qs}`);
   }
 

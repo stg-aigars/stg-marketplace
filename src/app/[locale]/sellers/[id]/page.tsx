@@ -105,11 +105,9 @@ export default async function SellerProfilePage(
     notFound();
   }
 
-  // Viewer for the message-seller CTA (anonymous = null → "Sign in to message").
-  const { data: { user: viewer } } = await supabase.auth.getUser();
-
-  // Count is queried separately from the grid so it stays accurate if the grid query becomes paginated.
-  const [rating, reviews, completedSales, { data: listings }, { count: listingsCount }] = await Promise.all([
+  // Viewer batched with the rest of the page-data round-trips so getUser doesn't
+  // add a sequential round-trip before everything else starts.
+  const [rating, reviews, completedSales, { data: listings }, { count: listingsCount }, viewerRes] = await Promise.all([
     getSellerRating(id),
     getSellerReviews(id, 10),
     getSellerCompletedSales(id),
@@ -127,7 +125,9 @@ export default async function SellerProfilePage(
       .select('id', { count: 'exact', head: true })
       .eq('seller_id', id)
       .in('status', ['active', 'reserved']),
+    supabase.auth.getUser(),
   ]);
+  const viewer = viewerRes.data.user;
 
   const activeListings = listings ?? [];
   // Floor against a silent count-query failure: never display fewer than the cards visibly on screen.

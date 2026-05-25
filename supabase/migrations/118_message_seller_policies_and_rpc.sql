@@ -3,11 +3,12 @@
 -- Pairs with 117.
 --
 -- Note on trigger posture: on_message_insert is SECURITY DEFINER with
--- SET search_path = '' so the metadata UPDATE on message_threads bypasses
--- the table's RLS policies (UPDATE policy is participant-scoped and would
--- only allow the sender's side to update — but the trigger needs to flip
--- the sender's own user_{a|b}_last_read_at in the same TX as the insert).
--- Intended; no UPDATE-via-trigger surface for the user.
+-- SET search_path = '' so the metadata UPDATE on message_threads can fire
+-- without an authenticated session. (Triggers run in whatever context their
+-- INSERT statement runs in; for an RPC called via service-role or for a
+-- direct INSERT under RLS, the trigger needs definer rights to update the
+-- denormalized columns regardless of which role inserted.) The set-search_path
+-- empty discipline follows accounting/097_posting_engine_rpc.sql's pattern.
 
 CREATE OR REPLACE FUNCTION public.on_message_insert()
 RETURNS trigger

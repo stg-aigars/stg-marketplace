@@ -1,15 +1,23 @@
 -- 119_notifications_message_prefix.sql
--- Add `message` to notifications_type_check regex so `message.received`
--- (introduced by the 1:1 messaging feature in 117/118) can be inserted.
+-- Sweep the notifications_type_check regex to include every prefix actually
+-- emitted by NotificationType (src/lib/notifications/types.ts).
 --
--- Without this, every notify(..., 'message.received', ...) call from the
--- messaging server actions throws a CHECK violation that notify()'s internal
--- try/catch silently swallows — the in-app bell never increments for messages.
--- See docs/plans/2026-05-25-message-seller-design.md §4.
+-- The regex was last touched in migration 076 (which removed `offer` after
+-- the shelves/offers feature was cut). It has fallen behind reality since:
+--   - `feedback.` added by PR #326 — silently fails the CHECK
+--   - `moderation.` + `listing.` added by the DSA PR — silently fail
+--   - `message.` added by this PR (messaging feature) — would silently fail
+--
+-- notify()'s internal try/catch swallows CHECK violations, so each of these
+-- broke the affected feature's in-app bell without a noisy error. Sweeping
+-- now to align the regex with the type union and unblock messaging.
+--
+-- Going forward: every PR that adds a new prefix to NotificationType MUST
+-- ship a paired migration adding the prefix to this regex.
 
 ALTER TABLE notifications
   DROP CONSTRAINT IF EXISTS notifications_type_check;
 
 ALTER TABLE notifications
   ADD CONSTRAINT notifications_type_check
-  CHECK (type ~ '^(order|comment|dispute|shipping|auction|wanted|dac7|message)\.');
+  CHECK (type ~ '^(order|comment|dispute|shipping|auction|wanted|dac7|moderation|listing|feedback|message)\.');
