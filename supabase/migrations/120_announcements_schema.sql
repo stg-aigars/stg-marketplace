@@ -1,0 +1,4 @@
+-- 120_announcements_schema.sql
+-- Platform announcements: table, indexes, RLS, plus paired update of
+-- notifications_type_check regex to include the new `announcement` prefix.
+-- Design: docs/plans/2026-05-25-announcements-design.md
