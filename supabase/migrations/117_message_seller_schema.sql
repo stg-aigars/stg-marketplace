@@ -37,3 +37,15 @@ CREATE INDEX idx_messages_thread ON public.messages (thread_id, created_at);
 CREATE INDEX idx_messages_undelivered
   ON public.messages (created_at)
   WHERE email_sent_at IS NULL;
+
+CREATE TABLE public.message_blocks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  blocker_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  blocked_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT message_blocks_unique UNIQUE (blocker_id, blocked_id),
+  CONSTRAINT message_blocks_not_self CHECK (blocker_id <> blocked_id)
+);
+
+CREATE INDEX idx_message_blocks_blocker ON public.message_blocks (blocker_id);
+CREATE INDEX idx_message_blocks_blocked ON public.message_blocks (blocked_id);
