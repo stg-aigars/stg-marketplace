@@ -41,6 +41,7 @@ const STAFF_NAV_GROUPS: StaffNavGroup[] = [
     label: 'Reference',
     items: [
       { key: 'audit', label: 'Audit log', href: '/staff/audit' },
+      { key: 'announcements', label: 'Announcements', href: '/staff/announcements' },
       { key: 'templates', label: 'Templates', href: '/staff/templates' },
     ],
   },
