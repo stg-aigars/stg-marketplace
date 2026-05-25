@@ -19,3 +19,20 @@ CREATE TABLE public.announcements (
 CREATE INDEX idx_announcements_published
   ON public.announcements (published_at DESC)
   WHERE published_at IS NOT NULL AND deleted_at IS NULL;
+
+CREATE OR REPLACE FUNCTION public.touch_announcements_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_touch_announcements_updated_at
+  BEFORE UPDATE ON public.announcements
+  FOR EACH ROW
+  EXECUTE FUNCTION public.touch_announcements_updated_at();
