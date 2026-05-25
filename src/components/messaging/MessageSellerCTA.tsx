@@ -51,7 +51,7 @@ export async function MessageSellerCTA({
   return (
     <Button variant="secondary" asChild>
       <Link href={href}>
-        <ChatCircle size={18} />
+        <ChatCircle size={18} className="mr-1.5" />
         Message seller
       </Link>
     </Button>

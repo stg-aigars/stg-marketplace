@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
-import { EmptyState } from '@/components/ui';
+import { Card, CardBody, EmptyState } from '@/components/ui';
 import { ChatCircle } from '@phosphor-icons/react/ssr';
 import { ThreadList } from './ThreadList';
 
@@ -66,9 +66,28 @@ export default async function MessagesInboxPage() {
     };
   });
 
+  const unreadCount = rows.filter(
+    (r) => !r.viewer_last_read_at || r.last_message_at > r.viewer_last_read_at,
+  ).length;
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-6">Messages</h1>
+      <div className="mb-6 flex items-baseline gap-3">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Messages</h1>
+        {rows.length > 0 && (
+          <span className="text-base font-normal text-semantic-text-muted">
+            ({rows.length}
+            {unreadCount > 0 && (
+              <>
+                <span aria-hidden="true"> · </span>
+                <span className="text-semantic-brand-active font-medium">{unreadCount} unread</span>
+              </>
+            )}
+            )
+          </span>
+        )}
+      </div>
+
       {rows.length === 0 ? (
         <EmptyState
           icon={ChatCircle}
@@ -77,7 +96,11 @@ export default async function MessagesInboxPage() {
           action={{ label: 'Browse games', href: '/browse' }}
         />
       ) : (
-        <ThreadList threads={rows} />
+        <Card>
+          <CardBody className="p-0">
+            <ThreadList threads={rows} />
+          </CardBody>
+        </Card>
       )}
     </div>
   );
