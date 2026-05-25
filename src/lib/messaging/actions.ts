@@ -75,3 +75,60 @@ export async function sendFirstMessage(args: {
 
   return result;
 }
+
+export async function sendMessage(args: {
+  threadId: string;
+  body: string;
+  listingRefId?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { user, profile } = await requireServerAuth();
+  const supabase = await createClient();
+
+  if (args.body.length < 1 || args.body.length > 2000) {
+    return { ok: false, error: 'invalid_body' };
+  }
+
+  const { data: thread } = await supabase
+    .from('message_threads')
+    .select('id, user_a_id, user_b_id')
+    .eq('id', args.threadId)
+    .maybeSingle();
+
+  if (!thread) return { ok: false, error: 'thread_not_found' };
+  const recipientId = thread.user_a_id === user.id ? thread.user_b_id : thread.user_a_id;
+  if (!recipientId) return { ok: false, error: 'ghost_thread' };
+
+  const { error } = await supabase.from('messages').insert({
+    thread_id: args.threadId,
+    sender_id: user.id,
+    body: args.body,
+    listing_ref_id: args.listingRefId ?? null,
+  });
+
+  if (error) return { ok: false, error: 'send_failed' };
+
+  // Resolve gameName for the recipient notification (notify() doesn't auto-enrich).
+  let gameName: string | undefined;
+  if (args.listingRefId) {
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('game_name')
+      .eq('id', args.listingRefId)
+      .maybeSingle();
+    gameName = listing?.game_name ?? undefined;
+  }
+
+  void notify(recipientId, 'message.received', {
+    threadId: args.threadId,
+    listingId: args.listingRefId,
+    senderName: profile?.full_name ?? undefined,
+    gameName,
+  });
+  void trackServer('message_sent', user.id, {
+    thread_id: args.threadId,
+    is_first_message: false,
+    has_listing_ref: !!args.listingRefId,
+  });
+
+  return { ok: true };
+}
