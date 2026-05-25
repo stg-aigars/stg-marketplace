@@ -64,3 +64,58 @@ export async function createAnnouncement(args: {
     throw err;
   }
 }
+
+export async function updateAnnouncement(
+  id: string,
+  fields: { title?: string; slug?: string; bodyMarkdown?: string },
+): Promise<AnnouncementsActionResult> {
+  try {
+    await requireStaffServerAuth();
+    const supabase = await createClient();
+
+    // Slug-lock invariant: once notifications have been fanned out, the
+    // snapshotted slug in notification metadata must keep resolving.
+    const { data: current } = await supabase
+      .from('announcements')
+      .select('notified_at')
+      .eq('id', id)
+      .maybeSingle();
+    if (!current) return { error: 'not_found' };
+
+    if (fields.slug !== undefined && current.notified_at !== null) {
+      return { error: 'slug_locked_after_notify' };
+    }
+
+    const payload: Record<string, unknown> = {};
+    if (fields.title !== undefined) {
+      if (fields.title.length < 1 || fields.title.length > ANNOUNCEMENT_TITLE_MAX) {
+        return { error: 'invalid_title' };
+      }
+      payload.title = fields.title;
+    }
+    if (fields.slug !== undefined) {
+      const check = validateSlug(fields.slug);
+      if (!check.ok) return { error: check.reason };
+      payload.slug = fields.slug;
+    }
+    if (fields.bodyMarkdown !== undefined) {
+      if (fields.bodyMarkdown.length < 1 || fields.bodyMarkdown.length > ANNOUNCEMENT_BODY_MAX) {
+        return { error: 'invalid_body' };
+      }
+      payload.body_markdown = fields.bodyMarkdown;
+    }
+
+    if (Object.keys(payload).length === 0) return { success: true };
+
+    const { error } = await supabase.from('announcements').update(payload).eq('id', id);
+    if (error) {
+      if (error.code === '23505') return { error: 'slug_taken' };
+      console.error('[announcements] updateAnnouncement failed', error);
+      return { error: 'update_failed' };
+    }
+    return { success: true };
+  } catch (err) {
+    if (err instanceof Error && err.message === 'forbidden') return { error: 'forbidden' };
+    throw err;
+  }
+}
