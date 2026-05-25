@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Plus } from '@phosphor-icons/react/ssr';
+import { Megaphone } from '@phosphor-icons/react/ssr';
 import { createServiceClient } from '@/lib/supabase';
 import { Badge, Button, Card, CardBody, EmptyState } from '@/components/ui';
 import { formatDateTime } from '@/lib/date-utils';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 import type { Announcement } from '@/lib/announcements/types';
-import { Megaphone } from '@phosphor-icons/react/ssr';
 
 export const metadata: Metadata = {
   title: 'Announcements — Staff',
@@ -38,10 +37,7 @@ export default async function StaffAnnouncementsPage() {
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className={cn(PAGE_HEADING_CLASS)}>Announcements</h1>
         <Button variant="brand" size="sm" asChild>
-          <Link href="/staff/announcements/new">
-            <Plus size={16} className="mr-1.5" />
-            New announcement
-          </Link>
+          <Link href="/staff/announcements/new">New announcement</Link>
         </Button>
       </div>
 
