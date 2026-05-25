@@ -30,3 +30,7 @@ CREATE TRIGGER trg_on_message_insert
   AFTER INSERT ON public.messages
   FOR EACH ROW
   EXECUTE FUNCTION public.on_message_insert();
+
+ALTER TABLE public.message_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.message_blocks ENABLE ROW LEVEL SECURITY;
