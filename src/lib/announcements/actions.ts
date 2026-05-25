@@ -138,6 +138,106 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
   }
 }
 
+/**
+ * Mark all unread `announcement.posted` notifications for this announcement
+ * as read, across all recipients. Called after unpublish + soft-delete so the
+ * bell dot clears for everyone — clicked bell rows then route to the tombstone
+ * page rather than dangling.
+ */
+async function sweepAnnouncementNotifications(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  announcementId: string,
+): Promise<void> {
+  await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('type', 'announcement.posted')
+    .is('read_at', null)
+    .eq('metadata->>announcementId', announcementId);
+}
+
+export async function unpublishAnnouncement(id: string): Promise<AnnouncementsActionResult> {
+  try {
+    const { user } = await requireStaffServerAuth();
+    const supabase = await createClient();
+
+    const { data: announcement } = await supabase
+      .from('announcements')
+      .select('id, slug, title')
+      .eq('id', id)
+      .maybeSingle();
+    if (!announcement) return { error: 'not_found' };
+
+    const { error } = await supabase
+      .from('announcements')
+      .update({ published_at: null })
+      .eq('id', id);
+    if (error) {
+      console.error('[announcements] unpublishAnnouncement failed', error);
+      return { error: 'unpublish_failed' };
+    }
+
+    await sweepAnnouncementNotifications(supabase, id);
+
+    void logAuditEvent(supabase, {
+      actorId: user.id,
+      actorType: 'user',
+      action: 'announcement.unpublished',
+      resourceType: 'announcement',
+      resourceId: id,
+      metadata: { slug: announcement.slug, title: announcement.title },
+      retentionClass: 'operational',
+    });
+
+    revalidatePath('/announcements');
+    return { success: true };
+  } catch (err) {
+    if (err instanceof Error && err.message === 'forbidden') return { error: 'forbidden' };
+    throw err;
+  }
+}
+
+export async function softDeleteAnnouncement(id: string): Promise<AnnouncementsActionResult> {
+  try {
+    const { user } = await requireStaffServerAuth();
+    const supabase = await createClient();
+
+    const { data: announcement } = await supabase
+      .from('announcements')
+      .select('id, slug, title')
+      .eq('id', id)
+      .maybeSingle();
+    if (!announcement) return { error: 'not_found' };
+
+    const { error } = await supabase
+      .from('announcements')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) {
+      console.error('[announcements] softDeleteAnnouncement failed', error);
+      return { error: 'delete_failed' };
+    }
+
+    await sweepAnnouncementNotifications(supabase, id);
+
+    void logAuditEvent(supabase, {
+      actorId: user.id,
+      actorType: 'user',
+      action: 'announcement.deleted',
+      resourceType: 'announcement',
+      resourceId: id,
+      metadata: { slug: announcement.slug, title: announcement.title },
+      retentionClass: 'operational',
+    });
+
+    revalidatePath('/announcements');
+    return { success: true };
+  } catch (err) {
+    if (err instanceof Error && err.message === 'forbidden') return { error: 'forbidden' };
+    throw err;
+  }
+}
+
 export async function updateAnnouncement(
   id: string,
   fields: { title?: string; slug?: string; bodyMarkdown?: string },
