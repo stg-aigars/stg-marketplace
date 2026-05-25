@@ -21,7 +21,7 @@ export function MessageBubble({ body, createdAt, isOwnMessage, listingChip }: Me
       )}
       <div
         className={cn(
-          'rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words',
+          'rounded-md px-4 py-2.5 text-sm whitespace-pre-wrap break-words',
           isOwnMessage
             ? 'bg-semantic-brand text-white'
             : 'bg-semantic-bg-subtle text-semantic-text-primary',
