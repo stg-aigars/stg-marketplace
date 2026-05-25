@@ -34,3 +34,15 @@ CREATE TRIGGER trg_on_message_insert
 ALTER TABLE public.message_threads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.message_blocks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users see their own threads"
+  ON public.message_threads
+  FOR SELECT
+  USING (auth.uid() IN (user_a_id, user_b_id));
+
+-- Allow each side to update only their own last_read_at via markThreadRead server action.
+CREATE POLICY "Users update their own last_read_at"
+  ON public.message_threads
+  FOR UPDATE
+  USING (auth.uid() IN (user_a_id, user_b_id))
+  WITH CHECK (auth.uid() IN (user_a_id, user_b_id));
