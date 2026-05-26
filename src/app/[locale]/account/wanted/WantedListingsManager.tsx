@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ImageSquare, Trash } from '@phosphor-icons/react/ssr';
+import { ImageSquare, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Badge, Button, Tabs } from '@/components/ui';
 import { formatDate } from '@/lib/date-utils';
 import { cancelWantedListing } from '@/lib/wanted/actions';
@@ -98,14 +99,25 @@ export function WantedListingsManager({ listings }: WantedListingsManagerProps) 
                       {WANTED_LISTING_STATUS_LABELS[listing.status]}
                     </Badge>
                     {listing.status === 'active' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCancel(listing.id)}
-                        loading={isPending && cancellingId === listing.id}
-                      >
-                        <Trash size={16} />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link
+                            href={`/account/wanted/${listing.id}/edit`}
+                            aria-label="Edit wanted listing"
+                          >
+                            <PencilSimple size={16} />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancel(listing.id)}
+                          loading={isPending && cancellingId === listing.id}
+                          aria-label="Remove wanted listing"
+                        >
+                          <Trash size={16} />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
