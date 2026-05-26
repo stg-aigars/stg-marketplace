@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { BackLink } from '@/components/ui';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
-import { EditWantedForm, type EditWantedListing } from './EditWantedForm';
+import { EditWantedForm } from './EditWantedForm';
+import type { EditWantedListing } from '@/lib/wanted/types';
 
 export const metadata: Metadata = {
   title: 'Edit wanted listing',

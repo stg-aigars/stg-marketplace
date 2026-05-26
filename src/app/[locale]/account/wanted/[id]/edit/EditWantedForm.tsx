@@ -1,43 +1,17 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button, Alert, Textarea } from '@/components/ui';
+import { GameIdentityRow } from '@/components/listings/atoms';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { buildEnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateWantedListing } from '@/lib/wanted/actions';
 import { useAuth } from '@/contexts/AuthContext';
 import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
-import type { VersionData, VersionSource } from '@/lib/listings/types';
-
-export interface EditWantedListing {
-  id: string;
-  buyer_id: string;
-  status: string;
-  bgg_game_id: number;
-  game_name: string;
-  game_year: number | null;
-  notes: string | null;
-  version_source: VersionSource | null;
-  bgg_version_id: number | null;
-  version_name: string | null;
-  publisher: string | null;
-  language: string | null;
-  edition_year: number | null;
-  version_thumbnail: string | null;
-  games: {
-    thumbnail: string | null;
-    image: string | null;
-    player_count: string | null;
-    alternate_names: string[] | null;
-    min_age: number | null;
-    playing_time: string | null;
-    weight: number | null;
-  } | null;
-}
+import { toEditionPayload, type EditWantedListing } from '@/lib/wanted/types';
+import type { VersionData } from '@/lib/listings/types';
 
 interface Props {
   listing: EditWantedListing;
@@ -66,14 +40,10 @@ export function EditWantedForm({ listing }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const enrichedGame = buildEnrichedGame(
-    listing.bgg_game_id,
-    listing.game_name,
-    listing.game_year,
-    listing.games,
+  const enrichedGame = useMemo(
+    () => buildEnrichedGame(listing.bgg_game_id, listing.game_name, listing.game_year, listing.games),
+    [listing.bgg_game_id, listing.game_name, listing.game_year, listing.games],
   );
-
-  const thumbnail = listing.games?.thumbnail ?? null;
 
   function handleSubmit() {
     setError(null);
@@ -83,17 +53,7 @@ export function EditWantedForm({ listing }: Props) {
     startTransition(async () => {
       const result = await updateWantedListing(
         listing.id,
-        submitEdition
-          ? {
-              versionSource: submitEdition.version_source,
-              bggVersionId: submitEdition.bgg_version_id,
-              versionName: submitEdition.version_name,
-              publisher: submitEdition.publisher,
-              language: submitEdition.language,
-              editionYear: submitEdition.edition_year,
-              versionThumbnail: submitEdition.version_thumbnail,
-            }
-          : null,
+        submitEdition ? toEditionPayload(submitEdition) : null,
         notes.trim() || undefined,
       );
 
@@ -111,33 +71,17 @@ export function EditWantedForm({ listing }: Props) {
     <div className="space-y-6">
       {error && <Alert variant="error">{error}</Alert>}
 
-      {/* Game header (read-only — game identity is fixed) */}
       <Card>
-        <CardBody>
-          <div className="flex items-center gap-3">
-            <div className="relative w-16 h-16 shrink-0 bg-semantic-bg-surface rounded overflow-hidden flex items-center justify-center">
-              {thumbnail ? (
-                <Image
-                  src={thumbnail}
-                  alt={listing.game_name}
-                  fill
-                  className="object-contain p-1"
-                  sizes="64px"
-                />
-              ) : (
-                <ImageSquare size={28} className="text-semantic-text-muted" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="font-medium text-semantic-text-heading truncate">
-                {listing.game_name}
-                {listing.game_year ? ` (${listing.game_year})` : ''}
-              </p>
-              <p className="text-xs text-semantic-text-muted mt-0.5">
-                To change the game, remove this listing and post a new one.
-              </p>
-            </div>
-          </div>
+        <CardBody className="space-y-2">
+          <GameIdentityRow
+            thumbnail={listing.games?.thumbnail}
+            name={listing.game_name}
+            year={listing.game_year}
+            size="md"
+          />
+          <p className="text-xs text-semantic-text-muted">
+            To change the game, remove this listing and post a new one.
+          </p>
         </CardBody>
       </Card>
 

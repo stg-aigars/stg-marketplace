@@ -1,5 +1,5 @@
 import type { CountryCode } from '@/lib/country-utils';
-import type { VersionSource } from '@/lib/listings/types';
+import type { VersionSource, VersionData } from '@/lib/listings/types';
 
 // ============================================================================
 // Wanted Listings
@@ -64,3 +64,45 @@ export const WANTED_LISTING_STATUS_BADGE_VARIANT: Record<WantedListingStatus, 's
   active: 'success',
   cancelled: 'error',
 };
+
+// ============================================================================
+// Edit-page query shape (used by /account/wanted/[id]/edit)
+// ============================================================================
+
+export interface EditWantedListing extends WantedListingRow {
+  games: {
+    thumbnail: string | null;
+    image: string | null;
+    player_count: string | null;
+    alternate_names: string[] | null;
+    min_age: number | null;
+    playing_time: string | null;
+    weight: number | null;
+  } | null;
+}
+
+// ============================================================================
+// Edition payload (snake_case VersionData → camelCase create/update arg)
+// ============================================================================
+
+export interface EditionPayload {
+  versionSource: VersionSource | null;
+  bggVersionId: number | null;
+  versionName: string | null;
+  publisher: string | null;
+  language: string | null;
+  editionYear: number | null;
+  versionThumbnail: string | null;
+}
+
+export function toEditionPayload(v: VersionData): EditionPayload {
+  return {
+    versionSource: v.version_source,
+    bggVersionId: v.bgg_version_id,
+    versionName: v.version_name,
+    publisher: v.publisher,
+    language: v.language,
+    editionYear: v.edition_year,
+    versionThumbnail: v.version_thumbnail,
+  };
+}
