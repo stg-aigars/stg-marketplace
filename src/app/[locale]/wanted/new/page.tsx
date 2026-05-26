@@ -26,15 +26,16 @@ export default async function CreateWantedPage() {
           <div className="space-y-2 text-sm text-semantic-text-secondary">
             <p>
               <span className="font-medium text-semantic-text-heading">Sellers see it.</span>{' '}
-              Your listing appears on the public Wanted board where any seller can find it.
+              Your listing shows up on the Wanted board so sellers can find it.
             </p>
             <p>
               <span className="font-medium text-semantic-text-heading">You get notified.</span>{' '}
-              When someone lists this game, we&rsquo;ll send you an in-app and email notification.
+              When someone lists this game, we&rsquo;ll email you and send an in-app notification.
+              The listing is public though, so you don&rsquo;t get automatic first dibs.
             </p>
             <p>
               <span className="font-medium text-semantic-text-heading">Sellers can message you.</span>{' '}
-              Anyone with a copy can reach out to ask about edition, condition, or price before listing.
+              Anyone with a copy can ask about edition, condition, or price before listing.
             </p>
           </div>
           <p className="text-xs text-semantic-text-muted pt-1">
