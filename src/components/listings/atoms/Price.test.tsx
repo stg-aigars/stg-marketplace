@@ -34,7 +34,7 @@ describe('Price', () => {
   it('renders the struck price at a smaller relative size than the current price', () => {
     const { container } = render(<Price cents={3000} previousCents={4000} />);
     const struck = container.querySelector('s');
-    expect(struck?.className).toContain('text-[0.5em]');
+    expect(struck?.className).toContain('text-[0.85em]');
   });
 
   it('marks the struck price aria-hidden so screen readers do not double-read', () => {

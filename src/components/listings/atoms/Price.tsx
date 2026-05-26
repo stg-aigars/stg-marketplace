@@ -31,7 +31,7 @@ function Price({ cents, previousCents, size = 'md', className = '' }: PriceProps
     >
       {current}
       {previous && (
-        <s className="font-normal text-semantic-text-muted ml-2 text-[0.5em]" aria-hidden="true">
+        <s className="font-normal text-semantic-primary ml-2 text-[0.85em]" aria-hidden="true">
           {previous}
         </s>
       )}
