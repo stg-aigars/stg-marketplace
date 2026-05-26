@@ -4,12 +4,12 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Textarea, Alert } from '@/components/ui';
 import { sendFirstMessage } from '@/lib/messaging/actions';
-import { MESSAGE_MAX_LENGTH, type MessagingError } from '@/lib/messaging/types';
+import { MESSAGE_MAX_LENGTH, type MessagingError, type MessagingEntryPoint } from '@/lib/messaging/types';
 
 interface NewMessageFormProps {
   otherUserId: string;
   seedListingId?: string;
-  entryPoint: 'listing_detail' | 'seller_profile' | 'wanted_detail';
+  entryPoint: MessagingEntryPoint;
 }
 
 function copyForError(error: MessagingError): string {

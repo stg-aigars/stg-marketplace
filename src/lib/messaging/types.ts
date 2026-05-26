@@ -26,6 +26,11 @@ export type MessagingError =
   | 'cannot_message_user'
   | 'unknown_user';
 
+/** Surface that originated a new-thread compose. Mirrored in the
+ *  message_thread_started analytics event and in the ALLOWED_ENTRY_POINTS
+ *  allowlist on the /account/messages/new route. */
+export type MessagingEntryPoint = 'listing_detail' | 'seller_profile' | 'wanted_detail';
+
 /** Raw jsonb shape returned by the send_first_message Postgres RPC.
  *  Translated to the canonical { success } / { error } server-action shape
  *  in src/lib/messaging/actions.ts. */

@@ -263,7 +263,7 @@ export default async function WantedDetailPage(props: Props) {
                 <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
                   <MessageSellerCTA
                     viewerId={user?.id ?? null}
-                    sellerId={listing.buyer_id}
+                    targetId={listing.buyer_id}
                     entryPoint="wanted_detail"
                     targetRole="buyer"
                   />
