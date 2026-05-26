@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { ImageSquare, Tag, Translate, Buildings, CalendarBlank, MagnifyingGlass, CaretRight, Flag } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, ShareButtons, Breadcrumb, Avatar, Alert, Button } from '@/components/ui';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
+import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { toBggFullSize, isBggImage, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { formatDate, formatMonthYear, formatRelativeTime } from '@/lib/date-utils';
@@ -257,6 +258,17 @@ export default async function WantedDetailPage(props: Props) {
                   className="shrink-0 text-semantic-text-muted group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom"
                 />
               </Link>
+
+              {!isOwner && (
+                <div className="mt-4 pt-4 border-t border-semantic-border-subtle">
+                  <MessageSellerCTA
+                    viewerId={user?.id ?? null}
+                    sellerId={listing.buyer_id}
+                    entryPoint="wanted_detail"
+                    targetRole="buyer"
+                  />
+                </div>
+              )}
             </CardBody>
           </Card>
 

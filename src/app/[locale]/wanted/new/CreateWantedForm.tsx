@@ -136,7 +136,7 @@ export function CreateWantedForm() {
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={500}
                 rows={3}
-                placeholder="Preferred language, condition, or anything else sellers should know"
+                placeholder="Preferred edition, language, condition, or anything sellers should know before reaching out"
               />
               <p className="text-xs text-semantic-text-muted mt-1 text-right">
                 {notes.length}/500

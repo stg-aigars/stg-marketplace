@@ -8,9 +8,15 @@ interface MessageSellerCTAProps {
   sellerId: string;
   /** When present, the chip is auto-seeded into the new-thread composer. */
   seedListingId?: string;
-  entryPoint: 'listing_detail' | 'seller_profile';
+  entryPoint: 'listing_detail' | 'seller_profile' | 'wanted_detail';
   /** Layout hint — defaults to a full-width Card-friendly block. */
   variant?: 'block' | 'inline';
+  /**
+   * Role of the user being messaged. Drives the button label and the
+   * "not accepting messages" copy. Defaults to 'seller' for the original
+   * listing-detail / seller-profile call sites.
+   */
+  targetRole?: 'buyer' | 'seller';
 }
 
 export async function MessageSellerCTA({
@@ -19,6 +25,7 @@ export async function MessageSellerCTA({
   seedListingId,
   entryPoint,
   variant = 'block',
+  targetRole = 'seller',
 }: MessageSellerCTAProps) {
   const result = await canMessageSeller(viewerId, sellerId);
 
@@ -39,7 +46,9 @@ export async function MessageSellerCTA({
   if (!result.visible) {
     return (
       <p className={variant === 'inline' ? 'text-xs text-semantic-text-muted' : 'text-sm text-semantic-text-muted'}>
-        This seller isn&rsquo;t accepting new messages right now.
+        {targetRole === 'buyer'
+          ? <>This buyer isn&rsquo;t accepting new messages right now.</>
+          : <>This seller isn&rsquo;t accepting new messages right now.</>}
       </p>
     );
   }
@@ -52,7 +61,7 @@ export async function MessageSellerCTA({
     <Button variant="secondary" asChild>
       <Link href={href}>
         <ChatCircle size={18} className="mr-1.5" />
-        Message seller
+        {targetRole === 'buyer' ? 'Message buyer' : 'Message seller'}
       </Link>
     </Button>
   );
