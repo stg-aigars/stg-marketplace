@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ImageSquare, Tag, Translate, Buildings, CalendarBlank, MagnifyingGlass, CaretRight, Flag } from '@phosphor-icons/react/ssr';
+import { ImageSquare, Tag, Translate, Buildings, CalendarBlank, MagnifyingGlass, PencilSimple, CaretRight, Flag } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, ShareButtons, Breadcrumb, Avatar, Alert, Button } from '@/components/ui';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
@@ -189,9 +189,25 @@ export default async function WantedDetailPage(props: Props) {
           {/* Desktop-only: title card sits first in the right column */}
           <div className="hidden lg:block">{titleCard}</div>
 
-          {!isOwner && (
-            <Alert variant="info" icon={<MagnifyingGlass size={20} />} title="Someone is looking for this game">
-              <p>If you have a copy, you can list it for sale.</p>
+          {isOwner ? (
+            <Alert variant="info" icon={<PencilSimple size={20} />} title="This is your wanted listing">
+              <p>Update your edition preferences or notes anytime.</p>
+              <div className="mt-3">
+                <Button asChild variant="brand" size="sm">
+                  <Link href={`/account/wanted/${listing.id}/edit`}>Edit wanted listing</Link>
+                </Button>
+              </div>
+            </Alert>
+          ) : (
+            <Alert
+              variant="info"
+              icon={<MagnifyingGlass size={20} />}
+              title={`${listing.buyer_name || 'Someone'} is looking for this game`}
+            >
+              <p>
+                If you have a copy, you can list it for sale.
+                We&rsquo;ll notify {listing.buyer_name || 'this buyer'} when you do.
+              </p>
               <div className="mt-3">
                 <Button asChild variant="primary" size="sm">
                   {user ? (
