@@ -8,7 +8,7 @@ import { listingCreateLimiter, listingUpdateLimiter, checkUserRateLimit } from '
 import { sendWantedListingMatchedToBuyer, sendListingPriceDroppedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
-import { notify, notifyMany } from '@/lib/notifications';
+import { notifyMany } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
 import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { AUCTION_DURATIONS } from '@/lib/auctions/types';
@@ -583,39 +583,35 @@ async function notifyWantedListingMatches(
   if (!matches.length) return;
 
   const conditionLabel = getConditionLabel(condition);
-
-  // Fetch all buyer profiles + seller profile in one batch
   const buyerIds = matches.map((m) => m.buyer_id);
   const profiles = await fetchProfiles(service, [sellerId, ...buyerIds]);
-  const sellerProfile = profiles.get(sellerId);
-  const sellerName = sellerProfile?.full_name ?? 'A seller';
+  const sellerName = profiles.get(sellerId)?.full_name ?? 'A seller';
+
+  void notifyMany(
+    matches.map((m) => ({
+      userId: m.buyer_id,
+      type: 'wanted.listing_matched',
+      context: { gameName, listingId },
+    })),
+  );
 
   for (const match of matches) {
     const buyerProfile = profiles.get(match.buyer_id);
+    if (!buyerProfile?.email) continue;
     const buyerEditionPreference = [match.language, match.publisher, match.edition_year]
       .filter(Boolean)
       .join(' · ') || null;
-
-    // In-app notification
-    void notify(match.buyer_id, 'wanted.listing_matched', {
+    void sendWantedListingMatchedToBuyer({
+      buyerName: buyerProfile.full_name,
+      buyerEmail: buyerProfile.email,
+      sellerName,
       gameName,
+      priceCents,
+      condition: conditionLabel,
+      listingEdition,
+      buyerEditionPreference,
       listingId,
-    });
-
-    // Email (non-blocking)
-    if (buyerProfile?.email) {
-      void sendWantedListingMatchedToBuyer({
-        buyerName: buyerProfile.full_name,
-        buyerEmail: buyerProfile.email,
-        sellerName,
-        gameName,
-        priceCents,
-        condition: conditionLabel,
-        listingEdition,
-        buyerEditionPreference,
-        listingId,
-      }).catch((err) => console.error('[Wanted] Failed to email matched buyer:', err));
-    }
+    }).catch((err) => console.error('[Wanted] Failed to email matched buyer:', err));
   }
 }
 
