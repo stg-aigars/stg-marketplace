@@ -40,6 +40,7 @@ export type NotificationType =
   | 'auction.payment_expired_seller'
   // Wanted listings
   | 'wanted.listing_matched'
+  | 'wanted.price_dropped'
   // DAC7 tax reporting
   | 'dac7.approaching'
   | 'dac7.data_requested'
@@ -99,4 +100,7 @@ export interface NotificationContext {
   announcementId?: string;
   announcementSlug?: string;
   announcementTitle?: string;
+  // Price-drop
+  fromCents?: number;
+  toCents?: number;
 }
