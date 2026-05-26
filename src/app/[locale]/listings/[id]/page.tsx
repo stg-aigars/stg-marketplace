@@ -241,6 +241,7 @@ export default async function ListingDetailPage(
 
   const isReserver = listing.status === 'reserved' && listing.reserved_by === user?.id;
   const showMobileBuyBar = !isOwner && !isAuction && (listing.status === 'active' || isReserver);
+  const previousPriceCents = isPriceDropActive(listing) ? listing.previous_price_cents! : undefined;
 
   // If listing is not active/reserved and viewer is not the seller, show unavailable message
   if (listing.status !== 'active' && listing.status !== 'reserved' && listing.status !== 'auction_ended' && !isOwner) {
@@ -423,7 +424,7 @@ export default async function ListingDetailPage(
           {/* Price & action */}
           <PurchaseSection
             priceCents={listing.price_cents}
-            previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
+            previousPriceCents={previousPriceCents}
             isReservedByMe={isReserver}
             showMobileBuyBar={showMobileBuyBar}
             listing={{
@@ -447,7 +448,7 @@ export default async function ListingDetailPage(
               ) : (
                 <Price
                   cents={listing.price_cents}
-                  previousCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
+                  previousCents={previousPriceCents}
                   size="xl"
                 />
               )}

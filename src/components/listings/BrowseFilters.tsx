@@ -49,6 +49,16 @@ function toggleArrayValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
+/**
+ * Toggling Price drops shifts the natural default sort to (or from)
+ * recent_drops. User-picked price_asc / price_desc survive untouched —
+ * keeps the visible sort label always matching what the query is doing.
+ */
+function computeSortOnPriceDropToggle(checked: boolean, currentSort: SortOption): SortOption {
+  if (checked) return currentSort === 'newest' ? 'recent_drops' : currentSort;
+  return currentSort === 'recent_drops' ? 'newest' : currentSort;
+}
+
 /** Sort languages: priority languages first (in defined order), then the rest alphabetically */
 function sortLanguages(languages: string[]): { priority: string[]; rest: string[] } {
   const priority = PRIORITY_LANGUAGES.filter((l) => languages.includes(l));
@@ -117,17 +127,13 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
     [currentFilters, applyFilters]
   );
 
-  /**
-   * Toggling Price drops shifts the natural default sort to (or from) recent_drops.
-   * User-picked sorts (price_asc / price_desc) survive untouched. This keeps the
-   * label visible in the dropdown always matching what the query is actually doing.
-   */
   const handlePriceDropsToggle = useCallback(
     (checked: boolean) => {
-      const nextSort: SortOption = checked
-        ? currentFilters.sort === 'newest' ? 'recent_drops' : currentFilters.sort
-        : currentFilters.sort === 'recent_drops' ? 'newest' : currentFilters.sort;
-      applyFilters({ ...currentFilters, priceDrops: checked, sort: nextSort });
+      applyFilters({
+        ...currentFilters,
+        priceDrops: checked,
+        sort: computeSortOnPriceDropToggle(checked, currentFilters.sort),
+      });
     },
     [currentFilters, applyFilters]
   );
@@ -402,12 +408,13 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             />
             <Toggle
               checked={draft.priceDrops}
-              onChange={(checked) => {
-                const nextSort: SortOption = checked
-                  ? draft.sort === 'newest' ? 'recent_drops' : draft.sort
-                  : draft.sort === 'recent_drops' ? 'newest' : draft.sort;
-                setDraft((prev) => ({ ...prev, priceDrops: checked, sort: nextSort }));
-              }}
+              onChange={(checked) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  priceDrops: checked,
+                  sort: computeSortOnPriceDropToggle(checked, prev.sort),
+                }))
+              }
               label="Price drops"
             />
           </div>
