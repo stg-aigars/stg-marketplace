@@ -6,6 +6,7 @@ import { ListingCard } from '@/components/listings/ListingCard';
 import { Badge, Button, Tabs } from '@/components/ui';
 import { ListingOverflowMenu } from './ListingOverflowMenu';
 import type { MyListingRow } from './page';
+import { isPriceDropActive } from '@/lib/listings/price-drop';
 
 interface MyListingsTabsProps {
   active: MyListingRow[];
@@ -58,6 +59,7 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 priceCents={listing.price_cents}
+                previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
                 sellerCountry={listing.country}
                 expansionCount={listing.expansion_count}
                 commentCount={listing.comment_count}

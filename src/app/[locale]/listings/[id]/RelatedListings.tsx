@@ -6,7 +6,7 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import type { ListingSectionItem } from '@/components/listings/ListingSection';
 
 const LISTING_SELECT =
-  'id, game_name, price_cents, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
+  'id, game_name, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)' as const;
 
 interface RelatedListingsProps {
   listingId: string;

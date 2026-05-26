@@ -33,9 +33,12 @@ interface SellerListing {
   game_year: number | null;
   condition: ListingCondition;
   price_cents: number;
+  previous_price_cents: number | null;
+  price_changed_at: string | null;
   photos: string[];
   country: string;
   status: string;
+  listing_type: 'fixed_price' | 'auction';
   version_thumbnail: string | null;
   games: { image: string | null; is_expansion: boolean } | null;
 }
@@ -113,7 +116,7 @@ export default async function SellerProfilePage(
     getSellerCompletedSales(id),
     supabase
       .from('listings')
-      .select('id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image, is_expansion)')
+      .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, version_thumbnail, games(image, is_expansion)')
       .eq('seller_id', id)
       .in('status', ['active', 'reserved'])
       .order('created_at', { ascending: false })

@@ -1,6 +1,6 @@
 import { COUNTRIES, type CountryCode } from '@/lib/country-utils';
 
-export type SortOption = 'newest' | 'price_asc' | 'price_desc';
+export type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'recent_drops';
 
 export type WeightLevel = 'light' | 'medium_light' | 'medium' | 'medium_heavy' | 'heavy';
 
@@ -23,7 +23,7 @@ export const WEIGHT_LEVEL_RANGES: Record<WeightLevel, { min: number; max: number
   heavy: { min: 4.5, max: 5.01 }, // inclusive upper bound for 5.0
 };
 
-const VALID_SORTS: SortOption[] = ['newest', 'price_asc', 'price_desc'];
+const VALID_SORTS: SortOption[] = ['newest', 'price_asc', 'price_desc', 'recent_drops'];
 const VALID_COUNTRY_CODES = COUNTRIES.map(c => c.code);
 export const VALID_PLAYER_COUNTS = [1, 2, 3, 4, 5, 6];
 
@@ -35,6 +35,7 @@ export interface BrowseFilters {
   weightLevels: WeightLevel[];
   expansionsOnly: boolean;
   showAuctions: boolean;
+  priceDrops: boolean;
   sort: SortOption;
   page: number;
 }
@@ -47,6 +48,7 @@ export const DEFAULT_FILTERS: BrowseFilters = {
   weightLevels: [],
   expansionsOnly: false,
   showAuctions: false,
+  priceDrops: false,
   sort: 'newest',
   page: 1,
 };
@@ -112,11 +114,14 @@ export function parseFiltersFromParams(
   // Show auctions only
   const showAuctions = get('auctions') === '1';
 
+  // Show price drops only (14d window applied at query time, see migration 122)
+  const priceDrops = get('priceDrops') === '1';
+
   // Page
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, sort, page };
+  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, priceDrops, sort, page };
 }
 
 /**
@@ -147,6 +152,9 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
   if (filters.showAuctions) {
     params.set('auctions', '1');
   }
+  if (filters.priceDrops) {
+    params.set('priceDrops', '1');
+  }
   if (filters.sort !== 'newest') {
     params.set('sort', filters.sort);
   }
@@ -170,6 +178,7 @@ export function countActiveFilters(filters: BrowseFilters): number {
   if (filters.weightLevels.length > 0) count++;
   if (filters.expansionsOnly) count++;
   if (filters.showAuctions) count++;
+  if (filters.priceDrops) count++;
   return count;
 }
 

@@ -28,6 +28,17 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'price_desc', label: 'Price ↓' },
 ];
 
+/**
+ * Sort options visible when `priceDrops=1` is active. Includes "Recent drops" as
+ * the natural default for the filtered view; suppresses "Newest" since it would
+ * mean "newest listings" not "newest drops" — confusing in the filtered context.
+ */
+const PRICE_DROP_SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'recent_drops', label: 'Recent drops' },
+  { value: 'price_asc', label: 'Price ↑' },
+  { value: 'price_desc', label: 'Price ↓' },
+];
+
 /** Priority languages shown before "Show all" — Baltic market first */
 const PRIORITY_LANGUAGES = ['English', 'Estonian', 'Latvian', 'Lithuanian', 'German', 'Russian'];
 
@@ -102,6 +113,21 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
   const handleSortChange = useCallback(
     (sort: SortOption) => {
       applyFilters({ ...currentFilters, sort });
+    },
+    [currentFilters, applyFilters]
+  );
+
+  /**
+   * Toggling Price drops shifts the natural default sort to (or from) recent_drops.
+   * User-picked sorts (price_asc / price_desc) survive untouched. This keeps the
+   * label visible in the dropdown always matching what the query is actually doing.
+   */
+  const handlePriceDropsToggle = useCallback(
+    (checked: boolean) => {
+      const nextSort: SortOption = checked
+        ? currentFilters.sort === 'newest' ? 'recent_drops' : currentFilters.sort
+        : currentFilters.sort === 'recent_drops' ? 'newest' : currentFilters.sort;
+      applyFilters({ ...currentFilters, priceDrops: checked, sort: nextSort });
     },
     [currentFilters, applyFilters]
   );
@@ -243,26 +269,30 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
 
   const renderSortButtons = (
     currentSort: SortOption,
-    onSort: (sort: SortOption) => void
-  ) => (
-    <div className="flex gap-1">
-      {SORT_OPTIONS.map((option) => {
-        const isActive = currentSort === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onSort(option.value)}
-            className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
-              isActive ? ACTIVE_CHIP : INACTIVE_CHIP
-            }`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+    onSort: (sort: SortOption) => void,
+    priceDropsActive: boolean
+  ) => {
+    const options = priceDropsActive ? PRICE_DROP_SORT_OPTIONS : SORT_OPTIONS;
+    return (
+      <div className="flex gap-1">
+        {options.map((option) => {
+          const isActive = currentSort === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onSort(option.value)}
+              className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-250 ease-out-custom min-h-[44px] sm:min-h-[32px] ${
+                isActive ? ACTIVE_CHIP : INACTIVE_CHIP
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -296,7 +326,12 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             onChange={(checked) => applyFilters({ ...currentFilters, showAuctions: checked })}
             label="Auctions"
           />
-          {renderSortButtons(currentFilters.sort, handleSortChange)}
+          <Toggle
+            checked={currentFilters.priceDrops}
+            onChange={handlePriceDropsToggle}
+            label="Price drops"
+          />
+          {renderSortButtons(currentFilters.sort, handleSortChange, currentFilters.priceDrops)}
         </div>
       </div>
 
@@ -308,7 +343,7 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             Filters{activeCount > 0 && ` (${activeCount})`}
           </span>
         </Button>
-        {renderSortButtons(currentFilters.sort, handleSortChange)}
+        {renderSortButtons(currentFilters.sort, handleSortChange, currentFilters.priceDrops)}
         {activeCount > 0 && (
           <button
             type="button"
@@ -364,6 +399,16 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
               checked={draft.showAuctions}
               onChange={(checked) => setDraft((prev) => ({ ...prev, showAuctions: checked }))}
               label="Auctions"
+            />
+            <Toggle
+              checked={draft.priceDrops}
+              onChange={(checked) => {
+                const nextSort: SortOption = checked
+                  ? draft.sort === 'newest' ? 'recent_drops' : draft.sort
+                  : draft.sort === 'recent_drops' ? 'newest' : draft.sort;
+                setDraft((prev) => ({ ...prev, priceDrops: checked, sort: nextSort }));
+              }}
+              label="Price drops"
             />
           </div>
         </div>

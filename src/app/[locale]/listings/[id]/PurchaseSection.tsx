@@ -7,6 +7,7 @@ import type { AddToCartListing } from '@/lib/hooks/useAddToCart';
 interface PurchaseSectionProps {
   children: ReactNode;
   priceCents: number;
+  previousPriceCents?: number;
   isReservedByMe: boolean;
   showMobileBuyBar: boolean;
   listing: AddToCartListing;
@@ -15,6 +16,7 @@ interface PurchaseSectionProps {
 export function PurchaseSection({
   children,
   priceCents,
+  previousPriceCents,
   isReservedByMe,
   showMobileBuyBar,
   listing,
@@ -28,6 +30,7 @@ export function PurchaseSection({
         <MobileBuyBar
           targetRef={cardRef}
           priceCents={priceCents}
+          previousPriceCents={previousPriceCents}
           isReservedByMe={isReservedByMe}
           listing={listing}
         />

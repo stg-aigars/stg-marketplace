@@ -15,6 +15,7 @@ import {
 } from '@/lib/listings/filters';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
+import { isPriceDropActive, PRICE_DROP_WINDOW_DAYS } from '@/lib/listings/price-drop';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 
@@ -43,6 +44,8 @@ interface ListingRow {
   game_year: number | null;
   condition: ListingCondition;
   price_cents: number;
+  previous_price_cents: number | null;
+  price_changed_at: string | null;
   photos: string[];
   country: string;
   bgg_game_id: number;
@@ -70,7 +73,7 @@ export default async function BrowsePage(
   let query = supabase
     .from('listings')
     .select(
-      'id, game_name, game_year, condition, price_cents, photos, country, bgg_game_id, status, listing_type, bid_count, auction_end_at, version_thumbnail, games!inner(image, is_expansion)',
+      'id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, bgg_game_id, status, listing_type, bid_count, auction_end_at, version_thumbnail, games!inner(image, is_expansion)',
       { count: 'exact' }
     )
     .in('status', ['active', 'reserved']);
@@ -88,6 +91,14 @@ export default async function BrowsePage(
   }
   if (filters.showAuctions) {
     query = query.eq('listing_type', 'auction');
+  }
+  if (filters.priceDrops) {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - PRICE_DROP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    query = query
+      .eq('has_price_decrease', true)
+      .gt('price_changed_at', cutoff.toISOString())
+      .lte('price_changed_at', now.toISOString());
   }
   if (filters.playerCounts.length > 0) {
     const playerClauses = filters.playerCounts.map((n) =>
@@ -139,6 +150,8 @@ export default async function BrowsePage(
     query = query.order('price_cents', { ascending: true });
   } else if (filters.sort === 'price_desc') {
     query = query.order('price_cents', { ascending: false });
+  } else if (filters.sort === 'recent_drops') {
+    query = query.order('price_changed_at', { ascending: false, nullsFirst: false });
   } else {
     query = query.order('created_at', { ascending: false });
   }
@@ -199,7 +212,11 @@ export default async function BrowsePage(
           <EmptyState
             icon={MagnifyingGlass}
             title="Nothing matches those filters"
-            description="Try tweaking them, or clear to see everything."
+            description={
+              filters.priceDrops && filters.showAuctions
+                ? 'Price drops apply to fixed-price listings only.'
+                : 'Try tweaking them, or clear to see everything.'
+            }
             action={{ label: 'Clear filters', href: '/browse', variant: 'secondary' }}
           />
         ) : (
@@ -222,6 +239,7 @@ export default async function BrowsePage(
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 priceCents={listing.price_cents}
+                previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
                 sellerCountry={listing.country}
                 isFavorited={favoriteIds.has(listing.id)}
                 isAuthenticated={isAuthenticated}

@@ -2,15 +2,19 @@ import { SectionLink } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingType } from '@/lib/listings/types';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { isPriceDropActive } from '@/lib/listings/price-drop';
 
 /**
  * A listing row shape that maps to ListingCard props.
  * Auction fields are optional for pages that don't query them (e.g., seller profile).
+ * Price-drop fields are optional — present when the SELECT includes them (post-migration 122).
  */
 export interface ListingSectionItem {
   id: string;
   game_name: string;
   price_cents: number;
+  previous_price_cents?: number | null;
+  price_changed_at?: string | null;
   photos: string[];
   country: string;
   version_thumbnail: string | null;
@@ -71,7 +75,16 @@ export function ListingSection({
         emptyState
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {listings.map((listing) => (
+          {listings.map((listing) => {
+            const dropActive = listing.listing_type
+              ? isPriceDropActive({
+                  listing_type: listing.listing_type,
+                  price_cents: listing.price_cents,
+                  previous_price_cents: listing.previous_price_cents ?? null,
+                  price_changed_at: listing.price_changed_at ?? null,
+                })
+              : false;
+            return (
             <ListingCard
               key={listing.id}
               id={listing.id}
@@ -80,6 +93,7 @@ export function ListingSection({
               firstPhoto={listing.photos?.[0] ?? null}
               photoCount={listing.photos?.length ?? 0}
               priceCents={listing.price_cents}
+              previousPriceCents={dropActive ? listing.previous_price_cents! : undefined}
               sellerCountry={listing.country}
               isFavorited={favoriteIds?.has(listing.id)}
               isAuthenticated={isAuthenticated}
@@ -91,7 +105,8 @@ export function ListingSection({
               bidCount={listing.bid_count}
               auctionEndAt={listing.auction_end_at}
             />
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

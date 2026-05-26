@@ -5,7 +5,8 @@ import { requireServerAuth } from '@/lib/auth/helpers';
 import { EmptyState } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { getListingCardCounts } from '@/lib/listings/queries';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ListingType } from '@/lib/listings/types';
+import { isPriceDropActive } from '@/lib/listings/price-drop';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 
@@ -22,6 +23,9 @@ interface FavoriteRow {
     game_year: number | null;
     condition: ListingCondition;
     price_cents: number;
+    previous_price_cents: number | null;
+    price_changed_at: string | null;
+    listing_type: ListingType;
     photos: string[];
     country: string;
     status: string;
@@ -37,7 +41,7 @@ export default async function FavoritesPage() {
   const { data: favorites } = await supabase
     .from('favorites')
     .select(
-      'listing_id, listings(id, game_name, game_year, condition, price_cents, photos, country, status, version_thumbnail, games(image, is_expansion))'
+      'listing_id, listings(id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, listing_type, photos, country, status, version_thumbnail, games(image, is_expansion))'
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
@@ -92,6 +96,7 @@ export default async function FavoritesPage() {
                 firstPhoto={listing.photos?.[0] ?? null}
                 photoCount={listing.photos?.length ?? 0}
                 priceCents={listing.price_cents}
+                previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
                 sellerCountry={listing.country}
                 isFavorited={true}
                 isAuthenticated={true}
