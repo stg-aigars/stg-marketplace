@@ -8,7 +8,7 @@ import { listingCreateLimiter, listingUpdateLimiter, checkUserRateLimit } from '
 import { sendWantedListingMatchedToBuyer, sendListingPriceDroppedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
-import { notify } from '@/lib/notifications';
+import { notify, notifyMany } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
 import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { AUCTION_DURATIONS } from '@/lib/auctions/types';
@@ -300,10 +300,8 @@ export async function updateListing(
   if (limited) return limited;
 
   // Fetch listing and verify ownership.
-  // `price_cents` is read so the price-drop fan-out (below) can compare
-  // OLD vs NEW without a second round-trip.
-  // `bgg_game_id` + `game_name` feed the wanted-matcher query.
-  // `condition` feeds the email body (mirrors notifyWantedListingMatches).
+  // Extra fields (price_cents, bgg_game_id, game_name, condition) feed the
+  // post-update price-drop fan-out without a second round-trip.
   const { data: listing, error: fetchError } = await supabase
     .from('listings')
     .select('seller_id, status, listing_type, bid_count, photos, price_cents, bgg_game_id, game_name, condition')
@@ -640,81 +638,75 @@ async function notifyWantedListingPriceDropped(
   listingEdition: string | null,
 ) {
   const service = createServiceClient();
-  const matches = await findActiveWantedMatchers(service, bggGameId, sellerId);
-  if (!matches.length) {
-    // No recipients — still emit the analytics event with zero count so the
-    // "% of drops with no audience" question has data.
-    void trackServer('listing_price_dropped', sellerId, {
+  const percentDrop = Math.round(((fromCents - toCents) / fromCents) * 100);
+  const fireAnalytics = (wantedMatchCount: number) =>
+    trackServer('listing_price_dropped', sellerId, {
       listing_id: listingId,
       seller_id: sellerId,
       bgg_game_id: bggGameId,
       from_cents: fromCents,
       to_cents: toCents,
-      percent_drop: Math.round(((fromCents - toCents) / fromCents) * 100),
-      wanted_match_count: 0,
+      percent_drop: percentDrop,
+      wanted_match_count: wantedMatchCount,
     });
+
+  const matches = await findActiveWantedMatchers(service, bggGameId, sellerId);
+  if (!matches.length) {
+    void fireAnalytics(0);
     return;
   }
 
-  // 14-day per-(buyer, listing) dedup. The JSONB `metadata->>'listingId'` lookup
-  // is a sequential scan over each buyer's recent rows — at <100 notifications/
-  // user/14d typical, fine; if a power-buyer profile emerges, add a top-level
-  // `listing_id` column to `notifications` (memo: deferred-follow-up #11 in
-  // docs/plans/2026-05-26-price-drop-design.md).
+  // 14-day per-(buyer, listing) dedup runs in parallel with profile fetch — both
+  // only need the matcher buyerIds, neither depends on the other. The JSONB
+  // `metadata->>'listingId'` filter is a sequential scan over each buyer's
+  // recent notifications (memo: deferred-follow-up #11 in design doc — add a
+  // top-level `listing_id` column on `notifications` if power-buyer load grows).
   const cutoffIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const buyerIds = matches.map((m) => m.buyer_id);
-  const { data: alreadyPinged } = await service
-    .from('notifications')
-    .select('user_id')
-    .eq('type', 'wanted.price_dropped')
-    .in('user_id', buyerIds)
-    .eq('metadata->>listingId', listingId)
-    .gt('created_at', cutoffIso);
-  const dedupedBuyers = new Set((alreadyPinged ?? []).map((r) => r.user_id));
-  const fresh = matches.filter((m) => !dedupedBuyers.has(m.buyer_id));
+  const [{ data: alreadyPinged }, profiles] = await Promise.all([
+    service
+      .from('notifications')
+      .select('user_id')
+      .eq('type', 'wanted.price_dropped')
+      .in('user_id', buyerIds)
+      .eq('metadata->>listingId', listingId)
+      .gt('created_at', cutoffIso),
+    fetchProfiles(service, [sellerId, ...buyerIds]),
+  ]);
+  const pingedIds = new Set((alreadyPinged ?? []).map((r) => r.user_id));
+  const fresh = matches.filter((m) => !pingedIds.has(m.buyer_id));
 
-  void trackServer('listing_price_dropped', sellerId, {
-    listing_id: listingId,
-    seller_id: sellerId,
-    bgg_game_id: bggGameId,
-    from_cents: fromCents,
-    to_cents: toCents,
-    percent_drop: Math.round(((fromCents - toCents) / fromCents) * 100),
-    wanted_match_count: fresh.length,
-  });
-
+  void fireAnalytics(fresh.length);
   if (!fresh.length) return;
 
   const conditionLabel = getConditionLabel(condition);
-  const profiles = await fetchProfiles(service, [sellerId, ...fresh.map((m) => m.buyer_id)]);
   const sellerName = profiles.get(sellerId)?.full_name ?? 'A seller';
+
+  void notifyMany(
+    fresh.map((m) => ({
+      userId: m.buyer_id,
+      type: 'wanted.price_dropped',
+      context: { gameName, listingId, fromCents, toCents },
+    })),
+  );
 
   for (const match of fresh) {
     const buyerProfile = profiles.get(match.buyer_id);
+    if (!buyerProfile?.email) continue;
     const buyerEditionPreference = [match.language, match.publisher, match.edition_year]
       .filter(Boolean)
       .join(' · ') || null;
-
-    void notify(match.buyer_id, 'wanted.price_dropped', {
+    void sendListingPriceDroppedToBuyer({
+      buyerName: buyerProfile.full_name,
+      buyerEmail: buyerProfile.email,
+      sellerName,
       gameName,
-      listingId,
       fromCents,
       toCents,
-    });
-
-    if (buyerProfile?.email) {
-      void sendListingPriceDroppedToBuyer({
-        buyerName: buyerProfile.full_name,
-        buyerEmail: buyerProfile.email,
-        sellerName,
-        gameName,
-        fromCents,
-        toCents,
-        condition: conditionLabel,
-        listingEdition,
-        buyerEditionPreference,
-        listingId,
-      }).catch((err) => console.error('[PriceDrop] Failed to email matched buyer:', err));
-    }
+      condition: conditionLabel,
+      listingEdition,
+      buyerEditionPreference,
+      listingId,
+    }).catch((err) => console.error('[PriceDrop] Failed to email matched buyer:', err));
   }
 }
