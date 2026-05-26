@@ -117,11 +117,19 @@ export function parseFiltersFromParams(
   // Show price drops only (14d window applied at query time, see migration 122)
   const priceDrops = get('priceDrops') === '1';
 
+  // Coerce sort=recent_drops back to newest when priceDrops is off. The toggle
+  // UI keeps these coupled; this guards the URL-crafting / stale-bookmark path
+  // where someone lands on ?sort=recent_drops without ?priceDrops=1, which
+  // would otherwise order by `price_changed_at desc nulls last` across all
+  // listings — pushing the bulk of never-changed inventory to the bottom in
+  // effectively-random order.
+  const effectiveSort: SortOption = sort === 'recent_drops' && !priceDrops ? 'newest' : sort;
+
   // Page
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, priceDrops, sort, page };
+  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, priceDrops, sort: effectiveSort, page };
 }
 
 /**

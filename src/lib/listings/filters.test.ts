@@ -82,8 +82,12 @@ describe('parseFiltersFromParams', () => {
     expect(parseFiltersFromParams({ priceDrops: 'true' }).priceDrops).toBe(false);
   });
 
-  it('accepts recent_drops as a valid sort', () => {
-    expect(parseFiltersFromParams({ sort: 'recent_drops' }).sort).toBe('recent_drops');
+  it('accepts recent_drops as a valid sort when priceDrops is on', () => {
+    expect(parseFiltersFromParams({ sort: 'recent_drops', priceDrops: '1' }).sort).toBe('recent_drops');
+  });
+
+  it('coerces sort=recent_drops to newest when priceDrops is off (URL-crafting guard)', () => {
+    expect(parseFiltersFromParams({ sort: 'recent_drops' }).sort).toBe('newest');
   });
 
   it('parses languages', () => {
