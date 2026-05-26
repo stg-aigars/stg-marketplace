@@ -27,7 +27,7 @@ export async function sendFirstMessage(args: {
   otherUserId: string;
   body: string;
   listingRefId?: string;
-  entryPoint: 'listing_detail' | 'seller_profile';
+  entryPoint: 'listing_detail' | 'seller_profile' | 'wanted_detail';
 }): Promise<SendFirstMessageResult> {
   const { user, profile } = await requireServerAuth();
   const supabase = await createClient();

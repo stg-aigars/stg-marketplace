@@ -19,7 +19,7 @@ interface PageProps {
   }>;
 }
 
-const ALLOWED_ENTRY_POINTS = new Set(['listing_detail', 'seller_profile']);
+const ALLOWED_ENTRY_POINTS = new Set(['listing_detail', 'seller_profile', 'wanted_detail']);
 
 export default async function NewMessagePage({ searchParams }: PageProps) {
   const { to, seedListingId, from } = await searchParams;
@@ -68,7 +68,7 @@ export default async function NewMessagePage({ searchParams }: PageProps) {
   }
 
   const entryPoint = from && ALLOWED_ENTRY_POINTS.has(from)
-    ? (from as 'listing_detail' | 'seller_profile')
+    ? (from as 'listing_detail' | 'seller_profile' | 'wanted_detail')
     : 'seller_profile';
 
   return (

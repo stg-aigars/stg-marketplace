@@ -9,7 +9,7 @@ import { MESSAGE_MAX_LENGTH, type MessagingError } from '@/lib/messaging/types';
 interface NewMessageFormProps {
   otherUserId: string;
   seedListingId?: string;
-  entryPoint: 'listing_detail' | 'seller_profile';
+  entryPoint: 'listing_detail' | 'seller_profile' | 'wanted_detail';
 }
 
 function copyForError(error: MessagingError): string {

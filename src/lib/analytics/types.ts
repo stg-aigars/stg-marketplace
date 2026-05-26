@@ -65,7 +65,7 @@ export interface AnalyticsEventMap {
   // sendMessage in-thread fires `false`.
   message_thread_started: {
     thread_id: string;
-    entry_point: 'listing_detail' | 'seller_profile';
+    entry_point: 'listing_detail' | 'seller_profile' | 'wanted_detail';
     has_listing_ref: boolean;
   };
   message_sent: {
