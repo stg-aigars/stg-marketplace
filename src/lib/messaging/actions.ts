@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { notify } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
-import type { SendFirstMessageResult, SendFirstMessageRpcResult } from './types';
+import type { MessagingEntryPoint, SendFirstMessageResult, SendFirstMessageRpcResult } from './types';
 
 type SendMessageResult = { success: true } | { error: string };
 
@@ -27,7 +27,7 @@ export async function sendFirstMessage(args: {
   otherUserId: string;
   body: string;
   listingRefId?: string;
-  entryPoint: 'listing_detail' | 'seller_profile';
+  entryPoint: MessagingEntryPoint;
 }): Promise<SendFirstMessageResult> {
   const { user, profile } = await requireServerAuth();
   const supabase = await createClient();

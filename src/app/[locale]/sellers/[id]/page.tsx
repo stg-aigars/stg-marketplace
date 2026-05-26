@@ -195,7 +195,7 @@ export default async function SellerProfilePage(
           <div className="mt-3">
             <MessageSellerCTA
               viewerId={viewer?.id ?? null}
-              sellerId={id}
+              targetId={id}
               entryPoint="seller_profile"
             />
           </div>

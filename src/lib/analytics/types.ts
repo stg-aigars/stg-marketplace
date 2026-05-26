@@ -1,5 +1,6 @@
 import type { ListingCondition } from '@/lib/listings/types';
 import type { FeedbackCategory } from '@/lib/feedback/types';
+import type { MessagingEntryPoint } from '@/lib/messaging/types';
 
 export interface AnalyticsEventMap {
   search_performed: { query: string; result_count: number };
@@ -65,7 +66,7 @@ export interface AnalyticsEventMap {
   // sendMessage in-thread fires `false`.
   message_thread_started: {
     thread_id: string;
-    entry_point: 'listing_detail' | 'seller_profile';
+    entry_point: MessagingEntryPoint;
     has_listing_ref: boolean;
   };
   message_sent: {

@@ -6,6 +6,7 @@ import { Card, CardBody, Button, Alert, Textarea } from '@/components/ui';
 import { GameSearchStep, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { createWantedListing } from '@/lib/wanted/actions';
+import { toEditionPayload } from '@/lib/wanted/types';
 import { useAuth } from '@/contexts/AuthContext';
 import type { VersionData } from '@/lib/listings/types';
 
@@ -45,15 +46,7 @@ export function CreateWantedForm() {
         game.id,
         gameName,
         game.yearpublished,
-        edition ? {
-          versionSource: edition.version_source,
-          bggVersionId: edition.bgg_version_id,
-          versionName: edition.version_name,
-          publisher: edition.publisher,
-          language: edition.language,
-          editionYear: edition.edition_year,
-          versionThumbnail: edition.version_thumbnail,
-        } : null,
+        edition ? toEditionPayload(edition) : null,
         notes.trim() || undefined
       );
 
@@ -136,7 +129,7 @@ export function CreateWantedForm() {
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={500}
                 rows={3}
-                placeholder="Preferred language, condition, or anything else sellers should know"
+                placeholder="Preferred edition, language, condition, or anything sellers should know before reaching out"
               />
               <p className="text-xs text-semantic-text-muted mt-1 text-right">
                 {notes.length}/500

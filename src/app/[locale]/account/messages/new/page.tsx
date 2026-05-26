@@ -6,6 +6,7 @@ import { findExistingThread } from '@/lib/messaging/actions';
 import { BackLink, Card, CardBody, CardHeader, UserIdentity } from '@/components/ui';
 import { ListingChipInline } from '../[threadId]/ListingChipInline';
 import { NewMessageForm } from './NewMessageForm';
+import type { MessagingEntryPoint } from '@/lib/messaging/types';
 
 export const metadata: Metadata = {
   title: 'New message',
@@ -19,7 +20,15 @@ interface PageProps {
   }>;
 }
 
-const ALLOWED_ENTRY_POINTS = new Set(['listing_detail', 'seller_profile']);
+const ALLOWED_ENTRY_POINTS: ReadonlySet<MessagingEntryPoint> = new Set([
+  'listing_detail',
+  'seller_profile',
+  'wanted_detail',
+]);
+
+function isMessagingEntryPoint(value: string): value is MessagingEntryPoint {
+  return (ALLOWED_ENTRY_POINTS as ReadonlySet<string>).has(value);
+}
 
 export default async function NewMessagePage({ searchParams }: PageProps) {
   const { to, seedListingId, from } = await searchParams;
@@ -67,9 +76,8 @@ export default async function NewMessagePage({ searchParams }: PageProps) {
     }
   }
 
-  const entryPoint = from && ALLOWED_ENTRY_POINTS.has(from)
-    ? (from as 'listing_detail' | 'seller_profile')
-    : 'seller_profile';
+  const entryPoint: MessagingEntryPoint =
+    from && isMessagingEntryPoint(from) ? from : 'seller_profile';
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">

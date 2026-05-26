@@ -677,7 +677,7 @@ export default async function ListingDetailPage(
               <div className="mt-3">
                 <MessageSellerCTA
                   viewerId={user?.id ?? null}
-                  sellerId={listing.seller_id}
+                  targetId={listing.seller_id}
                   seedListingId={listing.id}
                   entryPoint="listing_detail"
                 />

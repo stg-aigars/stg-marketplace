@@ -5,9 +5,14 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { wantedCreateLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { trackServer } from '@/lib/analytics/track-server';
-import type { WantedListingWithGame, WantedListingWithDetails } from './types';
+import type { WantedListingWithGame, WantedListingWithDetails, EditionPayload } from './types';
 import { MAX_NOTE_LENGTH } from './types';
-import type { VersionSource } from '@/lib/listings/types';
+
+function revalidateWantedPaths(id?: string) {
+  revalidatePath('/account/wanted');
+  revalidatePath('/wanted');
+  if (id) revalidatePath(`/wanted/${id}`);
+}
 
 // ============================================================================
 // Create wanted listing
@@ -17,15 +22,7 @@ export async function createWantedListing(
   bggGameId: number,
   gameName: string,
   gameYear: number | null,
-  edition: {
-    versionSource: VersionSource | null;
-    bggVersionId: number | null;
-    versionName: string | null;
-    publisher: string | null;
-    language: string | null;
-    editionYear: number | null;
-    versionThumbnail: string | null;
-  } | null,
+  edition: EditionPayload | null,
   notes?: string
 ): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
@@ -84,9 +81,62 @@ export async function createWantedListing(
     has_edition_preference: edition !== null,
   });
 
-  revalidatePath('/account/wanted');
-  revalidatePath('/wanted');
+  revalidateWantedPaths();
   return { id: data.id };
+}
+
+// ============================================================================
+// Update wanted listing (edition + notes; game identity is fixed)
+// ============================================================================
+
+export async function updateWantedListing(
+  id: string,
+  edition: EditionPayload | null,
+  notes?: string
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'You must be signed in' };
+  if (notes && notes.length > MAX_NOTE_LENGTH) {
+    return { error: `Notes must be ${MAX_NOTE_LENGTH} characters or fewer` };
+  }
+
+  const { data: listing, error: loadError } = await supabase
+    .from('wanted_listings')
+    .select('id, buyer_id, status')
+    .eq('id', id)
+    .single();
+
+  if (loadError || !listing) return { error: 'Wanted listing not found' };
+  if (listing.buyer_id !== user.id) return { error: 'You can only edit your own wanted listings' };
+  if (listing.status !== 'active') return { error: 'Can only edit active wanted listings' };
+
+  const service = createServiceClient();
+
+  const { error } = await service
+    .from('wanted_listings')
+    .update({
+      version_source: edition?.versionSource ?? null,
+      bgg_version_id: edition?.bggVersionId ?? null,
+      version_name: edition?.versionName ?? null,
+      publisher: edition?.publisher ?? null,
+      language: edition?.language ?? null,
+      edition_year: edition?.editionYear ?? null,
+      version_thumbnail: edition?.versionThumbnail ?? null,
+      notes: notes?.trim() || null,
+    })
+    .eq('id', id)
+    .eq('buyer_id', user.id)
+    .eq('status', 'active');
+
+  if (error) {
+    console.error('[Wanted] Failed to update:', error);
+    return { error: 'Failed to update wanted listing' };
+  }
+
+  revalidateWantedPaths(id);
+  return { success: true };
 }
 
 // ============================================================================
@@ -122,8 +172,7 @@ export async function cancelWantedListing(
 
   if (error) return { error: 'Failed to cancel wanted listing' };
 
-  revalidatePath('/account/wanted');
-  revalidatePath('/wanted');
+  revalidateWantedPaths();
   return { success: true };
 }
 
