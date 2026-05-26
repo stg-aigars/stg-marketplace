@@ -29,12 +29,12 @@ function Price({ cents, previousCents, size = 'md', className = '' }: PriceProps
       className={cn(sizeClasses[size], 'font-bold font-sans tracking-tight text-semantic-text-heading', className)}
       aria-label={previous ? `Price dropped from ${previous} to ${current}` : undefined}
     >
+      {current}
       {previous && (
-        <s className="font-normal text-semantic-text-muted mr-2" aria-hidden="true">
+        <s className="font-normal text-semantic-text-muted ml-2 text-[0.85em]" aria-hidden="true">
           {previous}
         </s>
       )}
-      {current}
     </span>
   );
 }

@@ -25,6 +25,18 @@ describe('Price', () => {
     expect(container.textContent).toContain('30,00 €');
   });
 
+  it('renders the current price BEFORE the struck old price (visual order)', () => {
+    const { container } = render(<Price cents={3000} previousCents={4000} />);
+    const text = container.textContent ?? '';
+    expect(text.indexOf('30,00 €')).toBeLessThan(text.indexOf('40,00 €'));
+  });
+
+  it('renders the struck price at a smaller relative size than the current price', () => {
+    const { container } = render(<Price cents={3000} previousCents={4000} />);
+    const struck = container.querySelector('s');
+    expect(struck?.className).toContain('text-[0.85em]');
+  });
+
   it('marks the struck price aria-hidden so screen readers do not double-read', () => {
     const { container } = render(<Price cents={3000} previousCents={4000} />);
     expect(container.querySelector('s')?.getAttribute('aria-hidden')).toBe('true');
