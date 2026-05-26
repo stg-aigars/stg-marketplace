@@ -14,6 +14,8 @@ interface ListingCardMiniProps {
   firstPhoto: string | null;
   condition: ListingCondition;
   priceCents: number;
+  /** Pre-resolved previous price (caller computes via `isPriceDropActive`). */
+  previousPriceCents?: number;
   expansionCount?: number;
 }
 
@@ -24,6 +26,7 @@ function ListingCardMini({
   firstPhoto,
   condition,
   priceCents,
+  previousPriceCents,
   expansionCount = 0,
 }: ListingCardMiniProps) {
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
@@ -57,7 +60,7 @@ function ListingCardMini({
             </p>
           )}
           <div className="flex items-center gap-1.5">
-            <Price cents={priceCents} size="sm" />
+            <Price cents={priceCents} previousCents={previousPriceCents} size="sm" />
             <span className="text-xs text-semantic-text-muted">{conditionLabel}</span>
           </div>
         </div>

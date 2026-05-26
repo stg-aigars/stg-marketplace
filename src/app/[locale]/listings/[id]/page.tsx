@@ -8,6 +8,8 @@ import { Prohibit, Package, Translate, Buildings, CalendarBlank, Tag, PuzzlePiec
 import { Alert, Avatar, Badge, Breadcrumb, Button, Card, CardBody, ConditionBadge, InlineArrowLink, ShareButtons, ShowMoreList } from '@/components/ui';
 import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { Price } from '@/components/listings/atoms';
+import { isPriceDropActive } from '@/lib/listings/price-drop';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getConditionLabel } from '@/lib/condition-config';
 import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
@@ -47,6 +49,8 @@ interface ListingDetailRow {
   game_year: number | null;
   condition: ListingCondition;
   price_cents: number;
+  previous_price_cents: number | null;
+  price_changed_at: string | null;
   description: string | null;
   status: ListingStatus;
   photos: string[];
@@ -237,6 +241,7 @@ export default async function ListingDetailPage(
 
   const isReserver = listing.status === 'reserved' && listing.reserved_by === user?.id;
   const showMobileBuyBar = !isOwner && !isAuction && (listing.status === 'active' || isReserver);
+  const previousPriceCents = isPriceDropActive(listing) ? listing.previous_price_cents! : undefined;
 
   // If listing is not active/reserved and viewer is not the seller, show unavailable message
   if (listing.status !== 'active' && listing.status !== 'reserved' && listing.status !== 'auction_ended' && !isOwner) {
@@ -419,6 +424,7 @@ export default async function ListingDetailPage(
           {/* Price & action */}
           <PurchaseSection
             priceCents={listing.price_cents}
+            previousPriceCents={previousPriceCents}
             isReservedByMe={isReserver}
             showMobileBuyBar={showMobileBuyBar}
             listing={{
@@ -440,9 +446,11 @@ export default async function ListingDetailPage(
               {isAuction ? (
                 <Badge variant="auction">Auction</Badge>
               ) : (
-                <p className="text-3xl font-bold font-sans tracking-tight text-semantic-text-heading">
-                  {formatCentsToCurrency(listing.price_cents)}
-                </p>
+                <Price
+                  cents={listing.price_cents}
+                  previousCents={previousPriceCents}
+                  size="xl"
+                />
               )}
             </div>
 

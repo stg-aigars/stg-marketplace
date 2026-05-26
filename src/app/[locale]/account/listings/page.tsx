@@ -17,6 +17,8 @@ export interface MyListingRow {
   game_year: number | null;
   condition: ListingCondition;
   price_cents: number;
+  previous_price_cents: number | null;
+  price_changed_at: string | null;
   photos: string[];
   country: string;
   status: string;
@@ -35,7 +37,7 @@ export default async function MyListingsPage() {
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, game_name, game_year, condition, price_cents, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+    .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false })
     .returns<MyListingRow[]>();

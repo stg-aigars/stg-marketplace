@@ -151,7 +151,7 @@ Always use these — do not write inline equivalents:
 | Game thumbnail | `GameThumb` (src, alt, size: sm/md/lg/xl; BGG-aware) | `@/components/listings/atoms` |
 | Game title | `GameTitle` (name, size, serif; display font by default) | `@/components/listings/atoms` |
 | Game metadata | `GameMeta` (year, publisher; middot-separated) | `@/components/listings/atoms` |
-| Price display | `Price` (cents, size; always Plus Jakarta Sans, never display font) | `@/components/listings/atoms` |
+| Price display | `Price` (cents, size sm/md/lg/xl; optional `previousCents` renders accessible strikethrough via `<s>` + outer `aria-label`; always Plus Jakarta Sans, never display font) | `@/components/listings/atoms` |
 | Game identity row | `GameIdentityRow` (thumbnail + name + edition metadata icons; bare row, caller wraps in Card; size, href, action slot) | `@/components/listings/atoms` |
 | Listing identity | `ListingIdentity` (compact horizontal row: linked thumb + title + expansion count + price slot + action slot; `disableLink` for parent-linked contexts; `disabled` for unavailable items) | `@/components/listings/atoms` |
 | Compact listing row | `ListingRow` (horizontal; wraps `ListingIdentity` in bordered container with condition label) | `@/components/listings` |

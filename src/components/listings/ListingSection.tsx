@@ -2,21 +2,25 @@ import { SectionLink } from '@/components/ui';
 import { ListingCard } from '@/components/listings/ListingCard';
 import type { ListingType } from '@/lib/listings/types';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { isPriceDropActive } from '@/lib/listings/price-drop';
 
 /**
  * A listing row shape that maps to ListingCard props.
- * Auction fields are optional for pages that don't query them (e.g., seller profile).
+ * `bid_count` / `auction_end_at` are optional for pages that don't query them
+ * (e.g., seller profile, which doesn't show countdowns).
  */
 export interface ListingSectionItem {
   id: string;
   game_name: string;
   price_cents: number;
+  previous_price_cents: number | null;
+  price_changed_at: string | null;
   photos: string[];
   country: string;
   version_thumbnail: string | null;
   games: { image: string | null; is_expansion: boolean } | null;
   status?: string;
-  listing_type?: ListingType;
+  listing_type: ListingType;
   bid_count?: number;
   auction_end_at?: string | null;
 }
@@ -80,6 +84,7 @@ export function ListingSection({
               firstPhoto={listing.photos?.[0] ?? null}
               photoCount={listing.photos?.length ?? 0}
               priceCents={listing.price_cents}
+              previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
               sellerCountry={listing.country}
               isFavorited={favoriteIds?.has(listing.id)}
               isAuthenticated={isAuthenticated}

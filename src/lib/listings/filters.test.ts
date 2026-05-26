@@ -76,6 +76,20 @@ describe('parseFiltersFromParams', () => {
     expect(parseFiltersFromParams({}).showAuctions).toBe(false);
   });
 
+  it('parses priceDrops', () => {
+    expect(parseFiltersFromParams({ priceDrops: '1' }).priceDrops).toBe(true);
+    expect(parseFiltersFromParams({}).priceDrops).toBe(false);
+    expect(parseFiltersFromParams({ priceDrops: 'true' }).priceDrops).toBe(false);
+  });
+
+  it('accepts recent_drops as a valid sort when priceDrops is on', () => {
+    expect(parseFiltersFromParams({ sort: 'recent_drops', priceDrops: '1' }).sort).toBe('recent_drops');
+  });
+
+  it('coerces sort=recent_drops to newest when priceDrops is off (URL-crafting guard)', () => {
+    expect(parseFiltersFromParams({ sort: 'recent_drops' }).sort).toBe('newest');
+  });
+
   it('parses languages', () => {
     const result = parseFiltersFromParams({ lang: 'English,Latvian' });
     expect(result.languages).toEqual(['English', 'Latvian']);
@@ -95,6 +109,7 @@ describe('parseFiltersFromParams', () => {
       sort: 'price_asc',
       page: '2',
       auctions: '1',
+      priceDrops: '1',
     });
     expect(result).toEqual({
       search: '',
@@ -104,6 +119,7 @@ describe('parseFiltersFromParams', () => {
       weightLevels: ['medium'],
       expansionsOnly: false,
       showAuctions: true,
+      priceDrops: true,
       sort: 'price_asc',
       page: 2,
     });
@@ -144,7 +160,8 @@ describe('filtersToSearchParams', () => {
       weightLevels: ['medium' as const],
       expansionsOnly: false,
       showAuctions: true,
-      sort: 'price_asc' as const,
+      priceDrops: true,
+      sort: 'recent_drops' as const,
       page: 2,
     };
     const params = filtersToSearchParams(original);
@@ -160,6 +177,15 @@ describe('filtersToSearchParams', () => {
 
   it('omits newest sort', () => {
     expect(filtersToSearchParams({ ...DEFAULT_FILTERS, sort: 'newest' })).toBe('');
+  });
+
+  it('emits priceDrops=1 only when true', () => {
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, priceDrops: true })).toContain('priceDrops=1');
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, priceDrops: false })).toBe('');
+  });
+
+  it('emits sort=recent_drops when chosen', () => {
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, sort: 'recent_drops' })).toContain('sort=recent_drops');
   });
 });
 
@@ -177,6 +203,12 @@ describe('countActiveFilters', () => {
   it('counts showAuctions as one filter', () => {
     expect(
       countActiveFilters({ ...DEFAULT_FILTERS, showAuctions: true })
+    ).toBe(1);
+  });
+
+  it('counts priceDrops as one filter', () => {
+    expect(
+      countActiveFilters({ ...DEFAULT_FILTERS, priceDrops: true })
     ).toBe(1);
   });
 

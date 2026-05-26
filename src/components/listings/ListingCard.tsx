@@ -15,6 +15,8 @@ interface ListingCardProps {
   gameThumbnail: string | null;
   firstPhoto: string | null;
   priceCents: number;
+  /** Pre-resolved previous price (caller computes via `isPriceDropActive`). */
+  previousPriceCents?: number;
   sellerCountry: string;
   /** Number of photos (shows count badge when > 0) */
   photoCount?: number;
@@ -43,6 +45,7 @@ function ListingCard({
   firstPhoto,
   photoCount,
   priceCents,
+  previousPriceCents,
   sellerCountry,
   isFavorited,
   isAuthenticated = false,
@@ -151,7 +154,7 @@ function ListingCard({
                 {isAuction && bidCount === 0 && (
                   <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
                 )}
-                <Price cents={priceCents} />
+                <Price cents={priceCents} previousCents={previousPriceCents} />
                 {isAuction && (
                   <span className="text-xs text-semantic-text-muted ml-3">
                     {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}
