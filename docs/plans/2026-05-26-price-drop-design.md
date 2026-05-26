@@ -93,12 +93,14 @@ alter table listings
 **Partial index:**
 
 ```sql
-create index concurrently idx_listings_recent_drops
+create index if not exists idx_listings_recent_drops
   on listings (price_changed_at desc)
   where has_price_decrease;
 ```
 
 The `WHERE has_price_decrease` predicate makes leading the index with `has_price_decrease` redundant; `price_changed_at desc` matches the natural "newest drops first" sort. `STORED` generated columns can be referenced in partial-index predicates (`VIRTUAL` cannot — if a future "save space" optimization tries to switch to `VIRTUAL`, this index breaks).
+
+**Index build mode:** plain `CREATE INDEX` (not `CONCURRENTLY`). Codebase convention — migrations are applied via Supabase MCP `apply_migration` which wraps the file in a transaction; `CONCURRENTLY` is incompatible with that. See migration 101 for the same reasoning on the `games` table. Listings is ~10k rows; the brief AccessExclusive lock is acceptable.
 
 **Index predicate vs. query predicate:** the index predicate intentionally omits the `price_changed_at <= now()` upper bound because `now()` is not immutable and cannot appear in an index predicate. The browse query applies the upper bound at read time; rows with future-dated `price_changed_at` are still in the index but filtered out by the query. Documented in the migration so a future reader doesn't ask why the index doesn't match the query predicate.
 
@@ -318,10 +320,9 @@ Each call site already destructures the listing; the change is one prop:
 The "ship data layer first to warm up" pattern beats a single bundled PR. Three separately-rollbackable concerns:
 
 **PR A — data layer (ships dark):**
-- Migration 122 (transactional): columns + trigger + trigger function + generated column.
-- Migration 123 (non-transactional, `-- postgres-migrations disable-transaction`): `CREATE INDEX CONCURRENTLY idx_listings_recent_drops`.
+- Migration 122 (single file, transactional): columns + trigger + trigger function + generated column + partial index (plain `CREATE INDEX`, see §2 "Index build mode").
 - Helper (`price-drop.ts`) + pure helper test.
-- Type updates on listing row shapes.
+- Type updates on listing row shapes (none needed — codebase uses structural typing per inline SELECT strings, no central generated types file).
 
 No UI changes; no user-visible effect. Drop state accumulates on real edits between PR A merge and PR B merge — when PR B ships, real listings have real strike-throughs from day one.
 
