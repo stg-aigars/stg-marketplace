@@ -27,6 +27,15 @@ export interface AnalyticsEventMap {
     price_cents: number;
     listing_type: 'fixed_price' | 'auction';
   };
+  listing_price_dropped: {
+    listing_id: string;
+    seller_id: string;
+    bgg_game_id: number;
+    from_cents: number;
+    to_cents: number;
+    percent_drop: number;
+    wanted_match_count: number;
+  };
   signup_completed: { method: 'email' | 'google' | 'facebook' };
   cart_item_added: {
     listing_id: string;

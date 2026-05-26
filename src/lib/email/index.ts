@@ -26,6 +26,7 @@ import { OrderAutoCancelled } from './templates/order-auto-cancelled';
 import { ShippingReminderSeller } from './templates/shipping-reminder-seller';
 import { DeliveryReminderBuyer } from './templates/delivery-reminder-buyer';
 import { WantedListingMatched } from './templates/wanted-listing-matched';
+import { WantedListingPriceDropped } from './templates/wanted-listing-price-dropped';
 import { AuctionBidReceived } from './templates/auction-bid-received';
 import { AuctionOutbid } from './templates/auction-outbid';
 import { AuctionEndingSoon } from './templates/auction-ending-soon';
@@ -628,6 +629,28 @@ export async function sendWantedListingMatchedToBuyer(params: {
     to: params.buyerEmail,
     subject: `${params.gameName} you're looking for was just listed`,
     react: React.createElement(WantedListingMatched, {
+      ...params,
+      listingUrl: `${env.app.url}/listings/${params.listingId}`,
+    }),
+  });
+}
+
+export async function sendListingPriceDroppedToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  sellerName: string;
+  gameName: string;
+  fromCents: number;
+  toCents: number;
+  condition: string;
+  listingEdition: string | null;
+  buyerEditionPreference: string | null;
+  listingId: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Price drop: ${params.gameName}`,
+    react: React.createElement(WantedListingPriceDropped, {
       ...params,
       listingUrl: `${env.app.url}/listings/${params.listingId}`,
     }),

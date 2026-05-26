@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { listingCreateLimiter, listingUpdateLimiter, checkUserRateLimit } from '@/lib/rate-limit';
-import { sendWantedListingMatchedToBuyer } from '@/lib/email';
+import { sendWantedListingMatchedToBuyer, sendListingPriceDroppedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
 import { getConditionLabel } from '@/lib/condition-config';
 import { notify } from '@/lib/notifications';
@@ -299,10 +299,14 @@ export async function updateListing(
   const limited = checkUserRateLimit(listingUpdateLimiter, user.id, 'listing_update', 'Too many edits. Please wait a moment.');
   if (limited) return limited;
 
-  // Fetch listing and verify ownership
+  // Fetch listing and verify ownership.
+  // `price_cents` is read so the price-drop fan-out (below) can compare
+  // OLD vs NEW without a second round-trip.
+  // `bgg_game_id` + `game_name` feed the wanted-matcher query.
+  // `condition` feeds the email body (mirrors notifyWantedListingMatches).
   const { data: listing, error: fetchError } = await supabase
     .from('listings')
-    .select('seller_id, status, listing_type, bid_count, photos')
+    .select('seller_id, status, listing_type, bid_count, photos, price_cents, bgg_game_id, game_name, condition')
     .eq('id', data.id)
     .single();
 
@@ -453,6 +457,26 @@ export async function updateListing(
 
   revalidatePath(`/listings/${data.id}`);
 
+  // Price-drop fan-out — only for fixed-price listings whose price actually
+  // dropped. Fire-and-forget (matches notifyWantedListingMatches pattern).
+  // The DB trigger from migration 122 has already updated previous_price_cents
+  // and price_changed_at server-side; this helper is just the user-facing ping.
+  if (
+    listing.listing_type === 'fixed_price' &&
+    data.price_cents < (listing.price_cents as number)
+  ) {
+    void notifyWantedListingPriceDropped(
+      listing.bgg_game_id as number,
+      user.id,
+      data.id,
+      data.game_name,
+      listing.price_cents as number,
+      data.price_cents,
+      listing.condition as ListingCondition,
+      [data.language, data.publisher, data.edition_year].filter(Boolean).join(' · ') || null,
+    ).catch((err) => console.error('[PriceDrop] notifyWantedListingPriceDropped failed:', err));
+  }
+
   return { success: true };
 }
 
@@ -519,6 +543,31 @@ export async function cancelListing(
 }
 
 /**
+ * Active wanted-listing matchers for a given BGG game, excluding the seller's
+ * own wanted entries. Pure read; shared between `notifyWantedListingMatches`
+ * (fires on listing-create) and `notifyWantedListingPriceDropped` (fires on
+ * fixed-price drop). Each caller owns its own downstream — dedup check,
+ * notify type, email template, analytics — so this helper stays just a
+ * SELECT and not a generic notify dispatcher.
+ *
+ * The 50-row cap mirrors the original `notifyWantedListingMatches` bound.
+ */
+async function findActiveWantedMatchers(
+  service: ReturnType<typeof createServiceClient>,
+  bggGameId: number,
+  sellerId: string,
+) {
+  const { data: matches } = await service
+    .from('wanted_listings')
+    .select('buyer_id, language, publisher, edition_year')
+    .eq('bgg_game_id', bggGameId)
+    .eq('status', 'active')
+    .neq('buyer_id', sellerId)
+    .limit(50);
+  return matches ?? [];
+}
+
+/**
  * After a listing is created, check for active wanted listings matching the same game.
  * Notify each buyer via in-app notification + email. Fire-and-forget.
  */
@@ -532,17 +581,8 @@ async function notifyWantedListingMatches(
   listingEdition: string | null,
 ) {
   const service = createServiceClient();
-
-  // Find active wanted listings for this game (exclude seller's own)
-  const { data: matches } = await service
-    .from('wanted_listings')
-    .select('buyer_id, language, publisher, edition_year')
-    .eq('bgg_game_id', bggGameId)
-    .eq('status', 'active')
-    .neq('buyer_id', sellerId)
-    .limit(50);
-
-  if (!matches?.length) return;
+  const matches = await findActiveWantedMatchers(service, bggGameId, sellerId);
+  if (!matches.length) return;
 
   const conditionLabel = getConditionLabel(condition);
 
@@ -577,6 +617,104 @@ async function notifyWantedListingMatches(
         buyerEditionPreference,
         listingId,
       }).catch((err) => console.error('[Wanted] Failed to email matched buyer:', err));
+    }
+  }
+}
+
+/**
+ * After a fixed-price listing's price drops, ping every buyer with an active
+ * wanted entry for the same BGG game — in-app + email. 14-day per-buyer
+ * dedup so rapid edits don't flood the recipient.
+ *
+ * Auctions are excluded at the caller (current price is the high bid, not a
+ * seller-set price). Fire-and-forget — never blocks the seller's edit submit.
+ */
+async function notifyWantedListingPriceDropped(
+  bggGameId: number,
+  sellerId: string,
+  listingId: string,
+  gameName: string,
+  fromCents: number,
+  toCents: number,
+  condition: ListingCondition,
+  listingEdition: string | null,
+) {
+  const service = createServiceClient();
+  const matches = await findActiveWantedMatchers(service, bggGameId, sellerId);
+  if (!matches.length) {
+    // No recipients — still emit the analytics event with zero count so the
+    // "% of drops with no audience" question has data.
+    void trackServer('listing_price_dropped', sellerId, {
+      listing_id: listingId,
+      seller_id: sellerId,
+      bgg_game_id: bggGameId,
+      from_cents: fromCents,
+      to_cents: toCents,
+      percent_drop: Math.round(((fromCents - toCents) / fromCents) * 100),
+      wanted_match_count: 0,
+    });
+    return;
+  }
+
+  // 14-day per-(buyer, listing) dedup. The JSONB `metadata->>'listingId'` lookup
+  // is a sequential scan over each buyer's recent rows — at <100 notifications/
+  // user/14d typical, fine; if a power-buyer profile emerges, add a top-level
+  // `listing_id` column to `notifications` (memo: deferred-follow-up #11 in
+  // docs/plans/2026-05-26-price-drop-design.md).
+  const cutoffIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const buyerIds = matches.map((m) => m.buyer_id);
+  const { data: alreadyPinged } = await service
+    .from('notifications')
+    .select('user_id')
+    .eq('type', 'wanted.price_dropped')
+    .in('user_id', buyerIds)
+    .eq('metadata->>listingId', listingId)
+    .gt('created_at', cutoffIso);
+  const dedupedBuyers = new Set((alreadyPinged ?? []).map((r) => r.user_id));
+  const fresh = matches.filter((m) => !dedupedBuyers.has(m.buyer_id));
+
+  void trackServer('listing_price_dropped', sellerId, {
+    listing_id: listingId,
+    seller_id: sellerId,
+    bgg_game_id: bggGameId,
+    from_cents: fromCents,
+    to_cents: toCents,
+    percent_drop: Math.round(((fromCents - toCents) / fromCents) * 100),
+    wanted_match_count: fresh.length,
+  });
+
+  if (!fresh.length) return;
+
+  const conditionLabel = getConditionLabel(condition);
+  const profiles = await fetchProfiles(service, [sellerId, ...fresh.map((m) => m.buyer_id)]);
+  const sellerName = profiles.get(sellerId)?.full_name ?? 'A seller';
+
+  for (const match of fresh) {
+    const buyerProfile = profiles.get(match.buyer_id);
+    const buyerEditionPreference = [match.language, match.publisher, match.edition_year]
+      .filter(Boolean)
+      .join(' · ') || null;
+
+    void notify(match.buyer_id, 'wanted.price_dropped', {
+      gameName,
+      listingId,
+      fromCents,
+      toCents,
+    });
+
+    if (buyerProfile?.email) {
+      sendListingPriceDroppedToBuyer({
+        buyerName: buyerProfile.full_name,
+        buyerEmail: buyerProfile.email,
+        sellerName,
+        gameName,
+        fromCents,
+        toCents,
+        condition: conditionLabel,
+        listingEdition,
+        buyerEditionPreference,
+        listingId,
+      }).catch((err) => console.error('[PriceDrop] Failed to email matched buyer:', err));
     }
   }
 }

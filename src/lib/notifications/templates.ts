@@ -7,6 +7,7 @@
  * Register: order/comment/shipping/auction/wanted = warm-specific; dispute/DAC7 = warm-factual (friction rule, no wit).
  */
 
+import { formatCentsToCurrency as formatCents } from '@/lib/services/pricing';
 import type { NotificationType, NotificationContext } from './types';
 
 interface NotificationTemplate {
@@ -205,6 +206,17 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
   'wanted.listing_matched': {
     title: () => 'A game you want was just listed',
     body: (ctx) => `${ctx.gameName ?? 'A game'} you're looking for just showed up.`,
+    link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : '/wanted',
+  },
+  'wanted.price_dropped': {
+    title: () => 'A game you want dropped in price',
+    body: (ctx) => {
+      const game = ctx.gameName ?? 'A game';
+      if (ctx.fromCents != null && ctx.toCents != null) {
+        return `${game} dropped from ${formatCents(ctx.fromCents)} to ${formatCents(ctx.toCents)}.`;
+      }
+      return `${game} just got cheaper.`;
+    },
     link: (ctx) => ctx.listingId ? `/listings/${ctx.listingId}` : '/wanted',
   },
 
