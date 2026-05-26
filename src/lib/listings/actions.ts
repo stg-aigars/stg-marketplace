@@ -606,7 +606,7 @@ async function notifyWantedListingMatches(
 
     // Email (non-blocking)
     if (buyerProfile?.email) {
-      sendWantedListingMatchedToBuyer({
+      void sendWantedListingMatchedToBuyer({
         buyerName: buyerProfile.full_name,
         buyerEmail: buyerProfile.email,
         sellerName,
@@ -703,7 +703,7 @@ async function notifyWantedListingPriceDropped(
     });
 
     if (buyerProfile?.email) {
-      sendListingPriceDroppedToBuyer({
+      void sendListingPriceDroppedToBuyer({
         buyerName: buyerProfile.full_name,
         buyerEmail: buyerProfile.email,
         sellerName,
