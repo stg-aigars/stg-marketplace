@@ -133,7 +133,7 @@ export async function publishAnnouncement(id: string): Promise<AnnouncementsActi
     });
   }
 
-  revalidatePath('/announcements');
+  revalidatePath('/[locale]/announcements', 'page');
   return { success: true };
 }
 
@@ -185,7 +185,7 @@ export async function updateAnnouncement(
     console.error('[announcements] updateAnnouncement failed', error);
     return { error: 'update_failed' };
   }
-  revalidatePath('/announcements');
+  revalidatePath('/[locale]/announcements', 'page');
   return { success: true };
 }
 
@@ -253,7 +253,7 @@ async function applyAnnouncementStateChange(
     retentionClass: 'operational',
   });
 
-  revalidatePath('/announcements');
+  revalidatePath('/[locale]/announcements', 'page');
   return { success: true };
 }
 
