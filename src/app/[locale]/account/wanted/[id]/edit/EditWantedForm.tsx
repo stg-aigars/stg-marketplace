@@ -151,7 +151,10 @@ export function EditWantedForm({ listing }: Props) {
             <Button
               variant={editionAnswer === 'no' ? 'brand' : 'secondary'}
               size="sm"
-              onClick={() => setEditionAnswer('no')}
+              onClick={() => {
+                setEditionAnswer('no');
+                setEdition(null);
+              }}
               aria-pressed={editionAnswer === 'no'}
             >
               Any edition
