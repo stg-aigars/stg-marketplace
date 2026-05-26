@@ -100,6 +100,8 @@ create index concurrently idx_listings_recent_drops
 
 The `WHERE has_price_decrease` predicate makes leading the index with `has_price_decrease` redundant; `price_changed_at desc` matches the natural "newest drops first" sort. `STORED` generated columns can be referenced in partial-index predicates (`VIRTUAL` cannot — if a future "save space" optimization tries to switch to `VIRTUAL`, this index breaks).
 
+**Index predicate vs. query predicate:** the index predicate intentionally omits the `price_changed_at <= now()` upper bound because `now()` is not immutable and cannot appear in an index predicate. The browse query applies the upper bound at read time; rows with future-dated `price_changed_at` are still in the index but filtered out by the query. Documented in the migration so a future reader doesn't ask why the index doesn't match the query predicate.
+
 **Filter query shape:** `query.eq('has_price_decrease', true).gt('price_changed_at', cutoffIso).lte('price_changed_at', nowIso)`.
 
 ---
@@ -214,6 +216,10 @@ export const PRICE_DROP_WINDOW_DAYS = 14;
  * is always fresh today. A future PPR/ISR migration touching browse would
  * need to revisit — a cached card could show a stale strike up to the
  * revalidate TTL after the 14d boundary.
+ *
+ * Narrowing contract: when this returns true, `previous_price_cents` is
+ * guaranteed non-null. Callers using `listing.previous_price_cents!` after
+ * an `isPriceDropActive(listing)` check are relying on this contract.
  */
 export function isPriceDropActive(listing: {
   listing_type: ListingType;
@@ -319,12 +325,16 @@ The "ship data layer first to warm up" pattern beats a single bundled PR. Three 
 
 No UI changes; no user-visible effect. Drop state accumulates on real edits between PR A merge and PR B merge — when PR B ships, real listings have real strike-throughs from day one.
 
+**PR A review checklist additions:**
+- Grep public-facing API routes for `select('*')` on `listings` — PR A adds two columns + one generated column that would leak into API responses before PR B explains them. CLAUDE.md captures `public_profiles` view discipline for `user_profiles`; verify no equivalent leak exists for listings.
+- Sanity-check that lint doesn't flag the new fields as unused on listing-row types between PR A and PR B (the types are object shapes, not unused imports — should be fine, but worth a `pnpm verify` confirmation).
+
 **PR B — render + filter:**
 - `Price` atom `previousCents` prop + `size='xl'` variant.
 - Caller wiring: `ListingCard`, `ListingCardMini`, detail page H1 refactor, `PurchaseSection` mobile sticky bar.
 - Filter wiring: `parseFiltersFromParams`, `filtersToSearchParams`, `countActiveFilters`, `BrowseFilters` checkbox.
 - Sort: new `SortOption = 'recent_drops'`, query builder branch, dropdown label gating.
-- Browse query: `.eq('has_price_decrease', true).gt('price_changed_at', cutoffIso).lte('price_changed_at', nowIso)` when `priceDrops=1`.
+- Browse query: `.eq('has_price_decrease', true).gt('price_changed_at', cutoffIso).lte('price_changed_at', nowIso)` when `priceDrops=1`. PR B's filter test asserts a future-dated `price_changed_at` row is excluded by the actual query (not just the helper) — confirms Supabase's query builder doesn't collapse or reorder the two predicates on the same column.
 - Empty-state copy when `priceDrops=1 + showAuctions=1`.
 
 User-visible drops appear.
@@ -371,6 +381,7 @@ Adding a `STORED GENERATED` column to a populated `listings` table requires Post
 8. **Integration test harness** — anon-RLS regression gap (CLAUDE.md) + helper/SQL drift test would join it.
 9. **Listing detail "Price history" affordance** — buyer-facing tooltip on detail page.
 10. **VIRTUAL → STORED constraint** — if a future "save index space" optimization tries to switch `has_price_decrease` to `VIRTUAL`, the partial index breaks. Already noted in the migration comment.
+11. **Dedup query performance at scale** — the `context->>'listingId'` JSONB extraction in the dedup query (§4) is a sequential scan over each buyer's recent notifications. At <100 notifications/user/14d this is invisible; at 10k+/user it would slow the fan-out tail. The dedup is on the critical path of every drop fan-out, so latency creep here extends the fire-and-forget tail. Memo: watch notification volume per user; if a heavy power-buyer profile emerges, the fix is a top-level `listing_id` column on `notifications` (one targeted schema change for one query).
 
 ---
 
@@ -400,5 +411,6 @@ Adding a `STORED GENERATED` column to a populated `listings` table requires Post
 | Dedup window | 14d (matches visibility) | §4 |
 | Channels | In-app + email (matches existing `wanted.listing_matched`) | §4 |
 | Percent-drop floor | None in v1 | §4 |
+| Audit event | None (notification, not regulatory) | §4 |
 | Accessibility | `<s>` + `aria-label` on wrapper | §5 |
 | Rollout | Three-PR split (data → render → notifications) | §6 |
