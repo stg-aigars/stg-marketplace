@@ -243,7 +243,7 @@ describe('accounting schema (PR 1)', () => {
       const persona = await createSignedInClient({ isStaff: true });
       try {
         const { data: accounts } = await persona.client.from('accounts').select('code');
-        expect(accounts ?? []).toHaveLength(52);
+        expect(accounts ?? []).toHaveLength(54);
 
         const { data: periods } = await persona.client
           .from('periods')
