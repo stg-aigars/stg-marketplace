@@ -16,6 +16,9 @@ export interface SuggestionListing {
  * so a single seller's failure can't tank the whole map, and logs rejections via the
  * injected `logError` callback. The route handler wraps this with a closure-bound
  * `fetchOne` that knows each seller's cart-item exclude list.
+ *
+ * `logError` is invoked synchronously per rejection; an async callback's returned
+ * Promise is not awaited.
  */
 export async function buildSuggestionsMap(
   sellerIds: string[],
