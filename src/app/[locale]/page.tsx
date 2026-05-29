@@ -49,25 +49,37 @@ export default async function HomePage() {
   const t = await getTranslations('home');
 
   const supabase = await createClient();
-  const [{ data: recentListings }, { user, favoriteIds }] = await Promise.all([
+  const [{ data: recentListings }, { data: endingSoonAuctions }, { user, favoriteIds }] = await Promise.all([
     supabase
       .from('listings')
       .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+      .eq('listing_type', 'fixed_price')
       .in('status', ['active', 'reserved'])
       .order('created_at', { ascending: false })
       .limit(8)
+      .returns<RecentListingRow[]>(),
+    supabase
+      .from('listings')
+      .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+      .eq('listing_type', 'auction')
+      .eq('status', 'active')
+      .gt('auction_end_at', new Date().toISOString())
+      .order('auction_end_at', { ascending: true })
+      .limit(4)
       .returns<RecentListingRow[]>(),
     getUserWithFavorites(),
   ]);
   const isAuthenticated = !!user;
 
   const recentListingsList = recentListings ?? [];
+  const endingSoonAuctionsList = endingSoonAuctions ?? [];
 
   const { expansionCounts, commentCounts } = await getListingCardCounts(
     supabase,
-    recentListingsList.map((l) => l.id)
+    [...recentListingsList, ...endingSoonAuctionsList].map((l) => l.id)
   );
 
+  const showEndingSoonRail = endingSoonAuctionsList.length >= 1;
   const showAvailableNowRail = recentListingsList.length >= 6;
   const showCompactSellerProp = !showAvailableNowRail && !IS_PRELAUNCH;
   const showFullSellerProp = showAvailableNowRail && !IS_PRELAUNCH;
@@ -76,6 +88,23 @@ export default async function HomePage() {
     <>
       <HomeHero />
       <TrustBand />
+
+      {showEndingSoonRail && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <ListingSection
+            eyebrow={t('auctions.eyebrow')}
+            heading={t('auctions.heading')}
+            href="/browse?auctions=1"
+            linkText={t('auctions.browseAll')}
+            listings={endingSoonAuctionsList}
+            favoriteIds={favoriteIds}
+            isAuthenticated={isAuthenticated}
+            expansionCounts={expansionCounts}
+            commentCounts={commentCounts}
+            className="py-8 sm:py-10 lg:py-12"
+          />
+        </div>
+      )}
 
       {showAvailableNowRail && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
