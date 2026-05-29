@@ -61,23 +61,29 @@ export function ListingSection({
 
   return (
     <section className={className}>
-      <div className="flex items-end justify-between mb-4 gap-4">
-        <div>
-          {eyebrow && (
-            <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-2">
-              {eyebrow}
-            </p>
-          )}
-          <h2 className={SECTION_HEADING_CLASS}>
-            {heading}
-          </h2>
-          {description && (
-            <p className="text-sm text-semantic-text-secondary mt-1">
-              {description}
-            </p>
+      <div className="mb-4">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            {eyebrow && (
+              <p className="text-xs font-medium uppercase tracking-wider text-semantic-text-secondary mb-2">
+                {eyebrow}
+              </p>
+            )}
+            <h2 className={SECTION_HEADING_CLASS}>
+              {heading}
+            </h2>
+          </div>
+          {href && (
+            <div className="shrink-0">
+              <SectionLink href={href}>{linkText}</SectionLink>
+            </div>
           )}
         </div>
-        {href && <SectionLink href={href}>{linkText}</SectionLink>}
+        {description && (
+          <p className="text-sm text-semantic-text-secondary mt-1">
+            {description}
+          </p>
+        )}
       </div>
       {listings.length === 0 ? (
         emptyState

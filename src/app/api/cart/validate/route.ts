@@ -58,11 +58,19 @@ export async function POST(request: Request) {
     .select('id, status, seller_id, listing_type, highest_bidder_id')
     .in('id', listingIds);
 
+  // Single pass over `listings` builds:
+  //   - listingMap: id → row (for the available/unavailable partition below)
+  //   - sellerIds: unique sellers (for the profile fetch)
+  //   - excludeBySeller: seller → cart's listing ids (LOAD-BEARING — see comment
+  //     near the suggestion fan-out below)
   const listingMap = new Map<string, { status: string; seller_id: string; listing_type: string; highest_bidder_id: string | null }>();
   const sellerIds = new Set<string>();
+  const excludeBySeller = new Map<string, string[]>();
   for (const l of listings ?? []) {
     listingMap.set(l.id, l);
     sellerIds.add(l.seller_id);
+    if (!excludeBySeller.has(l.seller_id)) excludeBySeller.set(l.seller_id, []);
+    excludeBySeller.get(l.seller_id)!.push(l.id);
   }
 
   const available: string[] = [];
@@ -89,45 +97,77 @@ export async function POST(request: Request) {
     }
   }
 
-  // Fetch seller profiles for cart display (name, avatar, country)
+  // Seller profiles + suggestions are independent once seller ids are known —
+  // run them in parallel to overlap the network round-trips. Each branch is
+  // self-contained: the suggestions branch wraps its own failure so a hiccup
+  // there never breaks the profile fetch or the core validation response.
+  const [sellers, suggestionsResult] = await Promise.all([
+    fetchSellerProfiles(supabase, sellerIds),
+    fetchSuggestions(supabase, excludeBySeller),
+  ]);
+
+  return NextResponse.json({
+    available,
+    unavailable,
+    sellers,
+    suggestions: suggestionsResult.suggestions,
+    suggestionExpansionCounts: suggestionsResult.expansionCounts,
+    suggestionCommentCounts: suggestionsResult.commentCounts,
+  });
+}
+
+async function fetchSellerProfiles(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sellerIds: Set<string>,
+): Promise<Record<string, { name: string; avatarUrl: string | null; country: string | null }>> {
   const sellers: Record<string, { name: string; avatarUrl: string | null; country: string | null }> = {};
-  if (sellerIds.size > 0) {
-    const { data: profiles } = await supabase
-      .from('public_profiles')
-      .select('id, full_name, avatar_url, country')
-      .in('id', Array.from(sellerIds));
+  if (sellerIds.size === 0) return sellers;
 
-    for (const p of profiles ?? []) {
-      sellers[p.id] = {
-        name: p.full_name ?? 'Seller',
-        avatarUrl: p.avatar_url ?? null,
-        country: p.country ?? null,
-      };
-    }
+  const { data: profiles } = await supabase
+    .from('public_profiles')
+    .select('id, full_name, avatar_url, country')
+    .in('id', Array.from(sellerIds));
+
+  for (const p of profiles ?? []) {
+    sellers[p.id] = {
+      name: p.full_name ?? 'Seller',
+      avatarUrl: p.avatar_url ?? null,
+      country: p.country ?? null,
+    };
   }
+  return sellers;
+}
 
-  // Per-seller cross-sell suggestions. Wrapped in its own try/catch so a failure
-  // here NEVER breaks the core validation response.
-  //
-  // Rows match `ListingSectionItem` so the client can render through the same
-  // `ListingSection` component the listing detail page uses for "More from
-  // {seller}" (see RelatedListings.tsx). Count maps decorate IDs flat across
-  // all sellers — the client looks them up per render.
-  let suggestions: Record<string, CartSuggestion[]> = {};
-  let suggestionExpansionCounts: Record<string, number> = {};
-  let suggestionCommentCounts: Record<string, number> = {};
+interface SuggestionsResult {
+  suggestions: Record<string, CartSuggestion[]>;
+  expansionCounts: Record<string, number>;
+  commentCounts: Record<string, number>;
+}
+
+/**
+ * Per-seller cross-sell suggestions. Rows match `ListingSectionItem` so the
+ * client renders through the shared `ListingSection` component the listing
+ * detail page uses for "More from {seller}" (see RelatedListings.tsx).
+ *
+ * Cart items keep status='active' until checkout-create flips them to
+ * 'reserved' (see reserve_listings_atomic RPC call in
+ * src/app/api/payments/cart-create/route.ts), so the per-seller exclusion is
+ * LOAD-BEARING, not defensive.
+ *
+ * Failure isolation is two-layer:
+ *   1. `buildSuggestionsMap` uses `Promise.allSettled` per seller; a single
+ *      seller's failed query logs to Sentry but doesn't tank the rest.
+ *   2. The count-decoration step has its own try/catch — a counts-query
+ *      failure degrades to zero counts on populated suggestions rather than
+ *      discarding all the suggestion data.
+ *   3. An outer try/catch on the whole block returns empty maps if anything
+ *      throws unexpectedly (defensive — `Promise.allSettled` doesn't throw).
+ */
+async function fetchSuggestions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  excludeBySeller: Map<string, string[]>,
+): Promise<SuggestionsResult> {
   try {
-    // Group cart's listing IDs by seller so we can exclude them from their own
-    // seller's suggestion strip. Cart items keep status='active' until
-    // checkout-create flips them to 'reserved' (see reserve_listings_atomic RPC
-    // call in src/app/api/payments/cart-create/route.ts), so the explicit
-    // exclusion below is LOAD-BEARING, not defensive.
-    const excludeBySeller = new Map<string, string[]>();
-    for (const l of listings ?? []) {
-      if (!excludeBySeller.has(l.seller_id)) excludeBySeller.set(l.seller_id, []);
-      excludeBySeller.get(l.seller_id)!.push(l.id);
-    }
-
     const orderedSellerIds = Array.from(excludeBySeller.keys());
 
     const fetchOne = async (sellerId: string): Promise<CartSuggestion[]> => {
@@ -153,7 +193,7 @@ export async function POST(request: Request) {
       // Rotates which cards a returning visitor sees without a full random()
       // ORDER BY (which would need an RPC). Pool stays skewed toward recent
       // inventory, which is fine — old listings shouldn't surface here.
-      const pool = [...(data ?? [])];
+      const pool = data ?? [];
       for (let i = pool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -169,32 +209,35 @@ export async function POST(request: Request) {
       });
     };
 
-    suggestions = await buildSuggestionsMap(orderedSellerIds, fetchOne, logError);
+    const suggestions = await buildSuggestionsMap(orderedSellerIds, fetchOne, logError);
 
-    // Decorate expansion + comment counts via the existing helper used by RelatedListings.
-    const allListingIds = Object.values(suggestions).flatMap((rows) => rows.map((r) => r.id));
-    if (allListingIds.length > 0) {
-      const counts = await getListingCardCounts(supabase, allListingIds);
-      suggestionExpansionCounts = counts.expansionCounts;
-      suggestionCommentCounts = counts.commentCounts;
+    // Decorate counts independently — a counts failure degrades to zero
+    // counts rather than discarding the suggestion data.
+    let expansionCounts: Record<string, number> = {};
+    let commentCounts: Record<string, number> = {};
+    const allListingIds: string[] = [];
+    for (const rows of Object.values(suggestions)) {
+      for (const row of rows) allListingIds.push(row.id);
     }
+    if (allListingIds.length > 0) {
+      try {
+        const counts = await getListingCardCounts(supabase, allListingIds);
+        expansionCounts = counts.expansionCounts;
+        commentCounts = counts.commentCounts;
+      } catch (err) {
+        Sentry.captureException(err, {
+          level: 'warning',
+          tags: { surface: 'cart_suggestions_counts' },
+        });
+      }
+    }
+
+    return { suggestions, expansionCounts, commentCounts };
   } catch (err) {
     Sentry.captureException(err, {
       level: 'warning',
       tags: { surface: 'cart_suggestions_outer' },
     });
-    // Wipe any partial state from a mid-loop throw — the type contract requires full maps.
-    suggestions = {};
-    suggestionExpansionCounts = {};
-    suggestionCommentCounts = {};
+    return { suggestions: {}, expansionCounts: {}, commentCounts: {} };
   }
-
-  return NextResponse.json({
-    available,
-    unavailable,
-    sellers,
-    suggestions,
-    suggestionExpansionCounts,
-    suggestionCommentCounts,
-  });
 }

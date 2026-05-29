@@ -10,6 +10,7 @@ import { ListingIdentity, Price } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import {
   getShippingPriceCents,
+  isTerminalCountry,
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
 import type { CartItem, CartValidationResult, CartSellerProfile, CartSuggestion } from '@/lib/checkout/cart-types';
@@ -67,10 +68,10 @@ export default function CartPage() {
   }, [items]);
 
   const buyerCountry = profile?.country ?? null;
-  // Allow-list (vs. `country !== null`) — shipping-hint copy assumes the Baltic cross-border
-  // parcel-locker network; gate fails closed if the platform ever ships beyond LV/LT/EE.
-  const BALTIC_COUNTRIES = ['LV', 'LT', 'EE'] as const;
-  const buyerIsBaltic = buyerCountry !== null && (BALTIC_COUNTRIES as readonly string[]).includes(buyerCountry);
+  // Shipping-hint copy assumes the Baltic cross-border parcel-locker network;
+  // reuse `isTerminalCountry` so the gate stays in sync with `TERMINAL_COUNTRIES`
+  // if the platform ever ships beyond LV/LT/EE.
+  const buyerIsBaltic = buyerCountry !== null && isTerminalCountry(buyerCountry);
 
   // Group items by seller — use fetched profiles for display, localStorage as fallback
   const sellerGroups = useMemo(() => {
