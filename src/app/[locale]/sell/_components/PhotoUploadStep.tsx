@@ -149,7 +149,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
     // Validate each file
     for (const file of filesToUpload) {
       if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-        setError('Only JPEG, PNG, WebP, and AVIF images are supported');
+        setError('Only JPEG, PNG, WebP, AVIF, and HEIC images are supported');
         return;
       }
       if (file.size > MAX_PHOTO_SIZE_BYTES) {
