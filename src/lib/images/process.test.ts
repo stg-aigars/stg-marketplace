@@ -68,6 +68,11 @@ describe('detectImageType', () => {
     expect(detectImageType(isoBmffWithBrand('hevx'))).toBe('image/heic');
   });
 
+  it('detects HEIC collection brands heim/heis', () => {
+    expect(detectImageType(isoBmffWithBrand('heim'))).toBe('image/heic');
+    expect(detectImageType(isoBmffWithBrand('heis'))).toBe('image/heic');
+  });
+
   it('detects HEIF base brands mif1/msf1', () => {
     expect(detectImageType(isoBmffWithBrand('mif1'))).toBe('image/heic');
     expect(detectImageType(isoBmffWithBrand('msf1'))).toBe('image/heic');
@@ -94,6 +99,18 @@ describe('detectImageType', () => {
 
   it('returns null for buffers shorter than the minimum header', () => {
     expect(detectImageType(Buffer.from([0xFF, 0xD8]))).toBeNull();
+  });
+
+  it('returns null for a GIF header (unsupported format)', () => {
+    // "GIF89a"
+    const buf = Buffer.concat([Buffer.from('GIF89a', 'ascii'), Buffer.alloc(6)]);
+    expect(detectImageType(buf)).toBeNull();
+  });
+
+  it('returns null for a PDF header (unsupported format)', () => {
+    // "%PDF-1.7"
+    const buf = Buffer.concat([Buffer.from('%PDF-1.7', 'ascii'), Buffer.alloc(4)]);
+    expect(detectImageType(buf)).toBeNull();
   });
 
   it('returns null for unrecognized content', () => {
