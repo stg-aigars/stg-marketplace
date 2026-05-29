@@ -73,9 +73,17 @@ export function detectImageType(buffer: Buffer): string | null {
  * Strip EXIF metadata (GPS, device info), cap long edge, normalize to WebP@90.
  * Sharp auto-detects input format from the buffer's magic bytes, so callers
  * don't pass it. `.rotate()` applies EXIF orientation before stripping it.
+ *
+ * `limitInputPixels` is a Sharp decode-time gate — exceeded inputs throw
+ * before resize runs. Sized at 100 MP to cover modern phone main cameras
+ * (iPhone 14/15/16 Pro 48 MP, Pixel 8/9 Pro 50 MP, Samsung Ultra high-res
+ * modes up to 50 MP / 108 MP) without forcing users to downscale before
+ * upload. The 10 MB request-size cap (MAX_PHOTO_SIZE_BYTES) remains the
+ * primary DoS gate; Sharp's library default of ~268 MP stays as the upper
+ * guard against pathological inputs.
  */
 export async function stripExifMetadata(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer, { limitInputPixels: 25_000_000 })
+  return sharp(buffer, { limitInputPixels: 100_000_000 })
     .rotate()
     .resize({
       width: MAX_PHOTO_DIMENSION,

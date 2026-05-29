@@ -66,6 +66,22 @@ describe('stripExifMetadata', () => {
     });
   });
 
+  describe('input pixel cap', () => {
+    it('accepts a 48 MP input (iPhone 14/15/16 Pro main camera)', async () => {
+      const input = await makeImageBuffer('jpeg', 8064, 6048);
+      const output = await stripExifMetadata(input);
+      const meta = await sharp(output).metadata();
+      expect(Math.max(meta.width!, meta.height!)).toBe(MAX_PHOTO_DIMENSION);
+    });
+
+    it('accepts a 50 MP input (Pixel 8/9 Pro, Samsung Ultra high-res)', async () => {
+      const input = await makeImageBuffer('jpeg', 8160, 6120);
+      const output = await stripExifMetadata(input);
+      const meta = await sharp(output).metadata();
+      expect(Math.max(meta.width!, meta.height!)).toBe(MAX_PHOTO_DIMENSION);
+    });
+  });
+
   describe('format normalization', () => {
     it('normalizes JPEG input to WebP', async () => {
       const input = await makeImageBuffer('jpeg', 2000, 1500);
