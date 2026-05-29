@@ -12,8 +12,9 @@ import {
   getShippingPriceCents,
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
-import type { CartItem, CartValidationResult, CartSellerProfile } from '@/lib/checkout/cart-types';
+import type { CartItem, CartValidationResult, CartSellerProfile, CartSuggestion } from '@/lib/checkout/cart-types';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { CartSuggestionStrip } from './CartSuggestionStrip';
 
 interface SellerGroup {
   sellerId: string;
@@ -29,6 +30,7 @@ export default function CartPage() {
   const { user, profile } = useAuth();
   const [unavailableMap, setUnavailableMap] = useState<Map<string, 'reserved' | 'sold' | 'cancelled'>>(new Map());
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, CartSellerProfile>>({});
+  const [suggestionsBySeller, setSuggestionsBySeller] = useState<Record<string, CartSuggestion[]>>({});
   const [validating, setValidating] = useState(false);
 
   // Validate cart items on mount only
@@ -54,12 +56,15 @@ export default function CartPage() {
         }
         setUnavailableMap(map);
         if (data.sellers) setSellerProfiles(data.sellers);
+        if (data.suggestions) setSuggestionsBySeller(data.suggestions);
       })
       .catch(() => {})
       .finally(() => setValidating(false));
   }, [items]);
 
   const buyerCountry = profile?.country ?? null;
+  const BALTIC_COUNTRIES = ['LV', 'LT', 'EE'] as const;
+  const buyerIsBaltic = buyerCountry !== null && (BALTIC_COUNTRIES as readonly string[]).includes(buyerCountry);
 
   // Group items by seller — use fetched profiles for display, localStorage as fallback
   const sellerGroups = useMemo(() => {
@@ -260,6 +265,15 @@ export default function CartPage() {
                     )}
                   </div>
                 </div>
+
+                {suggestionsBySeller[group.sellerId]?.length ? (
+                  <CartSuggestionStrip
+                    sellerId={group.sellerId}
+                    sellerName={group.sellerName}
+                    suggestions={suggestionsBySeller[group.sellerId]}
+                    showShippingHint={buyerIsBaltic}
+                  />
+                ) : null}
               </CardBody>
             </Card>
           );
