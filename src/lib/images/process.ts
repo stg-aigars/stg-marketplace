@@ -56,14 +56,40 @@ export function detectImageType(buffer: Buffer): string | null {
     return 'image/webp';
   }
 
-  // AVIF: "ftyp" at offset 4
+  // TIFF: little-endian (II*\0) or big-endian (MM\0*).
+  // Covers .tif/.tiff and Adobe DNG raw photos (iPhone ProRAW, Pixel RAW).
+  // Callers reject this distinctly so users get "RAW isn't supported"
+  // rather than the generic "Invalid file type".
+  if (
+    (buffer[0] === 0x49 && buffer[1] === 0x49 && buffer[2] === 0x2A && buffer[3] === 0x00) ||
+    (buffer[0] === 0x4D && buffer[1] === 0x4D && buffer[2] === 0x00 && buffer[3] === 0x2A)
+  ) {
+    return 'image/tiff';
+  }
+
+  // ISO BMFF container — "ftyp" at offset 4. The brand at offset 8-11
+  // disambiguates the actual format. Without the brand check, every
+  // ISO-BMFF file (HEIC, MP4, MOV, 3GP) would be mislabeled as AVIF.
   if (
     buffer[4] === 0x66 && // f
     buffer[5] === 0x74 && // t
     buffer[6] === 0x79 && // y
     buffer[7] === 0x70 // p
   ) {
-    return 'image/avif';
+    const brand = buffer.subarray(8, 12).toString('ascii');
+    if (brand === 'avif' || brand === 'avis') return 'image/avif';
+    // iPhone Photos use heic/heix/mif1; the others cover spec variants we may see.
+    if (
+      brand === 'heic' ||
+      brand === 'heix' ||
+      brand === 'hevc' ||
+      brand === 'hevx' ||
+      brand === 'mif1' ||
+      brand === 'msf1'
+    ) {
+      return 'image/heic';
+    }
+    return null;
   }
 
   return null;
