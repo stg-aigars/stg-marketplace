@@ -135,7 +135,7 @@ export async function POST(request: Request) {
         .eq('status', 'active')
         .eq('listing_type', 'fixed_price')
         .order('created_at', { ascending: false })
-        .limit(8);
+        .limit(4);
 
       if (excludeIds.length > 0) {
         // PostgREST `not.in.()` rejects empty parens; guard accordingly.

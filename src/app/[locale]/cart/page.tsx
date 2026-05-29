@@ -175,23 +175,26 @@ export default function CartPage() {
             <Card key={group.sellerId}>
               <CardBody>
                 {/* Seller header */}
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-semantic-border">
-                  <UserIdentity
-                    name={group.sellerName}
-                    avatarUrl={group.sellerAvatarUrl}
-                    country={group.sellerCountry}
-                    href={`/sellers/${group.sellerId}`}
-                    size="sm"
-                  />
-                  {buyerCountry && group.shippingCents !== null ? (
-                    <span className="text-sm text-semantic-text-secondary shrink-0">
-                      Shipping: {formatCentsToCurrency(group.shippingCents)}
-                    </span>
-                  ) : !buyerCountry ? (
-                    <span className="text-xs text-semantic-text-muted shrink-0">
-                      Sign in to see shipping
-                    </span>
-                  ) : null}
+                <div className="mb-4 pb-3 border-b border-semantic-border">
+                  <p className="text-xs text-semantic-text-muted mb-2">Seller</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <UserIdentity
+                      name={group.sellerName}
+                      avatarUrl={group.sellerAvatarUrl}
+                      country={group.sellerCountry}
+                      href={`/sellers/${group.sellerId}`}
+                      size="sm"
+                    />
+                    {buyerCountry && group.shippingCents !== null ? (
+                      <span className="text-sm text-semantic-text-secondary shrink-0">
+                        Shipping: {formatCentsToCurrency(group.shippingCents)}
+                      </span>
+                    ) : !buyerCountry ? (
+                      <span className="text-xs text-semantic-text-muted shrink-0">
+                        Sign in to see shipping
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Items */}
