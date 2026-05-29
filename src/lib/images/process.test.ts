@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { stripExifMetadata, MAX_PHOTO_DIMENSION } from './process';
+import { detectImageType, stripExifMetadata, MAX_PHOTO_DIMENSION } from './process';
+
+function isoBmffWithBrand(brand: string): Buffer {
+  // 4-byte box size + "ftyp" + 4-byte brand. The size value is cosmetic for the sniffer.
+  return Buffer.concat([
+    Buffer.from([0x00, 0x00, 0x00, 0x18]),
+    Buffer.from('ftyp', 'ascii'),
+    Buffer.from(brand, 'ascii'),
+  ]);
+}
 
 async function makeImageBuffer(
   format: 'jpeg' | 'png' | 'webp' | 'avif',
@@ -17,6 +26,80 @@ async function makeImageBuffer(
     default: return base.jpeg().toBuffer();
   }
 }
+
+describe('detectImageType', () => {
+  it('detects JPEG by FF D8 FF prefix', () => {
+    const buf = Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]), Buffer.alloc(8)]);
+    expect(detectImageType(buf)).toBe('image/jpeg');
+  });
+
+  it('detects PNG by 89 50 4E 47 0D 0A 1A 0A prefix', () => {
+    const buf = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+      Buffer.alloc(4),
+    ]);
+    expect(detectImageType(buf)).toBe('image/png');
+  });
+
+  it('detects WebP by RIFF + WEBP marker', () => {
+    const buf = Buffer.concat([
+      Buffer.from('RIFF', 'ascii'),
+      Buffer.from([0x00, 0x00, 0x00, 0x00]),
+      Buffer.from('WEBP', 'ascii'),
+    ]);
+    expect(detectImageType(buf)).toBe('image/webp');
+  });
+
+  it('detects AVIF by ftyp brand "avif"', () => {
+    expect(detectImageType(isoBmffWithBrand('avif'))).toBe('image/avif');
+  });
+
+  it('detects AVIF image-sequence brand "avis"', () => {
+    expect(detectImageType(isoBmffWithBrand('avis'))).toBe('image/avif');
+  });
+
+  it('detects HEIC by ftyp brand "heic" (iPhone Photos default)', () => {
+    expect(detectImageType(isoBmffWithBrand('heic'))).toBe('image/heic');
+  });
+
+  it('detects HEIC variants heix/hevc/hevx', () => {
+    expect(detectImageType(isoBmffWithBrand('heix'))).toBe('image/heic');
+    expect(detectImageType(isoBmffWithBrand('hevc'))).toBe('image/heic');
+    expect(detectImageType(isoBmffWithBrand('hevx'))).toBe('image/heic');
+  });
+
+  it('detects HEIF base brands mif1/msf1', () => {
+    expect(detectImageType(isoBmffWithBrand('mif1'))).toBe('image/heic');
+    expect(detectImageType(isoBmffWithBrand('msf1'))).toBe('image/heic');
+  });
+
+  it('returns null for ISO BMFF with unknown brand (e.g. MP4 "isom")', () => {
+    // Regression guard: pre-fix logic returned 'image/avif' for any ftyp box.
+    expect(detectImageType(isoBmffWithBrand('isom'))).toBeNull();
+  });
+
+  it('returns null for ISO BMFF with MOV brand "qt  "', () => {
+    expect(detectImageType(isoBmffWithBrand('qt  '))).toBeNull();
+  });
+
+  it('detects little-endian TIFF (Intel byte order, used by Adobe DNG)', () => {
+    const buf = Buffer.concat([Buffer.from([0x49, 0x49, 0x2A, 0x00]), Buffer.alloc(8)]);
+    expect(detectImageType(buf)).toBe('image/tiff');
+  });
+
+  it('detects big-endian TIFF (Motorola byte order)', () => {
+    const buf = Buffer.concat([Buffer.from([0x4D, 0x4D, 0x00, 0x2A]), Buffer.alloc(8)]);
+    expect(detectImageType(buf)).toBe('image/tiff');
+  });
+
+  it('returns null for buffers shorter than the minimum header', () => {
+    expect(detectImageType(Buffer.from([0xFF, 0xD8]))).toBeNull();
+  });
+
+  it('returns null for unrecognized content', () => {
+    expect(detectImageType(Buffer.alloc(64, 0))).toBeNull();
+  });
+});
 
 describe('stripExifMetadata', () => {
   describe('resize cap', () => {

@@ -56,14 +56,35 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const detectedType = detectImageType(buffer);
 
-  if (!detectedType || !ALLOWED_PHOTO_TYPES.includes(detectedType)) {
+  // TIFF/DNG = RAW photos (iPhone ProRAW, Pixel RAW). Reject with specific copy
+  // so the buyer knows to attach a JPEG/HEIC photo of the issue instead.
+  if (detectedType === 'image/tiff') {
     return NextResponse.json(
-      { error: `Invalid file type. Allowed: ${ALLOWED_PHOTO_TYPES.join(', ')}` },
+      { error: 'RAW (DNG/TIFF) photos aren’t supported. Please upload a JPEG or HEIC from your camera roll.' },
       { status: 400 }
     );
   }
 
-  const strippedBuffer = await stripExifMetadata(buffer);
+  if (!detectedType || !ALLOWED_PHOTO_TYPES.includes(detectedType)) {
+    return NextResponse.json(
+      { error: 'Unsupported image format. Please upload a JPEG, PNG, WebP, AVIF or HEIC photo.' },
+      { status: 400 }
+    );
+  }
+
+  let strippedBuffer: Buffer;
+  try {
+    strippedBuffer = await stripExifMetadata(buffer);
+  } catch (err) {
+    // Sharp throws on unsupported codecs (e.g. HEIC on a build without an HEVC
+    // decoder) and on inputs exceeding limitInputPixels. Return a clean 400
+    // rather than letting the throw surface as a generic 500.
+    console.error('Dispute photo processing failed:', err);
+    return NextResponse.json(
+      { error: 'Couldn’t process this photo. Try a different photo, or save it as JPEG before uploading.' },
+      { status: 400 }
+    );
+  }
   const path = `${user.id}/${crypto.randomUUID()}.${OUTPUT_EXTENSION}`;
 
   const { error: uploadError } = await supabase.storage

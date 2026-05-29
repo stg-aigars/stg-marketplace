@@ -258,7 +258,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif"
         multiple
         onChange={handleFileSelect}
         className="hidden"

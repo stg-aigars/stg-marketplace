@@ -114,4 +114,4 @@ export const MAX_TEXT_FIELD_LENGTH = 200;
 export const MAX_PRICE_CENTS = 999999; // €9,999.99
 export const MAX_PHOTOS = 8;
 export const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-export const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+export const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];
