@@ -63,6 +63,8 @@ export default function CartPage() {
   }, [items]);
 
   const buyerCountry = profile?.country ?? null;
+  // Allow-list (vs. `country !== null`) — shipping-hint copy assumes the Baltic cross-border
+  // parcel-locker network; gate fails closed if the platform ever ships beyond LV/LT/EE.
   const BALTIC_COUNTRIES = ['LV', 'LT', 'EE'] as const;
   const buyerIsBaltic = buyerCountry !== null && (BALTIC_COUNTRIES as readonly string[]).includes(buyerCountry);
 
