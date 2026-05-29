@@ -42,18 +42,6 @@ export interface AnalyticsEventMap {
     price_cents: number;
     seller_id: string;
   };
-  /** Fires once per strip impression via IntersectionObserver (0.5 threshold), not per individual suggestion card. */
-  cart_suggestion_viewed: {
-    seller_id: string;
-    /** Number of suggestion cards rendered in the strip at impression time. */
-    count: number;
-  };
-  cart_suggestion_clicked: {
-    seller_id: string;
-    listing_id: string;
-    /** 0-indexed position within the seller's suggestion strip */
-    position: number;
-  };
   seller_profile_viewed: {
     seller_id: string;
     listing_count: number;

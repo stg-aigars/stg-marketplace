@@ -2,9 +2,17 @@ import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@/lib/supabase/server';
 import type { CartSuggestion, UnavailableItem } from '@/lib/checkout/cart-types';
-import { buildSuggestionsMap, type SuggestionListing } from '@/lib/cart/suggestions';
+import { buildSuggestionsMap } from '@/lib/cart/suggestions';
 import { getListingCardCounts } from '@/lib/listings/queries';
 import { cartValidateLimiter, applyRateLimit } from '@/lib/rate-limit';
+
+/**
+ * Column set for cross-sell suggestions — matches `ListingSectionItem` so the
+ * client can render through the shared `ListingSection` component (same shape
+ * the listing-detail "More from {seller}" rail uses; see RelatedListings.tsx).
+ */
+const SUGGESTION_SELECT =
+  'id, game_name, price_cents, previous_price_cents, price_changed_at, photos, country, version_thumbnail, listing_type, games(image, is_expansion)' as const;
 
 /**
  * POST /api/cart/validate
@@ -20,7 +28,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     listingIds = body.listingIds;
     if (!Array.isArray(listingIds) || listingIds.length === 0) {
-      return NextResponse.json({ available: [], unavailable: [], sellers: {}, suggestions: {} });
+      return NextResponse.json({
+        available: [],
+        unavailable: [],
+        sellers: {},
+        suggestions: {},
+        suggestionExpansionCounts: {},
+        suggestionCommentCounts: {},
+      });
     }
     if (listingIds.length > 20) {
       return NextResponse.json({ error: 'Too many items' }, { status: 400 });
@@ -90,16 +105,19 @@ export async function POST(request: Request) {
   // Per-seller cross-sell suggestions. Wrapped in its own try/catch so a failure
   // here NEVER breaks the core validation response.
   //
-  // Type split:
-  //   - SuggestionListing = bare DB row shape returned by per-seller queries
-  //   - CartSuggestion    = SuggestionListing + expansionCount, decorated below
-  //                          via getListingCardCounts and returned to the client
+  // Rows match `ListingSectionItem` so the client can render through the same
+  // `ListingSection` component the listing detail page uses for "More from
+  // {seller}" (see RelatedListings.tsx). Count maps decorate IDs flat across
+  // all sellers — the client looks them up per render.
   let suggestions: Record<string, CartSuggestion[]> = {};
+  let suggestionExpansionCounts: Record<string, number> = {};
+  let suggestionCommentCounts: Record<string, number> = {};
   try {
     // Group cart's listing IDs by seller so we can exclude them from their own
-    // seller's suggestion strip. Cart items keep status='active' until checkout-create
-    // flips them to 'reserved' (see reserve_listings_atomic RPC call in src/app/api/payments/cart-create/route.ts),
-    // so the explicit exclusion below is LOAD-BEARING, not defensive.
+    // seller's suggestion strip. Cart items keep status='active' until
+    // checkout-create flips them to 'reserved' (see reserve_listings_atomic RPC
+    // call in src/app/api/payments/cart-create/route.ts), so the explicit
+    // exclusion below is LOAD-BEARING, not defensive.
     const excludeBySeller = new Map<string, string[]>();
     for (const l of listings ?? []) {
       if (!excludeBySeller.has(l.seller_id)) excludeBySeller.set(l.seller_id, []);
@@ -108,17 +126,11 @@ export async function POST(request: Request) {
 
     const orderedSellerIds = Array.from(excludeBySeller.keys());
 
-    const fetchOne = async (sellerId: string): Promise<SuggestionListing[]> => {
+    const fetchOne = async (sellerId: string): Promise<CartSuggestion[]> => {
       const excludeIds = excludeBySeller.get(sellerId) ?? [];
-      // NB: deviations from the plan's spec, both verified against the live schema:
-      //   - listings has no `primary_photo_url` column; first photo comes from
-      //     `photos TEXT[]` (canonical column per migration 001 + every
-      //     listing-rendering query in the codebase).
-      //   - `listing_type` enum is `fixed_price` | `auction` (see
-      //     `@/lib/listings/types`); there is no `'regular'` value.
       let q = supabase
         .from('listings')
-        .select('id, game_name, price_cents, condition, photos, games(thumbnail)')
+        .select(SUGGESTION_SELECT)
         .eq('seller_id', sellerId)
         .eq('status', 'active')
         .eq('listing_type', 'fixed_price')
@@ -130,17 +142,9 @@ export async function POST(request: Request) {
         q = q.not('id', 'in', `(${excludeIds.join(',')})`);
       }
 
-      const { data, error } = await q;
+      const { data, error } = await q.returns<CartSuggestion[]>();
       if (error) throw error;
-
-      return (data ?? []).map((row) => ({
-        listingId: row.id as string,
-        gameTitle: row.game_name as string,
-        gameThumbnail: (row.games as unknown as { thumbnail: string | null } | null)?.thumbnail ?? null,
-        firstPhoto: ((row.photos as string[] | null) ?? [])[0] ?? null,
-        condition: row.condition as SuggestionListing['condition'],
-        priceCents: row.price_cents as number,
-      }));
+      return data ?? [];
     };
 
     const logError = (sellerId: string, err: unknown) => {
@@ -151,31 +155,32 @@ export async function POST(request: Request) {
       });
     };
 
-    const bareMap = await buildSuggestionsMap(orderedSellerIds, fetchOne, logError);
+    suggestions = await buildSuggestionsMap(orderedSellerIds, fetchOne, logError);
 
-    // Decorate with expansion counts via the existing helper.
-    const allListingIds = Object.values(bareMap).flatMap((rows) => rows.map((r) => r.listingId));
-    const { expansionCounts } = await getListingCardCounts(supabase, allListingIds);
-
-    for (const [sellerId, rows] of Object.entries(bareMap)) {
-      suggestions[sellerId] = rows.map((r) => ({
-        listingId: r.listingId,
-        gameTitle: r.gameTitle,
-        gameThumbnail: r.gameThumbnail,
-        firstPhoto: r.firstPhoto,
-        condition: r.condition,
-        priceCents: r.priceCents,
-        expansionCount: expansionCounts[r.listingId] ?? 0,
-      }));
+    // Decorate expansion + comment counts via the existing helper used by RelatedListings.
+    const allListingIds = Object.values(suggestions).flatMap((rows) => rows.map((r) => r.id));
+    if (allListingIds.length > 0) {
+      const counts = await getListingCardCounts(supabase, allListingIds);
+      suggestionExpansionCounts = counts.expansionCounts;
+      suggestionCommentCounts = counts.commentCounts;
     }
   } catch (err) {
     Sentry.captureException(err, {
       level: 'warning',
       tags: { surface: 'cart_suggestions_outer' },
     });
-    // Wipe any partial state from a mid-loop throw — the type contract requires a full map.
+    // Wipe any partial state from a mid-loop throw — the type contract requires full maps.
     suggestions = {};
+    suggestionExpansionCounts = {};
+    suggestionCommentCounts = {};
   }
 
-  return NextResponse.json({ available, unavailable, sellers, suggestions });
+  return NextResponse.json({
+    available,
+    unavailable,
+    sellers,
+    suggestions,
+    suggestionExpansionCounts,
+    suggestionCommentCounts,
+  });
 }

@@ -14,7 +14,7 @@ import {
 } from '@/lib/services/unisend/types';
 import type { CartItem, CartValidationResult, CartSellerProfile, CartSuggestion } from '@/lib/checkout/cart-types';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
-import { CartSuggestionStrip } from './CartSuggestionStrip';
+import { ListingSection } from '@/components/listings/ListingSection';
 
 interface SellerGroup {
   sellerId: string;
@@ -31,6 +31,8 @@ export default function CartPage() {
   const [unavailableMap, setUnavailableMap] = useState<Map<string, 'reserved' | 'sold' | 'cancelled'>>(new Map());
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, CartSellerProfile>>({});
   const [suggestionsBySeller, setSuggestionsBySeller] = useState<Record<string, CartSuggestion[]>>({});
+  const [suggestionExpansionCounts, setSuggestionExpansionCounts] = useState<Record<string, number>>({});
+  const [suggestionCommentCounts, setSuggestionCommentCounts] = useState<Record<string, number>>({});
   const [validating, setValidating] = useState(false);
 
   // Validate cart items on mount only
@@ -57,6 +59,8 @@ export default function CartPage() {
         setUnavailableMap(map);
         if (data.sellers) setSellerProfiles(data.sellers);
         if (data.suggestions) setSuggestionsBySeller(data.suggestions);
+        if (data.suggestionExpansionCounts) setSuggestionExpansionCounts(data.suggestionExpansionCounts);
+        if (data.suggestionCommentCounts) setSuggestionCommentCounts(data.suggestionCommentCounts);
       })
       .catch(() => {})
       .finally(() => setValidating(false));
@@ -269,11 +273,19 @@ export default function CartPage() {
                 </div>
 
                 {suggestionsBySeller[group.sellerId]?.length ? (
-                  <CartSuggestionStrip
-                    sellerId={group.sellerId}
-                    sellerName={group.sellerName}
-                    suggestions={suggestionsBySeller[group.sellerId]}
-                    showShippingHint={buyerIsBaltic}
+                  <ListingSection
+                    heading={`More from ${group.sellerName}`}
+                    description={
+                      buyerIsBaltic
+                        ? 'No extra shipping when you add more from this seller.'
+                        : undefined
+                    }
+                    href={`/sellers/${group.sellerId}`}
+                    linkText="View all"
+                    listings={suggestionsBySeller[group.sellerId]}
+                    expansionCounts={suggestionExpansionCounts}
+                    commentCounts={suggestionCommentCounts}
+                    className="mt-6 pt-6 border-t border-semantic-border"
                   />
                 ) : null}
               </CardBody>

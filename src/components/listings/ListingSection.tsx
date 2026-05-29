@@ -29,6 +29,8 @@ interface ListingSectionProps {
   heading: string;
   /** Optional small label above the heading (uppercase, muted). Matches other landing sections. */
   eyebrow?: string;
+  /** Optional muted line below the heading (sentence case). Use for value-prop or context copy. */
+  description?: string;
   href?: string;
   linkText?: string;
   listings: ListingSectionItem[];
@@ -44,6 +46,7 @@ interface ListingSectionProps {
 export function ListingSection({
   heading,
   eyebrow,
+  description,
   href,
   linkText = 'View all',
   listings,
@@ -68,6 +71,11 @@ export function ListingSection({
           <h2 className={SECTION_HEADING_CLASS}>
             {heading}
           </h2>
+          {description && (
+            <p className="text-sm text-semantic-text-secondary mt-1">
+              {description}
+            </p>
+          )}
         </div>
         {href && <SectionLink href={href}>{linkText}</SectionLink>}
       </div>

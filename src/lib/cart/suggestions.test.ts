@@ -1,13 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildSuggestionsMap, type SuggestionListing } from './suggestions';
+import { buildSuggestionsMap } from './suggestions';
 
-function mkListing(id: string): SuggestionListing {
+/** Local fixture shape — `buildSuggestionsMap` is generic, so the test picks a minimal row. */
+interface TestListing {
+  listingId: string;
+  gameTitle: string;
+  priceCents: number;
+}
+
+function mkListing(id: string): TestListing {
   return {
     listingId: id,
     gameTitle: `Game ${id}`,
-    gameThumbnail: null,
-    firstPhoto: null,
-    condition: 'good',
     priceCents: 1000,
   };
 }

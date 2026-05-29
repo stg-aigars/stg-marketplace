@@ -71,11 +71,4 @@
   .mb-safe {
     margin-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
   }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
 }
