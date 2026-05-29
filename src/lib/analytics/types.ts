@@ -42,6 +42,16 @@ export interface AnalyticsEventMap {
     price_cents: number;
     seller_id: string;
   };
+  cart_suggestion_strip_viewed: {
+    seller_id: string;
+    count: number;
+  };
+  cart_suggestion_clicked: {
+    seller_id: string;
+    listing_id: string;
+    /** 0-indexed position within the seller's suggestion strip */
+    position: number;
+  };
   seller_profile_viewed: {
     seller_id: string;
     listing_count: number;
