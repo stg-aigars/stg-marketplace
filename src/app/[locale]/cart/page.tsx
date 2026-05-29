@@ -10,10 +10,12 @@ import { ListingIdentity, Price } from '@/components/listings/atoms';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import {
   getShippingPriceCents,
+  isTerminalCountry,
   type TerminalCountry,
 } from '@/lib/services/unisend/types';
-import type { CartItem, CartValidationResult, CartSellerProfile } from '@/lib/checkout/cart-types';
+import type { CartItem, CartValidationResult, CartSellerProfile, CartSuggestion } from '@/lib/checkout/cart-types';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { ListingSection } from '@/components/listings/ListingSection';
 
 interface SellerGroup {
   sellerId: string;
@@ -29,6 +31,9 @@ export default function CartPage() {
   const { user, profile } = useAuth();
   const [unavailableMap, setUnavailableMap] = useState<Map<string, 'reserved' | 'sold' | 'cancelled'>>(new Map());
   const [sellerProfiles, setSellerProfiles] = useState<Record<string, CartSellerProfile>>({});
+  const [suggestionsBySeller, setSuggestionsBySeller] = useState<Record<string, CartSuggestion[]>>({});
+  const [suggestionExpansionCounts, setSuggestionExpansionCounts] = useState<Record<string, number>>({});
+  const [suggestionCommentCounts, setSuggestionCommentCounts] = useState<Record<string, number>>({});
   const [validating, setValidating] = useState(false);
 
   // Validate cart items on mount only
@@ -54,12 +59,19 @@ export default function CartPage() {
         }
         setUnavailableMap(map);
         if (data.sellers) setSellerProfiles(data.sellers);
+        if (data.suggestions) setSuggestionsBySeller(data.suggestions);
+        if (data.suggestionExpansionCounts) setSuggestionExpansionCounts(data.suggestionExpansionCounts);
+        if (data.suggestionCommentCounts) setSuggestionCommentCounts(data.suggestionCommentCounts);
       })
       .catch(() => {})
       .finally(() => setValidating(false));
   }, [items]);
 
   const buyerCountry = profile?.country ?? null;
+  // Shipping-hint copy assumes the Baltic cross-border parcel-locker network;
+  // reuse `isTerminalCountry` so the gate stays in sync with `TERMINAL_COUNTRIES`
+  // if the platform ever ships beyond LV/LT/EE.
+  const buyerIsBaltic = buyerCountry !== null && isTerminalCountry(buyerCountry);
 
   // Group items by seller — use fetched profiles for display, localStorage as fallback
   const sellerGroups = useMemo(() => {
@@ -164,23 +176,26 @@ export default function CartPage() {
             <Card key={group.sellerId}>
               <CardBody>
                 {/* Seller header */}
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-semantic-border">
-                  <UserIdentity
-                    name={group.sellerName}
-                    avatarUrl={group.sellerAvatarUrl}
-                    country={group.sellerCountry}
-                    href={`/sellers/${group.sellerId}`}
-                    size="sm"
-                  />
-                  {buyerCountry && group.shippingCents !== null ? (
-                    <span className="text-sm text-semantic-text-secondary shrink-0">
-                      Shipping: {formatCentsToCurrency(group.shippingCents)}
-                    </span>
-                  ) : !buyerCountry ? (
-                    <span className="text-xs text-semantic-text-muted shrink-0">
-                      Sign in to see shipping
-                    </span>
-                  ) : null}
+                <div className="mb-4 pb-3 border-b border-semantic-border">
+                  <p className="text-xs text-semantic-text-muted mb-2">Seller</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <UserIdentity
+                      name={group.sellerName}
+                      avatarUrl={group.sellerAvatarUrl}
+                      country={group.sellerCountry}
+                      href={`/sellers/${group.sellerId}`}
+                      size="sm"
+                    />
+                    {buyerCountry && group.shippingCents !== null ? (
+                      <span className="text-sm text-semantic-text-secondary shrink-0">
+                        Shipping: {formatCentsToCurrency(group.shippingCents)}
+                      </span>
+                    ) : !buyerCountry ? (
+                      <span className="text-xs text-semantic-text-muted shrink-0">
+                        Sign in to see shipping
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Items */}
@@ -260,6 +275,23 @@ export default function CartPage() {
                     )}
                   </div>
                 </div>
+
+                {suggestionsBySeller[group.sellerId]?.length ? (
+                  <ListingSection
+                    heading={`More from ${group.sellerName}`}
+                    description={
+                      buyerIsBaltic
+                        ? 'No extra shipping when you add more from this seller.'
+                        : undefined
+                    }
+                    href={`/sellers/${group.sellerId}`}
+                    linkText="View all"
+                    listings={suggestionsBySeller[group.sellerId]}
+                    expansionCounts={suggestionExpansionCounts}
+                    commentCounts={suggestionCommentCounts}
+                    className="mt-6 pt-6 border-t border-semantic-border"
+                  />
+                ) : null}
               </CardBody>
             </Card>
           );

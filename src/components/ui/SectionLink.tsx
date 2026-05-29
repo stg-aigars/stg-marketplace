@@ -21,7 +21,7 @@ function SectionLink({ href, children, color, className }: SectionLinkProps) {
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity duration-250 ease-out-custom sm:hover:opacity-70',
+        'inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold transition-opacity duration-250 ease-out-custom sm:hover:opacity-70',
         !color && 'text-semantic-brand',
         className,
       )}

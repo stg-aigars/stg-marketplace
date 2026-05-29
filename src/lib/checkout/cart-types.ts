@@ -1,4 +1,5 @@
 import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingSectionItem } from '@/components/listings/ListingSection';
 
 /** Data stored in localStorage per cart item */
 export interface CartItem {
@@ -62,9 +63,22 @@ export interface CartSellerProfile {
   country: string | null;
 }
 
+/**
+ * Per-seller cross-sell suggestion shape — mirrors `ListingSectionItem` exactly
+ * so suggestions can be rendered through the shared `ListingSection` component,
+ * matching the "More from {seller}" surface on the listing detail page.
+ */
+export type CartSuggestion = ListingSectionItem;
+
 /** Response from /api/cart/validate */
 export interface CartValidationResult {
   available: string[];
   unavailable: UnavailableItem[];
   sellers: Record<string, CartSellerProfile>;
+  /** Keyed by sellerId. Sellers with no eligible other listings or beyond the fan-out cap are absent from the map. */
+  suggestions: Record<string, CartSuggestion[]>;
+  /** Expansion counts keyed by suggestion listing id. Flat across all sellers — caller looks up by listing id. */
+  suggestionExpansionCounts: Record<string, number>;
+  /** Comment counts keyed by suggestion listing id. Flat across all sellers. */
+  suggestionCommentCounts: Record<string, number>;
 }
