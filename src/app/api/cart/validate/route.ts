@@ -98,7 +98,7 @@ export async function POST(request: Request) {
   try {
     // Group cart's listing IDs by seller so we can exclude them from their own
     // seller's suggestion strip. Cart items keep status='active' until checkout-create
-    // flips them to 'reserved' (see src/app/api/payments/cart-create/route.ts:254),
+    // flips them to 'reserved' (see reserve_listings_atomic RPC call in src/app/api/payments/cart-create/route.ts),
     // so the explicit exclusion below is LOAD-BEARING, not defensive.
     const excludeBySeller = new Map<string, string[]>();
     for (const l of listings ?? []) {
@@ -173,6 +173,7 @@ export async function POST(request: Request) {
       level: 'warning',
       tags: { surface: 'cart_suggestions_outer' },
     });
+    // Wipe any partial state from a mid-loop throw — the type contract requires a full map.
     suggestions = {};
   }
 
