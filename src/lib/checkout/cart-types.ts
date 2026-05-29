@@ -62,9 +62,22 @@ export interface CartSellerProfile {
   country: string | null;
 }
 
+/** A single cross-sell suggestion surfaced under a seller card */
+export interface CartSuggestion {
+  listingId: string;
+  gameTitle: string;
+  gameThumbnail: string | null;
+  firstPhoto: string | null;
+  condition: ListingCondition;
+  priceCents: number;
+  expansionCount: number;
+}
+
 /** Response from /api/cart/validate */
 export interface CartValidationResult {
   available: string[];
   unavailable: UnavailableItem[];
   sellers: Record<string, CartSellerProfile>;
+  /** Keyed by sellerId. Sellers with no eligible other listings or beyond the fan-out cap are absent from the map. */
+  suggestions: Record<string, CartSuggestion[]>;
 }
