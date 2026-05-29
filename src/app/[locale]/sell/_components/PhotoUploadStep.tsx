@@ -23,7 +23,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVertical, X, CloudArrowUp } from '@phosphor-icons/react/ssr';
 import { Spinner } from '@/components/ui';
-import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
+import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES } from '@/lib/listings/types';
+import { isAcceptablePhotoCandidate } from '@/lib/images/client-validation';
 
 interface PhotoUploadStepProps {
   photos: string[];
@@ -148,7 +149,10 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
 
     // Validate each file
     for (const file of filesToUpload) {
-      if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      // Fast UX hint only — the authoritative gate is server-side magic-byte
+      // sniffing. Lenient on file.type so MIME-less uploads (iOS share-sheet /
+      // Files) aren't rejected here before the server can validate them.
+      if (!isAcceptablePhotoCandidate(file)) {
         setError('Only JPEG, PNG, WebP, AVIF, and HEIC images are supported');
         return;
       }
@@ -258,7 +262,7 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif"
+        accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif"
         multiple
         onChange={handleFileSelect}
         className="hidden"

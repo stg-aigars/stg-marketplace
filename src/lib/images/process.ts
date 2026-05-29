@@ -79,9 +79,13 @@ export function detectImageType(buffer: Buffer): string | null {
     const brand = buffer.subarray(8, 12).toString('ascii');
     if (brand === 'avif' || brand === 'avis') return 'image/avif';
     // iPhone Photos use heic/heix/mif1; the others cover spec variants we may see.
+    // heim/heis are HEVC image-collection brands; hevc/hevx are kept for inputs
+    // we've observed in the wild even though they're not in the canonical set.
     if (
       brand === 'heic' ||
       brand === 'heix' ||
+      brand === 'heim' ||
+      brand === 'heis' ||
       brand === 'hevc' ||
       brand === 'hevx' ||
       brand === 'mif1' ||
