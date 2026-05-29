@@ -14,6 +14,10 @@ import { cartValidateLimiter, applyRateLimit } from '@/lib/rate-limit';
 const SUGGESTION_SELECT =
   'id, game_name, price_cents, previous_price_cents, price_changed_at, photos, country, version_thumbnail, listing_type, games(image, is_expansion)' as const;
 
+/** Per-request rotation: fetch the newest POOL_SIZE, shuffle, return DISPLAY_SIZE. */
+const SUGGESTION_POOL_SIZE = 12;
+const SUGGESTION_DISPLAY_SIZE = 4;
+
 /**
  * POST /api/cart/validate
  * Checks which listings in the given array are still active,
@@ -135,7 +139,7 @@ export async function POST(request: Request) {
         .eq('status', 'active')
         .eq('listing_type', 'fixed_price')
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(SUGGESTION_POOL_SIZE);
 
       if (excludeIds.length > 0) {
         // PostgREST `not.in.()` rejects empty parens; guard accordingly.
@@ -144,7 +148,17 @@ export async function POST(request: Request) {
 
       const { data, error } = await q.returns<CartSuggestion[]>();
       if (error) throw error;
-      return data ?? [];
+
+      // Fisher-Yates shuffle the pool, then take the first DISPLAY_SIZE.
+      // Rotates which cards a returning visitor sees without a full random()
+      // ORDER BY (which would need an RPC). Pool stays skewed toward recent
+      // inventory, which is fine — old listings shouldn't surface here.
+      const pool = [...(data ?? [])];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, SUGGESTION_DISPLAY_SIZE);
     };
 
     const logError = (sellerId: string, err: unknown) => {
