@@ -21,7 +21,12 @@ export async function POST(request: Request) {
     .from('listing-photos')
     .list(user.id, { limit: MAX_USER_PHOTOS + 1 });
 
-  if (!listError && files && files.length >= MAX_USER_PHOTOS) {
+  if (listError) {
+    // Don't fail the request — fall through to the upload, which will surface
+    // its own auth/RLS error. But log so we can see when the quota gate is
+    // being bypassed because of a storage-client failure.
+    console.error('Listing-photo quota check failed:', listError);
+  } else if (files && files.length >= MAX_USER_PHOTOS) {
     return NextResponse.json(
       { error: `Photo limit reached (${MAX_USER_PHOTOS}). Please remove unused photos before uploading new ones.` },
       { status: 400 }
@@ -93,6 +98,14 @@ export async function POST(request: Request) {
     .upload(path, strippedBuffer, { contentType: OUTPUT_MIME });
 
   if (uploadError) {
+    // Log the Supabase StorageError so Sentry / Coolify logs capture status,
+    // statusCode, name, message — without these, every storage failure
+    // surfaces as a generic 500 with no diagnostic trail.
+    console.error('Listing-photo storage upload failed:', uploadError, {
+      detectedType,
+      fileSize: file.size,
+      outputBytes: strippedBuffer.byteLength,
+    });
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });
   }
 

@@ -92,6 +92,14 @@ export async function POST(request: Request) {
     .upload(path, strippedBuffer, { contentType: OUTPUT_MIME });
 
   if (uploadError) {
+    // Log the Supabase StorageError so Sentry / Coolify logs capture status,
+    // statusCode, name, message — without these, every storage failure
+    // surfaces as a generic 500 with no diagnostic trail.
+    console.error('Dispute-photo storage upload failed:', uploadError, {
+      detectedType,
+      fileSize: file.size,
+      outputBytes: strippedBuffer.byteLength,
+    });
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });
   }
 
