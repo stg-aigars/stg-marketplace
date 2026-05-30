@@ -113,5 +113,10 @@ export const MAX_DESCRIPTION_LENGTH = 2000;
 export const MAX_TEXT_FIELD_LENGTH = 200;
 export const MAX_PRICE_CENTS = 999999; // €9,999.99
 export const MAX_PHOTOS = 8;
-export const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+// 25 MB upload cap. The server downscales every upload to a 2048px WebP
+// (see stripExifMetadata), so this is the request-size / DoS guard, not the
+// stored size. Sized to comfortably admit large JPEG/HEIC from high-MP phones
+// and Safari's auto-transcoded ProRAW→JPEG, while still rejecting raw 50–75 MB
+// ProRAW DNGs (which are also unsupported by format).
+export const MAX_PHOTO_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
 export const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic', 'image/heif'];

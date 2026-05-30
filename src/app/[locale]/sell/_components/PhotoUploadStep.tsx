@@ -24,7 +24,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVertical, X, CloudArrowUp } from '@phosphor-icons/react/ssr';
 import { Spinner } from '@/components/ui';
 import { MAX_PHOTOS, MAX_PHOTO_SIZE_BYTES } from '@/lib/listings/types';
-import { isAcceptablePhotoCandidate } from '@/lib/images/client-validation';
+import { isAcceptablePhotoCandidate, isLikelyRawPhoto } from '@/lib/images/client-validation';
 
 interface PhotoUploadStepProps {
   photos: string[];
@@ -153,11 +153,15 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
       // sniffing. Lenient on file.type so MIME-less uploads (iOS share-sheet /
       // Files) aren't rejected here before the server can validate them.
       if (!isAcceptablePhotoCandidate(file)) {
-        setError('Only JPEG, PNG, WebP, AVIF, and HEIC images are supported');
+        setError(
+          isLikelyRawPhoto(file)
+            ? 'RAW photos (like iPhone ProRAW) aren’t supported. Turn off ProRAW, or upload a standard JPEG or HEIC.'
+            : 'Only JPEG, PNG, WebP, AVIF, and HEIC images are supported'
+        );
         return;
       }
       if (file.size > MAX_PHOTO_SIZE_BYTES) {
-        setError('Each photo must be under 10MB');
+        setError(`Each photo must be under ${Math.round(MAX_PHOTO_SIZE_BYTES / (1024 * 1024))}MB`);
         return;
       }
     }
