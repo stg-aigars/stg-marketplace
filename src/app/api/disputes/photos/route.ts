@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { detectImageType, stripExifMetadata, OUTPUT_MIME, OUTPUT_EXTENSION } from '@/lib/images/process';
+import * as Sentry from '@sentry/nextjs';
 
 export async function POST(request: Request) {
   const rateLimitError = applyRateLimit(photoUploadLimiter, request);
@@ -92,6 +93,16 @@ export async function POST(request: Request) {
     .upload(path, strippedBuffer, { contentType: OUTPUT_MIME });
 
   if (uploadError) {
+    console.error('Dispute-photo storage upload failed:', uploadError);
+    Sentry.captureException(uploadError, {
+      tags: { scope: 'dispute-photo-upload' },
+      extra: {
+        userId: user.id,
+        detectedType,
+        contentType: OUTPUT_MIME,
+        outputBytes: strippedBuffer.byteLength,
+      },
+    });
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });
   }
 
