@@ -108,7 +108,7 @@ export function detectImageType(buffer: Buffer): string | null {
  * before resize runs. Sized at 100 MP to cover modern phone main cameras
  * (iPhone 14/15/16 Pro 48 MP, Pixel 8/9 Pro 50 MP, Samsung Ultra high-res
  * modes up to 50 MP / 108 MP) without forcing users to downscale before
- * upload. The 10 MB request-size cap (MAX_PHOTO_SIZE_BYTES) remains the
+ * upload. The 25 MB request-size cap (MAX_PHOTO_SIZE_BYTES) remains the
  * primary DoS gate; Sharp's library default of ~268 MP stays as the upper
  * guard against pathological inputs.
  */
