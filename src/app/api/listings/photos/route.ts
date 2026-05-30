@@ -16,8 +16,13 @@ export async function POST(request: Request) {
   const { response, user, supabase } = await requireAuth();
   if (response) return response;
 
-  // Per-user photo quota: max 100 photos across all listings
-  const MAX_USER_PHOTOS = 100;
+  // Per-user photo quota: total photos across ALL of a user's listings. This
+  // is a coarse abuse guard, not a per-listing limit — an active multi-listing
+  // seller legitimately accumulates many photos (47 listings ≈ 98 photos hit
+  // the old cap of 100). 500 gives real headroom (~250 listings) while staying
+  // under storage.list()'s ~1000-row response cap, so `limit: MAX + 1` still
+  // reliably detects the over-limit case in a single call.
+  const MAX_USER_PHOTOS = 500;
   const { data: files, error: listError } = await supabase.storage
     .from('listing-photos')
     .list(user.id, { limit: MAX_USER_PHOTOS + 1 });
