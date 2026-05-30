@@ -4,6 +4,7 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { detectImageType, stripExifMetadata, OUTPUT_MIME, OUTPUT_EXTENSION } from '@/lib/images/process';
+import * as Sentry from '@sentry/nextjs';
 
 export async function POST(request: Request) {
   const rateLimitError = applyRateLimit(photoUploadLimiter, request);
@@ -21,7 +22,17 @@ export async function POST(request: Request) {
     .from('listing-photos')
     .list(user.id, { limit: MAX_USER_PHOTOS + 1 });
 
-  if (!listError && files && files.length >= MAX_USER_PHOTOS) {
+  if (listError) {
+    // A failing storage.list() usually means the storage client/session itself
+    // is broken (so the upload below will fail too) — report it rather than
+    // silently skipping the quota gate. Don't fail the request here; let the
+    // upload surface the authoritative error.
+    console.error('Listing-photo quota check failed:', listError);
+    Sentry.captureException(listError, {
+      tags: { scope: 'listing-photo-quota-check' },
+      extra: { userId: user.id },
+    });
+  } else if (files && files.length >= MAX_USER_PHOTOS) {
     return NextResponse.json(
       { error: `Photo limit reached (${MAX_USER_PHOTOS}). Please remove unused photos before uploading new ones.` },
       { status: 400 }
@@ -93,6 +104,20 @@ export async function POST(request: Request) {
     .upload(path, strippedBuffer, { contentType: OUTPUT_MIME });
 
   if (uploadError) {
+    // Surface the Supabase StorageError to Sentry (queryable) + Coolify stdout —
+    // without this, every storage failure is an opaque 500 with no diagnostic
+    // trail. The extra fields make RLS / bucket-config / size causes
+    // distinguishable.
+    console.error('Listing-photo storage upload failed:', uploadError);
+    Sentry.captureException(uploadError, {
+      tags: { scope: 'listing-photo-upload' },
+      extra: {
+        userId: user.id,
+        detectedType,
+        contentType: OUTPUT_MIME,
+        outputBytes: strippedBuffer.byteLength,
+      },
+    });
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });
   }
 

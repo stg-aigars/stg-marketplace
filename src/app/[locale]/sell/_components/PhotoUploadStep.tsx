@@ -170,6 +170,11 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
     setUploading(filesToUpload.length);
     const newUrls: string[] = [];
     const failedNames: string[] = [];
+    // Capture the first concrete failure reason so the user (and our logs) see
+    // *why* an upload failed instead of a generic "try again". The route returns
+    // a JSON { error } for handled cases; non-JSON (infra 413/502/timeout)
+    // falls back to the HTTP status, and a thrown fetch to a network message.
+    let failureReason: string | null = null;
 
     for (const file of filesToUpload) {
       try {
@@ -186,19 +191,30 @@ export function PhotoUploadStep({ photos, onPhotosChange, compact, heading, requ
           newUrls.push(data.url);
         } else {
           failedNames.push(file.name);
+          if (!failureReason) {
+            const serverMessage = await res
+              .json()
+              .then((d) => (d && typeof d.error === 'string' ? d.error : null))
+              .catch(() => null);
+            failureReason = serverMessage ?? `Upload failed (HTTP ${res.status})`;
+          }
         }
       } catch {
         failedNames.push(file.name);
+        if (!failureReason) {
+          failureReason = 'Network error while uploading. Check your connection and try again.';
+        }
       }
       setUploading((prev) => Math.max(0, prev - 1));
     }
 
     if (failedNames.length > 0) {
       const uploaded = filesToUpload.length - failedNames.length;
+      const reason = failureReason ?? 'Please try again.';
       if (uploaded > 0) {
-        setError(`${uploaded} of ${filesToUpload.length} photos uploaded. Failed: ${failedNames.join(', ')}`);
+        setError(`${uploaded} of ${filesToUpload.length} photos uploaded. ${reason}`);
       } else {
-        setError('Failed to upload photos. Please try again.');
+        setError(`Couldn’t upload your ${filesToUpload.length > 1 ? 'photos' : 'photo'}. ${reason}`);
       }
     }
 
