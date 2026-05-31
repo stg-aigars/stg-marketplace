@@ -388,26 +388,6 @@ export default async function ListingDetailPage(
       ]} />
       {/* Browse context navigation (prev/next) */}
       <ListingNavigation key={id} listingId={id} />
-      {/* Owner status banner for non-active listings */}
-      {isOwner && listing.status !== 'active' && (
-        <Alert variant="info" className="mb-6">
-          <p className="text-sm text-semantic-text-secondary">
-            {listing.status === 'reserved'
-              ? 'This listing is reserved — a buyer has purchased it and the order is being processed.'
-              : listing.status === 'sold'
-              ? 'This listing has been sold.'
-              : 'This listing has been cancelled.'}
-          </p>
-          {(listing.status === 'reserved' || listing.status === 'sold') && (
-            <Link
-              href="/account/orders"
-              className="text-sm text-semantic-brand font-medium mt-2 inline-block"
-            >
-              View your orders
-            </Link>
-          )}
-        </Alert>
-      )}
       {/* Mobile-only: title above photos (above-the-fold hierarchy) */}
       <div className="lg:hidden mb-6">{titleCard}</div>
 
