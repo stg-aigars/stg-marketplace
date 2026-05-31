@@ -510,6 +510,19 @@ export default async function ListingDetailPage(
                   <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
                 )}
               </>
+            ) : isOwner && (listing.status === 'sold' || listing.status === 'cancelled') ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-semantic-bg-secondary">
+                  <p className="text-sm text-semantic-text-secondary">
+                    {listing.status === 'sold' ? 'This game has been sold' : 'This listing was cancelled'}
+                  </p>
+                </div>
+                {listing.status === 'sold' && (
+                  <Button variant="secondary" asChild>
+                    <Link href="/account/orders">View your orders</Link>
+                  </Button>
+                )}
+              </div>
             ) : isOwner ? (
               <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (

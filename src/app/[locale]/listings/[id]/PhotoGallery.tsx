@@ -138,12 +138,21 @@ function Lightbox({
 }
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
-  const images =
-    photos.length > 0
-      ? gameImage ? [...photos, gameImage] : photos
-      : gameImage ? [gameImage] : [];
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Drop any image that fails to load (e.g. an uploaded photo missing from
+  // storage) so the gallery falls back to the BGG game image rather than
+  // rendering a broken-image box.
+  const images = (
+    photos.length > 0
+      ? gameImage ? [...photos, gameImage] : photos
+      : gameImage ? [gameImage] : []
+  ).filter((src) => !failedUrls.has(src));
+
+  const markFailed = (src: string) =>
+    setFailedUrls((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
 
   const openLightbox = useCallback(() => setLightboxOpen(true), []);
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
@@ -164,7 +173,9 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
     );
   }
 
-  const activeUrl = images[activeIndex];
+  // activeIndex can fall out of range once a failed image is filtered out.
+  const safeIndex = Math.min(activeIndex, images.length - 1);
+  const activeUrl = images[safeIndex];
 
   return (
     <>
@@ -174,18 +185,19 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
           type="button"
           onClick={openLightbox}
           className="w-full aspect-square max-h-[400px] bg-semantic-bg-secondary rounded-lg overflow-hidden relative cursor-zoom-in"
-          aria-label={`View ${gameTitle} photo ${activeIndex + 1} full size`}
+          aria-label={`View ${gameTitle} photo ${safeIndex + 1} full size`}
         >
           <Image
             src={activeUrl}
-            alt={`${gameTitle} - photo ${activeIndex + 1}`}
+            alt={`${gameTitle} - photo ${safeIndex + 1}`}
             fill
             className="object-contain"
             sizes="(max-width: 1024px) 100vw, 50vw"
-            priority={activeIndex === 0}
+            priority={safeIndex === 0}
             unoptimized={isBggImage(activeUrl)}
             placeholder="blur"
             blurDataURL={BLUR_PLACEHOLDER}
+            onError={() => markFailed(activeUrl)}
           />
           {activeUrl === gameImage && (
             <span className="absolute bottom-2 right-2 w-6 h-6 rounded bg-semantic-bg-secondary flex items-center justify-center">
@@ -203,7 +215,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                 onClick={() => setActiveIndex(i)}
                 aria-label={`View photo ${i + 1}`}
                 className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors duration-250 ease-out-custom relative ${
-                  i === activeIndex
+                  i === safeIndex
                     ? 'border-2 border-semantic-brand'
                     : 'border border-semantic-border-subtle sm:hover:border-semantic-border-default'
                 }`}
@@ -217,6 +229,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                   unoptimized={isBggImage(src)}
                   placeholder="blur"
                   blurDataURL={BLUR_PLACEHOLDER}
+                  onError={() => markFailed(src)}
                 />
               </button>
             ))}
@@ -227,7 +240,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
       {lightboxOpen && (
         <Lightbox
           images={images}
-          activeIndex={activeIndex}
+          activeIndex={safeIndex}
           gameImage={gameImage}
           gameTitle={gameTitle}
           onClose={closeLightbox}
