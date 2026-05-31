@@ -138,23 +138,37 @@ function Lightbox({
 }
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
-  const images =
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
+  // Track selection by URL, not index: when a failed image is filtered out the
+  // remaining images shift, so a positional index would silently point at a
+  // different photo. null means "first available".
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Drop any image that fails to load (e.g. an uploaded photo missing from
+  // storage) so the gallery falls back to the BGG game image rather than
+  // rendering a broken-image box.
+  const images = (
     photos.length > 0
       ? gameImage ? [...photos, gameImage] : photos
-      : gameImage ? [gameImage] : [];
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+      : gameImage ? [gameImage] : []
+  ).filter((src) => !failedUrls.has(src));
+
+  const markFailed = (src: string) =>
+    setFailedUrls((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
 
   const openLightbox = useCallback(() => setLightboxOpen(true), []);
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
-  const goNext = useCallback(() => {
-    setActiveIndex((i) => (i + 1) % images.length);
-  }, [images.length]);
-
-  const goPrev = useCallback(() => {
-    setActiveIndex((i) => (i - 1 + images.length) % images.length);
-  }, [images.length]);
+  const step = (delta: number) =>
+    setSelectedUrl((cur) => {
+      if (images.length === 0) return cur;
+      const base = cur && images.includes(cur) ? cur : images[0];
+      const nextIndex = (images.indexOf(base) + delta + images.length) % images.length;
+      return images[nextIndex];
+    });
+  const goNext = () => step(1);
+  const goPrev = () => step(-1);
 
   if (images.length === 0) {
     return (
@@ -164,7 +178,10 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
     );
   }
 
-  const activeUrl = images[activeIndex];
+  // Resolve selection by identity; fall back to the first surviving image when
+  // nothing is selected yet or the selected image was dropped after a load error.
+  const activeUrl = selectedUrl && images.includes(selectedUrl) ? selectedUrl : images[0];
+  const activeIndex = images.indexOf(activeUrl);
 
   return (
     <>
@@ -186,6 +203,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             unoptimized={isBggImage(activeUrl)}
             placeholder="blur"
             blurDataURL={BLUR_PLACEHOLDER}
+            onError={() => markFailed(activeUrl)}
           />
           {activeUrl === gameImage && (
             <span className="absolute bottom-2 right-2 w-6 h-6 rounded bg-semantic-bg-secondary flex items-center justify-center">
@@ -200,10 +218,10 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             {images.map((src, i) => (
               <button
                 key={i}
-                onClick={() => setActiveIndex(i)}
+                onClick={() => setSelectedUrl(src)}
                 aria-label={`View photo ${i + 1}`}
                 className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors duration-250 ease-out-custom relative ${
-                  i === activeIndex
+                  src === activeUrl
                     ? 'border-2 border-semantic-brand'
                     : 'border border-semantic-border-subtle sm:hover:border-semantic-border-default'
                 }`}
@@ -217,6 +235,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                   unoptimized={isBggImage(src)}
                   placeholder="blur"
                   blurDataURL={BLUR_PLACEHOLDER}
+                  onError={() => markFailed(src)}
                 />
               </button>
             ))}

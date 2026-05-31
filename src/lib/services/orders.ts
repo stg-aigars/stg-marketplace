@@ -231,6 +231,41 @@ export async function getOrder(orderId: string): Promise<OrderWithDetails | null
 }
 
 /**
+ * Whether `userId` is the buyer on a still-active order containing `listingId`.
+ *
+ * Lets a buyer revisit a listing's detail page after it is marked sold/cancelled
+ * (the public availability gate would otherwise hide it). Authenticated client —
+ * the `orders` RLS policy already restricts reads to the user's own orders, and
+ * the explicit `buyer_id` filter narrows to buyer-side participation.
+ *
+ * The `order_items.active` filter excludes declined/cancelled/refunded purchases
+ * (the flag is set false on those transitions and stays true through the
+ * paid→completed happy path — see order-transitions.ts:239), so a buyer whose
+ * order fell through and whose listing was then re-listed and sold to someone
+ * else does not falsely see "you purchased this game".
+ */
+export async function hasBuyerOrderForListing(listingId: string, userId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, order_items!inner(listing_id, active)')
+    .eq('buyer_id', userId)
+    .eq('order_items.listing_id', listingId)
+    .eq('order_items.active', true)
+    .limit(1);
+
+  if (error) {
+    // Fail closed (treat as not-a-buyer) but surface it — a silent false here
+    // would re-hide a purchased listing from its buyer, the bug this guards.
+    console.error('[hasBuyerOrderForListing] query failed:', error);
+    return false;
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
+/**
  * Get all orders for a user, filtered by role (buyer or seller).
  * Uses the authenticated server client — RLS handles authorization.
  */
