@@ -13,6 +13,7 @@ import { isPriceDropActive } from '@/lib/listings/price-drop';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getConditionLabel } from '@/lib/condition-config';
 import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
+import { canViewListingDetail } from '@/lib/listings/detail-access';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
@@ -243,8 +244,24 @@ export default async function ListingDetailPage(
   const showMobileBuyBar = !isOwner && !isAuction && (listing.status === 'active' || isReserver);
   const previousPriceCents = isPriceDropActive(listing) ? listing.previous_price_cents! : undefined;
 
-  // If listing is not active/reserved and viewer is not the seller, show unavailable message
-  if (listing.status !== 'active' && listing.status !== 'reserved' && listing.status !== 'auction_ended' && !isOwner) {
+  // Buyers can revisit a game they purchased even after it is marked sold/cancelled.
+  // active/reserved/auction_ended are public; for any other status RLS only returns the
+  // row to the owner or an order participant, so we only probe for the buyer on that path.
+  const isPubliclyViewable =
+    listing.status === 'active' || listing.status === 'reserved' || listing.status === 'auction_ended';
+  let isOrderBuyer = false;
+  if (user && !isPubliclyViewable && !isOwner) {
+    const { data: buyerOrder } = await supabase
+      .from('orders')
+      .select('id, order_items!inner(listing_id)')
+      .eq('buyer_id', user.id)
+      .eq('order_items.listing_id', listing.id)
+      .limit(1);
+    isOrderBuyer = (buyerOrder?.length ?? 0) > 0;
+  }
+
+  // Show the "no longer available" screen only to viewers who may not see this listing
+  if (!canViewListingDetail(listing.status, isOwner, isOrderBuyer)) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="text-center py-16">
@@ -503,6 +520,17 @@ export default async function ListingDetailPage(
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-semantic-success-bg">
                   <p className="text-sm text-semantic-text-secondary">You are purchasing this game</p>
+                </div>
+                <Button variant="secondary" asChild>
+                  <Link href="/account/orders">View your orders</Link>
+                </Button>
+              </div>
+            ) : isOrderBuyer ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-semantic-success-bg">
+                  <p className="text-sm text-semantic-text-secondary">
+                    {listing.status === 'sold' ? 'You purchased this game' : 'This listing is no longer available'}
+                  </p>
                 </div>
                 <Button variant="secondary" asChild>
                   <Link href="/account/orders">View your orders</Link>
