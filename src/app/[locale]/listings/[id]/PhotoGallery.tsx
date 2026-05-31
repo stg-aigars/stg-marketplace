@@ -139,7 +139,10 @@ function Lightbox({
 
 function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
   const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Track selection by URL, not index: when a failed image is filtered out the
+  // remaining images shift, so a positional index would silently point at a
+  // different photo. null means "first available".
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Drop any image that fails to load (e.g. an uploaded photo missing from
@@ -157,13 +160,15 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
   const openLightbox = useCallback(() => setLightboxOpen(true), []);
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
-  const goNext = useCallback(() => {
-    setActiveIndex((i) => (i + 1) % images.length);
-  }, [images.length]);
-
-  const goPrev = useCallback(() => {
-    setActiveIndex((i) => (i - 1 + images.length) % images.length);
-  }, [images.length]);
+  const step = (delta: number) =>
+    setSelectedUrl((cur) => {
+      if (images.length === 0) return cur;
+      const base = cur && images.includes(cur) ? cur : images[0];
+      const nextIndex = (images.indexOf(base) + delta + images.length) % images.length;
+      return images[nextIndex];
+    });
+  const goNext = () => step(1);
+  const goPrev = () => step(-1);
 
   if (images.length === 0) {
     return (
@@ -173,9 +178,10 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
     );
   }
 
-  // activeIndex can fall out of range once a failed image is filtered out.
-  const safeIndex = Math.min(activeIndex, images.length - 1);
-  const activeUrl = images[safeIndex];
+  // Resolve selection by identity; fall back to the first surviving image when
+  // nothing is selected yet or the selected image was dropped after a load error.
+  const activeUrl = selectedUrl && images.includes(selectedUrl) ? selectedUrl : images[0];
+  const activeIndex = images.indexOf(activeUrl);
 
   return (
     <>
@@ -185,15 +191,15 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
           type="button"
           onClick={openLightbox}
           className="w-full aspect-square max-h-[400px] bg-semantic-bg-secondary rounded-lg overflow-hidden relative cursor-zoom-in"
-          aria-label={`View ${gameTitle} photo ${safeIndex + 1} full size`}
+          aria-label={`View ${gameTitle} photo ${activeIndex + 1} full size`}
         >
           <Image
             src={activeUrl}
-            alt={`${gameTitle} - photo ${safeIndex + 1}`}
+            alt={`${gameTitle} - photo ${activeIndex + 1}`}
             fill
             className="object-contain"
             sizes="(max-width: 1024px) 100vw, 50vw"
-            priority={safeIndex === 0}
+            priority={activeIndex === 0}
             unoptimized={isBggImage(activeUrl)}
             placeholder="blur"
             blurDataURL={BLUR_PLACEHOLDER}
@@ -212,10 +218,10 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             {images.map((src, i) => (
               <button
                 key={i}
-                onClick={() => setActiveIndex(i)}
+                onClick={() => setSelectedUrl(src)}
                 aria-label={`View photo ${i + 1}`}
                 className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden transition-colors duration-250 ease-out-custom relative ${
-                  i === safeIndex
+                  src === activeUrl
                     ? 'border-2 border-semantic-brand'
                     : 'border border-semantic-border-subtle sm:hover:border-semantic-border-default'
                 }`}
@@ -240,7 +246,7 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
       {lightboxOpen && (
         <Lightbox
           images={images}
-          activeIndex={safeIndex}
+          activeIndex={activeIndex}
           gameImage={gameImage}
           gameTitle={gameTitle}
           onClose={closeLightbox}

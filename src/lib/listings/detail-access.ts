@@ -4,6 +4,20 @@ import type { ListingStatus } from './types';
 const PUBLICLY_VIEWABLE_STATUSES: readonly ListingStatus[] = ['active', 'reserved', 'auction_ended'];
 
 /**
+ * Whether a listing is visible to anyone (anonymous included). Callers use this
+ * to decide whether they even need to check order-participation — for a public
+ * status, nobody needs the buyer/owner probe.
+ *
+ * Note: a won auction settles to status `auction_ended` (not `sold` — see
+ * `markListingsAsSold` in order-transitions.ts), so it stays publicly viewable
+ * and an auction winner reaches the public auction view rather than the
+ * "you purchased this" buyer panel. That's a known limitation, not handled here.
+ */
+export function isPubliclyViewableStatus(status: ListingStatus): boolean {
+  return PUBLICLY_VIEWABLE_STATUSES.includes(status);
+}
+
+/**
  * Whether a viewer may see the full listing detail page rather than the
  * "no longer available" screen.
  *
@@ -17,6 +31,6 @@ export function canViewListingDetail(
   isOwner: boolean,
   isOrderBuyer: boolean,
 ): boolean {
-  if (PUBLICLY_VIEWABLE_STATUSES.includes(status)) return true;
+  if (isPubliclyViewableStatus(status)) return true;
   return isOwner || isOrderBuyer;
 }

@@ -13,7 +13,8 @@ import { isPriceDropActive } from '@/lib/listings/price-drop';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getConditionLabel } from '@/lib/condition-config';
 import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
-import { canViewListingDetail } from '@/lib/listings/detail-access';
+import { canViewListingDetail, isPubliclyViewableStatus } from '@/lib/listings/detail-access';
+import { hasBuyerOrderForListing } from '@/lib/services/orders';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { buildListingJsonLd } from '@/lib/seo/listing-json-ld';
 import { buildBreadcrumbJsonLd } from '@/lib/seo/breadcrumb-json-ld';
@@ -41,6 +42,41 @@ import { RelatedListings } from './RelatedListings';
 import { ListingViewAnalytics } from '@/components/analytics/ListingViewAnalytics';
 import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+
+/**
+ * Compact status panel shown in the price card when buy/bid actions don't apply
+ * (sold/cancelled/reserved for the owner, reserved-for-me or purchased for the
+ * buyer). Replaces what used to be a separate top-of-page banner so the state
+ * reads in the same spot as the price.
+ */
+function ListingStatePanel({
+  tone,
+  message,
+  showOrdersLink = false,
+}: {
+  tone: 'muted' | 'warning' | 'success';
+  message: string;
+  showOrdersLink?: boolean;
+}) {
+  const toneClass = {
+    muted: 'bg-semantic-bg-secondary',
+    warning: 'bg-semantic-warning-bg',
+    success: 'bg-semantic-success-bg',
+  }[tone];
+
+  return (
+    <div className="space-y-3">
+      <div className={cn('p-3 rounded-lg', toneClass)}>
+        <p className="text-sm text-semantic-text-secondary">{message}</p>
+      </div>
+      {showOrdersLink && (
+        <Button variant="secondary" asChild>
+          <Link href="/account/orders">View your orders</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
 
 interface ListingDetailRow {
   id: string;
@@ -245,20 +281,12 @@ export default async function ListingDetailPage(
   const previousPriceCents = isPriceDropActive(listing) ? listing.previous_price_cents! : undefined;
 
   // Buyers can revisit a game they purchased even after it is marked sold/cancelled.
-  // active/reserved/auction_ended are public; for any other status RLS only returns the
-  // row to the owner or an order participant, so we only probe for the buyer on that path.
-  const isPubliclyViewable =
-    listing.status === 'active' || listing.status === 'reserved' || listing.status === 'auction_ended';
-  let isOrderBuyer = false;
-  if (user && !isPubliclyViewable && !isOwner) {
-    const { data: buyerOrder } = await supabase
-      .from('orders')
-      .select('id, order_items!inner(listing_id)')
-      .eq('buyer_id', user.id)
-      .eq('order_items.listing_id', listing.id)
-      .limit(1);
-    isOrderBuyer = (buyerOrder?.length ?? 0) > 0;
-  }
+  // Public statuses are visible to everyone; for any other status the buyer probe
+  // only runs for a signed-in non-owner (RLS returns the row only to participants).
+  const isOrderBuyer =
+    user && !isOwner && !isPubliclyViewableStatus(listing.status)
+      ? await hasBuyerOrderForListing(listing.id, user.id)
+      : false;
 
   // Show the "no longer available" screen only to viewers who may not see this listing
   if (!canViewListingDetail(listing.status, isOwner, isOrderBuyer)) {
@@ -451,8 +479,10 @@ export default async function ListingDetailPage(
               )}
             </div>
 
-            {/* Shipping estimate */}
-            {!isOwner && (
+            {/* Shipping estimate — only while the listing can still be bought.
+                Hidden for sold/cancelled (incl. a buyer revisiting a purchase),
+                where shipping is no longer a decision the viewer is making. */}
+            {!isOwner && listing.status !== 'sold' && listing.status !== 'cancelled' && (
               <div className="flex items-center gap-2 text-sm text-semantic-text-muted">
                 <Package size={16} className="flex-shrink-0" />
                 {shippingCents != null ? (
@@ -490,45 +520,30 @@ export default async function ListingDetailPage(
                   <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
                 )}
               </>
-            ) : isOwner && (listing.status === 'sold' || listing.status === 'cancelled') ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-semantic-bg-secondary">
-                  <p className="text-sm text-semantic-text-secondary">
-                    {listing.status === 'sold' ? 'This game has been sold' : 'This listing was cancelled'}
-                  </p>
-                </div>
-                {listing.status === 'sold' && (
-                  <Button variant="secondary" asChild>
-                    <Link href="/account/orders">View your orders</Link>
-                  </Button>
-                )}
-              </div>
+            ) : isOwner && (listing.status === 'sold' || listing.status === 'cancelled' || listing.status === 'reserved') ? (
+              <ListingStatePanel
+                tone="muted"
+                message={
+                  listing.status === 'sold'
+                    ? 'This game has been sold'
+                    : listing.status === 'reserved'
+                    ? 'This listing is reserved — a buyer has purchased it and the order is being processed'
+                    : 'This listing was cancelled'
+                }
+                showOrdersLink={listing.status === 'sold' || listing.status === 'reserved'}
+              />
             ) : isOwner ? (
               <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
-              <div className="p-3 rounded-lg bg-semantic-warning-bg">
-                <p className="text-sm text-semantic-text-secondary">Reserved — may become available shortly</p>
-              </div>
+              <ListingStatePanel tone="warning" message="Reserved — may become available shortly" />
             ) : listing.status === 'reserved' && isReserver ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-semantic-success-bg">
-                  <p className="text-sm text-semantic-text-secondary">You are purchasing this game</p>
-                </div>
-                <Button variant="secondary" asChild>
-                  <Link href="/account/orders">View your orders</Link>
-                </Button>
-              </div>
+              <ListingStatePanel tone="success" message="You are purchasing this game" showOrdersLink />
             ) : isOrderBuyer ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-semantic-success-bg">
-                  <p className="text-sm text-semantic-text-secondary">
-                    {listing.status === 'sold' ? 'You purchased this game' : 'This listing is no longer available'}
-                  </p>
-                </div>
-                <Button variant="secondary" asChild>
-                  <Link href="/account/orders">View your orders</Link>
-                </Button>
-              </div>
+              <ListingStatePanel
+                tone="success"
+                message={listing.status === 'sold' ? 'You purchased this game' : 'This listing is no longer available'}
+                showOrdersLink
+              />
             ) : (
               <BuyActions
                 listing={{
