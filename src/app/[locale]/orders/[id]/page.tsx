@@ -8,6 +8,8 @@ import { getTrackingEvents } from '@/lib/services/tracking';
 import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/constants';
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
 import { getOrderMessages } from '@/lib/order-messages/actions';
+import { getTerminals } from '@/lib/services/unisend/client';
+import { isTerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 
 export async function generateMetadata(
   props: {
@@ -48,13 +50,32 @@ export default async function OrderDetailPage(
   const userRole = order.buyer_id === user.id ? 'buyer' : 'seller';
   const sellerPhone = order.seller_profile?.phone ?? null;
 
+  // Gated terminal fetch: only when the seller views an accepted order in a
+  // supported terminal country (the only case OrderStageHelper renders content).
+  // Inlining the isTerminalCountry guard narrows seller_country to TerminalCountry
+  // for getTerminals; the .map trims fields not needed client-side (boxes, hours).
+  const sellerCountry = order.seller_country;
+  const stageTerminalsPromise: Promise<TerminalOption[]> =
+    userRole === 'seller' && order.status === 'accepted' && isTerminalCountry(sellerCountry)
+      ? getTerminals(sellerCountry)
+          .then((terminals) =>
+            terminals.map((t) => ({
+              id: t.id, name: t.name, city: t.city, address: t.address,
+              postalCode: t.postalCode, countryCode: t.countryCode,
+              latitude: t.latitude, longitude: t.longitude,
+            }))
+          )
+          .catch(() => [])
+      : Promise.resolve([]);
+
   // Fetch dispute, review, tracking, and messages in parallel (independent queries)
   const hasTracking = !!order.barcode;
-  const [dispute, existingReview, trackingEvents, messages] = await Promise.all([
+  const [dispute, existingReview, trackingEvents, messages, stageTerminals] = await Promise.all([
     getDispute(id),
     getReviewForOrder(id),
     hasTracking ? getTrackingEvents(id) : Promise.resolve([]),
     getOrderMessages(id),
+    stageTerminalsPromise,
   ]);
   const orderWithDispute = { ...order, dispute };
 
@@ -79,6 +100,7 @@ export default async function OrderDetailPage(
       trackingEvents={trackingEvents}
       messages={messages}
       isStaff={isStaff}
+      stageTerminals={stageTerminals}
     />
   );
 }

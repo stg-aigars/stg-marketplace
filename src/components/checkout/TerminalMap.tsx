@@ -198,10 +198,10 @@ export function TerminalMap({
         />
       </Map>
 
-      {/* Terminal count indicator */}
+      {/* Count indicator — "lockers" on the seller drop-off finder, "terminals" at checkout */}
       <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-semantic-border-default">
         <span className="text-xs font-medium text-semantic-text-heading">
-          {terminals.length} terminals
+          {terminals.length} {popupAction === 'directions' ? 'lockers' : 'terminals'}
         </span>
       </div>
     </div>

@@ -21,6 +21,8 @@ import { OrderMessageForm } from './OrderMessageForm';
 import type { OrderMessage } from '@/lib/order-messages/types';
 import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { OrderStageHelper } from './OrderStageHelper';
+import { isTerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 
 interface OrderDetailClientProps {
   order: OrderWithDetails;
@@ -31,6 +33,7 @@ interface OrderDetailClientProps {
   trackingEvents: TrackingEventRow[];
   messages: OrderMessage[];
   isStaff: boolean;
+  stageTerminals: TerminalOption[];
 }
 
 /** Buyer-facing cancelled copy based on cancellation reason */
@@ -118,7 +121,7 @@ function BarcodeCard({ barcode }: { barcode: string }) {
   );
 }
 
-export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff }: OrderDetailClientProps) {
+export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff, stageTerminals }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
   const parcelArrivedAtLocker = hasArrivedAtDestination(trackingEvents);
@@ -178,6 +181,16 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
       {/* Barcode card (seller only, accepted/shipped) */}
       {userRole === 'seller' && order.barcode && status === 'accepted' && (
         <BarcodeCard barcode={order.barcode} />
+      )}
+
+      {/* Stage helper (seller + accepted only; renders null otherwise — it owns its own mb-6) */}
+      {!isStaff && isTerminalCountry(order.seller_country) && (
+        <OrderStageHelper
+          role={userRole}
+          status={status}
+          sellerCountry={order.seller_country}
+          terminals={stageTerminals}
+        />
       )}
 
       <div className="space-y-6">

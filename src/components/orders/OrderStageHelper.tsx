@@ -42,7 +42,9 @@ function AcceptedHelper({
   const [showFinder, setShowFinder] = useState(false);
 
   return (
-    <Card>
+    // mb-6 lives on the card (not a caller wrapper) so nothing renders empty
+    // margin when OrderStageHelper returns null for other roles/statuses.
+    <Card className="mb-6">
       <CardBody>
         <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>Ship your parcel</h2>
 
