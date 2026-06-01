@@ -75,13 +75,39 @@ exactly like checkout. No extra Unisend call on any other order view.
 - **Terminals fetch fails / empty** → finder still expands but shows
   *"Locker map is unavailable right now — drop at any compatible parcel locker."* The
   existing status banner already carries the fallback instruction.
-- **`seller_country` missing** (rare) → hide the finder, keep the packaging link. (Default
-  to `LV` only if we decide a default is better than hiding.)
+
+## Review resolutions (2026-06-01)
+
+Verified against code before implementation:
+
+1. **`order.seller_country` — confirmed on the order row.** `getOrder` selects `*`
+   (`orders.ts:212`); `seller_country` is a non-nullable `string` (`types.ts:52`),
+   denormalized at order creation (`orders.ts:106`), already consumed by `UnifiedTimeline`.
+   No `user_profiles` join needed. The "seller_country missing" edge case is **dropped** —
+   the field is non-nullable, so no hide-branch is written.
+2. **`/help/packing` — confirmed live** (`src/app/[locale]/help/packing/page.tsx`).
+3. **Copy is inline English literals** (owner decision 2026-06-01) — matches
+   `OrderDetailClient`'s own status copy and the reused `TerminalMap`/`TerminalSelectorWithMap`,
+   all of which are inline. next-intl is 11/141 components repo-wide; localizing only these
+   two new files would create a localized island on an otherwise-hardcoded surface. The whole
+   orders/terminal surface localizes together in the eventual LV sweep.
+4. **"Get directions" link `rel`.** The link is hand-built inside the Mapbox popup (raw
+   `<a target="_blank">`, not `InlineArrowLink`), so it sets `rel="noopener noreferrer"`
+   explicitly.
+5. **Checkout regression guard.** The new `TerminalMap` popup-action prop is additive and
+   defaults to current behavior. A render test asserts that with the prop unset the popup
+   still renders the "Select terminal" button — default path provably unchanged.
+6. **`receiverCountryCode` is a country filter only.** `Terminal` (`types.ts:26`) carries no
+   send/receive capability flag — terminals are bidirectional (T2T). The returned list is the
+   full set of network lockers in a country, valid as drop-off points, so "pick the closest"
+   is accurate. Box-size availability is a runtime kiosk concern, not encoded in the list.
 
 ## Testing
 
 - `OrderStageHelper`: render test — accepted shows helper; other statuses render `null`;
   buyer role never sees it.
+- `TerminalMap`: render test — popup-action prop unset → "Select terminal" still renders
+  (checkout default-path guard).
 - Map / geolocation / "Get directions": manual verify (Mapbox, browser geolocation).
 
 ## Brand-voice notes
