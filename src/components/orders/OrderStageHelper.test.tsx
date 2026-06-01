@@ -5,7 +5,7 @@ import { OrderStageHelper } from './OrderStageHelper';
 
 afterEach(cleanup);
 
-const baseProps = { sellerCountry: 'LV' as const, terminals: [] };
+const baseProps = { sellerCountry: 'LV' as const, terminals: [], barcode: null };
 
 describe('OrderStageHelper', () => {
   it('renders the Accepted helper for a seller on an accepted order', () => {
@@ -14,6 +14,17 @@ describe('OrderStageHelper', () => {
     const link = screen.getByRole('link', { name: /Read the packing guide/i }) as HTMLAnchorElement;
     expect(link.getAttribute('href')).toContain('/help/packing');
     expect(screen.getByRole('button', { name: /Find a drop-off locker/i })).toBeDefined();
+  });
+
+  it('shows the barcode in the hub when present, and omits it when null', () => {
+    const { rerender } = render(
+      <OrderStageHelper role="seller" status="accepted" {...baseProps} barcode="CC991949945LT" />
+    );
+    expect(screen.getByText('CC991949945LT')).toBeDefined();
+    expect(screen.getByText(/Enter this barcode at the parcel locker kiosk/i)).toBeDefined();
+
+    rerender(<OrderStageHelper role="seller" status="accepted" {...baseProps} barcode={null} />);
+    expect(screen.queryByText(/Enter this barcode at the parcel locker kiosk/i)).toBeNull();
   });
 
   it('keeps the locker finder collapsed until the button is clicked', () => {

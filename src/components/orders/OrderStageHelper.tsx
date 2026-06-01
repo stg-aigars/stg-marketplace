@@ -8,12 +8,15 @@ import { cn } from '@/lib/cn';
 import type { OrderStatus } from '@/lib/orders/types';
 import type { TerminalOption, TerminalCountry } from '@/lib/services/unisend/types';
 import { LockerFinder } from './LockerFinder';
+import { BarcodeCard } from './BarcodeCard';
 
 interface OrderStageHelperProps {
   role: 'buyer' | 'seller';
   status: OrderStatus;
   sellerCountry: TerminalCountry;
   terminals: TerminalOption[];
+  /** Shipping-label barcode; null until shipping setup succeeds. */
+  barcode: string | null;
 }
 
 /**
@@ -21,12 +24,12 @@ interface OrderStageHelperProps {
  * stage has content; other statuses are intentional extension points that
  * render nothing until their content is designed.
  */
-export function OrderStageHelper({ role, status, sellerCountry, terminals }: OrderStageHelperProps) {
+export function OrderStageHelper({ role, status, sellerCountry, terminals, barcode }: OrderStageHelperProps) {
   if (role !== 'seller') return null;
 
   switch (status) {
     case 'accepted':
-      return <AcceptedHelper sellerCountry={sellerCountry} terminals={terminals} />;
+      return <AcceptedHelper sellerCountry={sellerCountry} terminals={terminals} barcode={barcode} />;
     default:
       return null;
   }
@@ -35,18 +38,27 @@ export function OrderStageHelper({ role, status, sellerCountry, terminals }: Ord
 function AcceptedHelper({
   sellerCountry,
   terminals,
+  barcode,
 }: {
   sellerCountry: TerminalCountry;
   terminals: TerminalOption[];
+  barcode: string | null;
 }) {
   const [showFinder, setShowFinder] = useState(false);
 
   return (
     // mb-6 lives on the card (not a caller wrapper) so nothing renders empty
     // margin when OrderStageHelper returns null for other roles/statuses.
+    // Single shipping hub: lead instruction → barcode → packing → locker finder.
     <Card className="mb-6">
       <CardBody>
         <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>Ship your parcel</h2>
+
+        <p className="text-sm text-semantic-text-secondary mb-4">
+          Drop your parcel at any compatible parcel locker.
+        </p>
+
+        {barcode && <BarcodeCard barcode={barcode} className="mb-4" />}
 
         <p className="text-sm text-semantic-text-secondary">
           New to shipping board games? A few minutes of padding saves a damaged-in-transit

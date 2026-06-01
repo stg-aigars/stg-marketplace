@@ -22,6 +22,7 @@ import type { OrderMessage } from '@/lib/order-messages/types';
 import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 import { OrderStageHelper } from './OrderStageHelper';
+import { BarcodeCard } from './BarcodeCard';
 import { isTerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 
 interface OrderDetailClientProps {
@@ -108,25 +109,21 @@ function getAlertVariant(status: OrderStatus): 'error' | 'success' | 'warning' |
   return v === 'default' ? 'info' : v;
 }
 
-function BarcodeCard({ barcode }: { barcode: string }) {
-  return (
-    <div className="mb-6 p-4 rounded-lg bg-semantic-brand/10 border border-semantic-brand/30">
-      <p className="text-sm text-semantic-text-secondary mb-2">
-        Enter this barcode at the parcel locker kiosk to print your shipping label
-      </p>
-      <code className="font-mono text-lg font-semibold tracking-wider text-semantic-text-heading">
-        {barcode}
-      </code>
-    </div>
-  );
-}
-
 export function OrderDetailClient({ order, userRole, sellerPhone, existingReview, isReviewEligible, trackingEvents, messages, isStaff, stageTerminals }: OrderDetailClientProps) {
   const status = order.status as OrderStatus;
   const statusConfig = ORDER_STATUS_CONFIG[status];
   const parcelArrivedAtLocker = hasArrivedAtDestination(trackingEvents);
   const statusMessage = getStatusMessage(status, userRole, order.cancellation_reason, parcelArrivedAtLocker);
   const actualDeliveryTerminal = getActualDeliveryTerminal(trackingEvents);
+
+  // The "Ship your parcel" hub (OrderStageHelper, accepted stage) absorbs the
+  // drop-off instruction and the barcode, so when it renders we suppress the
+  // redundant status Alert and the standalone barcode card below.
+  const acceptedSellerHub =
+    !isStaff &&
+    userRole === 'seller' &&
+    status === 'accepted' &&
+    isTerminalCountry(order.seller_country);
 
   // Derive items from order_items (preferred) or legacy listings join
   const items = order.order_items ?? [];
@@ -151,8 +148,8 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         </div>
       )}
 
-      {/* Status message */}
-      {statusMessage && (
+      {/* Status message (suppressed for the accepted seller — the hub carries it) */}
+      {statusMessage && !acceptedSellerHub && (
         <Alert variant={getAlertVariant(status)} className="mb-6">
           <p className="text-sm">{statusMessage}</p>
         </Alert>
@@ -178,9 +175,10 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
         </div>
       )}
 
-      {/* Barcode card (seller only, accepted/shipped) */}
-      {userRole === 'seller' && order.barcode && status === 'accepted' && (
-        <BarcodeCard barcode={order.barcode} />
+      {/* Standalone barcode card — only for the staff / non-Baltic fallback paths
+          where the hub doesn't render; otherwise the hub shows the barcode. */}
+      {userRole === 'seller' && order.barcode && status === 'accepted' && !acceptedSellerHub && (
+        <BarcodeCard barcode={order.barcode} className="mb-6" />
       )}
 
       {/* Stage helper (seller + accepted only; renders null otherwise — it owns its own mb-6) */}
@@ -190,6 +188,7 @@ export function OrderDetailClient({ order, userRole, sellerPhone, existingReview
           status={status}
           sellerCountry={order.seller_country}
           terminals={stageTerminals}
+          barcode={order.barcode}
         />
       )}
 
