@@ -30,11 +30,11 @@ describe('OrderStageHelper', () => {
   it('keeps the locker finder collapsed until the button is clicked', () => {
     render(<OrderStageHelper role="seller" status="accepted" {...baseProps} />);
     // Collapsed: no finder content yet (empty terminals would show unavailable text).
-    expect(screen.queryByText(/Locker map is unavailable right now/i)).toBeNull();
+    expect(screen.queryByText(/locker map isn't loading right now/i)).toBeNull();
     // fireEvent (not native .click()) so React 19 flushes the state update
     // synchronously inside act — a raw .click() does not flush in this harness.
     fireEvent.click(screen.getByRole('button', { name: /Find a drop-off locker/i }));
-    expect(screen.getByText(/Locker map is unavailable right now/i)).toBeDefined();
+    expect(screen.getByText(/locker map isn't loading right now/i)).toBeDefined();
   });
 
   it('renders nothing for non-accepted statuses', () => {

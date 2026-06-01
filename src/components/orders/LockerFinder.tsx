@@ -35,7 +35,8 @@ export function LockerFinder({ terminals, country }: LockerFinderProps) {
   if (terminals.length === 0) {
     return (
       <p className="text-sm text-semantic-text-secondary" role="status">
-        Locker map is unavailable right now — drop at any compatible parcel locker.
+        The locker map isn&apos;t loading right now. You can still drop your parcel at any
+        compatible parcel locker.
       </p>
     );
   }

@@ -8,7 +8,7 @@ afterEach(cleanup);
 describe('LockerFinder', () => {
   it('shows an unavailable message and no search box when there are no terminals', () => {
     render(<LockerFinder terminals={[]} country="LV" />);
-    expect(screen.getByText(/Locker map is unavailable right now/i)).toBeDefined();
+    expect(screen.getByText(/locker map isn't loading right now/i)).toBeDefined();
     expect(screen.queryByPlaceholderText('Search lockers...')).toBeNull();
   });
 });

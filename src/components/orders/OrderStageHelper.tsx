@@ -61,8 +61,7 @@ function AcceptedHelper({
         {barcode && <BarcodeCard barcode={barcode} className="mb-4" />}
 
         <p className="text-sm text-semantic-text-secondary">
-          New to shipping board games? A few minutes of padding saves a damaged-in-transit
-          dispute.{' '}
+          First time shipping a game? A bit of padding keeps it safe on the way.{' '}
           <InlineArrowLink href="/help/packing" size="sm">
             Read the packing guide
           </InlineArrowLink>
@@ -82,7 +81,7 @@ function AcceptedHelper({
           ) : (
             <div className="space-y-2">
               <p className="text-sm text-semantic-text-secondary">
-                Drop at whichever compatible locker is closest to you.
+                Pick whichever locker is closest to you.
               </p>
               <LockerFinder terminals={terminals} country={sellerCountry} />
             </div>
