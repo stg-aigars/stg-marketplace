@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { getWalletBalance } from '@/lib/services/wallet';
 import { getAllTerminals } from '@/lib/services/unisend/client';
-import type { TerminalCountry, TerminalOption } from '@/lib/services/unisend/types';
+import { toTerminalOption, type TerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
 import { Alert, Breadcrumb } from '@/components/ui';
 import { CheckoutForm } from './CheckoutForm';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
@@ -74,11 +74,7 @@ export default async function CheckoutPage({
     })(),
   ]);
 
-  terminals = terminalsResult.map((t) => ({
-    id: t.id, name: t.name, city: t.city, address: t.address,
-    postalCode: t.postalCode, countryCode: t.countryCode,
-    latitude: t.latitude, longitude: t.longitude,
-  }));
+  terminals = terminalsResult.map(toTerminalOption);
 
   const errorMessage = params.error ? errorMessages[params.error] ?? 'Something went wrong. Please try again.' : null;
 

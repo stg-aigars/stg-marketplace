@@ -11,7 +11,7 @@ import {
   MapClusterLayer,
 } from '@/components/ui/map';
 import { useMap } from '@/components/ui/map/context';
-import { Button } from '@/components/ui';
+import { TerminalPopupContent, type TerminalPopupAction } from './TerminalPopupContent';
 import type { TerminalOption, TerminalCountry } from '@/lib/services/unisend/types';
 
 interface TerminalMapProps {
@@ -20,6 +20,7 @@ interface TerminalMapProps {
   onSelect: (terminal: TerminalOption) => void;
   country: TerminalCountry;
   className?: string;
+  popupAction?: TerminalPopupAction;   // NEW — default 'select'
 }
 
 // Country center coordinates and zoom levels
@@ -77,6 +78,7 @@ export function TerminalMap({
   onSelect,
   country,
   className,
+  popupAction = 'select',   // NEW
 }: TerminalMapProps) {
   const [popupTerminal, setPopupTerminal] = useState<TerminalOption | null>(null);
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
@@ -179,25 +181,11 @@ export function TerminalMap({
             onClose={handlePopupClose}
             className="min-w-[200px] max-w-[280px]"
           >
-            <div className="space-y-2">
-              <h4 className="font-semibold text-semantic-text-heading text-sm">
-                {popupTerminal.name}
-              </h4>
-              <p className="text-xs text-semantic-text-secondary">
-                {popupTerminal.address}, {popupTerminal.postalCode}
-              </p>
-              <p className="text-xs text-semantic-text-secondary">
-                {popupTerminal.city}
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSelectFromPopup}
-                className="w-full mt-2"
-              >
-                Select terminal
-              </Button>
-            </div>
+            <TerminalPopupContent
+              terminal={popupTerminal}
+              action={popupAction}
+              onSelect={handleSelectFromPopup}
+            />
           </MapPopup>
         )}
 
@@ -210,10 +198,10 @@ export function TerminalMap({
         />
       </Map>
 
-      {/* Terminal count indicator */}
+      {/* Count indicator — "lockers" on the seller drop-off finder, "terminals" at checkout */}
       <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-semantic-border-default">
         <span className="text-xs font-medium text-semantic-text-heading">
-          {terminals.length} terminals
+          {terminals.length} {popupAction === 'directions' ? 'lockers' : 'terminals'}
         </span>
       </div>
     </div>

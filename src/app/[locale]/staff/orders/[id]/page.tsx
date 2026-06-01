@@ -100,6 +100,7 @@ export default async function StaffOrderDetailPage(
             trackingEvents={trackingEvents}
             messages={messages}
             isStaff={true}
+            stageTerminals={[]}
           />
         </div>
 
