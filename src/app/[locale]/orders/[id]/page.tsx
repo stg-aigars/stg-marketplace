@@ -9,7 +9,7 @@ import { REVIEW_WINDOW_DAYS, REVIEW_ELIGIBLE_STATUSES } from '@/lib/reviews/cons
 import { OrderDetailClient } from '@/components/orders/OrderDetailClient';
 import { getOrderMessages } from '@/lib/order-messages/actions';
 import { getTerminals } from '@/lib/services/unisend/client';
-import { isTerminalCountry, type TerminalOption } from '@/lib/services/unisend/types';
+import { isTerminalCountry, toTerminalOption, type TerminalOption } from '@/lib/services/unisend/types';
 
 export async function generateMetadata(
   props: {
@@ -53,18 +53,12 @@ export default async function OrderDetailPage(
   // Gated terminal fetch: only when the seller views an accepted order in a
   // supported terminal country (the only case OrderStageHelper renders content).
   // Inlining the isTerminalCountry guard narrows seller_country to TerminalCountry
-  // for getTerminals; the .map trims fields not needed client-side (boxes, hours).
+  // for getTerminals; toTerminalOption trims fields not needed client-side.
   const sellerCountry = order.seller_country;
   const stageTerminalsPromise: Promise<TerminalOption[]> =
     userRole === 'seller' && order.status === 'accepted' && isTerminalCountry(sellerCountry)
       ? getTerminals(sellerCountry)
-          .then((terminals) =>
-            terminals.map((t) => ({
-              id: t.id, name: t.name, city: t.city, address: t.address,
-              postalCode: t.postalCode, countryCode: t.countryCode,
-              latitude: t.latitude, longitude: t.longitude,
-            }))
-          )
+          .then((terminals) => terminals.map(toTerminalOption))
           .catch(() => [])
       : Promise.resolve([]);
 

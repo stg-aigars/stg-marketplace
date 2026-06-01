@@ -40,6 +40,25 @@ export interface Terminal {
 /** Display subset of Terminal used in checkout UIs (includes coordinates for map) */
 export type TerminalOption = Pick<Terminal, 'id' | 'name' | 'city' | 'address' | 'postalCode' | 'countryCode' | 'latitude' | 'longitude'>;
 
+/**
+ * Project a full Terminal down to the serialisable TerminalOption subset.
+ * Trims fields not needed client-side (boxes, servicingHours, comment) before
+ * the array crosses a server→client boundary. Single source for the projection
+ * so it tracks TerminalOption rather than being copy-pasted per call site.
+ */
+export function toTerminalOption(t: Terminal): TerminalOption {
+  return {
+    id: t.id,
+    name: t.name,
+    city: t.city,
+    address: t.address,
+    postalCode: t.postalCode,
+    countryCode: t.countryCode,
+    latitude: t.latitude,
+    longitude: t.longitude,
+  };
+}
+
 export type TerminalCountry = 'LT' | 'LV' | 'EE';
 
 export const TERMINAL_COUNTRIES: readonly TerminalCountry[] = ['LT', 'LV', 'EE'];
