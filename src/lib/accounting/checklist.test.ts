@@ -289,6 +289,10 @@ function buildHappyPathQueues(
       // path. When empty, getInFlightCartReceiptsTotal short-circuits and
       // does not issue the orders SELECT or the releases SELECT.
       { data: [], error: null },
+      // Item 7 card-receipts (C.1) lookup — empty in the happy path. When
+      // empty, getInTransitEverypayClearingTotal short-circuits and does not
+      // issue the settlement (C.3) or card-refund (C.9) SELECTs.
+      { data: [], error: null },
       // Item 8 P.1/P.3 lookup — empty (no consolidation, no movement → NA).
       { data: [], error: null },
       // Item 8 H.1+override_type=historical_filing_alignment lookup — empty.
@@ -586,6 +590,63 @@ describe('getPeriodCloseChecklist — items 4-7 (single-account closing = 0)', (
     expect(result.items.find((i) => i.id === 5)?.status).toBe('pass');
     expect(result.items.find((i) => i.id === 6)?.status).toBe('pass');
     expect(result.items.find((i) => i.id === 7)?.status).toBe('pass');
+  });
+
+  it('item 7 passes when 2630 holds unsettled card receipts (month-boundary in-transit, not zero)', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    const REF = 'everypay-ref-intransit-7';
+    // 2630 ledger (journal_lines[6]): €150.44 debit balance (in-transit card cash).
+    queues.journal_lines[6] = {
+      data: [
+        {
+          id: 'l-2630',
+          entry_id: 'e-2630',
+          line_number: 1,
+          account_code: '2630',
+          debit_cents: 15044,
+          credit_cents: 0,
+          currency: 'EUR',
+          fx_rate_snapshot: null,
+          vat_rate_snapshot: null,
+          vat_country: null,
+          counterparty_type: null,
+          counterparty_id: null,
+          narrative: null,
+          journal_entries: {
+            id: 'e-2630',
+            posting_date: '2027-01-15',
+            accounting_period: '2027-01',
+            tax_period: '2027-01',
+            entry_type: 'checkout',
+            type_id: 'C.1',
+            source_doc_type: 'cart_payment',
+            source_doc_id: 'cp',
+            reverses_entry_id: null,
+            correction_reason: null,
+            narrative: 'card cart',
+            posting_context: {},
+            created_by: 'test',
+            created_at: '2027-01-15T00:00:00Z',
+            period_close_adjustment: false
+          }
+        }
+      ],
+      error: null
+    };
+    // item 7 card-receipts (C.1) at journal_entries[1]: one €150.44 receipt, unsettled.
+    queues.journal_entries[1] = {
+      data: [{ posting_context: { everypay_payment_id: REF, everypay_charge_cents: 15044 } }],
+      error: null
+    };
+    // Non-empty receipts → item 7 also issues settlement (C.3) + card-refund (C.9)
+    // SELECTs. Insert two empty responses at [2],[3]; item 8 P.1/H.1 shift to [4],[5].
+    queues.journal_entries.splice(2, 0, { data: [], error: null }, { data: [], error: null });
+
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item7 = result.items.find((i) => i.id === 7);
+    expect(item7?.status).toBe('pass');
+    expect(item7?.detail).toMatch(/in transit/);
   });
 
   it('fails item 4 when 5590 closing != 0', async () => {
@@ -1090,8 +1151,8 @@ describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
 
   it('passes when a P.1 consolidation entry exists for the period', async () => {
     const queues = buildHappyPathQueues(periodOpen);
-    // Index 1 since PR D's item-4 cart-receipts query occupies [0].
-    queues.journal_entries[1] = {
+    // Index 2: item-4 cart-receipts query occupies [0], item-7 card-receipts [1].
+    queues.journal_entries[2] = {
       data: [{ id: 'p1-uuid', type_id: 'P.1' }],
       error: null
     };
@@ -1106,10 +1167,10 @@ describe('getPeriodCloseChecklist — item 8 (VAT consolidation)', () => {
     // period-level VAT consolidation but routes through the H.1 historical
     // override family rather than P.1. The override_type filter on item 8's
     // H.1 query is applied server-side; the mock simulates that by returning
-    // only matching rows on journal_entries[2] (index shifted +1 by PR D's
-    // item-4 cart-receipts query at [0]).
+    // only matching rows on journal_entries[3]: item-4 cart-receipts at [0],
+    // item-7 card-receipts at [1], item-8 P.1 at [2], item-8 H.1 at [3].
     const queues = buildHappyPathQueues(periodOpen);
-    queues.journal_entries[2] = {
+    queues.journal_entries[3] = {
       data: [{ id: 'h1-uuid', type_id: 'H.1' }],
       error: null
     };
@@ -1240,9 +1301,9 @@ describe('getPeriodCloseChecklist — can_hard_lock', () => {
 
   it('is false when entries were posted since locked_at', async () => {
     const queues = buildHappyPathQueues(periodSoftLocked);
-    // getEntriesPostedSince — last journal_entries response.
-    // Index 3 since PR D's item-4 cart-receipts query occupies [0].
-    queues.journal_entries[3] = {
+    // getEntriesPostedSince — last journal_entries response. Index 4: item-4
+    // cart-receipts [0], item-7 card-receipts [1], item-8 P.1 [2], item-8 H.1 [3].
+    queues.journal_entries[4] = {
       data: [
         {
           id: 'late-entry',

@@ -13,6 +13,7 @@ import {
   getAccountLedger,
   getEntriesPostedSince,
   getInFlightCartReceiptsTotal,
+  getInTransitEverypayClearingTotal,
   getJournalEntry,
   getNetVatPositionForPeriod,
   getPeriodRow,
@@ -1973,5 +1974,68 @@ describe('getInFlightCartReceiptsTotal — backfill posting_context keys', () =>
     });
     const total = await getInFlightCartReceiptsTotal(client as never, '2026-05-31');
     expect(total).toBe(0);
+  });
+});
+
+// =============================================================================
+// getInTransitEverypayClearingTotal — period-close item 7 (2630) gate
+// =============================================================================
+
+describe('getInTransitEverypayClearingTotal', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const REF_SETTLED = 'everypay-ref-settled-aaaa';
+  const REF_INTRANSIT_1 = 'everypay-ref-intransit-bbbb';
+  const REF_INTRANSIT_2 = 'everypay-ref-intransit-cccc';
+
+  it('sums card receipts whose EveryPay ref has not been settled; excludes settled refs', async () => {
+    const client = buildMockClient({
+      journal_entries: [
+        // Step 1 — card receipts (C.1)
+        {
+          data: [
+            { posting_context: { everypay_payment_id: REF_SETTLED, everypay_charge_cents: 7350 } },
+            { posting_context: { everypay_payment_id: REF_INTRANSIT_1, everypay_charge_cents: 2834 } },
+            { posting_context: { everypay_payment_id: REF_INTRANSIT_2, everypay_charge_cents: 12210 } }
+          ],
+          error: null
+        },
+        // Step 2 — settlements (C.3): REF_SETTLED released from 2630
+        { data: [{ posting_context: { included_txn_refs: [REF_SETTLED] } }], error: null },
+        // Step 3 — card refunds (C.9): none
+        { data: [], error: null }
+      ]
+    });
+    const total = await getInTransitEverypayClearingTotal(client as never, '2026-05-31');
+    // Orders 4 (€28.34) + 6 (€122.10) in transit; order 2 (€73.50) settled out.
+    expect(total).toBe(15044);
+  });
+
+  it('returns 0 when there are no card receipts', async () => {
+    const client = buildMockClient({ journal_entries: [{ data: [], error: null }] });
+    const total = await getInTransitEverypayClearingTotal(client as never, '2026-05-31');
+    expect(total).toBe(0);
+  });
+
+  it('subtracts a card cart-time partial refund (C.9) from an in-transit receipt', async () => {
+    const client = buildMockClient({
+      journal_entries: [
+        {
+          data: [{ posting_context: { everypay_payment_id: REF_INTRANSIT_1, everypay_charge_cents: 5000 } }],
+          error: null
+        },
+        { data: [], error: null }, // no settlements
+        {
+          data: [
+            { posting_context: { payment_method: 'card', everypay_payment_id: REF_INTRANSIT_1, everypay_refund_cents: 1500 } }
+          ],
+          error: null
+        }
+      ]
+    });
+    const total = await getInTransitEverypayClearingTotal(client as never, '2026-05-31');
+    expect(total).toBe(3500); // €50.00 charge − €15.00 card refund
   });
 });

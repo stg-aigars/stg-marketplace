@@ -1179,6 +1179,98 @@ export async function getInFlightCartReceiptsTotal(
 }
 
 // =============================================================================
+// getInTransitEverypayClearingTotal — period-close checklist item 7 gate
+// =============================================================================
+
+/**
+ * Expected 2630 (EveryPay clearing) closing balance as of `asOf`: the sum of
+ * card cart receipts (C.1) whose EveryPay settlement (C.3) has NOT yet posted.
+ * Used by `buildItem7` in checklist.ts to reconcile the GL 2630 balance against
+ * marketplace state — replacing the legacy "2630 closing = 0" gate, which fails
+ * for every card payment that straddles a month boundary (authorised in month N,
+ * settled to the bank in N+1). Mirrors `getInFlightCartReceiptsTotal` (item 4 /
+ * 5590), the same fix applied for cart-completion suspense.
+ *
+ * Algorithm:
+ *   1. Card cart receipts (C.1) posted by asOf — each debited 2630 by its
+ *      `posting_context.everypay_charge_cents` (the EveryPay-rail portion).
+ *   2. EveryPay settlements (C.3) posted by asOf — each lists the settled
+ *      EveryPay refs in `posting_context.included_txn_refs` (credited 2630).
+ *   3. Cart-time card partial refunds (C.9, payment_method='card') posted by
+ *      asOf for not-yet-settled refs — each credited 2630 by
+ *      `posting_context.everypay_refund_cents`.
+ *   4. Sum charge − card-refund across card receipts whose EveryPay ref is not
+ *      in any settlement batch. Bank-link (C.2) receipts never touch 2630.
+ *
+ * Returns integer cents; always >= 0. Only C.1 / C.3 / C.9 touch 2630, so a
+ * divergence between this and the GL 2630 balance flags a stray posting, a
+ * missing settlement, or an over-settled batch.
+ */
+export async function getInTransitEverypayClearingTotal(
+  supabase: SupabaseClient,
+  asOf: string
+): Promise<number> {
+  // Step 1 — card cart receipts (C.1). Bank-link (C.2) lands in 2610/2620, not 2630.
+  const { data: cardReceipts, error: receiptsError } = await supabase
+    .from('journal_entries')
+    .select('posting_context')
+    .eq('source_doc_type', 'cart_payment')
+    .eq('type_id', 'C.1')
+    .lte('posting_date', asOf);
+  throwIfError(receiptsError, 'getInTransitEverypayClearingTotal: card receipts SELECT failed');
+  if (!cardReceipts || cardReceipts.length === 0) return 0;
+
+  // Step 2 — settled EveryPay refs (C.3 batches).
+  const { data: settlements, error: settlementsError } = await supabase
+    .from('journal_entries')
+    .select('posting_context')
+    .eq('type_id', 'C.3')
+    .lte('posting_date', asOf);
+  throwIfError(settlementsError, 'getInTransitEverypayClearingTotal: settlements SELECT failed');
+
+  const settledRefs = new Set<string>();
+  for (const s of (settlements ?? []) as Array<{ posting_context: { included_txn_refs?: unknown } | null }>) {
+    const refs = s.posting_context?.included_txn_refs;
+    if (Array.isArray(refs)) {
+      for (const ref of refs) if (typeof ref === 'string') settledRefs.add(ref);
+    }
+  }
+
+  // Step 3 — cart-time card partial refunds (C.9) for not-yet-settled refs.
+  const { data: cardRefunds, error: refundsError } = await supabase
+    .from('journal_entries')
+    .select('posting_context')
+    .eq('source_doc_type', 'cart_partial_refund')
+    .eq('type_id', 'C.9')
+    .lte('posting_date', asOf);
+  throwIfError(refundsError, 'getInTransitEverypayClearingTotal: card refunds SELECT failed');
+
+  const refundByRef = new Map<string, number>();
+  for (const r of (cardRefunds ?? []) as Array<{ posting_context: Record<string, unknown> | null }>) {
+    const ctx = r.posting_context ?? {};
+    if (ctx.payment_method !== 'card') continue; // bank-link refunds credit 2610, not 2630
+    const ref = typeof ctx.everypay_payment_id === 'string' ? ctx.everypay_payment_id : null;
+    if (!ref) continue;
+    const everypayRefund = Number(ctx.everypay_refund_cents ?? 0);
+    if (Number.isFinite(everypayRefund) && everypayRefund > 0) {
+      refundByRef.set(ref, (refundByRef.get(ref) ?? 0) + everypayRefund);
+    }
+  }
+
+  // Step 4 — sum (charge − card refund) for receipts not yet settled.
+  let total = 0;
+  for (const r of cardReceipts as Array<{ posting_context: Record<string, unknown> | null }>) {
+    const ctx = r.posting_context ?? {};
+    const ref = typeof ctx.everypay_payment_id === 'string' ? ctx.everypay_payment_id : null;
+    if (ref && settledRefs.has(ref)) continue; // settled → released from 2630
+    const charge = Number(ctx.everypay_charge_cents ?? ctx.gross_cart_cents ?? 0);
+    const refund = ref ? (refundByRef.get(ref) ?? 0) : 0;
+    total += Math.max(0, (Number.isFinite(charge) ? charge : 0) - refund);
+  }
+  return total;
+}
+
+// =============================================================================
 // getNetVatPositionForPeriod — PR C commit 12 (monthly-vat-close cron)
 // =============================================================================
 
