@@ -28,6 +28,7 @@ import {
   getAccountLedger,
   getEntriesPostedSince,
   getInFlightCartReceiptsTotal,
+  getInTransitEverypayClearingTotal,
   getPeriodRow,
   getTrialBalance,
   getWalletIntegrityAsOf
@@ -337,25 +338,46 @@ async function buildItem6(
   };
 }
 
-/** Item 7 — EveryPay clearing reconciled: 2630 closing = 0 for Phase 0. */
+/**
+ * Item 7 — EveryPay clearing reconciled (2630). 2630 is a debit-balance asset
+ * holding card cart receipts that EveryPay hasn't settled to the bank yet. The
+ * balance is legitimately non-zero at any month boundary where card payments
+ * were authorised in month N but settle in N+1 — so we reconcile against the
+ * expected in-transit total (unsettled card receipts), NOT against zero. Same
+ * fix as item 4 (5590): the old "2630 closing = 0" gate was Phase-0-only and
+ * failed for every straddling card payment post-cutover.
+ */
 async function buildItem7(
   supabase: SupabaseClient,
   asOf: string
 ): Promise<ChecklistItem> {
-  const balance = await getAccountClosingBalance(supabase, '2630', asOf);
-  if (balance === 0) {
+  const [actual, expected_in_transit] = await Promise.all([
+    getAccountClosingBalance(supabase, '2630', asOf),  // net-debit cents; 2630 is an asset
+    getInTransitEverypayClearingTotal(supabase, asOf)
+  ]);
+
+  if (actual === expected_in_transit) {
     return {
       id: 7,
       label: 'EveryPay clearing reconciled (2630)',
       status: 'pass',
-      detail: '2630 closing balance is zero (no PIS activity yet in Phase 0).'
+      detail: expected_in_transit === 0
+        ? '2630 closing balance is zero; no card receipts in transit.'
+        : `2630 holds ${formatEur(actual)} in transit, matching unsettled card receipts ${formatEur(expected_in_transit)} (settle next period).`
     };
   }
+
+  const delta = actual - expected_in_transit;
+  const direction = delta > 0 ? 'over-states' : 'under-states';
   return {
     id: 7,
     label: 'EveryPay clearing reconciled (2630)',
     status: 'fail',
-    detail: `2630 closing balance ${formatEur(balance)}; reconcile before close.`,
+    detail:
+      `2630 holds ${formatEur(actual)}, ${direction} expected unsettled card receipts ` +
+      `${formatEur(expected_in_transit)} by ${formatEur(Math.abs(delta))}. Possible causes: a settlement ` +
+      `(C.3) posted without crediting 2630, a card receipt (C.1) missing its 2630 leg, or a stray posting. ` +
+      `Reconcile before close.`,
     drillDownHref: '/staff/accounting/account-ledger/2630'
   };
 }

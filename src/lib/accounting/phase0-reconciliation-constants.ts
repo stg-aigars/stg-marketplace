@@ -36,7 +36,12 @@ export const BANK_WALK_CHECKPOINTS: ReadonlyArray<{
   // April 2026 backfill (PR #293): +4.20 +3.10 -1.91 -0.08 -0.90 = +€4.41 net (HVFJ + 9UC5
   // cart receipts, Hetzner payment, Swedbank POS fee, HVFJ wallet withdrawal). Unisend
   // invoice booked but payment forward-flagged to May (not in this checkpoint).
-  { date: '2026-04-30', expected_cents: 44931 }
+  { date: '2026-04-30', expected_cents: 44931 },
+  // May 2026 backfill (PR #395): operating account 2610 only (marketplace receipts
+  // land in the new e-commerce account 2620, statement B). Net −€65.53: Anthropic
+  // −90.00, Meta −7.00, Unisend −3.90, Swedbank comm −0.09, 2620 transfer −0.72,
+  // VID refund +0.30, Vincit refund +35.88. Matches Swedbank statement A 31.05.2026.
+  { date: '2026-05-31', expected_cents: 38378 }
 ];
 
 /**
