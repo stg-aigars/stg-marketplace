@@ -243,7 +243,10 @@ describe('accounting schema (PR 1)', () => {
       const persona = await createSignedInClient({ isStaff: true });
       try {
         const { data: accounts } = await persona.client.from('accounts').select('code');
-        expect(accounts ?? []).toHaveLength(54);
+        // Count tracks migration 096 seed + later account-adding migrations
+        // (123: 7750 + 5310-META; 125: 2620 e-commerce settlement). Bump when
+        // a migration adds a chart-of-accounts row.
+        expect(accounts ?? []).toHaveLength(55);
 
         const { data: periods } = await persona.client
           .from('periods')
