@@ -1084,21 +1084,31 @@ export async function getInFlightCartReceiptsTotal(
   const PARTIAL_RELEASE_TYPE_ID = 'O.9' as const;
   const ALL_RELEASE_TYPE_IDS = [...FULL_RELEASE_TYPE_IDS, PARTIAL_RELEASE_TYPE_ID] as const;
 
-  // Step 1 — cart-receipt antecedents posted by asOf.
+  // Step 1 — cart-receipt antecedents posted by asOf. The cart_group_id is read
+  // from posting_context.cart_payment_id — the canonical field set by BOTH the
+  // live cart wrap and the backfill — NOT source_doc_id. Live cart entries
+  // happen to set source_doc_id = cart_group_id, but backfill cart entries use
+  // label source_doc_ids (e.g. 'may_2026_entry_6') which are not UUIDs and blow
+  // up the orders.cart_group_id (uuid) filter in Step 2.
   const { data: cartReceipts, error: receiptsError } = await supabase
     .from('journal_entries')
-    .select('source_doc_id')
+    .select('posting_context')
     .eq('source_doc_type', 'cart_payment')
     .in('type_id', CART_RECEIPT_TYPE_IDS)
     .lte('posting_date', asOf);
   throwIfError(receiptsError, 'getInFlightCartReceiptsTotal: cart_receipts SELECT failed');
   if (!cartReceipts || cartReceipts.length === 0) return 0;
 
-  // De-duplicate cart_group_ids (a single cart could have multiple C.x rows
-  // if a future flow ever splits them; defensive). source_doc_id is text.
+  // De-duplicate cart_group_ids. posting_context.cart_payment_id IS the
+  // cart_checkout_groups.id (uuid) in both live and backfill entries.
   const cartGroupIds = Array.from(
-    new Set(cartReceipts.map((r) => (r as { source_doc_id: string }).source_doc_id))
+    new Set(
+      cartReceipts
+        .map((r) => (r as { posting_context: { cart_payment_id?: string } | null }).posting_context?.cart_payment_id)
+        .filter((id): id is string => typeof id === 'string')
+    )
   );
+  if (cartGroupIds.length === 0) return 0;
 
   // Step 2 — candidate orders pointing at those cart groups.
   const { data: orders, error: ordersError } = await supabase
@@ -1108,20 +1118,21 @@ export async function getInFlightCartReceiptsTotal(
   throwIfError(ordersError, 'getInFlightCartReceiptsTotal: orders SELECT failed');
   if (!orders || orders.length === 0) return 0;
 
-  const orderIds = orders.map((o) => (o as { id: string }).id);
-
-  // Step 3 — release entries for those orders.
+  // Step 3 — release entries. Matched on posting_context.order_id (the canonical
+  // order UUID set by both live completions and the backfill), NOT source_doc_id:
+  // backfill order entries use label source_doc_ids (e.g. 'may_2026_entry_7').
+  // Load order-side release entries by type + date, then bucket by order_id; the
+  // candidate-order lookup in Step 4 matches the bucket key to orders.id.
   const { data: releases, error: releasesError } = await supabase
     .from('journal_entries')
     .select('source_doc_id, type_id, posting_context')
     .eq('source_doc_type', 'order')
-    .in('source_doc_id', orderIds)
     .in('type_id', ALL_RELEASE_TYPE_IDS)
     .lte('posting_date', asOf);
   throwIfError(releasesError, 'getInFlightCartReceiptsTotal: releases SELECT failed');
 
-  // Bucket releases by source_doc_id (order id, stored as text on the journal
-  // entry) for O(1) per-order lookup during aggregation.
+  // Bucket releases by order_id (posting_context.order_id, the order UUID; falls
+  // back to source_doc_id for any legacy entry that predates the payload field).
   type ReleaseRow = {
     source_doc_id: string;
     type_id: string;
@@ -1129,9 +1140,11 @@ export async function getInFlightCartReceiptsTotal(
   };
   const releasesByOrder = new Map<string, ReleaseRow[]>();
   for (const r of (releases ?? []) as ReleaseRow[]) {
-    const arr = releasesByOrder.get(r.source_doc_id) ?? [];
+    const ctxOrderId = typeof r.posting_context?.order_id === 'string' ? r.posting_context.order_id : null;
+    const orderKey = ctxOrderId ?? r.source_doc_id;
+    const arr = releasesByOrder.get(orderKey) ?? [];
     arr.push(r);
-    releasesByOrder.set(r.source_doc_id, arr);
+    releasesByOrder.set(orderKey, arr);
   }
 
   // Step 4 — per-order aggregation.

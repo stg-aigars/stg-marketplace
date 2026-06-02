@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getAccountLedger,
   getEntriesPostedSince,
+  getInFlightCartReceiptsTotal,
   getJournalEntry,
   getNetVatPositionForPeriod,
   getPeriodRow,
@@ -1905,5 +1906,72 @@ describe('getNetVatPositionForPeriod', () => {
     // period closed; staff sees the trivial entry.
     expect(result.lines).toHaveLength(3);
     expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', credit_cents: 0 });
+  });
+});
+
+// =============================================================================
+// getInFlightCartReceiptsTotal — backfill source_doc_id convention
+//
+// Regression: backfill cart/order entries use label source_doc_ids (e.g.
+// 'may_2026_entry_6'), not the live convention source_doc_id = cart_group_id /
+// order_id. The canonical id lives in posting_context.cart_payment_id (Step 1)
+// and posting_context.order_id (Step 3). Reading source_doc_id fed a non-UUID
+// label into the orders.cart_group_id (uuid) filter → "invalid input syntax for
+// type uuid: april_2026_entry_3" when the period-close checklist loaded.
+// =============================================================================
+
+describe('getInFlightCartReceiptsTotal — backfill posting_context keys', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const CART_A = 'aaaaaaaa-0000-4000-8000-000000000001';
+  const CART_B = 'bbbbbbbb-0000-4000-8000-000000000002';
+  const ORDER_A = 'cccccccc-0000-4000-8000-000000000003';
+  const ORDER_B = 'dddddddd-0000-4000-8000-000000000004';
+
+  it('reads cart_group_id + order_id from posting_context for backfill entries (label source_doc_ids)', async () => {
+    const client = buildMockClient({
+      journal_entries: [
+        // Step 1 — cart receipts: backfill label source_doc_id, UUID in posting_context.cart_payment_id
+        {
+          data: [
+            { posting_context: { cart_payment_id: CART_A } },
+            { posting_context: { cart_payment_id: CART_B } }
+          ],
+          error: null
+        },
+        // Step 3 — releases: backfill O.1 with label source_doc_id, UUID in posting_context.order_id
+        {
+          data: [
+            { source_doc_id: 'may_2026_entry_7', type_id: 'O.1', posting_context: { order_id: ORDER_A } }
+          ],
+          error: null
+        }
+      ],
+      orders: [
+        {
+          data: [
+            { id: ORDER_A, items_total_cents: 2000, shipping_cost_cents: 190, cart_group_id: CART_A }, // released
+            { id: ORDER_B, items_total_cents: 7000, shipping_cost_cents: 350, cart_group_id: CART_B }  // in-flight
+          ],
+          error: null
+        }
+      ]
+    });
+
+    const total = await getInFlightCartReceiptsTotal(client as never, '2026-05-31');
+    // Order A is released by the backfill O.1 (matched via posting_context.order_id),
+    // so only Order B's €73.50 remains in-flight suspense.
+    expect(total).toBe(7350);
+  });
+
+  it('returns 0 without an orders query when no cart receipt carries a cart_payment_id', async () => {
+    const client = buildMockClient({
+      journal_entries: [{ data: [{ posting_context: {} }], error: null }],
+      orders: []
+    });
+    const total = await getInFlightCartReceiptsTotal(client as never, '2026-05-31');
+    expect(total).toBe(0);
   });
 });

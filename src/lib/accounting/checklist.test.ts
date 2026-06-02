@@ -776,7 +776,14 @@ function setupInFlightCarts(
     suspenseCreditCents?: number;
   }
 ) {
-  queues.journal_entries[0] = { data: opts.cartReceipts, error: null };
+  // getInFlightCartReceiptsTotal reads the cart_group_id from
+  // posting_context.cart_payment_id (canonical across live + backfill), so
+  // project the test's source_doc_id input into that shape. (Test inputs keep
+  // source_doc_id for readability; the cart-group id value is identical.)
+  queues.journal_entries[0] = {
+    data: opts.cartReceipts.map((r) => ({ posting_context: { cart_payment_id: r.source_doc_id } })),
+    error: null
+  };
 
   // When cart receipts are non-empty, the release lookup fires AFTER the
   // orders SELECT and BEFORE item 8's queries. Splice the release response
