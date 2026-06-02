@@ -1050,3 +1050,239 @@ describe('P.1 — monthly VAT consolidation', () => {
     expect(result.lines[1]!.narrative).toBe('B');
   });
 });
+
+// =============================================================================
+// Backfill-enablement additions (feature/accounting-backfill-enablement):
+//   - I.4 EUR (no-FX) path
+//   - I.8 vendor credit note / refund received
+//   - C.1/C.2 bank_account override + C.3 settlement_bank_account override
+//   - C.10 internal bank transfer
+// =============================================================================
+
+function lvVendorCp(): CounterpartyRow {
+  return {
+    ...lvSeller(),
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    type: 'vendor',
+    full_name: 'LV Vendor',
+    country: 'LV',
+    tax_status: 'vat_registered',
+    vat_number: 'LV40203249460',
+    vendor_code: 'XX'
+  };
+}
+
+function nonEuVendorCp(): CounterpartyRow {
+  return {
+    ...lvSeller(),
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    type: 'vendor',
+    full_name: 'Anthropic PBC',
+    country: 'US',
+    tax_status: null,
+    vendor_code: 'AN'
+  };
+}
+
+function nullCp(): CounterpartyRow {
+  return null as unknown as CounterpartyRow;
+}
+
+describe('I.4 — non-EU RC, EUR-denominated (no FX)', () => {
+  it('emits 4 lines (no 7710 FX line) for a EUR invoice — Anthropic €90', () => {
+    const i4 = findMappingById('I.4')!;
+    const result = i4.compute(
+      buildInput(nonEuVendorCp(), 0.21, {
+        invoice_currency: 'EUR',
+        invoice_net_cents: 9000,
+        expense_account: '7730',
+        vat_treatment: 'non_eu_rc',
+        vendor_invoice_number: 'JQYX1OS2-0011',
+        vendor_country: 'US'
+      })
+    );
+    expect(result.lines).toHaveLength(4);
+    expect(result.lines.some((l) => l.account_code === '7710')).toBe(false);
+    const byAccount = (code: string) => result.lines.find((l) => l.account_code === code)!;
+    expect(byAccount('7730').debit_cents).toBe(9000);
+    expect(byAccount('5710-RC-IN').debit_cents).toBe(1890);
+    expect(byAccount('5710-RC-OUT').credit_cents).toBe(1890);
+    expect(byAccount('2610').credit_cents).toBe(9000);
+    const dr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(dr).toBe(cr);
+    expect(dr).toBe(10890);
+  });
+
+  it('honours payable_account override for a deferred (two-entry) EUR invoice', () => {
+    const i4 = findMappingById('I.4')!;
+    const result = i4.compute(
+      buildInput(nonEuVendorCp(), 0.21, {
+        invoice_currency: 'EUR',
+        invoice_net_cents: 9000,
+        expense_account: '7730',
+        payable_account: '5310-AN',
+        vat_treatment: 'non_eu_rc',
+        vendor_invoice_number: 'JQYX1OS2-0011',
+        vendor_country: 'US'
+      })
+    );
+    const payable = result.lines.find((l) => l.account_code === '5310-AN')!;
+    expect(payable.credit_cents).toBe(9000);
+    expect(payable.counterparty_type).toBe('vendor');
+  });
+
+  it('still uses the 5-line FX path for a USD invoice', () => {
+    const i4 = findMappingById('I.4')!;
+    const result = i4.compute(
+      buildInput(nonEuVendorCp(), 0.21, {
+        invoice_currency: 'USD',
+        usd_amount: 20.0,
+        fx_rate: 1.1,
+        fx_rate_source: 'bank_transaction',
+        bank_amount_eur: 18.5,
+        expense_account: '7730',
+        vat_treatment: 'non_eu_rc',
+        vendor_invoice_number: 'X',
+        vendor_country: 'US'
+      })
+    );
+    expect(result.lines).toHaveLength(5);
+    expect(result.lines.some((l) => l.account_code === '7710')).toBe(true);
+    const dr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(dr).toBe(cr);
+  });
+});
+
+describe('I.8 — vendor credit note / refund received', () => {
+  it('reverses expense + input VAT — Vincit €35.88 (50% of €71.76)', () => {
+    const i8 = findMappingById('I.8')!;
+    const result = i8.compute(
+      buildInput(lvVendorCp(), null, {
+        refund_net_cents: 2965,
+        refund_vat_cents: 623,
+        expense_account: '7740',
+        bank_account: '2610',
+        original_invoice_ref: 'VO-113703',
+        vat_treatment: 'standard'
+      })
+    );
+    expect(result.lines).toHaveLength(3);
+    const byAccount = (code: string) => result.lines.find((l) => l.account_code === code)!;
+    expect(byAccount('2610').debit_cents).toBe(3588);
+    expect(byAccount('7740').credit_cents).toBe(2965);
+    expect(byAccount('5710-LV-IN').credit_cents).toBe(623);
+    const dr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(dr).toBe(cr);
+    expect(dr).toBe(3588);
+  });
+
+  it('omits the VAT line for a VAT-exempt refund (refund_vat_cents=0)', () => {
+    const i8 = findMappingById('I.8')!;
+    const result = i8.compute(
+      buildInput(lvVendorCp(), null, {
+        refund_net_cents: 1000,
+        refund_vat_cents: 0,
+        expense_account: '7710',
+        bank_account: '2610',
+        original_invoice_ref: 'X',
+        vat_treatment: 'exempt'
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines.some((l) => l.account_code === '5710-LV-IN')).toBe(false);
+  });
+});
+
+describe('cash-rail bank_account override (2620 e-commerce account)', () => {
+  it('C.2 bank-link credits to 2620 when bank_account override is passed', () => {
+    const c2 = findMappingById('C.2')!;
+    const result = c2.compute(
+      buildInput(nullCp(), null, {
+        gross_cart_cents: 2190,
+        buyer_wallet_cents: 0,
+        bank_account: '2620',
+        cart_payment_id: 'x',
+        everypay_payment_id: 'y'
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    const bank = result.lines.find((l) => l.debit_cents > 0)!;
+    expect(bank.account_code).toBe('2620');
+    expect(bank.debit_cents).toBe(2190);
+    expect(result.lines.find((l) => l.account_code === '5590')!.credit_cents).toBe(2190);
+  });
+
+  it('C.2 defaults to 2610 when no override (regression)', () => {
+    const c2 = findMappingById('C.2')!;
+    const result = c2.compute(
+      buildInput(nullCp(), null, {
+        gross_cart_cents: 610,
+        buyer_wallet_cents: 0,
+        cart_payment_id: 'x',
+        everypay_payment_id: 'y'
+      })
+    );
+    expect(result.lines.find((l) => l.debit_cents > 0)!.account_code).toBe('2610');
+  });
+
+  it('C.1 card still defaults to 2630 clearing', () => {
+    const c1 = findMappingById('C.1')!;
+    const result = c1.compute(
+      buildInput(nullCp(), null, {
+        gross_cart_cents: 7350,
+        buyer_wallet_cents: 0,
+        cart_payment_id: 'x',
+        everypay_payment_id: 'y'
+      })
+    );
+    expect(result.lines.find((l) => l.debit_cents > 0)!.account_code).toBe('2630');
+  });
+
+  it('C.3 settles to 2620 when settlement_bank_account override is passed', () => {
+    const c3 = findMappingById('C.3')!;
+    const result = c3.compute(
+      buildInput(nullCp(), null, {
+        settlement_cents: 7350,
+        settlement_bank_account: '2620',
+        everypay_settlement_id: 's',
+        batch_date: '2026-05-29',
+        settlement_value_date: '2026-05-29',
+        included_txn_refs: ['a']
+      })
+    );
+    expect(result.lines.find((l) => l.debit_cents > 0)!.account_code).toBe('2620');
+    expect(result.lines.find((l) => l.credit_cents > 0)!.account_code).toBe('2630');
+  });
+});
+
+describe('C.10 — internal bank transfer', () => {
+  it('debits to_account, credits from_account — €0.72 funding 2610 → 2620', () => {
+    const c10 = findMappingById('C.10')!;
+    const result = c10.compute(
+      buildInput(nullCp(), null, {
+        from_account: '2610',
+        to_account: '2620',
+        transfer_cents: 72
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines.find((l) => l.account_code === '2620')!.debit_cents).toBe(72);
+    expect(result.lines.find((l) => l.account_code === '2610')!.credit_cents).toBe(72);
+  });
+
+  it('rejects a transfer where from and to are the same account', () => {
+    const c10 = findMappingById('C.10')!;
+    expect(() =>
+      c10.compute(
+        buildInput(nullCp(), null, {
+          from_account: '2610',
+          to_account: '2610',
+          transfer_cents: 72
+        })
+      )
+    ).toThrow();
+  });
+});

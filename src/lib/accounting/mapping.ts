@@ -1344,6 +1344,90 @@ const I_7: VatMappingEntry = {
 };
 
 // =============================================================================
+// I.8 — Vendor credit note / refund received (inbound)
+//
+// Mirror of I.1's domestic-VAT shape, reversed: cash comes IN, the original
+// expense is reduced, and previously-deducted input VAT is repaid. Used when a
+// vendor issues a refund / credit note for a (partial) cancellation of a
+// previously-invoiced LV-standard-VAT service (e.g. the pats.lv / Vincit
+// pre-term cancellation refund).
+//
+// Posts 2 or 3 lines:
+//   Dr bank_account     refund_gross (= net + vat)
+//   Cr expense_account  refund_net
+//   Cr 5710-LV-IN       refund_vat   (input-VAT reversal; omitted when vat = 0)
+//
+// The 5710-LV-IN credit reduces the period's deductible input VAT, increasing
+// net VAT payable — correct when input was claimed on the original invoice.
+// For a refund of a VAT-exempt service pass refund_vat_cents=0 → 2-line entry
+// (the zero VAT line is skipped to satisfy the journal_lines line CHECK).
+//
+// PVN deklarācija: the reversal nets against line 62 (domestic priekšnodoklis);
+// the credit note is a PVN 1-I (I_dala) document.
+// =============================================================================
+
+const I_8: VatMappingEntry = {
+  id: 'I.8',
+  category: 'incoming',
+  entry_type: 'manual',
+  description: 'Vendor credit note / refund received — reverses expense + input VAT',
+  legal_basis: 'PVN likums (input VAT adjustment on price reduction); Article 185 of Directive 2006/112/EC',
+  routing: {
+    event_type: 'vendor.refund_received',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: {
+    pvn_lines: ['62'],
+    pvn1_pielikums: 'I_dala'
+  },
+  posting_context_required_keys: ['refund_net_cents', 'refund_vat_cents', 'expense_account', 'bank_account', 'original_invoice_ref', 'vat_treatment'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const refund_net_cents = requireNumber(input.payload, 'refund_net_cents');
+    const refund_vat_cents = requireNumber(input.payload, 'refund_vat_cents', { allowZero: true });
+    const expense_account = requireString(input.payload, 'expense_account');
+    const bank_account = requireString(input.payload, 'bank_account');
+    const refund_gross_cents = refund_net_cents + refund_vat_cents;
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: bank_account,
+        debit_cents: refund_gross_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Bank — vendor refund received'
+      },
+      {
+        line_number: 2,
+        account_code: expense_account,
+        debit_cents: 0,
+        credit_cents: refund_net_cents,
+        currency: 'EUR',
+        counterparty_type: input.counterparty ? 'vendor' : null,
+        counterparty_id: input.counterparty?.id ?? null,
+        narrative: 'Expense reversal (net of VAT)'
+      }
+    ];
+    if (refund_vat_cents > 0) {
+      lines.push({
+        line_number: 3,
+        account_code: '5710-LV-IN',
+        debit_cents: 0,
+        credit_cents: refund_vat_cents,
+        currency: 'EUR',
+        vat_country: 'LV',
+        narrative: 'Input VAT reversal (priekšnodoklis adjustment)'
+      });
+    }
+    return {
+      lines,
+      posting_context_extras: { refund_net_cents, refund_vat_cents, refund_gross_cents, expense_account, bank_account }
+    };
+  }
+};
+
+// =============================================================================
 // I.4 — Non-EU vendor B2B reverse-charge with FX decomposition (§F)
 // =============================================================================
 
@@ -1373,25 +1457,97 @@ const I_4: VatMappingEntry = {
     pvn_lines: ['54', '63'],
     pvn1_pielikums: 'I_dala'
   },
+  // FX-specific keys (usd_amount, fx_rate, fx_rate_source, bank_amount_eur) are
+  // NOT in the static list: they're required only on the foreign-currency path
+  // and validated inside compute(). invoice_currency is the discriminator and
+  // stays required. invoice_net_cents is required only on the EUR path (also
+  // validated in compute).
   posting_context_required_keys: [
     'vendor_invoice_number',
     'vendor_country',
     'invoice_currency',
-    'fx_rate',
-    'fx_rate_source',
-    'bank_amount_eur',
-    'usd_amount',
     'expense_account',
     'vat_treatment'
   ],
   compute: (input: ComputeInput): ComputeOutput => {
-    const usd_amount = requireNumber(input.payload, 'usd_amount');
-    const fx_rate = requireNumber(input.payload, 'fx_rate');
-    const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
     const expense_account = requireString(input.payload, 'expense_account');
+    const invoice_currency = requireString(input.payload, 'invoice_currency');
     if (input.vat_rate === null) {
       engineInvariant('I.4 compute requires vat_rate');
     }
+
+    // EUR-denominated non-EU RC (e.g. Anthropic billed in EUR): no FX
+    // decomposition. The invoice net IS the EUR service value, and the
+    // VAT-exempt FX-fee line (7710) is omitted entirely — emitting it with a
+    // zero fee would trip the journal_lines (debit=0)<>(credit=0) CHECK. The
+    // RC self-assessment pair (5710-RC-IN / 5710-RC-OUT) nets to zero cash.
+    // Optional payable_account override (default 2610) supports a deferred
+    // two-entry I.4 + I.7 pattern; same-day card pay credits 2610 directly.
+    if (invoice_currency === 'EUR') {
+      const invoice_net_cents = requireNumber(input.payload, 'invoice_net_cents');
+      const rc_vat_cents = roundHalfUpCents(invoice_net_cents * input.vat_rate);
+      const payable_account = typeof input.payload.payable_account === 'string'
+        ? input.payload.payable_account
+        : '2610';
+      const is_vendor_payable = payable_account.startsWith('5310-');
+      const eur_lines: ComputedLine[] = [
+        {
+          line_number: 1,
+          account_code: expense_account,
+          debit_cents: invoice_net_cents,
+          credit_cents: 0,
+          currency: 'EUR',
+          counterparty_type: input.counterparty ? 'vendor' : null,
+          counterparty_id: input.counterparty?.id ?? null,
+          narrative: 'Expense (service value, EUR-billed)'
+        },
+        {
+          line_number: 2,
+          account_code: '5710-RC-IN',
+          debit_cents: rc_vat_cents,
+          credit_cents: 0,
+          currency: 'EUR',
+          vat_rate_snapshot: input.vat_rate,
+          vat_country: 'LV',
+          narrative: 'Input VAT (RC self-assessment, deductible)'
+        },
+        {
+          line_number: 3,
+          account_code: payable_account,
+          debit_cents: 0,
+          credit_cents: invoice_net_cents,
+          currency: 'EUR',
+          counterparty_type: is_vendor_payable && input.counterparty ? 'vendor' : null,
+          counterparty_id: is_vendor_payable ? (input.counterparty?.id ?? null) : null,
+          narrative: is_vendor_payable ? 'Vendor payable (net, RC)' : 'Swedbank — card transaction (EUR billed)'
+        },
+        {
+          line_number: 4,
+          account_code: '5710-RC-OUT',
+          debit_cents: 0,
+          credit_cents: rc_vat_cents,
+          currency: 'EUR',
+          vat_rate_snapshot: input.vat_rate,
+          vat_country: 'LV',
+          narrative: 'Output VAT (RC self-assessment)'
+        }
+      ];
+      return {
+        lines: eur_lines,
+        posting_context_extras: {
+          invoice_net_cents,
+          rc_vat_cents,
+          invoice_currency: 'EUR',
+          payable_account,
+          vat_rate_snapshot: input.vat_rate
+        }
+      };
+    }
+
+    // Foreign-currency path (USD / CHF / GBP): §F FX decomposition.
+    const usd_amount = requireNumber(input.payload, 'usd_amount');
+    const fx_rate = requireNumber(input.payload, 'fx_rate');
+    const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
     const fx = decomposeFx({ foreign_amount: usd_amount, fx_rate, bank_amount_eur });
     const rc_vat_cents = roundHalfUpCents(fx.service_value_eur_cents * input.vat_rate);
     const bank_amount_cents = fx.service_value_eur_cents + fx.fx_fee_eur_cents;
@@ -1744,9 +1900,16 @@ const P_7: VatMappingEntry = {
  */
 function computeCartPayment(
   input: ComputeInput,
-  bankAccountCode: '2630' | '2610',
+  defaultBankAccountCode: '2630' | '2610',
   bankNarrative: string
 ): ComputeOutput {
+  // Optional bank_account override. Defaults preserve pre-existing behaviour
+  // (2630 EveryPay clearing for card, 2610 Swedbank for PIS). The May 2026
+  // backfill and the post-cutover cart wrap pass '2620' — the dedicated
+  // e-commerce settlement account where marketplace receipts actually land.
+  const bankAccountCode = typeof input.payload.bank_account === 'string'
+    ? input.payload.bank_account
+    : defaultBankAccountCode;
   const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
   const buyer_wallet_cents = requireNumber(input.payload, 'buyer_wallet_cents', {
     allowZero: true
@@ -1891,10 +2054,16 @@ const C_3: VatMappingEntry = {
   posting_context_required_keys: ['everypay_settlement_id', 'batch_date', 'settlement_value_date', 'included_txn_refs'],
   compute: (input: ComputeInput): ComputeOutput => {
     const settlement_cents = requireNumber(input.payload, 'settlement_cents');
+    // settlement_bank_account override (default 2610). The backfill and the
+    // post-cutover wrap pass '2620' — EveryPay settles the merchant batch into
+    // the e-commerce settlement account, not the operating account.
+    const settlement_bank_account = typeof input.payload.settlement_bank_account === 'string'
+      ? input.payload.settlement_bank_account
+      : '2610';
     const lines: ComputedLine[] = [
       {
         line_number: 1,
-        account_code: '2610',
+        account_code: settlement_bank_account,
         debit_cents: settlement_cents,
         credit_cents: 0,
         currency: 'EUR',
@@ -1909,7 +2078,7 @@ const C_3: VatMappingEntry = {
         narrative: 'EveryPay clearing — settlement clears balance'
       }
     ];
-    return { lines, posting_context_extras: { settlement_cents } };
+    return { lines, posting_context_extras: { settlement_cents, settlement_bank_account } };
   }
 };
 
@@ -2288,11 +2457,66 @@ const C_9: VatMappingEntry = {
 };
 
 // =============================================================================
+// C.10 — Internal bank transfer (asset-to-asset, no VAT)
+//
+// Cash moved between two own bank / clearing accounts — e.g. funding the
+// e-commerce settlement account (2620) from the operating account (2610).
+// Pure inter-asset movement: no P&L, no VAT, no counterparty.
+// =============================================================================
+
+const C_10: VatMappingEntry = {
+  id: 'C.10',
+  category: 'cash_only',
+  entry_type: 'settlement',
+  description: 'Internal bank transfer between own accounts (e.g. 2610 → 2620 funding)',
+  legal_basis: 'Cash-only inter-asset transfer; no VAT impact',
+  routing: {
+    event_type: 'bank.internal_transfer',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['from_account', 'to_account', 'transfer_cents'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const transfer_cents = requireNumber(input.payload, 'transfer_cents');
+    const from_account = requireString(input.payload, 'from_account');
+    const to_account = requireString(input.payload, 'to_account');
+    if (from_account === to_account) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `C.10 from_account and to_account must differ (both '${from_account}')`,
+        context: { from_account, to_account }
+      });
+    }
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: to_account,
+        debit_cents: transfer_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: `Internal transfer in (from ${from_account})`
+      },
+      {
+        line_number: 2,
+        account_code: from_account,
+        debit_cents: 0,
+        credit_cents: transfer_cents,
+        currency: 'EUR',
+        narrative: `Internal transfer out (to ${to_account})`
+      }
+    ];
+    return { lines, posting_context_extras: { transfer_cents, from_account, to_account } };
+  }
+};
+
+// =============================================================================
 // MAPPING_TABLE — readonly export consumed by dispatcher.ts
 // =============================================================================
 
 /**
- * v3 mapping table — 28 type IDs in scope. First-match-wins routing in
+ * v3 mapping table — 30 type IDs in scope. First-match-wins routing in
  * dispatcher.ts evaluates in this order against the incoming PostingEvent.
  * Order matters when multiple types share an event_type — e.g. O.2 must
  * precede O.3 because O.2's conditions are stricter (vat_registered +
@@ -2343,6 +2567,7 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   I_1,
   I_5,
   I_7,
+  I_8,
   // Period close
   P_1,
   P_6,
@@ -2360,7 +2585,8 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   C_6,
   C_7,
   C_8,
-  C_9
+  C_9,
+  C_10
 ] as const;
 
 /** Lookup by id. Returns undefined if id not in MAPPING_TABLE. */

@@ -370,6 +370,23 @@ const REPRESENTATIVES: Representative[] = [
       counterparty: null,
       payload: { payment_method: 'card' }
     }
+  },
+  // Backfill-enablement additions — I.8 vendor refund, C.10 internal transfer
+  {
+    type_id: 'I.8',
+    ctx: {
+      event_type: 'vendor.refund_received',
+      counterparty: lvVendor(),
+      payload: { vat_treatment: 'standard' }
+    }
+  },
+  {
+    type_id: 'C.10',
+    ctx: {
+      event_type: 'bank.internal_transfer',
+      counterparty: null,
+      payload: {}
+    }
   }
 ];
 
