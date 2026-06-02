@@ -11,9 +11,10 @@
 -- Used by:
 --   - the May 2026 backfill (marketplace cash legs, EveryPay fees, the
 --     2610→2620 funding transfer)
---   - the engine cash rails post-cutover: C.2 (bank-link) / C.3 (EveryPay
---     settlement) accept a payload `bank_account` override that the cart wrap
---     passes as '2620' once the Stage 3 cutover lands.
+--   - the engine cash rails post-cutover: the shared cart-payment compute
+--     (C.1 card / C.2 bank-link) takes a payload `bank_account` override and
+--     C.3 (EveryPay settlement) a `settlement_bank_account` override, which the
+--     cart wrap / settlement action pass as '2620' once Stage 3 cutover lands.
 insert into public.accounts (code, name_lv, name_en, type, is_vat, parent_code) values
   ('2620', 'Swedbank e-komercijas norēķinu konts', 'Swedbank e-commerce settlement account', 'asset', false, null)
 on conflict (code) do nothing;

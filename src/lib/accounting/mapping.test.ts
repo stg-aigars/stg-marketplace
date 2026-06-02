@@ -1089,13 +1089,14 @@ function nullCp(): CounterpartyRow {
 }
 
 describe('I.4 — non-EU RC, EUR-denominated (no FX)', () => {
-  it('emits 4 lines (no 7710 FX line) for a EUR invoice — Anthropic €90', () => {
+  it('emits 4 lines (no 7710 FX line) for a EUR invoice — Anthropic €90, same-day pay to 2610', () => {
     const i4 = findMappingById('I.4')!;
     const result = i4.compute(
       buildInput(nonEuVendorCp(), 0.21, {
         invoice_currency: 'EUR',
         invoice_net_cents: 9000,
         expense_account: '7730',
+        payable_account: '2610',
         vat_treatment: 'non_eu_rc',
         vendor_invoice_number: 'JQYX1OS2-0011',
         vendor_country: 'US'
@@ -1112,6 +1113,27 @@ describe('I.4 — non-EU RC, EUR-denominated (no FX)', () => {
     const cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
     expect(dr).toBe(cr);
     expect(dr).toBe(10890);
+  });
+
+  it('omits the RC pair (2 lines, no 0/0 line) when rc_vat rounds to 0', () => {
+    const i4 = findMappingById('I.4')!;
+    const result = i4.compute(
+      buildInput(nonEuVendorCp(), 0.21, {
+        invoice_currency: 'EUR',
+        invoice_net_cents: 2, // 2 * 0.21 = 0.42 → rounds to 0 cents
+        expense_account: '7730',
+        payable_account: '2610',
+        vat_treatment: 'non_eu_rc',
+        vendor_invoice_number: 'X',
+        vendor_country: 'US'
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines.some((l) => l.account_code.startsWith('5710-RC'))).toBe(false);
+    // No 0/0 line — every line is debit-only XOR credit-only.
+    for (const l of result.lines) {
+      expect((l.debit_cents === 0) !== (l.credit_cents === 0)).toBe(true);
+    }
   });
 
   it('honours payable_account override for a deferred (two-entry) EUR invoice', () => {
@@ -1256,6 +1278,21 @@ describe('cash-rail bank_account override (2620 e-commerce account)', () => {
     expect(result.lines.find((l) => l.debit_cents > 0)!.account_code).toBe('2620');
     expect(result.lines.find((l) => l.credit_cents > 0)!.account_code).toBe('2630');
   });
+
+  it('rejects a non-cash bank_account override (e.g. revenue/VAT account)', () => {
+    const c2 = findMappingById('C.2')!;
+    expect(() =>
+      c2.compute(
+        buildInput(nullCp(), null, {
+          gross_cart_cents: 2190,
+          buyer_wallet_cents: 0,
+          bank_account: '6310-C',
+          cart_payment_id: 'x',
+          everypay_payment_id: 'y'
+        })
+      )
+    ).toThrow(/cash\/clearing account/);
+  });
 });
 
 describe('C.10 — internal bank transfer', () => {
@@ -1284,5 +1321,18 @@ describe('C.10 — internal bank transfer', () => {
         })
       )
     ).toThrow();
+  });
+
+  it('rejects a transfer to a non-cash account', () => {
+    const c10 = findMappingById('C.10')!;
+    expect(() =>
+      c10.compute(
+        buildInput(nullCp(), null, {
+          from_account: '2610',
+          to_account: '5710-LV-OUT',
+          transfer_cents: 72
+        })
+      )
+    ).toThrow(/cash\/clearing account/);
   });
 });

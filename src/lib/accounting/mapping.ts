@@ -101,6 +101,28 @@ function engineInvariant(reason: string, context?: Record<string, unknown>): nev
 }
 
 /**
+ * Cash / clearing accounts that a payment-rail override may target. Guards the
+ * bank_account / settlement_bank_account / internal-transfer overrides so a
+ * typo'd direct-emit (backfill) payload can't silently post cash to a P&L or
+ * VAT account — the journal_lines.account_code FK only rejects non-existent
+ * codes, not wrong-category ones, and a balanced entry posts regardless.
+ * 2610 operating, 2620 e-commerce settlement, 2630 EveryPay clearing, 2670
+ * other cash.
+ */
+const CASH_RAIL_ACCOUNTS = ['2610', '2620', '2630', '2670'] as const;
+
+function assertCashAccount(account_code: string, payload_key: string): string {
+  if (!(CASH_RAIL_ACCOUNTS as readonly string[]).includes(account_code)) {
+    throw new PostingValidationError({
+      code: 'invalid_payload_value',
+      reason: `${payload_key} must be a cash/clearing account (one of ${CASH_RAIL_ACCOUNTS.join(', ')}), got '${account_code}'`,
+      context: { payload_key, account_code }
+    });
+  }
+  return account_code;
+}
+
+/**
  * Shared scaffolding for pre-computed lines (P.1, H.1, P.7). Caller passes
  * `payload.lines: Array<{ account_code, debit_cents?, credit_cents?, ... }>`;
  * the helper validates the array shape and projects each entry into a
@@ -1387,7 +1409,7 @@ const I_8: VatMappingEntry = {
     const refund_net_cents = requireNumber(input.payload, 'refund_net_cents');
     const refund_vat_cents = requireNumber(input.payload, 'refund_vat_cents', { allowZero: true });
     const expense_account = requireString(input.payload, 'expense_account');
-    const bank_account = requireString(input.payload, 'bank_account');
+    const bank_account = assertCashAccount(requireString(input.payload, 'bank_account'), 'bank_account');
     const refund_gross_cents = refund_net_cents + refund_vat_cents;
     const lines: ComputedLine[] = [
       {
@@ -1470,81 +1492,50 @@ const I_4: VatMappingEntry = {
     'vat_treatment'
   ],
   compute: (input: ComputeInput): ComputeOutput => {
-    const expense_account = requireString(input.payload, 'expense_account');
     const invoice_currency = requireString(input.payload, 'invoice_currency');
     if (input.vat_rate === null) {
       engineInvariant('I.4 compute requires vat_rate');
     }
 
     // EUR-denominated non-EU RC (e.g. Anthropic billed in EUR): no FX
-    // decomposition. The invoice net IS the EUR service value, and the
-    // VAT-exempt FX-fee line (7710) is omitted entirely — emitting it with a
-    // zero fee would trip the journal_lines (debit=0)<>(credit=0) CHECK. The
-    // RC self-assessment pair (5710-RC-IN / 5710-RC-OUT) nets to zero cash.
-    // Optional payable_account override (default 2610) supports a deferred
-    // two-entry I.4 + I.7 pattern; same-day card pay credits 2610 directly.
+    // decomposition — the invoice net IS the EUR service value. Reuses
+    // buildVendorRcLines (the same builder I.3 EU-RC uses): identical RC line
+    // shape, AND it already omits the 5710-RC-IN/OUT pair when rc_vat rounds to
+    // 0, so a sub-cent net never emits a 0/0 line that the journal_lines
+    // (debit=0)<>(credit=0) CHECK would reject. payable_account defaults to the
+    // vendor payable (5310-{code}); the backfill passes '2610' for same-day
+    // card pay so the credit lands on Swedbank directly. No 7710 FX-fee line.
     if (invoice_currency === 'EUR') {
-      const invoice_net_cents = requireNumber(input.payload, 'invoice_net_cents');
-      const rc_vat_cents = roundHalfUpCents(invoice_net_cents * input.vat_rate);
-      const payable_account = typeof input.payload.payable_account === 'string'
-        ? input.payload.payable_account
-        : '2610';
-      const is_vendor_payable = payable_account.startsWith('5310-');
-      const eur_lines: ComputedLine[] = [
-        {
-          line_number: 1,
-          account_code: expense_account,
-          debit_cents: invoice_net_cents,
-          credit_cents: 0,
-          currency: 'EUR',
-          counterparty_type: input.counterparty ? 'vendor' : null,
-          counterparty_id: input.counterparty?.id ?? null,
-          narrative: 'Expense (service value, EUR-billed)'
-        },
-        {
-          line_number: 2,
-          account_code: '5710-RC-IN',
-          debit_cents: rc_vat_cents,
-          credit_cents: 0,
-          currency: 'EUR',
-          vat_rate_snapshot: input.vat_rate,
-          vat_country: 'LV',
-          narrative: 'Input VAT (RC self-assessment, deductible)'
-        },
-        {
-          line_number: 3,
-          account_code: payable_account,
-          debit_cents: 0,
-          credit_cents: invoice_net_cents,
-          currency: 'EUR',
-          counterparty_type: is_vendor_payable && input.counterparty ? 'vendor' : null,
-          counterparty_id: is_vendor_payable ? (input.counterparty?.id ?? null) : null,
-          narrative: is_vendor_payable ? 'Vendor payable (net, RC)' : 'Swedbank — card transaction (EUR billed)'
-        },
-        {
-          line_number: 4,
-          account_code: '5710-RC-OUT',
-          debit_cents: 0,
-          credit_cents: rc_vat_cents,
-          currency: 'EUR',
-          vat_rate_snapshot: input.vat_rate,
-          vat_country: 'LV',
-          narrative: 'Output VAT (RC self-assessment)'
-        }
-      ];
+      if (!input.counterparty) {
+        engineInvariant('I.4 EUR path requires counterparty');
+      }
+      const result = buildVendorRcLines({
+        counterparty: input.counterparty,
+        payload: input.payload,
+        vat_rate: input.vat_rate,
+        vat_country: 'LV',
+        rc_in_account: '5710-RC-IN',
+        rc_out_account: '5710-RC-OUT',
+        context_label: 'non-EU RC, EUR'
+      });
       return {
-        lines: eur_lines,
+        lines: result.lines,
         posting_context_extras: {
-          invoice_net_cents,
-          rc_vat_cents,
+          invoice_net_cents: result.invoice_net_cents,
+          rc_vat_cents: result.rc_vat_cents,
           invoice_currency: 'EUR',
-          payable_account,
+          payable_account: result.payable_account,
           vat_rate_snapshot: input.vat_rate
         }
       };
     }
 
     // Foreign-currency path (USD / CHF / GBP): §F FX decomposition.
+    const expense_account = requireString(input.payload, 'expense_account');
+    // fx_rate_source provenance was an engine-validated required key before the
+    // FX/EUR key split; re-assert it here so the FX path keeps recording which
+    // rate source backed the §F VAT base (regulatory traceability).
+    requireString(input.payload, 'fx_rate_source');
     const usd_amount = requireNumber(input.payload, 'usd_amount');
     const fx_rate = requireNumber(input.payload, 'fx_rate');
     const bank_amount_eur = requireNumber(input.payload, 'bank_amount_eur');
@@ -1908,7 +1899,7 @@ function computeCartPayment(
   // backfill and the post-cutover cart wrap pass '2620' — the dedicated
   // e-commerce settlement account where marketplace receipts actually land.
   const bankAccountCode = typeof input.payload.bank_account === 'string'
-    ? input.payload.bank_account
+    ? assertCashAccount(input.payload.bank_account, 'bank_account')
     : defaultBankAccountCode;
   const gross_cart_cents = requireNumber(input.payload, 'gross_cart_cents');
   const buyer_wallet_cents = requireNumber(input.payload, 'buyer_wallet_cents', {
@@ -2058,7 +2049,7 @@ const C_3: VatMappingEntry = {
     // post-cutover wrap pass '2620' — EveryPay settles the merchant batch into
     // the e-commerce settlement account, not the operating account.
     const settlement_bank_account = typeof input.payload.settlement_bank_account === 'string'
-      ? input.payload.settlement_bank_account
+      ? assertCashAccount(input.payload.settlement_bank_account, 'settlement_bank_account')
       : '2610';
     const lines: ComputedLine[] = [
       {
@@ -2480,8 +2471,8 @@ const C_10: VatMappingEntry = {
   posting_context_required_keys: ['from_account', 'to_account', 'transfer_cents'],
   compute: (input: ComputeInput): ComputeOutput => {
     const transfer_cents = requireNumber(input.payload, 'transfer_cents');
-    const from_account = requireString(input.payload, 'from_account');
-    const to_account = requireString(input.payload, 'to_account');
+    const from_account = assertCashAccount(requireString(input.payload, 'from_account'), 'from_account');
+    const to_account = assertCashAccount(requireString(input.payload, 'to_account'), 'to_account');
     if (from_account === to_account) {
       throw new PostingValidationError({
         code: 'invalid_payload_value',
