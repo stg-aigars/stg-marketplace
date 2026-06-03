@@ -3,7 +3,7 @@
  *
  * Covers:
  *   - Scenario 1: card cart → C.1 (Dr 2630 / Cr 5590)
- *   - Scenario 2: bank_link / PIS cart → C.2 (Dr 2610 / Cr 5590)
+ *   - Scenario 2: bank_link / PIS cart → C.2 (Dr 2620 / Cr 5590)
  *   - Scenario 11: buyer-wallet 3-line C.1 (Dr 5351-buyer / Dr 2630 / Cr 5590)
  *   - F1: idempotent retry returns idempotent_skip (RPC's paid_at guard)
  *
@@ -112,8 +112,8 @@ describe('Scenario 1 — card cart fulfillment emits C.1 (Dr 2630 / Cr 5590)', (
 // Scenario 2 — bank_link (PIS) cart C.2
 // ---------------------------------------------------------------------------
 
-describe('Scenario 2 — bank_link cart fulfillment emits C.2 (Dr 2610 / Cr 5590)', () => {
-  it('flag-ON path: fulfilling a PIS cart writes C.2 directly to 2610', async () => {
+describe('Scenario 2 — bank_link cart fulfillment emits C.2 (Dr 2620 / Cr 5590)', () => {
+  it('flag-ON path: fulfilling a PIS cart writes C.2 directly to the e-commerce account 2620', async () => {
     const buyer = await createTestUser({ country: 'LV' });
     const grossCart = 9_900;
 
@@ -142,7 +142,7 @@ describe('Scenario 2 — bank_link cart fulfillment emits C.2 (Dr 2610 / Cr 5590
     });
 
     await assertJournalLines(supabase, entry.id, [
-      { account_code: '2610', debit_cents: grossCart, credit_cents: 0 },
+      { account_code: '2620', debit_cents: grossCart, credit_cents: 0 },
       { account_code: '5590', debit_cents: 0, credit_cents: grossCart },
     ]);
   });
