@@ -4,8 +4,10 @@ import { LockKey } from '@phosphor-icons/react/ssr';
 
 import { Alert, Button, Card, CardBody } from '@/components/ui';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { getPeriodCloseChecklist } from '@/lib/accounting/checklist';
+import { getPeriodCloseChecklist, lastDayOfMonthlyPeriod } from '@/lib/accounting/checklist';
+import { getBankClosureReconciliation, type BankClosureReconRow } from '@/lib/accounting/queries';
 import { PeriodCloseChecklist } from '@/components/staff/accounting/PeriodCloseChecklist';
+import { BankClosureForm } from '@/components/staff/accounting/BankClosureForm';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
 export const metadata: Metadata = {
@@ -107,6 +109,24 @@ export default async function PeriodClosePage(props: {
         : 'Could not load period-close checklist.';
   }
 
+  // Bank accounts still needing a statement closing (or with a mismatch), for
+  // the inline record form. Only while the period is open; non-fatal on error.
+  let bankClosureRows: BankClosureReconRow[] = [];
+  if (checklist && checklist.period_status === 'open') {
+    try {
+      const rows = await getBankClosureReconciliation(
+        serviceClient,
+        period,
+        lastDayOfMonthlyPeriod(period),
+      );
+      bankClosureRows = rows.filter(
+        (r) => r.status === 'manual_pending' || r.status === 'fail',
+      );
+    } catch {
+      // Non-fatal — the form just won't render; the checklist still shows item 2.
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -162,7 +182,12 @@ export default async function PeriodClosePage(props: {
           </p>
         </Alert>
       ) : checklist ? (
-        <PeriodCloseChecklist checklist={checklist} />
+        <>
+          <PeriodCloseChecklist checklist={checklist} />
+          {bankClosureRows.length > 0 ? (
+            <BankClosureForm period={period} rows={bankClosureRows} />
+          ) : null}
+        </>
       ) : null}
     </div>
   );

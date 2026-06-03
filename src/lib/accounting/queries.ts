@@ -1271,6 +1271,101 @@ export async function getInTransitEverypayClearingTotal(
 }
 
 // =============================================================================
+// getBankClosureReconciliation — period-close checklist item 2 (PR #4b)
+// =============================================================================
+
+export interface BankClosureReconRow {
+  account_code: string;
+  /** Has the account any GL lines by asOf? Drives the in-use guard. */
+  has_activity: boolean;
+  /** Cumulative GL net-debit balance through asOf. */
+  gl_closing_cents: number;
+  /** Staff-recorded statement closing for the period, or null if none recorded. */
+  recorded_closing_cents: number | null;
+  /**
+   *  skip           — flagged account with no activity yet (e.g. 2620 before May)
+   *  manual_pending — in use, no statement closing recorded yet
+   *  pass           — in use, GL closing == recorded statement closing
+   *  fail           — in use, GL closing != recorded statement closing
+   */
+  status: 'pass' | 'fail' | 'manual_pending' | 'skip';
+}
+
+/**
+ * Per-account bank reconciliation for the period-close checklist (item 2):
+ * compares each `accounts.is_bank_reconcilable` account's cumulative GL closing
+ * (through asOf) against its staff-recorded `bank_statement_closures` row for
+ * the period. Data-driven replacement for the hardcoded BANK_WALK_CHECKPOINTS
+ * single-account check.
+ *
+ * In-use guard: an account is only reconciled once it has GL activity by asOf,
+ * so a flagged account that hasn't started holding money (2620 before May)
+ * `skip`s rather than blocking the close with a spurious manual_pending.
+ */
+export async function getBankClosureReconciliation(
+  supabase: SupabaseClient,
+  periodKey: string,
+  asOf: string
+): Promise<BankClosureReconRow[]> {
+  const { data: accts, error: acctErr } = await supabase
+    .from('accounts')
+    .select('code')
+    .eq('is_bank_reconcilable', true)
+    .order('code');
+  throwIfError(acctErr, 'getBankClosureReconciliation: accounts SELECT failed');
+  if (!accts || accts.length === 0) return [];
+  const codes = (accts as Array<{ code: string }>).map((a) => a.code);
+
+  // Cumulative GL balance + activity per flagged account, through asOf.
+  const { data: lines, error: linesErr } = await supabase
+    .from('journal_lines')
+    .select('account_code, debit_cents, credit_cents, journal_entries!inner(posting_date)')
+    .in('account_code', codes)
+    .lte('journal_entries.posting_date', asOf);
+  throwIfError(linesErr, 'getBankClosureReconciliation: journal_lines SELECT failed');
+
+  const gl = new Map<string, { net: number; count: number }>();
+  for (const code of codes) gl.set(code, { net: 0, count: 0 });
+  for (const l of (lines ?? []) as Array<{ account_code: string; debit_cents: number; credit_cents: number }>) {
+    const agg = gl.get(l.account_code);
+    if (agg) {
+      agg.net += Number(l.debit_cents) - Number(l.credit_cents);
+      agg.count += 1;
+    }
+  }
+
+  // Recorded statement closings for the period.
+  const { data: closures, error: closuresErr } = await supabase
+    .from('bank_statement_closures')
+    .select('account_code, closing_balance_cents')
+    .eq('period_key', periodKey)
+    .in('account_code', codes);
+  throwIfError(closuresErr, 'getBankClosureReconciliation: closures SELECT failed');
+
+  const recorded = new Map<string, number>();
+  for (const r of (closures ?? []) as Array<{ account_code: string; closing_balance_cents: number }>) {
+    recorded.set(r.account_code, Number(r.closing_balance_cents));
+  }
+
+  return codes.map((code): BankClosureReconRow => {
+    const agg = gl.get(code) ?? { net: 0, count: 0 };
+    const rec = recorded.has(code) ? (recorded.get(code) as number) : null;
+    let status: BankClosureReconRow['status'];
+    if (agg.count === 0) status = 'skip';
+    else if (rec === null) status = 'manual_pending';
+    else if (agg.net === rec) status = 'pass';
+    else status = 'fail';
+    return {
+      account_code: code,
+      has_activity: agg.count > 0,
+      gl_closing_cents: agg.net,
+      recorded_closing_cents: rec,
+      status
+    };
+  });
+}
+
+// =============================================================================
 // getNetVatPositionForPeriod — PR C commit 12 (monthly-vat-close cron)
 // =============================================================================
 
