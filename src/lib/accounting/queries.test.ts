@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getAccountLedger,
+  getBankClosureReconciliation,
   getEntriesPostedSince,
   getInFlightCartReceiptsTotal,
   getInTransitEverypayClearingTotal,
@@ -2037,5 +2038,66 @@ describe('getInTransitEverypayClearingTotal', () => {
     });
     const total = await getInTransitEverypayClearingTotal(client as never, '2026-05-31');
     expect(total).toBe(3500); // €50.00 charge − €15.00 card refund
+  });
+});
+
+// =============================================================================
+// getBankClosureReconciliation — period-close item 2 (PR #4b)
+// =============================================================================
+
+describe('getBankClosureReconciliation', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('classifies each flagged account: pass / fail / skip', async () => {
+    const client = buildMockClient({
+      accounts: [{ data: [{ code: '2610' }, { code: '2620' }, { code: '2670' }], error: null }],
+      journal_lines: [
+        {
+          data: [
+            { account_code: '2610', debit_cents: 38378, credit_cents: 0 },
+            { account_code: '2620', debit_cents: 14920, credit_cents: 0 }
+            // 2670 has no lines → in-use guard → skip
+          ],
+          error: null
+        }
+      ],
+      bank_statement_closures: [
+        {
+          data: [
+            { account_code: '2610', closing_balance_cents: 38378 }, // match → pass
+            { account_code: '2620', closing_balance_cents: 14000 } //  mismatch → fail
+          ],
+          error: null
+        }
+      ]
+    });
+    const rows = await getBankClosureReconciliation(client as never, '2026-05', '2026-05-31');
+    const byCode = Object.fromEntries(rows.map((r) => [r.account_code, r]));
+    expect(byCode['2610']!.status).toBe('pass');
+    expect(byCode['2620']!.status).toBe('fail');
+    expect(byCode['2620']!.gl_closing_cents).toBe(14920);
+    expect(byCode['2620']!.recorded_closing_cents).toBe(14000);
+    expect(byCode['2670']!.status).toBe('skip');
+    expect(byCode['2670']!.has_activity).toBe(false);
+  });
+
+  it('returns manual_pending when an in-use account has no recorded closing', async () => {
+    const client = buildMockClient({
+      accounts: [{ data: [{ code: '2620' }], error: null }],
+      journal_lines: [{ data: [{ account_code: '2620', debit_cents: 14920, credit_cents: 0 }], error: null }],
+      bank_statement_closures: [{ data: [], error: null }]
+    });
+    const rows = await getBankClosureReconciliation(client as never, '2026-05', '2026-05-31');
+    expect(rows[0]!.status).toBe('manual_pending');
+    expect(rows[0]!.gl_closing_cents).toBe(14920);
+    expect(rows[0]!.recorded_closing_cents).toBeNull();
+  });
+
+  it('returns [] when no accounts are bank-reconcilable', async () => {
+    const client = buildMockClient({ accounts: [{ data: [], error: null }] });
+    const rows = await getBankClosureReconciliation(client as never, '2026-05', '2026-05-31');
+    expect(rows).toEqual([]);
   });
 });

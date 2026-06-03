@@ -142,17 +142,6 @@ const periodHardLocked = {
  *   accounts gains an extra leading entry for the 2610 ledger.
  */
 
-const accountRow2610 = {
-  code: '2610',
-  name_lv: 'Swedbank',
-  name_en: 'Swedbank',
-  type: 'asset',
-  is_vat: false,
-  is_active: true,
-  parent_code: null,
-  created_at: '2025-01-01T00:00:00Z'
-};
-
 const accountRow5590 = {
   code: '5590',
   name_lv: 'Suspense',
@@ -222,27 +211,14 @@ const emptyLines = { data: [], error: null };
 function buildHappyPathQueues(
   period: typeof periodOpen | typeof periodSoftLocked | typeof periodHardLocked
 ): Record<string, MockResponse[]> {
-  const isPhase0Period = /^2025-(0[7-9]|1[0-2])$|^2026-0[1-3]$/.test(
-    period.period_key
-  );
-
-  // Item 2 queries 2610 ledger only when period is in Phase 0 fixture.
-  // Otherwise item 2 returns manual_pending and skips both the accounts
-  // and journal_lines reads for 2610.
-  const item2LedgerJournalLines: MockResponse[] = isPhase0Period
-    ? [emptyLines]
-    : [];
-  const item2LedgerAccounts: MockResponse[] = isPhase0Period
-    ? [{ data: accountRow2610, error: null }]
-    : [];
-
   return {
     periods: [{ data: period, error: null }],
     journal_lines: [
       // Item 1 trial balance — empty so it's trivially balanced (Σ=0).
       emptyLines,
-      // Item 2 ledger 2610 (Phase 0 period only).
-      ...item2LedgerJournalLines,
+      // (Item 2 issues NO journal_lines query in the happy path: its
+      // getBankClosureReconciliation flagged-accounts query returns [] and
+      // short-circuits before the journal_lines / closures reads.)
       // Item 3 wallet integrity 5351 lines.
       { data: [], error: null },
       // Item 4 ledger 5590.
@@ -259,15 +235,20 @@ function buildHappyPathQueues(
       { data: [], error: null }
     ],
     accounts: [
-      // Item 2 ledger 2610 account load (Phase 0 period only). Item 1 trial
-      // balance skips accounts entirely when no lines aggregate.
-      ...item2LedgerAccounts,
+      // Item 2 getBankClosureReconciliation flagged-accounts query — empty in
+      // the happy path (no is_bank_reconcilable accounts) → item 2 trivially
+      // passes and issues no further reads.
+      { data: [], error: null },
       // Items 4-7 ledger account loads: 5590, 2351, 5410-UN, 5410-EP, 2630.
       { data: accountRow5590, error: null },
       { data: accountRow2351, error: null },
       { data: accountRow5410UN, error: null },
       { data: accountRow5410EP, error: null },
       { data: accountRow2630, error: null }
+    ],
+    bank_statement_closures: [
+      // Item 2 — only queried when flagged accounts exist (overridden per-test).
+      { data: [], error: null }
     ],
     wallet_transactions: [
       // Item 3 per-user balance_after_cents lookup (period-scoped).
@@ -306,51 +287,6 @@ function buildHappyPathQueues(
     orders: [
       { data: [], error: null }
     ]
-  };
-}
-
-/**
- * Mock GL lines for account 2610 producing the given closing balance via a
- * single H.1 historical-debit line. Used in `can_soft_lock` / `can_hard_lock`
- * test blocks to set up Phase 0 bank state matching the Phase 0 fixture.
- */
-function buildPhase0Bank2610Lines(closingCents: number): MockResponse {
-  return {
-    data: [
-      {
-        id: 'l1',
-        entry_id: 'e1',
-        line_number: 1,
-        account_code: '2610',
-        debit_cents: closingCents,
-        credit_cents: 0,
-        currency: 'EUR',
-        fx_rate_snapshot: null,
-        vat_rate_snapshot: null,
-        vat_country: null,
-        counterparty_type: null,
-        counterparty_id: null,
-        narrative: null,
-        journal_entries: {
-          id: 'e1',
-          posting_date: '2025-07-15',
-          accounting_period: '2025-07',
-          tax_period: '2025-07',
-          entry_type: 'manual',
-          type_id: 'H.1',
-          source_doc_type: 'historical',
-          source_doc_id: 'h1',
-          reverses_entry_id: null,
-          correction_reason: null,
-          narrative: 'opening',
-          posting_context: {},
-          created_by: 'test',
-          created_at: '2025-07-15T00:00:00Z',
-          period_close_adjustment: false
-        }
-      }
-    ],
-    error: null
   };
 }
 
@@ -438,121 +374,100 @@ describe('getPeriodCloseChecklist — item 1 (Σ debits = Σ credits)', () => {
   });
 });
 
+/**
+ * Set up item 2's data-driven bank reconciliation (getBankClosureReconciliation):
+ *   - flagged: account codes returned by the is_bank_reconcilable query (accounts[0])
+ *   - glLines: journal_lines for those accounts (item 2's lines query is the
+ *     2nd journal_lines dequeue, after item 1's trial balance at [0])
+ *   - closures: recorded bank_statement_closures rows
+ */
+function setupItem2(
+  queues: ReturnType<typeof buildHappyPathQueues>,
+  opts: {
+    flagged: string[];
+    glLines: Array<{ account_code: string; debit_cents: number; credit_cents: number }>;
+    closures: Array<{ account_code: string; closing_balance_cents: number }>;
+  }
+) {
+  queues.accounts[0] = { data: opts.flagged.map((code) => ({ code })), error: null };
+  queues.journal_lines.splice(1, 0, { data: opts.glLines, error: null });
+  queues.bank_statement_closures = [{ data: opts.closures, error: null }];
+}
+
 describe('getPeriodCloseChecklist — item 2 (bank reconciliation)', () => {
-  it('returns manual_pending for a period not in the Phase 0 fixture', async () => {
-    // 2027-01 is post-Phase-0; getPhase0BankCloseForPeriod returns null.
+  it('passes trivially when no accounts are bank-reconcilable', async () => {
     const client = buildMockClient(buildHappyPathQueues(periodOpen));
     const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     const item2 = result.items.find((i) => i.id === 2);
-    expect(item2?.status).toBe('manual_pending');
-    expect(item2?.detail).toMatch(/PR #4b/);
+    expect(item2?.status).toBe('pass');
+    expect(item2?.detail).toMatch(/No bank accounts with activity/);
   });
 
-  it('passes when GL 2610 closing matches the Phase 0 fixture', async () => {
-    // 2025-07 expects 5100 cents.
-    const queues = buildHappyPathQueues({
-      ...periodOpen,
-      period_key: '2025-07'
-    });
-    // Item 2 ledger 2610: produce closing = 5100 via a single +5100 line
-    // dated before the period (so it lands in opening_balance, but
-    // closing = opening + 0 in-range = 5100 ✓ — actually we need it AT
-    // or before 2025-07-31 inclusive, so dating it 2025-07-15 puts it
-    // in-range). Either way closing_balance_cents will be 5100.
-    queues.journal_lines[1] = {
-      data: [
-        {
-          id: 'l1',
-          entry_id: 'e1',
-          line_number: 1,
-          account_code: '2610',
-          debit_cents: 5100,
-          credit_cents: 0,
-          currency: 'EUR',
-          fx_rate_snapshot: null,
-          vat_rate_snapshot: null,
-          vat_country: null,
-          counterparty_type: null,
-          counterparty_id: null,
-          narrative: null,
-          journal_entries: {
-            id: 'e1',
-            posting_date: '2025-07-15',
-            accounting_period: '2025-07',
-            tax_period: '2025-07',
-            entry_type: 'manual',
-            type_id: 'H.1',
-            source_doc_type: 'historical',
-            source_doc_id: 'h1',
-            reverses_entry_id: null,
-            correction_reason: null,
-            narrative: 'opening',
-            posting_context: {},
-            created_by: 'test',
-            created_at: '2025-07-15T00:00:00Z',
-            period_close_adjustment: false
-          }
-        }
+  it('passes when every flagged account GL closing matches its recorded statement closing', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupItem2(queues, {
+      flagged: ['2610', '2620'],
+      glLines: [
+        { account_code: '2610', debit_cents: 38378, credit_cents: 0 },
+        { account_code: '2620', debit_cents: 14920, credit_cents: 0 }
       ],
-      error: null
-    };
-
+      closures: [
+        { account_code: '2610', closing_balance_cents: 38378 },
+        { account_code: '2620', closing_balance_cents: 14920 }
+      ]
+    });
     const client = buildMockClient(queues);
-    const result = await getPeriodCloseChecklist(client as never, '2025-07');
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     const item2 = result.items.find((i) => i.id === 2);
     expect(item2?.status).toBe('pass');
-    expect(item2?.detail).toMatch(/matches Swedbank/);
+    expect(item2?.detail).toMatch(/2620.*= statement/);
   });
 
-  it('fails when GL 2610 closing diverges from the Phase 0 fixture', async () => {
-    const queues = buildHappyPathQueues({
-      ...periodOpen,
-      period_key: '2025-07'
-    });
-    // Closing = 1234 ≠ expected 5100.
-    queues.journal_lines[1] = {
-      data: [
-        {
-          id: 'l1',
-          entry_id: 'e1',
-          line_number: 1,
-          account_code: '2610',
-          debit_cents: 1234,
-          credit_cents: 0,
-          currency: 'EUR',
-          fx_rate_snapshot: null,
-          vat_rate_snapshot: null,
-          vat_country: null,
-          counterparty_type: null,
-          counterparty_id: null,
-          narrative: null,
-          journal_entries: {
-            id: 'e1',
-            posting_date: '2025-07-15',
-            accounting_period: '2025-07',
-            tax_period: '2025-07',
-            entry_type: 'manual',
-            type_id: 'H.1',
-            source_doc_type: 'historical',
-            source_doc_id: 'h1',
-            reverses_entry_id: null,
-            correction_reason: null,
-            narrative: 'corrupt',
-            posting_context: {},
-            created_by: 'test',
-            created_at: '2025-07-15T00:00:00Z',
-            period_close_adjustment: false
-          }
-        }
+  it('manual_pending when a flagged in-use account has no recorded closing', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupItem2(queues, {
+      flagged: ['2610', '2620'],
+      glLines: [
+        { account_code: '2610', debit_cents: 38378, credit_cents: 0 },
+        { account_code: '2620', debit_cents: 14920, credit_cents: 0 }
       ],
-      error: null
-    };
-
+      closures: [{ account_code: '2610', closing_balance_cents: 38378 }] // 2620 missing
+    });
     const client = buildMockClient(queues);
-    const result = await getPeriodCloseChecklist(client as never, '2025-07');
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item2 = result.items.find((i) => i.id === 2);
+    expect(item2?.status).toBe('manual_pending');
+    expect(item2?.detail).toMatch(/No statement closing recorded for 2620/);
+  });
+
+  it('fails when a flagged account GL closing diverges from its recorded closing', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupItem2(queues, {
+      flagged: ['2610'],
+      glLines: [{ account_code: '2610', debit_cents: 1234, credit_cents: 0 }],
+      closures: [{ account_code: '2610', closing_balance_cents: 5100 }]
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     const item2 = result.items.find((i) => i.id === 2);
     expect(item2?.status).toBe('fail');
-    expect(item2?.detail).toMatch(/delta/);
+    expect(item2?.detail).toMatch(/Δ/);
+  });
+
+  it('skips a flagged account with no activity yet (in-use guard) — e.g. 2620 before launch', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupItem2(queues, {
+      flagged: ['2610', '2620'],
+      glLines: [{ account_code: '2610', debit_cents: 5100, credit_cents: 0 }], // 2620 has no lines
+      closures: [{ account_code: '2610', closing_balance_cents: 5100 }]
+    });
+    const client = buildMockClient(queues);
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
+    const item2 = result.items.find((i) => i.id === 2);
+    // 2620 skipped (no activity), 2610 reconciles → item 2 passes; detail only mentions 2610.
+    expect(item2?.status).toBe('pass');
+    expect(item2?.detail).toContain('2610');
+    expect(item2?.detail).not.toContain('2620');
   });
 });
 
@@ -1232,59 +1147,49 @@ describe('getPeriodCloseChecklist — item 9 (wallets non-negative)', () => {
 // =============================================================================
 
 describe('getPeriodCloseChecklist — can_soft_lock', () => {
-  it('is true for an open period when all items pass-or-NA', async () => {
+  it('is true for an open period when all items pass-or-NA (no bank accounts in use)', async () => {
     const client = buildMockClient(buildHappyPathQueues(periodOpen));
     const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     expect(result.period_status).toBe('open');
-    expect(result.all_pass).toBe(false); // item 2 is manual_pending
-    expect(result.can_soft_lock).toBe(false);
+    expect(result.all_pass).toBe(true);
+    expect(result.can_soft_lock).toBe(true);
   });
 
-  it('is true for an open period when item 2 is the only manual_pending and is replaced with pass', async () => {
-    // Use 2025-07 (Phase 0 fixture defines this) with a matching ledger.
-    const queues = buildHappyPathQueues({
-      ...periodOpen,
-      period_key: '2025-07'
+  it('is true for an open period when flagged bank accounts all reconcile', async () => {
+    const queues = buildHappyPathQueues(periodOpen);
+    setupItem2(queues, {
+      flagged: ['2610', '2620'],
+      glLines: [
+        { account_code: '2610', debit_cents: 38378, credit_cents: 0 },
+        { account_code: '2620', debit_cents: 14920, credit_cents: 0 }
+      ],
+      closures: [
+        { account_code: '2610', closing_balance_cents: 38378 },
+        { account_code: '2620', closing_balance_cents: 14920 }
+      ]
     });
-    // Item 2 ledger 2610: closing = 5100 (matches fixture).
-    queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
-
     const client = buildMockClient(queues);
-    const result = await getPeriodCloseChecklist(client as never, '2025-07');
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     expect(result.all_pass).toBe(true);
     expect(result.can_soft_lock).toBe(true);
   });
 
   it('is false when any item fails', async () => {
-    const queues = buildHappyPathQueues({
-      ...periodOpen,
-      period_key: '2025-07'
-    });
-    // Use the Phase-0-matching ledger so item 2 passes...
-    queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
-    // ...but break item 9 (negative wallet). wallets[0] is now item 9's
-    // lt(0) check (item 3 reads wallet_transactions, not wallets).
+    const queues = buildHappyPathQueues(periodOpen);
+    // Break item 9 (negative wallet). wallets[0] is item 9's lt(0) check.
     queues.wallets[0] = {
       data: [{ user_id: 'u', balance_cents: -100 }],
       error: null
     };
-
     const client = buildMockClient(queues);
-    const result = await getPeriodCloseChecklist(client as never, '2025-07');
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     expect(result.all_pass).toBe(false);
     expect(result.can_soft_lock).toBe(false);
   });
 
   it('is false even with all_pass=true if status is not open', async () => {
-    const queues = buildHappyPathQueues({
-      ...periodSoftLocked,
-      period_key: '2025-07'
-    });
-    // Phase-0-matching ledger so item 2 passes; the rest are pass/NA.
-    queues.journal_lines[1] = buildPhase0Bank2610Lines(5100);
-
-    const client = buildMockClient(queues);
-    const result = await getPeriodCloseChecklist(client as never, '2025-07');
+    const client = buildMockClient(buildHappyPathQueues(periodSoftLocked));
+    const result = await getPeriodCloseChecklist(client as never, PERIOD_KEY);
     expect(result.period_status).toBe('soft_locked');
     expect(result.all_pass).toBe(true);
     expect(result.can_soft_lock).toBe(false); // not 'open'

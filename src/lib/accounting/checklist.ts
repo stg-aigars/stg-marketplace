@@ -23,9 +23,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { OVERRIDE_TYPE_HISTORICAL_FILING } from './mapping';
-import { getPhase0BankCloseForPeriod } from './phase0-reconciliation-constants';
 import {
   getAccountLedger,
+  getBankClosureReconciliation,
   getEntriesPostedSince,
   getInFlightCartReceiptsTotal,
   getInTransitEverypayClearingTotal,
@@ -74,7 +74,7 @@ export interface PeriodCloseChecklist {
  * rolls back to the last day of the previous month, which is the last day
  * of the requested month when `month` is passed as the 1-indexed value.
  */
-function lastDayOfMonthlyPeriod(periodKey: string): string {
+export function lastDayOfMonthlyPeriod(periodKey: string): string {
   const [yearStr, monthStr] = periodKey.split('-');
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
@@ -165,39 +165,63 @@ async function buildItem1(
   };
 }
 
-/** Item 2 — Bank reconciliation: GL 2610 close matches Phase 0 fixture. */
+const ITEM2_LABEL = 'Bank reconciliation (GL vs Swedbank statements)';
+
+/**
+ * Item 2 — Bank reconciliation. For every `is_bank_reconcilable` account that
+ * has GL activity by asOf, the GL closing must equal the staff-recorded
+ * statement closing (`bank_statement_closures`). Data-driven + multi-account
+ * (2610 operating, 2620 e-commerce, any future bank account) — replaces the
+ * old hardcoded single-account BANK_WALK_CHECKPOINTS check. Accounts with no
+ * activity yet are skipped (in-use guard). Roll-up: any fail → fail; else any
+ * unrecorded → manual_pending; else pass.
+ */
 async function buildItem2(
   supabase: SupabaseClient,
   periodKey: string,
   asOf: string
 ): Promise<ChecklistItem> {
-  const expected = getPhase0BankCloseForPeriod(periodKey);
-  if (expected === null) {
+  const rows = await getBankClosureReconciliation(supabase, periodKey, asOf);
+  const inUse = rows.filter((r) => r.status !== 'skip');
+
+  if (inUse.length === 0) {
     return {
       id: 2,
-      label: 'Bank reconciliation (GL 2610 vs Swedbank statement)',
-      status: 'manual_pending',
-      detail: `Bank statement not yet ingested for ${periodKey}; PR #4b ships ingestion.`,
-      drillDownHref: '/staff/accounting/account-ledger/2610'
-    };
-  }
-  const actual = await getAccountClosingBalance(supabase, '2610', asOf);
-  if (actual === expected) {
-    return {
-      id: 2,
-      label: 'Bank reconciliation (GL 2610 vs Swedbank statement)',
+      label: ITEM2_LABEL,
       status: 'pass',
-      detail: `GL 2610 closing ${formatEur(actual)} matches Swedbank statement.`,
-      drillDownHref: '/staff/accounting/account-ledger/2610'
+      detail: 'No bank accounts with activity to reconcile this period.'
     };
   }
-  return {
-    id: 2,
-    label: 'Bank reconciliation (GL 2610 vs Swedbank statement)',
-    status: 'fail',
-    detail: `GL 2610 closing ${formatEur(actual)} vs Swedbank ${formatEur(expected)} (delta ${formatEur(actual - expected)}).`,
-    drillDownHref: '/staff/accounting/account-ledger/2610'
-  };
+
+  const fails = inUse.filter((r) => r.status === 'fail');
+  const pendings = inUse.filter((r) => r.status === 'manual_pending');
+  const drillTo = (code: string) => `/staff/accounting/account-ledger/${code}`;
+
+  if (fails.length > 0) {
+    const detail = fails
+      .map(
+        (r) =>
+          `${r.account_code}: GL ${formatEur(r.gl_closing_cents)} vs statement ` +
+          `${formatEur(r.recorded_closing_cents ?? 0)} (Δ ${formatEur(r.gl_closing_cents - (r.recorded_closing_cents ?? 0))})`
+      )
+      .join('; ');
+    return { id: 2, label: ITEM2_LABEL, status: 'fail', detail, drillDownHref: drillTo(fails[0]!.account_code) };
+  }
+
+  if (pendings.length > 0) {
+    const names = pendings.map((r) => r.account_code).join(', ');
+    const reconciled = inUse
+      .filter((r) => r.status === 'pass')
+      .map((r) => `${r.account_code} ${formatEur(r.gl_closing_cents)} ✓`)
+      .join('; ');
+    const detail =
+      `No statement closing recorded for ${names}; record it before close.` +
+      (reconciled ? ` (${reconciled})` : '');
+    return { id: 2, label: ITEM2_LABEL, status: 'manual_pending', detail, drillDownHref: drillTo(pendings[0]!.account_code) };
+  }
+
+  const detail = inUse.map((r) => `${r.account_code} ${formatEur(r.gl_closing_cents)} = statement ✓`).join('; ');
+  return { id: 2, label: ITEM2_LABEL, status: 'pass', detail };
 }
 
 /** Item 3 — Wallet integrity: GL 5351 vs wallet table, period-scoped to asOf. */
