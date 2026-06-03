@@ -623,6 +623,11 @@ export async function cartFulfillmentWithGL(
     gross_cart_cents: input.gross_cart_cents,
     buyer_wallet_cents: input.buyer_wallet_cents,
     buyer_id: input.buyer_wallet_cents > 0 ? input.buyer_id : undefined,
+    // Bank-link (PIS) receipts land directly in the e-commerce settlement
+    // account (2620). Card receipts stay in 2630 EveryPay clearing (C.1
+    // default) until the C.3 settlement releases them to 2620. See the #394
+    // cash-rail finding / lifecycle-cutover-runbook.md.
+    bank_account: input.payment_method === 'bank_link' ? '2620' : undefined,
     callback_payload: input.callback_payload,
     is_staff_test: input.is_staff_test,
     posting_date: today,

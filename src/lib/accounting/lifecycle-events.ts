@@ -74,6 +74,14 @@ export interface BuildCartPaymentEventInput extends PostingPeriodInput {
    * Defaults to false (real customer traffic).
    */
   is_staff_test?: boolean;
+  /**
+   * Bank-rail override for the C.2 (bank_link) cash leg. When set, the gross
+   * (or EveryPay portion) debits this account instead of the C.2 default 2610.
+   * The cart wrap passes '2620' for bank-link receipts (they land directly in
+   * the e-commerce settlement account). Omitted for card (C.1), which always
+   * uses the 2630 EveryPay clearing default until C.3 settles.
+   */
+  bank_account?: string;
 }
 
 /**
@@ -97,6 +105,7 @@ export function buildCartPaymentEvent(input: BuildCartPaymentEventInput): Postin
       gross_cart_cents: input.gross_cart_cents,
       buyer_wallet_cents,
       ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
+      ...(input.bank_account !== undefined ? { bank_account: input.bank_account } : {}),
       cart_payment_id: input.cart_payment_id,
       everypay_payment_id: input.everypay_payment_id,
       callback_payload: input.callback_payload,
@@ -504,6 +513,9 @@ export function buildEverypaySettlementEvent(
       batch_date: input.batch_date,
       settlement_value_date: input.settlement_value_date,
       included_txn_refs: input.included_txn_refs,
+      // EveryPay settles card batches into the e-commerce settlement account
+      // (2620), not the operating account. Overrides the C.3 default (2610).
+      settlement_bank_account: '2620',
       ...(input.posting_context_notes ? { staff_notes: input.posting_context_notes } : {})
     },
     created_by: input.actor_id

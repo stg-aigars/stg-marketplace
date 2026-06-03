@@ -124,6 +124,23 @@ describe('buildCartPaymentEvent', () => {
     expect(matched.id).toBe('C.2');
   });
 
+  it('threads bank_account into the payload when set, omits it otherwise', () => {
+    const bankLink = buildCartPaymentEvent({
+      cart_payment_id: 'c', everypay_payment_id: 'e', payment_method: 'bank_link',
+      gross_cart_cents: 5000, posting_date: '2027-01-15',
+      accounting_period: '2027-01', tax_period: '2027-01', callback_payload: {},
+      bank_account: '2620'
+    });
+    expect(bankLink.payload.bank_account).toBe('2620');
+
+    const card = buildCartPaymentEvent({
+      cart_payment_id: 'c', everypay_payment_id: 'e', payment_method: 'card',
+      gross_cart_cents: 5000, posting_date: '2027-01-15',
+      accounting_period: '2027-01', tax_period: '2027-01', callback_payload: {}
+    });
+    expect('bank_account' in card.payload).toBe(false);
+  });
+
   it('passes actor_id through to created_by', () => {
     const event = buildCartPaymentEvent({
       cart_payment_id: 'c', everypay_payment_id: 'e', payment_method: 'card',
@@ -500,6 +517,11 @@ describe('buildEverypaySettlementEvent', () => {
     expect(event.source_doc_id).toBe('SWB-2027-01-15-001');
     const matched = dispatch(ctxFromEvent(event, null));
     expect(matched.id).toBe('C.3');
+  });
+
+  it('settles into the e-commerce account (2620), overriding the C.3 default', () => {
+    const event = buildEverypaySettlementEvent(baseInput);
+    expect(event.payload.settlement_bank_account).toBe('2620');
   });
 
   it('stamps emission_source=staff_manual on the event', () => {

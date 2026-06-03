@@ -5,7 +5,8 @@
  * Exercises `recordEverypaySettlement` end-to-end against a real local
  * Supabase: server action builds the C.3 event, calls engine.emit()
  * directly (not a parent RPC — C.3 is staff-only manual emission per the
- * round-2 brief), engine writes Dr 2610 / Cr 2630 to journal_entries.
+ * round-2 brief), engine writes Dr 2620 / Cr 2630 to journal_entries (EveryPay
+ * settles card batches into the e-commerce settlement account, not operating).
  *
  * The server action requires `requireServerAuth` which reads Next.js
  * cookies(); we mock at that border per the period-close.test.ts pattern.
@@ -57,7 +58,7 @@ afterAll(() => {
 });
 
 describe('Scenario 13 — C.3 EveryPay settlement', () => {
-  it('records a card-rail settlement: Dr 2610 + Cr 2630 in journal_entries', async () => {
+  it('records a card-rail settlement: Dr 2620 + Cr 2630 in journal_entries', async () => {
     const bankRef = `INT-LIFECYCLE-C3-SCEN-13-${Date.now()}`;
     const settlementCents = 12500;
 
@@ -85,7 +86,7 @@ describe('Scenario 13 — C.3 EveryPay settlement', () => {
     expect(entry.posting_context.emission_source).toBe('staff_manual');
 
     await assertJournalLines(supabase, entry.id, [
-      { account_code: '2610', debit_cents: settlementCents, credit_cents: 0 },
+      { account_code: '2620', debit_cents: settlementCents, credit_cents: 0 },
       { account_code: '2630', debit_cents: 0, credit_cents: settlementCents },
     ]);
 
