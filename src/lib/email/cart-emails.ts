@@ -59,6 +59,8 @@ export async function sendCartOrderEmails(
       if (sellerProfile?.email) {
         sendNewOrderToSeller({
           ...baseEmailData,
+          terminalCity: order.terminalCity,
+          terminalCountry: order.terminalCountry,
           sellerName: sellerProfile.full_name ?? 'Seller',
           sellerEmail: sellerProfile.email,
           buyerName: buyerProfile?.full_name ?? 'Buyer',

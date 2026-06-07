@@ -58,6 +58,8 @@ export async function sendNewOrderToSeller(params: {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
+  terminalCity?: string | null;
+  terminalCountry?: string | null;
 }): Promise<void> {
   await sendEmail({
     to: params.sellerEmail,
@@ -71,6 +73,8 @@ export async function sendNewOrderToSeller(params: {
       priceCents: params.priceCents,
       shippingCents: params.shippingCents,
       terminalName: params.terminalName,
+      terminalCity: params.terminalCity,
+      terminalCountry: params.terminalCountry,
       appUrl: env.app.url,
     }),
   });

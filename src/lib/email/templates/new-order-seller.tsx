@@ -7,6 +7,7 @@ import { Button, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, theme, templateStyles as s } from './layout';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
+import { getCountryName } from '@/lib/country-utils';
 
 interface NewOrderSellerProps {
   sellerName: string;
@@ -17,6 +18,8 @@ interface NewOrderSellerProps {
   priceCents: number;
   shippingCents: number;
   terminalName: string;
+  terminalCity?: string | null;
+  terminalCountry?: string | null;
   appUrl: string;
 }
 
@@ -29,9 +32,18 @@ export function NewOrderSeller({
   priceCents,
   shippingCents,
   terminalName,
+  terminalCity,
+  terminalCountry,
   appUrl,
 }: NewOrderSellerProps) {
   const orderUrl = `${appUrl}/orders/${orderId}`;
+  const destination = [
+    terminalName,
+    terminalCity,
+    terminalCountry ? getCountryName(terminalCountry) : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <EmailLayout preview={`New order for ${gameName} — ${orderNumber}`}>
@@ -58,7 +70,7 @@ export function NewOrderSeller({
         <Text style={s.detailValue}>{formatCentsToCurrency(shippingCents)}</Text>
 
         <Text style={s.detailLabel}>Destination</Text>
-        <Text style={s.detailValue}>{terminalName}</Text>
+        <Text style={s.detailValue}>{destination}</Text>
       </div>
 
       <div style={s.ctaSection}>
