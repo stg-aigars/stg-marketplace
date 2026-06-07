@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
-import { createOrder, lookupSellerIbanCountry } from '@/lib/services/orders';
+import { createOrder, generateOrderNumber, lookupSellerIbanCountry } from '@/lib/services/orders';
 import { debitWallet, getWalletBalance } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
@@ -144,8 +144,43 @@ export async function POST(request: Request) {
     }
   }
 
-  // Create a cart checkout group for record-keeping
-  const cartGroupId = crypto.randomUUID();
+  // Create a cart checkout group for record-keeping. orders.cart_group_id carries
+  // an FK to cart_checkout_groups (orders_cart_group_id_fkey, migration 069), so the
+  // row must exist before createOrder() inserts the order — status is 'completed'
+  // immediately since the wallet payment settles with no EveryPay redirect to await.
+  const { data: cartGroup, error: cartGroupError } = await serviceClient
+    .from('cart_checkout_groups')
+    .insert({
+      order_number: generateOrderNumber(),
+      callback_token: crypto.randomUUID(),
+      buyer_id: user.id,
+      terminal_id: terminalId,
+      terminal_name: terminalName,
+      terminal_address: terminalAddress,
+      terminal_city: terminalCity,
+      terminal_postal_code: terminalPostalCode,
+      terminal_country: terminalCountry,
+      buyer_phone: buyerPhone,
+      total_amount_cents: grandTotalCents,
+      wallet_debit_cents: grandTotalCents,
+      listing_ids: listingIds,
+      status: 'completed',
+    })
+    .select('id')
+    .single();
+
+  if (cartGroupError || !cartGroup) {
+    console.error('[Cart Wallet] Failed to create checkout group:', cartGroupError);
+    if (regularIds.length > 0) {
+      await serviceClient.rpc('unreserve_listings', {
+        p_listing_ids: regularIds,
+        p_buyer_id: user.id,
+      });
+    }
+    return NextResponse.json({ error: 'Order didn\'t go through — mind trying again?' }, { status: 500 });
+  }
+
+  const cartGroupId = cartGroup.id;
 
   // Create single order (single-seller guard ensures one seller)
   let createdOrder: { id: string; orderNumber: string };
