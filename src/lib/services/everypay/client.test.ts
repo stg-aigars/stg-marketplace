@@ -31,6 +31,13 @@ describe('mapEveryPayMethod', () => {
     expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 
+  it('maps known Coop Pank OB (coop_ob_ep_baltics_ee) to bank_link without warning', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(mapEveryPayMethod('coop_ob_ep_baltics_ee')).toBe('bank_link');
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
   it('maps unknown method to bank_link with Sentry warning', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(mapEveryPayMethod('apple_pay', 'STG-TEST-001')).toBe('bank_link');

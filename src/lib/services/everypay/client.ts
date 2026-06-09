@@ -140,7 +140,7 @@ async function request<T>(
 // ---------------------------------------------------------------------------
 
 /** Known open-banking method prefixes from Baltic EveryPay providers. */
-const KNOWN_OB_PREFIXES = ['ob_', 'swed_ob_', 'seb_ob_', 'lhv_ob_', 'luminor_ob_', 'citadele_ob_'];
+const KNOWN_OB_PREFIXES = ['ob_', 'swed_ob_', 'seb_ob_', 'lhv_ob_', 'luminor_ob_', 'citadele_ob_', 'coop_ob_'];
 
 /**
  * Map an EveryPay `payment_method` string to our PaymentMethod enum.
