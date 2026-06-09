@@ -80,6 +80,9 @@ jobs:
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
             NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=${{ secrets.NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED }}
+            SENTRY_RELEASE=${{ github.sha }}
+            SENTRY_ORG=second-turn-games
+            SENTRY_PROJECT=stg-marketplace
           # Server-only secrets go through BuildKit secret mounts: the values
           # are exposed to the single `pnpm build` RUN step via /run/secrets/<id>
           # and never persisted in an image layer or in the GHA build cache.
@@ -97,6 +100,7 @@ jobs:
             unisend_password=${{ secrets.UNISEND_PASSWORD }}
             cron_secret=${{ secrets.CRON_SECRET }}
             next_server_actions_encryption_key=${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+            sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
 
       # After the image is in GHCR, ask Coolify to pull and deploy it. The
       # step is tolerant of missing secrets (warns + skips) so the workflow
