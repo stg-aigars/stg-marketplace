@@ -99,6 +99,13 @@ export default process.env.SENTRY_AUTH_TOKEN
   ? withSentryConfig(config, {
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      release: {
+        name: process.env.SENTRY_RELEASE,
+      },
+      sourcemaps: {
+        deleteSourcemapsAfterUpload: true,
+      },
       silent: !process.env.CI,
       widenClientFileUpload: true,
       bundleSizeOptimizations: {

@@ -44,6 +44,10 @@ ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED
+# Sentry release metadata — not secret (commit SHA and org/project slugs)
+ARG SENTRY_RELEASE
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
@@ -51,7 +55,10 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY \
     NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
-    NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=$NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED
+    NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED=$NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED \
+    SENTRY_RELEASE=$SENTRY_RELEASE \
+    SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_PROJECT=$SENTRY_PROJECT
 
 RUN --mount=type=secret,id=supabase_service_role_key \
     --mount=type=secret,id=everypay_api_username \
@@ -65,6 +72,7 @@ RUN --mount=type=secret,id=supabase_service_role_key \
     --mount=type=secret,id=unisend_password \
     --mount=type=secret,id=cron_secret \
     --mount=type=secret,id=next_server_actions_encryption_key \
+    --mount=type=secret,id=sentry_auth_token \
     export SUPABASE_SERVICE_ROLE_KEY="$(cat /run/secrets/supabase_service_role_key)" && \
     export EVERYPAY_API_USERNAME="$(cat /run/secrets/everypay_api_username)" && \
     export EVERYPAY_API_SECRET="$(cat /run/secrets/everypay_api_secret)" && \
@@ -77,6 +85,7 @@ RUN --mount=type=secret,id=supabase_service_role_key \
     export UNISEND_PASSWORD="$(cat /run/secrets/unisend_password)" && \
     export CRON_SECRET="$(cat /run/secrets/cron_secret)" && \
     export NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$(cat /run/secrets/next_server_actions_encryption_key)" && \
+    export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)" && \
     pnpm build
 
 # Stage 3: Install platform-specific sharp in isolation (avoids npm resolution
