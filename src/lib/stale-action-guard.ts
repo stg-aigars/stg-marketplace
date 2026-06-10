@@ -48,6 +48,23 @@ export function isRenderedMoreHooksError(error: unknown): boolean {
 }
 
 /**
+ * Detect Next.js's App Router "unexpected response" error (STG-MARKETPLACE-V),
+ * thrown when a Server Action / RSC fetch gets back a non-RSC response — e.g.
+ * a 503 from a brief deploy-window outage on a long-idle tab. Surfaces as an
+ * unhandled rejection (no error boundary involved), so a reload is the only
+ * way back to a working page.
+ */
+export function isUnexpectedServerResponseError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+
+  const message = (error as { message?: unknown }).message;
+  return (
+    typeof message === 'string' &&
+    message.includes('An unexpected response was received from the server')
+  );
+}
+
+/**
  * Pure read — safe to call during React render.
  * Returns true if a reload was attempted within the last 30 seconds.
  */

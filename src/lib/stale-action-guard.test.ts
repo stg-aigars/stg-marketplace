@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isStaleActionError, isRenderedMoreHooksError } from './stale-action-guard';
+import { isStaleActionError, isRenderedMoreHooksError, isUnexpectedServerResponseError } from './stale-action-guard';
 
 describe('isStaleActionError', () => {
   it('matches errors whose name is UnrecognizedActionError', () => {
@@ -54,5 +54,23 @@ describe('isRenderedMoreHooksError', () => {
     expect(isRenderedMoreHooksError(undefined)).toBe(false);
     expect(isRenderedMoreHooksError('string')).toBe(false);
     expect(isRenderedMoreHooksError(42)).toBe(false);
+  });
+});
+
+describe('isUnexpectedServerResponseError', () => {
+  it('matches the App Router "unexpected response" error message', () => {
+    expect(isUnexpectedServerResponseError(new Error('An unexpected response was received from the server.'))).toBe(true);
+  });
+
+  it('does NOT match unrelated errors', () => {
+    expect(isUnexpectedServerResponseError(new Error('Failed to fetch'))).toBe(false);
+    expect(isUnexpectedServerResponseError(new Error('network down'))).toBe(false);
+  });
+
+  it('rejects non-object values', () => {
+    expect(isUnexpectedServerResponseError(null)).toBe(false);
+    expect(isUnexpectedServerResponseError(undefined)).toBe(false);
+    expect(isUnexpectedServerResponseError('string')).toBe(false);
+    expect(isUnexpectedServerResponseError(42)).toBe(false);
   });
 });

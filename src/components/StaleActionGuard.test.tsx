@@ -74,6 +74,19 @@ describe('StaleActionGuard', () => {
     expect(screen.getByRole('alert').textContent).toContain('t:newVersionAvailable');
   });
 
+  it('reloads the page and shows the updating toast when the App Router "unexpected response" error is rejected', () => {
+    render(<StaleActionGuard />);
+    dispatchRejection(new Error('An unexpected response was received from the server.'));
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledWith('t:updating');
+    expect(reloadMock).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
+  });
+
   it('ignores unrelated rejection reasons', () => {
     render(<StaleActionGuard />);
     dispatchRejection(new Error('random network failure'));
