@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isStaleActionError } from './stale-action-guard';
+import { isStaleActionError, isRenderedMoreHooksError } from './stale-action-guard';
 
 describe('isStaleActionError', () => {
   it('matches errors whose name is UnrecognizedActionError', () => {
@@ -36,5 +36,23 @@ describe('isStaleActionError', () => {
     expect(isStaleActionError(undefined)).toBe(false);
     expect(isStaleActionError('string')).toBe(false);
     expect(isStaleActionError(42)).toBe(false);
+  });
+});
+
+describe('isRenderedMoreHooksError', () => {
+  it('matches the React "Rendered more hooks" invariant violation message', () => {
+    expect(isRenderedMoreHooksError(new Error('Rendered more hooks than during the previous render.'))).toBe(true);
+  });
+
+  it('does NOT match unrelated errors', () => {
+    expect(isRenderedMoreHooksError(new Error('Rendered fewer hooks than expected'))).toBe(false);
+    expect(isRenderedMoreHooksError(new Error('network down'))).toBe(false);
+  });
+
+  it('rejects non-object values', () => {
+    expect(isRenderedMoreHooksError(null)).toBe(false);
+    expect(isRenderedMoreHooksError(undefined)).toBe(false);
+    expect(isRenderedMoreHooksError('string')).toBe(false);
+    expect(isRenderedMoreHooksError(42)).toBe(false);
   });
 });
