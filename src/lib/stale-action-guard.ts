@@ -30,6 +30,24 @@ export function isStaleActionError(error: unknown): boolean {
 }
 
 /**
+ * Detect React's "Rendered more hooks than during the previous render"
+ * invariant violation (React error #310). Seen intermittently on [id]-based
+ * detail routes (STG-MARKETPLACE-13) during client-side navigation
+ * transitions, with no application-level rules-of-hooks violation found after
+ * an exhaustive audit — likely a Next.js-vendored React canary edge case. A
+ * full reload gives the page a fresh fiber tree and dispatcher state.
+ */
+export function isRenderedMoreHooksError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+
+  const message = (error as { message?: unknown }).message;
+  return (
+    typeof message === 'string' &&
+    message.includes('Rendered more hooks than during the previous render')
+  );
+}
+
+/**
  * Pure read — safe to call during React render.
  * Returns true if a reload was attempted within the last 30 seconds.
  */
