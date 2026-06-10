@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Alert } from '@/components/ui';
 import {
   isStaleActionError,
+  isUnexpectedServerResponseError,
   hasRecentReloadAttempt,
   markReloadAttempt,
 } from '@/lib/stale-action-guard';
@@ -20,7 +21,10 @@ export function StaleActionGuard() {
     let timerId: ReturnType<typeof setTimeout> | undefined;
 
     function handler(event: PromiseRejectionEvent) {
-      if (!isStaleActionError(event.reason)) return;
+      if (
+        !isStaleActionError(event.reason) &&
+        !isUnexpectedServerResponseError(event.reason)
+      ) return;
 
       event.preventDefault();
 
