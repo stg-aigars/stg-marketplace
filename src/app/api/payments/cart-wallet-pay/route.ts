@@ -5,10 +5,11 @@
  */
 
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createOrder, generateOrderNumber, lookupSellerIbanCountry } from '@/lib/services/orders';
-import { debitWallet, getWalletBalance } from '@/lib/services/wallet';
+import { debitWallet, getWalletBalance, InsufficientBalanceError } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { createServiceClient } from '@/lib/supabase';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
@@ -136,6 +137,10 @@ export async function POST(request: Request) {
 
     if (rpcError) {
       console.error('[Cart Wallet] Reservation RPC failed:', rpcError);
+      Sentry.captureException(rpcError, {
+        tags: { scope: 'cart-wallet-pay-reserve' },
+        extra: { userId: user.id, listingIds: regularIds },
+      });
       return NextResponse.json({ error: 'Failed to reserve items. Please try again.' }, { status: 500 });
     }
 
@@ -171,6 +176,10 @@ export async function POST(request: Request) {
 
   if (cartGroupError || !cartGroup) {
     console.error('[Cart Wallet] Failed to create checkout group:', cartGroupError);
+    Sentry.captureException(cartGroupError ?? new Error('cart_checkout_groups insert returned no row'), {
+      tags: { scope: 'cart-wallet-pay-group' },
+      extra: { userId: user.id, listingIds },
+    });
     if (regularIds.length > 0) {
       await serviceClient.rpc('unreserve_listings', {
         p_listing_ids: regularIds,
@@ -213,6 +222,10 @@ export async function POST(request: Request) {
     createdOrder = { id: order.id, orderNumber: order.order_number };
   } catch (error) {
     console.error('[Cart Wallet] Order creation failed:', error);
+    Sentry.captureException(error, {
+      tags: { scope: 'cart-wallet-pay-create-order' },
+      extra: { userId: user.id, sellerId, listingIds },
+    });
     if (regularIds.length > 0) {
       await serviceClient.rpc('unreserve_listings', {
         p_listing_ids: regularIds,
@@ -242,9 +255,28 @@ export async function POST(request: Request) {
       });
     } catch (rollbackErr) {
       console.error('[Cart Wallet] Rollback failed:', rollbackErr);
+      Sentry.captureException(rollbackErr, {
+        tags: { scope: 'cart-wallet-pay-debit-rollback' },
+        extra: { userId: user.id, orderId: createdOrder.id, listingIds },
+      });
     }
-    const message = walletError instanceof Error ? walletError.message : 'Wallet payment failed';
-    return NextResponse.json({ error: message }, { status: 400 });
+
+    if (walletError instanceof InsufficientBalanceError) {
+      // Balance changed between the upfront check (L124-127) and the debit —
+      // a real race, not a server fault. Worth visibility but not an exception.
+      Sentry.captureMessage('Wallet balance race on cart checkout', {
+        level: 'warning',
+        tags: { scope: 'cart-wallet-pay-debit' },
+        extra: { userId: user.id, orderId: createdOrder.id, message: walletError.message },
+      });
+      return NextResponse.json({ error: 'Insufficient wallet balance' }, { status: 400 });
+    }
+
+    Sentry.captureException(walletError, {
+      tags: { scope: 'cart-wallet-pay-debit' },
+      extra: { userId: user.id, orderId: createdOrder.id, listingIds },
+    });
+    return NextResponse.json({ error: 'Order didn\'t go through — mind trying again?' }, { status: 500 });
   }
 
   void logAuditEvent(serviceClient, {
