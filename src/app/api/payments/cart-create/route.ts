@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase';
 import { generateOrderNumber } from '@/lib/services/orders';
 import { env } from '@/lib/env';
 import { COUNTRY_TO_EVERYPAY_LOCALE } from '@/lib/constants';
+import { isValidCountryCode } from '@/lib/country-utils';
 import { paymentLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { parseCartCheckoutBody } from '@/lib/api/checkout-validation';
 import { logAuditEvent } from '@/lib/services/audit';
@@ -218,9 +219,9 @@ export async function POST(request: Request) {
       callbackUrl,
       {
         locale: COUNTRY_TO_EVERYPAY_LOCALE[buyerProfile.country] ?? 'en',
-        // Pre-select the buyer's bank-link country on the EveryPay page;
-        // only pass supported markets (same set as the locale map)
-        ...(buyerProfile.country in COUNTRY_TO_EVERYPAY_LOCALE && {
+        // Pre-select the buyer's bank-link country on the EveryPay page
+        // (supported markets only)
+        ...(isValidCountryCode(buyerProfile.country) && {
           preferredCountry: buyerProfile.country,
         }),
         email: user.email,
