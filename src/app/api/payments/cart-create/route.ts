@@ -218,6 +218,11 @@ export async function POST(request: Request) {
       callbackUrl,
       {
         locale: COUNTRY_TO_EVERYPAY_LOCALE[buyerProfile.country] ?? 'en',
+        // Pre-select the buyer's bank-link country on the EveryPay page;
+        // only pass supported markets (same set as the locale map)
+        ...(buyerProfile.country in COUNTRY_TO_EVERYPAY_LOCALE && {
+          preferredCountry: buyerProfile.country,
+        }),
         email: user.email,
         customerIp: request.headers.get('x-forwarded-for') || undefined,
       }

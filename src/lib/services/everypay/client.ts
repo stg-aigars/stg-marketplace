@@ -184,13 +184,13 @@ export function mapEveryPayMethod(raw: string | undefined, orderReference?: stri
  * @param amountCents  Total to charge in cents (e.g. 1250 = €12.50)
  * @param orderReference  Unique reference for this payment (e.g. basket ID or order ID)
  * @param customerUrl  URL to redirect buyer to after payment
- * @param options  Optional: locale, email, customerIp
+ * @param options  Optional: locale, preferredCountry, email, customerIp
  */
 export async function createPayment(
   amountCents: number,
   orderReference: string,
   customerUrl: string,
-  options?: { locale?: string; email?: string; customerIp?: string }
+  options?: { locale?: string; preferredCountry?: string; email?: string; customerIp?: string }
 ): Promise<EveryPayPaymentResponse> {
   const config = getConfig();
 
@@ -203,6 +203,7 @@ export async function createPayment(
     nonce: nonce(),
     timestamp: timestamp(),
     ...(options?.locale && { locale: options.locale }),
+    ...(options?.preferredCountry && { preferred_country: options.preferredCountry }),
     ...(options?.email && { email: options.email }),
     ...(options?.customerIp && { customer_ip: options.customerIp }),
     mobile_payment: true,

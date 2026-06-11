@@ -67,6 +67,9 @@ export interface CreatePaymentRequest {
   timestamp: string;
   /** Locale for the payment page (en, lv, lt, et) */
   locale?: string;
+  /** Pre-selects the bank-link country on the payment page (ISO-2: LV, LT, EE).
+   *  Default only — the buyer can still switch country manually. */
+  preferred_country?: string;
   /** Customer email (for fraud detection) */
   email?: string;
   /** Customer IP address (for fraud detection) */
