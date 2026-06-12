@@ -1,7 +1,9 @@
 import { createServiceClient } from '@/lib/supabase';
 import { sendNewOrderToSeller, sendOrderConfirmationToBuyer } from './index';
+import { sendAdminNotification } from './admin-notifications';
 import { notify } from '@/lib/notifications';
 import { orderGameSummary } from '@/lib/orders/utils';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { TERMS_VERSION, SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import type { TerminalEmailFields } from '@/lib/terminals/format';
 
@@ -83,6 +85,18 @@ export async function sendCartOrderEmails(
           sellerTermsVersion: SELLER_TERMS_VERSION,
         }).catch((err) => console.error('[Email] Cart order buyer confirmation failed:', err));
       }
+
+      // Internal admin alert (same channel as the new-signup email)
+      void sendAdminNotification(`New order: ${order.orderNumber}`, [
+        `A new order was created on Second Turn Games.`,
+        ``,
+        `Order:    ${order.orderNumber}`,
+        `Items:    ${gameName}`,
+        `Total:    ${formatCentsToCurrency(totalItemsCents + order.shippingCents)} (incl. shipping)`,
+        `Buyer:    ${buyerProfile?.full_name ?? '(unknown)'} (${buyerId})`,
+        `Seller:   ${sellerProfile?.full_name ?? '(unknown)'} (${order.sellerId})`,
+        `Order ID: ${order.orderId}`,
+      ]);
 
       // In-app notifications
       void notify(order.sellerId, 'order.created', {
