@@ -4,6 +4,8 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { createWithdrawalRequest, InsufficientBalanceError } from '@/lib/services/wallet';
 import { withdrawalLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { createServiceClient } from '@/lib/supabase';
+import { sendAdminNotification } from '@/lib/email/admin-notifications';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 
 // Basic IBAN validation for Baltic countries
 const IBAN_REGEX = /^(LV|LT|EE)\d{2}[A-Z0-9]{4,30}$/;
@@ -57,6 +59,19 @@ export async function POST(request: Request) {
 
   try {
     const withdrawal = await createWithdrawalRequest(user.id, amountCents, bankAccountHolder, bankIban);
+
+    // Internal admin alert (same channel as the new-signup email).
+    // IBAN is masked — the full number is in the staff withdrawals dashboard.
+    void sendAdminNotification(`New withdrawal request: ${formatCentsToCurrency(amountCents)}`, [
+      `A new withdrawal request was submitted on Second Turn Games.`,
+      ``,
+      `Amount:     ${formatCentsToCurrency(amountCents)}`,
+      `User:       ${user.email ?? '(no email)'} (${user.id})`,
+      `Holder:     ${bankAccountHolder}`,
+      `IBAN:       ${bankIban.slice(0, 4)}…${bankIban.slice(-4)}`,
+      `Request ID: ${withdrawal.id}`,
+    ]);
+
     return NextResponse.json({ withdrawal });
   } catch (error) {
     if (error instanceof InsufficientBalanceError) {
