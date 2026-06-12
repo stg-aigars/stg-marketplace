@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DokPVNv7 xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Precizejums>false</Precizejums>
+  <NmrKods>50203665371</NmrKods>
+  <ParskGads>2026</ParskGads>
+  <ParskMen>5</ParskMen>
+  <ParskCeturksnis xsi:nil="true" />
+  <Epasts>aigars@secondturn.games</Epasts>
+  <Talrunis>26779625</Talrunis>
+  <Sagatavotajs>AIGARS GRĒNIŅŠ</Sagatavotajs>
+  <IbanNumurs>LV89HABA0551062053777</IbanNumurs>
+  <PVN>
+    <R41>5.29</R41>
+    <R411 xsi:nil="true" />
+    <R42 xsi:nil="true" />
+    <R421 xsi:nil="true" />
+    <R44>0</R44>
+    <R45 xsi:nil="true" />
+    <R451 xsi:nil="true" />
+    <R46 xsi:nil="true" />
+    <R47 xsi:nil="true" />
+    <R48 xsi:nil="true" />
+    <R481 xsi:nil="true" />
+    <R43>0</R43>
+    <R482 xsi:nil="true" />
+    <R49 xsi:nil="true" />
+    <R50>103.00</R50>
+    <R51 xsi:nil="true" />
+    <R511 xsi:nil="true" />
+    <R52>1.11</R52>
+    <R53>0.00</R53>
+    <R531>0.00</R531>
+    <R54 xsi:nil="true" />
+    <R55>21.63</R55>
+    <R56>0.00</R56>
+    <R561>0.00</R561>
+    <R57 xsi:nil="true" />
+    <R61 xsi:nil="true" />
+    <R62>0.12</R62>
+    <R63 xsi:nil="true" />
+    <R64>21.63</R64>
+    <R65 xsi:nil="true" />
+    <R66 xsi:nil="true" />
+    <R67>-6.23</R67>
+  </PVN>
+  <PVN1I>
+    <R>
+      <Npk>1</Npk>
+      <DpValsts>LV</DpValsts>
+      <DpNumurs>40003074764</DpNumurs>
+      <DpNosaukums>Swedbank AS</DpNosaukums>
+      <DarVeids>A</DarVeids>
+      <VertibaBezPvn>0.60</VertibaBezPvn>
+      <PvnVertiba>0.12</PvnVertiba>
+      <DokVeids>1</DokVeids>
+      <DokNumurs>V0000891330</DokNumurs>
+      <DokDatums>2026-05-15</DokDatums>
+    </R>
+    <R>
+      <Npk>2</Npk>
+      <DpValsts>US</DpValsts>
+      <DpNumurs />
+      <DpNosaukums>Anthropic, PBC</DpNosaukums>
+      <DarVeids>N</DarVeids>
+      <VertibaBezPvn>90.00</VertibaBezPvn>
+      <PvnVertiba>18.90</PvnVertiba>
+      <DokVeids>1</DokVeids>
+      <DokNumurs>JQYX1OS2-0011</DokNumurs>
+      <DokDatums>2026-05-05</DokDatums>
+    </R>
+    <R>
+      <Npk>3</Npk>
+      <DpValsts>LV</DpValsts>
+      <DpNumurs>40203249460</DpNumurs>
+      <DpNosaukums>Vincit Online, SIA</DpNosaukums>
+      <DarVeids>A</DarVeids>
+      <VertibaBezPvn>-29.65</VertibaBezPvn>
+      <PvnVertiba>-6.23</PvnVertiba>
+      <DokVeids>4</DokVeids>
+      <DokNumurs>VO-113703K</DokNumurs>
+      <DokDatums>2026-05-27</DokDatums>
+    </R>
+  </PVN1I>
+  <PVN1II>
+    <R>
+      <Npk>1</Npk>
+      <DpValsts>IE</DpValsts>
+      <DpNumurs>9692928F</DpNumurs>
+      <DpNosaukums>Meta Platforms Ireland Limited</DpNosaukums>
+      <DarVeids>P</DarVeids>
+      <VertibaBezPvn>2.00</VertibaBezPvn>
+      <PvnVertiba>0.42</PvnVertiba>
+      <ValVertiba>2.00</ValVertiba>
+      <ValKods>EUR</ValKods>
+      <DokNumurs>FBADS-046-105967339</DokNumurs>
+      <DokDatums>2026-05-27</DokDatums>
+    </R>
+    <R>
+      <Npk>2</Npk>
+      <DpValsts>IE</DpValsts>
+      <DpNumurs>9692928F</DpNumurs>
+      <DpNosaukums>Meta Platforms Ireland Limited</DpNosaukums>
+      <DarVeids>P</DarVeids>
+      <VertibaBezPvn>2.00</VertibaBezPvn>
+      <PvnVertiba>0.42</PvnVertiba>
+      <ValVertiba>2.00</ValVertiba>
+      <ValKods>EUR</ValKods>
+      <DokNumurs>FBADS-046-105971606</DokNumurs>
+      <DokDatums>2026-05-28</DokDatums>
+    </R>
+    <R>
+      <Npk>3</Npk>
+      <DpValsts>IE</DpValsts>
+      <DpNumurs>9692928F</DpNumurs>
+      <DpNosaukums>Meta Platforms Ireland Limited</DpNosaukums>
+      <DarVeids>P</DarVeids>
+      <VertibaBezPvn>3.00</VertibaBezPvn>
+      <PvnVertiba>0.63</PvnVertiba>
+      <ValVertiba>3.00</ValVertiba>
+      <ValKods>EUR</ValKods>
+      <DokNumurs>FBADS-046-105977993</DokNumurs>
+      <DokDatums>2026-05-29</DokDatums>
+    </R>
+    <R>
+      <Npk>4</Npk>
+      <DpValsts>IE</DpValsts>
+      <DpNumurs>9692928F</DpNumurs>
+      <DpNosaukums>Meta Platforms Ireland Limited</DpNosaukums>
+      <DarVeids>P</DarVeids>
+      <VertibaBezPvn>3.00</VertibaBezPvn>
+      <PvnVertiba>0.63</PvnVertiba>
+      <ValVertiba>3.00</ValVertiba>
+      <ValKods>EUR</ValKods>
+      <DokNumurs>FBADS-046-105982609</DokNumurs>
+      <DokDatums>2026-05-30</DokDatums>
+    </R>
+    <R>
+      <Npk>5</Npk>
+      <DpValsts>IE</DpValsts>
+      <DpNumurs>9692928F</DpNumurs>
+      <DpNosaukums>Meta Platforms Ireland Limited</DpNosaukums>
+      <DarVeids>P</DarVeids>
+      <VertibaBezPvn>3.00</VertibaBezPvn>
+      <PvnVertiba>0.63</PvnVertiba>
+      <ValVertiba>3.00</ValVertiba>
+      <ValKods>EUR</ValKods>
+      <DokNumurs>FBADS-046-105987014</DokNumurs>
+      <DokDatums>2026-05-31</DokDatums>
+    </R>
+  </PVN1II>
+  <PVN1III>
+    <R>
+      <Npk>1</Npk>
+      <DpValsts />
+      <DpNumurs>X</DpNumurs>
+      <DpNosaukums />
+      <DarVeids>41</DarVeids>
+      <VertibaBezPvn>3.22</VertibaBezPvn>
+      <PvnVertiba>0.68</PvnVertiba>
+      <DokVeids>1</DokVeids>
+      <DokNumurs>INV-2026-00003</DokNumurs>
+      <DokDatums>2026-05-22</DokDatums>
+    </R>
+    <R>
+      <Npk>2</Npk>
+      <DpValsts />
+      <DpNumurs>X</DpNumurs>
+      <DpNosaukums />
+      <DarVeids>41</DarVeids>
+      <VertibaBezPvn>2.07</VertibaBezPvn>
+      <PvnVertiba>0.43</PvnVertiba>
+      <DokVeids>1</DokVeids>
+      <DokNumurs>INV-2026-00004</DokNumurs>
+      <DokDatums>2026-05-29</DokDatums>
+    </R>
+  </PVN1III>
+  <PVN2 />
+  <PVN6I>
+    <R31 xsi:nil="true" />
+    <R32 xsi:nil="true" />
+    <R33 xsi:nil="true" />
+    <R34 xsi:nil="true" />
+    <R41 xsi:nil="true" />
+    <R42 xsi:nil="true" />
+    <R43 xsi:nil="true" />
+    <R44 xsi:nil="true" />
+    <R51 xsi:nil="true" />
+    <R52 xsi:nil="true" />
+    <R53 xsi:nil="true" />
+    <R54 xsi:nil="true" />
+    <R6 xsi:nil="true" />
+  </PVN6I>
+  <PVN6II />
+  <PVN6III />
+  <PVN7I />
+  <Pielikumi>
+    <CitiPielikumi />
+  </Pielikumi>
+  <PVN11ErekiniButtonClicked>false</PVN11ErekiniButtonClicked>
+  <PVN13ErekiniButtonClicked>false</PVN13ErekiniButtonClicked>
+</DokPVNv7>
