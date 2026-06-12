@@ -36,12 +36,12 @@
     <R561>0.00</R561>
     <R57 xsi:nil="true" />
     <R61 xsi:nil="true" />
-    <R62>0.12</R62>
+    <R62>12.79</R62>
     <R63 xsi:nil="true" />
-    <R64>21.63</R64>
+    <R64>2.73</R64>
     <R65 xsi:nil="true" />
     <R66 xsi:nil="true" />
-    <R67>-6.23</R67>
+    <R67 xsi:nil="true" />
   </PVN>
   <PVN1I>
     <R>
@@ -58,7 +58,7 @@
     </R>
     <R>
       <Npk>2</Npk>
-      <DpValsts>US</DpValsts>
+      <DpValsts />
       <DpNumurs />
       <DpNosaukums>Anthropic, PBC</DpNosaukums>
       <DarVeids>N</DarVeids>

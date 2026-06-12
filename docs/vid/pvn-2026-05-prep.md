@@ -14,24 +14,27 @@ Deadlines: declaration due 20.06.2026 (Saturday → EDS deadline moves to Monday
 | 50 (goods/services received under reverse charge, 21% base) | **103.00** | Meta 13.00 (EU, Art. 196) + Anthropic 90.00 (third country) |
 | 52 (output VAT 21% on row 41) | **1.11** | 0.68 + 0.43 |
 | 55 (VAT calculated on row 50) | **21.63** | 2.73 (Meta) + 18.90 (Anthropic) |
-| 62 (input VAT, domestic) | **0.12** | Swedbank invoice V0000891330 (net 0.60) |
-| 64 (input VAT on received services) | **21.63** | mirrors row 55 — fully deductible |
-| 67 (input VAT correction, prior period) | **−6.23** | Vincit credit note VO-113703K (orig. VO-113703 deducted Jan 2026) |
+| 62 (input VAT, domestic + PVN1-I-backed) | **12.79** | Swedbank 0.12 + Anthropic 18.90 − Vincit credit note 6.23 |
+| 64 (input VAT on services received from EU) | **2.73** | Meta only — must be backed by PVN1-II total |
+| 67 | — (empty) | EDS rejects negative values here |
 
-**Net payable: (1.11 + 21.63) − (0.12 + 21.63 − 6.23) = 22.74 − 15.52 = €7.22** ✓ matches GL P.1.
+**Net payable: (1.11 + 21.63) − (12.79 + 2.73) = 22.74 − 15.52 = €7.22** ✓ matches GL P.1.
 
-Mapping notes:
-- Rows 50/51/51.1 (and tax rows 55/56/56.1) are split **by rate** (21/12/5 %), not by geography — both the EU (Meta) and third-country (Anthropic) reverse-charge services sit in 50/55. Confirmed against the current form layout (rows 51/56 = 12 % rate; the pre-2013 form's "54/63 received services" rows map to today's 55/64). April precedent (Hetzner, EU service → 50/55/64) is consistent.
-- Third-country supplier rows use PVN1-I transaction code **N** ("partner has no LV/EU VAT registration number").
-- Vincit correction: original input VAT deducted in the January declaration → prior-period correction in row 67 (negative), PVN1-I row with document type **4 (kredītrēķins)** and negative values. If EDS's cross-check insists the PVN1-I A-code total reconcile to row 62, move the −6.23 from row 67 into row 62 (0.12 − 6.23 = −6.11) — net result identical (€7.22).
+Mapping notes (validated against EDS import checks, 12.06.2026):
+- Rows 50/51/51.1 (and tax rows 55/56/56.1) are split **by rate** (21/12/5 %), not by geography — both the EU (Meta) and third-country (Anthropic) reverse-charge services sit in 50/55. April precedent (Hetzner, EU service → 50/55) is consistent.
+- **Deduction side splits by appendix, not by service type**: row 64 is cross-checked against the PVN1-II total, so only EU-partner RC (Meta) goes there. The third-country RC deduction (Anthropic, PVN1-I code N) goes in **row 62**, which is cross-checked against the PVN1-I VAT total.
+- **Row 67 must be ≥ 0** (EDS hard error on negatives). The Vincit credit-note correction is therefore netted into row 62. PVN1-I row keeps document type **4 (kredītrēķins)** with negative values; PVN1-I VAT total = 0.12 + 18.90 − 6.23 = 12.79 = row 62 exactly.
+- Third-country supplier rows use PVN1-I transaction code **N** ("partner has no LV/EU VAT registration number") with the **partner-country field left blank** — EDS's Part I country classifier has no third-country entries (it deletes e.g. "US" with a warning).
 
 ## PVN1 Part I (input documents)
 
 | # | Counterparty | Country / Reg | Type | Net | VAT | DokVeids | Document | Date |
 |---|--------------|---------------|------|-----|-----|----------|----------|------|
 | 1 | Swedbank AS | LV / 40003074764 | A | 0.60 | 0.12 | 1 | V0000891330 | 15.05.2026 |
-| 2 | Anthropic, PBC | US / — (no EU VAT nr) | N | 90.00 | 18.90 | 1 | JQYX1OS2-0011 | 05.05.2026 |
+| 2 | Anthropic, PBC | (blank) / — (no EU VAT nr) | N | 90.00 | 18.90 | 1 | JQYX1OS2-0011 | 05.05.2026 |
 | 3 | Vincit Online, SIA | LV / 40203249460 | A | −29.65 | −6.23 | 4 (kredītrēķins) | VO-113703K | 27.05.2026 |
+
+PVN1-I VAT total: 0.12 + 18.90 − 6.23 = **12.79** (= row 62).
 
 ## PVN1 Part II (received from EU) — Meta Platforms Ireland Limited, IE 9692928F, type P, EUR
 
