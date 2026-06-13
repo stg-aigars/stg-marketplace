@@ -4,26 +4,33 @@ import { useEffect, useRef } from 'react';
 import { InlineArrowLink, Textarea } from '@/components/ui';
 import { ConditionStep } from './ConditionStep';
 import { PhotoUploadStep } from './PhotoUploadStep';
+import { ComponentUpgradesPicker } from './ComponentUpgradesPicker';
 import { conditionRequiresPhotos, conditionRequiresDescription, MAX_DESCRIPTION_LENGTH } from '@/lib/listings/types';
-import type { ListingCondition } from '@/lib/listings/types';
+import type { ListingCondition, ComponentUpgrade } from '@/lib/listings/types';
 import { SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 
 interface ConditionPhotosStepProps {
+  gameId: number | null;
   condition: ListingCondition | null;
   photos: string[];
   description: string;
+  componentUpgrades: ComponentUpgrade[];
   onConditionChange: (condition: ListingCondition) => void;
   onPhotosChange: (photos: string[]) => void;
   onDescriptionChange: (desc: string) => void;
+  onComponentUpgradesChange: (upgrades: ComponentUpgrade[]) => void;
 }
 
 export function ConditionPhotosStep({
+  gameId,
   condition,
   photos,
   description,
+  componentUpgrades,
   onConditionChange,
   onPhotosChange,
   onDescriptionChange,
+  onComponentUpgradesChange,
 }: ConditionPhotosStepProps) {
   const photoSectionRef = useRef<HTMLDivElement>(null);
   const prevConditionRef = useRef(condition);
@@ -126,6 +133,17 @@ export function ConditionPhotosStep({
             {description.length}/{MAX_DESCRIPTION_LENGTH}
           </p>
         </div>
+      )}
+
+      {condition && gameId && <hr className="border-semantic-border-subtle" />}
+
+      {/* Included extras / component upgrades */}
+      {condition && gameId && (
+        <ComponentUpgradesPicker
+          gameId={gameId}
+          value={componentUpgrades}
+          onChange={onComponentUpgradesChange}
+        />
       )}
     </div>
   );

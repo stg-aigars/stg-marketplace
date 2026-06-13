@@ -10,11 +10,12 @@ import { PhotoUploadStep } from '@/app/[locale]/sell/_components/PhotoUploadStep
 import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { ExpansionStep } from '@/app/[locale]/sell/_components/ExpansionStep';
+import { ComponentUpgradesPicker } from '@/app/[locale]/sell/_components/ComponentUpgradesPicker';
 import { buildEnrichedGame, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateListing } from '@/lib/listings/actions';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
-import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
+import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription, type ComponentUpgrade } from '@/lib/listings/types';
 import type { ListingCondition, VersionData, ListingExpansion } from '@/lib/listings/types';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 
@@ -35,6 +36,7 @@ interface EditListingFormProps {
     language: VersionData['language'];
     edition_year: VersionData['edition_year'];
     version_thumbnail: string | null;
+    component_upgrades: ComponentUpgrade[] | null;
     games: {
       name: string | null;
       thumbnail: string | null;
@@ -83,6 +85,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     photos: JSON.stringify(listing.photos),
     version: JSON.stringify(initialVersion(listing)),
     expansionIds: JSON.stringify(existingExpansions.map((e) => e.bgg_game_id).sort()),
+    componentUpgrades: JSON.stringify(listing.component_upgrades ?? []),
   }));
 
   // Editable state
@@ -91,6 +94,9 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   const [priceCents, setPriceCents] = useState(listing.price_cents);
   const [description, setDescription] = useState(listing.description ?? '');
   const [photos, setPhotos] = useState<string[]>(listing.photos);
+  const [componentUpgrades, setComponentUpgrades] = useState<ComponentUpgrade[]>(
+    listing.component_upgrades ?? []
+  );
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
   // Expansion state
@@ -201,7 +207,8 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     description !== initial.description ||
     JSON.stringify(photos) !== initial.photos ||
     JSON.stringify(version) !== initial.version ||
-    JSON.stringify([...selectedExpansionIds].sort()) !== initial.expansionIds;
+    JSON.stringify([...selectedExpansionIds].sort()) !== initial.expansionIds ||
+    JSON.stringify(componentUpgrades) !== initial.componentUpgrades;
 
   // Validation
   const isValid = condition !== null &&
@@ -245,6 +252,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       description: description || null,
       photos,
       expansions,
+      component_upgrades: componentUpgrades,
     });
 
     if ('error' in result) {
@@ -363,6 +371,13 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
 
       {/* Condition */}
       <ConditionStep selectedCondition={condition} onSelect={setCondition} />
+
+      {/* Included extras / component upgrades */}
+      <ComponentUpgradesPicker
+        gameId={listing.bgg_game_id}
+        value={componentUpgrades}
+        onChange={setComponentUpgrades}
+      />
 
       {/* Price & Description */}
       <PriceStep

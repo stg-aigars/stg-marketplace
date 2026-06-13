@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { requireServerAuth } from '@/lib/auth/helpers';
 import { createClient } from '@/lib/supabase/server';
-import { isAuctionWithBids, type ListingCondition, type ListingStatus, type ListingType, type VersionSource } from '@/lib/listings/types';
+import { isAuctionWithBids, type ListingCondition, type ListingStatus, type ListingType, type VersionSource, type ComponentUpgrade } from '@/lib/listings/types';
 import { EditListingForm } from './EditListingForm';
 
 export const metadata: Metadata = {
@@ -29,6 +29,7 @@ interface EditListingRow {
   language: string | null;
   edition_year: number | null;
   version_thumbnail: string | null;
+  component_upgrades: ComponentUpgrade[] | null;
   games: {
     name: string | null;
     thumbnail: string | null;
@@ -57,7 +58,7 @@ export default async function EditListingPage(
   const { data: listing } = await supabase
     .from('listings')
     .select(
-      'id, seller_id, bgg_game_id, game_name, game_year, condition, price_cents, description, status, listing_type, bid_count, photos, version_source, bgg_version_id, version_name, publisher, language, edition_year, version_thumbnail, games(name, thumbnail, image, player_count, alternate_names)'
+      'id, seller_id, bgg_game_id, game_name, game_year, condition, price_cents, description, status, listing_type, bid_count, photos, version_source, bgg_version_id, version_name, publisher, language, edition_year, version_thumbnail, component_upgrades, games(name, thumbnail, image, player_count, alternate_names)'
     )
     .eq('id', id)
     .single<EditListingRow>();

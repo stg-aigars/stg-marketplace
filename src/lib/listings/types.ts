@@ -28,6 +28,16 @@ export interface ListingExpansion {
   version_thumbnail?: string | null;
 }
 
+/**
+ * A seller-declared included extra / component upgrade. Picked from the game's
+ * BGG accessory list (`bgg_accessory_id` set) or free-text (`bgg_accessory_id`
+ * null). Stored as a JSONB array on `listings.component_upgrades`.
+ */
+export interface ComponentUpgrade {
+  bgg_accessory_id: number | null;
+  name: string;
+}
+
 export interface CreateListingData {
   bgg_game_id: number;
   game_name: string;
@@ -48,6 +58,7 @@ export interface CreateListingData {
   auction_duration_days?: number;
   starting_price_cents?: number;
   expansions?: ListingExpansion[];
+  component_upgrades?: ComponentUpgrade[];
 }
 
 export interface UpdateListingData {
@@ -65,6 +76,7 @@ export interface UpdateListingData {
   description: string | null;
   photos: string[];
   expansions?: ListingExpansion[];
+  component_upgrades?: ComponentUpgrade[];
 }
 
 /** Camel-case mirror of `ListingCondition`. The DB stores snake_case (`like_new`); the UI codepath
@@ -106,6 +118,15 @@ export function isAuctionWithBids(listingType: string, bidCount: number): boolea
 export function formatExpansionCount(count: number): string {
   return `+${count} ${count === 1 ? 'expansion' : 'expansions'}`;
 }
+
+export function formatUpgradeCount(count: number): string {
+  return `+${count} ${count === 1 ? 'extra' : 'extras'}`;
+}
+
+/** Max component upgrades a seller can declare on one listing. */
+export const MAX_COMPONENT_UPGRADES = 20;
+/** Max length of a single component-upgrade name. */
+export const MAX_UPGRADE_NAME_LENGTH = 100;
 
 export const MIN_PRICE_CENTS = 50; // €0.50
 export const MAX_GAME_NAME_LENGTH = 200;

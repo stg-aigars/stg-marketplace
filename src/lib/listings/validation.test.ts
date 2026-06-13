@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { validateListingFields, type ListingFieldsToValidate } from './validation';
-import { MAX_TEXT_FIELD_LENGTH, MAX_LANGUAGE_FIELD_LENGTH } from './types';
+import {
+  validateListingFields,
+  sanitizeComponentUpgrades,
+  type ListingFieldsToValidate,
+} from './validation';
+import {
+  MAX_TEXT_FIELD_LENGTH,
+  MAX_LANGUAGE_FIELD_LENGTH,
+  MAX_COMPONENT_UPGRADES,
+  MAX_UPGRADE_NAME_LENGTH,
+} from './types';
 
 const PHOTO_PREFIX = 'https://cdn.example.com/listings/';
 
@@ -66,5 +75,94 @@ describe('validateListingFields', () => {
         `Publisher must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`
       );
     });
+  });
+
+  describe('component upgrades', () => {
+    it('accepts a listing with a reasonable upgrade list', () => {
+      const component_upgrades = [
+        { bgg_accessory_id: 100, name: 'Metal Coins' },
+        { bgg_accessory_id: null, name: 'Sleeved cards' },
+      ];
+      expect(validateListingFields(validFields({ component_upgrades }), PHOTO_PREFIX)).toBeNull();
+    });
+
+    it('rejects more than the maximum number of upgrades', () => {
+      const component_upgrades = Array.from({ length: MAX_COMPONENT_UPGRADES + 1 }, (_, i) => ({
+        bgg_accessory_id: i + 1,
+        name: `Upgrade ${i}`,
+      }));
+      expect(validateListingFields(validFields({ component_upgrades }), PHOTO_PREFIX)).toBe(
+        `You can list up to ${MAX_COMPONENT_UPGRADES} component upgrades`
+      );
+    });
+
+    it('rejects an empty upgrade name', () => {
+      const component_upgrades = [{ bgg_accessory_id: null, name: '   ' }];
+      expect(validateListingFields(validFields({ component_upgrades }), PHOTO_PREFIX)).toBe(
+        'Component upgrade names cannot be empty'
+      );
+    });
+
+    it('rejects an upgrade name over the length cap', () => {
+      const component_upgrades = [{ bgg_accessory_id: null, name: 'x'.repeat(MAX_UPGRADE_NAME_LENGTH + 1) }];
+      expect(validateListingFields(validFields({ component_upgrades }), PHOTO_PREFIX)).toBe(
+        `Component upgrade names must be ${MAX_UPGRADE_NAME_LENGTH} characters or fewer`
+      );
+    });
+  });
+});
+
+describe('sanitizeComponentUpgrades', () => {
+  it('returns an empty array for non-array input', () => {
+    expect(sanitizeComponentUpgrades(null)).toEqual([]);
+    expect(sanitizeComponentUpgrades(undefined)).toEqual([]);
+    expect(sanitizeComponentUpgrades('nope')).toEqual([]);
+  });
+
+  it('trims names and drops empty entries', () => {
+    const result = sanitizeComponentUpgrades([
+      { bgg_accessory_id: 1, name: '  Metal Coins  ' },
+      { bgg_accessory_id: null, name: '   ' },
+      { bgg_accessory_id: null, name: 'Insert' },
+    ]);
+    expect(result).toEqual([
+      { bgg_accessory_id: 1, name: 'Metal Coins' },
+      { bgg_accessory_id: null, name: 'Insert' },
+    ]);
+  });
+
+  it('coerces invalid bgg ids to null', () => {
+    const result = sanitizeComponentUpgrades([
+      { bgg_accessory_id: 0, name: 'Zero' },
+      { bgg_accessory_id: -5, name: 'Negative' },
+      { bgg_accessory_id: 1.5, name: 'Float' },
+    ]);
+    expect(result.every((u) => u.bgg_accessory_id === null)).toBe(true);
+  });
+
+  it('dedupes by bgg id and by case-insensitive name', () => {
+    const result = sanitizeComponentUpgrades([
+      { bgg_accessory_id: 1, name: 'Metal Coins' },
+      { bgg_accessory_id: 1, name: 'Metal Coins (dup id)' },
+      { bgg_accessory_id: null, name: 'Insert' },
+      { bgg_accessory_id: null, name: 'INSERT' },
+    ]);
+    expect(result).toEqual([
+      { bgg_accessory_id: 1, name: 'Metal Coins' },
+      { bgg_accessory_id: null, name: 'Insert' },
+    ]);
+  });
+
+  it('dedupes a BGG-picked item against a same-name free-text item (cross-source)', () => {
+    const result = sanitizeComponentUpgrades([
+      { bgg_accessory_id: 5, name: 'Metal Coins' },
+      { bgg_accessory_id: null, name: 'metal coins' },
+    ]);
+    expect(result).toEqual([{ bgg_accessory_id: 5, name: 'Metal Coins' }]);
+  });
+
+  it('skips malformed entries', () => {
+    const result = sanitizeComponentUpgrades([null, 42, { name: 123 }, { bgg_accessory_id: 1, name: 'Good' }]);
+    expect(result).toEqual([{ bgg_accessory_id: 1, name: 'Good' }]);
   });
 });

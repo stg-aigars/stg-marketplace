@@ -39,6 +39,7 @@ interface ListingSectionProps {
   isAuthenticated?: boolean;
   expansionCounts?: Record<string, number>;
   commentCounts?: Record<string, number>;
+  upgradeCounts?: Record<string, number>;
   emptyState?: React.ReactNode;
   className?: string;
 }
@@ -54,6 +55,7 @@ export function ListingSection({
   isAuthenticated,
   expansionCounts,
   commentCounts,
+  upgradeCounts,
   emptyState,
   className,
 }: ListingSectionProps) {
@@ -104,6 +106,7 @@ export function ListingSection({
               isAuthenticated={isAuthenticated}
               expansionCount={expansionCounts?.[listing.id] ?? 0}
               commentCount={commentCounts?.[listing.id] ?? 0}
+              upgradeCount={upgradeCounts?.[listing.id] ?? 0}
               status={listing.status}
               isExpansion={listing.games?.is_expansion ?? false}
               isAuction={listing.listing_type === 'auction'}

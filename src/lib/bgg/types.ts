@@ -38,6 +38,16 @@ export interface BGGInboundLink {
   inbound: boolean;
 }
 
+/**
+ * A BGG accessory (`boardgameaccessory` link): community-catalogued add-on for a
+ * game — component upgrades, custom inserts, upgraded tokens, sleeves, etc. The
+ * list is noisy (a popular game can have 50+), so the sell flow filters by search.
+ */
+export interface BGGAccessory {
+  id: number;
+  name: string;
+}
+
 export interface BGGGameMetadata {
   id: number;
   name: string;
