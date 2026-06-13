@@ -153,6 +153,14 @@ describe('sanitizeComponentUpgrades', () => {
     ]);
   });
 
+  it('dedupes a BGG-picked item against a same-name free-text item (cross-source)', () => {
+    const result = sanitizeComponentUpgrades([
+      { bgg_accessory_id: 5, name: 'Metal Coins' },
+      { bgg_accessory_id: null, name: 'metal coins' },
+    ]);
+    expect(result).toEqual([{ bgg_accessory_id: 5, name: 'Metal Coins' }]);
+  });
+
   it('skips malformed entries', () => {
     const result = sanitizeComponentUpgrades([null, 42, { name: 123 }, { bgg_accessory_id: 1, name: 'Good' }]);
     expect(result).toEqual([{ bgg_accessory_id: 1, name: 'Good' }]);

@@ -52,14 +52,15 @@ export function sanitizeComponentUpgrades(input: unknown): ComponentUpgrade[] {
     const bgg_accessory_id =
       typeof rawId === 'number' && Number.isInteger(rawId) && rawId > 0 ? rawId : null;
 
-    if (bgg_accessory_id !== null) {
-      if (seenIds.has(bgg_accessory_id)) continue;
-      seenIds.add(bgg_accessory_id);
-    } else {
-      const key = name.toLowerCase();
-      if (seenNames.has(key)) continue;
-      seenNames.add(key);
-    }
+    // Dedupe by id (when present) AND by name across BOTH sources — otherwise a
+    // BGG-picked "Metal Coins" and a free-text "Metal Coins" would both survive
+    // and render as duplicate chips/badges.
+    if (bgg_accessory_id !== null && seenIds.has(bgg_accessory_id)) continue;
+    const nameKey = name.toLowerCase();
+    if (seenNames.has(nameKey)) continue;
+
+    if (bgg_accessory_id !== null) seenIds.add(bgg_accessory_id);
+    seenNames.add(nameKey);
 
     result.push({ bgg_accessory_id, name });
   }

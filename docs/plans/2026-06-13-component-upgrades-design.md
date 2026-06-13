@@ -59,9 +59,17 @@ and returns — mirroring `/api/games/[id]/versions`.
 New optional section in the "details" step (`ConditionPhotosStep`): **"Included extras /
 component upgrades"**, rendered by a new sell-flow-local `ComponentUpgradesPicker`:
 - Fetches `/api/games/[id]/accessories` on mount (`apiFetch`, same as `VersionStep`).
-- Search box filters the cached list by substring; tapping a match adds a removable chip.
-- "Add your own" free-text input appends a custom chip (`bgg_accessory_id: null`).
-- Dedup: by `bgg_accessory_id` for BGG items, case-insensitive `name` for free-text.
+- **Browsable list, not search-only** (mirrors `ExpansionStep`): the full accessory list
+  renders as a scrollable (`max-h-72`) checkbox list so the seller can scan what exists
+  without knowing exact product names — a search-only box has a discoverability floor.
+- A filter box on top narrows the list (matches by name); the row count is shown so the
+  scale is honest for noisy games (Gloomhaven: 69).
+- "Add your own" free-text input appends a custom chip (`bgg_accessory_id: null`) for
+  anything not catalogued on BGG.
+- Selected items show as removable chips above the list.
+- Dedup is enforced in `sanitizeComponentUpgrades`: by `bgg_accessory_id` AND by
+  case-insensitive `name` across both sources (a BGG-picked and a free-text "Metal Coins"
+  collapse to one).
 - No multi-select primitive exists; keep it sell-flow-local, flag for extraction if a
   second caller appears.
 
