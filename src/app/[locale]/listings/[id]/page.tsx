@@ -31,7 +31,7 @@ import { getSellerCompletedSales, getActiveOrReservedListingCount } from '@/lib/
 import { SellerBadgesRow } from '@/components/sellers/SellerBadgesRow';
 import { SellerRating } from '@/components/reviews';
 import { BuyActions } from '@/components/listings/BuyActions';
-import { GameIdentityRow } from '@/components/listings/atoms';
+import { GameIdentityRow, LanguageList } from '@/components/listings/atoms';
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { OwnerActions } from './OwnerActions';
 import { getComments } from '@/lib/comments/actions';
@@ -374,7 +374,7 @@ export default async function ListingDetailPage(
             {listing.language && (
               <div className="flex items-center gap-1.5">
                 <Translate size={15} className="flex-shrink-0" />
-                <span>{listing.language}</span>
+                <LanguageList value={listing.language} />
               </div>
             )}
             {listing.publisher && (

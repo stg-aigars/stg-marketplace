@@ -111,6 +111,13 @@ export const MIN_PRICE_CENTS = 50; // €0.50
 export const MAX_GAME_NAME_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 2000;
 export const MAX_TEXT_FIELD_LENGTH = 200;
+// The language field legitimately aggregates many values: a multilingual BGG
+// edition stores every language its rules cover as a comma-joined string (e.g.
+// "English, French, German, ..."), and browse splits on `,` to power per-language
+// filters (see browse/page.tsx). So it needs far more headroom than single-value
+// fields like publisher / version_name. BGG's largest multilingual editions run
+// ~25 languages (~275 chars); 500 is comfortable headroom without being unbounded.
+export const MAX_LANGUAGE_FIELD_LENGTH = 500;
 export const MAX_PRICE_CENTS = 999999; // €9,999.99
 export const MAX_PHOTOS = 8;
 // 25 MB upload cap. The server downscales every upload to a 2048px WebP

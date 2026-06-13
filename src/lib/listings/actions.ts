@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
-import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { listingCreateLimiter, listingUpdateLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { sendWantedListingMatchedToBuyer, sendListingPriceDroppedToBuyer } from '@/lib/email';
 import { fetchProfiles } from '@/lib/supabase/helpers';
@@ -14,90 +13,13 @@ import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { AUCTION_DURATIONS } from '@/lib/auctions/types';
 import { extractStoragePath } from './storage-utils';
 import {
-  LISTING_CONDITIONS,
-  MIN_PRICE_CENTS,
-  MAX_PRICE_CENTS,
   MAX_GAME_NAME_LENGTH,
-  MAX_DESCRIPTION_LENGTH,
-  MAX_TEXT_FIELD_LENGTH,
-  conditionRequiresPhotos,
-  conditionRequiresDescription,
   isAuctionWithBids,
   type CreateListingData,
   type ListingCondition,
   type UpdateListingData,
 } from './types';
-
-interface ListingFieldsToValidate {
-  condition: ListingCondition;
-  price_cents: number;
-  photos: string[];
-  description: string | null;
-  publisher: string | null;
-  language: string | null;
-  version_name: string | null;
-  bgg_version_id: number | null;
-}
-
-/** Shared validation for listing fields common to create and update. */
-function validateListingFields(
-  data: ListingFieldsToValidate,
-  photoUrlPrefix: string
-): string | null {
-  if (!LISTING_CONDITIONS.includes(data.condition)) {
-    return 'Invalid condition selected';
-  }
-
-  if (
-    !data.price_cents ||
-    !Number.isFinite(data.price_cents) ||
-    !Number.isInteger(data.price_cents) ||
-    data.price_cents < MIN_PRICE_CENTS ||
-    data.price_cents > MAX_PRICE_CENTS
-  ) {
-    return `Price must be between ${formatCentsToCurrency(MIN_PRICE_CENTS)} and ${formatCentsToCurrency(MAX_PRICE_CENTS)}`;
-  }
-
-  if (!data.photos) {
-    data.photos = [];
-  }
-
-  for (const photo of data.photos) {
-    if (!photo.startsWith(photoUrlPrefix)) {
-      return 'Invalid photo URL detected';
-    }
-  }
-
-  if (conditionRequiresPhotos(data.condition) && data.photos.length === 0) {
-    return 'At least one photo is required for this condition';
-  }
-
-  if (conditionRequiresDescription(data.condition) && (!data.description || !data.description.trim())) {
-    return 'A description is required for this condition';
-  }
-
-  if (data.description && data.description.length > MAX_DESCRIPTION_LENGTH) {
-    return `Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`;
-  }
-
-  if (data.publisher && data.publisher.length > MAX_TEXT_FIELD_LENGTH) {
-    return `Publisher must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`;
-  }
-
-  if (data.language && data.language.length > MAX_TEXT_FIELD_LENGTH) {
-    return `Language must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`;
-  }
-
-  if (data.version_name && data.version_name.length > MAX_TEXT_FIELD_LENGTH) {
-    return `Version name must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`;
-  }
-
-  if (data.bgg_version_id != null && (!Number.isInteger(data.bgg_version_id) || data.bgg_version_id <= 0)) {
-    return 'Invalid BGG version selected';
-  }
-
-  return null;
-}
+import { validateListingFields } from './validation';
 
 export async function createListing(
   data: CreateListingData
