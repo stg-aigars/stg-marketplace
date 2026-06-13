@@ -12,7 +12,7 @@ import { Price } from '@/components/listings/atoms';
 import { isPriceDropActive } from '@/lib/listings/price-drop';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getConditionLabel } from '@/lib/condition-config';
-import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType } from '@/lib/listings/types';
+import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType, type ComponentUpgrade } from '@/lib/listings/types';
 import { canViewListingDetail, isPubliclyViewableStatus } from '@/lib/listings/detail-access';
 import { hasBuyerOrderForListing } from '@/lib/services/orders';
 import { JsonLd } from '@/lib/seo/json-ld';
@@ -97,6 +97,7 @@ interface ListingDetailRow {
   publisher: string | null;
   language: string | null;
   edition_year: number | null;
+  component_upgrades: ComponentUpgrade[] | null;
   reserved_at: string | null;
   reserved_by: string | null;
   version_thumbnail: string | null;
@@ -389,6 +390,19 @@ export default async function ListingDetailPage(
                 <span>{listing.edition_year}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {listing.component_upgrades && listing.component_upgrades.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold text-semantic-text-secondary">Included extras</p>
+            <div className="flex flex-wrap gap-1.5">
+              {listing.component_upgrades.map((upgrade) => (
+                <Badge key={upgrade.bgg_accessory_id ?? `custom-${upgrade.name}`} variant="default">
+                  {upgrade.name}
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
 

@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Stepper, Card, CardBody, Spinner } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
-import type { ListingCondition, ListingType, VersionSource, ListingExpansion } from '@/lib/listings/types';
+import type { ListingCondition, ListingType, VersionSource, ListingExpansion, ComponentUpgrade } from '@/lib/listings/types';
 import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,6 +59,7 @@ export interface FormData {
   photos: string[];
   condition: ListingCondition | null;
   description: string;
+  component_upgrades: ComponentUpgrade[];
   // Step: Price (set on review step)
   price_cents: number;
   // Auction fields
@@ -86,6 +87,7 @@ const initialFormData: FormData = {
   expansion_game_names: {},
   photos: [],
   condition: null,
+  component_upgrades: [],
   price_cents: 0,
   description: '',
   starting_price_cents: 0,
@@ -356,6 +358,7 @@ export function ListingCreationFlow({
         auction_duration_days: formData.auction_duration_days,
       } : {}),
       ...(expansions.length > 0 ? { expansions } : {}),
+      ...(formData.component_upgrades.length > 0 ? { component_upgrades: formData.component_upgrades } : {}),
     });
 
     if ('error' in result) {
@@ -607,12 +610,15 @@ export function ListingCreationFlow({
 
         {currentStepId === 'details' && (
           <ConditionPhotosStep
+            gameId={formData.bgg_game_id}
             condition={formData.condition}
             photos={formData.photos}
             description={formData.description}
+            componentUpgrades={formData.component_upgrades}
             onConditionChange={(condition) => updateFormData({ condition })}
             onPhotosChange={(photos) => updateFormData({ photos })}
             onDescriptionChange={(description) => updateFormData({ description })}
+            onComponentUpgradesChange={(component_upgrades) => updateFormData({ component_upgrades })}
           />
         )}
 

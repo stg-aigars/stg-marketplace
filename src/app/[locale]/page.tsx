@@ -74,7 +74,7 @@ export default async function HomePage() {
   const recentListingsList = recentListings ?? [];
   const endingSoonAuctionsList = endingSoonAuctions ?? [];
 
-  const { expansionCounts, commentCounts } = await getListingCardCounts(
+  const { expansionCounts, commentCounts, upgradeCounts } = await getListingCardCounts(
     supabase,
     [...recentListingsList, ...endingSoonAuctionsList].map((l) => l.id)
   );
@@ -101,6 +101,7 @@ export default async function HomePage() {
             isAuthenticated={isAuthenticated}
             expansionCounts={expansionCounts}
             commentCounts={commentCounts}
+            upgradeCounts={upgradeCounts}
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>
@@ -118,6 +119,7 @@ export default async function HomePage() {
             isAuthenticated={isAuthenticated}
             expansionCounts={expansionCounts}
             commentCounts={commentCounts}
+            upgradeCounts={upgradeCounts}
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>

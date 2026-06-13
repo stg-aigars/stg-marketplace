@@ -52,7 +52,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
   if (copiesList.length === 0 && sellerList.length === 0 && isOwner) return null;
 
   const allIds = [...copiesList, ...sellerList].map((l) => l.id);
-  const { expansionCounts, commentCounts } = await getListingCardCounts(supabase, allIds);
+  const { expansionCounts, commentCounts, upgradeCounts } = await getListingCardCounts(supabase, allIds);
 
   const hasSections = copiesList.length > 0 || sellerList.length > 0;
 
@@ -66,6 +66,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
           isAuthenticated={isAuthenticated}
           expansionCounts={expansionCounts}
           commentCounts={commentCounts}
+          upgradeCounts={upgradeCounts}
         />
       )}
       {sellerList.length > 0 && (
@@ -77,6 +78,7 @@ export async function RelatedListings({ listingId, bggGameId, sellerId, gameName
           isAuthenticated={isAuthenticated}
           expansionCounts={expansionCounts}
           commentCounts={commentCounts}
+          upgradeCounts={upgradeCounts}
         />
       )}
       {!isOwner && (

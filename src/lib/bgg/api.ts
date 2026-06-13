@@ -5,14 +5,14 @@
  */
 
 import { XMLParser } from 'fast-xml-parser';
-import type { BGGGame, BGGVersion, BGGGameMetadata, BGGInboundLink } from './types';
+import type { BGGGame, BGGVersion, BGGGameMetadata, BGGInboundLink, BGGAccessory } from './types';
 import { classifyGame } from './classifier';
 import { BGGError, createRateLimitError, createAPIUnavailableError, createTimeoutError, parseFetchError } from './errors';
 import { createBGGHeaders, BGG_CONFIG } from './config';
 import { decodeHTMLEntities } from './utils';
 
 // Re-export for convenience
-export type { BGGGame, BGGVersion, BGGGameMetadata, BGGInboundLink };
+export type { BGGGame, BGGVersion, BGGGameMetadata, BGGInboundLink, BGGAccessory };
 export { decodeHTMLEntities, getLanguageFlag, getLanguageInfo, debounce } from './utils';
 
 // ============================================================================
@@ -608,6 +608,88 @@ export async function ensureGameVersions(
   }
 
   return versions;
+}
+
+// ============================================================================
+// Accessories (component upgrades)
+// ============================================================================
+
+/**
+ * Extract `boardgameaccessory` links from a game's metadata into a deduped
+ * accessory list. Accessories carry no `inbound` attribute on the thing record,
+ * so they land in outboundLinks; we scan both arrays to be robust. Pure function
+ * (no I/O) so it's unit-testable against fixtures.
+ */
+export function extractAccessories(metadata: BGGGameMetadata): BGGAccessory[] {
+  const seen = new Set<number>();
+  const accessories: BGGAccessory[] = [];
+
+  for (const link of [...metadata.inboundLinks, ...metadata.outboundLinks]) {
+    if (link.type !== 'boardgameaccessory') continue;
+    const id = parseInt(link.id, 10);
+    if (!Number.isInteger(id) || id <= 0 || seen.has(id)) continue;
+    const name = decodeHTMLEntities(link.value).trim();
+    if (!name) continue;
+    seen.add(id);
+    accessories.push({ id, name });
+  }
+
+  // Stable alphabetical order — the sell flow filters by search, not position.
+  return accessories.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Fetch a game's accessory list from BGG (propagates BGGError on failure). */
+export async function getGameAccessories(gameId: number): Promise<BGGAccessory[]> {
+  const metadata = await fetchGameMetadata(gameId);
+  if (!metadata) return [];
+  return extractAccessories(metadata);
+}
+
+/**
+ * Return a game's BGG accessory list, served from the `games.accessories` cache
+ * when fresh and otherwise fetched from BGG and persisted. Mirrors
+ * ensureGameVersions: checks accessories_fetched_at (not the array) so games with
+ * zero accessories don't re-fetch every time, and never writes the timestamp on a
+ * failed fetch (avoids poisoned cache).
+ */
+export async function ensureGameAccessories(
+  gameId: number,
+  supabase: { from: (table: string) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
+): Promise<BGGAccessory[]> {
+  const { data: game, error: fetchError } = await supabase
+    .from('games')
+    .select('accessories, accessories_fetched_at')
+    .eq('id', gameId)
+    .single();
+
+  if (fetchError) {
+    console.error(`ensureGameAccessories: error fetching game ${gameId}:`, fetchError);
+    // Fall through to BGG API — don't block the user
+  }
+
+  if (game?.accessories_fetched_at) {
+    const ageMs = Date.now() - new Date(game.accessories_fetched_at).getTime();
+    if (ageMs < VERSIONS_STALE_DAYS * 24 * 60 * 60 * 1000) {
+      return (game.accessories as BGGAccessory[]) ?? [];
+    }
+  }
+
+  const accessories = await getGameAccessories(gameId);
+
+  const { error: updateError } = await supabase
+    .from('games')
+    .update({
+      accessories: accessories.length > 0 ? accessories : null,
+      accessories_fetched_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', gameId);
+
+  if (updateError) {
+    console.error(`ensureGameAccessories: error persisting accessories for game ${gameId}:`, updateError);
+  }
+
+  return accessories;
 }
 
 // ============================================================================

@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece } from '@phosphor-icons/react/ssr';
+import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece, Sparkle } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Badge, Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, Price } from './atoms';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { FavoriteButton } from './FavoriteButton';
-import { formatExpansionCount } from '@/lib/listings/types';
+import { formatExpansionCount, formatUpgradeCount } from '@/lib/listings/types';
 
 interface ListingCardProps {
   id: string;
@@ -26,6 +26,8 @@ interface ListingCardProps {
   unavailable?: boolean;
   /** Expansion count for "+N expansions" badge */
   expansionCount?: number;
+  /** Component-upgrade count for "+N extras" indicator */
+  upgradeCount?: number;
   /** Comment count for comment indicator */
   commentCount?: number;
   /** Whether this listing is for an expansion (not a base game) */
@@ -51,6 +53,7 @@ function ListingCard({
   isAuthenticated = false,
   unavailable = false,
   expansionCount = 0,
+  upgradeCount = 0,
   commentCount = 0,
   isExpansion = false,
   status,
@@ -131,7 +134,7 @@ function ListingCard({
         <div className="px-3 py-3 flex flex-col flex-1 gap-2">
           <div>
             <GameTitle name={gameTitle} size="md" serif clamp={2} />
-            {(isExpansion || expansionCount > 0) && (
+            {(isExpansion || expansionCount > 0 || upgradeCount > 0) && (
               <div className="flex items-center gap-2 text-xs text-semantic-text-muted mt-0.5">
                 {isExpansion && (
                   <span className="inline-flex items-center gap-0.5">
@@ -141,6 +144,12 @@ function ListingCard({
                 )}
                 {expansionCount > 0 && (
                   <span>{formatExpansionCount(expansionCount)}</span>
+                )}
+                {upgradeCount > 0 && (
+                  <span className="inline-flex items-center gap-0.5">
+                    <Sparkle size={11} />
+                    {formatUpgradeCount(upgradeCount)}
+                  </span>
                 )}
               </div>
             )}

@@ -19,7 +19,7 @@ import {
   type ListingCondition,
   type UpdateListingData,
 } from './types';
-import { validateListingFields } from './validation';
+import { validateListingFields, sanitizeComponentUpgrades } from './validation';
 
 export async function createListing(
   data: CreateListingData
@@ -48,6 +48,9 @@ export async function createListing(
 
   // Shared field validations
   const photoUrlPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/${user.id}/`;
+  // Normalize the seller-declared upgrades before validation so dedup/trim run
+  // once and both the validation gate and the insert see the same clean array.
+  data.component_upgrades = sanitizeComponentUpgrades(data.component_upgrades);
   const fieldError = validateListingFields(data, photoUrlPrefix);
   if (fieldError) return { error: fieldError };
 
@@ -125,6 +128,8 @@ export async function createListing(
     photos: data.photos,
     country: profile.country,
     listing_type: data.listing_type ?? 'fixed_price',
+    component_upgrades:
+      data.component_upgrades && data.component_upgrades.length > 0 ? data.component_upgrades : null,
   };
 
   // Add auction-specific fields
@@ -253,6 +258,11 @@ export async function updateListing(
 
   // Shared field validations
   const photoUrlPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/${user.id}/`;
+  // Only normalize when the field is present — an undefined payload means "leave
+  // upgrades unchanged", so we must not wipe existing ones with an empty array.
+  if (data.component_upgrades !== undefined) {
+    data.component_upgrades = sanitizeComponentUpgrades(data.component_upgrades);
+  }
   const fieldError = validateListingFields(data, photoUrlPrefix);
   if (fieldError) return { error: fieldError };
 
@@ -278,6 +288,12 @@ export async function updateListing(
       price_cents: data.price_cents,
       description: data.description,
       photos: data.photos,
+      ...(data.component_upgrades !== undefined
+        ? {
+            component_upgrades:
+              data.component_upgrades.length > 0 ? data.component_upgrades : null,
+          }
+        : {}),
     })
     .eq('id', data.id)
     .eq('seller_id', user.id);

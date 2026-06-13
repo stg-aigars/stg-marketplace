@@ -175,7 +175,7 @@ export default async function BrowsePage(
   const availableLanguages = [...langSet].sort();
   const isAuthenticated = !!user;
 
-  const { expansionCounts, commentCounts } = await getListingCardCounts(
+  const { expansionCounts, commentCounts, upgradeCounts } = await getListingCardCounts(
     supabase,
     (listings ?? []).map((l) => l.id)
   );
@@ -245,6 +245,7 @@ export default async function BrowsePage(
                 isAuthenticated={isAuthenticated}
                 expansionCount={expansionCounts[listing.id] ?? 0}
                 commentCount={commentCounts[listing.id] ?? 0}
+                upgradeCount={upgradeCounts[listing.id] ?? 0}
                 status={listing.status}
                 isExpansion={listing.games?.is_expansion ?? false}
                 isAuction={listing.listing_type === 'auction'}
