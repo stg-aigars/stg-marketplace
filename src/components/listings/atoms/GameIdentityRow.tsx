@@ -1,5 +1,6 @@
 import { Tag, Translate, Buildings, CalendarBlank } from '@phosphor-icons/react/ssr';
 import { GameThumb } from './GameThumb';
+import { LanguageList } from './LanguageList';
 
 interface GameIdentityRowProps {
   /** Thumbnail URL (BGG or user upload) */
@@ -67,7 +68,7 @@ function GameIdentityRow({
             {language && (
               <span className="flex items-center gap-1">
                 <Translate size={13} className="shrink-0" />
-                {language}
+                <LanguageList value={language} />
               </span>
             )}
             {publisher && (

@@ -10,3 +10,5 @@ export { GameIdentityRow } from './GameIdentityRow';
 export type { GameIdentityRowProps } from './GameIdentityRow';
 export { ListingIdentity } from './ListingIdentity';
 export type { ListingIdentityProps } from './ListingIdentity';
+export { LanguageList } from './LanguageList';
+export type { LanguageListProps } from './LanguageList';
