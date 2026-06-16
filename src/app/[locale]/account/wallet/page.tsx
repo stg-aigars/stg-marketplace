@@ -52,6 +52,9 @@ export default async function WalletPage() {
           {balanceCents > 0 && (
             <div className="mt-4">
               <WithdrawalForm balanceCents={balanceCents} />
+              <p className="text-xs text-semantic-text-muted mt-3">
+                You can also spend your balance on games across the marketplace.
+              </p>
             </div>
           )}
         </CardBody>
