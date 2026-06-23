@@ -74,6 +74,7 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                   listingId={listing.id}
                   listingType={listing.listing_type}
                   bidCount={listing.bid_count}
+                  priceCents={listing.price_cents}
                 />
               )}
               {listing.status !== 'active' && (

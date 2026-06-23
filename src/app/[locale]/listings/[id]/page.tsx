@@ -558,7 +558,7 @@ export default async function ListingDetailPage(
                   }}
                 />
                 {isOwner && (
-                  <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
+                  <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} priceCents={listing.price_cents} locale={locale} />
                 )}
               </>
             ) : isOwner && (listing.status === 'sold' || listing.status === 'cancelled' || listing.status === 'reserved') ? (
@@ -574,7 +574,7 @@ export default async function ListingDetailPage(
                 showOrdersLink={listing.status === 'sold' || listing.status === 'reserved'}
               />
             ) : isOwner ? (
-              <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} locale={locale} />
+              <OwnerActions listingId={listing.id} status={listing.status} listingType={listing.listing_type} bidCount={listing.bid_count} priceCents={listing.price_cents} locale={locale} />
             ) : listing.status === 'reserved' && !isReserver ? (
               <ListingStatePanel tone="warning" message="Reserved — may become available shortly" />
             ) : listing.status === 'reserved' && isReserver ? (

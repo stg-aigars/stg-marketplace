@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
+import { ConvertToDecliningModal } from '@/components/listings/ConvertToDecliningModal';
 import { isAuctionWithBids, type ListingStatus, type ListingType } from '@/lib/listings/types';
 
 interface OwnerActionsProps {
@@ -11,11 +12,13 @@ interface OwnerActionsProps {
   status: ListingStatus;
   listingType: ListingType;
   bidCount: number;
+  priceCents: number;
   locale: string;
 }
 
-export function OwnerActions({ listingId, status, listingType, bidCount, locale }: OwnerActionsProps) {
+export function OwnerActions({ listingId, status, listingType, bidCount, priceCents, locale }: OwnerActionsProps) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showConvert, setShowConvert] = useState(false);
 
   if (status === 'sold' || status === 'cancelled') {
     return null;
@@ -24,6 +27,7 @@ export function OwnerActions({ listingId, status, listingType, bidCount, locale 
   const isReserved = status === 'reserved';
   const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
   const editDisabled = isReserved || hasAuctionBids;
+  const canConvertToDeclining = status === 'active' && listingType === 'fixed_price';
 
   return (
     <>
@@ -37,6 +41,11 @@ export function OwnerActions({ listingId, status, listingType, bidCount, locale 
             <Link href={`/${locale}/listings/${listingId}/edit`}>
               Edit listing
             </Link>
+          </Button>
+        )}
+        {canConvertToDeclining && (
+          <Button variant="secondary" onClick={() => setShowConvert(true)}>
+            Switch to declining price
           </Button>
         )}
         <Button
@@ -68,6 +77,15 @@ export function OwnerActions({ listingId, status, listingType, bidCount, locale 
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
       />
+
+      {canConvertToDeclining && (
+        <ConvertToDecliningModal
+          listingId={listingId}
+          startingPriceCents={priceCents}
+          open={showConvert}
+          onClose={() => setShowConvert(false)}
+        />
+      )}
     </>
   );
 }
