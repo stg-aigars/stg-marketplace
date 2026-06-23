@@ -53,7 +53,7 @@ export default async function HomePage() {
     supabase
       .from('listings')
       .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
-      .eq('listing_type', 'fixed_price')
+      .in('listing_type', ['fixed_price', 'declining'])
       .in('status', ['active', 'reserved'])
       .order('created_at', { ascending: false })
       .limit(8)
