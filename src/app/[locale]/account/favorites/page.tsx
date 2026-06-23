@@ -26,6 +26,8 @@ interface FavoriteRow {
     previous_price_cents: number | null;
     price_changed_at: string | null;
     listing_type: ListingType;
+    bid_count: number;
+    auction_end_at: string | null;
     photos: string[];
     country: string;
     status: string;
@@ -41,7 +43,7 @@ export default async function FavoritesPage() {
   const { data: favorites } = await supabase
     .from('favorites')
     .select(
-      'listing_id, listings(id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, listing_type, photos, country, status, version_thumbnail, games(image, is_expansion))'
+      'listing_id, listings(id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, listing_type, bid_count, auction_end_at, photos, country, status, version_thumbnail, games(image, is_expansion))'
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
@@ -104,6 +106,10 @@ export default async function FavoritesPage() {
                 expansionCount={expansionCounts[listing.id] ?? 0}
                 commentCount={commentCounts[listing.id] ?? 0}
                 isExpansion={listing.games?.is_expansion ?? false}
+                isAuction={listing.listing_type === 'auction'}
+                bidCount={listing.bid_count}
+                auctionEndAt={listing.auction_end_at}
+                isDeclining={listing.listing_type === 'declining'}
               />
             );
           })}
