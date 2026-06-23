@@ -95,10 +95,12 @@ export default async function BrowsePage(
   if (filters.priceDrops) {
     const now = new Date();
     const cutoff = new Date(now.getTime() - PRICE_DROP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    query = query
-      .eq('has_price_decrease', true)
-      .gt('price_changed_at', cutoff.toISOString())
-      .lte('price_changed_at', now.toISOString());
+    // Declining listings are excluded from has_price_decrease by the migration-122
+    // trigger's fixed_price-only guard (they're already badged "Price drops" on the
+    // card), so OR them in directly rather than relying on that generated column.
+    query = query.or(
+      `and(has_price_decrease.eq.true,price_changed_at.gt.${cutoff.toISOString()},price_changed_at.lte.${now.toISOString()}),listing_type.eq.declining`
+    );
   }
   if (filters.playerCounts.length > 0) {
     const playerClauses = filters.playerCounts.map((n) =>
@@ -214,7 +216,7 @@ export default async function BrowsePage(
             title="Nothing matches those filters"
             description={
               filters.priceDrops && filters.showAuctions
-                ? 'Price drops apply to fixed-price listings only.'
+                ? "Price drops don't apply to auctions."
                 : 'Try tweaking them, or clear to see everything.'
             }
             action={{ label: 'Clear filters', href: '/browse', variant: 'secondary' }}
