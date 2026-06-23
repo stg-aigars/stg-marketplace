@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece, Sparkle } from '@phosphor-icons/react/ssr';
+import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece, Sparkle, TrendDown } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Badge, Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
@@ -38,6 +38,8 @@ interface ListingCardProps {
   isAuction?: boolean;
   bidCount?: number;
   auctionEndAt?: string | null;
+  /** Declining-price schedule active (price drops automatically toward a floor) */
+  isDeclining?: boolean;
 }
 
 function ListingCard({
@@ -60,6 +62,7 @@ function ListingCard({
   isAuction = false,
   bidCount = 0,
   auctionEndAt,
+  isDeclining = false,
 }: ListingCardProps) {
   const isReserved = status === 'reserved';
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
@@ -90,6 +93,9 @@ function ListingCard({
           )}
           {isReserved && (
             <Badge variant="warning" className="absolute top-2 right-2 z-10">Reserved</Badge>
+          )}
+          {isDeclining && (
+            <Badge variant="declining" className="absolute top-2 left-2 z-10">Price drops</Badge>
           )}
           {unavailable && (
             <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
@@ -163,7 +169,10 @@ function ListingCard({
                 {isAuction && bidCount === 0 && (
                   <span className="text-xs text-semantic-text-muted mr-1">Starting at</span>
                 )}
-                <Price cents={priceCents} previousCents={previousPriceCents} />
+                <span className="inline-flex items-center gap-1">
+                  <Price cents={priceCents} previousCents={previousPriceCents} />
+                  {isDeclining && <TrendDown size={14} className="text-aurora-indigo" aria-hidden="true" />}
+                </span>
                 {isAuction && (
                   <span className="text-xs text-semantic-text-muted ml-3">
                     {bidCount > 0 ? `(${bidCount} ${bidCount === 1 ? 'bid' : 'bids'})` : '(no bids)'}

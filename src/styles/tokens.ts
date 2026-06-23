@@ -37,6 +37,7 @@ export const colors = {
     red: '#BF616A',         // Errors, rare/collectible items
     yellow: '#EBCB8B',      // Warnings, attention needed
     purple: '#B48EAD',      // Auctions, bidding
+    indigo: '#9C8FC9',      // Declining-price listings — distinct from frost (trust) and aurora.purple (auctions)
   },
 
   // Semantic colors - mapped from palette

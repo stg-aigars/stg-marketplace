@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildDecliningPriceSchedulePreview, computeDecliningPrice, validateDecliningSchedule } from './declining-price';
+import {
+  buildDecliningPriceSchedulePreview,
+  computeDecliningPrice,
+  nextDecliningPriceCents,
+  validateDecliningSchedule,
+} from './declining-price';
 
 const SCHEDULE_START = new Date('2026-06-01T00:00:00.000Z');
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -130,6 +135,16 @@ describe('buildDecliningPriceSchedulePreview', () => {
   it('falls back to just the starting price when the floor has not been set below the start', () => {
     const preview = buildDecliningPriceSchedulePreview(input({ floorPriceCents: 6000 }));
     expect(preview).toEqual({ steps: [{ priceCents: 6000, dropAt: null, isFloor: false }], truncated: false });
+  });
+});
+
+describe('nextDecliningPriceCents', () => {
+  it('subtracts one decrement from the current price', () => {
+    expect(nextDecliningPriceCents({ currentPriceCents: 5500, floorPriceCents: 3000, decrementCents: 500 })).toBe(5000);
+  });
+
+  it('clamps at the floor when the decrement would overshoot it', () => {
+    expect(nextDecliningPriceCents({ currentPriceCents: 3200, floorPriceCents: 3000, decrementCents: 500 })).toBe(3000);
   });
 });
 

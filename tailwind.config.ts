@@ -34,6 +34,7 @@ const config: Config = {
           red: colors.aurora.red,
           yellow: colors.aurora.yellow,
           purple: colors.aurora.purple,
+          indigo: colors.aurora.indigo,
         },
         semantic: {
           primary: colors.semantic.primary,

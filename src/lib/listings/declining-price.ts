@@ -56,6 +56,24 @@ export function computeDecliningPrice({
   return { currentPriceCents, nextDropAt };
 }
 
+/**
+ * The price the listing will drop to at its next scheduled drop — used by the
+ * listing detail page's "drops to €X on {date}" line. Callers gate on
+ * `nextDropAt !== null` (computeDecliningPrice's contract for "not yet at the
+ * floor") before calling this.
+ */
+export function nextDecliningPriceCents({
+  currentPriceCents,
+  floorPriceCents,
+  decrementCents,
+}: {
+  currentPriceCents: number;
+  floorPriceCents: number;
+  decrementCents: number;
+}): number {
+  return Math.max(floorPriceCents, currentPriceCents - decrementCents);
+}
+
 export interface DecliningPriceScheduleStep {
   priceCents: number;
   /** Null for the starting step ("today") — every later step has a drop date. */

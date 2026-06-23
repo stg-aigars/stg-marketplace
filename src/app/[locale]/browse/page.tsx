@@ -251,6 +251,7 @@ export default async function BrowsePage(
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}
+                isDeclining={listing.listing_type === 'declining'}
               />
             ))}
           </div>
