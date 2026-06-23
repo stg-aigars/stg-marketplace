@@ -1,3 +1,4 @@
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { MIN_PRICE_CENTS } from './types';
 
 /** Bounds for declining-price schedule inputs, enforced at create time. */
@@ -133,7 +134,7 @@ export function validateDecliningSchedule({
   dropIntervalDays: number;
 }): DecliningScheduleValidation {
   if (floorPriceCents > 0 && floorPriceCents < MIN_PRICE_CENTS) {
-    return { valid: false, error: 'Floor price is below the minimum allowed price' };
+    return { valid: false, error: `Floor price must be at least ${formatCentsToCurrency(MIN_PRICE_CENTS)}` };
   }
   if (floorPriceCents > 0 && startingPriceCents > 0 && floorPriceCents >= startingPriceCents) {
     return { valid: false, error: 'Floor price must be lower than the starting price' };

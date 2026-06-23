@@ -155,7 +155,7 @@ describe('validateDecliningSchedule', () => {
   it('rejects a floor price below the platform minimum once entered', () => {
     expect(validateDecliningSchedule({ ...valid, floorPriceCents: 10 })).toEqual({
       valid: false,
-      error: 'Floor price is below the minimum allowed price',
+      error: 'Floor price must be at least 0,50 €',
     });
   });
 

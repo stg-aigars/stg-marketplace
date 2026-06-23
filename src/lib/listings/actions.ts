@@ -11,6 +11,7 @@ import { notifyMany } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
 import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { AUCTION_DURATIONS } from '@/lib/auctions/types';
+import { formatCentsToCurrency } from '@/lib/services/pricing';
 import {
   computeDecliningPrice,
   MIN_DROP_INTERVAL_DAYS,
@@ -166,7 +167,7 @@ export async function createListing(
       return { error: 'Starting price, floor price, decrement, and drop interval are required' };
     }
     if (data.floor_price_cents < MIN_PRICE_CENTS) {
-      return { error: 'Floor price is below the minimum allowed price' };
+      return { error: `Floor price must be at least ${formatCentsToCurrency(MIN_PRICE_CENTS)}` };
     }
     if (data.floor_price_cents >= data.starting_price_cents) {
       return { error: 'Floor price must be lower than the starting price' };

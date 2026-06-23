@@ -382,7 +382,7 @@ function DecliningScheduleSection({
                     {step.dropAt === null
                       ? 'today'
                       : step.isFloor
-                        ? `floor on ${formatDate(step.dropAt)}`
+                        ? `(floor) from ${formatDate(step.dropAt)}`
                         : `on ${formatDate(step.dropAt)}`}
                   </span>
                 )}
@@ -394,7 +394,7 @@ function DecliningScheduleSection({
 
       <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
         <p className="text-sm text-semantic-text-secondary">
-          The price drops automatically until it reaches the floor or a buyer purchases at the current price.
+          The price drops automatically until it reaches the floor. It stops the moment someone buys.
         </p>
       </div>
     </div>
