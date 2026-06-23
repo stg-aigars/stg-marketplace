@@ -1,8 +1,8 @@
 export type ListingCondition = 'like_new' | 'very_good' | 'good' | 'acceptable' | 'for_parts';
 
-export type ListingType = 'fixed_price' | 'auction';
+export type ListingType = 'fixed_price' | 'auction' | 'declining';
 
-export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved' | 'auction_ended';
+export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved' | 'auction_ended' | 'paused';
 
 export type VersionSource = 'bgg' | 'manual';
 
@@ -57,6 +57,10 @@ export interface CreateListingData {
   listing_type?: ListingType;
   auction_duration_days?: number;
   starting_price_cents?: number;
+  // Declining-price fields (only when listing_type = 'declining')
+  floor_price_cents?: number;
+  decrement_cents?: number;
+  drop_interval_days?: number;
   expansions?: ListingExpansion[];
   component_upgrades?: ComponentUpgrade[];
 }
@@ -113,6 +117,10 @@ export function conditionRequiresDescription(condition: string): boolean {
 
 export function isAuctionWithBids(listingType: string, bidCount: number): boolean {
   return listingType === 'auction' && bidCount > 0;
+}
+
+export function isDecliningListing(listingType: string): boolean {
+  return listingType === 'declining';
 }
 
 export function formatExpansionCount(count: number): string {

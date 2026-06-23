@@ -11,9 +11,15 @@ import { notifyMany } from '@/lib/notifications';
 import { trackServer } from '@/lib/analytics/track-server';
 import { SELLER_TERMS_VERSION } from '@/lib/legal/constants';
 import { AUCTION_DURATIONS } from '@/lib/auctions/types';
+import {
+  computeDecliningPrice,
+  MIN_DROP_INTERVAL_DAYS,
+  MAX_DROP_INTERVAL_DAYS,
+} from './declining-price';
 import { extractStoragePath } from './storage-utils';
 import {
   MAX_GAME_NAME_LENGTH,
+  MIN_PRICE_CENTS,
   isAuctionWithBids,
   type CreateListingData,
   type ListingCondition,
@@ -110,6 +116,7 @@ export async function createListing(
 
   // Build insert payload
   const isAuction = data.listing_type === 'auction';
+  const isDeclining = data.listing_type === 'declining';
   const insertPayload: Record<string, unknown> = {
     seller_id: user.id,
     bgg_game_id: data.bgg_game_id,
@@ -123,7 +130,7 @@ export async function createListing(
     edition_year: data.edition_year,
     version_thumbnail: data.version_thumbnail ?? null,
     condition: data.condition,
-    price_cents: isAuction ? data.starting_price_cents : data.price_cents,
+    price_cents: isAuction || isDeclining ? data.starting_price_cents : data.price_cents,
     description: data.description,
     photos: data.photos,
     country: profile.country,
@@ -146,6 +153,53 @@ export async function createListing(
     insertPayload.auction_original_end_at = endAt;
   }
 
+  // Add declining-price-specific fields. starting_price_cents is reused from
+  // the auction work (see migration 128) as the opening price; price_cents
+  // above is already set to it so browse/sort/search need no changes.
+  if (isDeclining) {
+    if (
+      !data.starting_price_cents ||
+      !data.floor_price_cents ||
+      !data.decrement_cents ||
+      !data.drop_interval_days
+    ) {
+      return { error: 'Starting price, floor price, decrement, and drop interval are required' };
+    }
+    if (data.floor_price_cents < MIN_PRICE_CENTS) {
+      return { error: 'Floor price is below the minimum allowed price' };
+    }
+    if (data.floor_price_cents >= data.starting_price_cents) {
+      return { error: 'Floor price must be lower than the starting price' };
+    }
+    if (!Number.isInteger(data.decrement_cents) || data.decrement_cents <= 0) {
+      return { error: 'Decrement must be a positive amount' };
+    }
+    if (
+      !Number.isInteger(data.drop_interval_days) ||
+      data.drop_interval_days < MIN_DROP_INTERVAL_DAYS ||
+      data.drop_interval_days > MAX_DROP_INTERVAL_DAYS
+    ) {
+      return { error: `Drop interval must be between ${MIN_DROP_INTERVAL_DAYS} and ${MAX_DROP_INTERVAL_DAYS} days` };
+    }
+
+    const scheduleStartAt = new Date();
+    const { nextDropAt } = computeDecliningPrice({
+      startingPriceCents: data.starting_price_cents,
+      floorPriceCents: data.floor_price_cents,
+      decrementCents: data.decrement_cents,
+      dropIntervalDays: data.drop_interval_days,
+      scheduleStartAt,
+      now: scheduleStartAt,
+    });
+
+    insertPayload.starting_price_cents = data.starting_price_cents;
+    insertPayload.floor_price_cents = data.floor_price_cents;
+    insertPayload.decrement_cents = data.decrement_cents;
+    insertPayload.drop_interval_days = data.drop_interval_days;
+    insertPayload.schedule_start_at = scheduleStartAt.toISOString();
+    insertPayload.next_drop_at = nextDropAt ? nextDropAt.toISOString() : null;
+  }
+
   // Insert listing (RLS allows sellers to insert their own)
   const { data: listing, error: insertError } = await supabase
     .from('listings')
@@ -160,7 +214,7 @@ export async function createListing(
   void trackServer('listing_created', user.id, {
     listing_id: listing.id,
     bgg_game_id: data.bgg_game_id,
-    price_cents: isAuction ? data.starting_price_cents! : data.price_cents,
+    price_cents: isAuction || isDeclining ? data.starting_price_cents! : data.price_cents,
     listing_type: data.listing_type ?? 'fixed_price',
   });
 

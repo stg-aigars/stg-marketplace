@@ -9,7 +9,7 @@ export interface AnalyticsEventMap {
     bgg_game_id: number;
     price_cents: number;
     condition: ListingCondition;
-    listing_type: 'fixed_price' | 'auction';
+    listing_type: 'fixed_price' | 'auction' | 'declining';
   };
   checkout_started: {
     seller_id: string;
@@ -25,7 +25,7 @@ export interface AnalyticsEventMap {
     listing_id: string;
     bgg_game_id: number;
     price_cents: number;
-    listing_type: 'fixed_price' | 'auction';
+    listing_type: 'fixed_price' | 'auction' | 'declining';
   };
   listing_price_dropped: {
     listing_id: string;
