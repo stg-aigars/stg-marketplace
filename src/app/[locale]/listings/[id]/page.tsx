@@ -10,6 +10,7 @@ import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
 import { Price } from '@/components/listings/atoms';
 import { isPriceDropActive } from '@/lib/listings/price-drop';
+import { nextDecliningPriceCents } from '@/lib/listings/declining-price';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { getConditionLabel } from '@/lib/condition-config';
 import { formatExpansionCount, type ListingCondition, type ListingStatus, type ListingType, type ComponentUpgrade } from '@/lib/listings/types';
@@ -108,6 +109,11 @@ interface ListingDetailRow {
   bid_count: number;
   highest_bidder_id: string | null;
   payment_deadline_at: string | null;
+  floor_price_cents: number | null;
+  decrement_cents: number | null;
+  drop_interval_days: number | null;
+  schedule_start_at: string | null;
+  next_drop_at: string | null;
   created_at: string;
   games: {
     name: string;
@@ -271,6 +277,15 @@ export default async function ListingDetailPage(
   const isStaff = buyerProfileResult?.data?.is_staff ?? false;
 
   const isAuction = listing.listing_type === 'auction';
+  const isDeclining = listing.listing_type === 'declining';
+  const nextDecliningPrice =
+    isDeclining && listing.next_drop_at != null && listing.floor_price_cents != null && listing.decrement_cents != null
+      ? nextDecliningPriceCents({
+          currentPriceCents: listing.price_cents,
+          floorPriceCents: listing.floor_price_cents,
+          decrementCents: listing.decrement_cents,
+        })
+      : null;
 
   // Fetch auction data if applicable
   const [auctionState, bidHistory] = isAuction
@@ -491,7 +506,19 @@ export default async function ListingDetailPage(
                   size="xl"
                 />
               )}
+              {isDeclining && <Badge variant="declining">Price drops</Badge>}
             </div>
+
+            {isDeclining && listing.floor_price_cents != null && (
+              <div className="text-sm text-semantic-text-muted space-y-0.5">
+                <p>Won&apos;t drop below {formatCentsToCurrency(listing.floor_price_cents)}</p>
+                <p>
+                  {nextDecliningPrice != null && listing.next_drop_at
+                    ? `Drops to ${formatCentsToCurrency(nextDecliningPrice)} on ${formatDate(listing.next_drop_at)}`
+                    : 'Lowest price reached'}
+                </p>
+              </div>
+            )}
 
             {/* Shipping estimate — only while the listing can still be bought.
                 Hidden for sold/cancelled (incl. a buyer revisiting a purchase),
