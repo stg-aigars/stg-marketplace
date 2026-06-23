@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Tag, Gavel, Storefront } from '@phosphor-icons/react/ssr';
+import { Tag, Gavel, TrendDown, Storefront } from '@phosphor-icons/react/ssr';
 import { Card, CardBody, Button } from '@/components/ui';
 import { ListingCreationFlow } from './ListingCreationFlow';
 import { SellStepHeader } from './SellStepHeader';
@@ -16,12 +16,12 @@ export function SellPageClient() {
         <CardBody className="space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <SellStepHeader
             variant="icon"
-            title="Two ways to sell"
+            title="Three ways to sell"
             helper="Pick what fits this game. Your next listing can be different."
             icon={<Storefront size={24} weight="duotone" />}
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-6">
             <div className="space-y-2">
               <Button
                 variant="brand"
@@ -49,6 +49,21 @@ export function SellPageClient() {
               </Button>
               <p className="text-sm text-semantic-text-muted">
                 Start low. Watch buyers bid it up over a few days.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setListingType('declining')}
+                className="w-full text-base"
+              >
+                <TrendDown size={20} weight="bold" className="mr-2" />
+                Declining price
+              </Button>
+              <p className="text-sm text-semantic-text-muted">
+                Start high. The price drops on a schedule until it sells.
               </p>
             </div>
           </div>

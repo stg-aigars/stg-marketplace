@@ -6,6 +6,7 @@ import { Button, Stepper, Card, CardBody, Spinner } from '@/components/ui';
 import { createListing } from '@/lib/listings/actions';
 import type { ListingCondition, ListingType, VersionSource, ListingExpansion, ComponentUpgrade } from '@/lib/listings/types';
 import { conditionRequiresPhotos, conditionRequiresDescription } from '@/lib/listings/types';
+import { DEFAULT_DROP_INTERVAL_DAYS } from '@/lib/listings/declining-price';
 import { apiFetch } from '@/lib/api-fetch';
 import { useAuth } from '@/contexts/AuthContext';
 import { GameSearchStep, buildEnrichedGame } from './GameSearchStep';
@@ -65,6 +66,10 @@ export interface FormData {
   // Auction fields
   starting_price_cents: number;
   auction_duration_days: number;
+  // Declining-price fields
+  floor_price_cents: number;
+  decrement_cents: number;
+  drop_interval_days: number;
 }
 
 const initialFormData: FormData = {
@@ -92,6 +97,9 @@ const initialFormData: FormData = {
   description: '',
   starting_price_cents: 0,
   auction_duration_days: 7,
+  floor_price_cents: 0,
+  decrement_cents: 0,
+  drop_interval_days: DEFAULT_DROP_INTERVAL_DAYS,
 };
 
 type StepId = 'game' | 'edition' | 'details' | 'review';
@@ -110,6 +118,7 @@ export function ListingCreationFlow({
   listingType = 'fixed_price',
 }: ListingCreationFlowProps = {}) {
   const isAuction = listingType === 'auction';
+  const isDeclining = listingType === 'declining';
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
@@ -349,13 +358,19 @@ export function ListingCreationFlow({
       edition_year: formData.edition_year,
       version_thumbnail: formData.version_thumbnail,
       condition: formData.condition,
-      price_cents: isAuction ? formData.starting_price_cents : formData.price_cents,
+      price_cents: isAuction || isDeclining ? formData.starting_price_cents : formData.price_cents,
       description: formData.description || null,
       photos: formData.photos,
       listing_type: listingType,
       ...(isAuction ? {
         starting_price_cents: formData.starting_price_cents,
         auction_duration_days: formData.auction_duration_days,
+      } : {}),
+      ...(isDeclining ? {
+        starting_price_cents: formData.starting_price_cents,
+        floor_price_cents: formData.floor_price_cents,
+        decrement_cents: formData.decrement_cents,
+        drop_interval_days: formData.drop_interval_days,
       } : {}),
       ...(expansions.length > 0 ? { expansions } : {}),
       ...(formData.component_upgrades.length > 0 ? { component_upgrades: formData.component_upgrades } : {}),
@@ -625,7 +640,7 @@ export function ListingCreationFlow({
         {currentStepId === 'review' && (
           <ReviewPriceStep
             formData={formData}
-            onPriceChange={(cents) => updateFormData(isAuction ? { starting_price_cents: cents } : { price_cents: cents })}
+            onPriceChange={(cents) => updateFormData(isAuction || isDeclining ? { starting_price_cents: cents } : { price_cents: cents })}
             onPublish={handlePublish}
             publishing={publishing}
             error={error}
@@ -634,6 +649,13 @@ export function ListingCreationFlow({
             isAuction={isAuction}
             auctionDurationDays={formData.auction_duration_days}
             onDurationChange={(days) => updateFormData({ auction_duration_days: days })}
+            isDeclining={isDeclining}
+            floorPriceCents={formData.floor_price_cents}
+            decrementCents={formData.decrement_cents}
+            dropIntervalDays={formData.drop_interval_days}
+            onFloorPriceChange={(cents) => updateFormData({ floor_price_cents: cents })}
+            onDecrementChange={(cents) => updateFormData({ decrement_cents: cents })}
+            onDropIntervalChange={(days) => updateFormData({ drop_interval_days: days })}
             expansions={formData.selected_expansion_ids.map((id) => {
               const exp = availableExpansions.find((e) => e.id === id);
               return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };

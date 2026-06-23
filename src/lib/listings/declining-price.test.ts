@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { computeDecliningPrice } from './declining-price';
+import { buildDecliningPriceSchedulePreview, computeDecliningPrice, validateDecliningSchedule } from './declining-price';
 
 const SCHEDULE_START = new Date('2026-06-01T00:00:00.000Z');
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -86,5 +86,97 @@ describe('computeDecliningPrice', () => {
     );
     expect(result.currentPriceCents).toBe(5800);
     expect(result.nextDropAt).toBeNull();
+  });
+});
+
+describe('buildDecliningPriceSchedulePreview', () => {
+  it('collapses a long schedule to start, first drop, and floor with truncated=true', () => {
+    const preview = buildDecliningPriceSchedulePreview(input());
+    expect(preview.truncated).toBe(true);
+    expect(preview.steps).toEqual([
+      { priceCents: 6000, dropAt: null, isFloor: false },
+      { priceCents: 5500, dropAt: new Date(SCHEDULE_START.getTime() + 7 * DAY_MS), isFloor: false },
+      { priceCents: 3000, dropAt: new Date(SCHEDULE_START.getTime() + 6 * 7 * DAY_MS), isFloor: true },
+    ]);
+  });
+
+  it('returns every step without truncation when 3 or fewer drops reach the floor', () => {
+    const preview = buildDecliningPriceSchedulePreview(
+      input({ floorPriceCents: 4500 }) // (6000 - 4500) / 500 = 3 steps
+    );
+    expect(preview.truncated).toBe(false);
+    expect(preview.steps).toEqual([
+      { priceCents: 6000, dropAt: null, isFloor: false },
+      { priceCents: 5500, dropAt: new Date(SCHEDULE_START.getTime() + 7 * DAY_MS), isFloor: false },
+      { priceCents: 5000, dropAt: new Date(SCHEDULE_START.getTime() + 2 * 7 * DAY_MS), isFloor: false },
+      { priceCents: 4500, dropAt: new Date(SCHEDULE_START.getTime() + 3 * 7 * DAY_MS), isFloor: true },
+    ]);
+  });
+
+  it('lands on the floor in a single step when the decrement overshoots it', () => {
+    const preview = buildDecliningPriceSchedulePreview(input({ floorPriceCents: 5800 }));
+    expect(preview.truncated).toBe(false);
+    expect(preview.steps).toEqual([
+      { priceCents: 6000, dropAt: null, isFloor: false },
+      { priceCents: 5800, dropAt: new Date(SCHEDULE_START.getTime() + 7 * DAY_MS), isFloor: true },
+    ]);
+  });
+
+  it('falls back to just the starting price when the decrement is not yet entered', () => {
+    const preview = buildDecliningPriceSchedulePreview(input({ decrementCents: 0 }));
+    expect(preview).toEqual({ steps: [{ priceCents: 6000, dropAt: null, isFloor: false }], truncated: false });
+  });
+
+  it('falls back to just the starting price when the floor has not been set below the start', () => {
+    const preview = buildDecliningPriceSchedulePreview(input({ floorPriceCents: 6000 }));
+    expect(preview).toEqual({ steps: [{ priceCents: 6000, dropAt: null, isFloor: false }], truncated: false });
+  });
+});
+
+describe('validateDecliningSchedule', () => {
+  const valid = {
+    startingPriceCents: 6000,
+    floorPriceCents: 3000,
+    decrementCents: 500,
+    dropIntervalDays: 7,
+  };
+
+  it('accepts a fully-specified, internally consistent schedule', () => {
+    expect(validateDecliningSchedule(valid)).toEqual({ valid: true, error: null });
+  });
+
+  it('does not error on a pristine, not-yet-filled-in form', () => {
+    expect(validateDecliningSchedule({ startingPriceCents: 0, floorPriceCents: 0, decrementCents: 0, dropIntervalDays: 0 })).toEqual({
+      valid: false,
+      error: null,
+    });
+  });
+
+  it('rejects a floor price below the platform minimum once entered', () => {
+    expect(validateDecliningSchedule({ ...valid, floorPriceCents: 10 })).toEqual({
+      valid: false,
+      error: 'Floor price is below the minimum allowed price',
+    });
+  });
+
+  it('rejects a floor price at or above the starting price', () => {
+    expect(validateDecliningSchedule({ ...valid, floorPriceCents: 6000 })).toEqual({
+      valid: false,
+      error: 'Floor price must be lower than the starting price',
+    });
+  });
+
+  it('rejects a non-integer decrement', () => {
+    expect(validateDecliningSchedule({ ...valid, decrementCents: 500.5 })).toEqual({
+      valid: false,
+      error: 'Price drop must be a positive amount',
+    });
+  });
+
+  it('rejects a drop interval outside the allowed range', () => {
+    expect(validateDecliningSchedule({ ...valid, dropIntervalDays: 91 })).toEqual({
+      valid: false,
+      error: 'Drop interval must be between 1 and 90 days',
+    });
   });
 });
