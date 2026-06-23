@@ -114,7 +114,8 @@ export function parseFiltersFromParams(
   // Show auctions only
   const showAuctions = get('auctions') === '1';
 
-  // Show price drops only (14d window applied at query time, see migration 122)
+  // Show price drops only: recent manual fixed-price drops (14d window, see
+  // migration 122) OR'd with declining-price listings at query time
   const priceDrops = get('priceDrops') === '1';
 
   // Coerce sort=recent_drops back to newest when priceDrops is off. The toggle
