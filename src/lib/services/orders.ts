@@ -4,6 +4,7 @@
  * Orders are only created AFTER payment is confirmed.
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { createServiceClient } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
 import { calculateOrderPricing, getVatRate, calculateVatSplit } from '@/lib/services/pricing';
@@ -159,7 +160,12 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
 
     if (itemsError) {
       // Roll back the order if items insertion fails
-      await serviceClient.from('orders').delete().eq('id', order.id);
+      const { error: orderDeleteError } = await serviceClient.from('orders').delete().eq('id', order.id);
+      if (orderDeleteError) {
+        Sentry.captureException(orderDeleteError, {
+          tags: { orderId: order.id, phase: 'create_order_rollback_order_delete_failed' },
+        });
+      }
       throw new Error(`Failed to create order items: ${itemsError.message}`);
     }
 
@@ -176,8 +182,18 @@ export async function createOrder(params: CreateOrderParams): Promise<OrderRow> 
 
     if (!updatedListings || updatedListings.length !== listingIds.length) {
       // Some listings were reserved by someone else or already sold — roll back
-      await serviceClient.from('order_items').delete().eq('order_id', order.id);
-      await serviceClient.from('orders').delete().eq('id', order.id);
+      const { error: itemsDeleteError } = await serviceClient.from('order_items').delete().eq('order_id', order.id);
+      if (itemsDeleteError) {
+        Sentry.captureException(itemsDeleteError, {
+          tags: { orderId: order.id, phase: 'create_order_rollback_items_delete_failed' },
+        });
+      }
+      const { error: orderDeleteError } = await serviceClient.from('orders').delete().eq('id', order.id);
+      if (orderDeleteError) {
+        Sentry.captureException(orderDeleteError, {
+          tags: { orderId: order.id, phase: 'create_order_rollback_order_delete_failed' },
+        });
+      }
       // Unreserve any listings that were just updated
       if (updatedListings && updatedListings.length > 0) {
         const updatedIds = updatedListings.map((l) => l.id);
