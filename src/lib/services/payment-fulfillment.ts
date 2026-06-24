@@ -413,11 +413,20 @@ export async function fulfillCartPayment(
 
     // Re-query rather than trust createdOrders — a row can be invisible to it
     // if createOrder() itself failed to report a row it created (see orders.ts).
-    const { data: pendingOrders } = await serviceClient
+    const { data: pendingOrders, error: pendingOrdersError } = await serviceClient
       .from('orders')
       .select('id, order_number, buyer_wallet_debit_cents, total_amount_cents')
       .eq('cart_group_id', group.id)
       .eq('status', 'pending_seller');
+
+    if (pendingOrdersError) {
+      // If this query fails, Phase 1 silently loops over [] (nothing claimed)
+      // and Phase 2 still fires the card refund unconditionally — surface it
+      // rather than let the rollback proceed on a false "nothing pending" read.
+      Sentry.captureException(pendingOrdersError, {
+        tags: { cartGroupId: group.id, phase: 'cart_rollback_verification_query_failed' },
+      });
+    }
 
     if (pendingOrders && pendingOrders.length !== createdOrders.length) {
       Sentry.captureException(new Error('Cart rollback found orders not tracked in-memory'), {
@@ -429,18 +438,26 @@ export async function fulfillCartPayment(
     // Phase 1 — cancel + restore listings + deactivate order_items + refund the
     // wallet leg for every pending order FIRST, before any card money moves.
     // A crash here leaves orders cancelled (never live-and-refunded).
+    // Per-order try/catch (matching autoCancelOrders in order-deadlines.ts) so
+    // one order's unexpected throw can't abort the rollback for its siblings.
     const claimedOrders: NonNullable<typeof pendingOrders> = [];
     const walletOutcomes = new Map<string, boolean>();
     for (const order of pendingOrders ?? []) {
-      const claimed = await claimAndCancelOrder(serviceClient, group.buyer_id, order);
-      if (!claimed) continue;
-      const walletRefundOk = await refundOrderWalletLeg(serviceClient, group.buyer_id, order);
-      walletOutcomes.set(order.id, walletRefundOk);
-      claimedOrders.push(order);
-      // Pessimistic DB stamp for crash-visibility — captureIfIncomplete=false:
-      // cardRefundOk is hard-coded false here (the card hasn't run yet), so
-      // capturing now would alert on every successful rollback.
-      await stampRollbackRefundStatus(serviceClient, order, false, walletRefundOk, false);
+      try {
+        const claimed = await claimAndCancelOrder(serviceClient, group.buyer_id, order);
+        if (!claimed) continue;
+        const walletRefundOk = await refundOrderWalletLeg(serviceClient, group.buyer_id, order);
+        walletOutcomes.set(order.id, walletRefundOk);
+        claimedOrders.push(order);
+        // Pessimistic DB stamp for crash-visibility — captureIfIncomplete=false:
+        // cardRefundOk is hard-coded false here (the card hasn't run yet), so
+        // capturing now would alert on every successful rollback.
+        await stampRollbackRefundStatus(serviceClient, order, false, walletRefundOk, false);
+      } catch (perOrderError) {
+        Sentry.captureException(perOrderError, {
+          tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_unexpected_per_order_error' },
+        });
+      }
     }
 
     // Phase 2 — the single aggregate card refund, only now that nothing claimed
@@ -456,30 +473,44 @@ export async function fulfillCartPayment(
 
     // Phase 3 — upgrade every claimed order's refund_status now that the card
     // outcome is known (captureIfIncomplete=true), and fire the audit event.
+    // Per-order try/catch, same rationale as Phase 1.
     for (const order of claimedOrders) {
-      const walletRefundOk = walletOutcomes.get(order.id) ?? false;
-      const { refundStatus, refundAmountCents } = await stampRollbackRefundStatus(
-        serviceClient, order, cardRefundOk, walletRefundOk, true
-      );
-      void logAuditEvent(serviceClient, {
-        actorType: 'system',
-        action: 'order.auto_cancelled.system',
-        resourceType: 'order',
-        resourceId: order.id,
-        metadata: { orderNumber: order.order_number, reason: 'system', refundStatus, refundAmountCents },
-        retentionClass: 'regulatory',
-      });
+      try {
+        const walletRefundOk = walletOutcomes.get(order.id) ?? false;
+        const { refundStatus, refundAmountCents } = await stampRollbackRefundStatus(
+          serviceClient, order, cardRefundOk, walletRefundOk, true
+        );
+        void logAuditEvent(serviceClient, {
+          actorType: 'system',
+          action: 'order.auto_cancelled.system',
+          resourceType: 'order',
+          resourceId: order.id,
+          metadata: { orderNumber: order.order_number, reason: 'system', refundStatus, refundAmountCents },
+          retentionClass: 'regulatory',
+        });
+      } catch (perOrderError) {
+        Sentry.captureException(perOrderError, {
+          tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_unexpected_per_order_error' },
+        });
+      }
     }
 
     // Post-condition canary: after a total rollback, every order tied to this
     // group must be cancelled. Any survivor is the literal UJRJ incident
-    // condition — alert immediately.
-    const { data: stillLiveOrders } = await serviceClient
+    // condition — alert immediately. If the verification query itself fails,
+    // that failure must be just as loud — a silent `null` here would let the
+    // one canary whose job is "catch the incident again" go dark exactly when
+    // it might be needed.
+    const { data: stillLiveOrders, error: stillLiveOrdersError } = await serviceClient
       .from('orders')
       .select('id')
       .eq('cart_group_id', group.id)
       .neq('status', 'cancelled');
-    if (stillLiveOrders && stillLiveOrders.length > 0) {
+    if (stillLiveOrdersError) {
+      Sentry.captureException(stillLiveOrdersError, {
+        tags: { cartGroupId: group.id, phase: 'cart_rollback_verification_query_failed' },
+      });
+    } else if (stillLiveOrders && stillLiveOrders.length > 0) {
       Sentry.captureException(new Error('Cart rollback left a live order after total rollback'), {
         tags: { cartGroupId: group.id, phase: 'cart_rollback_live_order_survived' },
         extra: { liveOrderIds: stillLiveOrders.map((o) => o.id) },

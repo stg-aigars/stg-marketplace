@@ -1070,4 +1070,105 @@ describe('fulfillCartPayment — mid-loop rollback', () => {
     // NOT fire this alert — covered by test 1's own assertion above; this
     // comment documents the pairing per the task's test-12 spec.
   });
+
+  it('13. captures the verification-query-failed phase when the stillLiveOrders re-query itself errors, and does NOT also fire the live-order-survived capture (mutually exclusive branches)', async () => {
+    mockRefundPayment.mockResolvedValue(undefined);
+    mockRefundToWallet.mockResolvedValue(undefined);
+
+    const queryError = { message: 'stillLiveOrders query failed' };
+
+    const client = makeClient({
+      listings: twoSellerListings(),
+      ordersResponses: [
+        ok([]),
+        ok([pendingOrderRow()]),
+        ok({ id: SELLER_1_ORDER.id }),
+        ok(null),
+        ok(null),
+        fail(queryError), // stillLiveOrders re-query errors
+      ],
+      orderItemsSelectResponses: [ok([{ listing_id: 'listing-1' }])],
+    });
+
+    const { fulfillCartPayment } = await import('./payment-fulfillment');
+    await fulfillCartPayment(twoSellerGroup(), 'ep-ref-1', 'settled', client, 'card');
+
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      queryError,
+      expect.objectContaining({
+        tags: expect.objectContaining({ phase: 'cart_rollback_verification_query_failed' }),
+      })
+    );
+    expect(mockCaptureException).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tags: expect.objectContaining({ phase: 'cart_rollback_live_order_survived' }),
+      })
+    );
+  });
+
+  it('14. isolates a per-order throw in the Phase 1 loop — the other order in a 2-order rollback still gets fully cancelled and stamped, and the error is captured rather than propagating', async () => {
+    mockRefundPayment.mockResolvedValue(undefined);
+    mockRefundToWallet.mockResolvedValue(undefined);
+
+    const orderA = pendingOrderRow({ id: 'order-seller-1', order_number: 'STG-20270115-AAAA' });
+    const orderB = pendingOrderRow({ id: 'order-seller-2', order_number: 'STG-20270115-BBBB' });
+
+    const client = makeClient({
+      listings: twoSellerListings(),
+      ordersResponses: [
+        ok([]),
+        ok([orderA, orderB]), // pendingOrders re-query — both orders persisted
+        ok({ id: orderA.id }), // claim-UPDATE for order A succeeds
+        ok(null), // Phase 1 stampRollbackRefundStatus UPDATE for order A — call #2 on mockOrdersUpdate
+        ok({ id: orderB.id }), // claim-UPDATE for order B succeeds
+        ok(null), // Phase 1 stampRollbackRefundStatus UPDATE for order B
+        ok(null), // Phase 3 stampRollbackRefundStatus UPDATE for order B (order A never reaches Phase 3 — see below)
+        ok([]), // stillLiveOrders re-query
+      ],
+      orderItemsSelectResponses: [ok([{ listing_id: 'listing-1' }]), ok([{ listing_id: 'listing-2' }])],
+    });
+
+    // Force the 2nd call to the orders-table `.update()` mock to throw
+    // synchronously. Call order within the Phase 1 loop body for order A is:
+    // (1) claimAndCancelOrder's claim-UPDATE, (2) stampRollbackRefundStatus's
+    // UPDATE. Throwing on call #2 simulates an unexpected error from a call
+    // with no internal try/catch of its own (unlike refundOrderWalletLeg,
+    // which already swallows wallet errors per Task 2's spec) — exactly the
+    // shape the new outer per-order try/catch exists to contain. Order A is
+    // claimed/cancelled (claim-UPDATE already succeeded) but never reaches
+    // claimedOrders.push (the throw happens before that line), so it's
+    // excluded from Phase 3 — order B is unaffected either way.
+    let ordersUpdateCallCount = 0;
+    mockOrdersUpdate.mockImplementation(() => {
+      ordersUpdateCallCount++;
+      if (ordersUpdateCallCount === 2) {
+        throw new Error('unexpected synchronous throw for order-seller-1');
+      }
+    });
+
+    // The describe block's beforeEach already configures mockCreateOrder to
+    // resolve for seller 1 then reject for seller 2, which drives the seller
+    // loop into the catch block below — same trigger as test 1.
+    const { fulfillCartPayment } = await import('./payment-fulfillment');
+    await fulfillCartPayment(twoSellerGroup(), 'ep-ref-1', 'settled', client, 'card');
+
+    // The error from order A's stampRollbackRefundStatus throw is captured
+    // rather than propagating out of the loop and aborting order B.
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('unexpected synchronous throw') }),
+      expect.objectContaining({
+        tags: expect.objectContaining({ orderId: 'order-seller-1', phase: 'cart_rollback_unexpected_per_order_error' }),
+      })
+    );
+
+    // Order A was still claimed/cancelled — its claim-UPDATE (call #1) ran to
+    // completion before the throw on call #2.
+    expect(mockOrdersUpdate.mock.calls[0]![0]).toMatchObject({ status: 'cancelled' });
+
+    // Order B (the sibling) was fully processed despite order A's throw: its
+    // claim-UPDATE fired (call #3) and its refund_status was stamped (call #4).
+    expect(mockOrdersUpdate.mock.calls[2]![0]).toMatchObject({ status: 'cancelled' });
+    expect(mockOrdersUpdate.mock.calls[3]![0]).toMatchObject({ refund_status: expect.any(String) });
+  });
 });
