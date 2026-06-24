@@ -448,6 +448,13 @@ export async function fulfillCartPayment(
         if (!claimed) continue;
         const walletRefundOk = await refundOrderWalletLeg(serviceClient, group.buyer_id, order);
         walletOutcomes.set(order.id, walletRefundOk);
+        // Pushed before the stamp call below, on purpose: an order that
+        // throws on its Phase 1 stamp is still retried in Phase 3 (the
+        // refund-status upgrade must still be attempted). If the same
+        // condition recurs there, the per-order catch below AND Phase 3's
+        // catch will both capture it under the same orderId and phase tag —
+        // two Sentry events, ~milliseconds apart, for one order. That's
+        // intentional: double-reporting beats silently dropping the retry.
         claimedOrders.push(order);
         // Pessimistic DB stamp for crash-visibility — captureIfIncomplete=false:
         // cardRefundOk is hard-coded false here (the card hasn't run yet), so
