@@ -1114,38 +1114,71 @@ describe('fulfillCartPayment — mid-loop rollback', () => {
     const orderA = pendingOrderRow({ id: 'order-seller-1', order_number: 'STG-20270115-AAAA' });
     const orderB = pendingOrderRow({ id: 'order-seller-2', order_number: 'STG-20270115-BBBB' });
 
-    const client = makeClient({
-      listings: twoSellerListings(),
-      ordersResponses: [
-        ok([]),
-        ok([orderA, orderB]), // pendingOrders re-query — both orders persisted
-        ok({ id: orderA.id }), // claim-UPDATE for order A succeeds
-        ok(null), // Phase 1 stampRollbackRefundStatus UPDATE for order A — call #2 on mockOrdersUpdate
-        ok({ id: orderB.id }), // claim-UPDATE for order B succeeds
-        ok(null), // Phase 1 stampRollbackRefundStatus UPDATE for order B
-        ok(null), // Phase 3 stampRollbackRefundStatus UPDATE for order B (order A never reaches Phase 3 — see below)
-        ok([]), // stillLiveOrders re-query
-      ],
-      orderItemsSelectResponses: [ok([{ listing_id: 'listing-1' }]), ok([{ listing_id: 'listing-2' }])],
-    });
-
-    // Force the 2nd call to the orders-table `.update()` mock to throw
-    // synchronously. Call order within the Phase 1 loop body for order A is:
-    // (1) claimAndCancelOrder's claim-UPDATE, (2) stampRollbackRefundStatus's
-    // UPDATE. Throwing on call #2 simulates an unexpected error from a call
-    // with no internal try/catch of its own (unlike refundOrderWalletLeg,
-    // which already swallows wallet errors per Task 2's spec) — exactly the
-    // shape the new outer per-order try/catch exists to contain. Order A is
-    // claimed/cancelled (claim-UPDATE already succeeded) but never reaches
-    // claimedOrders.push (the throw happens before that line), so it's
-    // excluded from Phase 3 — order B is unaffected either way.
-    let ordersUpdateCallCount = 0;
-    mockOrdersUpdate.mockImplementation(() => {
-      ordersUpdateCallCount++;
-      if (ordersUpdateCallCount === 2) {
+    // Bespoke inline client for this test rather than the shared
+    // makeClient/ordersResponses queue: that queue is consumed strictly in
+    // `.then()` order, and a synchronous throw from `mockOrdersUpdate` (which
+    // fires on `.update()`, before `.then()` is ever reached) skips a queue
+    // slot — every later `.then()` then resolves one position off, silently
+    // shifting the test's outcome onto the wrong order (caught in review: the
+    // original version of this test asserted on order B's calls by index but
+    // was actually inspecting order A's). Targeting the throw by inspecting
+    // call arguments (the order id passed to `.eq('id', ...)`, and the
+    // `.update()` payload shape) avoids touching `.then()` resolution order
+    // entirely for every call except the one we want to fail.
+    let pendingUpdatePayload: Record<string, unknown> | null = null;
+    const ordersBuilder: Record<string, unknown> = {};
+    const chainMethods = ['select', 'in', 'limit', 'returns', 'is', 'single', 'neq'];
+    for (const m of chainMethods) {
+      ordersBuilder[m] = vi.fn(() => ordersBuilder);
+    }
+    ordersBuilder.update = (payload: Record<string, unknown>) => {
+      mockOrdersUpdate(payload);
+      pendingUpdatePayload = payload;
+      return ordersBuilder;
+    };
+    ordersBuilder.eq = (...args: unknown[]) => {
+      const [column, value] = args;
+      // Order A's refund-status stamp (Phase 1) is the one unguarded call
+      // this test targets: identified by column='id', value=orderA.id, AND
+      // an update payload that carries refund_status (distinguishing it from
+      // order A's claim-UPDATE, whose payload carries status: 'cancelled').
+      if (
+        column === 'id' && value === orderA.id &&
+        pendingUpdatePayload && 'refund_status' in pendingUpdatePayload
+      ) {
         throw new Error('unexpected synchronous throw for order-seller-1');
       }
+      return ordersBuilder;
+    };
+    let ordersThenCallIndex = 0;
+    const ordersThenResponses = [
+      ok([]), // existing-orders idempotency check
+      ok([orderA, orderB]), // pendingOrders re-query — both orders persisted
+      ok({ id: orderA.id }), // claim-UPDATE for order A succeeds
+      ok({ id: orderB.id }), // claim-UPDATE for order B succeeds
+      ok(null), // Phase 1 stampRollbackRefundStatus UPDATE for order B
+      // Phase 3 stampRollbackRefundStatus UPDATE for order B. Order A IS also
+      // in claimedOrders (claimedOrders.push happens before the throwing
+      // stamp call in Phase 1) and Phase 3 iterates over claimedOrders, but
+      // order A's Phase 3 stamp call throws again via the same .eq() guard
+      // before reaching `.then()` — so it never consumes a slot here either.
+      ok(null),
+      ok([]), // stillLiveOrders re-query
+    ];
+    ordersBuilder.then = (resolve: (v: unknown) => void) => {
+      const idx = Math.min(ordersThenCallIndex, ordersThenResponses.length - 1);
+      resolve(ordersThenResponses[idx]!);
+      ordersThenCallIndex++;
+    };
+
+    const baseClient = makeClient({
+      listings: twoSellerListings(),
+      orderItemsSelectResponses: [ok([{ listing_id: 'listing-1' }]), ok([{ listing_id: 'listing-2' }])],
     });
+    const client = {
+      ...baseClient,
+      from: (table: string) => (table === 'orders' ? ordersBuilder : (baseClient.from as (t: string) => unknown)(table)),
+    } as unknown as Parameters<typeof import('./payment-fulfillment').fulfillCartPayment>[3];
 
     // The describe block's beforeEach already configures mockCreateOrder to
     // resolve for seller 1 then reject for seller 2, which drives the seller
@@ -1154,21 +1187,37 @@ describe('fulfillCartPayment — mid-loop rollback', () => {
     await fulfillCartPayment(twoSellerGroup(), 'ep-ref-1', 'settled', client, 'card');
 
     // The error from order A's stampRollbackRefundStatus throw is captured
-    // rather than propagating out of the loop and aborting order B.
-    expect(mockCaptureException).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('unexpected synchronous throw') }),
-      expect.objectContaining({
-        tags: expect.objectContaining({ orderId: 'order-seller-1', phase: 'cart_rollback_unexpected_per_order_error' }),
-      })
+    // rather than propagating out of the loop and aborting order B. It fires
+    // TWICE: claimedOrders.push(order) happens before the throwing stamp call
+    // in Phase 1, so order A is (correctly, per the production code) still
+    // included in Phase 3's loop over claimedOrders — and the same throw
+    // condition fires again there, caught by Phase 3's own per-order catch.
+    // Both captures carry the same tags; this proves BOTH loops' catches work
+    // independently for the same problematic order.
+    const orderAThrowCaptures = mockCaptureException.mock.calls.filter(
+      (c) =>
+        (c[0] as Error)?.message?.includes('unexpected synchronous throw') &&
+        (c[1] as { tags?: { orderId?: string; phase?: string } })?.tags?.orderId === orderA.id &&
+        (c[1] as { tags?: { phase?: string } })?.tags?.phase === 'cart_rollback_unexpected_per_order_error'
     );
+    expect(orderAThrowCaptures.length).toBe(2);
 
-    // Order A was still claimed/cancelled — its claim-UPDATE (call #1) ran to
-    // completion before the throw on call #2.
-    expect(mockOrdersUpdate.mock.calls[0]![0]).toMatchObject({ status: 'cancelled' });
+    // Order A reaches no audit event — Phase 3's stamp call throws again
+    // before reaching the logAuditEvent line for order A, so the per-order
+    // catch swallows it before any audit event for order A's id is fired.
+    const orderAAuditCall = mockLogAuditEvent.mock.calls.find(
+      (c) => (c[1] as { resourceId?: string })?.resourceId === orderA.id
+    );
+    expect(orderAAuditCall).toBeUndefined();
 
-    // Order B (the sibling) was fully processed despite order A's throw: its
-    // claim-UPDATE fired (call #3) and its refund_status was stamped (call #4).
-    expect(mockOrdersUpdate.mock.calls[2]![0]).toMatchObject({ status: 'cancelled' });
-    expect(mockOrdersUpdate.mock.calls[3]![0]).toMatchObject({ refund_status: expect.any(String) });
+    // Order B (the sibling) is fully processed despite order A's throw:
+    // identified by its own audit-event resourceId, not by positional call
+    // index — this is what actually proves sibling isolation rather than
+    // accidentally inspecting order A's calls under a desynced queue.
+    const orderBAuditCall = mockLogAuditEvent.mock.calls.find(
+      (c) => (c[1] as { resourceId?: string })?.resourceId === orderB.id
+    );
+    expect(orderBAuditCall).toBeDefined();
+    expect((orderBAuditCall![1] as { action?: string }).action).toBe('order.auto_cancelled.system');
   });
 });
