@@ -257,7 +257,7 @@ export async function POST(request: Request) {
 
     const staffEmail = env.app.adminEmail ?? env.resend.fromEmail;
     const lines = stuckRefunds.map((o) =>
-      `- ${o.order_number} (${o.id}): refund_status=${o.refund_status}, refunded ${o.refund_amount_cents} of ${o.total_amount_cents} cents, updated ${o.updated_at}`
+      `- ${o.order_number} (${o.id}): refund_status=${o.refund_status}, refunded ${o.refund_amount_cents} of ${o.total_amount_cents} cents, buyer ${o.buyer_id}, seller ${o.seller_id}, updated ${o.updated_at}`
     );
     void sendEmail({
       to: staffEmail,

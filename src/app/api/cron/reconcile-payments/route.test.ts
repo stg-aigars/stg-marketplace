@@ -218,11 +218,13 @@ describe('POST /api/cron/reconcile-payments — stuck refund_status alert', () =
     expect(rendered).toContain('refund_status may be stale — verify against EveryPay before re-issuing a refund.');
   });
 
-  it('includes order_number, id, refund_status, refund_amount_cents, total_amount_cents, and updated_at per row', async () => {
+  it('includes order_number, id, refund_status, refund_amount_cents, total_amount_cents, buyer_id, seller_id, and updated_at per row', async () => {
     const stuck = [
       refundRow({
         id: 'order-1',
         order_number: 'STG-0001',
+        buyer_id: 'buyer-stuck-1',
+        seller_id: 'seller-stuck-1',
         refund_status: 'partial',
         refund_amount_cents: 1200,
         total_amount_cents: 5000,
@@ -241,6 +243,8 @@ describe('POST /api/cron/reconcile-payments — stuck refund_status alert', () =
     expect(rendered).toContain('partial');
     expect(rendered).toContain('1200');
     expect(rendered).toContain('5000');
+    expect(rendered).toContain('buyer-stuck-1');
+    expect(rendered).toContain('seller-stuck-1');
     expect(rendered).toContain('2026-06-24T09:00:00.000Z');
   });
 
