@@ -12,12 +12,14 @@ const TYPE_LABELS: Record<string, string> = {
   credit: 'Credit',
   debit: 'Payment',
   withdrawal: 'Withdrawal',
+  refund: 'Refund',
 };
 
 const TYPE_BADGE_VARIANT: Record<string, 'success' | 'default' | 'warning'> = {
   credit: 'success',
   debit: 'default',
   withdrawal: 'warning',
+  refund: 'success',
 };
 
 interface TransactionListProps {
@@ -75,8 +77,8 @@ export function TransactionList({
                   </p>
                 </div>
                 <div className="text-right ml-4 shrink-0">
-                  <p className={`font-semibold ${txn.type === 'credit' ? 'text-semantic-success' : 'text-semantic-text-primary'}`}>
-                    {txn.type === 'credit' ? '+' : '-'}{formatCentsToCurrency(txn.amount_cents)}
+                  <p className={`font-semibold ${txn.type === 'credit' || txn.type === 'refund' ? 'text-semantic-success' : 'text-semantic-text-primary'}`}>
+                    {txn.type === 'credit' || txn.type === 'refund' ? '+' : '-'}{formatCentsToCurrency(txn.amount_cents)}
                   </p>
                   <p className="text-xs text-semantic-text-muted">
                     Balance: {formatCentsToCurrency(txn.balance_after_cents)}
