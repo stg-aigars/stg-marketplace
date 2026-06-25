@@ -177,7 +177,17 @@ function staffAuthPayload(): {
 async function waitForPeriodStatusAuditRow(
   resourceId: string,
   since: string,
-  timeoutMs = 2000
+  timeoutMs = 2000,
+  // Disambiguates between this call's own row and a sibling test's row for
+  // the SAME resource_id whose fire-and-forget audit INSERT (logAuditEvent
+  // is `void`, never awaited by the server action) lands late and ends up
+  // with a created_at newer than this row's -- "most recent match" then picks
+  // the wrong one. Only needed where sibling tests on the same resource_id
+  // produce genuinely different metadata (unsoftLockPeriod's free-text
+  // transition_reason); softLockPeriod/hardLockPeriod's metadata is identical
+  // across sibling calls on the same period, so picking the wrong sibling row
+  // there is unobservable and doesn't need this.
+  expectedTransitionReason?: string
 ): Promise<{
   actor_type: string | null;
   actor_id: string | null;
@@ -188,14 +198,17 @@ async function waitForPeriodStatusAuditRow(
   const deadline = Date.now() + timeoutMs;
   let lastError: { message: string } | null = null;
   while (Date.now() < deadline) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('audit_log')
       .select('actor_type, actor_id, resource_type, metadata, retention_class, created_at')
       .eq('action', 'accounting.period_status_changed')
       .eq('actor_id', staffUserId)
       .eq('resource_id', resourceId)
-      .gte('created_at', since)
-      .order('created_at', { ascending: true });
+      .gte('created_at', since);
+    if (expectedTransitionReason !== undefined) {
+      query = query.eq('metadata->>transition_reason', expectedTransitionReason);
+    }
+    const { data, error } = await query.order('created_at', { ascending: true });
     if (error) {
       lastError = error;
     } else if ((data ?? []).length > 0) {
@@ -756,7 +769,7 @@ describe('unsoftLockPeriod server action', () => {
     const result = await unsoftLockPeriod(TEST_PERIODS.ACTION_UNSOFTLOCK_PASS, `   ${reason}   `);
     expect(result).toEqual({ success: true });
 
-    const audit = await waitForPeriodStatusAuditRow(TEST_PERIODS.ACTION_UNSOFTLOCK_PASS, before);
+    const audit = await waitForPeriodStatusAuditRow(TEST_PERIODS.ACTION_UNSOFTLOCK_PASS, before, 2000, reason);
     expect(audit.retention_class).toBe('regulatory');
     expect(audit.metadata).toEqual({
       period_type: 'month',
