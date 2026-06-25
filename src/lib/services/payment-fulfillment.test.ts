@@ -726,6 +726,13 @@ describe('fulfillCartPayment — mid-loop rollback', () => {
     const claimCallOrder = mockOrdersUpdate.mock.invocationCallOrder[0]!;
     const refundCallOrder = mockRefundPayment.mock.invocationCallOrder[0]!;
     expect(claimCallOrder).toBeLessThan(refundCallOrder);
+
+    // attemptAutoRefund's own Sentry wiring (Part A of this fix) — the
+    // "no exception, no log" gap the original incident exposed.
+    expect(mockCaptureException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ tags: expect.objectContaining({ phase: 'auto_refund_failed' }) })
+    );
   });
 
   it('4. is idempotent when the claim-UPDATE finds no row (already cancelled by a concurrent retry)', async () => {
