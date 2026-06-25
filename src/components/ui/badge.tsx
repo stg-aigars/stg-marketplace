@@ -1,9 +1,9 @@
 import { type HTMLAttributes } from 'react';
-import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass } from '@phosphor-icons/react/ssr';
+import { Sparkle, Star, Check, Warning, PuzzlePiece, Gavel, MagnifyingGlass, TrendDown } from '@phosphor-icons/react/ssr';
 import { cn } from '@/lib/cn';
 import type { ConditionBadgeKey } from '@/lib/listings/types';
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted' | 'accent';
+type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'trust' | 'auction' | 'wanted' | 'accent' | 'declining';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const conditionIcons: Record<ConditionBadgeKey, React.FC<any>> = {
@@ -18,6 +18,7 @@ const conditionIcons: Record<ConditionBadgeKey, React.FC<any>> = {
 const variantIcons: Partial<Record<BadgeVariant, React.FC<any>>> = {
   auction: Gavel,
   wanted: MagnifyingGlass,
+  declining: TrendDown,
 };
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -34,6 +35,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   trust: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
   auction: 'bg-aurora-purple/15 text-aurora-purple border-aurora-purple/30',
   wanted: 'bg-semantic-brand/10 text-semantic-brand-active border-semantic-brand',
+  declining: 'bg-aurora-indigo/15 text-aurora-indigo border-aurora-indigo/30',
   // Warm-gold accent. Text uses semantic-text-heading (dark polar night) instead
   // of semantic-accent because the gold is too light for body-text contrast on
   // its own tint. Promote to a dedicated `accent-text` token if accent badges

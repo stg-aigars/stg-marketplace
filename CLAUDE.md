@@ -120,7 +120,7 @@ Always use these — do not write inline equivalents:
 | Card wrappers | `Card`, `CardHeader`, `CardBody`, `CardFooter` | `@/components/ui` |
 | Form inputs | `Input` (prefix, suffix, error), `Select` | `@/components/ui` |
 | Modals / bottom sheets | `Modal` | `@/components/ui` |
-| Condition & status badges | `Badge` (variants: default, success, warning, error, trust, auction, wanted; condition keys; `dot` prop for status dots) | `@/components/ui` |
+| Condition & status badges | `Badge` (variants: default, success, warning, error, trust, auction, wanted, declining, accent; condition keys; `dot` prop for status dots) | `@/components/ui` |
 | Condition badge (from DB) | `ConditionBadge` (takes raw `ListingCondition` string, renders Badge with icon + label; use instead of manual `conditionToBadgeKey` + `conditionConfig` lookup) | `@/components/ui` |
 | Category & mechanic tags | `Badge variant="default"` | `@/components/ui` |
 | Alerts & banners | `Alert` (variants: error, success, warning, info; dismissible; optional icon + title) | `@/components/ui` |
@@ -351,6 +351,7 @@ Existing cron routes: `expire-reservations` (5min), `reconcile-payments` (5min, 
     - `announcement.published` (operational) — fires from `publishAnnouncement` in `src/lib/announcements/actions.ts` on first publish (`notified_at IS NULL` branch only — re-publish after unpublish does not re-fire). `actorType: 'user'`, `actorId` = staff user. `resourceType: 'announcement'`, `resourceId` = announcement.id. Metadata: `{ slug, title, recipientsIntended }` (the `Intended` suffix flags this is fan-out-time count, not delivery-time). Operational class is the right call — "we shipped X" is platform comms, not a regulatory event; if a specific announcement is regulatory in nature (material privacy/terms change), the regulatory anchor is the underlying event (`terms.accepted`), not the comms.
     - `announcement.unpublished` (operational) — fires from `unpublishAnnouncement`. Same actor shape as published. Metadata: `{ slug, title }`. Companion sweep marks all unread `announcement.posted` notifications for the announcement as read so clicked bell rows land on the tombstone, not 404.
     - `announcement.deleted` (operational) — fires from `softDeleteAnnouncement`. Same actor shape + metadata + sweep companion as unpublished.
+    - `listing.converted_to_declining` (operational) — fires from `convertListingToDeclining` in `src/lib/listings/actions.ts` when a seller switches an active fixed-price listing to declining price. `actorType: 'user'`, `actorId` = seller. `resourceType: 'listing'`, `resourceId` = listingId. Metadata: `{ starting_price_cents, floor_price_cents, decrement_cents, drop_interval_days }`. Operational class — derivative of the `listings` row state (mirrors `order.status_changed`'s rationale), and the conversion is irreversible by design so there's no dispute-resolution need for long retention.
 
 ## Server Action Error Handling
 - Server actions return `{ success: true }` or `{ error: string }` — never throw to the client

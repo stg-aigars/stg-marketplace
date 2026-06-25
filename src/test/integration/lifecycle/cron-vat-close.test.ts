@@ -129,7 +129,12 @@ async function seedVatMovement(
 describe('Scenario 14 — monthly-vat-close cron emits P.1 for refund position', () => {
   beforeEach(() => {
     // Fix now to 2027-02-01 so computeTargetPeriod returns TEST_PERIOD (2027-01)
-    vi.useFakeTimers();
+    // toFake: ['Date'] only -- faking setTimeout/setInterval too breaks
+    // Node's built-in fetch (undici), which needs real timers internally for
+    // connection-pool/keep-alive handling. Under Node 22 this hangs any
+    // Supabase client call made while fake timers are active until Vitest's
+    // own (real-timer) test timeout fires.
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(Date.UTC(2027, 1, 1, 1, 0, 0)));
   });
 
@@ -196,7 +201,12 @@ describe('F7 — canonical Layer 2 idempotency test', () => {
 
   beforeEach(() => {
     // System time at 2027-03-01 so cron targets 2027-02 (TEST_PERIOD_NEXT)
-    vi.useFakeTimers();
+    // toFake: ['Date'] only -- faking setTimeout/setInterval too breaks
+    // Node's built-in fetch (undici), which needs real timers internally for
+    // connection-pool/keep-alive handling. Under Node 22 this hangs any
+    // Supabase client call made while fake timers are active until Vitest's
+    // own (real-timer) test timeout fires.
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(Date.UTC(2027, 2, 1, 1, 0, 0)));
   });
 
@@ -308,7 +318,12 @@ describe('Scenario 15 — monthly-vat-close cron emits P.1 for payable position'
     // The actual GL state depends on what seeded earlier in this suite.
     // We only assert the cron route runs to completion (no 500) and the
     // result.status is a known value.
-    vi.useFakeTimers();
+    // toFake: ['Date'] only -- faking setTimeout/setInterval too breaks
+    // Node's built-in fetch (undici), which needs real timers internally for
+    // connection-pool/keep-alive handling. Under Node 22 this hangs any
+    // Supabase client call made while fake timers are active until Vitest's
+    // own (real-timer) test timeout fires.
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(Date.UTC(2027, 1, 1, 1, 0, 0)));
     await resetPeriodStatus(supabase, TEST_PERIOD, 'open');
 

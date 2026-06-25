@@ -67,12 +67,14 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 isAuction={listing.listing_type === 'auction'}
                 bidCount={listing.bid_count}
                 auctionEndAt={listing.auction_end_at}
+                isDeclining={listing.listing_type === 'declining'}
               />
               {listing.status === 'active' && (
                 <ListingOverflowMenu
                   listingId={listing.id}
                   listingType={listing.listing_type}
                   bidCount={listing.bid_count}
+                  priceCents={listing.price_cents}
                 />
               )}
               {listing.status !== 'active' && (

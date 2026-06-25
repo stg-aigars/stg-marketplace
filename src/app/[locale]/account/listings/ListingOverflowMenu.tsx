@@ -3,8 +3,9 @@
 import { useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { DotsThreeVertical, PencilSimple, Trash } from '@phosphor-icons/react/ssr';
+import { DotsThreeVertical, PencilSimple, Trash, ArrowDown } from '@phosphor-icons/react/ssr';
 import { RemoveListingModal } from '@/components/listings/RemoveListingModal';
+import { ConvertToDecliningModal } from '@/components/listings/ConvertToDecliningModal';
 import { isAuctionWithBids, type ListingType } from '@/lib/listings/types';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
@@ -13,14 +14,17 @@ interface ListingOverflowMenuProps {
   listingId: string;
   listingType: ListingType;
   bidCount: number;
+  priceCents: number;
 }
 
-export function ListingOverflowMenu({ listingId, listingType, bidCount }: ListingOverflowMenuProps) {
+export function ListingOverflowMenu({ listingId, listingType, bidCount, priceCents }: ListingOverflowMenuProps) {
   const { locale } = useParams<{ locale: string }>();
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showConvert, setShowConvert] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const hasAuctionBids = isAuctionWithBids(listingType, bidCount);
+  const canConvertToDeclining = listingType === 'fixed_price';
 
   useClickOutside(() => setOpen(false), open, menuRef);
   useEscapeKey(() => setOpen(false), open);
@@ -53,6 +57,21 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
               <PencilSimple size={16} />
               Edit
             </Link>
+            {canConvertToDeclining && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setOpen(false);
+                  setShowConvert(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-semantic-text-primary hover:bg-semantic-bg-surface transition-colors duration-250 ease-out-custom"
+              >
+                <ArrowDown size={16} />
+                Switch to declining price
+              </button>
+            )}
             <button
               type="button"
               onClick={(e) => {
@@ -75,6 +94,15 @@ export function ListingOverflowMenu({ listingId, listingType, bidCount }: Listin
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
       />
+
+      {canConvertToDeclining && (
+        <ConvertToDecliningModal
+          listingId={listingId}
+          startingPriceCents={priceCents}
+          open={showConvert}
+          onClose={() => setShowConvert(false)}
+        />
+      )}
     </>
   );
 }

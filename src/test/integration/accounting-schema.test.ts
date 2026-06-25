@@ -2,6 +2,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createTestServiceClient, createTestAnonClient } from '../helpers/supabase';
 import { dbExec, dbExecOrThrow } from '../helpers/db-exec';
 import { createSignedInClient } from '../helpers/auth-personas';
+import { deleteTestUser } from '../helpers/factories';
 import { SYSTEM_COUNTERPARTY } from '@/lib/accounting/system-counterparties';
 
 const supabase = createTestServiceClient();
@@ -235,7 +236,7 @@ describe('accounting schema (PR 1)', () => {
           }
         }
       } finally {
-        await supabase.auth.admin.deleteUser(persona.userId);
+        await deleteTestUser(persona.userId);
       }
     });
 
@@ -294,7 +295,7 @@ describe('accounting schema (PR 1)', () => {
         expect(vid!.tin).toBe('90000010008');
         expect(vid!.type).toBe('tax_authority');
       } finally {
-        await supabase.auth.admin.deleteUser(persona.userId);
+        await deleteTestUser(persona.userId);
       }
     });
   });

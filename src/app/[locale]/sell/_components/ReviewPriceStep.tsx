@@ -7,12 +7,14 @@ import { PencilSimple, Eye } from '@phosphor-icons/react/ssr';
 import { GameIdentityRow } from '@/components/listings/atoms';
 import { ConditionBadge, Button, Input } from '@/components/ui';
 import { MIN_PRICE_CENTS } from '@/lib/listings/types';
+import { validateDecliningSchedule } from '@/lib/listings/declining-price';
 import { calculateSellerEarnings, formatCentsToCurrency } from '@/lib/services/pricing';
 import { normalizeDecimalInput } from '@/lib/utils/decimal-input';
 import { toBggFullSize } from '@/lib/bgg/utils';
 import { AUCTION_DURATIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
 import { SellStepHeader } from './SellStepHeader';
+import { DecliningScheduleSection } from './DecliningScheduleSection';
 import type { FormData } from './ListingCreationFlow';
 
 interface ReviewPriceStepProps {
@@ -26,6 +28,13 @@ interface ReviewPriceStepProps {
   isAuction?: boolean;
   auctionDurationDays?: number;
   onDurationChange?: (days: number) => void;
+  isDeclining?: boolean;
+  floorPriceCents?: number;
+  decrementCents?: number;
+  dropIntervalDays?: number;
+  onFloorPriceChange?: (cents: number) => void;
+  onDecrementChange?: (cents: number) => void;
+  onDropIntervalChange?: (days: number) => void;
   expansions?: Array<{ id: number; name: string }>;
 }
 
@@ -38,6 +47,13 @@ interface PriceInputSectionProps {
   isAuction: boolean;
   auctionDurationDays?: number;
   onDurationChange?: (days: number) => void;
+  isDeclining: boolean;
+  floorPriceCents?: number;
+  decrementCents?: number;
+  dropIntervalDays?: number;
+  onFloorPriceChange?: (cents: number) => void;
+  onDecrementChange?: (cents: number) => void;
+  onDropIntervalChange?: (days: number) => void;
   bggGameId: number | null;
   gameName?: string;
   condition: FormData['condition'];
@@ -52,6 +68,13 @@ function PriceInputSection({
   isAuction,
   auctionDurationDays,
   onDurationChange,
+  isDeclining,
+  floorPriceCents,
+  decrementCents,
+  dropIntervalDays,
+  onFloorPriceChange,
+  onDecrementChange,
+  onDropIntervalChange,
   bggGameId,
   gameName,
   condition,
@@ -120,7 +143,7 @@ function PriceInputSection({
       />
 
       <Input
-        label={isAuction ? 'Starting price' : 'Price'}
+        label={isAuction || isDeclining ? 'Starting price' : 'Price'}
         type="text"
         inputMode="decimal"
         prefix="€"
@@ -185,6 +208,18 @@ function PriceInputSection({
         </div>
       )}
 
+      {isDeclining && onFloorPriceChange && onDecrementChange && onDropIntervalChange && (
+        <DecliningScheduleSection
+          startingPriceCents={priceCents}
+          floorPriceCents={floorPriceCents ?? 0}
+          decrementCents={decrementCents ?? 0}
+          dropIntervalDays={dropIntervalDays ?? 7}
+          onFloorPriceChange={onFloorPriceChange}
+          onDecrementChange={onDecrementChange}
+          onDropIntervalChange={onDropIntervalChange}
+        />
+      )}
+
       {!isAuction && earnings && priceCents >= MIN_PRICE_CENTS && (
         <div className="bg-semantic-bg-surface rounded-lg px-4 py-3">
           <p className="text-sm text-semantic-text-secondary">
@@ -213,9 +248,25 @@ export function ReviewPriceStep({
   isAuction = false,
   auctionDurationDays,
   onDurationChange,
+  isDeclining = false,
+  floorPriceCents,
+  decrementCents,
+  dropIntervalDays,
+  onFloorPriceChange,
+  onDecrementChange,
+  onDropIntervalChange,
   expansions = [],
 }: ReviewPriceStepProps) {
-  const effectivePrice = isAuction ? formData.starting_price_cents : formData.price_cents;
+  const effectivePrice = isAuction || isDeclining ? formData.starting_price_cents : formData.price_cents;
+
+  const scheduleValidation = isDeclining
+    ? validateDecliningSchedule({
+        startingPriceCents: effectivePrice,
+        floorPriceCents: floorPriceCents ?? 0,
+        decrementCents: decrementCents ?? 0,
+        dropIntervalDays: dropIntervalDays ?? 7,
+      })
+    : null;
 
   const summaryImageUrl = toBggFullSize(formData.version_thumbnail) ?? toBggFullSize(formData.game_image) ?? toBggFullSize(formData.game_thumbnail) ?? null;
 
@@ -241,6 +292,13 @@ export function ReviewPriceStep({
         isAuction={isAuction}
         auctionDurationDays={auctionDurationDays}
         onDurationChange={onDurationChange}
+        isDeclining={isDeclining}
+        floorPriceCents={floorPriceCents}
+        decrementCents={decrementCents}
+        dropIntervalDays={dropIntervalDays}
+        onFloorPriceChange={onFloorPriceChange}
+        onDecrementChange={onDecrementChange}
+        onDropIntervalChange={onDropIntervalChange}
         bggGameId={formData.bgg_game_id}
         gameName={formData.game_name}
         condition={formData.condition}
@@ -346,7 +404,7 @@ export function ReviewPriceStep({
         size="lg"
         onClick={onPublish}
         loading={publishing}
-        disabled={effectivePrice < MIN_PRICE_CENTS}
+        disabled={effectivePrice < MIN_PRICE_CENTS || (isDeclining && !scheduleValidation?.valid)}
         className="w-full"
       >
         Publish listing

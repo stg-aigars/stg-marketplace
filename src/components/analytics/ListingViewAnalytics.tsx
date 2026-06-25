@@ -13,7 +13,7 @@ export function ListingViewAnalytics(props: {
   bggGameId: number;
   priceCents: number;
   condition: ListingCondition;
-  listingType: 'fixed_price' | 'auction';
+  listingType: 'fixed_price' | 'auction' | 'declining';
 }) {
   const fired = useRef(false);
 

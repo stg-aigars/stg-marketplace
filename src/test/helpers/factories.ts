@@ -56,6 +56,24 @@ export async function createTestUser(opts: CreateTestUserOptions = {}): Promise<
   return { id: userId, email, country, full_name: fullName };
 }
 
+/**
+ * Deletes a test auth.users row, first clearing any audit_log rows that
+ * reference it as actor_id. audit_log.actor_id has no ON DELETE action
+ * (migration 020 — deliberately, since audit rows must survive a real user's
+ * GDPR deletion in production), so any referencing row blocks the delete
+ * with an FK violation that the Admin API surfaces only as a generic
+ * "Database error deleting user" — silently, if the caller doesn't check
+ * the returned error. Throws on failure so callers decide whether to
+ * propagate or swallow (cleanupTestData below swallows per-user).
+ */
+export async function deleteTestUser(userId: string): Promise<void> {
+  await supabase.from('audit_log').delete().eq('actor_id', userId);
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) {
+    throw new Error(`Failed to delete test user ${userId}: ${error.message}`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Test game (ensures FK target exists)
 // ---------------------------------------------------------------------------
@@ -311,7 +329,13 @@ export async function cleanupTestData() {
   if (users?.users) {
     for (const user of users.users) {
       if (user.email?.endsWith('@stg-test.local')) {
-        await supabase.auth.admin.deleteUser(user.id);
+        try {
+          await deleteTestUser(user.id);
+        } catch (err) {
+          // Don't let one stuck user (e.g. blocked by some other FK we
+          // haven't seen yet) abort cleanup for the rest of the batch.
+          console.error(`[cleanupTestData] Failed to delete ${user.id}:`, err);
+        }
       }
     }
   }

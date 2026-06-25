@@ -82,6 +82,7 @@ import { hardLockPeriod, softLockPeriod, unsoftLockPeriod } from '@/lib/accounti
 
 import { dbExec, dbExecOrThrow } from '../helpers/db-exec';
 import { createTestServiceClient } from '../helpers/supabase';
+import { deleteTestUser } from '../helpers/factories';
 
 // ---------------------------------------------------------------------------
 // Test fixtures and shared state
@@ -259,11 +260,12 @@ afterAll(async () => {
   resetPeriodsToOpen();
 
   if (staffUserId) {
-    const { error } = await supabase.auth.admin.deleteUser(staffUserId);
-    if (error) {
+    try {
+      await deleteTestUser(staffUserId);
+    } catch (err) {
       // Don't throw in afterAll — surface to console so vitest still reports
       // pass/fail of the actual tests rather than crashing teardown.
-      console.error(`[period-close.test] cleanup deleteUser failed: ${error.message}`);
+      console.error(`[period-close.test] cleanup deleteUser failed:`, err);
     }
   }
 });
