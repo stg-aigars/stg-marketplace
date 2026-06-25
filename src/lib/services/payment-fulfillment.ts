@@ -10,12 +10,14 @@
  * Returns outcome objects — callers map outcomes to redirects (callback) or logs (cron).
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { createOrder, lookupSellerIbanCountry } from '@/lib/services/orders';
-import { debitWallet, creditWallet, refundToWallet } from '@/lib/services/wallet';
+import { debitWallet, refundToWallet } from '@/lib/services/wallet';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
+import { REFUND_STATUS, type RefundStatus } from '@/lib/services/order-refund';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
 import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
 import { cartFulfillmentWithGL } from '@/lib/accounting/lifecycle-wraps';
@@ -60,8 +62,135 @@ export async function attemptAutoRefund(
       `[Payments] CRITICAL: Auto-refund failed for ${paymentReference} (${reason}):`,
       refundError
     );
+    Sentry.captureException(refundError, {
+      tags: { paymentReference, reason, phase: 'auto_refund_failed' },
+      extra: { amountCents },
+    });
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Mid-loop rollback helpers (cart-rollback-refund-consistency fix)
+// ---------------------------------------------------------------------------
+//
+// These exist to fix the production incident where order STG-20260606-UJRJ
+// had its card payment refunded but was never cancelled — the old catch
+// block refunded the card BEFORE cancelling orders, so a crash mid-rollback
+// reproduced the exact incident. Cancel-first design: claimAndCancelOrder +
+// refundOrderWalletLeg run for every pending order BEFORE any card refund.
+//
+// Deliberately do NOT call refundOrder() from order-refund.ts — that
+// function always attempts its own EveryPay call when cardAmount > 0, which
+// would double-refund against the same payment reference the aggregate
+// attemptAutoRefund call already covers in the catch block below.
+
+/**
+ * Atomically claims a pending_seller order for cancellation, restores its
+ * listings, and deactivates its order_items. Idempotent: returns false
+ * without side effects if the order was already transitioned by a
+ * concurrent retry.
+ */
+export async function claimAndCancelOrder(
+  serviceClient: SupabaseClient,
+  buyerId: string,
+  order: { id: string; order_number: string },
+): Promise<boolean> {
+  const { data: claimed } = await serviceClient
+    .from('orders')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancellation_reason: 'system',
+    })
+    .eq('id', order.id)
+    .eq('status', 'pending_seller')
+    .select('id')
+    .single();
+
+  if (!claimed) return false; // already transitioned by a concurrent retry — idempotent no-op
+
+  const { data: orderItems } = await serviceClient
+    .from('order_items')
+    .select('listing_id')
+    .eq('order_id', order.id);
+  const listingIds = (orderItems ?? []).map((i) => i.listing_id);
+
+  if (listingIds.length > 0) {
+    const { error: unreserveError } = await serviceClient.rpc('unreserve_listings', {
+      p_listing_ids: listingIds, p_buyer_id: buyerId,
+    });
+    if (unreserveError) {
+      Sentry.captureException(unreserveError, {
+        tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_listings_restore_failed' },
+      });
+    }
+    const { error: deactivateError } = await serviceClient
+      .from('order_items')
+      .update({ active: false })
+      .eq('order_id', order.id);
+    if (deactivateError) {
+      Sentry.captureException(deactivateError, {
+        tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_order_items_deactivate_failed' },
+      });
+    }
+  }
+
+  return true;
+}
+
+async function refundOrderWalletLeg(
+  serviceClient: SupabaseClient,
+  buyerId: string,
+  order: { id: string; order_number: string; buyer_wallet_debit_cents: number },
+): Promise<boolean> {
+  if (order.buyer_wallet_debit_cents <= 0) return true;
+  try {
+    await refundToWallet(buyerId, order.buyer_wallet_debit_cents, order.id, 'Rollback: cart order creation failed');
+    return true;
+  } catch (walletError) {
+    console.error(`[Payments] Cart: Wallet rollback refund failed for order ${order.id}:`, walletError);
+    Sentry.captureException(walletError, {
+      tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_wallet_refund_failed' },
+    });
+    return false;
+  }
+}
+
+/**
+ * Writes the refund_status stamp unconditionally (needed in Phase 1, before
+ * the card outcome is known, so a crash before Phase 3 still leaves a
+ * sweepable status instead of null). Only captures to Sentry when
+ * captureIfIncomplete=true — Phase 1 always computes 'partial'/'failed'
+ * (cardRefundOk is hard-coded false there), so capturing there would alert
+ * on every successful rollback. Phase 3 passes true once the real outcome
+ * is known.
+ */
+export async function stampRollbackRefundStatus(
+  serviceClient: SupabaseClient,
+  order: { id: string; order_number: string; total_amount_cents: number; buyer_wallet_debit_cents: number },
+  cardRefundOk: boolean,
+  walletRefundOk: boolean,
+  captureIfIncomplete: boolean,
+): Promise<{ refundStatus: RefundStatus; refundAmountCents: number }> {
+  const refundStatus: RefundStatus =
+    cardRefundOk && walletRefundOk ? REFUND_STATUS.COMPLETED :
+    !cardRefundOk && !walletRefundOk ? REFUND_STATUS.FAILED : REFUND_STATUS.PARTIAL;
+  const refundAmountCents =
+    (cardRefundOk ? order.total_amount_cents - order.buyer_wallet_debit_cents : 0) +
+    (walletRefundOk ? order.buyer_wallet_debit_cents : 0);
+
+  await serviceClient
+    .from('orders')
+    .update({ refund_status: refundStatus, refund_amount_cents: refundAmountCents, refunded_at: new Date().toISOString() })
+    .eq('id', order.id);
+
+  if (captureIfIncomplete && refundStatus !== REFUND_STATUS.COMPLETED) {
+    Sentry.captureException(new Error(`Cart rollback refund ${refundStatus} for order ${order.order_number}`), {
+      tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_refund_incomplete' },
+    });
+  }
+  return { refundStatus, refundAmountCents };
 }
 
 // ---------------------------------------------------------------------------
@@ -146,17 +275,17 @@ export async function fulfillCartPayment(
 
   if (available.length === 0) {
     await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');
-    // Credit back wallet portion if buyer used wallet balance
+    // Refund back wallet portion if buyer used wallet balance
     if (walletDebit > 0) {
       try {
-        await creditWallet(
+        await refundToWallet(
           group.buyer_id,
           walletDebit,
           group.id,
           `Refund: all items unavailable in cart order`
         );
       } catch (err) {
-        console.error('[Payments] Cart: Failed to credit wallet for all-unavailable refund:', err);
+        console.error('[Payments] Cart: Failed to refund wallet for all-unavailable refund:', err);
       }
     }
     await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
@@ -181,9 +310,25 @@ export async function fulfillCartPayment(
     refundCardCents += itemTotalForRefund - walletForItem;
   }
 
-  // Process partial refund if needed
+  // Process partial refund if needed. Both legs of the SAME refund event
+  // (card + wallet) fire together, here, before the seller loop starts —
+  // so a later unrelated failure in the loop can't skip the wallet leg
+  // (it used to run after the loop completed successfully, so a mid-loop
+  // throw meant the wallet portion for unavailable items was never refunded).
   if (refundCardCents > 0) {
     await attemptAutoRefund(serviceClient, paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`);
+  }
+  if (refundWalletCents > 0) {
+    try {
+      await refundToWallet(
+        group.buyer_id,
+        refundWalletCents,
+        group.id,
+        `Refund: ${unavailable.length} unavailable item(s) from cart order`
+      );
+    } catch (err) {
+      console.error('[Payments] Cart: Failed to refund wallet for unavailable items:', err);
+    }
   }
 
   // Group available items by seller — one order per seller
@@ -262,47 +407,123 @@ export async function fulfillCartPayment(
     }
   } catch (error) {
     console.error('[Payments] Cart: Failed mid-loop, rolling back created orders:', error);
+    Sentry.captureException(error, {
+      tags: { cartGroupId: group.id, paymentReference, phase: 'cart_fulfillment_mid_loop' },
+      extra: { createdOrderIds: createdOrders.map((o) => o.id) },
+    });
 
-    // Rollback: cancel created orders and refund their wallet debits
-    for (const created of createdOrders) {
+    // Re-query rather than trust createdOrders — a row can be invisible to it
+    // if createOrder() itself failed to report a row it created (see orders.ts).
+    const { data: pendingOrders, error: pendingOrdersError } = await serviceClient
+      .from('orders')
+      .select('id, order_number, buyer_wallet_debit_cents, total_amount_cents')
+      .eq('cart_group_id', group.id)
+      .eq('status', 'pending_seller');
+
+    if (pendingOrdersError) {
+      // If this query fails, Phase 1 silently loops over [] (nothing claimed)
+      // and Phase 2 still fires the card refund unconditionally — surface it
+      // rather than let the rollback proceed on a false "nothing pending" read.
+      Sentry.captureException(pendingOrdersError, {
+        tags: { cartGroupId: group.id, phase: 'cart_rollback_verification_query_failed' },
+      });
+    }
+
+    if (pendingOrders && pendingOrders.length !== createdOrders.length) {
+      Sentry.captureException(new Error('Cart rollback found orders not tracked in-memory'), {
+        tags: { cartGroupId: group.id, phase: 'cart_fulfillment_stranded_order_detected' },
+        extra: { dbOrderIds: pendingOrders.map((o) => o.id), trackedOrderIds: createdOrders.map((o) => o.id) },
+      });
+    }
+
+    // Phase 1 — cancel + restore listings + deactivate order_items + refund the
+    // wallet leg for every pending order FIRST, before any card money moves.
+    // A crash here leaves orders cancelled (never live-and-refunded).
+    // Per-order try/catch (matching autoCancelOrders in order-deadlines.ts) so
+    // one order's unexpected throw can't abort the rollback for its siblings.
+    const claimedOrders: Array<NonNullable<typeof pendingOrders>[number] & { walletRefundOk: boolean }> = [];
+    for (const order of pendingOrders ?? []) {
       try {
-        if (created.walletDebitCents > 0) {
-          await refundToWallet(
-            group.buyer_id,
-            created.walletDebitCents,
-            created.id,
-            `Rollback: cart order creation failed`
-          );
-        }
-        await serviceClient
-          .from('orders')
-          .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'system' })
-          .eq('id', created.id);
-      } catch (rollbackError) {
-        console.error(`[Payments] Cart: Rollback failed for order ${created.id}:`, rollbackError);
+        const claimed = await claimAndCancelOrder(serviceClient, group.buyer_id, order);
+        if (!claimed) continue;
+        const walletRefundOk = await refundOrderWalletLeg(serviceClient, group.buyer_id, order);
+        // Pushed before the stamp call below, on purpose: an order that
+        // throws on its Phase 1 stamp is still retried in Phase 3 (the
+        // refund-status upgrade must still be attempted). If the same
+        // condition recurs there, the per-order catch below AND Phase 3's
+        // catch will both capture it under the same orderId and phase tag —
+        // two Sentry events, ~milliseconds apart, for one order. That's
+        // intentional: double-reporting beats silently dropping the retry.
+        claimedOrders.push({ ...order, walletRefundOk });
+        // Pessimistic DB stamp for crash-visibility — captureIfIncomplete=false:
+        // cardRefundOk is hard-coded false here (the card hasn't run yet), so
+        // capturing now would alert on every successful rollback.
+        await stampRollbackRefundStatus(serviceClient, order, false, walletRefundOk, false);
+      } catch (perOrderError) {
+        Sentry.captureException(perOrderError, {
+          tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_unexpected_per_order_error' },
+        });
       }
     }
 
-    // Full card refund — the EveryPay charge covers all sellers as one payment,
-    // so we refund the entire card amount regardless of how many orders were created
-    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart order creation failed mid-loop');
+    // Phase 2 — the single aggregate card refund, only now that nothing claimed
+    // above can still be shipped. Subtract what the pre-loop unavailable-items
+    // refund already covered (Finding A) so the card is never refunded twice.
+    const remainingCardRefundCents = expectedEverypayAmountCents - refundCardCents;
+    let cardRefundOk = true;
+    if (remainingCardRefundCents > 0) {
+      cardRefundOk = await attemptAutoRefund(
+        serviceClient, paymentReference, remainingCardRefundCents, 'cart order creation failed mid-loop'
+      );
+    }
+
+    // Phase 3 — upgrade every claimed order's refund_status now that the card
+    // outcome is known (captureIfIncomplete=true), and fire the audit event.
+    // Per-order try/catch, same rationale as Phase 1.
+    for (const order of claimedOrders) {
+      try {
+        const { refundStatus, refundAmountCents } = await stampRollbackRefundStatus(
+          serviceClient, order, cardRefundOk, order.walletRefundOk, true
+        );
+        void logAuditEvent(serviceClient, {
+          actorType: 'system',
+          action: 'order.auto_cancelled.system',
+          resourceType: 'order',
+          resourceId: order.id,
+          metadata: { orderNumber: order.order_number, reason: 'system', refundStatus, refundAmountCents },
+          retentionClass: 'regulatory',
+        });
+      } catch (perOrderError) {
+        Sentry.captureException(perOrderError, {
+          tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_unexpected_per_order_error' },
+        });
+      }
+    }
+
+    // Post-condition canary: after a total rollback, every order tied to this
+    // group must be cancelled. Any survivor is the literal UJRJ incident
+    // condition — alert immediately. If the verification query itself fails,
+    // that failure must be just as loud — a silent `null` here would let the
+    // one canary whose job is "catch the incident again" go dark exactly when
+    // it might be needed.
+    const { data: stillLiveOrders, error: stillLiveOrdersError } = await serviceClient
+      .from('orders')
+      .select('id')
+      .eq('cart_group_id', group.id)
+      .neq('status', 'cancelled');
+    if (stillLiveOrdersError) {
+      Sentry.captureException(stillLiveOrdersError, {
+        tags: { cartGroupId: group.id, phase: 'cart_rollback_verification_query_failed' },
+      });
+    } else if (stillLiveOrders && stillLiveOrders.length > 0) {
+      Sentry.captureException(new Error('Cart rollback left a live order after total rollback'), {
+        tags: { cartGroupId: group.id, phase: 'cart_rollback_live_order_survived' },
+        extra: { liveOrderIds: stillLiveOrders.map((o) => o.id) },
+      });
+    }
 
     await serviceClient.from('cart_checkout_groups').update({ status: 'expired' }).eq('id', group.id);
     return { outcome: 'failed', error: error instanceof Error ? error.message : 'unknown' };
-  }
-
-  // Credit wallet for unavailable items' wallet portion
-  if (refundWalletCents > 0) {
-    try {
-      await creditWallet(
-        group.buyer_id,
-        refundWalletCents,
-        group.id,
-        `Refund: ${unavailable.length} unavailable item(s) from cart order`
-      );
-    } catch (err) {
-      console.error('[Payments] Cart: Failed to credit wallet for unavailable items:', err);
-    }
   }
 
   // Mark group as completed. Two-level cutover gate:

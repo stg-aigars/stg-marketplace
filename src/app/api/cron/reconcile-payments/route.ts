@@ -17,6 +17,7 @@ import { debitWallet } from '@/lib/services/wallet';
 import { fulfillCartPayment } from '@/lib/services/payment-fulfillment';
 import { sendEmail } from '@/lib/email/service';
 import React from 'react';
+import * as Sentry from '@sentry/nextjs';
 import type { CartCheckoutGroup } from '@/lib/checkout/cart-types';
 
 const BATCH_LIMIT = 50;
@@ -27,6 +28,20 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours — skip ancient sessions
 const WALLET_RETRY_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 /** After 1 hour of failures, send a staff alert */
 const WALLET_ALERT_AGE_MS = 60 * 60 * 1000;
+/** Refund status stuck in a non-terminal state for over 1 hour triggers a staff alert */
+const REFUND_ALERT_AGE_MS = 60 * 60 * 1000;
+/**
+ * Width of the "just crossed the alert threshold" window. Without this, a
+ * permanently stuck refund would re-trigger the digest every 5-minute cron
+ * tick, indefinitely. This bounds it to (at most) one alert per stuck order,
+ * fired on whichever tick first finds it stale past REFUND_ALERT_AGE_MS.
+ * Wider than the actual cron interval (5min) so an occasional skipped or
+ * delayed run doesn't silently drop that one alert. If a refund is still
+ * stuck after this window closes, refund_status remains directly queryable
+ * on the order row — this sweep is a convenience notification, not the
+ * source of truth.
+ */
+const REFUND_ALERT_WINDOW_MS = 30 * 60 * 1000;
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -227,9 +242,53 @@ export async function POST(request: Request) {
     }).catch((err) => console.error('[Reconcile] Failed to send staff alert email:', err));
   }
 
+  // ---- Stuck refund_status alert ----
+  // Detect orders whose refund_status has sat in a non-terminal state
+  // ('failed' or 'partial') for over an hour. No cart_group_id filter — this
+  // deliberately also covers pre-existing stuck refunds from dispute
+  // resolutions and deadline auto-cancellations (markRefundFailed/refundOrder
+  // in order-refund.ts), not just cart-rollback-originated ones. A crash
+  // between a successful card refund and the final per-order bookkeeping
+  // write can also leave this state — safe (a tracked debt, not a live
+  // order) but otherwise invisible without this sweep.
+
+  const refundAlertCutoff = new Date(Date.now() - REFUND_ALERT_AGE_MS).toISOString();
+  const refundAlertWindowStart = new Date(Date.now() - REFUND_ALERT_AGE_MS - REFUND_ALERT_WINDOW_MS).toISOString();
+
+  const { data: stuckRefunds } = await serviceClient
+    .from('orders')
+    .select('id, order_number, buyer_id, seller_id, refund_status, refund_amount_cents, total_amount_cents, updated_at')
+    .in('refund_status', ['failed', 'partial'])
+    .lt('updated_at', refundAlertCutoff)
+    .gt('updated_at', refundAlertWindowStart)
+    .limit(BATCH_LIMIT);
+
+  if (stuckRefunds && stuckRefunds.length > 0) {
+    Sentry.captureException(new Error(`${stuckRefunds.length} order(s) with stuck refund_status`), {
+      tags: { phase: 'reconcile_stuck_refund_status' },
+      extra: { orderIds: stuckRefunds.map((o) => o.id) },
+    });
+
+    const staffEmail = env.app.adminEmail ?? env.resend.fromEmail;
+    const lines = stuckRefunds.map((o) =>
+      `- ${o.order_number} (${o.id}): refund_status=${o.refund_status}, refunded ${o.refund_amount_cents} of ${o.total_amount_cents} cents, buyer ${o.buyer_id}, seller ${o.seller_id}, updated ${o.updated_at}`
+    );
+    void sendEmail({
+      to: staffEmail,
+      subject: `[ACTION REQUIRED] ${stuckRefunds.length} order(s) with stuck refund_status`,
+      react: React.createElement('div', null,
+        React.createElement('p', null, `${stuckRefunds.length} order(s) have a refund_status of 'failed' or 'partial' for over 1 hour.`),
+        React.createElement('pre', null, lines.join('\n')),
+        React.createElement('p', null, 'refund_status may be stale — verify against EveryPay before re-issuing a refund.'),
+        React.createElement('p', null, 'Please review and resolve manually.'),
+      ),
+    }).catch((err) => console.error('[Reconcile] Failed to send staff alert email:', err));
+  }
+
   return NextResponse.json({
     ...summary,
     walletRetries,
     walletRetryErrors,
+    stuckRefunds: stuckRefunds?.length ?? 0,
   });
 }

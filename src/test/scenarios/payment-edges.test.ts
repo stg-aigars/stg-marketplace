@@ -419,6 +419,279 @@ describe('fulfillCartPayment', () => {
     // createOrder should NOT be called
     expect(mockCreateOrder).not.toHaveBeenCalled();
   });
+
+  // -------------------------------------------------------------------------
+  // I12: end-to-end mid-loop rollback against real row state
+  // -------------------------------------------------------------------------
+  //
+  // Every other test in this file (and the unit tests in
+  // payment-fulfillment.test.ts) asserts on mock *call arguments* — what
+  // payload was passed to `.update(...)`. This test instead runs a tiny
+  // in-memory fake table store: `.update()` actually mutates rows filtered by
+  // `.eq()`, and assertions read the resulting rows back via `.select()`,
+  // exactly as a production reader of the `orders` table would see them.
+  // This is the strongest evidence that claimAndCancelOrder,
+  // refundOrderWalletLeg, and stampRollbackRefundStatus actually compose into
+  // correct final state, not just correct individual calls.
+  //
+  // Scenario: a two-seller cart. Seller A's createOrder() call fully
+  // succeeds (order + order_items inserted, listing flipped to 'reserved').
+  // Seller B's createOrder() call fails — modeling another buyer having
+  // bought seller B's listing between cart creation and fulfillment, which
+  // makes createOrder()'s internal listings-availability check fail and
+  // throw (createOrder()'s own self-rollback is covered by orders.ts's own
+  // tests; createOrder is mocked here, same as every other test in this
+  // file). That throw propagates to fulfillCartPayment's catch block, which
+  // must roll back seller A's already-created order.
+  it('I12: multi-seller cart, one seller fails mid-loop -> surviving sibling order ends fully rolled back in the orders table', async () => {
+    const { fulfillCartPayment } = await import('@/lib/services/payment-fulfillment');
+
+    const BUYER_ID = 'buyer-1';
+    const SELLER_A_ORDER_ID = 'order-seller-a';
+    const SELLER_A_ORDER_NUMBER = 'STG-20260413-AAAA';
+
+    // ---- In-memory fake table store, scoped to this test -------------------
+    type Row = Record<string, unknown>;
+    const ordersStore: Row[] = [];
+    const orderItemsStore: Row[] = [];
+    const listingsStore: Row[] = [
+      {
+        id: 'listing-a',
+        seller_id: 'seller-a',
+        price_cents: 2000,
+        status: 'reserved',
+        reserved_by: BUYER_ID,
+        country: 'LV',
+        game_name: 'Catan',
+        listing_type: 'fixed_price',
+        highest_bidder_id: null,
+        current_bid_cents: null,
+      },
+      {
+        id: 'listing-b',
+        seller_id: 'seller-b',
+        // Sold to another buyer between cart creation and fulfillment —
+        // no longer reserved by this buyer, so isAvailable() in
+        // fulfillCartPayment returns false and seller B's listing lands in
+        // the `unavailable` bucket up front... but the scenario this test
+        // targets is the MID-LOOP failure, not the pre-loop partial-refund
+        // path. To force seller B through createAndCancelOrder's seller
+        // loop (not the pre-loop unavailable filter), seller B's listing
+        // must still read as available to fulfillCartPayment's own
+        // isAvailable() check; the unavailability is discovered only inside
+        // createOrder()'s own re-check, which is mocked (rejected) below.
+        status: 'reserved',
+        reserved_by: BUYER_ID,
+        country: 'LV',
+        game_name: 'Wingspan',
+        listing_type: 'fixed_price',
+        highest_bidder_id: null,
+        current_bid_cents: null,
+      },
+    ];
+
+    function matchesEq(row: Row, filters: Array<[string, unknown]>) {
+      return filters.every(([col, val]) => row[col] === val);
+    }
+    function matchesNeq(row: Row, filters: Array<[string, unknown]>) {
+      return filters.every(([col, val]) => row[col] !== val);
+    }
+    function matchesIn(row: Row, inFilters: Array<[string, unknown[]]>) {
+      return inFilters.every(([col, vals]) => vals.includes(row[col]));
+    }
+
+    function makeOrdersBuilder() {
+      const eqFilters: Array<[string, unknown]> = [];
+      const neqFilters: Array<[string, unknown]> = [];
+      let updatePatch: Row | null = null;
+      let wantsSingle = false;
+
+      const builder: Row = {
+        select: vi.fn(() => builder),
+        eq: vi.fn((col: string, val: unknown) => {
+          eqFilters.push([col, val]);
+          return builder;
+        }),
+        neq: vi.fn((col: string, val: unknown) => {
+          neqFilters.push([col, val]);
+          return builder;
+        }),
+        update: vi.fn((patch: Row) => {
+          updatePatch = patch;
+          return builder;
+        }),
+        single: vi.fn(() => {
+          wantsSingle = true;
+          return builder;
+        }),
+        then: (resolve: (v: unknown) => void) => {
+          const matched = ordersStore.filter(
+            (r) => matchesEq(r, eqFilters) && matchesNeq(r, neqFilters)
+          );
+          if (updatePatch) {
+            matched.forEach((r) => Object.assign(r, updatePatch));
+          }
+          if (wantsSingle) {
+            resolve({ data: matched[0] ?? null, error: null });
+          } else {
+            resolve({ data: matched, error: null });
+          }
+        },
+      };
+      return builder;
+    }
+
+    function makeOrderItemsBuilder() {
+      const eqFilters: Array<[string, unknown]> = [];
+      let updatePatch: Row | null = null;
+
+      const builder: Row = {
+        select: vi.fn(() => builder),
+        eq: vi.fn((col: string, val: unknown) => {
+          eqFilters.push([col, val]);
+          return builder;
+        }),
+        update: vi.fn((patch: Row) => {
+          updatePatch = patch;
+          return builder;
+        }),
+        then: (resolve: (v: unknown) => void) => {
+          const matched = orderItemsStore.filter((r) => matchesEq(r, eqFilters));
+          if (updatePatch) {
+            matched.forEach((r) => Object.assign(r, updatePatch));
+          }
+          resolve({ data: matched, error: null });
+        },
+      };
+      return builder;
+    }
+
+    function makeListingsBuilder() {
+      const inFilters: Array<[string, unknown[]]> = [];
+
+      const builder: Row = {
+        select: vi.fn(() => builder),
+        in: vi.fn((col: string, vals: unknown[]) => {
+          inFilters.push([col, vals]);
+          return builder;
+        }),
+        then: (resolve: (v: unknown) => void) => {
+          const matched = listingsStore.filter((r) => matchesIn(r, inFilters));
+          resolve({ data: matched, error: null });
+        },
+      };
+      return builder;
+    }
+
+    const mockClient = {
+      from: vi.fn((table: string) => {
+        if (table === 'orders') return makeOrdersBuilder();
+        if (table === 'order_items') return makeOrderItemsBuilder();
+        if (table === 'listings') return makeListingsBuilder();
+        if (table === 'listing_expansions') return makeQueryBuilder([]);
+        if (table === 'cart_checkout_groups') return makeQueryBuilder();
+        return makeQueryBuilder();
+      }),
+      rpc: vi.fn((fnName: string, args: { p_listing_ids: string[]; p_buyer_id: string }) => {
+        if (fnName === 'unreserve_listings') {
+          let count = 0;
+          for (const listing of listingsStore) {
+            if (
+              args.p_listing_ids.includes(listing.id as string) &&
+              listing.status === 'reserved' &&
+              listing.reserved_by === args.p_buyer_id
+            ) {
+              listing.status = 'active';
+              listing.reserved_by = null;
+              listing.reserved_at = null;
+              count++;
+            }
+          }
+          return Promise.resolve({ data: count, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    // ---- createOrder mock: seller A succeeds (and writes through to the ----
+    // fake store, modeling what the real createOrder() does), seller B
+    // fails (modeling createOrder()'s own internal listings-mismatch
+    // rollback + throw — covered separately by orders.ts's own tests).
+    mockCreateOrder.mockImplementation(
+      async (params: { sellerId: string; items: Array<{ listingId: string; priceCents: number }> }) => {
+        if (params.sellerId === 'seller-b') {
+          throw new Error('One or more listings are no longer available');
+        }
+        // seller-a path: insert order + order_items, flip listing to reserved
+        const itemsTotal = params.items.reduce((sum, i) => sum + i.priceCents, 0);
+        ordersStore.push({
+          id: SELLER_A_ORDER_ID,
+          order_number: SELLER_A_ORDER_NUMBER,
+          buyer_id: BUYER_ID,
+          seller_id: params.sellerId,
+          status: 'pending_seller',
+          total_amount_cents: itemsTotal,
+          buyer_wallet_debit_cents: 0,
+          cart_group_id: 'group-1',
+          refund_status: null,
+          refund_amount_cents: null,
+          cancellation_reason: null,
+          cancelled_at: null,
+        });
+        for (const item of params.items) {
+          orderItemsStore.push({
+            id: `item-${item.listingId}`,
+            order_id: SELLER_A_ORDER_ID,
+            listing_id: item.listingId,
+            price_cents: item.priceCents,
+            active: true,
+          });
+        }
+        for (const listing of listingsStore) {
+          if (params.items.some((i) => i.listingId === listing.id)) {
+            listing.status = 'reserved';
+            listing.reserved_by = BUYER_ID;
+          }
+        }
+        return { id: SELLER_A_ORDER_ID, order_number: SELLER_A_ORDER_NUMBER };
+      }
+    );
+    mockRefundPayment.mockResolvedValue(undefined);
+
+    const group = makeGroup({
+      buyer_id: BUYER_ID,
+      listing_ids: ['listing-a', 'listing-b'],
+      total_amount_cents: 4000,
+      wallet_debit_cents: 0,
+      wallet_allocation: {},
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await fulfillCartPayment(group, 'ep-ref-1', 'settled', mockClient as any, 'card');
+
+    expect(result.outcome).toBe('failed');
+
+    // EveryPay refund called for the full cart amount (seller A's order was
+    // never separately refunded pre-loop — both listings looked available
+    // going in, so the entire amount is refunded as the mid-loop aggregate).
+    expect(mockRefundPayment).toHaveBeenCalledWith('ep-ref-1', 4000);
+
+    // ---- Assert on FINAL PERSISTED STATE, read back from the fake store ----
+    const survivingOrder = ordersStore.find((o) => o.id === SELLER_A_ORDER_ID);
+    expect(survivingOrder).toBeDefined();
+    expect(survivingOrder!.status).toBe('cancelled');
+    expect(survivingOrder!.cancellation_reason).toBe('system');
+    expect(survivingOrder!.refund_status).toBe('completed');
+    expect(survivingOrder!.refund_amount_cents).toBe(survivingOrder!.total_amount_cents);
+
+    const listingA = listingsStore.find((l) => l.id === 'listing-a');
+    expect(listingA!.status).toBe('active');
+    expect(listingA!.reserved_by).toBeNull();
+
+    const orderItemA = orderItemsStore.find((i) => i.order_id === SELLER_A_ORDER_ID);
+    expect(orderItemA).toBeDefined();
+    expect(orderItemA!.active).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

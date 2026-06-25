@@ -105,6 +105,16 @@ async function handleCartCallback(
     return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}`);
   }
 
+  // Idempotency: a group already marked 'expired' (session timeout,
+  // all-items-unavailable, or a mid-loop checkout failure via the
+  // cancel-first rollback) has already been fully handled — including any
+  // refund. A repeated callback hit (browser back-button resubmission, a
+  // flaky retry) must not re-verify payment or re-enter fulfillment, which
+  // would risk a second refund for a checkout that already failed.
+  if (group.status === 'expired') {
+    return NextResponse.redirect(`${env.app.url}/account/orders?from=cart&group=${group.id}&error=partial_creation`);
+  }
+
   // Verify payment with EveryPay
   let paymentStatus;
   try {
