@@ -17,6 +17,7 @@ import { refundPayment } from '@/lib/services/everypay/client';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
+import { REFUND_STATUS, type RefundStatus } from '@/lib/services/order-refund';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
 import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
 import { cartFulfillmentWithGL } from '@/lib/accounting/lifecycle-wraps';
@@ -171,10 +172,10 @@ export async function stampRollbackRefundStatus(
   cardRefundOk: boolean,
   walletRefundOk: boolean,
   captureIfIncomplete: boolean,
-): Promise<{ refundStatus: 'completed' | 'partial' | 'failed'; refundAmountCents: number }> {
-  const refundStatus =
-    cardRefundOk && walletRefundOk ? 'completed' :
-    !cardRefundOk && !walletRefundOk ? 'failed' : 'partial';
+): Promise<{ refundStatus: RefundStatus; refundAmountCents: number }> {
+  const refundStatus: RefundStatus =
+    cardRefundOk && walletRefundOk ? REFUND_STATUS.COMPLETED :
+    !cardRefundOk && !walletRefundOk ? REFUND_STATUS.FAILED : REFUND_STATUS.PARTIAL;
   const refundAmountCents =
     (cardRefundOk ? order.total_amount_cents - order.buyer_wallet_debit_cents : 0) +
     (walletRefundOk ? order.buyer_wallet_debit_cents : 0);
@@ -184,7 +185,7 @@ export async function stampRollbackRefundStatus(
     .update({ refund_status: refundStatus, refund_amount_cents: refundAmountCents, refunded_at: new Date().toISOString() })
     .eq('id', order.id);
 
-  if (captureIfIncomplete && refundStatus !== 'completed') {
+  if (captureIfIncomplete && refundStatus !== REFUND_STATUS.COMPLETED) {
     Sentry.captureException(new Error(`Cart rollback refund ${refundStatus} for order ${order.order_number}`), {
       tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_refund_incomplete' },
     });
@@ -440,14 +441,12 @@ export async function fulfillCartPayment(
     // A crash here leaves orders cancelled (never live-and-refunded).
     // Per-order try/catch (matching autoCancelOrders in order-deadlines.ts) so
     // one order's unexpected throw can't abort the rollback for its siblings.
-    const claimedOrders: NonNullable<typeof pendingOrders> = [];
-    const walletOutcomes = new Map<string, boolean>();
+    const claimedOrders: Array<NonNullable<typeof pendingOrders>[number] & { walletRefundOk: boolean }> = [];
     for (const order of pendingOrders ?? []) {
       try {
         const claimed = await claimAndCancelOrder(serviceClient, group.buyer_id, order);
         if (!claimed) continue;
         const walletRefundOk = await refundOrderWalletLeg(serviceClient, group.buyer_id, order);
-        walletOutcomes.set(order.id, walletRefundOk);
         // Pushed before the stamp call below, on purpose: an order that
         // throws on its Phase 1 stamp is still retried in Phase 3 (the
         // refund-status upgrade must still be attempted). If the same
@@ -455,7 +454,7 @@ export async function fulfillCartPayment(
         // catch will both capture it under the same orderId and phase tag —
         // two Sentry events, ~milliseconds apart, for one order. That's
         // intentional: double-reporting beats silently dropping the retry.
-        claimedOrders.push(order);
+        claimedOrders.push({ ...order, walletRefundOk });
         // Pessimistic DB stamp for crash-visibility — captureIfIncomplete=false:
         // cardRefundOk is hard-coded false here (the card hasn't run yet), so
         // capturing now would alert on every successful rollback.
@@ -483,9 +482,8 @@ export async function fulfillCartPayment(
     // Per-order try/catch, same rationale as Phase 1.
     for (const order of claimedOrders) {
       try {
-        const walletRefundOk = walletOutcomes.get(order.id) ?? false;
         const { refundStatus, refundAmountCents } = await stampRollbackRefundStatus(
-          serviceClient, order, cardRefundOk, walletRefundOk, true
+          serviceClient, order, cardRefundOk, order.walletRefundOk, true
         );
         void logAuditEvent(serviceClient, {
           actorType: 'system',
