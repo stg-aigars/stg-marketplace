@@ -7,12 +7,18 @@
  * sets here so they no-op and don't interfere with the assertions below.
  *
  * Covers:
- *  - A `failed`/`partial` refund_status older than REFUND_ALERT_AGE_MS (1h)
- *    triggers exactly one digest email + one Sentry capture for the batch.
+ *  - A `failed`/`partial` refund_status older than REFUND_ALERT_AGE_MS (1h),
+ *    but within REFUND_ALERT_WINDOW_MS (30min) of first crossing that
+ *    threshold, triggers exactly one digest email + one Sentry capture for
+ *    the batch.
  *  - `completed` refund_status orders are excluded by the query predicate
  *    (`.in('refund_status', ['failed', 'partial'])`) — never appear in the
  *    alert.
  *  - A `failed` refund_status within the 1h grace period is not yet alerted.
+ *  - A `failed` refund_status stuck well past the alert window (already had
+ *    its one chance to alert) is NOT re-alerted — this is the fix for a
+ *    code-review finding that the original unbounded query would re-send
+ *    the same digest every 5-minute cron tick, indefinitely.
  *  - An empty result set sends no email and fires no Sentry capture.
  */
 
@@ -84,7 +90,10 @@ function refundRow(opts: Partial<StuckRefundRow> & { id: string }): StuckRefundR
     refund_status: 'failed',
     refund_amount_cents: 0,
     total_amount_cents: 5000,
-    updated_at: new Date(NOW.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2h ago by default
+    // 1h15m ago by default — past REFUND_ALERT_AGE_MS (1h) but inside
+    // REFUND_ALERT_WINDOW_MS (1h to 1h30m), so it's within the one-shot
+    // alert window rather than already past it.
+    updated_at: new Date(NOW.getTime() - 75 * 60 * 1000).toISOString(),
     ...opts,
   };
 }
@@ -117,7 +126,6 @@ function makeSupabaseMock(allOrders: StuckRefundRow[]) {
     builder.eq = vi.fn(() => builder);
     builder.neq = vi.fn(() => builder);
     builder.not = vi.fn(() => builder);
-    builder.gt = vi.fn(() => builder);
     builder.in = vi.fn((col: string, values: string[]) => {
       if (table === 'orders' && col === 'refund_status') {
         isStuckRefundsQuery = true;
@@ -128,6 +136,12 @@ function makeSupabaseMock(allOrders: StuckRefundRow[]) {
     builder.lt = vi.fn((col: string, cutoff: string) => {
       if (table === 'orders' && isStuckRefundsQuery && col === 'updated_at') {
         filtered = filtered.filter((o) => o.updated_at < cutoff);
+      }
+      return builder;
+    });
+    builder.gt = vi.fn((col: string, windowStart: string) => {
+      if (table === 'orders' && isStuckRefundsQuery && col === 'updated_at') {
+        filtered = filtered.filter((o) => o.updated_at > windowStart);
       }
       return builder;
     });
@@ -228,7 +242,7 @@ describe('POST /api/cron/reconcile-payments — stuck refund_status alert', () =
         refund_status: 'partial',
         refund_amount_cents: 1200,
         total_amount_cents: 5000,
-        updated_at: '2026-06-24T09:00:00.000Z',
+        updated_at: '2026-06-24T10:45:00.000Z', // 1h15m before NOW — inside the alert window
       }),
     ];
     mockCreateServiceClient.mockReturnValue(makeSupabaseMock(stuck));
@@ -245,7 +259,7 @@ describe('POST /api/cron/reconcile-payments — stuck refund_status alert', () =
     expect(rendered).toContain('5000');
     expect(rendered).toContain('buyer-stuck-1');
     expect(rendered).toContain('seller-stuck-1');
-    expect(rendered).toContain('2026-06-24T09:00:00.000Z');
+    expect(rendered).toContain('2026-06-24T10:45:00.000Z');
   });
 
   it('does not alert on a completed refund_status (excluded by the query predicate)', async () => {
@@ -278,6 +292,31 @@ describe('POST /api/cron/reconcile-payments — stuck refund_status alert', () =
         id: 'order-recent',
         refund_status: 'failed',
         updated_at: new Date(NOW.getTime() - 10 * 60 * 1000).toISOString(),
+      }),
+    ];
+    mockCreateServiceClient.mockReturnValue(makeSupabaseMock(rows));
+
+    const { POST } = await import('./route');
+    const res = await POST(makeRequest());
+    const json = await res.json();
+
+    expect(json.stuckRefunds).toBe(0);
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockSentryCaptureException).not.toHaveBeenCalled();
+  });
+
+  it('does not re-alert on a refund stuck well past the alert window (already had its one chance to alert)', async () => {
+    // Code-review finding: the original query had no upper bound, so a
+    // permanently stuck refund would re-trigger the digest on every 5-minute
+    // cron tick, indefinitely. This row is 3 hours stale — well past
+    // REFUND_ALERT_WINDOW_MS (1h to 1h30m) — and must NOT be alerted on,
+    // proving the fix actually bounds the alert to (at most) one occurrence
+    // per stuck order rather than just capping total duration.
+    const rows = [
+      refundRow({
+        id: 'order-long-stuck',
+        refund_status: 'failed',
+        updated_at: new Date(NOW.getTime() - 3 * 60 * 60 * 1000).toISOString(),
       }),
     ];
     mockCreateServiceClient.mockReturnValue(makeSupabaseMock(rows));

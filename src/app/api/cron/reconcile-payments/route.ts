@@ -30,6 +30,18 @@ const WALLET_RETRY_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 const WALLET_ALERT_AGE_MS = 60 * 60 * 1000;
 /** Refund status stuck in a non-terminal state for over 1 hour triggers a staff alert */
 const REFUND_ALERT_AGE_MS = 60 * 60 * 1000;
+/**
+ * Width of the "just crossed the alert threshold" window. Without this, a
+ * permanently stuck refund would re-trigger the digest every 5-minute cron
+ * tick, indefinitely. This bounds it to (at most) one alert per stuck order,
+ * fired on whichever tick first finds it stale past REFUND_ALERT_AGE_MS.
+ * Wider than the actual cron interval (5min) so an occasional skipped or
+ * delayed run doesn't silently drop that one alert. If a refund is still
+ * stuck after this window closes, refund_status remains directly queryable
+ * on the order row — this sweep is a convenience notification, not the
+ * source of truth.
+ */
+const REFUND_ALERT_WINDOW_MS = 30 * 60 * 1000;
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -241,12 +253,14 @@ export async function POST(request: Request) {
   // order) but otherwise invisible without this sweep.
 
   const refundAlertCutoff = new Date(Date.now() - REFUND_ALERT_AGE_MS).toISOString();
+  const refundAlertWindowStart = new Date(Date.now() - REFUND_ALERT_AGE_MS - REFUND_ALERT_WINDOW_MS).toISOString();
 
   const { data: stuckRefunds } = await serviceClient
     .from('orders')
     .select('id, order_number, buyer_id, seller_id, refund_status, refund_amount_cents, total_amount_cents, updated_at')
     .in('refund_status', ['failed', 'partial'])
     .lt('updated_at', refundAlertCutoff)
+    .gt('updated_at', refundAlertWindowStart)
     .limit(BATCH_LIMIT);
 
   if (stuckRefunds && stuckRefunds.length > 0) {
