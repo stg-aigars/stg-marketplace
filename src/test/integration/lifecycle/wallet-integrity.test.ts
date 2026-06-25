@@ -39,7 +39,12 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  // toFake: ['Date'] only -- faking setTimeout/setInterval too breaks Node's
+  // built-in fetch (undici), which relies on real timers internally for
+  // connection-pool/keep-alive handling. Under Node 22 (not Node 20) this
+  // hangs any Supabase client call made while fake timers are active until
+  // Vitest's own (real-timer) test timeout fires.
+  vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(Date.UTC(2027, 0, 15, 12, 0, 0)));
 });
 
