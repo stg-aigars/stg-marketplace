@@ -7,6 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { dbExecOrThrow } from './db-exec';
 import { createTestAnonClient, createTestServiceClient } from './supabase';
+import { deleteTestUser } from './factories';
 
 export interface SignedInClientOptions {
   isStaff?: boolean;
@@ -76,11 +77,8 @@ export async function createSignedInClient(
  * Deletes the auth.users row for a previously-created persona. The
  * user_profiles row cascades via FK. Use in test teardown when running
  * multiple personas in one test; single-persona tests can call
- * supabase.auth.admin.deleteUser(persona.userId) directly.
+ * deleteTestUser(persona.userId) (from '../helpers/factories') directly.
  */
 export async function cleanupSignedInClient(persona: SignedInClient): Promise<void> {
-  const { error } = await serviceClient.auth.admin.deleteUser(persona.userId);
-  if (error) {
-    throw new Error(`cleanupSignedInClient failed: ${error.message}`);
-  }
+  await deleteTestUser(persona.userId);
 }
