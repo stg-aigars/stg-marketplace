@@ -162,10 +162,10 @@ export default async function HomePage() {
           />
         </div>
       )}
+      <WantedRail />
       {showCompactSellerProp && <SellerValueProp variant="compact" />}
 
       <Features />
-      <WantedRail />
       {showFullSellerProp && <SellerValueProp />}
       <FaqAccordion />
       <HomeCta />
