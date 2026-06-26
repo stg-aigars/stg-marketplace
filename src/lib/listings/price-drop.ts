@@ -7,12 +7,18 @@ const WINDOW_MS = PRICE_DROP_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 /**
  * Single source of truth for "is this listing's price drop visible right now?"
  *
+ * Covers both manual fixed-price reductions AND automated declining-price
+ * drops. A declining listing only qualifies once it has actually dropped:
+ * its previous_price_cents / price_changed_at stay null until the
+ * apply-price-drops cron applies the first decrement (recorded by the
+ * migration-129 trigger). Auctions are excluded by construction.
+ *
  * SQL mirror: the browse query filters by the `has_price_decrease` generated
  * column (directional fact: price_cents < previous_price_cents) plus a
  * `price_changed_at > now() - 14d AND price_changed_at <= now()` predicate
  * (freshness window). Helper computes all conditions inline; SQL short-circuits
  * the directional check via the generated column. Semantics are identical —
- * any change to one side must update the other (see migration 122).
+ * any change to one side must update the other (see migrations 122 and 129).
  *
  * SSR caching: helper evaluates against `Date.now()` at render time. Browse
  * pages are dynamic today (searchParams forces dynamic rendering), so the
@@ -30,7 +36,7 @@ export function isPriceDropActive(listing: {
   previous_price_cents: number | null;
   price_changed_at: string | null;
 }): boolean {
-  if (listing.listing_type !== 'fixed_price') return false;
+  if (listing.listing_type !== 'fixed_price' && listing.listing_type !== 'declining') return false;
   if (listing.previous_price_cents == null || listing.price_changed_at == null) return false;
   if (listing.price_cents >= listing.previous_price_cents) return false;
   const now = Date.now();

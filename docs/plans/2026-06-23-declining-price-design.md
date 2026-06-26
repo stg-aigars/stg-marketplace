@@ -70,7 +70,7 @@ Index `next_drop_at` (partial: `WHERE next_drop_at IS NOT NULL`) for the cron qu
 
 All monetary values are **integer cents**.
 
-**Price-drop-tracking note (migration 122):** declining listings are excluded from `has_price_decrease` / "Price drops only" by the same `listing_type = 'fixed_price'` guard that already excludes auctions — confirmed in Phase 0 item 9. No migration change needed; this is a deliberate inherited behavior, not an oversight.
+**Price-drop-tracking note (migration 122):** declining listings are excluded from `has_price_decrease` / "Price drops only" by the same `listing_type = 'fixed_price'` guard that already excludes auctions — confirmed in Phase 0 item 9. No migration change needed; this is a deliberate inherited behavior, not an oversight. **Superseded by migration 129:** the price-change trigger now tracks declining listings too, so a declining listing surfaces in "Price drops only" once it has actually dropped (auctions remain excluded). See `isPriceDropActive` + migration 129.
 
 ### Types
 
@@ -152,7 +152,7 @@ i18n for all new strings across the four locale files. `pnpm verify` green.
 
 - **`listing.price_dropped` notifications** to watchers/favoriters. Only viable if a watchlist table exists; the `listing.` notification prefix is already in the `notifications_type_check` regex, so no prefix migration would be needed — but defer until watchlist is confirmed/built.
 - Auto-expiry N days after hitting the floor. Floor listings simply remain buyable at floor.
-- Surfacing declining-listing drops in the "Price drops only" browse filter (migration 122) — deliberately excluded, see Phase 0 item 9.
+- Surfacing declining-listing drops in the "Price drops only" browse filter (migration 122) — initially excluded (Phase 0 item 9); **now shipped in migration 129**, which tracks declining drops so they appear once actually dropped.
 
 ## Accounting note (no work required)
 

@@ -95,12 +95,15 @@ export default async function BrowsePage(
   if (filters.priceDrops) {
     const now = new Date();
     const cutoff = new Date(now.getTime() - PRICE_DROP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    // Declining listings are excluded from has_price_decrease by the migration-122
-    // trigger's fixed_price-only guard (they're already badged "Price drops" on the
-    // card), so OR them in directly rather than relying on that generated column.
-    query = query.or(
-      `and(has_price_decrease.eq.true,price_changed_at.gt.${cutoff.toISOString()},price_changed_at.lte.${now.toISOString()}),listing_type.eq.declining`
-    );
+    // Migration 129 extends the price-change trigger to declining listings, so
+    // has_price_decrease now covers both manual fixed-price reductions AND
+    // dropped declining listings — and excludes declining listings that haven't
+    // dropped yet. This mirrors isPriceDropActive() exactly (price < previous,
+    // within the 14d window), so the card strike and this filter stay in lockstep.
+    query = query
+      .eq('has_price_decrease', true)
+      .gt('price_changed_at', cutoff.toISOString())
+      .lte('price_changed_at', now.toISOString());
   }
   if (filters.playerCounts.length > 0) {
     const playerClauses = filters.playerCounts.map((n) =>
