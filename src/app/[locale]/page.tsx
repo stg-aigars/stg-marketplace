@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserWithFavorites } from '@/lib/favorites/actions';
 import { getListingCardCounts } from '@/lib/listings/queries';
+import { PRICE_DROP_WINDOW_DAYS } from '@/lib/listings/price-drop';
 import { ListingSection } from '@/components/listings/ListingSection';
 import { HomeHero } from '@/components/marketing/HomeHero';
 import { TrustBand } from '@/components/marketing/TrustBand';
@@ -49,7 +50,12 @@ export default async function HomePage() {
   const t = await getTranslations('home');
 
   const supabase = await createClient();
-  const [{ data: recentListings }, { data: endingSoonAuctions }, { user, favoriteIds }] = await Promise.all([
+  const now = new Date();
+  // Same price-drop predicate as the browse "Price drops" filter (post-#421):
+  // has_price_decrease + the 14d freshness window. Covers manual fixed-price
+  // reductions AND dropped declining listings; excludes un-dropped declining.
+  const priceDropCutoff = new Date(now.getTime() - PRICE_DROP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const [{ data: recentListings }, { data: endingSoonAuctions }, { data: priceDropListings }, { user, favoriteIds }] = await Promise.all([
     supabase
       .from('listings')
       .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
@@ -63,9 +69,19 @@ export default async function HomePage() {
       .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
       .eq('listing_type', 'auction')
       .eq('status', 'active')
-      .gt('auction_end_at', new Date().toISOString())
+      .gt('auction_end_at', now.toISOString())
       .order('auction_end_at', { ascending: true })
       .limit(4)
+      .returns<RecentListingRow[]>(),
+    supabase
+      .from('listings')
+      .select('id, game_name, game_year, condition, price_cents, previous_price_cents, price_changed_at, photos, country, status, listing_type, bid_count, auction_end_at, version_thumbnail, games(image, is_expansion)')
+      .eq('status', 'active')
+      .eq('has_price_decrease', true)
+      .gt('price_changed_at', priceDropCutoff.toISOString())
+      .lte('price_changed_at', now.toISOString())
+      .order('price_changed_at', { ascending: false })
+      .limit(8)
       .returns<RecentListingRow[]>(),
     getUserWithFavorites(),
   ]);
@@ -73,14 +89,16 @@ export default async function HomePage() {
 
   const recentListingsList = recentListings ?? [];
   const endingSoonAuctionsList = endingSoonAuctions ?? [];
+  const priceDropListingsList = priceDropListings ?? [];
 
   const { expansionCounts, commentCounts, upgradeCounts } = await getListingCardCounts(
     supabase,
-    [...recentListingsList, ...endingSoonAuctionsList].map((l) => l.id)
+    [...recentListingsList, ...endingSoonAuctionsList, ...priceDropListingsList].map((l) => l.id)
   );
 
   const showEndingSoonRail = endingSoonAuctionsList.length >= 1;
   const showAvailableNowRail = recentListingsList.length >= 6;
+  const showPriceDropsRail = priceDropListingsList.length >= 1;
   const showCompactSellerProp = !showAvailableNowRail && !IS_PRELAUNCH;
   const showFullSellerProp = showAvailableNowRail && !IS_PRELAUNCH;
 
@@ -105,6 +123,26 @@ export default async function HomePage() {
             className="py-8 sm:py-10 lg:py-12"
           />
         </div>
+      )}
+
+      {showPriceDropsRail && (
+        <section className="bg-semantic-brand-bg border-y border-semantic-border-subtle">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <ListingSection
+              eyebrow={t('priceDrops.eyebrow')}
+              heading={t('priceDrops.heading')}
+              href="/browse?priceDrops=1&sort=recent_drops"
+              linkText={t('priceDrops.browseAll')}
+              listings={priceDropListingsList}
+              favoriteIds={favoriteIds}
+              isAuthenticated={isAuthenticated}
+              expansionCounts={expansionCounts}
+              commentCounts={commentCounts}
+              upgradeCounts={upgradeCounts}
+              className="py-8 sm:py-10 lg:py-12"
+            />
+          </div>
+        </section>
       )}
 
       {showAvailableNowRail && (

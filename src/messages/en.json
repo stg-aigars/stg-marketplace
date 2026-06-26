@@ -42,6 +42,11 @@
       "heading": "Auctions ending soon",
       "browseAll": "See all auctions"
     },
+    "priceDrops": {
+      "eyebrow": "Just dropped",
+      "heading": "Price drops",
+      "browseAll": "Browse all"
+    },
     "wanted": {
       "eyebrow": "On the hunt",
       "heading": "Wanted by buyers",
