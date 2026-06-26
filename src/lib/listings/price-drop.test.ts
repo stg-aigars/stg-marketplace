@@ -5,7 +5,7 @@ import { PRICE_DROP_WINDOW_DAYS, isPriceDropActive } from './price-drop';
 const NOW = new Date('2026-05-26T12:00:00.000Z');
 
 function listing(overrides: {
-  listing_type?: 'fixed_price' | 'auction';
+  listing_type?: 'fixed_price' | 'auction' | 'declining';
   price_cents?: number;
   previous_price_cents?: number | null;
   price_changed_at?: string | null;
@@ -50,6 +50,23 @@ describe('isPriceDropActive', () => {
 
   it('returns false for auction listings even if the data looks like a drop', () => {
     expect(isPriceDropActive(listing({ listing_type: 'auction' }))).toBe(false);
+  });
+
+  it('returns true for a declining listing that has actually dropped', () => {
+    expect(isPriceDropActive(listing({ listing_type: 'declining' }))).toBe(true);
+  });
+
+  it('returns false for a declining listing that has not dropped yet (previous_price_cents null)', () => {
+    expect(
+      isPriceDropActive(listing({ listing_type: 'declining', previous_price_cents: null }))
+    ).toBe(false);
+  });
+
+  it('returns false for a declining listing whose drop is past the 14d window', () => {
+    const changedAt = new Date(NOW.getTime() - (PRICE_DROP_WINDOW_DAYS * 24 * 60 + 1) * 60 * 1000);
+    expect(
+      isPriceDropActive(listing({ listing_type: 'declining', price_changed_at: changedAt.toISOString() }))
+    ).toBe(false);
   });
 
   it('returns false when previous_price_cents is null', () => {
