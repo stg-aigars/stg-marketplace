@@ -14,6 +14,7 @@ import { PendingActionsProvider } from '@/contexts/PendingActionsContext';
 import { PendingActionsBanner } from '@/components/layout/PendingActionsBanner';
 import { FeedbackBanner } from '@/components/feedback/FeedbackBanner';
 import { JsonLd } from '@/lib/seo/json-ld';
+import { OG_IMAGES, TWITTER_IMAGES } from '@/lib/seo/og';
 import type { SearchAction } from 'schema-dts';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import NextTopLoader from 'nextjs-toploader';
@@ -57,11 +58,13 @@ export const metadata: Metadata = {
     title: 'Second Turn Games',
     description: 'Every game deserves a second turn. Pre-loved board games for the Baltic region.',
     url: baseUrl,
+    images: OG_IMAGES,
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Second Turn Games',
     description: 'Every game deserves a second turn. Pre-loved board games for the Baltic region.',
+    images: TWITTER_IMAGES,
   },
   metadataBase: new URL(baseUrl),
   manifest: '/manifest.webmanifest',
