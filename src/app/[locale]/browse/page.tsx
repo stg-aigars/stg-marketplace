@@ -18,6 +18,7 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import { isPriceDropActive, PRICE_DROP_WINDOW_DAYS } from '@/lib/listings/price-drop';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { OG_IMAGES } from '@/lib/seo/og';
 
 const PAGE_SIZE = 24;
 
@@ -34,7 +35,7 @@ export async function generateMetadata(
   return {
     title,
     description,
-    openGraph: { title: `${title} | Second Turn Games`, description },
+    openGraph: { title: `${title} | Second Turn Games`, description, images: OG_IMAGES },
   };
 }
 
