@@ -5,7 +5,6 @@ import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Badge, Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, Price } from './atoms';
-import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 import { FavoriteButton } from './FavoriteButton';
 import { formatExpansionCount, formatUpgradeCount } from '@/lib/listings/types';
 
@@ -17,7 +16,6 @@ interface ListingCardProps {
   priceCents: number;
   /** Pre-resolved previous price (caller computes via `isPriceDropActive`). */
   previousPriceCents?: number;
-  sellerCountry: string;
   /** Number of photos (shows count badge when > 0) */
   photoCount?: number;
   isFavorited?: boolean;
@@ -50,7 +48,6 @@ function ListingCard({
   photoCount,
   priceCents,
   previousPriceCents,
-  sellerCountry,
   isFavorited,
   isAuthenticated = false,
   unavailable = false,
@@ -66,8 +63,6 @@ function ListingCard({
 }: ListingCardProps) {
   const isReserved = status === 'reserved';
   const imageUrl = toBggFullSize(gameThumbnail) ?? firstPhoto ?? null;
-  const flagClass = getCountryFlag(sellerCountry);
-  const countryName = getCountryName(sellerCountry);
   const hasPhotos = photoCount !== undefined && photoCount > 0;
 
   return (
@@ -179,13 +174,6 @@ function ListingCard({
                   </span>
                 )}
               </div>
-            )}
-            {flagClass && (
-              <span
-                className={`${flagClass} text-base`}
-                title={countryName}
-                aria-label={countryName}
-              />
             )}
           </div>
 

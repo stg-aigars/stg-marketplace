@@ -246,7 +246,6 @@ export default async function BrowsePage(
                 photoCount={listing.photos?.length ?? 0}
                 priceCents={listing.price_cents}
                 previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
-                sellerCountry={listing.country}
                 isFavorited={favoriteIds.has(listing.id)}
                 isAuthenticated={isAuthenticated}
                 expansionCount={expansionCounts[listing.id] ?? 0}

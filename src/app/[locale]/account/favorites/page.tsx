@@ -99,7 +99,6 @@ export default async function FavoritesPage() {
                 photoCount={listing.photos?.length ?? 0}
                 priceCents={listing.price_cents}
                 previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
-                sellerCountry={listing.country}
                 isFavorited={true}
                 isAuthenticated={true}
                 unavailable={isUnavailable}
