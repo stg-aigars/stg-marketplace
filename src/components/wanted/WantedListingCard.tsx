@@ -4,7 +4,6 @@ import { ImageSquare } from '@phosphor-icons/react/ssr';
 import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
 import { Card } from '@/components/ui';
 import { GameTitle, GameMeta } from '@/components/listings/atoms';
-import { getCountryFlag, getCountryName } from '@/lib/country-utils';
 
 interface WantedListingCardProps {
   id: string;
@@ -15,7 +14,6 @@ interface WantedListingCardProps {
   versionThumbnail: string | null;
   language: string | null;
   publisher: string | null;
-  buyerCountry: string;
   notes: string | null;
 }
 
@@ -28,7 +26,6 @@ export function WantedListingCard({
   versionThumbnail,
   language,
   publisher,
-  buyerCountry,
   notes,
 }: WantedListingCardProps) {
   const displayYear = editionYear ?? gameYear;
@@ -65,15 +62,8 @@ export function WantedListingCard({
             </p>
           )}
 
-          <div className="mt-auto pt-2 flex items-center justify-between">
-            <span
-              className={`${getCountryFlag(buyerCountry)} text-xs`}
-              title={getCountryName(buyerCountry)}
-            />
-          </div>
-
           {notes && (
-            <p className="text-xs text-semantic-text-muted mt-1.5 line-clamp-2">
+            <p className="text-xs text-semantic-text-muted mt-auto pt-2 line-clamp-2">
               {notes}
             </p>
           )}

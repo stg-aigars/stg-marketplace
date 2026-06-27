@@ -89,7 +89,6 @@ function WantsSection({ title, wants }: { title: string; wants: WantedRelatedRow
             versionThumbnail={want.version_thumbnail}
             language={want.language}
             publisher={want.publisher}
-            buyerCountry={want.country}
             notes={want.notes}
           />
         ))}

@@ -130,7 +130,6 @@ export default async function WantedBrowsePage(
                 versionThumbnail={listing.version_thumbnail}
                 language={listing.language}
                 publisher={listing.publisher}
-                buyerCountry={listing.country}
                 notes={listing.notes}
               />
             ))}

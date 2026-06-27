@@ -65,7 +65,6 @@ export async function WantedRail() {
               versionThumbnail={w.version_thumbnail}
               language={w.language}
               publisher={w.publisher}
-              buyerCountry={w.country}
               notes={w.notes}
             />
           ))}

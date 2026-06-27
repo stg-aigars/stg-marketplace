@@ -60,7 +60,6 @@ export function MyListingsTabs({ active, inactive }: MyListingsTabsProps) {
                 photoCount={listing.photos?.length ?? 0}
                 priceCents={listing.price_cents}
                 previousPriceCents={isPriceDropActive(listing) ? listing.previous_price_cents! : undefined}
-                sellerCountry={listing.country}
                 expansionCount={listing.expansion_count}
                 commentCount={listing.comment_count}
                 isExpansion={listing.games?.is_expansion ?? false}
