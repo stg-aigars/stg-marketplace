@@ -14,6 +14,7 @@ import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
 import { IS_PRELAUNCH } from '@/lib/constants';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
+import { OG_IMAGES } from '@/lib/seo/og';
 
 const HOMEPAGE_TITLE = 'Second Turn Games — Pre-loved board games for the Baltic region';
 const HOMEPAGE_DESCRIPTION =
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: HOMEPAGE_TITLE,
     description: HOMEPAGE_DESCRIPTION,
+    images: OG_IMAGES,
   },
 };
 
