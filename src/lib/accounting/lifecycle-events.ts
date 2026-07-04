@@ -59,13 +59,20 @@ export interface BuildCartPaymentEventInput extends PostingPeriodInput {
   buyer_wallet_cents?: number;
   /**
    * Buyer's auth.users.id. Required when `buyer_wallet_cents > 0` — stamped
-   * into posting_context so the wallet-integrity dashboard can attribute the
-   * Dr 5351 line back to a user (journal_lines.counterparty_id stays null
-   * because the counterparties.type CHECK doesn't include 'buyer' today;
-   * counterparty_type='buyer' marks the role and buyer_id carries the
-   * attribution). Omitted when buyer paid entirely via EveryPay.
+   * into posting_context for audit/telemetry regardless of counterparty
+   * resolution. Omitted when buyer paid entirely via EveryPay.
    */
   buyer_id?: string;
+  /**
+   * Resolved 'buyer' counterparty id (migration 131 +
+   * resolveOrCreateBuyerCounterparty in lifecycle-wraps.ts). When present,
+   * computeCartPayment sets journal_lines.counterparty_id on the Dr 5351 line
+   * to this instead of null, so the wallet-integrity dashboard can attribute
+   * it back to a user. Caller resolves this before building the event since
+   * compute() is synchronous / has no DB access. Omitted (falls back to null)
+   * when buyer_wallet_cents is 0.
+   */
+  buyer_counterparty_id?: string;
   callback_payload: Record<string, unknown>;
   /**
    * Staff-test marker — propagated to posting_context so PR #4 reporting
@@ -105,6 +112,7 @@ export function buildCartPaymentEvent(input: BuildCartPaymentEventInput): Postin
       gross_cart_cents: input.gross_cart_cents,
       buyer_wallet_cents,
       ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
+      ...(input.buyer_counterparty_id !== undefined ? { buyer_counterparty_id: input.buyer_counterparty_id } : {}),
       ...(input.bank_account !== undefined ? { bank_account: input.bank_account } : {}),
       cart_payment_id: input.cart_payment_id,
       everypay_payment_id: input.everypay_payment_id,
@@ -134,9 +142,16 @@ export interface BuildCartPartialRefundCashLegEventInput extends PostingPeriodIn
   buyer_wallet_refund_cents?: number;
   /**
    * Buyer's auth.users.id. Required when `buyer_wallet_refund_cents > 0`;
-   * stamped into posting_context for wallet-integrity attribution.
+   * stamped into posting_context for audit/telemetry regardless of
+   * counterparty resolution.
    */
   buyer_id?: string;
+  /**
+   * Resolved 'buyer' counterparty id — same mechanism as
+   * BuildCartPaymentEventInput.buyer_counterparty_id. When present, C.9's
+   * compute sets the Cr 5351 line's counterparty_id to this instead of null.
+   */
+  buyer_counterparty_id?: string;
   /**
    * Stable per-refund identifier for idempotency. Using cart_payment_id alone
    * would collide on (source_doc_type, source_doc_id, type_id) UNIQUE if a
@@ -177,6 +192,7 @@ export function buildCartPartialRefundCashLegEvent(
       refund_cents: input.refund_cents,
       buyer_wallet_refund_cents,
       ...(input.buyer_id !== undefined ? { buyer_id: input.buyer_id } : {}),
+      ...(input.buyer_counterparty_id !== undefined ? { buyer_counterparty_id: input.buyer_counterparty_id } : {}),
       refund_reference: input.refund_reference,
       is_staff_test: input.is_staff_test ?? false
     },

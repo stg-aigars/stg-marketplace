@@ -8,6 +8,8 @@ import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth/helpers';
 import { requireBrowserOrigin } from '@/lib/api/csrf';
+import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
+import { cartFulfillmentWithGL } from '@/lib/accounting/lifecycle-wraps';
 import { createOrder, generateOrderNumber, lookupSellerIbanCountry } from '@/lib/services/orders';
 import { debitWallet, getWalletBalance, InsufficientBalanceError } from '@/lib/services/wallet';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
@@ -171,7 +173,7 @@ export async function POST(request: Request) {
       listing_ids: listingIds,
       status: 'completed',
     })
-    .select('id')
+    .select('id, is_staff_test')
     .single();
 
   if (cartGroupError || !cartGroup) {
@@ -277,6 +279,30 @@ export async function POST(request: Request) {
       extra: { userId: user.id, orderId: createdOrder.id, listingIds },
     });
     return NextResponse.json({ error: 'Order didn\'t go through — mind trying again?' }, { status: 500 });
+  }
+
+  // Step 3: Emit GL entry when cutover-gated. Mirrors payment-fulfillment.ts:
+  // fulfillCartPayment's two-level gate (ACCOUNTING_ENGINE_ENABLED + per-row
+  // is_staff_test) — dormant for real customer traffic today since nothing in
+  // this route (or any other checkout route) sets is_staff_test=true; that's
+  // set via a separate staff-only burn-in path. gross_cart_cents ==
+  // buyer_wallet_cents here (100% wallet-funded), so computeCartPayment skips
+  // the bank-rail debit line entirely — the C.1/C.2 choice and bank_account
+  // value below are unused in practice, picked for narrative consistency only.
+  // No try/catch around this call, same as the card/bank-link path: a GL
+  // failure here propagates rather than being silently swallowed, consistent
+  // with the engine's fail-loud posture for financial data.
+  if (isAccountingEngineEnabled() && cartGroup.is_staff_test) {
+    await cartFulfillmentWithGL(serviceClient, {
+      cart_group_id: cartGroupId,
+      buyer_id: user.id,
+      payment_method: 'bank_link',
+      gross_cart_cents: grandTotalCents,
+      buyer_wallet_cents: grandTotalCents,
+      everypay_payment_reference: `wallet:${cartGroupId}`,
+      callback_payload: { payment_method: 'wallet', wallet_debit_cents: grandTotalCents },
+      is_staff_test: true
+    });
   }
 
   void logAuditEvent(serviceClient, {

@@ -185,7 +185,8 @@ export type JournalEntryType =
   | 'shareholder_loan'
   | 'vendor_invoice'
   | 'vendor_payment'
-  | 'vat_refund';
+  | 'vat_refund'
+  | 'vat_payment';
 
 /** 1:1 mapping to public.journal_entries */
 export interface JournalEntryRow {

@@ -157,6 +157,57 @@ async function resolveSellerCounterparty(
 }
 
 /**
+ * Resolve-or-create a 'buyer' counterparty by user_id, mirroring
+ * resolveSellerCounterparty exactly but for the buyer role introduced in
+ * migration 131. Only `id` is needed by callers — a buyer counterparty is
+ * never routing-relevant (no O.x/I.x dispatch ever reads it), it exists
+ * purely so journal_lines.counterparty_id (a foreign key) has a real row to
+ * point at for wallet-integrity attribution on the buyer's 5351
+ * wallet-contribution line, instead of the historical `null`.
+ */
+async function resolveOrCreateBuyerCounterparty(
+  supabase: SupabaseClient,
+  buyerId: string
+): Promise<{ id: string }> {
+  const { data: existing, error: lookupErr } = await supabase
+    .from('counterparties')
+    .select('id')
+    .eq('user_id', buyerId)
+    .eq('type', 'buyer')
+    .maybeSingle();
+  if (lookupErr) {
+    throw new Error(`resolveOrCreateBuyerCounterparty lookup failed for ${buyerId}: ${lookupErr.message}`);
+  }
+  if (existing) return existing;
+
+  const { data: profile, error: profileErr } = await supabase
+    .from('user_profiles')
+    .select('id, full_name, country')
+    .eq('id', buyerId)
+    .single();
+  if (profileErr || !profile) {
+    throw new Error(`resolveOrCreateBuyerCounterparty: cannot read user_profile ${buyerId}: ${profileErr?.message ?? 'not found'}`);
+  }
+
+  const { data: created, error: insertErr } = await supabase
+    .from('counterparties')
+    .insert({
+      user_id: buyerId,
+      type: 'buyer',
+      full_name: profile.full_name,
+      country: profile.country,
+      legal_compliance_status: 'ok',
+      kyc_status: 'not_required'
+    })
+    .select('id')
+    .single();
+  if (insertErr || !created) {
+    throw new Error(`resolveOrCreateBuyerCounterparty: counterparty insert failed for ${buyerId}: ${insertErr?.message ?? 'no row returned'}`);
+  }
+  return created;
+}
+
+/**
  * Flag-ON path for `order-transitions.ts:creditSellerWallet`. Builds the
  * O.1-O.5 completion event, dispatches + computes via the engine assembly
  * helper, and calls `complete_order_with_event_atomic` (migration 104) to
@@ -616,6 +667,19 @@ export async function cartFulfillmentWithGL(
   const today = new Date().toISOString().split('T')[0];
   const period = today.substring(0, 7);
 
+  // Resolve the buyer counterparty only when there's a wallet contribution to
+  // attribute — either the cart payment itself, or (independently) a partial
+  // refund crediting back to wallet (migration 131 +
+  // resolveOrCreateBuyerCounterparty). Resolved once up front and reused for
+  // both the cart event and the paired C.9 refund event below, since both
+  // reference the same buyer. Avoids an unnecessary lazy-init write for the
+  // common 100%-EveryPay, no-partial-refund cart.
+  const needsBuyerCounterparty = input.buyer_wallet_cents > 0
+    || (input.partial_refund !== undefined && input.partial_refund.buyer_wallet_refund_cents > 0);
+  const buyerCounterparty = needsBuyerCounterparty
+    ? await resolveOrCreateBuyerCounterparty(supabase, input.buyer_id)
+    : null;
+
   const cartEvent = buildCartPaymentEvent({
     cart_payment_id: input.cart_group_id,
     everypay_payment_id: input.everypay_payment_reference,
@@ -623,6 +687,7 @@ export async function cartFulfillmentWithGL(
     gross_cart_cents: input.gross_cart_cents,
     buyer_wallet_cents: input.buyer_wallet_cents,
     buyer_id: input.buyer_wallet_cents > 0 ? input.buyer_id : undefined,
+    buyer_counterparty_id: buyerCounterparty?.id,
     // Bank-link (PIS) receipts land directly in the e-commerce settlement
     // account (2620). Card receipts stay in 2630 EveryPay clearing (C.1
     // default) until the C.3 settlement releases them to 2620. See the #394
@@ -671,6 +736,7 @@ export async function cartFulfillmentWithGL(
       refund_cents: input.partial_refund.refund_cents,
       buyer_wallet_refund_cents: input.partial_refund.buyer_wallet_refund_cents,
       buyer_id: input.partial_refund.buyer_wallet_refund_cents > 0 ? input.buyer_id : undefined,
+      buyer_counterparty_id: buyerCounterparty?.id,
       refund_reference,
       is_staff_test: input.is_staff_test,
       posting_date: today,

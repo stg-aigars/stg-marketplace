@@ -761,6 +761,24 @@ describe('C.1 — cart payment, EveryPay card', () => {
       )
     ).toThrow();
   });
+
+  it('sets counterparty_id from buyer_counterparty_id when the caller resolved one', () => {
+    const result = C_1().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        gross_cart_cents: 10000,
+        buyer_wallet_cents: 3000,
+        buyer_id: 'b0000000-0000-0000-0000-000000000001',
+        buyer_counterparty_id: 'cp-buyer-0000-0000-0000-000000000001',
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines[1]).toMatchObject({
+      account_code: '5351',
+      counterparty_type: 'buyer',
+      counterparty_id: 'cp-buyer-0000-0000-0000-000000000001'
+    });
+  });
 });
 
 describe('C.2 — cart payment, PIS / bank-link', () => {
@@ -849,6 +867,24 @@ describe('C.9 — cart-time partial refund cash leg', () => {
     const sum_dr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
     const sum_cr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
     expect(sum_dr).toBe(sum_cr);
+  });
+
+  it('sets counterparty_id from buyer_counterparty_id when the caller resolved one', () => {
+    const result = C_9().compute(
+      buildInput(null as unknown as CounterpartyRow, null, {
+        refund_cents: 4000,
+        buyer_wallet_refund_cents: 1000,
+        buyer_id: 'b0000000-0000-0000-0000-000000000003',
+        buyer_counterparty_id: 'cp-buyer-0000-0000-0000-000000000003',
+        payment_method: 'card'
+      })
+    );
+
+    expect(result.lines[2]).toMatchObject({
+      account_code: '5351',
+      counterparty_type: 'buyer',
+      counterparty_id: 'cp-buyer-0000-0000-0000-000000000003'
+    });
   });
 
   it('omits the 2630 leg when the refund came entirely from wallet allocation', () => {
