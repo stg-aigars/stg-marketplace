@@ -231,6 +231,14 @@ const YEB9_CART = '4b6c9ef1-3295-42f0-a99e-9fc9ba9b0052';
 const YEB9_EVERYPAY = '77dbe714063e9df07d2831885f6751e543c1f26b314567980758c5cebe87c31d';
 const YEB9_ID = '6797e321-e92a-4f4d-ae8a-0ff7c8086412';
 
+// STG-20260607-G6QC — 100%-wallet-funded (buyer used existing wallet balance,
+// no EveryPay involved). Originally skipped entirely (matching the live
+// cart-wallet-pay route, which never touches the accounting engine — see
+// file header). Now that route is fixed (this same PR), correcting the gap
+// here so June's wallet integrity ties out too: entries 66/67 below.
+const G6QC_ID = 'faaf6c45-624e-4eda-96fb-14a656cec291';
+const G6QC_CART = 'e4c01dc0-5e1b-4394-a862-b34ea6de2a63';
+
 // Seller user_ids (new sellers this month; see file header for the resolution
 // mechanism). Aigars (630f6e7f-95cb-41fa-a98f-a4d199aa32fe) already has a
 // counterparty from Phase 0 — referenced via sellerUserId too so the runner's
@@ -246,6 +254,7 @@ const DAINIS_USER_ID = '880caa98-9098-4364-bd86-5bde6410992e';
 const LUMINARIOUS_USER_ID = 'ee3b9fe6-c074-411a-91bb-c3d1f9319298';
 const ARTURS_P_USER_ID = 'f4d4492d-d3b4-4c59-8ca6-d1bff83a3d75';
 const BEERZINJSH_USER_ID = '159fad8d-59e3-4014-8040-2187718148fb';
+const KASPARS_SILAVS_USER_ID = 'd8f7acef-acb1-44e6-a525-4e58817f679d';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1806,15 +1815,70 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
         everypay_payment_id: YEB9_EVERYPAY
       })
     }
+  },
+
+  // 2026-06-07: G6QC cart payment — 100% buyer wallet, no bank leg (C.2-shaped;
+  // gross == buyer_wallet_cents so computeCartPayment skips the bank-rail
+  // debit entirely). Correction: originally skipped per the live route's gap;
+  // that route is fixed on this same branch, so this entry now represents
+  // what it would have posted at cart-creation time.
+  {
+    entry_number: '66',
+    description: 'G6QC cart €36.90 — 100% buyer wallet debit (no EveryPay involved)',
+    event: {
+      event_type: 'everypay.payment_confirmed',
+      source_doc_type: SOURCE_DOC_TYPE_CART_PAYMENT,
+      source_doc_id: 'june_2026_entry_66',
+      posting_date: '2026-06-07',
+      accounting_period: '2026-06',
+      tax_period: '2026-06',
+      narrative: 'Order STG-20260607-G6QC cart €36.90 — 100% buyer wallet debit, no EveryPay/bank rail involved',
+      payload: tag('66', {
+        payment_method: 'bank_link',
+        gross_cart_cents: 3690,
+        buyer_wallet_cents: 3690,
+        buyer_id: AIGARS_USER_ID,
+        bank_account: '2620',
+        order_id: G6QC_ID,
+        cart_payment_id: G6QC_CART,
+        everypay_payment_id: `wallet:${G6QC_CART}`
+      })
+    }
+  },
+
+  // 2026-06-12: G6QC completion (O.1 LV) — Kaspars Silavs (first appearance as a seller)
+  {
+    entry_number: '67',
+    description: 'G6QC completion €36.90 — LV B2C',
+    sellerUserId: KASPARS_SILAVS_USER_ID,
+    event: {
+      event_type: 'order.completed',
+      source_doc_type: SOURCE_DOC_TYPE_ORDER,
+      source_doc_id: 'june_2026_entry_67',
+      posting_date: '2026-06-12',
+      accounting_period: '2026-06',
+      tax_period: '2026-06',
+      narrative: 'Order STG-20260607-G6QC — LV B2C completion (item €35.00 + ship €1.90 = €36.90)',
+      payload: tag('67', {
+        order_id: G6QC_ID,
+        order_number: 'STG-20260607-G6QC',
+        invoice_number: 'INV-2026-00016',
+        consumption_ms: 'LV',
+        item_value_cents: 3500,
+        shipping_value_cents: 190
+      })
+    }
   }
 ];
 
 // ---------------------------------------------------------------------------
-// Sanity assertion: 64 emits expected. June's own P.1 close is deferred
+// Sanity assertion: 67 emits expected. June's own P.1 close is deferred
 // (Swedbank invoice pending, ~15 July) — see file header. The C.11 entry
-// settles MAY's payable and is independent of that deferral.
+// settles MAY's payable and is independent of that deferral. Entries 66/67
+// correct the G6QC wallet-order gap, added once the cart-wallet-pay route
+// fix landed on this same branch.
 // ---------------------------------------------------------------------------
-export const TOTAL_BACKFILL_ENTRIES = 65;
+export const TOTAL_BACKFILL_ENTRIES = 67;
 if (BACKFILL_ENTRIES.length !== TOTAL_BACKFILL_ENTRIES) {
   throw new Error(
     `june-2026-backfill-data.ts: expected ${TOTAL_BACKFILL_ENTRIES} BACKFILL_ENTRIES, ` +

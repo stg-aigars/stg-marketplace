@@ -1,7 +1,7 @@
 /**
  * June 2026 backfill — runner script.
  *
- * Posts 64 journal entries reconstructing STG's marketplace + vendor GL
+ * Posts 67 journal entries reconstructing STG's marketplace + vendor GL
  * activity for June 2026. Continues the chain from May (`close_2026_05`
  * hard-locked). June's OWN P.1 VAT close is NOT in this run — deferred until
  * the Swedbank/EveryPay platform-fee invoice for the 15.06 statement lines
@@ -16,7 +16,7 @@
  *
  * Env: reads `.env.local` for NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
  *
- * Idempotency: source_doc_id `june_2026_entry_<N>` (N=1..63, plus `7b`). Re-runs hit
+ * Idempotency: source_doc_id `june_2026_entry_<N>` (N=1..67, plus `6b`/`7b`). Re-runs hit
  * idempotent_skip and reconcile to the same closing state. Seller counterparty
  * resolution (see below) is also idempotent — a re-run's lookup finds the row
  * the first run created.

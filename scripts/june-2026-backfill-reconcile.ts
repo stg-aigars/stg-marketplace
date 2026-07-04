@@ -4,7 +4,7 @@
  * Deliberately lighter than May's reconcile harness (`may-2026-backfill-
  * reconcile.ts`). May hand-derived a full per-account delta table for 6
  * orders across 2 VAT jurisdictions — feasible by hand at that volume. June
- * has 21 completions across 3 jurisdictions (LV 21%, LT 21% OSS, EE 24% OSS)
+ * has 22 completions across 3 jurisdictions (LV 21%, LT 21% OSS, EE 24% OSS)
  * plus FX decomposition (Porkbun) and combined-batch settlements; hand-
  * deriving every commission/VAT split independently would be more error-prone
  * than trusting the engine's own (separately unit-tested) compute functions.
