@@ -1269,6 +1269,13 @@ const I_5: VatMappingEntry = {
   posting_context_required_keys: ['vendor', 'fee_type'],
   compute: (input: ComputeInput): ComputeOutput => {
     const fee_cents = requireNumber(input.payload, 'fee_cents');
+    // bank_account override (default '2610'). Card-settlement fees deducted at
+    // the 2620 e-commerce account (per-transaction MDR on POS batches) need to
+    // debit that account, not the operating account — same override shape as
+    // C.1/C.2/C.3's bank_account / settlement_bank_account.
+    const bankAccountCode = typeof input.payload.bank_account === 'string'
+      ? assertCashAccount(input.payload.bank_account, 'bank_account')
+      : '2610';
     const lines: ComputedLine[] = [
       {
         line_number: 1,
@@ -1280,14 +1287,14 @@ const I_5: VatMappingEntry = {
       },
       {
         line_number: 2,
-        account_code: '2610',
+        account_code: bankAccountCode,
         debit_cents: 0,
         credit_cents: fee_cents,
         currency: 'EUR',
         narrative: 'Swedbank — fee debit'
       }
     ];
-    return { lines, posting_context_extras: { fee_cents, vat_treatment: 'exempt_financial_service' } };
+    return { lines, posting_context_extras: { fee_cents, bank_account: bankAccountCode, vat_treatment: 'exempt_financial_service' } };
   }
 };
 
@@ -2096,6 +2103,13 @@ const C_4: VatMappingEntry = {
     if (!input.counterparty?.id) {
       engineInvariant('C.4 compute requires counterparty');
     }
+    // bank_account override (default '2610'). Withdrawals paid out of the 2620
+    // e-commerce settlement account (where marketplace wallet float actually
+    // sits post-cutover) need to debit that account — same override shape as
+    // C.1/C.2/C.3's bank_account / settlement_bank_account.
+    const bankAccountCode = typeof input.payload.bank_account === 'string'
+      ? assertCashAccount(input.payload.bank_account, 'bank_account')
+      : '2610';
     const lines: ComputedLine[] = [
       {
         line_number: 1,
@@ -2109,14 +2123,14 @@ const C_4: VatMappingEntry = {
       },
       {
         line_number: 2,
-        account_code: '2610',
+        account_code: bankAccountCode,
         debit_cents: 0,
         credit_cents: withdrawal_cents,
         currency: 'EUR',
         narrative: 'Swedbank — outbound SEPA payout'
       }
     ];
-    return { lines, posting_context_extras: { withdrawal_cents } };
+    return { lines, posting_context_extras: { withdrawal_cents, bank_account: bankAccountCode } };
   }
 };
 
@@ -2503,6 +2517,54 @@ const C_10: VatMappingEntry = {
 };
 
 // =============================================================================
+// C.11 — VID VAT payment made
+//
+// Cash outflow to VID (Valsts ieņēmumu dienests) settling a prior-period PVN
+// deklarācija payable position. Clears the VAT payable on 5710-09 — the
+// mirror image of C.8 (which clears the 2380 receivable on a refund). P.1
+// close credits 5710-09 when the net position is payable; this entry debits
+// it down to zero once the declared amount is actually paid.
+// =============================================================================
+
+const C_11: VatMappingEntry = {
+  id: 'C.11',
+  category: 'cash_only',
+  entry_type: 'vat_payment',
+  description: 'VID VAT payment made from operating bank',
+  legal_basis: 'PVN likums (settlement of output VAT payable)',
+  routing: {
+    event_type: 'vid.payment_made',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['vid_payment_ref', 'for_period'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const payment_cents = requireNumber(input.payload, 'payment_cents');
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code: '5710-09',
+        debit_cents: payment_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Norēķini ar valsts un pašvaldību budžetu (VAT payable cleared)'
+      },
+      {
+        line_number: 2,
+        account_code: '2610',
+        debit_cents: 0,
+        credit_cents: payment_cents,
+        currency: 'EUR',
+        narrative: 'Swedbank — VID VAT payment made'
+      }
+    ];
+    return { lines, posting_context_extras: { payment_cents } };
+  }
+};
+
+// =============================================================================
 // MAPPING_TABLE — readonly export consumed by dispatcher.ts
 // =============================================================================
 
@@ -2577,7 +2639,8 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   C_7,
   C_8,
   C_9,
-  C_10
+  C_10,
+  C_11
 ] as const;
 
 /** Lookup by id. Returns undefined if id not in MAPPING_TABLE. */

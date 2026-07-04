@@ -387,6 +387,14 @@ const REPRESENTATIVES: Representative[] = [
       counterparty: null,
       payload: {}
     }
+  },
+  {
+    type_id: 'C.11',
+    ctx: {
+      event_type: 'vid.payment_made',
+      counterparty: null,
+      payload: {}
+    }
   }
 ];
 
