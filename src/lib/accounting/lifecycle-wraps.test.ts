@@ -508,6 +508,97 @@ describe('cartFulfillmentWithGL — paired C.9 partial-refund branch', () => {
 });
 
 // ---------------------------------------------------------------------------
+// cartFulfillmentWithGL — buyer counterparty resolution (migration 131)
+// ---------------------------------------------------------------------------
+
+describe('cartFulfillmentWithGL — buyer counterparty resolution', () => {
+  beforeEach(() => {
+    mockAssembleEntryForRpc.mockReset();
+    mockAssembleEntryForRpc.mockResolvedValueOnce({
+      rpcEntry: { type_id: 'C.1', source_doc_type: 'cart_payment', source_doc_id: 'cart-wallet-1' },
+      rpcLines: [],
+      type_id: 'C.1',
+    });
+  });
+
+  it('resolves-or-creates a buyer counterparty and threads its id into the event payload', async () => {
+    let counterpartyLookups = 0;
+    const supabase = {
+      from: vi.fn((table: string) => {
+        const builder: Record<string, unknown> = {};
+        const chainable = () => builder;
+        builder.select = vi.fn(chainable);
+        builder.eq = vi.fn(chainable);
+        builder.insert = vi.fn(chainable);
+        if (table === 'counterparties') {
+          counterpartyLookups++;
+          // First call: lookup (not found). Second call: insert (returns new row).
+          builder.maybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }));
+          builder.single = vi.fn(() => Promise.resolve({ data: { id: 'cp-buyer-resolved-1' }, error: null }));
+        } else if (table === 'user_profiles') {
+          builder.single = vi.fn(() =>
+            Promise.resolve({ data: { id: 'buyer-1', full_name: 'Test Buyer', country: 'LV' }, error: null })
+          );
+        }
+        return builder;
+      }),
+      rpc: vi.fn((rpcName: string) => {
+        if (rpcName === 'cart_complete_payment_with_event_atomic') {
+          return Promise.resolve({ data: { journal_entry_id: 'je-c1-wallet', idempotent_skip: false }, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const result = await cartFulfillmentWithGL(supabase as never, {
+      cart_group_id: 'cart-wallet-1',
+      buyer_id: 'buyer-1',
+      payment_method: 'bank_link',
+      gross_cart_cents: 3690,
+      buyer_wallet_cents: 3690,
+      everypay_payment_reference: 'wallet:cart-wallet-1',
+      callback_payload: { payment_method: 'wallet' },
+    });
+
+    expect(result.cart_journal_entry_id).toBe('je-c1-wallet');
+    expect(counterpartyLookups).toBeGreaterThan(0);
+
+    const cartEventArg = mockAssembleEntryForRpc.mock.calls[0][1] as Record<string, unknown>;
+    const payload = cartEventArg.payload as Record<string, unknown>;
+    expect(payload.buyer_counterparty_id).toBe('cp-buyer-resolved-1');
+  });
+
+  it('skips buyer-counterparty resolution entirely for a 100%-EveryPay cart', async () => {
+    const supabase = {
+      from: vi.fn(() => {
+        throw new Error('should not query counterparties/user_profiles when buyer_wallet_cents=0');
+      }),
+      rpc: vi.fn((rpcName: string) => {
+        if (rpcName === 'cart_complete_payment_with_event_atomic') {
+          return Promise.resolve({ data: { journal_entry_id: 'je-c1-everypay', idempotent_skip: false }, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const result = await cartFulfillmentWithGL(supabase as never, {
+      cart_group_id: 'cart-everypay-1',
+      buyer_id: 'buyer-2',
+      payment_method: 'card',
+      gross_cart_cents: 5000,
+      buyer_wallet_cents: 0,
+      everypay_payment_reference: 'ep-test-2',
+      callback_payload: {},
+    });
+
+    expect(result.cart_journal_entry_id).toBe('je-c1-everypay');
+    const cartEventArg = mockAssembleEntryForRpc.mock.calls[0][1] as Record<string, unknown>;
+    const payload = cartEventArg.payload as Record<string, unknown>;
+    expect(payload.buyer_counterparty_id).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // refundOrderWithGL — cross-period (full_prior) branch (scenario 4 surface)
 // ---------------------------------------------------------------------------
 //

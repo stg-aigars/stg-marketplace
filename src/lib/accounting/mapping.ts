@@ -1938,16 +1938,15 @@ function computeCartPayment(
   }
 
   // Buyer wallet debit (only when buyer used wallet balance). buyer_id is
-  // the auth.users.id; counterparty_id stays null because counterparties.type
-  // CHECK doesn't include 'buyer' today, but counterparty_type='buyer' marks
-  // the line role + posting_context.buyer_id carries attribution for the
-  // wallet-integrity dashboard. Lazy-init of a buyer counterparty is a
-  // schema-migration follow-up.
+  // the auth.users.id, kept for audit/telemetry. counterparty_id is set from
+  // payload.buyer_counterparty_id when the caller resolved one (migration 131
+  // + resolveOrCreateBuyerCounterparty in lifecycle-wraps.ts) — falls back to
+  // null for callers that haven't wired the resolution through yet.
   if (buyer_wallet_cents > 0) {
-    // requireString validates non-empty; the FK on journal_lines.counterparty_id
-    // is null-permissive so we keep counterparty_id=null even though we ARE
-    // resolving an attribution id.
     requireString(input.payload, 'buyer_id');
+    const buyer_counterparty_id = typeof input.payload.buyer_counterparty_id === 'string'
+      ? input.payload.buyer_counterparty_id
+      : null;
     lines.push({
       line_number: lines.length + 1,
       account_code: '5351',
@@ -1955,7 +1954,7 @@ function computeCartPayment(
       credit_cents: 0,
       currency: 'EUR',
       counterparty_type: 'buyer',
-      counterparty_id: null,
+      counterparty_id: buyer_counterparty_id,
       narrative: 'Buyer wallet — debit for cart payment'
     });
   }
@@ -2437,6 +2436,9 @@ const C_9: VatMappingEntry = {
 
     if (buyer_wallet_refund_cents > 0) {
       requireString(input.payload, 'buyer_id');
+      const buyer_counterparty_id = typeof input.payload.buyer_counterparty_id === 'string'
+        ? input.payload.buyer_counterparty_id
+        : null;
       lines.push({
         line_number: lines.length + 1,
         account_code: '5351',
@@ -2444,7 +2446,7 @@ const C_9: VatMappingEntry = {
         credit_cents: buyer_wallet_refund_cents,
         currency: 'EUR',
         counterparty_type: 'buyer',
-        counterparty_id: null,
+        counterparty_id: buyer_counterparty_id,
         narrative: 'Buyer wallet — credit-back for unavailable items'
       });
     }
