@@ -4,6 +4,7 @@ import { requireBrowserOrigin } from '@/lib/api/csrf';
 import { MAX_PHOTO_SIZE_BYTES, ALLOWED_PHOTO_TYPES } from '@/lib/listings/types';
 import { photoUploadLimiter, applyRateLimit } from '@/lib/rate-limit';
 import { detectImageType, stripExifMetadata, OUTPUT_MIME, OUTPUT_EXTENSION } from '@/lib/images/process';
+import { withStorageRetry } from '@/lib/storage/retry';
 import * as Sentry from '@sentry/nextjs';
 
 export async function POST(request: Request) {
@@ -23,9 +24,11 @@ export async function POST(request: Request) {
   // under storage.list()'s ~1000-row response cap, so `limit: MAX + 1` still
   // reliably detects the over-limit case in a single call.
   const MAX_USER_PHOTOS = 500;
-  const { data: files, error: listError } = await supabase.storage
-    .from('listing-photos')
-    .list(user.id, { limit: MAX_USER_PHOTOS + 1 });
+  // Retry the quota check on a transient Storage pool-exhaustion blip — a
+  // failed list() here otherwise drops the gate silently (see below).
+  const { data: files, error: listError } = await withStorageRetry(() =>
+    supabase.storage.from('listing-photos').list(user.id, { limit: MAX_USER_PHOTOS + 1 })
+  );
 
   if (listError) {
     // A failing storage.list() usually means the storage client/session itself
@@ -104,15 +107,19 @@ export async function POST(request: Request) {
   }
   const path = `${user.id}/${crypto.randomUUID()}.${OUTPUT_EXTENSION}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('listing-photos')
-    .upload(path, strippedBuffer, { contentType: OUTPUT_MIME });
+  // Retry the upload on a transient Storage pool-exhaustion blip. A burst of
+  // concurrent uploads can momentarily exhaust the Storage service's own
+  // Postgres pool (STG-MARKETPLACE-1J); it clears in well under a second.
+  const { error: uploadError, attempts: uploadAttempts } = await withStorageRetry(() =>
+    supabase.storage.from('listing-photos').upload(path, strippedBuffer, { contentType: OUTPUT_MIME })
+  );
 
   if (uploadError) {
     // Surface the Supabase StorageError to Sentry (queryable) + Coolify stdout —
     // without this, every storage failure is an opaque 500 with no diagnostic
     // trail. The extra fields make RLS / bucket-config / size causes
-    // distinguishable.
+    // distinguishable. Only genuine failures reach here: a transient blip that
+    // recovers on retry returns error: null and never logs (cuts 1J noise).
     console.error('Listing-photo storage upload failed:', uploadError);
     Sentry.captureException(uploadError, {
       tags: { scope: 'listing-photo-upload' },
@@ -121,6 +128,8 @@ export async function POST(request: Request) {
         detectedType,
         contentType: OUTPUT_MIME,
         outputBytes: strippedBuffer.byteLength,
+        attempts: uploadAttempts,
+        retriesExhausted: uploadAttempts > 1,
       },
     });
     return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 });
