@@ -14,7 +14,6 @@ import { signUpWithEmail } from '@/lib/auth/actions';
 import { validatePasswordStrength } from '@/lib/auth/password-validation';
 import { OAuthButton } from './OAuthButton';
 import { CountrySelector } from './CountrySelector';
-import { env } from '@/lib/env';
 import { Link } from '@/i18n/navigation';
 import type { CountryCode } from '@/lib/country-utils';
 
@@ -110,9 +109,6 @@ export function SignUpForm({ returnUrl }: SignUpFormProps) {
     <div className="space-y-6">
       <div className="space-y-3">
         <OAuthButton returnUrl={returnUrl} label="Sign up with Google" />
-        {env.facebook.loginEnabled && (
-          <OAuthButton provider="facebook" returnUrl={returnUrl} label="Sign up with Facebook" />
-        )}
       </div>
 
       <div className="relative">
