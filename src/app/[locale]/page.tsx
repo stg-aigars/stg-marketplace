@@ -127,6 +127,24 @@ export default async function HomePage() {
         </div>
       )}
 
+      {showAvailableNowRail && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <ListingSection
+            eyebrow={t('recentlyListed.eyebrow')}
+            heading={t('recentlyListed.heading')}
+            href="/browse"
+            linkText={t('recentlyListed.browseAll')}
+            listings={recentListingsList}
+            favoriteIds={favoriteIds}
+            isAuthenticated={isAuthenticated}
+            expansionCounts={expansionCounts}
+            commentCounts={commentCounts}
+            upgradeCounts={upgradeCounts}
+            className="py-8 sm:py-10 lg:py-12"
+          />
+        </div>
+      )}
+
       {showPriceDropsRail && (
         <section className="bg-semantic-brand-bg border-y border-semantic-border-subtle">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -145,24 +163,6 @@ export default async function HomePage() {
             />
           </div>
         </section>
-      )}
-
-      {showAvailableNowRail && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <ListingSection
-            eyebrow={t('recentlyListed.eyebrow')}
-            heading={t('recentlyListed.heading')}
-            href="/browse"
-            linkText={t('recentlyListed.browseAll')}
-            listings={recentListingsList}
-            favoriteIds={favoriteIds}
-            isAuthenticated={isAuthenticated}
-            expansionCounts={expansionCounts}
-            commentCounts={commentCounts}
-            upgradeCounts={upgradeCounts}
-            className="py-8 sm:py-10 lg:py-12"
-          />
-        </div>
       )}
       <WantedRail />
       {showCompactSellerProp && <SellerValueProp variant="compact" />}
