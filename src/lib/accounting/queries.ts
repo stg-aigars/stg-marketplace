@@ -1412,6 +1412,19 @@ export interface NetVatPosition {
  * 5710-LV-IN + 5710-LV-OUT movement from the GL. Used by the
  * /api/cron/monthly-vat-close cron to determine P.1 emit shape.
  *
+ * **Sweeps by `tax_period`, not `accounting_period`** (June 2026 close
+ * repair). `target.period_key` is matched against each line's entry
+ * `tax_period` — the declaration period an entry's VAT is claimed in — which
+ * is independent of `accounting_period`, the period the entry's expense/
+ * revenue is recognized in. The two coincide for every entry through
+ * 2026-05; they first diverge for invoices claimed in a later tax period
+ * than the one they're expensed in (e.g. a June-dated vendor invoice whose
+ * input VAT is claimed on the July declaration). The Layer 2 pre-emit
+ * existence check in the monthly-vat-close cron route, and checklist item
+ * 8, both intentionally continue to key off `accounting_period` — the P.1
+ * entry itself belongs to the accounting period being closed; only the
+ * lines it sweeps are tax-period-scoped.
+ *
  * **Type-catalog coupling (per `accounting_conventions §2`):**
  *
  *   (A) **VAT account coupling.** This query only reads `5710-LV-IN` and
@@ -1443,10 +1456,10 @@ export async function getNetVatPositionForPeriod(
   const { data: rows, error } = await supabase
     .from('journal_lines')
     .select(
-      'account_code, debit_cents, credit_cents, journal_entries!inner(accounting_period)'
+      'account_code, debit_cents, credit_cents, journal_entries!inner(tax_period)'
     )
     .in('account_code', LV_VAT_ACCOUNTS)
-    .eq('journal_entries.accounting_period', target.period_key);
+    .eq('journal_entries.tax_period', target.period_key);
   throwIfError(error, `getNetVatPositionForPeriod: journal_lines SELECT failed for ${target.period_key}`);
 
   // Aggregate signed credit-normal balance per account: sum(credit) - sum(debit).

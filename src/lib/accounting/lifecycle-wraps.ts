@@ -165,7 +165,7 @@ async function resolveSellerCounterparty(
  * point at for wallet-integrity attribution on the buyer's 5351
  * wallet-contribution line, instead of the historical `null`.
  */
-async function resolveOrCreateBuyerCounterparty(
+export async function resolveOrCreateBuyerCounterparty(
   supabase: SupabaseClient,
   buyerId: string
 ): Promise<{ id: string }> {
