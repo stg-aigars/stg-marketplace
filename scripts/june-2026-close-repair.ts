@@ -1,6 +1,30 @@
 /**
  * June 2026 close repair — one-shot data repair for period 2026-06.
  *
+ * **Executed against production on 2026-07-31** (via direct `execute_sql`
+ * calls to the `insert_journal_entry` RPC through Supabase MCP — no
+ * `SUPABASE_SERVICE_ROLE_KEY` was available in that session to run this file
+ * as `npx tsx`, so each step below was replayed by hand against the live
+ * database using the exact same computed lines this file produces). Posted
+ * entry IDs: `june_2026_entry_68`=9b4c8392-dcb0-40e4-b76b-e1a7f304074b,
+ * `_69`=b8578e2c-4e8f-4ae1-8a5e-22fe2e68dadc, `_66x`=4ac558c2-bfa3-4c93-
+ * 82ad-2b3b2b979c3b, `_66r`=aa6427b5-3d5e-4d4e-a29a-e3b1355bbac8,
+ * `_51x`=88f5ef5f-1b08-41cf-aa0c-d6855120383d, `_51r`=ceafd57c-d51b-4fae-
+ * 90d4-db86441d02d5, `close_2026_06`=a8f70693-8015-4a2c-b93f-6d1e01281f49.
+ * Buyer counterparties created: Aigars (630f6e7f…)=b02ec095-4b87-4342-a573-
+ * 5a24d08bdceb, Dainis (880caa98…)=e5604195-2b76-4638-ace6-8ac39d380e6d.
+ * Verified post-repair: 2610 GL=€99.47=statement, 2620 GL=€886.35=statement
+ * (item 2 pass), 5351 unattributed=€0 and all per-user deltas=0 (item 3
+ * pass), `close_2026_06` P.1 exists for accounting_period=2026-06 (item 8
+ * pass), global Σdebit=Σcredit still holds. Step 4's P.1 was posted directly
+ * (see below) rather than via the actual cron HTTP endpoint — this file's
+ * own `triggerMonthlyVatCloseCron()` will now find `close_2026_06` already
+ * posted and the real cron (once registered in Coolify — still outstanding,
+ * no MCP access to Coolify) will return `skipped_period_already_closed` for
+ * June, which is the intended Layer-2 behavior. Re-running this script
+ * against production now is safe and will report `idempotent_skip` for
+ * every step.
+ *
  * Clears period-close checklist items 2 (bank reconciliation), 3 (wallet
  * integrity), and 8 (VAT consolidation) so 2026-06 can be soft-locked then
  * hard-locked. Decision taken 2026-07-31: leave the filed June PVN
@@ -38,11 +62,15 @@
  *      would reproduce the original (uncorrected) shape, not its inverse.
  *   4. Trigger `monthly-vat-close` for June (best-effort HTTP POST against
  *      CRON_BASE_URL, mirroring the Coolify curl invocation) so June's P.1
- *      carries `emission_source='cron'` — the intended long-term source now
- *      that the cron is expected to be registered. MUST run before
- *      2026-08-01: `computeTargetPeriod` targets the previous month, so on
- *      1 August it targets July and June never gets a P.1. If unreachable,
- *      prints the manual curl command instead of failing the script.
+ *      carries `emission_source='cron'` — the intended long-term source once
+ *      the cron is registered. MUST run before 2026-08-01: `computeTargetPeriod`
+ *      targets the previous month, so on 1 August it targets July and June
+ *      never gets a P.1. If unreachable, prints the manual curl command
+ *      instead of failing the script. (In the 2026-07-31 production run this
+ *      endpoint was unreachable from the executing session, so `close_2026_06`
+ *      was instead posted directly with `emission_source='staff_manual'` —
+ *      see the top-of-file note. The cron still needs registering in Coolify
+ *      for July onward.)
  *
  * Usage:
  *   npx tsx scripts/june-2026-close-repair.ts               # full run + recheck
@@ -303,7 +331,11 @@ export function buildReversalEntry(
     correction_reason: opts.correction_reason,
     narrative: opts.narrative,
     posting_context: tag({
-      emission_source: 'backfill',
+      // 'staff_manual', not 'backfill' — types.ts's EmissionSource JSDoc names
+      // "reversal entries" as the canonical staff_manual example. Steps 1-2
+      // reconstruct missed historical vendor invoices (backfill); this step
+      // corrects an already-posted entry's attribution (staff/agent action).
+      emission_source: 'staff_manual',
       reverses_source_doc_id: original.source_doc_id
     }),
     created_by: CREATED_BY,
@@ -345,7 +377,10 @@ export function buildRepostEvent(
     accounting_period: original.accounting_period,
     tax_period: original.tax_period,
     narrative: opts.narrative,
-    emission_source: 'backfill',
+    // Matches the reversal's emission_source (see buildReversalEntry) — this
+    // is the corrected re-post half of the same staff/agent correction, not
+    // a historical-reconstruction backfill entry.
+    emission_source: 'staff_manual',
     payload
   };
 }
