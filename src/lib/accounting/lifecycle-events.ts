@@ -487,6 +487,14 @@ export interface BuildEverypaySettlementEventInput {
   settlement_value_date: string;
   /** Cart-payment refs included in this batch. Empty array is acceptable. */
   included_txn_refs: string[];
+  /**
+   * Card-acquiring (MDR) fee netted at settlement, in cents. Absent/undefined
+   * for the un-netted rail (fee booked separately via a standalone I.5 entry,
+   * as before 10.06.2026). When present, `settlement_cents` still means the
+   * amount actually credited to the bank account; the C.3 compute derives
+   * the 2630 clearing credit as `settlement_cents + mdr_fee_cents`.
+   */
+  mdr_fee_cents?: number;
   /** Optional staff freeform note; absent when whitespace-only. */
   posting_context_notes?: string;
   /** auth.users.id of the staff member emitting (audit attribution). */
@@ -532,6 +540,7 @@ export function buildEverypaySettlementEvent(
       // EveryPay settles card batches into the e-commerce settlement account
       // (2620), not the operating account. Overrides the C.3 default (2610).
       settlement_bank_account: '2620',
+      ...(input.mdr_fee_cents !== undefined ? { mdr_fee_cents: input.mdr_fee_cents } : {}),
       ...(input.posting_context_notes ? { staff_notes: input.posting_context_notes } : {})
     },
     created_by: input.actor_id

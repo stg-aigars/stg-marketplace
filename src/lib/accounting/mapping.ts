@@ -2057,6 +2057,18 @@ const C_3: VatMappingEntry = {
     const settlement_bank_account = typeof input.payload.settlement_bank_account === 'string'
       ? assertCashAccount(input.payload.settlement_bank_account, 'settlement_bank_account')
       : '2610';
+    // mdr_fee_cents (optional) — Swedbank started netting the card-acquiring
+    // fee at settlement for some batches from 10.06.2026 onward (before: full
+    // gross credited, fee debited separately via a standalone I.5 entry).
+    // settlement_cents keeps its existing meaning — the amount actually
+    // credited to settlement_bank_account (net of any netted fee). When
+    // mdr_fee_cents is absent, this is byte-identical to the pre-existing
+    // 2-line shape.
+    const mdr_fee_cents = input.payload.mdr_fee_cents !== undefined
+      ? requireNumber(input.payload, 'mdr_fee_cents', { allowZero: true })
+      : 0;
+    const gross_batch_cents = settlement_cents + mdr_fee_cents;
+
     const lines: ComputedLine[] = [
       {
         line_number: 1,
@@ -2065,17 +2077,33 @@ const C_3: VatMappingEntry = {
         credit_cents: 0,
         currency: 'EUR',
         narrative: 'Swedbank — EveryPay daily settlement inbound'
-      },
-      {
-        line_number: 2,
-        account_code: '2630',
-        debit_cents: 0,
-        credit_cents: settlement_cents,
-        currency: 'EUR',
-        narrative: 'EveryPay clearing — settlement clears balance'
       }
     ];
-    return { lines, posting_context_extras: { settlement_cents, settlement_bank_account } };
+
+    if (mdr_fee_cents > 0) {
+      lines.push({
+        line_number: lines.length + 1,
+        account_code: '7710',
+        debit_cents: mdr_fee_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: 'Payment processing — card-acquiring fee netted at settlement'
+      });
+    }
+
+    lines.push({
+      line_number: lines.length + 1,
+      account_code: '2630',
+      debit_cents: 0,
+      credit_cents: gross_batch_cents,
+      currency: 'EUR',
+      narrative: 'EveryPay clearing — settlement clears balance'
+    });
+
+    return {
+      lines,
+      posting_context_extras: { settlement_cents, settlement_bank_account, mdr_fee_cents, gross_batch_cents }
+    };
   }
 };
 
