@@ -159,6 +159,41 @@ describe('recordEverypaySettlement', () => {
       const result = await recordEverypaySettlement({ ...baseInput(), settlement_value_date: 'Jan 15, 2027' });
       expect(result).toEqual({ error: 'Settlement value date must be in YYYY-MM-DD format' });
     });
+
+    it('rejects negative mdr_fee_cents', async () => {
+      const result = await recordEverypaySettlement({ ...baseInput(), mdr_fee_cents: -1 });
+      expect(result).toEqual({ error: 'MDR fee must be a non-negative integer (cents)' });
+      expect(mockEmit).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-integer mdr_fee_cents', async () => {
+      const result = await recordEverypaySettlement({ ...baseInput(), mdr_fee_cents: 12.5 });
+      expect(result).toEqual({ error: 'MDR fee must be a non-negative integer (cents)' });
+    });
+  });
+
+  describe('mdr_fee_cents (netted card-acquiring fee)', () => {
+    it('threads mdr_fee_cents through to the event payload when provided', async () => {
+      await recordEverypaySettlement({ ...baseInput(), mdr_fee_cents: 59 });
+
+      const [, event] = mockEmit.mock.calls[0]!;
+      expect((event as { payload: Record<string, unknown> }).payload.mdr_fee_cents).toBe(59);
+    });
+
+    it('omits mdr_fee_cents from the payload when not supplied (un-netted rail)', async () => {
+      await recordEverypaySettlement(baseInput());
+
+      const [, event] = mockEmit.mock.calls[0]!;
+      expect((event as { payload: Record<string, unknown> }).payload.mdr_fee_cents).toBeUndefined();
+    });
+
+    it('accepts mdr_fee_cents=0 explicitly rather than treating it as absent', async () => {
+      const result = await recordEverypaySettlement({ ...baseInput(), mdr_fee_cents: 0 });
+      expect(result).toMatchObject({ success: true });
+
+      const [, event] = mockEmit.mock.calls[0]!;
+      expect((event as { payload: Record<string, unknown> }).payload.mdr_fee_cents).toBe(0);
+    });
   });
 
   describe('optional notes normalization (commit-10 §6 convention)', () => {

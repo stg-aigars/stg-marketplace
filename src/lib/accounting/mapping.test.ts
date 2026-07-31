@@ -1315,6 +1315,70 @@ describe('cash-rail bank_account override (2620 e-commerce account)', () => {
     expect(result.lines.find((l) => l.credit_cents > 0)!.account_code).toBe('2630');
   });
 
+  it('C.3 stays 2-line (byte-identical to pre-existing shape) when mdr_fee_cents is absent', () => {
+    const c3 = findMappingById('C.3')!;
+    const result = c3.compute(
+      buildInput(nullCp(), null, {
+        settlement_cents: 3081,
+        settlement_bank_account: '2620',
+        everypay_settlement_id: 's',
+        batch_date: '2026-06-10',
+        settlement_value_date: '2026-06-10',
+        included_txn_refs: ['a']
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ account_code: '2620', debit_cents: 3081, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '2630', debit_cents: 0, credit_cents: 3081 });
+    expect(result.posting_context_extras.mdr_fee_cents).toBe(0);
+    expect(result.posting_context_extras.gross_batch_cents).toBe(3081);
+  });
+
+  it('C.3 produces 3-line netted shape (Dr bank_account + Dr 7710 fee / Cr 2630 gross) when mdr_fee_cents > 0', () => {
+    // Mirrors the 06-10 Swedbank statement line: €31.40 gross, €0.59 fee, €30.81 credited.
+    const c3 = findMappingById('C.3')!;
+    const result = c3.compute(
+      buildInput(nullCp(), null, {
+        settlement_cents: 3081,
+        mdr_fee_cents: 59,
+        settlement_bank_account: '2620',
+        everypay_settlement_id: 's',
+        batch_date: '2026-06-10',
+        settlement_value_date: '2026-06-10',
+        included_txn_refs: ['a']
+      })
+    );
+    expect(result.lines).toHaveLength(3);
+    expect(result.lines[0]).toMatchObject({ account_code: '2620', debit_cents: 3081, credit_cents: 0 });
+    expect(result.lines[1]).toMatchObject({ account_code: '7710', debit_cents: 59, credit_cents: 0 });
+    expect(result.lines[2]).toMatchObject({ account_code: '2630', debit_cents: 0, credit_cents: 3140 });
+
+    const sumDr = result.lines.reduce((s, l) => s + l.debit_cents, 0);
+    const sumCr = result.lines.reduce((s, l) => s + l.credit_cents, 0);
+    expect(sumDr).toBe(sumCr);
+    expect(result.posting_context_extras).toMatchObject({
+      settlement_cents: 3081,
+      mdr_fee_cents: 59,
+      gross_batch_cents: 3140
+    });
+  });
+
+  it('C.3 rejects a negative mdr_fee_cents', () => {
+    const c3 = findMappingById('C.3')!;
+    expect(() =>
+      c3.compute(
+        buildInput(nullCp(), null, {
+          settlement_cents: 3081,
+          mdr_fee_cents: -1,
+          everypay_settlement_id: 's',
+          batch_date: '2026-06-10',
+          settlement_value_date: '2026-06-10',
+          included_txn_refs: ['a']
+        })
+      )
+    ).toThrow();
+  });
+
   it('rejects a non-cash bank_account override (e.g. revenue/VAT account)', () => {
     const c2 = findMappingById('C.2')!;
     expect(() =>

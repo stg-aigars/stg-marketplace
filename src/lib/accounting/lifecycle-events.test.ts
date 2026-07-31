@@ -586,6 +586,25 @@ describe('buildEverypaySettlementEvent', () => {
     expect(event.narrative).toContain('(1 txn)');
     expect(event.narrative).not.toContain('(1 txns)');
   });
+
+  it('includes mdr_fee_cents in payload only when provided (netted-settlement support)', () => {
+    const netted = buildEverypaySettlementEvent({
+      ...baseInput,
+      mdr_fee_cents: 59,
+    });
+    expect(netted.payload.mdr_fee_cents).toBe(59);
+
+    const unnetted = buildEverypaySettlementEvent(baseInput);
+    expect(unnetted.payload.mdr_fee_cents).toBeUndefined();
+  });
+
+  it('threads mdr_fee_cents=0 through explicitly rather than dropping it (allowZero semantics)', () => {
+    const event = buildEverypaySettlementEvent({
+      ...baseInput,
+      mdr_fee_cents: 0,
+    });
+    expect(event.payload.mdr_fee_cents).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------

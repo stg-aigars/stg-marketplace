@@ -24,6 +24,7 @@ export function EverypaySettlementForm() {
 
   const [bankRef, setBankRef] = useState('');
   const [amountEuros, setAmountEuros] = useState('');
+  const [mdrFeeEuros, setMdrFeeEuros] = useState('');
   const [batchDate, setBatchDate] = useState('');
   const [valueDate, setValueDate] = useState('');
   const [txnRefsRaw, setTxnRefsRaw] = useState('');
@@ -48,6 +49,23 @@ export function EverypaySettlementForm() {
       return;
     }
 
+    // MDR fee is optional — leave undefined when the field is blank (the
+    // un-netted rail, where the fee is booked separately via a standalone
+    // I.5 entry, same as before Swedbank's 10.06.2026 netting change).
+    let mdr_fee_cents: number | undefined;
+    if (mdrFeeEuros.trim().length > 0) {
+      const parsedFee = parseFloat(mdrFeeEuros);
+      if (!Number.isFinite(parsedFee) || parsedFee < 0) {
+        setError('MDR fee must be a non-negative number');
+        return;
+      }
+      mdr_fee_cents = Math.round(parsedFee * 100);
+      if (!Number.isInteger(mdr_fee_cents) || mdr_fee_cents < 0) {
+        setError('MDR fee must be a non-negative integer (cents)');
+        return;
+      }
+    }
+
     // Optional-text-input normalization at the FORM body construction (commit-10 §6).
     // Server action re-normalizes — defense in depth on both layers.
     const posting_context_notes = notes.trim().length > 0 ? notes.trim() : undefined;
@@ -60,6 +78,7 @@ export function EverypaySettlementForm() {
         batch_date: batchDate,
         settlement_value_date: valueDate,
         included_txn_refs,
+        mdr_fee_cents,
         posting_context_notes,
       });
 
@@ -99,6 +118,18 @@ export function EverypaySettlementForm() {
             onChange={(e) => setAmountEuros(e.target.value)}
             placeholder="e.g. 125.00"
             required
+            disabled={isPending}
+          />
+
+          <Input
+            label="Card-acquiring (MDR) fee netted at settlement (EUR, optional)"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            value={mdrFeeEuros}
+            onChange={(e) => setMdrFeeEuros(e.target.value)}
+            placeholder="Leave blank if the fee was debited separately"
             disabled={isPending}
           />
 

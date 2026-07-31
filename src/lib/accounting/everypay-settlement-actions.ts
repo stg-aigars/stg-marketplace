@@ -6,6 +6,12 @@
  * Without this, 2630 accumulates from C.1 card-cart receipts post-cutover
  * and item 7 of the period-close checklist (2630 closing = 0) fails.
  *
+ * `mdr_fee_cents` (optional) supports Swedbank's netted-settlement batches
+ * (some card-acquiring fees deducted at settlement rather than debited
+ * separately, from 10.06.2026 onward): when supplied, the C.3 entry gets a
+ * third line (Dr 7710 card-acquiring fee) and 2630 clears the pre-fee gross
+ * batch total instead of just `settlement_cents`.
+ *
  * Not a marketplace lifecycle event — emits via `emit()` directly rather
  * than through a parent RPC. `emission_source='staff_manual'` discriminates
  * from `'lifecycle'` (commits 9/10), `'cron'` (PR #296 / commit 12), and
@@ -41,6 +47,11 @@ export interface RecordEverypaySettlementInput {
    * mapping isn't yet automated.
    */
   included_txn_refs: string[];
+  /**
+   * Card-acquiring (MDR) fee netted at settlement, in cents. Omit for the
+   * un-netted rail (fee booked separately via a standalone I.5 entry).
+   */
+  mdr_fee_cents?: number;
   /** Optional staff freeform note; whitespace-only treated as absent. */
   posting_context_notes?: string;
 }
@@ -78,6 +89,13 @@ export async function recordEverypaySettlement(
     return { error: 'included_txn_refs must be an array (caller bug)' };
   }
 
+  if (
+    input.mdr_fee_cents !== undefined &&
+    (!Number.isInteger(input.mdr_fee_cents) || input.mdr_fee_cents < 0)
+  ) {
+    return { error: 'MDR fee must be a non-negative integer (cents)' };
+  }
+
   // Optional-text-input normalization at the server-action boundary
   // (commit-10 §6 convention — defend at both UI and route boundaries).
   const posting_context_notes =
@@ -91,6 +109,7 @@ export async function recordEverypaySettlement(
     batch_date: input.batch_date,
     settlement_value_date: input.settlement_value_date,
     included_txn_refs: input.included_txn_refs,
+    mdr_fee_cents: input.mdr_fee_cents,
     posting_context_notes,
     actor_id: user.id,
   });
