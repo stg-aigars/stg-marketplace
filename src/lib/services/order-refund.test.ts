@@ -131,7 +131,8 @@ describe('refundOrder — flag-branch contract', () => {
         shipping_cost_cents: 500,
         total_amount_cents: 10500,
         payment_method: 'card',
-        cart_group_id: 'cart_uuid_test'
+        cart_group_id: 'cart_uuid_test',
+        is_staff_test: true
       }),
       expect.objectContaining({
         card_refunded: 10500,
@@ -172,14 +173,32 @@ describe('refundOrder — flag-branch contract', () => {
     expect(issueCreditNote).not.toHaveBeenCalled();
   });
 
-  it('flag-ON + is_staff_test=false: takes legacy refund path (stage 2 customer traffic gate)', async () => {
+  it('flag-ON + is_staff_test=false: runs the engine path unconditionally (stage 3 cutover — gate removed)', async () => {
     vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
     const customerOrder = { ...cardOnlyOrder, is_staff_test: false };
 
     await refundOrder('order_uuid_test', customerOrder);
 
     expect(refundPayment).toHaveBeenCalledTimes(1);
-    expect(mockUpdate).toHaveBeenCalled();
-    expect(refundOrderWithGL).not.toHaveBeenCalled();
+    expect(refundOrderWithGL).toHaveBeenCalledTimes(1);
+    expect(refundOrderWithGL).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ is_staff_test: false }),
+      expect.anything()
+    );
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('flag-ON + is_staff_test undefined: threads false through to the wrap (defensive default)', async () => {
+    vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
+    const { is_staff_test: _omit, ...orderWithoutFlag } = cardOnlyOrder;
+
+    await refundOrder('order_uuid_test', orderWithoutFlag);
+
+    expect(refundOrderWithGL).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ is_staff_test: false }),
+      expect.anything()
+    );
   });
 });

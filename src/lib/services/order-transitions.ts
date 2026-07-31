@@ -494,13 +494,11 @@ export async function creditSellerWallet(
 ): Promise<void> {
   if (!order.seller_wallet_credit_cents || order.seller_wallet_credit_cents <= 0) return;
 
-  // Two-level cutover gate:
-  //   - ACCOUNTING_ENGINE_ENABLED=false → legacy path for all (default)
-  //   - flag-ON + is_staff_test=false → legacy path (stage 2 customer traffic)
-  //   - flag-ON + is_staff_test=true → engine path with posting_context.is_staff_test=true
-  // Stage 3 transition: drop the `&& order.is_staff_test` clause to make the
-  // engine path unconditional once stage 2 burn-in verifies the pipeline.
-  if (isAccountingEngineEnabled() && order.is_staff_test) {
+  // Stage 3 cutover (lifecycle-cutover-runbook.md §4): engine path runs
+  // unconditionally once ACCOUNTING_ENGINE_ENABLED=true, for all orders.
+  // is_staff_test still threads through to posting_context for reporting-view
+  // filtering (staff test orders keep existing post-cutover per the runbook).
+  if (isAccountingEngineEnabled()) {
     const supabase = createServiceClient();
     await completeOrderWithGL(
       supabase,
@@ -512,7 +510,7 @@ export async function creditSellerWallet(
         shipping_cost_cents: order.shipping_cost_cents,
         order_number: order.order_number,
         cart_group_id: order.cart_group_id,
-        is_staff_test: true
+        is_staff_test: order.is_staff_test
       },
       completionSource
     );

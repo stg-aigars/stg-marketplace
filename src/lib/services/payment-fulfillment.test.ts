@@ -353,6 +353,7 @@ describe('fulfillCartPayment — ACCOUNTING_ENGINE_ENABLED wrap', () => {
         gross_cart_cents: 10000,
         buyer_wallet_cents: 0,
         everypay_payment_reference: 'ep-ref-1',
+        is_staff_test: true,
       });
       expect(callArgs.partial_refund).toBeUndefined();
     });
@@ -521,12 +522,12 @@ describe('fulfillCartPayment — ACCOUNTING_ENGINE_ENABLED wrap', () => {
     });
   });
 
-  describe('flag-ON + cart.is_staff_test=false (stage 2 customer traffic gate)', () => {
+  describe('flag-ON + cart.is_staff_test=false (stage 3 cutover — gate removed)', () => {
     beforeEach(() => {
       mockIsAccountingEngineEnabled.mockReturnValue(true);
     });
 
-    it('takes legacy cart_checkout_groups.status update path; does NOT call cartFulfillmentWithGL', async () => {
+    it('runs the engine path unconditionally, threading is_staff_test=false to the wrap', async () => {
       const { fulfillCartPayment } = await import('./payment-fulfillment');
       const result = await fulfillCartPayment(
         baseCartGroup({ is_staff_test: false }),
@@ -537,8 +538,11 @@ describe('fulfillCartPayment — ACCOUNTING_ENGINE_ENABLED wrap', () => {
       );
 
       expect(result.outcome).toBe('created');
-      expect(mockCartFulfillmentWithGL).not.toHaveBeenCalled();
-      expect(mockCartCheckoutGroupsUpdate).toHaveBeenCalledWith({ status: 'completed' });
+      expect(mockCartFulfillmentWithGL).toHaveBeenCalledTimes(1);
+      expect(mockCartCheckoutGroupsUpdate).not.toHaveBeenCalled();
+
+      const callArgs = mockCartFulfillmentWithGL.mock.calls[0]![1] as { is_staff_test: boolean };
+      expect(callArgs.is_staff_test).toBe(false);
     });
   });
 });

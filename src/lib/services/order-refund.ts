@@ -58,7 +58,7 @@ interface RefundableOrder {
   shipping_cost_cents?: number;
   credit_note_number?: string | null;
   cart_group_id?: string | null;
-  /** Stage-2 cutover gate marker. See lifecycle-cutover-runbook.md §3. */
+  /** Threaded to posting_context for reporting-view filtering; no longer gates emission post-stage-3. See lifecycle-cutover-runbook.md §4. */
   is_staff_test?: boolean;
 }
 
@@ -155,10 +155,9 @@ export async function refundOrder(
   // through to the refund event payload (used as a human-readable reference;
   // O.7/O.8 still use source_doc_id=order_id for retry idempotency).
   // Flag-OFF: existing path runs byte-identical.
-  // Two-level cutover gate; mirrors order-transitions.ts:creditSellerWallet.
-  // Stage 3 transition: drop `&& order.is_staff_test` to make engine path
-  // unconditional. See lifecycle-cutover-runbook.md §4.
-  if (isAccountingEngineEnabled() && order.is_staff_test) {
+  // Stage 3 cutover (lifecycle-cutover-runbook.md §4): engine path runs
+  // unconditionally for all orders once ACCOUNTING_ENGINE_ENABLED=true.
+  if (isAccountingEngineEnabled()) {
     let creditNoteNumber: string | null = null;
     if (order.invoice_number) {
       try {
@@ -187,7 +186,7 @@ export async function refundOrder(
           total_amount_cents: order.total_amount_cents,
           payment_method: order.payment_method,
           cart_group_id: order.cart_group_id ?? null,
-          is_staff_test: true,
+          is_staff_test: order.is_staff_test ?? false,
         },
         {
           card_refunded: cardRefunded,
