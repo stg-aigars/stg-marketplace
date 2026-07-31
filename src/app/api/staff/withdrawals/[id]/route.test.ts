@@ -163,7 +163,7 @@ describe('PATCH /api/staff/withdrawals/[id] — action=complete', () => {
     });
   });
 
-  describe('flag-ON + withdrawal.is_staff_test=false (stage 2 customer traffic gate)', () => {
+  describe('flag-ON + withdrawal.is_staff_test=false (stage 3 cutover — gate removed)', () => {
     beforeEach(() => {
       mockIsAccountingEngineEnabled.mockReturnValue(true);
       mockCreateServiceClient.mockReturnValue(makeClient({
@@ -171,12 +171,14 @@ describe('PATCH /api/staff/withdrawals/[id] — action=complete', () => {
       }));
     });
 
-    it('takes legacy withdrawal_requests update path; does NOT call the wrap', async () => {
+    it('runs the engine path unconditionally, threading is_staff_test=false to the wrap', async () => {
       const { PATCH } = await import('./route');
       const res = await PATCH(makeRequest({ action: 'complete' }), makeParams());
 
       expect(res.status).toBe(200);
-      expect(mockWithdrawalCompletionWithGL).not.toHaveBeenCalled();
+      expect(mockWithdrawalCompletionWithGL).toHaveBeenCalledTimes(1);
+      const callArgs = mockWithdrawalCompletionWithGL.mock.calls[0]![1] as { is_staff_test: boolean };
+      expect(callArgs.is_staff_test).toBe(false);
     });
   });
 
@@ -200,6 +202,7 @@ describe('PATCH /api/staff/withdrawals/[id] — action=complete', () => {
         withdrawal_ref: 'WD-2027-00001',
         seller_iban: 'LV12RIKO0000111122223',
         staff_user_id: 'staff-uuid-1',
+        is_staff_test: true,
       });
       // bank_confirmation_ref omitted from request body → undefined in wrap input
       expect(callArgs.bank_confirmation_ref).toBeUndefined();

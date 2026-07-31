@@ -127,7 +127,8 @@ describe('creditSellerWallet — flag-branch contract', () => {
         items_total_cents: 10000,
         shipping_cost_cents: 500,
         order_number: 'STG-2027-00001',
-        cart_group_id: 'cart_uuid_test'
+        cart_group_id: 'cart_uuid_test',
+        is_staff_test: true
       }),
       'auto_complete'
     );
@@ -151,11 +152,15 @@ describe('creditSellerWallet — flag-branch contract', () => {
     expect(creditWallet).not.toHaveBeenCalled();
   });
 
-  it('flag-ON + is_staff_test=false: takes legacy creditWallet path (stage 2 customer traffic gate)', async () => {
+  it('flag-ON + is_staff_test=false: runs the engine path unconditionally (stage 3 cutover — gate removed)', async () => {
     vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
     await creditSellerWallet('order_uuid_test', { ...orderFixture, is_staff_test: false });
-    expect(creditWallet).toHaveBeenCalledTimes(1);
-    expect(completeOrderWithGL).not.toHaveBeenCalled();
-    expect(trackServer).not.toHaveBeenCalled();
+    expect(completeOrderWithGL).toHaveBeenCalledTimes(1);
+    expect(completeOrderWithGL).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ is_staff_test: false }),
+      expect.anything()
+    );
+    expect(creditWallet).not.toHaveBeenCalled();
   });
 });

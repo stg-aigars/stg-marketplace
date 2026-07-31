@@ -113,16 +113,11 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
   }
 
   if (action === 'complete') {
-    // Two-level cutover gate:
-    //   - ACCOUNTING_ENGINE_ENABLED=false → legacy path (default)
-    //   - flag-ON + withdrawal.is_staff_test=false → legacy path (stage 2
-    //     real seller traffic)
-    //   - flag-ON + withdrawal.is_staff_test=true → engine path; wrap runs
-    //     TS-layer KYC gate via assertPayoutAllowed, parent RPC composes
-    //     status flip + completed_at stamp + C.4 emit atomically.
-    // Stage 3 transition: drop the `&& withdrawal.is_staff_test` clause so
-    // the engine path runs unconditionally. See lifecycle-cutover-runbook.md §4.
-    if (isAccountingEngineEnabled() && withdrawal.is_staff_test) {
+    // Stage 3 cutover (lifecycle-cutover-runbook.md §4): engine path runs
+    // unconditionally once ACCOUNTING_ENGINE_ENABLED=true. Wrap runs TS-layer
+    // KYC gate via assertPayoutAllowed; parent RPC composes status flip +
+    // completed_at stamp + C.4 emit atomically.
+    if (isAccountingEngineEnabled()) {
       try {
         await withdrawalCompletionWithGL(serviceClient, {
           withdrawal_request_id: withdrawalId,
@@ -133,7 +128,7 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
           bank_confirmation_ref: bankConfirmationRef,
           staff_notes: staffNotes,
           staff_user_id: user.id,
-          is_staff_test: true,
+          is_staff_test: withdrawal.is_staff_test,
         });
         return NextResponse.json({ success: true });
       } catch (err) {
