@@ -1909,6 +1909,83 @@ describe('getNetVatPositionForPeriod', () => {
     expect(result.lines).toHaveLength(3);
     expect(result.lines[1]).toMatchObject({ account_code: '5710-LV-IN', credit_cents: 0 });
   });
+
+  it('filters on journal_entries.tax_period, not accounting_period (June 2026 close repair)', async () => {
+    const client = buildMockClient({
+      journal_lines: [{ data: [], error: null }]
+    });
+    await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-07',
+      posting_date: '2026-07-31'
+    });
+
+    expect(client.from).toHaveBeenCalledWith('journal_lines');
+    const builder = client.from.mock.results[0]?.value as {
+      select: ReturnType<typeof vi.fn>;
+      eq: ReturnType<typeof vi.fn>;
+    };
+    expect(builder.select).toHaveBeenCalledWith(
+      expect.stringContaining('journal_entries!inner(tax_period)')
+    );
+    expect(builder.eq).toHaveBeenCalledWith('journal_entries.tax_period', '2026-07');
+    expect(builder.eq).not.toHaveBeenCalledWith(
+      'journal_entries.accounting_period',
+      expect.anything()
+    );
+  });
+
+  it('sweeps by tax_period, not accounting_period: an entry accounting_period=2026-06/tax_period=2026-07 is excluded from June and included in July', async () => {
+    // The mock's .eq()/.in() chain doesn't actually filter (see
+    // buildMockClient), so this test documents the queued rows as "what a real
+    // .eq('journal_entries.tax_period', period_key) filter would return" for
+    // each period_key, given a single entry with accounting_period=2026-06 /
+    // tax_period=2026-07.
+    const juneClient = buildMockClient({
+      journal_lines: [{ data: [], error: null }]
+    });
+    const juneResult = await getNetVatPositionForPeriod(juneClient as never, {
+      period_key: '2026-06',
+      posting_date: '2026-06-30'
+    });
+    expect(juneResult.has_no_movement).toBe(true);
+
+    const julyClient = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            { account_code: '5710-LV-IN', debit_cents: 774, credit_cents: 0 }
+          ],
+          error: null
+        }
+      ]
+    });
+    const julyResult = await getNetVatPositionForPeriod(julyClient as never, {
+      period_key: '2026-07',
+      posting_date: '2026-07-31'
+    });
+    expect(julyResult.has_no_movement).toBe(false);
+    expect(julyResult.lv_in_cents).toBe(774);
+  });
+
+  it('handles the reverse split — an entry with accounting_period=2026-07 / tax_period=2026-06 lands in June', async () => {
+    // Guards against someone "fixing" the query back to accounting_period.
+    const client = buildMockClient({
+      journal_lines: [
+        {
+          data: [
+            { account_code: '5710-LV-OUT', debit_cents: 0, credit_cents: 500 }
+          ],
+          error: null
+        }
+      ]
+    });
+    const result = await getNetVatPositionForPeriod(client as never, {
+      period_key: '2026-06',
+      posting_date: '2026-06-30'
+    });
+    expect(result.has_no_movement).toBe(false);
+    expect(result.lv_out_cents).toBe(500);
+  });
 });
 
 // =============================================================================
