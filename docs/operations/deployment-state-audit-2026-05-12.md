@@ -376,6 +376,7 @@ After PR C deployment was confirmed live (`curl https://secondturn.games/api/hea
 ### 8.9 Operational implications going forward
 
 - **Future deploys:** push to main → GHA builds + pushes to GHCR (~3 min, automatic) → manual click "Redeploy" in Coolify for the new app → Coolify pulls + runs (~30 s). The auto-deploy webhook to Coolify is no longer wired; the manual click is intentional discipline until/unless we wire a `workflow_run` → Coolify webhook.
+  **Superseded 2026-08-03** — see `docs/operations/coolify-api-notes.md`'s "Automated redeploy" section. The `build-and-push.yml` workflow now triggers Coolify's deploy API directly after every push to main; no manual click is needed. This snapshot is left as-written since it's a point-in-time capture, not a living doc — read the superseding note for current behavior.
 - **Rollback:** every image is tagged with its commit SHA in GHCR. To roll back, change the Coolify app's image tag from `latest` to a previous SHA (e.g., `b2cc71ff4ec1352d3030f719f7a25338a963a3f6`) and redeploy. Old image is cached locally on the VPS so rollback is ~10 seconds.
 - **Cron management:** Coolify API now usable for bulk operations. Token stored in user's password manager, IP allowlist set to user's current public IP.
 - **VPS sizing:** CX23 (€3.49/mo) stays viable indefinitely. No upgrade pressure from build memory.

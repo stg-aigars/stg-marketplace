@@ -121,11 +121,25 @@ Coolify API tokens don't have a UI-side expiry. Operational discipline:
 - On rotation: delete old token in dashboard, create new, update any stored references (Bitwarden)
 - Tokens are bearer credentials — losing one means revoking and re-issuing
 
+## Automated redeploy (DONE — supersedes the item below)
+
+**Confirmed live 2026-08-03.** `.github/workflows/build-and-push.yml` has a
+"Trigger Coolify deploy" step that calls `GET /api/v1/deploy?uuid=<app-uuid>`
+after every push-to-main build (tolerant of missing `COOLIFY_HOST` /
+`COOLIFY_TOKEN` / `COOLIFY_APP_UUID` repo secrets — warns and skips rather
+than failing the build if unconfigured). Verified end-to-end on the
+`b5f37d1` merge: the job logged `Coolify response:
+{"deployments":[{"message":"Application docker-image-*** deployment
+queued." ...}]}`. **No manual "Redeploy" click is needed after a merge to
+main** — this superseded the manual-click discipline described in
+`deployment-state-audit-2026-05-12.md` §8.9 sometime after that doc was
+written; exactly when/by whom isn't recorded anywhere, which is itself the
+reason this file's own "future candidate" list below had gone stale.
+
 ## Future automation candidates
 
 Operations currently done via the dashboard that could move to API once we trust the endpoints:
 
-- Trigger redeploy after GHA pushes a new image to GHCR (the manual click after every push to main)
 - List recent deployments + their status (currently visible only in dashboard)
 - Bulk env var inspection across apps for drift detection between staging/production (no staging today, but relevant when one exists)
 - Application stop/start during cutover stages (instead of UI button clicks)
