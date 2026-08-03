@@ -2595,6 +2595,72 @@ const C_11: VatMappingEntry = {
 };
 
 // =============================================================================
+// C.12 — OSS quarterly VAT payment made
+//
+// Cash outflow settling a Union OSS quarterly declaration's payable position
+// for one consumption member state. Mirrors C.11 (VID domestic PVN payment)
+// exactly, but targets the per-country OSS payable (5711 LT / 5712 EE)
+// instead of the domestic 5710-09 — those two accounts accrue every quarter
+// via O.3/O.5 completions and, before this type existed, were never cleared
+// by a corresponding cash entry (every prior OSS payment was posted as a
+// one-off raw entry — see scripts/july-2026-oss-and-p1-close.ts). A quarter
+// whose declaration covers both LT and EE requires two C.12 emits, one per
+// country, mirroring how the actual filing breaks out by consumption MS.
+// =============================================================================
+
+const OSS_PAYABLE_ACCOUNT_BY_COUNTRY: Record<'LT' | 'EE', string> = {
+  LT: '5711',
+  EE: '5712'
+};
+
+const C_12: VatMappingEntry = {
+  id: 'C.12',
+  category: 'cash_only',
+  entry_type: 'vat_payment',
+  description: 'OSS quarterly VAT payment made from operating bank, one consumption MS per emit',
+  legal_basis: 'Article 369i-369k of Directive 2006/112/EC (Union OSS scheme)',
+  routing: {
+    event_type: 'oss.payment_made',
+    conditions: {}
+  },
+  vat_base_rule: { source: 'none' },
+  vat_rate_country: null,
+  reporting: { pvn_lines: [] },
+  posting_context_required_keys: ['oss_country', 'oss_quarter', 'eds_document_number'],
+  compute: (input: ComputeInput): ComputeOutput => {
+    const payment_cents = requireNumber(input.payload, 'payment_cents');
+    const oss_country = requireString(input.payload, 'oss_country');
+    const account_code = OSS_PAYABLE_ACCOUNT_BY_COUNTRY[oss_country as 'LT' | 'EE'];
+    if (!account_code) {
+      throw new PostingValidationError({
+        code: 'invalid_payload_value',
+        reason: `C.12 oss_country must be 'LT' or 'EE', got '${oss_country}'`,
+        context: { oss_country }
+      });
+    }
+    const lines: ComputedLine[] = [
+      {
+        line_number: 1,
+        account_code,
+        debit_cents: payment_cents,
+        credit_cents: 0,
+        currency: 'EUR',
+        narrative: `OSS-${oss_country} payable — quarterly return payment`
+      },
+      {
+        line_number: 2,
+        account_code: '2610',
+        debit_cents: 0,
+        credit_cents: payment_cents,
+        currency: 'EUR',
+        narrative: `Swedbank — OSS-${oss_country} quarterly payment made`
+      }
+    ];
+    return { lines, posting_context_extras: { payment_cents, oss_country } };
+  }
+};
+
+// =============================================================================
 // MAPPING_TABLE — readonly export consumed by dispatcher.ts
 // =============================================================================
 
@@ -2670,7 +2736,8 @@ export const MAPPING_TABLE: readonly VatMappingEntry[] = [
   C_8,
   C_9,
   C_10,
-  C_11
+  C_11,
+  C_12
 ] as const;
 
 /** Lookup by id. Returns undefined if id not in MAPPING_TABLE. */

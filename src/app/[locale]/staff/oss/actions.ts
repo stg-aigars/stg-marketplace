@@ -49,15 +49,18 @@ export async function recordOssSubmission(input: MarkFiledInput): Promise<Action
 
   const supabase = createServiceClient();
 
-  // Fetch orders within the quarter window — same shape as /staff/oss/page.tsx.
+  // Fetch orders within the quarter window — same shape AND same completed_at/
+  // status='completed' basis as /staff/oss/page.tsx, so the recorded filing
+  // always matches what the page displayed. See accounting_conventions.md.
   const quarterStartIso = `${quarter.quarterStart}T00:00:00Z`;
   const quarterEndExclusiveIso = nextDayIso(quarter.quarterEnd);
 
   const { data: orders } = await supabase
     .from('orders')
     .select('status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents')
-    .gte('created_at', quarterStartIso)
-    .lt('created_at', quarterEndExclusiveIso);
+    .eq('status', 'completed')
+    .gte('completed_at', quarterStartIso)
+    .lt('completed_at', quarterEndExclusiveIso);
 
   // Recompute the per-MS aggregate server-side. Client-supplied amounts are
   // never trusted — only the quarter identifier + payment reference cross

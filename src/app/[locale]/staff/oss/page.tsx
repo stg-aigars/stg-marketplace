@@ -52,12 +52,17 @@ export default async function StaffOssPage(props: PageProps) {
   const quarterStartIso = `${targetQuarter.quarterStart}T00:00:00Z`;
   const quarterEndExclusive = nextDayIso(targetQuarter.quarterEnd);
 
+  // Bucket by completed_at + require status='completed' — matches the GL's
+  // own recognition point (O.3/O.5 post at completion), not order creation.
+  // See accounting_conventions.md for why completion-date is the standing
+  // convention and what happens to orders that straddle a quarter boundary.
   const [ordersResult, submissionsResult, priorRefundsResult] = await Promise.all([
     serviceClient
       .from('orders')
       .select('id, status, seller_country, items_total_cents, shipping_cost_cents, platform_commission_cents, total_amount_cents, commission_net_cents, commission_vat_cents, shipping_net_cents, shipping_vat_cents, seller_iban_country_at_order')
-      .gte('created_at', quarterStartIso)
-      .lt('created_at', quarterEndExclusive),
+      .eq('status', 'completed')
+      .gte('completed_at', quarterStartIso)
+      .lt('completed_at', quarterEndExclusive),
     serviceClient
       .from('oss_submissions')
       .select('*')
