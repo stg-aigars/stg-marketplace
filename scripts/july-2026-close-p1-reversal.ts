@@ -1,6 +1,16 @@
 /**
  * July 2026 P.1 reversal — one-shot correction for period 2026-07.
  *
+ * **Executed against production on 2026-08-03** (direct `execute_sql` call
+ * to `insert_journal_entry` through Supabase MCP, same constraint as
+ * june-2026-close-repair.ts — no service-role key in-session). Reversed
+ * entry `close_2026_07` (id=91558a90-3029-4af6-9c78-e039b4ba244b) with
+ * reversal entry `close_2026_07_reversal`=86d6f053-4efd-495d-925b-
+ * b0bf5a86bb5c. Confirmed no double-reversal (pre-flight query found zero
+ * existing reversals pointing at the original before posting). Executed
+ * AFTER `scripts/july-2026-backfill.ts`'s 30 entries had already posted and
+ * reconciled. A fresh, correct July P.1 remains a separate, later step.
+ *
  * The `monthly-vat-close` cron fired on 2026-08-01 (targeting the previous
  * month, July) and posted `close_2026_07` — but at that point almost none of
  * July's real marketplace/vendor activity had been backfilled yet (Stage 3

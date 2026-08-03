@@ -1,6 +1,55 @@
 /**
  * July 2026 backfill — data table (FULL PASS).
  *
+ * **Executed against production on 2026-08-03** (via direct `execute_sql`
+ * calls to the `insert_journal_entry` RPC through Supabase MCP — no
+ * `SUPABASE_SERVICE_ROLE_KEY` was available in that session to run this file
+ * as `npx tsx`, same constraint as june-2026-close-repair.ts. Each entry's
+ * exact rpcEntry/rpcLines JSON was computed offline by running the real
+ * dispatch()+compute() pipeline against literal counterparty rows queried
+ * read-only from production, then posted one at a time and verified). Posted
+ * entry IDs: `july_2026_entry_3`=dde28f34-9212-442c-8206-1d49e66184b1,
+ * `_4`=fd99755e-8233-4d3c-93b9-a445c3860802, `_5`=40f01be1-a0ba-44aa-a27a-
+ * 7511e1b93ac5, `_6`=f2996441-0487-44e6-8fb6-bfd36354eafa, `_7`=e4c35d0c-13a8-
+ * 4e7e-8cff-362c31e641dd, `_8`=93033f83-553d-4af6-a30f-8a64b542faed,
+ * `_9`=daa69fc3-d509-424e-b31a-3467a07ad182, `_10`=9ec6176b-3890-4774-98ac-
+ * 3832a52205db, `_11`=73b7a68a-8957-451c-80a9-bd1f1ef2b4a1, `_12`=463f294d-
+ * 399d-4ba9-b9fd-087045ecf804, `_13`=bc0ff07a-f2d1-4b0f-9b21-7bf985087de1,
+ * `_14`=bdcf9b7d-728b-4062-8596-ee3d6578e04a, `_15`=09d9a19e-4ce7-4925-bdab-
+ * 4cfe951be3fd, `_16`=2419b8b3-d0a4-461c-9512-2b07ec119cd6, `_17`=d8e4f424-
+ * ec84-42cf-a2f5-67c14292ce7b, `_18`=d8e64eae-b455-4720-a352-3ea72627bc30,
+ * `_19`=ed10d3a9-22c6-47ac-8038-b22955511903, `_20`=792cd0fd-ab6a-49eb-ac6f-
+ * d8a7877aa9b5, `_21`=3623012d-b1cd-4b81-b8f2-6a6bdc2e646f, `_22`=0ab9eea8-
+ * 5e30-4053-88af-ef393bdaffbe, `_23`=e0cbd890-1851-4b90-b902-e23f070c792e,
+ * `_24`=76bb825b-75d3-4f4f-917f-e566fe0580e3, `_25`=e3096695-fa76-4d5d-8ef8-
+ * a0c591b6b68f, `_26`=806fc6af-13bf-4c82-ba50-930d293397b1, `_27`=b1a6a847-
+ * 3189-405d-a8ce-5e5ecd75816f, `_28`=805ee185-300e-4f37-86ce-bb702fafa796,
+ * `_29`=01592b16-d592-4bb0-8459-25d8f19ef95d, `_30`=58e28c6e-e98c-4e76-b608-
+ * f7ae172ab537, `_31`=b9bfe613-9eda-414f-8b98-d8b7e068bde4, `_32`=30055b1a-
+ * d9a5-45b8-a752-c93c9b30759c. New counterparties created: Arturs P. (buyer)
+ * =c3cfb279-e76d-4b72-88fd-6d61ac53430f, Rokas (seller, LT, first completion)
+ * =11e2039f-963f-462d-9f0e-cbcb331ddff7.
+ *
+ * Verified post-run: global Σdebit=Σcredit through 2026-07-31 (909324=909324),
+ * bank checkpoints match exactly (2610=38702¢ incl. the documented €10.35
+ * Q2.2026-VID gap, 2620=63089¢ exact match, 2630=9720¢ = UJRJ+4DUR in-transit),
+ * 5310-HE and 5310-UN cleared to 0, 5310-META rolls -500¢ to August, no
+ * unattributed 5351 wallet lines. `bank_statement_closures` recorded for
+ * 2026-07 (2610=37667¢, 2620=63089¢) with companion `bank_closure.recorded`
+ * audit events. The premature `close_2026_07` P.1 was reversed (see
+ * `july-2026-close-p1-reversal.ts`) — a fresh, correct July P.1 is still a
+ * separate, later step. Period 2026-07 checklist item 2 (bank reconciliation)
+ * fails on 2610 by design (the €10.35 gap); item 3 (wallet integrity) will
+ * show a nominal mismatch if checked after 2026-08-03 because it compares GL
+ * frozen at 31.07 against the live `wallets` table, which by then already
+ * reflects the 03.08 WD-2026-00005 withdrawal (€45.00) — not a backfill
+ * defect. Item 8 (VAT consolidation posted) will show `pass` because it only
+ * checks for existence of a P.1/P.3 entry in the period and doesn't know
+ * `close_2026_07` was reversed — both the original and its reversal carry
+ * `type_id='P.1'` and `accounting_period='2026-07'`. Re-running this file's
+ * emits against production now is safe and will report `idempotent_skip` for
+ * every entry.
+ *
  * Extends the first (partial) pass — entries 1-2 (XK5D, E93F completions,
  * both deferred from June) are UNCHANGED and their numbering is reserved.
  * Entries 3-32 are the full July close: the remaining 7 July order

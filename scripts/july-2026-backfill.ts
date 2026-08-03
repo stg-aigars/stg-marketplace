@@ -1,6 +1,13 @@
 /**
  * July 2026 backfill — runner script (FULL PASS).
  *
+ * **Executed against production on 2026-08-03** — see july-2026-backfill-
+ * data.ts header for the full entry_number -> entry_id mapping and
+ * post-run verification (bank checkpoints, wallet integrity, global
+ * balance all confirmed). `bank_statement_closures` recorded for 2026-07
+ * (2610, 2620) with companion audit events. Re-running this script against
+ * production now is safe and will report idempotent_skip for every entry.
+ *
  * Posts 32 journal entries — see july-2026-backfill-data.ts header for the
  * full breakdown. Does NOT post the close_2026_07 reversal (separate script,
  * scripts/july-2026-close-p1-reversal.ts) or a fresh July P.1 (deliberately
