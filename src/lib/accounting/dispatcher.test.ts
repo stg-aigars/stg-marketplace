@@ -395,6 +395,14 @@ const REPRESENTATIVES: Representative[] = [
       counterparty: null,
       payload: {}
     }
+  },
+  {
+    type_id: 'C.12',
+    ctx: {
+      event_type: 'oss.payment_made',
+      counterparty: null,
+      payload: { oss_country: 'LT' }
+    }
   }
 ];
 

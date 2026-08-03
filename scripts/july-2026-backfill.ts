@@ -1,11 +1,17 @@
 /**
- * July 2026 backfill — runner script (PARTIAL — first pass).
+ * July 2026 backfill — runner script (FULL PASS).
  *
- * Posts 2 journal entries: the XK5D and E93F completions deferred from June
- * (see july-2026-backfill-data.ts header for why). This is a first pass, not
- * the full July close — the data file will be extended later for UJRJ's
- * in-transit settlement, remaining July marketplace activity, and July's own
- * P.1 close.
+ * **Executed against production on 2026-08-03** — see july-2026-backfill-
+ * data.ts header for the full entry_number -> entry_id mapping and
+ * post-run verification (bank checkpoints, wallet integrity, global
+ * balance all confirmed). `bank_statement_closures` recorded for 2026-07
+ * (2610, 2620) with companion audit events. Re-running this script against
+ * production now is safe and will report idempotent_skip for every entry.
+ *
+ * Posts 32 journal entries — see july-2026-backfill-data.ts header for the
+ * full breakdown. Does NOT post the close_2026_07 reversal (separate script,
+ * scripts/july-2026-close-p1-reversal.ts) or a fresh July P.1 (deliberately
+ * deferred to a later close step, matching every prior month's discipline).
  *
  * Usage:
  *   npx tsx scripts/july-2026-backfill.ts                  # full run + reconcile
@@ -14,9 +20,12 @@
  *
  * Env: reads `.env.local` for NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
  *
- * Idempotency: source_doc_id `july_2026_entry_<N>` (N=1..2). Re-runs hit
+ * Idempotency: source_doc_id `july_2026_entry_<N>` (N=1..32). Re-runs hit
  * idempotent_skip. Seller counterparty resolution mirrors the June runner's
- * resolveOrCreateSellerCounterparty pattern exactly.
+ * resolveOrCreateSellerCounterparty pattern exactly. Buyer counterparty
+ * resolution (for the one 100%-wallet cart, entry 4) mirrors
+ * resolveOrCreateBuyerCounterparty from lifecycle-wraps.ts / the June
+ * close-repair's usage of the same helper.
  */
 
 import './_load-env';
@@ -27,6 +36,7 @@ import * as path from 'path';
 import { pathToFileURL } from 'url';
 
 import { dispatch } from '@/lib/accounting/dispatcher';
+import { resolveOrCreateBuyerCounterparty } from '@/lib/accounting/lifecycle-wraps';
 import { emit } from '@/lib/accounting/posting-engine';
 
 import {
@@ -105,6 +115,11 @@ export async function runBackfill(supabase: SupabaseClient): Promise<BackfillRun
       const counterparty = await resolveOrCreateSellerCounterparty(supabase, entry.sellerUserId);
       entry.event.counterparty_id = counterparty.id;
       (entry.event.payload as Record<string, unknown>).seller_id = counterparty.id;
+    }
+
+    if (entry.buyerUserId) {
+      const buyerCounterparty = await resolveOrCreateBuyerCounterparty(supabase, entry.buyerUserId);
+      (entry.event.payload as Record<string, unknown>).buyer_counterparty_id = buyerCounterparty.id;
     }
 
     const emitResult = await emit(supabase, entry.event);
@@ -207,12 +222,13 @@ function logDryRun(): void {
   console.log('--dry-run mode: planned entries (no DB writes):\n');
   for (const entry of BACKFILL_ENTRIES) {
     const sellerNote = entry.sellerUserId ? `seller=${entry.sellerUserId.slice(0, 8)}…` : '';
+    const buyerNote = entry.buyerUserId ? `buyer=${entry.buyerUserId.slice(0, 8)}…` : '';
     console.log(
       `  ${entry.entry_number.padEnd(4)} ${entry.event.posting_date}  ` +
-      `${peekDispatch(entry).padEnd(6)}  ${entry.description}  ${sellerNote}`
+      `${peekDispatch(entry).padEnd(6)}  ${entry.description}  ${sellerNote}${buyerNote}`
     );
   }
-  console.log(`\nTotal: ${BACKFILL_ENTRIES.length} entries planned (partial pass).`);
+  console.log(`\nTotal: ${BACKFILL_ENTRIES.length} entries planned (full July pass).`);
 }
 
 function peekDispatch(entry: BackfillEntry): string {
@@ -232,7 +248,7 @@ async function runMain(): Promise<void> {
   const env = loadEnv();
   const supabase = createClient(env.url, env.key);
 
-  console.log(`\nJuly 2026 backfill (PARTIAL) ${cli.dryRun ? '(DRY RUN)' : cli.reconcileOnly ? '(RECONCILE ONLY)' : ''}`);
+  console.log(`\nJuly 2026 backfill (FULL) ${cli.dryRun ? '(DRY RUN)' : cli.reconcileOnly ? '(RECONCILE ONLY)' : ''}`);
   console.log(`Target Supabase: ${env.url}\n`);
 
   console.log('Pre-flight: checking periods 2026-07 / 2026-Q3 / 2026...');
@@ -275,11 +291,14 @@ async function runMain(): Promise<void> {
   await assertMatchesExpectedClosingState(supabase);
   console.log('Reconciliation: PASS ✓');
   console.log(
-    '\nThis was a PARTIAL July pass (2 entries). Still outstanding for the full July close:\n' +
-    '  - UJRJ\'s still-in-transit €34.10 card settlement (2630 → 2620).\n' +
-    '  - Any further July marketplace activity (orders, withdrawals) as the month progresses.\n' +
-    '  - July vendor invoices (Anthropic, Meta, Hetzner payment, etc.).\n' +
-    '  - July\'s own P.1 VAT close, once June\'s deferred close + fee resolve first.\n'
+    '\nStill outstanding after this pass (NOT this script\'s job):\n' +
+    '  - The close_2026_07 reversal — run scripts/july-2026-close-p1-reversal.ts separately.\n' +
+    '  - The Q2.2026 VID payment (€10.35, 11.07) — open question, NOT posted; see data file header.\n' +
+    '  - UJRJ\'s still-in-transit €34.10 card settlement — explicit user decision to skip.\n' +
+    '  - A fresh, correct July P.1 VAT close — deliberately deferred to a later step (matches\n' +
+    '    April/May/June precedent of closing the period AFTER its backfill is reconciled).\n' +
+    '  - Recording July\'s 2610/2620 bank_statement_closures rows via the staff UI (separate\n' +
+    '    manual action, not part of any backfill script to date).\n'
   );
 }
 

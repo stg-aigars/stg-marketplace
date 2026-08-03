@@ -1436,3 +1436,49 @@ describe('C.10 — internal bank transfer', () => {
     ).toThrow(/cash\/clearing account/);
   });
 });
+
+describe('C.12 — OSS quarterly VAT payment', () => {
+  it('debits 5711 and credits 2610 for an LT payment', () => {
+    const c12 = findMappingById('C.12')!;
+    const result = c12.compute(
+      buildInput(nullCp(), null, {
+        oss_country: 'LT',
+        payment_cents: 331,
+        oss_quarter: '2026-Q2',
+        eds_document_number: '115617661'
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines.find((l) => l.account_code === '5711')!.debit_cents).toBe(331);
+    expect(result.lines.find((l) => l.account_code === '2610')!.credit_cents).toBe(331);
+  });
+
+  it('debits 5712 and credits 2610 for an EE payment', () => {
+    const c12 = findMappingById('C.12')!;
+    const result = c12.compute(
+      buildInput(nullCp(), null, {
+        oss_country: 'EE',
+        payment_cents: 704,
+        oss_quarter: '2026-Q2',
+        eds_document_number: '115617661'
+      })
+    );
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines.find((l) => l.account_code === '5712')!.debit_cents).toBe(704);
+    expect(result.lines.find((l) => l.account_code === '2610')!.credit_cents).toBe(704);
+  });
+
+  it('rejects an oss_country other than LT or EE', () => {
+    const c12 = findMappingById('C.12')!;
+    expect(() =>
+      c12.compute(
+        buildInput(nullCp(), null, {
+          oss_country: 'DE',
+          payment_cents: 100,
+          oss_quarter: '2026-Q2',
+          eds_document_number: '115617661'
+        })
+      )
+    ).toThrow(/oss_country/);
+  });
+});
