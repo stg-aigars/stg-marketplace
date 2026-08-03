@@ -94,8 +94,9 @@
  *     steady-state going forward).
  *   - I.4 Anthropic €18.00 (EUR path, non-EU RC, same-day pay 2610), 28.07 —
  *     same amount as June's JQYX1OS2-0012 (recurring Claude Pro subscription).
- *     PLACEHOLDER invoice number — verify against the real Anthropic invoice
- *     before production posting.
+ *     Invoice number confirmed from the real Anthropic invoice PDF:
+ *     JQYX1OS2-0014, issued 2026-07-26 (Claude Pro Jul 26–Aug 26), 0% tax /
+ *     reverse charge — matches the planned non_eu_rc treatment exactly.
  *   - I.3 Meta ads accrual €19.42 (EU B2B RC, IE) + I.7 payment €14.42, 31.07
  *     — 4 card debits total €19.42 (28.07 €4.42, 30.07 €5.00, 31.07 €5.00,
  *     and a 4th €5.00 booked 02.08 but narrative-dated 31.07). Judgment call:
@@ -104,8 +105,16 @@
  *     May→June rollover precedent. The PAYMENT (I.7) clears only the 3 that
  *     actually left cash by 03.08 (€14.42) — the 4th (€5.00, cash-cleared
  *     02.08) rolls to August's backfill, mirroring May's €6.00 rollover
- *     exactly. PLACEHOLDER invoice numbers — verify against real FBADS
- *     invoices before production posting.
+ *     exactly. All 4 invoice numbers confirmed from the real Meta/FBADS
+ *     invoice PDFs, matched to their bank charges by transaction timestamp:
+ *     FBADS-046-106259359 (€4.42, txn Jul 27 06:04), FBADS-046-106267577
+ *     (€5.00, txn Jul 28 22:04), FBADS-046-106273729 (€5.00, txn Jul 30
+ *     03:42), FBADS-046-106285148 (€5.00, txn Jul 31 23:28 — this is the one
+ *     that cash-clears 02.08 and rolls to August). A 5th Meta invoice
+ *     (FBADS-046-106293368, txn Aug 2 13:29, €5.00) was also supplied but
+ *     falls entirely in August (billing period 31.07–02.08, no July bank
+ *     charge for it) — out of scope for this pass, belongs to August's
+ *     backfill instead.
  *   - 2 monthly account-maintenance fees, €5.00 each (2610 default account,
  *     2620 override), both 31.07 — I.5 exempt (no precedent fee_type exists
  *     for "account maintenance" specifically; reusing 'pis_commission' as
@@ -839,11 +848,15 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
   },
 
   // 2026-07-28: Anthropic invoice (I.4 EUR path), same-day pay 2610.
-  // PLACEHOLDER invoice number — verify against real Anthropic invoice before
-  // production posting.
+  // Invoice number JQYX1OS2-0014 confirmed from the real Anthropic invoice
+  // PDF (issued 2026-07-26, due same day, 0% tax / reverse charge — matches
+  // the non_eu_rc treatment below exactly). posting_date stays on the bank
+  // booking date (28.07, matching the statement's DBIT entry) per this
+  // file's same-day-pay dating convention; invoice_date carries the real
+  // 2026-07-26 issue date.
   {
     entry_number: '25',
-    description: 'Anthropic €18.00 — non-EU RC, EUR-billed (Claude Pro); same-day pay 2610 [PLACEHOLDER invoice number]',
+    description: 'Anthropic €18.00 — non-EU RC, EUR-billed (Claude Pro); same-day pay 2610 (invoice JQYX1OS2-0014)',
     event: {
       event_type: 'vendor.invoice_received',
       source_doc_type: SOURCE_DOC_TYPE_VENDOR_INVOICE,
@@ -851,7 +864,7 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       posting_date: '2026-07-28',
       accounting_period: '2026-07',
       tax_period: '2026-07',
-      narrative: 'Anthropic invoice (PLACEHOLDER — verify actual invoice number before production posting) €18.00 — non-EU RC (Article 44 + 196); EUR-billed, no FX; LV self-assessment 21%',
+      narrative: 'Anthropic invoice JQYX1OS2-0014 (issued 2026-07-26, Claude Pro Jul 26-Aug 26) €18.00 — non-EU RC (Article 44 + 196); EUR-billed, no FX; LV self-assessment 21%',
       counterparty_id: ANTHROPIC_CP_ID,
       payload: tag('25', {
         invoice_currency: 'EUR',
@@ -859,9 +872,9 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
         expense_account: '7730',
         payable_account: '2610',
         vat_treatment: 'non_eu_rc',
-        vendor_invoice_number: 'JQYX1OS2-VERIFY-2026-07',
+        vendor_invoice_number: 'JQYX1OS2-0014',
         vendor_country: 'US',
-        invoice_date: '2026-07-28'
+        invoice_date: '2026-07-26'
       })
     }
   },
@@ -943,11 +956,14 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
   // total €19.42 (28.07 €4.42, 30.07 €5.00, 31.07 €5.00, and a 4th €5.00
   // booked 02.08 but narrative-dated 31.07 — included here since accrual
   // timing follows economic incurral, not cash-clearing date, mirroring the
-  // May→June rollover precedent). PLACEHOLDER invoice numbers — verify
-  // against real FBADS invoices before production posting.
+  // May→June rollover precedent). All 4 invoice numbers confirmed from the
+  // real Meta/FBADS invoice PDFs, matched to bank charges by transaction
+  // timestamp: FBADS-046-106259359 (€4.42, txn Jul 27 06:04),
+  // FBADS-046-106267577 (€5.00, txn Jul 28 22:04), FBADS-046-106273729
+  // (€5.00, txn Jul 30 03:42), FBADS-046-106285148 (€5.00, txn Jul 31 23:28).
   {
     entry_number: '29',
-    description: 'Meta ads €19.42 — EU B2B RC (4 card debits 28-31.07, code P); self-assess 21% RC VAT €4.08; accrued to 5310-META [PLACEHOLDER invoice numbers]',
+    description: 'Meta ads €19.42 — EU B2B RC (4 card debits 28-31.07, code P); self-assess 21% RC VAT €4.08; accrued to 5310-META (FBADS-046-106259359/106267577/106273729/106285148)',
     event: {
       event_type: 'vendor.invoice_received',
       source_doc_type: SOURCE_DOC_TYPE_VENDOR_INVOICE,
@@ -955,14 +971,14 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       posting_date: '2026-07-31',
       accounting_period: '2026-07',
       tax_period: '2026-07',
-      narrative: 'Meta Platforms Ireland ads €19.42 — EU B2B RC (Article 196); 4 card debits 28-31.07 2026 (PLACEHOLDER invoice numbers — verify before production posting); LV self-assessment 21%',
+      narrative: 'Meta Platforms Ireland ads €19.42 — EU B2B RC (Article 196); 4 invoices covering card debits 27-31.07 2026 (FBADS-046-106259359, FBADS-046-106267577, FBADS-046-106273729, FBADS-046-106285148); LV self-assessment 21%',
       counterparty_id: META_CP_ID,
       payload: tag('29', {
         invoice_net_cents: 1942,
         invoice_vat_cents: 0,
         expense_account: '7750',
         vat_treatment: 'eu_b2b_rc',
-        vendor_invoice_number: 'FBADS-046-VERIFY-2026-07',
+        vendor_invoice_number: 'FBADS-046-106259359, FBADS-046-106267577, FBADS-046-106273729, FBADS-046-106285148',
         vendor_vat_number: 'IE9692928F',
         vendor_country: 'IE',
         invoice_date: '2026-07-31'
@@ -970,9 +986,11 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
     }
   },
 
-  // 2026-07-31: Meta ads payment (I.7) — clears 3 of 4 card debits (€14.42);
-  // the 4th (€5.00, cash-cleared 02.08) rolls to August's backfill, mirroring
-  // May's €6.00 rollover precedent exactly.
+  // 2026-07-31: Meta ads payment (I.7) — clears 3 of 4 card debits (€14.42):
+  // FBADS-046-106259359 (€4.42) + FBADS-046-106267577 (€5.00) +
+  // FBADS-046-106273729 (€5.00). The 4th (FBADS-046-106285148, €5.00,
+  // cash-cleared 02.08) rolls to August's backfill, mirroring May's €6.00
+  // rollover precedent exactly.
   {
     entry_number: '30',
     description: 'Meta ads payment €14.42 — 3 of 4 July invoices settled on card 28-31.07; €5.00 remains payable (settles August)',
@@ -983,12 +1001,12 @@ export const BACKFILL_ENTRIES: readonly BackfillEntry[] = [
       posting_date: '2026-07-31',
       accounting_period: '2026-07',
       tax_period: '2026-07',
-      narrative: 'Meta ads payment €14.42 — MasterCard settlements 28.07 (€4.42) + 30.07 (€5.00) + 31.07 (€5.00) clear 3 of 4 July card debits; remaining €5.00 (cash-cleared 02.08) settles August',
+      narrative: 'Meta ads payment €14.42 — MasterCard settlements clear 3 of 4 July invoices: FBADS-046-106259359 (€4.42) + FBADS-046-106267577 (€5.00) + FBADS-046-106273729 (€5.00); FBADS-046-106285148 (€5.00, cash-cleared 02.08) settles August',
       counterparty_id: META_CP_ID,
       payload: tag('30', {
         payment_cents: 1442,
         payable_account: '5310-META',
-        vendor_invoice_number: 'FBADS-046-VERIFY-2026-07',
+        vendor_invoice_number: 'FBADS-046-106259359, FBADS-046-106267577, FBADS-046-106273729',
         bank_account: '2610'
       })
     }
