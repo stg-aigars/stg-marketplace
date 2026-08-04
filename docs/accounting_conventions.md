@@ -94,10 +94,10 @@ domestic B2C supplies): its formula computes `row41 × 0.21` in one shot
 individually-rounded per-invoice VAT amounts. Same mechanism as above, one
 cent, expected. Filed with GL's per-invoice figure (3.83) rather than
 EDS's aggregate recomputation (3.84) — the per-invoice number is the one
-backed by real invoices. **Open question, not yet resolved**: whether EDS
-silently overrides the typed value to its own recomputed figure on submit,
-or genuinely accepts the warned value as entered — worth confirming next
-time this warning appears, and updating this note once known either way.
+backed by real invoices. **Confirmed 2026-08-04: EDS's "Brīdinājumi"
+(warnings) are advisory only — it does not override or alter any typed
+value, including row 52.** File warned-but-explained values as entered;
+no separate reconciliation step needed after submission.
 
 ## 6. Posting an OSS quarterly payment — C.12
 

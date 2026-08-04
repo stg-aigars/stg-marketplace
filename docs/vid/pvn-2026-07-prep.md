@@ -39,7 +39,7 @@ Mapping notes (same convention as May/June, re-verified against this month's dat
 Attempted import (2026-08-04) produced 3 warnings, none blocking:
 
 1–2. **PVN1-I rows 1–2, document date outside the taxation period.** Expected — these are the two June-dated invoices (Swedbank V0000897245, Unisend 2601925) whose input VAT was deliberately deferred to July per the June close repair, documented above. Not changing the document dates; they're the real invoice dates.
-3. **Row 52 should be 3.84, not 3.83.** The permanent aggregate-vs-per-invoice rounding gap (`docs/accounting_conventions.md` §5) showing up on the domestic form for the first time, not just OSS. Filed with 3.83 (the true per-invoice sum). **Open question, flagged in §5**: whether EDS silently overrides this to 3.84 on submit or accepts the typed value — check the actual submission and update both this note and §5 once known.
+3. **Row 52 should be 3.84, not 3.83.** The permanent aggregate-vs-per-invoice rounding gap (`docs/accounting_conventions.md` §5) showing up on the domestic form for the first time, not just OSS. Filed with 3.83 (the true per-invoice sum). **Confirmed 2026-08-04**: EDS's warnings are advisory only — it does not override any typed value on submit, including row 52. Filed as entered.
 
 ## PVN1 Part I (input documents)
 
