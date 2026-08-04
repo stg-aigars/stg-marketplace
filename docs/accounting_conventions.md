@@ -87,6 +87,18 @@ quarter. The same mechanism produced the 7-cent gap on June 2026's domestic
 PVN payment (declared €13.66 vs GL's €13.59), folded into July's close
 rather than amending June's filed return.
 
+**Confirmed on the domestic PVN form too, not just OSS.** Filing July
+2026's declaration, EDS's own validation flagged row 52 (output VAT on
+domestic B2C supplies): its formula computes `row41 × 0.21` in one shot
+(18.27 × 0.21 = 3.8367 → 3.84), while GL's 3.83 is the sum of six
+individually-rounded per-invoice VAT amounts. Same mechanism as above, one
+cent, expected. Filed with GL's per-invoice figure (3.83) rather than
+EDS's aggregate recomputation (3.84) — the per-invoice number is the one
+backed by real invoices. **Open question, not yet resolved**: whether EDS
+silently overrides the typed value to its own recomputed figure on submit,
+or genuinely accepts the warned value as entered — worth confirming next
+time this warning appears, and updating this note once known either way.
+
 ## 6. Posting an OSS quarterly payment — C.12
 
 Once a quarter's OSS return is filed and paid, post the cash outflow via

@@ -34,6 +34,13 @@ Mapping notes (same convention as May/June, re-verified against this month's dat
 - No B2B reverse-charge domestic supplies this month (no O.2/O.4 entries) → **PVN2 (ESL) stays empty**, same as every month so far.
 - **This is the first refund-position filing in this dataset** (April/May were both payable). The row structure is identical either way — EDS computes the net sign from the same rows; there's no separate "refund" row to populate differently. Flagged for verification in EDS directly since there's no prior refund-case precedent on file to cross-check against.
 
+## EDS import — validation warnings seen, all expected
+
+Attempted import (2026-08-04) produced 3 warnings, none blocking:
+
+1–2. **PVN1-I rows 1–2, document date outside the taxation period.** Expected — these are the two June-dated invoices (Swedbank V0000897245, Unisend 2601925) whose input VAT was deliberately deferred to July per the June close repair, documented above. Not changing the document dates; they're the real invoice dates.
+3. **Row 52 should be 3.84, not 3.83.** The permanent aggregate-vs-per-invoice rounding gap (`docs/accounting_conventions.md` §5) showing up on the domestic form for the first time, not just OSS. Filed with 3.83 (the true per-invoice sum). **Open question, flagged in §5**: whether EDS silently overrides this to 3.84 on submit or accepts the typed value — check the actual submission and update both this note and §5 once known.
+
 ## PVN1 Part I (input documents)
 
 | # | Counterparty | Country / Reg | Type | Net | VAT | DokVeids | Document | Date |
