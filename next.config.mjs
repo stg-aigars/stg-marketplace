@@ -5,6 +5,11 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Intentionally false — do NOT flip this to get readable Sentry traces.
+  // `withSentryConfig` (bottom of this file) generates hidden source maps,
+  // uploads them to Sentry, and deletes them from the image via
+  // `sourcemaps.deleteSourcemapsAfterUpload`. Setting this true would publish
+  // maps to the browser without improving Sentry symbolication.
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
   output: 'standalone',
