@@ -19,6 +19,11 @@ Sentry.init({
     "Failed to execute 'appendChild' on 'Node'",
     // Common browser extension noise
     'ResizeObserver loop',
+    // Third-party scripts (browser extensions, scrapers) that parse our
+    // application/ld+json blocks and assume a single node object. Thrown from
+    // injected inline script, not from our bundles — see the JsonLd component
+    // for the shape fix. Sentry STG-MARKETPLACE-1P / -1R / -1S.
+    /@context.*\.toLowerCase/,
   ],
 
   beforeSend(event) {
