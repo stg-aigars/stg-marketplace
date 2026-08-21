@@ -306,9 +306,13 @@ export async function sellerAcceptRefund(orderId: string, userId: string): Promi
     throw new Error('Dispute is already resolved');
   }
 
-  const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
+  const { cardRefunded, walletRefunded, blocked } = await refundOrder(orderId, order);
 
-  if (cardRefunded + walletRefunded === 0) {
+  // `blocked` means the gateway can't reverse the payment and a manual bank
+  // transfer is queued — the refund obligation is recorded, not lost. Rolling
+  // the dispute claim back here would strand a resolved dispute in an
+  // unresolved state and tell the seller their acceptance failed.
+  if (!blocked && cardRefunded + walletRefunded === 0) {
     await handleRefundInitiationFailure(supabase, dispute.id, userId, orderId, order, 'dispute.seller_accepted_refund');
   }
 
@@ -529,9 +533,11 @@ export async function staffResolveDispute(
       throw new Error('Dispute is already resolved');
     }
 
-    const { cardRefunded, walletRefunded } = await refundOrder(orderId, order);
+    const { cardRefunded, walletRefunded, blocked } = await refundOrder(orderId, order);
 
-    if (cardRefunded + walletRefunded === 0) {
+    // See the seller-accepted path above: a blocked refund is queued for manual
+    // transfer, not a failed initiation, so the staff resolution stands.
+    if (!blocked && cardRefunded + walletRefunded === 0) {
       await handleRefundInitiationFailure(supabase, dispute.id, staffUserId, orderId, order, 'dispute.staff_resolved');
     }
 

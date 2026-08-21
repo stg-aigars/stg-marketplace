@@ -127,12 +127,17 @@ async function handleCartCallback(
   const walletDebit = group.wallet_debit_cents ?? 0;
   const expectedEverypayAmountCents = group.total_amount_cents - walletDebit;
 
+  // Resolved before the verification guards below, not after: those guards can
+  // trigger a refund, and the refund gateway needs the method to know whether
+  // the payment is reversible at all.
+  const paymentMethod = mapEveryPayMethod(paymentStatus.payment_method, paymentStatus.order_reference);
+
   // Verify order_reference matches cart group
   if (paymentStatus.order_reference !== group.order_number) {
     console.error(
       `[Payments] Cart order_reference mismatch: EveryPay returned "${paymentStatus.order_reference}" but group has "${group.order_number}"`
     );
-    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart order_reference mismatch');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart order_reference mismatch', paymentMethod);
     return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
   }
 
@@ -155,12 +160,11 @@ async function handleCartCallback(
   const expectedAmount = (expectedEverypayAmountCents / 100).toFixed(2);
   if (paymentStatus.amount && paymentStatus.amount !== expectedAmount) {
     console.error(`[Payments] Cart amount mismatch: expected €${expectedAmount}, got €${paymentStatus.amount}`);
-    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart amount mismatch');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'cart amount mismatch', paymentMethod);
     return NextResponse.redirect(`${env.app.url}/cart?error=verification_failed`);
   }
 
   // Fulfill the cart payment — create orders, debit wallet, send notifications.
-  const paymentMethod = mapEveryPayMethod(paymentStatus.payment_method, paymentStatus.order_reference);
   const requestCountryAtOrder = request.headers.get('cf-ipcountry');
   const result = await fulfillCartPayment(
     group,

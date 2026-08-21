@@ -42,6 +42,10 @@ import { Dac7Reminder } from './templates/dac7-reminder';
 import { Dac7Blocked } from './templates/dac7-blocked';
 import { Dac7ReportAvailable } from './templates/dac7-report-available';
 import { SellerVerificationRequest } from './templates/seller-verification-request';
+import { RefundOperatorAlert } from './templates/refund-operator-alert';
+import { RefundManualPendingBuyer } from './templates/refund-manual-pending-buyer';
+import { getOperatorRecipient } from './admin-notifications';
+import type { RefundBlockedReason } from '@/lib/payments/refundability';
 import { env } from '@/lib/env';
 import type { TerminalEmailFields } from '@/lib/terminals/format';
 
@@ -907,6 +911,67 @@ export async function sendSellerVerificationRequest(params: {
       salesCount: params.salesCount,
       responseDeadlineDays: params.responseDeadlineDays,
       appUrl: env.app.url,
+    }),
+  });
+}
+
+// ============================================================================
+// Refund emails
+// ============================================================================
+
+/**
+ * Operator refund alert → ops inbox. Fires on every refund, whatever the
+ * outcome; the subject line carries the distinction so the blocked ones are
+ * findable at a glance. Called only via the refund gateway choke point
+ * (`attemptGatewayRefund`) so a future refund path inherits it automatically.
+ */
+export async function sendRefundOperatorAlert(params: {
+  outcome: 'refunded' | 'manual_required' | 'failed';
+  amountCents: number;
+  paymentMethod: string | null;
+  paymentReference: string;
+  refundReason: string;
+  orderId: string | null;
+  orderNumber: string | null;
+  buyerName: string | null;
+  blockedReason: RefundBlockedReason | null;
+  failureCode: number | null;
+  failureMessage: string | null;
+}): Promise<void> {
+  const subjectPrefix =
+    params.outcome === 'manual_required'
+      ? '[Refund] ACTION REQUIRED'
+      : params.outcome === 'failed'
+        ? '[Refund] Failed'
+        : '[Refund] Completed';
+
+  await sendEmail({
+    to: getOperatorRecipient(),
+    subject: `${subjectPrefix} — ${params.orderNumber ?? params.paymentReference}`,
+    react: React.createElement(RefundOperatorAlert, { ...params, appUrl: env.app.url }),
+  });
+}
+
+/**
+ * Manual-refund notice → buyer. Sent alongside the cancellation email when the
+ * gateway could not reverse the payment, so the buyer knows the money is
+ * coming by bank transfer rather than hearing nothing.
+ */
+export async function sendRefundManualPendingToBuyer(params: {
+  buyerName: string;
+  buyerEmail: string;
+  orderNumber: string;
+  gameName: string;
+  amountCents: number;
+}): Promise<void> {
+  await sendEmail({
+    to: params.buyerEmail,
+    subject: `Your refund for ${params.orderNumber} is on its way`,
+    react: React.createElement(RefundManualPendingBuyer, {
+      buyerName: params.buyerName,
+      orderNumber: params.orderNumber,
+      gameName: params.gameName,
+      amountCents: params.amountCents,
     }),
   });
 }

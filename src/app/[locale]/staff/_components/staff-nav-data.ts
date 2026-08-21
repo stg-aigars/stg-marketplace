@@ -19,6 +19,7 @@ const STAFF_NAV_GROUPS: StaffNavGroup[] = [
       { key: 'disputes', label: 'Disputes', href: '/staff/disputes' },
       { key: 'notices', label: 'DSA notices', href: '/staff/notices' },
       { key: 'withdrawals', label: 'Withdrawals', href: '/staff/withdrawals' },
+      { key: 'refunds', label: 'Manual refunds', href: '/staff/refunds' },
       { key: 'feedback', label: 'Feedback', href: '/staff/feedback' },
       { key: 'announcements', label: 'Announcements', href: '/staff/announcements' },
     ],

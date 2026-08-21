@@ -52,9 +52,11 @@ const mockRefundPayment = vi.fn().mockResolvedValue(undefined);
 const mockSendCartOrderEmails = vi.fn().mockResolvedValue(undefined);
 const mockLogAuditEvent = vi.fn().mockResolvedValue(undefined);
 const mockCaptureException = vi.fn();
+const mockCaptureMessage = vi.fn();
 
 vi.mock('@sentry/nextjs', () => ({
   captureException: (...args: unknown[]) => mockCaptureException(...args),
+  captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
 }));
 vi.mock('@/lib/accounting/feature-flag', () => ({
   isAccountingEngineEnabled: (...args: unknown[]) => mockIsAccountingEngineEnabled(...args),
@@ -81,6 +83,13 @@ vi.mock('@/lib/services/wallet', () => ({
 vi.mock('@/lib/services/everypay/client', () => ({
   refundPayment: (...args: unknown[]) => mockRefundPayment(...args),
 }));
+// Static import of `@/lib/email` reaches the Resend client, which needs an API
+// key at module load. The refund gateway sends the operator alert from there.
+vi.mock('@/lib/email', () => ({
+  sendRefundOperatorAlert: vi.fn(async () => undefined),
+  sendRefundManualPendingToBuyer: vi.fn(async () => undefined),
+}));
+
 vi.mock('@/lib/email/cart-emails', () => ({
   sendCartOrderEmails: (...args: unknown[]) => mockSendCartOrderEmails(...args),
 }));
@@ -798,6 +807,49 @@ describe('fulfillCartPayment — mid-loop rollback', () => {
 
     // Sentry captured for the incomplete-refund outcome (Phase 3 only).
     expect(mockCaptureException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ tags: expect.objectContaining({ phase: 'cart_rollback_refund_incomplete' }) })
+    );
+  });
+
+  it('5b. stamps manual_required, not partial, when the cart payment is bank-link (gateway cannot reverse it)', async () => {
+    // The retryable 'partial'/'failed' buckets are swept by the reconcile
+    // cron. An open-banking refund can never succeed on retry, so parking it
+    // there means a buyer waits forever behind a cron that cannot help.
+    mockRefundToWallet.mockResolvedValue(undefined);
+
+    const client = makeClient({
+      listings: twoSellerListings(),
+      ordersResponses: [
+        ok([]),
+        ok([pendingOrderRow()]),
+        ok({ id: SELLER_1_ORDER.id }),
+        ok(null),
+        ok(null),
+        ok([]),
+      ],
+      orderItemsSelectResponses: [ok([{ listing_id: 'listing-1' }])],
+    });
+
+    const { fulfillCartPayment } = await import('./payment-fulfillment');
+    await fulfillCartPayment(twoSellerGroup(), 'ep-ref-1', 'settled', client, 'bank_link');
+
+    // The gateway is never called for a bank-link payment.
+    expect(mockRefundPayment).not.toHaveBeenCalled();
+
+    const finalStampCall = mockOrdersUpdate.mock.calls[mockOrdersUpdate.mock.calls.length - 1]![0];
+    expect(finalStampCall).toMatchObject({
+      refund_status: 'manual_required',
+      refund_blocked_reason: 'open_banking_not_refundable',
+    });
+    // Phase 1 optimistically stamps refunded_at before the card outcome is
+    // known, so Phase 3 must clear it — a manual_required order whose money
+    // has not moved must not carry a "buyer has been paid" timestamp.
+    expect(finalStampCall).toMatchObject({ refunded_at: null });
+
+    // No incomplete-refund page: the operator email and the staff queue carry
+    // this one, so Sentry stays for genuine anomalies.
+    expect(mockCaptureException).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ tags: expect.objectContaining({ phase: 'cart_rollback_refund_incomplete' }) })
     );

@@ -16,6 +16,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Static import of `@/lib/email` reaches the Resend client, which needs an API
+// key at module load. The refund gateway sends the operator alert from there.
+vi.mock('@/lib/email', () => ({
+  sendRefundOperatorAlert: vi.fn(async () => undefined),
+  sendRefundManualPendingToBuyer: vi.fn(async () => undefined),
+}));
+
 vi.mock('@/lib/accounting/feature-flag', () => ({
   isAccountingEngineEnabled: vi.fn(() => false)
 }));
@@ -45,14 +52,34 @@ vi.mock('@/lib/services/audit', () => ({
   logAuditEvent: vi.fn(async () => undefined)
 }));
 
-const mockUpdate = vi.fn(() => ({
+vi.mock('@/lib/notifications', () => ({
+  notifyStaff: vi.fn(async () => undefined)
+}));
+
+// Typed param so assertions can read the update payload off mock.calls.
+const mockUpdate = vi.fn((_payload: Record<string, unknown>) => ({
   eq: vi.fn(async () => ({ data: null, error: null }))
+}));
+
+// The manual-required path re-reads the order for the buyer's email + game
+// summary. Returns a buyer so the notice path runs end to end.
+const mockSelect = vi.fn(() => ({
+  eq: vi.fn(() => ({
+    single: vi.fn(async () => ({
+      data: {
+        buyer_profile: { full_name: 'Buyer One', email: 'buyer@example.com' },
+        order_items: [{ listings: { game_name: 'Catan' } }]
+      },
+      error: null
+    }))
+  }))
 }));
 
 vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(() => ({
     from: vi.fn(() => ({
-      update: mockUpdate
+      update: mockUpdate,
+      select: mockSelect
     }))
   }))
 }));
@@ -61,7 +88,10 @@ import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
 import { refundOrderWithGL } from '@/lib/accounting/lifecycle-wraps';
 import { refundPayment } from '@/lib/services/everypay/client';
 import { issueCreditNote } from '@/lib/services/invoicing';
-import { refundOrder } from './order-refund';
+import { logAuditEvent } from '@/lib/services/audit';
+import { notifyStaff } from '@/lib/notifications';
+import { sendRefundManualPendingToBuyer } from '@/lib/email';
+import { refundOrder, REFUND_STATUS } from './order-refund';
 
 const cardOnlyOrder = {
   id: 'order_uuid_test',
@@ -167,7 +197,7 @@ describe('refundOrder — flag-branch contract', () => {
 
     const result = await refundOrder('order_uuid_test', alreadyRefunded);
 
-    expect(result).toEqual({ cardRefunded: 0, walletRefunded: 0 });
+    expect(result).toEqual({ cardRefunded: 0, walletRefunded: 0, blocked: false });
     expect(refundPayment).not.toHaveBeenCalled();
     expect(refundOrderWithGL).not.toHaveBeenCalled();
     expect(issueCreditNote).not.toHaveBeenCalled();
@@ -200,5 +230,131 @@ describe('refundOrder — flag-branch contract', () => {
       expect.objectContaining({ is_staff_test: false }),
       expect.anything()
     );
+  });
+});
+
+/**
+ * The bank-link case that produced order STG-20260816-HGBM: seller declined,
+ * auto-refund fired, EveryPay answered 4037, and nothing was written or sent.
+ */
+describe('refundOrder — gateway cannot reverse the payment', () => {
+  const bankLinkOrder = { ...cardOnlyOrder, payment_method: 'bank_link' as const };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(isAccountingEngineEnabled).mockReturnValue(false);
+  });
+
+  it('does not call EveryPay for a bank-link payment', async () => {
+    await refundOrder('order_uuid_test', bankLinkOrder);
+
+    expect(refundPayment).not.toHaveBeenCalled();
+  });
+
+  it('reports blocked so callers do not treat it as a failed initiation', async () => {
+    const result = await refundOrder('order_uuid_test', bankLinkOrder);
+
+    expect(result).toEqual({ cardRefunded: 0, walletRefunded: 0, blocked: true });
+  });
+
+  it('writes manual_required with the reason, and leaves refunded_at unset', async () => {
+    await refundOrder('order_uuid_test', bankLinkOrder);
+
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    const payload = mockUpdate.mock.calls[0][0];
+    expect(payload.refund_status).toBe(REFUND_STATUS.MANUAL_REQUIRED);
+    expect(payload.refund_blocked_reason).toBe('open_banking_not_refundable');
+    expect(payload.refund_blocked_at).toEqual(expect.any(String));
+    expect(payload).not.toHaveProperty('refunded_at');
+  });
+
+  it('does not run the GL wrap — no money has moved on the gateway leg', async () => {
+    vi.mocked(isAccountingEngineEnabled).mockReturnValue(true);
+
+    await refundOrder('order_uuid_test', bankLinkOrder);
+
+    expect(refundOrderWithGL).not.toHaveBeenCalled();
+  });
+
+  it('fires the regulatory refund.manual_required audit event', async () => {
+    await refundOrder('order_uuid_test', bankLinkOrder);
+
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'refund.manual_required',
+        actorType: 'system',
+        resourceType: 'order',
+        resourceId: 'order_uuid_test',
+        retentionClass: 'regulatory',
+        metadata: expect.objectContaining({
+          orderNumber: 'STG-2027-00001',
+          amountCents: 10500,
+          paymentMethod: 'bank_link',
+          blockedReason: 'open_banking_not_refundable',
+          everypayPaymentReference: 'ep_pay_ref',
+        }),
+      })
+    );
+  });
+
+  it('notifies staff so the queue is not discovered by chance', async () => {
+    await refundOrder('order_uuid_test', bankLinkOrder);
+
+    expect(notifyStaff).toHaveBeenCalledWith(
+      'refund.manual_required',
+      expect.objectContaining({ orderNumber: 'STG-2027-00001', amountCents: 10500 })
+    );
+  });
+
+  it('tells the buyer their money is coming by bank transfer', async () => {
+    await refundOrder('order_uuid_test', bankLinkOrder);
+    await vi.waitFor(() => expect(sendRefundManualPendingToBuyer).toHaveBeenCalledTimes(1));
+
+    expect(sendRefundManualPendingToBuyer).toHaveBeenCalledWith({
+      buyerName: 'Buyer One',
+      buyerEmail: 'buyer@example.com',
+      orderNumber: 'STG-2027-00001',
+      gameName: 'Catan',
+      amountCents: 10500,
+    });
+  });
+
+  it('records only the outstanding amount when the wallet leg already refunded part', async () => {
+    await refundOrder('order_uuid_test', {
+      ...bankLinkOrder,
+      buyer_wallet_debit_cents: 4000,
+    });
+
+    const payload = mockUpdate.mock.calls[0][0];
+    // 4000 moved to the wallet automatically; the human still owes 6500.
+    expect(payload.refund_amount_cents).toBe(4000);
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'refund.manual_required',
+        metadata: expect.objectContaining({ amountCents: 6500, autoRefundedCents: 4000 }),
+      })
+    );
+  });
+
+  it('is idempotent — a re-run against an already-queued order does nothing', async () => {
+    const result = await refundOrder('order_uuid_test', {
+      ...bankLinkOrder,
+      refund_status: REFUND_STATUS.MANUAL_REQUIRED,
+    });
+
+    expect(result).toEqual({ cardRefunded: 0, walletRefunded: 0, blocked: false });
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(notifyStaff).not.toHaveBeenCalled();
+  });
+
+  it('card orders are untouched by this branch (regression guard)', async () => {
+    await refundOrder('order_uuid_test', cardOnlyOrder);
+
+    expect(refundPayment).toHaveBeenCalledWith('ep_pay_ref', 10500);
+    const payload = mockUpdate.mock.calls[0][0];
+    expect(payload.refund_status).toBe(REFUND_STATUS.COMPLETED);
+    expect(payload.refunded_at).toEqual(expect.any(String));
   });
 });
