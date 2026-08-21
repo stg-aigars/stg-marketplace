@@ -248,6 +248,12 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
   },
 
   // Moderation (DSA Art. 16/17)
+  'refund.manual_required': {
+    title: () => 'Refund needs a manual bank transfer',
+    body: (ctx) =>
+      `${ctx.orderNumber ?? 'An order'} could not be refunded through the gateway — send the transfer and mark it resolved`,
+    link: () => '/staff/refunds',
+  },
   'moderation.notice_received': {
     title: () => 'New DSA notice received',
     body: (ctx) =>

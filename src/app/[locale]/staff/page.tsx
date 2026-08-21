@@ -56,6 +56,7 @@ export default async function StaffDashboardPage() {
     disputesStaleResult,
     withdrawalsStaleResult,
     dac7ActionResult,
+    manualRefundsResult,
   ] = await Promise.all([
     serviceClient
       .from('orders')
@@ -120,6 +121,13 @@ export default async function StaffDashboardPage() {
       .from('user_profiles')
       .select('id', { count: 'exact', head: true })
       .in('dac7_status', ['blocked', 'reminder_sent']),
+    // Gateway-irreversible refunds waiting on a bank transfer. Separate cohort
+    // from "refund issues" above: those are retryable failures, these need a
+    // human to move money and will never resolve on their own.
+    serviceClient
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('refund_status', REFUND_STATUS.MANUAL_REQUIRED),
   ]);
 
   const totalOrders = ordersResult.count ?? 0;
@@ -133,6 +141,7 @@ export default async function StaffDashboardPage() {
   const escalatedDisputeCount = escalatedDisputesResult.count ?? 0;
   const totalWalletBalanceCents = (walletBalanceResult.data as number) ?? 0;
   const refundIssueCount = refundIssuesResult.count ?? 0;
+  const manualRefundCount = manualRefundsResult.count ?? 0;
 
   const actionRows: Array<{ count: number; label: string; href: string; variant: 'warning' | 'error' }> = [
     { count: dsaNoticesStaleResult.count ?? 0, label: `DSA notices open over ${ACTION_SLAS.dsaNoticeOpenHours}h`, href: '/staff/notices', variant: 'error' as const },
@@ -140,6 +149,7 @@ export default async function StaffDashboardPage() {
     { count: verificationsOverdueResult.count ?? 0, label: `Verifications past ${TRADER_THRESHOLDS.verificationResponseDeadlineDays}-day deadline`, href: '/staff/users?cohort=awaiting_response', variant: 'error' as const },
     { count: disputesStaleResult.count ?? 0, label: `Escalated disputes untouched over ${ACTION_SLAS.disputeEscalatedHours}h`, href: '/staff/disputes', variant: 'error' as const },
     { count: refundIssueCount, label: 'Refund issues (failed or partial)', href: '/staff/orders?refund_status=issues', variant: 'error' as const },
+    { count: manualRefundCount, label: 'Refunds awaiting a manual bank transfer', href: '/staff/refunds', variant: 'error' as const },
     { count: withdrawalsStaleResult.count ?? 0, label: `Withdrawals pending over ${ACTION_SLAS.withdrawalPendingHours}h`, href: '/staff/withdrawals', variant: 'warning' as const },
     { count: dac7ActionResult.count ?? 0, label: 'DAC7 sellers blocked or in reminder', href: '/staff/dac7', variant: 'warning' as const },
   ].filter((row) => row.count > 0);
@@ -153,6 +163,7 @@ export default async function StaffDashboardPage() {
     { label: 'Open disputes', value: openDisputeCount.toString() },
     { label: 'Escalated disputes', value: escalatedDisputeCount.toString() },
     { label: 'Refund issues', value: refundIssueCount.toString(), href: '/staff/orders?refund_status=issues' },
+    { label: 'Manual refunds due', value: manualRefundCount.toString(), href: '/staff/refunds' },
   ];
 
   return (

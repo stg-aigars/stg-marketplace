@@ -53,6 +53,13 @@ vi.mock('@/lib/services/orders', () => ({
   createOrder: (...args: unknown[]) => mockCreateOrder(...args),
   lookupSellerIbanCountry: vi.fn().mockResolvedValue(null),
 }));
+// Static import of `@/lib/email` reaches the Resend client, which needs an API
+// key at module load. The refund gateway sends the operator alert from there.
+vi.mock('@/lib/email', () => ({
+  sendRefundOperatorAlert: vi.fn(async () => undefined),
+  sendRefundManualPendingToBuyer: vi.fn(async () => undefined),
+}));
+
 vi.mock('@/lib/email/cart-emails', () => ({
   sendCartOrderEmails: (...args: unknown[]) => mockSendCartOrderEmails(...args),
 }));

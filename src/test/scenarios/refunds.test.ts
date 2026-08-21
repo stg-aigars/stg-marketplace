@@ -18,6 +18,13 @@ const mockRefundPayment = vi.fn();
 const mockRefundToWallet = vi.fn();
 const mockLogAuditEvent = vi.fn();
 
+// Static import of `@/lib/email` reaches the Resend client, which needs an API
+// key at module load. The refund gateway sends the operator alert from there.
+vi.mock('@/lib/email', () => ({
+  sendRefundOperatorAlert: vi.fn(async () => undefined),
+  sendRefundManualPendingToBuyer: vi.fn(async () => undefined),
+}));
+
 vi.mock('@/lib/supabase', () => ({
   createServiceClient: vi.fn(),
 }));

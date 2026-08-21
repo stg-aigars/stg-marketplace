@@ -55,7 +55,9 @@ export type NotificationType =
   // Messaging
   | 'message.received'
   // Platform announcements
-  | 'announcement.posted';
+  | 'announcement.posted'
+  // Refunds needing a manual bank transfer (staff-only)
+  | 'refund.manual_required';
 
 /** Row shape from the notifications table */
 export interface NotificationRow {
@@ -103,4 +105,7 @@ export interface NotificationContext {
   // Price-drop
   fromCents?: number;
   toCents?: number;
+  // Refunds needing a manual bank transfer
+  amountCents?: number;
+  blockedReason?: string;
 }

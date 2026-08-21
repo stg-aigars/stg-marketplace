@@ -13,11 +13,12 @@
 import * as Sentry from '@sentry/nextjs';
 import { createOrder, lookupSellerIbanCountry } from '@/lib/services/orders';
 import { debitWallet, refundToWallet } from '@/lib/services/wallet';
-import { refundPayment } from '@/lib/services/everypay/client';
+import { attemptGatewayRefund, type GatewayRefundOutcome } from '@/lib/payments/refund-gateway';
+import type { RefundBlockedReason } from '@/lib/payments/refundability';
 import { getShippingPriceCents, type TerminalCountry } from '@/lib/services/unisend/types';
 import { sendCartOrderEmails } from '@/lib/email/cart-emails';
 import { logAuditEvent } from '@/lib/services/audit';
-import { REFUND_STATUS, type RefundStatus } from '@/lib/services/order-refund';
+import { REFUND_STATUS, notifyBuyerOfManualRefund, type RefundStatus } from '@/lib/services/order-refund';
 import { formatGameWithExpansions } from '@/lib/orders/utils';
 import { isAccountingEngineEnabled } from '@/lib/accounting/feature-flag';
 import { cartFulfillmentWithGL } from '@/lib/accounting/lifecycle-wraps';
@@ -39,35 +40,80 @@ export type CartFulfillmentOutcome =
 // Auto-refund helper (shared across both flows)
 // ---------------------------------------------------------------------------
 
+/**
+ * Refund a cart-level payment through the gateway choke point.
+ *
+ * Returns the outcome rather than a bare boolean: 'refunded' and
+ * 'manual_required' both mean "stop retrying", but only the first means money
+ * moved, and the cart-rollback stamp needs to tell them apart — a blocked
+ * refund parked in the retryable 'failed' bucket would be swept forever by a
+ * cron that can never succeed.
+ *
+ * `paymentMethod` defaults to undefined rather than 'card': an unstated method
+ * routes to manual review, which is the safe direction. Callers that know the
+ * method (post-callback flows) should pass it.
+ */
 export async function attemptAutoRefund(
   serviceClient: SupabaseClient,
   paymentReference: string,
   amountCents: number,
-  reason: string
-): Promise<boolean> {
-  try {
-    await refundPayment(paymentReference, amountCents);
+  reason: string,
+  paymentMethod?: PaymentMethod | null,
+  order?: { id: string; orderNumber: string } | null,
+): Promise<GatewayRefundOutcome> {
+  const outcome = await attemptGatewayRefund({
+    paymentReference,
+    amountCents,
+    paymentMethod,
+    reason,
+    order,
+  });
+
+  if (outcome.status === 'refunded') {
     console.log(`[Payments] Auto-refunded ${paymentReference}: ${reason}`);
     void logAuditEvent(serviceClient, {
       actorType: 'system',
       action: 'payment.refunded',
       resourceType: 'payment',
       resourceId: paymentReference,
-      metadata: { amountCents, reason },
+      metadata: { amountCents, reason, paymentMethod: paymentMethod ?? null },
       retentionClass: 'regulatory',
     });
-    return true;
-  } catch (refundError) {
-    console.error(
-      `[Payments] CRITICAL: Auto-refund failed for ${paymentReference} (${reason}):`,
-      refundError
-    );
-    Sentry.captureException(refundError, {
-      tags: { paymentReference, reason, phase: 'auto_refund_failed' },
-      extra: { amountCents },
-    });
-    return false;
+    return outcome;
   }
+
+  if (outcome.status === 'manual_required') {
+    void logAuditEvent(serviceClient, {
+      actorType: 'system',
+      action: 'refund.manual_required',
+      resourceType: 'payment',
+      resourceId: paymentReference,
+      metadata: {
+        amountCents,
+        reason,
+        paymentMethod: paymentMethod ?? null,
+        blockedReason: outcome.reason,
+        everypayPaymentReference: paymentReference,
+        orderNumber: order?.orderNumber ?? null,
+      },
+      retentionClass: 'regulatory',
+    });
+    Sentry.captureMessage(`Auto-refund needs a manual bank transfer`, {
+      level: 'warning',
+      tags: { paymentReference, reason, phase: 'auto_refund_manual_required' },
+      extra: { amountCents, blockedReason: outcome.reason },
+    });
+    return outcome;
+  }
+
+  console.error(
+    `[Payments] CRITICAL: Auto-refund failed for ${paymentReference} (${reason}): ${outcome.failureMessage}`
+  );
+  Sentry.captureException(new Error(`Auto-refund failed: ${outcome.failureMessage}`), {
+    tags: { paymentReference, reason, phase: 'auto_refund_failed' },
+    extra: { amountCents },
+  });
+  return outcome;
 }
 
 // ---------------------------------------------------------------------------
@@ -172,8 +218,16 @@ export async function stampRollbackRefundStatus(
   cardRefundOk: boolean,
   walletRefundOk: boolean,
   captureIfIncomplete: boolean,
+  /**
+   * Set when the gateway leg is irreversible. Overrides the failed/partial
+   * classification: those are retryable and get swept by the reconcile cron,
+   * which would retry an open-banking refund forever. Manual-required is
+   * terminal for the automated path and belongs in /staff/refunds instead.
+   */
+  cardBlockedReason: RefundBlockedReason | null = null,
 ): Promise<{ refundStatus: RefundStatus; refundAmountCents: number }> {
   const refundStatus: RefundStatus =
+    cardBlockedReason ? REFUND_STATUS.MANUAL_REQUIRED :
     cardRefundOk && walletRefundOk ? REFUND_STATUS.COMPLETED :
     !cardRefundOk && !walletRefundOk ? REFUND_STATUS.FAILED : REFUND_STATUS.PARTIAL;
   const refundAmountCents =
@@ -182,10 +236,27 @@ export async function stampRollbackRefundStatus(
 
   await serviceClient
     .from('orders')
-    .update({ refund_status: refundStatus, refund_amount_cents: refundAmountCents, refunded_at: new Date().toISOString() })
+    .update({
+      refund_status: refundStatus,
+      refund_amount_cents: refundAmountCents,
+      // refunded_at means "the buyer has their money". A manual-required stamp
+      // is the opposite claim, so it is explicitly cleared rather than merely
+      // omitted: Phase 1 always writes refunded_at (it runs before the card
+      // outcome is known), so leaving it out here would let that optimistic
+      // stamp survive on an order whose money has not moved.
+      ...(cardBlockedReason
+        ? {
+            refunded_at: null,
+            refund_blocked_reason: cardBlockedReason,
+            refund_blocked_at: new Date().toISOString(),
+          }
+        : { refunded_at: new Date().toISOString() }),
+    })
     .eq('id', order.id);
 
-  if (captureIfIncomplete && refundStatus !== REFUND_STATUS.COMPLETED) {
+  // A blocked refund is a queue item, not an anomaly — the operator email and
+  // the staff queue already carry it, so it doesn't also page Sentry.
+  if (captureIfIncomplete && !cardBlockedReason && refundStatus !== REFUND_STATUS.COMPLETED) {
     Sentry.captureException(new Error(`Cart rollback refund ${refundStatus} for order ${order.order_number}`), {
       tags: { orderId: order.id, orderNumber: order.order_number, phase: 'cart_rollback_refund_incomplete' },
     });
@@ -253,7 +324,7 @@ export async function fulfillCartPayment(
 
   if (!listings) {
     console.error('[Payments] Cart: Failed to fetch listings');
-    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'failed to fetch listings');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'failed to fetch listings', paymentMethod);
     return { outcome: 'failed', error: 'failed to fetch listings' };
   }
 
@@ -274,7 +345,7 @@ export async function fulfillCartPayment(
   }
 
   if (available.length === 0) {
-    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'all cart items unavailable');
+    await attemptAutoRefund(serviceClient, paymentReference, expectedEverypayAmountCents, 'all cart items unavailable', paymentMethod);
     // Refund back wallet portion if buyer used wallet balance
     if (walletDebit > 0) {
       try {
@@ -316,7 +387,7 @@ export async function fulfillCartPayment(
   // (it used to run after the loop completed successfully, so a mid-loop
   // throw meant the wallet portion for unavailable items was never refunded).
   if (refundCardCents > 0) {
-    await attemptAutoRefund(serviceClient, paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`);
+    await attemptAutoRefund(serviceClient, paymentReference, refundCardCents, `partial cart refund: ${unavailable.length} items unavailable`, paymentMethod);
   }
   if (refundWalletCents > 0) {
     try {
@@ -471,10 +542,13 @@ export async function fulfillCartPayment(
     // refund already covered (Finding A) so the card is never refunded twice.
     const remainingCardRefundCents = expectedEverypayAmountCents - refundCardCents;
     let cardRefundOk = true;
+    let cardBlockedReason: RefundBlockedReason | null = null;
     if (remainingCardRefundCents > 0) {
-      cardRefundOk = await attemptAutoRefund(
-        serviceClient, paymentReference, remainingCardRefundCents, 'cart order creation failed mid-loop'
+      const cardOutcome = await attemptAutoRefund(
+        serviceClient, paymentReference, remainingCardRefundCents, 'cart order creation failed mid-loop', paymentMethod
       );
+      cardRefundOk = cardOutcome.status === 'refunded';
+      cardBlockedReason = cardOutcome.status === 'manual_required' ? cardOutcome.reason : null;
     }
 
     // Phase 3 — upgrade every claimed order's refund_status now that the card
@@ -483,8 +557,18 @@ export async function fulfillCartPayment(
     for (const order of claimedOrders) {
       try {
         const { refundStatus, refundAmountCents } = await stampRollbackRefundStatus(
-          serviceClient, order, cardRefundOk, order.walletRefundOk, true
+          serviceClient, order, cardRefundOk, order.walletRefundOk, true, cardBlockedReason
         );
+        if (cardBlockedReason) {
+          // Same notice the decline/timeout paths send. Without it the buyer's
+          // cart just fails and they hear nothing while holding no goods and
+          // no money — the worst version of this bug.
+          void notifyBuyerOfManualRefund(
+            serviceClient, order.id, order, order.total_amount_cents - refundAmountCents
+          ).catch((err) =>
+            console.error('[Payments] Failed to send manual-refund notice to buyer:', err)
+          );
+        }
         void logAuditEvent(serviceClient, {
           actorType: 'system',
           action: 'order.auto_cancelled.system',
