@@ -90,11 +90,12 @@ function makeSupabase(opts: MockSupabaseOpts) {
       // counterparties: select → eq(user_id) → eq(type) → maybeSingle
       //                 OR insert → select → single
       // user_profiles: select → eq → single
-      // journal_entries: select → eq → eq → in → maybeSingle
+      // journal_entries: select → eq → or → in → maybeSingle
       const builder: Record<string, unknown> = {};
       const chainable = () => builder;
       builder.select = vi.fn(chainable);
       builder.eq = vi.fn(chainable);
+      builder.or = vi.fn(chainable);
       builder.in = vi.fn(chainable);
       builder.insert = vi.fn(chainable);
 
