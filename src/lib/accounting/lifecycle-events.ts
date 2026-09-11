@@ -386,6 +386,14 @@ export interface BuildRefundCashLegEventInput extends PostingPeriodInput {
   refund_reference: string;
   refund_cents: number;
   funding_source: 'everypay' | 'bank';
+  /**
+   * Cash account a 'bank' refund actually leaves from. Optional — defaults
+   * to '2620' in mapping.ts's C.5 compute() (bank_link cart payments always
+   * land in the Swedbank e-commerce settlement account via C.2, never
+   * 2610, so the refund leaves from the same place). Ignored for
+   * funding_source='everypay', which always credits 2630.
+   */
+  bank_account?: string;
   /** Inherits from the parent order's is_staff_test. Defaults to false. */
   is_staff_test?: boolean;
 }
@@ -410,6 +418,7 @@ export function buildRefundCashLegEvent(input: BuildRefundCashLegEventInput): Po
       refund_reference: input.refund_reference,
       refund_cents: input.refund_cents,
       funding_source: input.funding_source,
+      ...(input.funding_source === 'bank' ? { bank_account: input.bank_account ?? '2620' } : {}),
       is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
@@ -427,6 +436,18 @@ export interface BuildWithdrawalCompletionEventInput extends PostingPeriodInput 
   withdrawal_ref: string;
   seller_iban: string;
   bank_confirmation_ref?: string;
+  /**
+   * Cash account the payout actually left from ('2610' | '2620' | '2630' |
+   * '2670'). Defaults to '2620' — post-cutover, the marketplace wallet float
+   * sits in the Swedbank e-commerce settlement account (customer cart
+   * payments land there via C.1/C.2/C.3), not the 2610 operating account.
+   * Before this field existed, C.4 always fell through to mapping.ts's own
+   * '2610' default regardless of where the money actually was, which is what
+   * produced August 2026's 6-entry bank-reconciliation mismatch (all 6
+   * withdrawals booked to 2610 while the Swedbank statements showed them
+   * debited from 2620).
+   */
+  bank_account?: string;
   /**
    * Staff-test marker — propagated to posting_context for stage-2 cutover
    * burn-in entry tagging. Caller derives from `withdrawal_requests.is_staff_test`.
@@ -462,6 +483,7 @@ export function buildWithdrawalCompletionEvent(input: BuildWithdrawalCompletionE
       withdrawal_ref: input.withdrawal_ref,
       seller_iban: input.seller_iban,
       bank_confirmation_ref: input.bank_confirmation_ref,
+      bank_account: input.bank_account ?? '2620',
       is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id

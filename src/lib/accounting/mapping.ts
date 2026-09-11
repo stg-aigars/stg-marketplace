@@ -2194,10 +2194,20 @@ const C_5: VatMappingEntry = {
         context: { funding_source }
       });
     }
-    const credit_account = funding_source === 'everypay' ? '2630' : '2610';
+    // 'bank' defaults to 2620 — bank_link cart payments always land in the
+    // Swedbank e-commerce settlement account (C.2's hardcoded target), never
+    // 2610, so a bank-funded refund leaves from the same place. Same bug
+    // shape as C.4 (mapping.ts commit adding bank_account there): this
+    // branch used to hardcode 2610 regardless of where the money actually
+    // was. Override via payload.bank_account only for a genuinely different
+    // rail in the future — every current 'bank' refund is 2620.
+    const bank_account_override = typeof input.payload.bank_account === 'string'
+      ? assertCashAccount(input.payload.bank_account, 'bank_account')
+      : '2620';
+    const credit_account = funding_source === 'everypay' ? '2630' : bank_account_override;
     const credit_narrative = funding_source === 'everypay'
       ? 'EveryPay clearing — refund issued from clearing balance'
-      : 'Swedbank — refund issued from bank';
+      : 'Swedbank — refund issued from bank (e-commerce settlement)';
     const lines: ComputedLine[] = [
       {
         line_number: 1,
@@ -2216,7 +2226,7 @@ const C_5: VatMappingEntry = {
         narrative: credit_narrative
       }
     ];
-    return { lines, posting_context_extras: { refund_cents, funding_source } };
+    return { lines, posting_context_extras: { refund_cents, funding_source, bank_account: credit_account } };
   }
 };
 
