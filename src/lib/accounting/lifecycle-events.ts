@@ -386,6 +386,14 @@ export interface BuildRefundCashLegEventInput extends PostingPeriodInput {
   refund_reference: string;
   refund_cents: number;
   funding_source: 'everypay' | 'bank';
+  /**
+   * Cash account a 'bank' refund actually leaves from. Optional — defaults
+   * to '2620' in mapping.ts's C.5 compute() (bank_link cart payments always
+   * land in the Swedbank e-commerce settlement account via C.2, never
+   * 2610, so the refund leaves from the same place). Ignored for
+   * funding_source='everypay', which always credits 2630.
+   */
+  bank_account?: string;
   /** Inherits from the parent order's is_staff_test. Defaults to false. */
   is_staff_test?: boolean;
 }
@@ -410,6 +418,7 @@ export function buildRefundCashLegEvent(input: BuildRefundCashLegEventInput): Po
       refund_reference: input.refund_reference,
       refund_cents: input.refund_cents,
       funding_source: input.funding_source,
+      ...(input.funding_source === 'bank' ? { bank_account: input.bank_account ?? '2620' } : {}),
       is_staff_test: input.is_staff_test ?? false
     },
     created_by: input.actor_id
