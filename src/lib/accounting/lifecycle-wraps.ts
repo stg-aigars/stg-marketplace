@@ -484,7 +484,13 @@ export async function refundOrderWithGL(
       .from('journal_entries')
       .select('id, type_id, tax_period')
       .eq('source_doc_type', 'order')
-      .eq('source_doc_id', order.id)
+      // Matches either the live shape (source_doc_id is the order UUID) or
+      // the backfill shape (posting_context.order_id carries the order UUID;
+      // source_doc_id is a human-readable label like 'july_2026_entry_28').
+      // Backfilled completions were previously invisible here, silently
+      // skipping the O.7/O.8 VAT-reversal credit note on refund — see
+      // migration 134.
+      .or(`source_doc_id.eq.${order.id},posting_context->>order_id.eq.${order.id}`)
       .in('type_id', ['O.1', 'O.2', 'O.3', 'O.4', 'O.5'])
       .maybeSingle()
   ]);
