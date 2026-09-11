@@ -180,7 +180,7 @@ describe('Scenario 16 — Shape-2 wallet-integrity lag invariant', () => {
     expect(reconciledOffsetB).toBe(reconciledOffsetA);
 
     // ──────────────────────────────────────────────────────────────────
-    // Run completion — C.4 fires Dr 5351 / Cr 2610; status flips to completed.
+    // Run completion — C.4 fires Dr 5351 / Cr 2620; status flips to completed.
     // ──────────────────────────────────────────────────────────────────
     const result = await withdrawalCompletionWithGL(supabase, {
       withdrawal_request_id: wd!.id,

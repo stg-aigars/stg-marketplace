@@ -800,6 +800,12 @@ export interface WithdrawalCompletionWithGLInput {
    * column mutation. Undefined values are not written to the payload at all.
    */
   bank_confirmation_ref?: string;
+  /**
+   * Cash account the payout actually left from. Optional — defaults to
+   * '2620' in buildWithdrawalCompletionEvent (see that type's doc comment
+   * for why 2620 rather than 2610 is the right default post-cutover).
+   */
+  bank_account?: string;
   /** Optional staff notes; coalesces with existing notes inside the RPC. */
   staff_notes?: string;
   /** auth.users.id of the staff member triggering completion (for audit/actor_id). */
@@ -859,6 +865,7 @@ export async function withdrawalCompletionWithGL(
     withdrawal_ref: input.withdrawal_ref,
     seller_iban: input.seller_iban,
     bank_confirmation_ref: input.bank_confirmation_ref,
+    bank_account: input.bank_account,
     is_staff_test: input.is_staff_test,
     posting_date: today,
     accounting_period: period,

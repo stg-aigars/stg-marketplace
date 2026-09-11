@@ -5,7 +5,7 @@
  *   - Scenario 8: KYC blocked withdrawal (legal_compliance_status='pending_kyc'
  *     → PostingComplianceGateError code 'kyc_gate'; no C.4 entry written)
  *   - Scenario 9: Happy-path withdrawal completion (C.4 entry Dr 5351 /
- *     Cr 2610; withdrawal_requests.status flips to 'completed',
+ *     Cr 2620; withdrawal_requests.status flips to 'completed',
  *     completed_at stamped)
  *   - F5: `dac7_blocked` variant (legal_compliance_status='dac7_blocked' →
  *     PostingComplianceGateError code 'dac7_blocked')
@@ -112,7 +112,7 @@ async function createApprovedWithdrawal(
 // ---------------------------------------------------------------------------
 
 describe('Scenario 9 — withdrawal completion happy path', () => {
-  it('emits C.4 (Dr 5351 / Cr 2610) and flips withdrawal_requests.status to completed', async () => {
+  it('emits C.4 (Dr 5351 / Cr 2620) and flips withdrawal_requests.status to completed', async () => {
     const seller = await createTestUser({ country: 'LV' });
     await createTestWallet({ userId: seller.id, balanceCents: 0 });
     await ensureTestCounterparty(supabase, {
@@ -158,7 +158,7 @@ describe('Scenario 9 — withdrawal completion happy path', () => {
 
     await assertJournalLines(supabase, entry.id, [
       { account_code: '5351', debit_cents: withdrawalCents, credit_cents: 0 },
-      { account_code: '2610', debit_cents: 0, credit_cents: withdrawalCents },
+      { account_code: '2620', debit_cents: 0, credit_cents: withdrawalCents },
     ]);
 
     // Verify withdrawal_requests row flipped to completed with completed_at set
