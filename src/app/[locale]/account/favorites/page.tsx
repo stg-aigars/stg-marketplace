@@ -74,7 +74,8 @@ export default async function FavoritesPage() {
           {items.map((fav) => {
             const listing = fav.listings;
             if (!listing) {
-              // Listing was deleted
+              // Listing row no longer exists (e.g. hard-deleted) — sold/cancelled
+              // listings stay visible to the user who favorited them via RLS.
               return (
                 <div
                   key={fav.listing_id}
