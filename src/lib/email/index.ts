@@ -17,6 +17,7 @@ import { OrderDeliveredSeller } from './templates/order-delivered-seller';
 import { OrderCompletedSeller } from './templates/order-completed-seller';
 import { OrderDeclinedBuyer } from './templates/order-declined-buyer';
 import { OrderDisputedSeller } from './templates/order-disputed-seller';
+import { OrderMessageReceived } from './templates/order-message-received';
 import { DisputeResolvedRefund } from './templates/dispute-resolved-refund';
 import { DisputeResolvedNoRefund } from './templates/dispute-resolved-no-refund';
 import { DisputeEscalated } from './templates/dispute-escalated';
@@ -368,6 +369,31 @@ export async function sendOrderDisputedToSeller(params: {
       gameName: params.gameName,
       buyerName: params.buyerName,
       reason: params.reason,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+/**
+ * Order message received → the other party (buyer or seller)
+ */
+export async function sendOrderMessageReceivedToRecipient(params: {
+  recipientName: string;
+  recipientEmail: string;
+  senderName: string;
+  orderNumber: string;
+  orderId: string;
+  messageBody: string;
+}): Promise<void> {
+  await sendEmail({
+    to: params.recipientEmail,
+    subject: `${params.senderName} sent you a message about order ${params.orderNumber}`,
+    react: React.createElement(OrderMessageReceived, {
+      recipientName: params.recipientName,
+      senderName: params.senderName,
+      orderNumber: params.orderNumber,
+      orderId: params.orderId,
+      messageBody: params.messageBody,
       appUrl: env.app.url,
     }),
   });

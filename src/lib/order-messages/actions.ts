@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase';
 import { orderMessageLimiter } from '@/lib/rate-limit';
 import { notify } from '@/lib/notifications';
+import { sendOrderMessageReceivedToRecipient } from '@/lib/email';
 import { logAuditEvent } from '@/lib/services/audit';
 import { fetchPublicProfiles } from '@/lib/supabase/helpers';
 import { MAX_ORDER_MESSAGE_LENGTH, type OrderMessage } from './types';
@@ -62,11 +63,33 @@ export async function postOrderMessage(
 
   // Fire-and-forget: notify the other party
   const recipientId = authorRole === 'buyer' ? order.seller_id : order.buyer_id;
+  const senderName = senderProfile?.full_name ?? 'Someone';
   void notify(recipientId, 'order.message_received', {
-    senderName: senderProfile?.full_name ?? 'Someone',
+    senderName,
     orderNumber: order.order_number,
     orderId: order.id,
   }).catch((err) => console.error('[OrderMessages] Notification dispatch failed:', err));
+
+  // Fire-and-forget: email the other party (RLS blocks a peer's profile read
+  // on the user-session client, so this needs the service-role client)
+  void (async () => {
+    const { data: recipientProfile } = await createServiceClient()
+      .from('user_profiles')
+      .select('full_name, email')
+      .eq('id', recipientId)
+      .single<{ full_name: string | null; email: string | null }>();
+
+    if (!recipientProfile?.email) return;
+
+    await sendOrderMessageReceivedToRecipient({
+      recipientName: recipientProfile.full_name ?? 'there',
+      recipientEmail: recipientProfile.email,
+      senderName,
+      orderNumber: order.order_number,
+      orderId: order.id,
+      messageBody: trimmed,
+    });
+  })().catch((err) => console.error('[OrderMessages] Email dispatch failed:', err));
 
   revalidatePath(`/orders/${orderId}`);
   return { success: true };
