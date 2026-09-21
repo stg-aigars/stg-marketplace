@@ -156,7 +156,7 @@ export default async function SellerProfilePage(
   const totalPages = Math.max(1, Math.ceil(totalListingCount / PAGE_SIZE));
 
   if (activeTab === 'listings' && requestedPage > totalPages) {
-    redirect(totalPages > 1 ? `/sellers/${id}?tab=listings&page=${totalPages}` : `/sellers/${id}?tab=listings`);
+    redirect(totalPages > 1 ? `/sellers/${id}?page=${totalPages}#listings` : `/sellers/${id}#listings`);
   }
 
   const sellerName = profile.full_name ?? 'Seller';
@@ -222,9 +222,9 @@ export default async function SellerProfilePage(
       {/* Tabs */}
       <NavTabs
         tabs={[
-          { key: 'profile', label: 'Profile', href: `/sellers/${id}` },
+          { key: 'listings', label: 'Listings', href: `/sellers/${id}`, count: totalListingCount },
           { key: 'reviews', label: 'Reviews', href: `/sellers/${id}?tab=reviews`, count: rating.ratingCount },
-          { key: 'listings', label: 'Listings', href: `/sellers/${id}?tab=listings`, count: totalListingCount },
+          { key: 'profile', label: 'Profile', href: `/sellers/${id}?tab=profile` },
         ]}
         activeTab={activeTab}
         variant="underline"
@@ -245,7 +245,7 @@ export default async function SellerProfilePage(
             Positive
           </div>
           <div className="w-px h-8 bg-semantic-border-subtle" />
-          <a href={`/sellers/${id}?tab=listings`} className="group block">
+          <a href={`/sellers/${id}`} className="group block">
             <span className="block text-lg font-extrabold text-semantic-text-heading group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
               {totalListingCount}
             </span>
@@ -284,6 +284,7 @@ export default async function SellerProfilePage(
       {activeTab === 'listings' && (
         <>
           <ListingSection
+            id="listings"
             heading="Active listings"
             listings={activeListings}
             expansionCounts={expansionCounts}
@@ -297,6 +298,7 @@ export default async function SellerProfilePage(
                 </CardBody>
               </Card>
             }
+            className="scroll-mt-20"
           />
 
           <Pagination
@@ -304,7 +306,7 @@ export default async function SellerProfilePage(
             totalPages={totalPages}
             totalItems={totalListingCount}
             pageSize={PAGE_SIZE}
-            buildUrl={(p) => (p === 1 ? `/sellers/${id}?tab=listings` : `/sellers/${id}?tab=listings&page=${p}`)}
+            buildUrl={(p) => (p === 1 ? `/sellers/${id}#listings` : `/sellers/${id}?page=${p}#listings`)}
           />
         </>
       )}

@@ -2,18 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { parseSellerProfileSearchParams } from './parse-search-params';
 
 describe('parseSellerProfileSearchParams', () => {
-  it('defaults to profile tab and page 1 with no params', () => {
-    expect(parseSellerProfileSearchParams({})).toEqual({ activeTab: 'profile', requestedPage: 1 });
+  it('defaults to listings tab and page 1 with no params', () => {
+    expect(parseSellerProfileSearchParams({})).toEqual({ activeTab: 'listings', requestedPage: 1 });
   });
 
-  it('recognizes reviews and listings tabs', () => {
+  it('recognizes profile and reviews tabs', () => {
+    expect(parseSellerProfileSearchParams({ tab: 'profile' }).activeTab).toBe('profile');
     expect(parseSellerProfileSearchParams({ tab: 'reviews' }).activeTab).toBe('reviews');
-    expect(parseSellerProfileSearchParams({ tab: 'listings' }).activeTab).toBe('listings');
   });
 
-  it('falls back to profile for unknown or malformed tab values', () => {
-    expect(parseSellerProfileSearchParams({ tab: 'bogus' }).activeTab).toBe('profile');
-    expect(parseSellerProfileSearchParams({ tab: ['reviews', 'listings'] }).activeTab).toBe('profile');
+  it('falls back to listings for unknown or malformed tab values', () => {
+    expect(parseSellerProfileSearchParams({ tab: 'bogus' }).activeTab).toBe('listings');
+    expect(parseSellerProfileSearchParams({ tab: ['profile', 'reviews'] }).activeTab).toBe('listings');
   });
 
   it('parses a valid page number', () => {
