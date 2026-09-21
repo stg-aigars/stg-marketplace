@@ -21,10 +21,10 @@ describe('OrderStageHelper', () => {
       <OrderStageHelper role="seller" status="accepted" {...baseProps} barcode="CC991949945LT" />
     );
     expect(screen.getByText('CC991949945LT')).toBeDefined();
-    expect(screen.getByText(/Enter this barcode at the parcel locker kiosk/i)).toBeDefined();
+    expect(screen.getByText(/Scan this code at the parcel locker kiosk/i)).toBeDefined();
 
     rerender(<OrderStageHelper role="seller" status="accepted" {...baseProps} barcode={null} />);
-    expect(screen.queryByText(/Enter this barcode at the parcel locker kiosk/i)).toBeNull();
+    expect(screen.queryByText(/Scan this code at the parcel locker kiosk/i)).toBeNull();
   });
 
   it('keeps the locker finder collapsed until the button is clicked', () => {

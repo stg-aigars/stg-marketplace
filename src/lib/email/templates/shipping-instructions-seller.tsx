@@ -3,7 +3,7 @@
  * Sent when a parcel is created for an accepted T2T order.
  */
 
-import { Button, Link, Text } from '@react-email/components';
+import { Button, Img, Link, Text } from '@react-email/components';
 import * as React from 'react';
 import { EmailLayout, theme, templateStyles as s } from './layout';
 
@@ -47,6 +47,13 @@ export function ShippingInstructionsSeller({
         <Text style={s.detailValue}>{buyerName}</Text>
 
         <Text style={s.detailLabel}>Drop-off code</Text>
+        <Img
+          src={`${appUrl}/api/qr-code?code=${encodeURIComponent(barcode)}`}
+          width="120"
+          height="120"
+          alt={`Drop-off QR code: ${barcode}`}
+          style={styles.qrCode}
+        />
         <Text style={styles.dropOffCode}>{barcode}</Text>
 
         <Text style={s.detailLabel}>Destination terminal</Text>
@@ -69,7 +76,7 @@ export function ShippingInstructionsSeller({
       </Text>
       <Text style={s.stepList}>
         1. Visit any Unisend parcel terminal{'\n'}
-        2. Enter the drop-off code shown above to print your shipping label{'\n'}
+        2. Scan the QR code shown above, or enter the drop-off code manually, to print your shipping label{'\n'}
         3. Place the game in the locker
       </Text>
 
@@ -87,6 +94,12 @@ export function ShippingInstructionsSeller({
 }
 
 const styles = {
+  qrCode: {
+    display: 'block' as const,
+    margin: '4px 0',
+    border: `1px solid ${theme.borderSubtle}`,
+    borderRadius: '6px',
+  },
   dropOffCode: {
     color: theme.textHeading,
     fontSize: '28px',
