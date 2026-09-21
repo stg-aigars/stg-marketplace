@@ -144,7 +144,7 @@ export default async function SellerProfilePage(
   const totalPages = Math.max(1, Math.ceil(totalListingCount / PAGE_SIZE));
 
   if (requestedPage > totalPages) {
-    redirect(totalPages > 1 ? `/sellers/${id}?page=${totalPages}` : `/sellers/${id}`);
+    redirect(totalPages > 1 ? `/sellers/${id}?page=${totalPages}#listings` : `/sellers/${id}#listings`);
   }
 
   const sellerName = profile.full_name ?? 'Seller';
@@ -219,10 +219,14 @@ export default async function SellerProfilePage(
           Positive
         </div>
         <div className="w-px h-8 bg-semantic-border-subtle" />
-        <div>
-          <span className="block text-lg font-extrabold text-semantic-text-heading">{totalListingCount}</span>
-          Listed
-        </div>
+        <a href="#listings" className="group block">
+          <span className="block text-lg font-extrabold text-semantic-text-heading group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+            {totalListingCount}
+          </span>
+          <span className="group-hover:text-semantic-brand transition-colors duration-250 ease-out-custom">
+            Listed
+          </span>
+        </a>
       </div>
 
       {/* Reviews section */}
@@ -251,6 +255,7 @@ export default async function SellerProfilePage(
 
       {/* Active listings section */}
       <ListingSection
+        id="listings"
         heading="Active listings"
         listings={activeListings}
         expansionCounts={expansionCounts}
@@ -264,6 +269,7 @@ export default async function SellerProfilePage(
             </CardBody>
           </Card>
         }
+        className="scroll-mt-20"
       />
 
       <Pagination
@@ -271,7 +277,7 @@ export default async function SellerProfilePage(
         totalPages={totalPages}
         totalItems={totalListingCount}
         pageSize={PAGE_SIZE}
-        buildUrl={(p) => p === 1 ? `/sellers/${id}` : `/sellers/${id}?page=${p}`}
+        buildUrl={(p) => (p === 1 ? `/sellers/${id}#listings` : `/sellers/${id}?page=${p}#listings`)}
       />
     </div>
   );
