@@ -93,6 +93,9 @@ export default async function BrowsePage(
   if (filters.showAuctions) {
     query = query.eq('listing_type', 'auction');
   }
+  if (filters.localPickupOnly) {
+    query = query.eq('local_pickup_available', true);
+  }
   if (filters.priceDrops) {
     const now = new Date();
     const cutoff = new Date(now.getTime() - PRICE_DROP_WINDOW_DAYS * 24 * 60 * 60 * 1000);

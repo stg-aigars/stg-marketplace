@@ -61,6 +61,9 @@ export interface FormData {
   condition: ListingCondition | null;
   description: string;
   component_upgrades: ComponentUpgrade[];
+  // Step: Review (local pickup)
+  local_pickup_available: boolean;
+  local_pickup_note: string;
   // Step: Price (set on review step)
   price_cents: number;
   // Auction fields
@@ -95,6 +98,8 @@ const initialFormData: FormData = {
   component_upgrades: [],
   price_cents: 0,
   description: '',
+  local_pickup_available: false,
+  local_pickup_note: '',
   starting_price_cents: 0,
   auction_duration_days: 7,
   floor_price_cents: 0,
@@ -362,6 +367,8 @@ export function ListingCreationFlow({
       description: formData.description || null,
       photos: formData.photos,
       listing_type: listingType,
+      local_pickup_available: formData.local_pickup_available,
+      local_pickup_note: formData.local_pickup_available ? (formData.local_pickup_note || null) : null,
       ...(isAuction ? {
         starting_price_cents: formData.starting_price_cents,
         auction_duration_days: formData.auction_duration_days,
@@ -656,6 +663,8 @@ export function ListingCreationFlow({
             onFloorPriceChange={(cents) => updateFormData({ floor_price_cents: cents })}
             onDecrementChange={(cents) => updateFormData({ decrement_cents: cents })}
             onDropIntervalChange={(days) => updateFormData({ drop_interval_days: days })}
+            onLocalPickupAvailableChange={(available) => updateFormData({ local_pickup_available: available })}
+            onLocalPickupNoteChange={(note) => updateFormData({ local_pickup_note: note })}
             expansions={formData.selected_expansion_ids.map((id) => {
               const exp = availableExpansions.find((e) => e.id === id);
               return { id, name: formData.expansion_game_names[id] ?? exp?.name ?? `Game ${id}` };

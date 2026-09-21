@@ -99,6 +99,8 @@ interface ListingDetailRow {
   language: string | null;
   edition_year: number | null;
   component_upgrades: ComponentUpgrade[] | null;
+  local_pickup_available: boolean;
+  local_pickup_note: string | null;
   reserved_at: string | null;
   reserved_by: string | null;
   version_thumbnail: string | null;
@@ -658,6 +660,21 @@ export default async function ListingDetailPage(
               )}
             </CardBody>
           </Card>
+
+          {/* Local pickup */}
+          {listing.local_pickup_available && (
+            <Card>
+              <CardBody>
+                <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>
+                  Local pickup available
+                </h2>
+                <p className="text-semantic-text-secondary">
+                  This seller is open to arranging in-person pickup instead of shipping.
+                  {listing.local_pickup_note && ` ${listing.local_pickup_note}`} Message them to arrange details.
+                </p>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Seller info */}
           <Card>

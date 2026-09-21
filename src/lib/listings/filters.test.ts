@@ -82,6 +82,12 @@ describe('parseFiltersFromParams', () => {
     expect(parseFiltersFromParams({ priceDrops: 'true' }).priceDrops).toBe(false);
   });
 
+  it('parses localPickupOnly', () => {
+    expect(parseFiltersFromParams({ localPickup: '1' }).localPickupOnly).toBe(true);
+    expect(parseFiltersFromParams({}).localPickupOnly).toBe(false);
+    expect(parseFiltersFromParams({ localPickup: 'true' }).localPickupOnly).toBe(false);
+  });
+
   it('accepts recent_drops as a valid sort when priceDrops is on', () => {
     expect(parseFiltersFromParams({ sort: 'recent_drops', priceDrops: '1' }).sort).toBe('recent_drops');
   });
@@ -110,6 +116,7 @@ describe('parseFiltersFromParams', () => {
       page: '2',
       auctions: '1',
       priceDrops: '1',
+      localPickup: '1',
     });
     expect(result).toEqual({
       search: '',
@@ -120,6 +127,7 @@ describe('parseFiltersFromParams', () => {
       expansionsOnly: false,
       showAuctions: true,
       priceDrops: true,
+      localPickupOnly: true,
       sort: 'price_asc',
       page: 2,
     });
@@ -161,6 +169,7 @@ describe('filtersToSearchParams', () => {
       expansionsOnly: false,
       showAuctions: true,
       priceDrops: true,
+      localPickupOnly: true,
       sort: 'recent_drops' as const,
       page: 2,
     };
@@ -182,6 +191,11 @@ describe('filtersToSearchParams', () => {
   it('emits priceDrops=1 only when true', () => {
     expect(filtersToSearchParams({ ...DEFAULT_FILTERS, priceDrops: true })).toContain('priceDrops=1');
     expect(filtersToSearchParams({ ...DEFAULT_FILTERS, priceDrops: false })).toBe('');
+  });
+
+  it('emits localPickup=1 only when true', () => {
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, localPickupOnly: true })).toContain('localPickup=1');
+    expect(filtersToSearchParams({ ...DEFAULT_FILTERS, localPickupOnly: false })).toBe('');
   });
 
   it('emits sort=recent_drops when chosen', () => {
@@ -209,6 +223,12 @@ describe('countActiveFilters', () => {
   it('counts priceDrops as one filter', () => {
     expect(
       countActiveFilters({ ...DEFAULT_FILTERS, priceDrops: true })
+    ).toBe(1);
+  });
+
+  it('counts localPickupOnly as one filter', () => {
+    expect(
+      countActiveFilters({ ...DEFAULT_FILTERS, localPickupOnly: true })
     ).toBe(1);
   });
 

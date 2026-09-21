@@ -15,6 +15,7 @@ import { AUCTION_DURATIONS } from '@/lib/auctions/types';
 import { PricingAssistant } from './PricingAssistant';
 import { SellStepHeader } from './SellStepHeader';
 import { DecliningScheduleSection } from './DecliningScheduleSection';
+import { LocalPickupSection } from './LocalPickupSection';
 import type { FormData } from './ListingCreationFlow';
 
 interface ReviewPriceStepProps {
@@ -35,6 +36,8 @@ interface ReviewPriceStepProps {
   onFloorPriceChange?: (cents: number) => void;
   onDecrementChange?: (cents: number) => void;
   onDropIntervalChange?: (days: number) => void;
+  onLocalPickupAvailableChange: (available: boolean) => void;
+  onLocalPickupNoteChange: (note: string) => void;
   expansions?: Array<{ id: number; name: string }>;
 }
 
@@ -255,6 +258,8 @@ export function ReviewPriceStep({
   onFloorPriceChange,
   onDecrementChange,
   onDropIntervalChange,
+  onLocalPickupAvailableChange,
+  onLocalPickupNoteChange,
   expansions = [],
 }: ReviewPriceStepProps) {
   const effectivePrice = isAuction || isDeclining ? formData.starting_price_cents : formData.price_cents;
@@ -364,6 +369,15 @@ export function ReviewPriceStep({
           </p>
         )}
       </div>
+
+      <hr className="border-semantic-border-subtle" />
+
+      <LocalPickupSection
+        available={formData.local_pickup_available}
+        note={formData.local_pickup_note}
+        onAvailableChange={onLocalPickupAvailableChange}
+        onNoteChange={onLocalPickupNoteChange}
+      />
 
       {formData.photos.length > 0 && (
         <>

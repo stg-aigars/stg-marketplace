@@ -337,6 +337,11 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
             onChange={handlePriceDropsToggle}
             label="Price drops"
           />
+          <Toggle
+            checked={currentFilters.localPickupOnly}
+            onChange={(checked) => applyFilters({ ...currentFilters, localPickupOnly: checked })}
+            label="Local pickup"
+          />
           {renderSortButtons(currentFilters.sort, handleSortChange, currentFilters.priceDrops)}
         </div>
       </div>
@@ -416,6 +421,11 @@ function BrowseFilters({ currentFilters, availableLanguages }: BrowseFiltersProp
                 }))
               }
               label="Price drops"
+            />
+            <Toggle
+              checked={draft.localPickupOnly}
+              onChange={(checked) => setDraft((prev) => ({ ...prev, localPickupOnly: checked }))}
+              label="Local pickup"
             />
           </div>
         </div>

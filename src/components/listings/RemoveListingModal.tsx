@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Modal } from '@/components/ui';
+import { Alert, Button, Modal, Select } from '@/components/ui';
 import { cancelListing } from '@/lib/listings/actions';
+import { LISTING_REMOVAL_REASON_OPTIONS, type ListingRemovalReason } from '@/lib/listings/types';
 
 interface RemoveListingModalProps {
   listingId: string;
@@ -15,6 +16,7 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reason, setReason] = useState<ListingRemovalReason | ''>('');
 
   // Reset stale state when modal opens
   useEffect(() => {
@@ -22,6 +24,7 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
       // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting state when modal opens
       setError(null);
       setRemoving(false);
+      setReason('');
     }
   }, [open]);
 
@@ -29,7 +32,7 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
     setRemoving(true);
     setError(null);
 
-    const result = await cancelListing(listingId);
+    const result = await cancelListing(listingId, reason || undefined);
 
     if ('error' in result) {
       setError(result.error);
@@ -47,6 +50,14 @@ export function RemoveListingModal({ listingId, open, onClose }: RemoveListingMo
         <p className="text-semantic-text-secondary">
           This will remove your listing from the marketplace. This action cannot be undone.
         </p>
+
+        <Select
+          label="Why are you removing it? (optional)"
+          placeholder="Select a reason"
+          options={LISTING_REMOVAL_REASON_OPTIONS}
+          value={reason}
+          onChange={(e) => setReason(e.target.value as ListingRemovalReason)}
+        />
 
         {error && <Alert variant="error">{error}</Alert>}
 

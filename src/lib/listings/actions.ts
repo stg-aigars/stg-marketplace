@@ -25,6 +25,7 @@ import {
   isAuctionWithBids,
   type CreateListingData,
   type ListingCondition,
+  type ListingRemovalReason,
   type UpdateListingData,
 } from './types';
 import { validateListingFields, sanitizeComponentUpgrades } from './validation';
@@ -140,6 +141,8 @@ export async function createListing(
     listing_type: data.listing_type ?? 'fixed_price',
     component_upgrades:
       data.component_upgrades && data.component_upgrades.length > 0 ? data.component_upgrades : null,
+    local_pickup_available: data.local_pickup_available ?? false,
+    local_pickup_note: data.local_pickup_available ? (data.local_pickup_note ?? null) : null,
   };
 
   // Add auction-specific fields
@@ -349,6 +352,12 @@ export async function updateListing(
         ? {
             component_upgrades:
               data.component_upgrades.length > 0 ? data.component_upgrades : null,
+          }
+        : {}),
+      ...(data.local_pickup_available !== undefined
+        ? {
+            local_pickup_available: data.local_pickup_available,
+            local_pickup_note: data.local_pickup_available ? (data.local_pickup_note ?? null) : null,
           }
         : {}),
     })
@@ -585,7 +594,8 @@ export async function convertListingToDeclining(
 }
 
 export async function cancelListing(
-  listingId: string
+  listingId: string,
+  reason?: ListingRemovalReason
 ): Promise<{ success: true } | { error: string }> {
   // No Turnstile gate here: the action is already constrained to the authenticated
   // owner of the listing, blocked on reserved/sold/cancelled status, and refuses
@@ -632,7 +642,7 @@ export async function cancelListing(
   const service = createServiceClient();
   const { error: updateError } = await service
     .from('listings')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', removal_reason: reason ?? null })
     .eq('id', listingId)
     .eq('seller_id', user.id);
 

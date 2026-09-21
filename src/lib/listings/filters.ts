@@ -36,6 +36,7 @@ export interface BrowseFilters {
   expansionsOnly: boolean;
   showAuctions: boolean;
   priceDrops: boolean;
+  localPickupOnly: boolean;
   sort: SortOption;
   page: number;
 }
@@ -49,6 +50,7 @@ export const DEFAULT_FILTERS: BrowseFilters = {
   expansionsOnly: false,
   showAuctions: false,
   priceDrops: false,
+  localPickupOnly: false,
   sort: 'newest',
   page: 1,
 };
@@ -114,6 +116,9 @@ export function parseFiltersFromParams(
   // Show auctions only
   const showAuctions = get('auctions') === '1';
 
+  // Show local-pickup listings only
+  const localPickupOnly = get('localPickup') === '1';
+
   // Show price drops only: recent manual fixed-price drops (14d window, see
   // migration 122) OR'd with declining-price listings at query time
   const priceDrops = get('priceDrops') === '1';
@@ -130,7 +135,7 @@ export function parseFiltersFromParams(
   const rawPage = get('page');
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1);
 
-  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, priceDrops, sort: effectiveSort, page };
+  return { search, playerCounts, languages, countries, weightLevels, expansionsOnly, showAuctions, priceDrops, localPickupOnly, sort: effectiveSort, page };
 }
 
 /**
@@ -164,6 +169,9 @@ export function filtersToSearchParams(filters: BrowseFilters): string {
   if (filters.priceDrops) {
     params.set('priceDrops', '1');
   }
+  if (filters.localPickupOnly) {
+    params.set('localPickup', '1');
+  }
   if (filters.sort !== 'newest') {
     params.set('sort', filters.sort);
   }
@@ -188,6 +196,7 @@ export function countActiveFilters(filters: BrowseFilters): number {
   if (filters.expansionsOnly) count++;
   if (filters.showAuctions) count++;
   if (filters.priceDrops) count++;
+  if (filters.localPickupOnly) count++;
   return count;
 }
 
