@@ -48,7 +48,7 @@ export function ShippingInstructionsSeller({
 
         <Text style={s.detailLabel}>Drop-off code</Text>
         <Img
-          src={`${appUrl}/api/orders/${orderId}/qr-code`}
+          src={`${appUrl}/api/qr-code?code=${encodeURIComponent(barcode)}`}
           width="120"
           height="120"
           alt={`Drop-off QR code: ${barcode}`}
