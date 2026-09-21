@@ -15,6 +15,8 @@ interface ComponentUpgradesPickerProps {
   gameId: number;
   value: ComponentUpgrade[];
   onChange: (next: ComponentUpgrade[]) => void;
+  /** Hide the internal heading + description so a parent can render its own (e.g. a card heading). */
+  hideHeading?: boolean;
 }
 
 /** True if `value` already contains a BGG accessory with this id. */
@@ -33,7 +35,7 @@ function hasName(value: ComponentUpgrade[], name: string): boolean {
  * list (the seller can scan it without knowing exact product names) and allows
  * free-text additions for anything not catalogued on BGG.
  */
-export function ComponentUpgradesPicker({ gameId, value, onChange }: ComponentUpgradesPickerProps) {
+export function ComponentUpgradesPicker({ gameId, value, onChange, hideHeading }: ComponentUpgradesPickerProps) {
   const [accessories, setAccessories] = useState<BGGAccessory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -92,15 +94,17 @@ export function ComponentUpgradesPicker({ gameId, value, onChange }: ComponentUp
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
-          Included extras
-        </p>
-        <p className="text-sm text-semantic-text-secondary mt-1">
-          Note any component upgrades or extras your copy includes — metal coins, custom
-          inserts, upgraded tokens, sleeves.
-        </p>
-      </div>
+      {!hideHeading && (
+        <div>
+          <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+            Included extras
+          </p>
+          <p className="text-sm text-semantic-text-secondary mt-1">
+            Note any component upgrades or extras your copy includes — metal coins, custom
+            inserts, upgraded tokens, sleeves.
+          </p>
+        </div>
+      )}
 
       {/* Selected chips */}
       {value.length > 0 && (

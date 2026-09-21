@@ -8,6 +8,8 @@ export interface LocalPickupSectionProps {
   note: string;
   onAvailableChange: (available: boolean) => void;
   onNoteChange: (note: string) => void;
+  /** Hide the internal divider + heading so a parent can render its own (e.g. a card heading). */
+  hideHeading?: boolean;
 }
 
 export function LocalPickupSection({
@@ -15,14 +17,19 @@ export function LocalPickupSection({
   note,
   onAvailableChange,
   onNoteChange,
+  hideHeading,
 }: LocalPickupSectionProps) {
   return (
     <div className="space-y-3">
-      <hr className="border-semantic-border-subtle" />
+      {!hideHeading && (
+        <>
+          <hr className="border-semantic-border-subtle" />
 
-      <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
-        Local pickup
-      </p>
+          <p className="text-sm font-semibold text-semantic-text-secondary uppercase tracking-wide">
+            Local pickup
+          </p>
+        </>
+      )}
 
       <Checkbox checked={available} onChange={onAvailableChange}>
         I&apos;m open to arranging in-person pickup instead of shipping

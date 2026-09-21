@@ -18,7 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiFetch } from '@/lib/api-fetch';
 import { MIN_PRICE_CENTS, conditionRequiresPhotos, conditionRequiresDescription, type ComponentUpgrade } from '@/lib/listings/types';
 import type { ListingCondition, VersionData, ListingExpansion } from '@/lib/listings/types';
-import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { PAGE_HEADING_CLASS, CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
+import { cn } from '@/lib/cn';
 
 interface EditListingFormProps {
   listing: {
@@ -278,7 +279,7 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   const thumbnail = listing.games?.thumbnail ?? listing.photos[0] ?? null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Breadcrumb
         items={[
           { label: 'Browse', href: `/${locale}` },
@@ -320,92 +321,127 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       </Card>
 
       {/* Edition / Version */}
-      <VersionStep
-        userCountry={userCountry}
-        gameId={listing.bgg_game_id}
-        gameName={gameName}
-        selectedGame={enrichedGame}
-        onGameNameChange={setGameName}
-        selectedVersionId={version.bgg_version_id}
-        selectedVersionSource={version.version_source}
-        selectedPublisher={version.publisher}
-        selectedLanguage={version.language}
-        selectedEditionYear={version.edition_year}
-        onSelect={setVersion}
-        compact
-      />
+      <Card>
+        <CardBody>
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>Edition</h2>
+          <VersionStep
+            userCountry={userCountry}
+            gameId={listing.bgg_game_id}
+            gameName={gameName}
+            selectedGame={enrichedGame}
+            onGameNameChange={setGameName}
+            selectedVersionId={version.bgg_version_id}
+            selectedVersionSource={version.version_source}
+            selectedPublisher={version.publisher}
+            selectedLanguage={version.language}
+            selectedEditionYear={version.edition_year}
+            onSelect={setVersion}
+            compact
+          />
+        </CardBody>
+      </Card>
 
       {/* Expansions — shown if available */}
       {!loadingExpansions && availableExpansions.length > 0 && (
-        <div className="space-y-4">
-          <ExpansionStep
-            expansions={availableExpansions.map((e) => ({
-              ...e,
-              alternate_names: enrichedExpansions[e.id]?.alternateNames ?? null,
-            }))}
-            selectedExpansionIds={selectedExpansionIds}
-            onSelectionChange={setSelectedExpansionIds}
-          />
-          {/* Expansion version selectors */}
-          {selectedExpansionIds.map((expId) => {
-            const expansion = availableExpansions.find((e) => e.id === expId);
-            if (!expansion) return null;
-            const expVersion = expansionVersions[expId];
-            return (
-              <div key={expId}>
-                <p className="text-sm font-medium text-semantic-text-muted mb-2">
-                  {expansion.name} edition
-                  <span className="text-semantic-text-muted font-normal ml-1">(optional)</span>
-                </p>
-                <VersionStep
-                  userCountry={userCountry}
-                  gameId={expId}
-                  gameName={expansion.name}
-                  selectedVersionId={expVersion?.bgg_version_id ?? null}
-                  selectedVersionSource={expVersion?.version_source ?? null}
-                  selectedPublisher={expVersion?.publisher ?? null}
-                  selectedLanguage={expVersion?.language ?? null}
-                  selectedEditionYear={expVersion?.edition_year ?? null}
-                  onSelect={(ver: VersionData) => {
-                    setExpansionVersions((prev) => ({ ...prev, [expId]: ver }));
-                  }}
-                  compact
-                />
-              </div>
-            );
-          })}
-        </div>
+        <Card>
+          <CardBody>
+            <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>Expansions</h2>
+            <div className="space-y-4">
+              <ExpansionStep
+                expansions={availableExpansions.map((e) => ({
+                  ...e,
+                  alternate_names: enrichedExpansions[e.id]?.alternateNames ?? null,
+                }))}
+                selectedExpansionIds={selectedExpansionIds}
+                onSelectionChange={setSelectedExpansionIds}
+                hideHeading
+              />
+              {/* Expansion version selectors */}
+              {selectedExpansionIds.map((expId) => {
+                const expansion = availableExpansions.find((e) => e.id === expId);
+                if (!expansion) return null;
+                const expVersion = expansionVersions[expId];
+                return (
+                  <div key={expId}>
+                    <p className="text-sm font-medium text-semantic-text-muted mb-2">
+                      {expansion.name} edition
+                      <span className="text-semantic-text-muted font-normal ml-1">(optional)</span>
+                    </p>
+                    <VersionStep
+                      userCountry={userCountry}
+                      gameId={expId}
+                      gameName={expansion.name}
+                      selectedVersionId={expVersion?.bgg_version_id ?? null}
+                      selectedVersionSource={expVersion?.version_source ?? null}
+                      selectedPublisher={expVersion?.publisher ?? null}
+                      selectedLanguage={expVersion?.language ?? null}
+                      selectedEditionYear={expVersion?.edition_year ?? null}
+                      onSelect={(ver: VersionData) => {
+                        setExpansionVersions((prev) => ({ ...prev, [expId]: ver }));
+                      }}
+                      compact
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Photos */}
-      <PhotoUploadStep photos={photos} onPhotosChange={setPhotos} compact />
+      <Card>
+        <CardBody>
+          <PhotoUploadStep photos={photos} onPhotosChange={setPhotos} compact />
+        </CardBody>
+      </Card>
 
       {/* Condition */}
-      <ConditionStep selectedCondition={condition} onSelect={setCondition} />
+      <Card>
+        <CardBody>
+          <ConditionStep selectedCondition={condition} onSelect={setCondition} />
+        </CardBody>
+      </Card>
 
       {/* Included extras / component upgrades */}
-      <ComponentUpgradesPicker
-        gameId={listing.bgg_game_id}
-        value={componentUpgrades}
-        onChange={setComponentUpgrades}
-      />
+      <Card>
+        <CardBody>
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-2')}>Included extras</h2>
+          <ComponentUpgradesPicker
+            gameId={listing.bgg_game_id}
+            value={componentUpgrades}
+            onChange={setComponentUpgrades}
+            hideHeading
+          />
+        </CardBody>
+      </Card>
 
       {/* Local pickup */}
-      <LocalPickupSection
-        available={localPickupAvailable}
-        note={localPickupNote}
-        onAvailableChange={setLocalPickupAvailable}
-        onNoteChange={setLocalPickupNote}
-      />
+      <Card>
+        <CardBody>
+          <h2 className={cn(CARD_SUBSECTION_HEADING_CLASS, 'mb-3')}>Local pickup</h2>
+          <LocalPickupSection
+            available={localPickupAvailable}
+            note={localPickupNote}
+            onAvailableChange={setLocalPickupAvailable}
+            onNoteChange={setLocalPickupNote}
+            hideHeading
+          />
+        </CardBody>
+      </Card>
 
       {/* Price & Description */}
-      <PriceStep
-        priceCents={priceCents}
-        description={description}
-        onPriceChange={setPriceCents}
-        onDescriptionChange={setDescription}
-        compact
-      />
+      <Card>
+        <CardBody>
+          <PriceStep
+            priceCents={priceCents}
+            description={description}
+            onPriceChange={setPriceCents}
+            onDescriptionChange={setDescription}
+            compact
+          />
+        </CardBody>
+      </Card>
 
       {/* Error alert */}
       {error && (
