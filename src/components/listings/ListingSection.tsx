@@ -42,6 +42,8 @@ interface ListingSectionProps {
   upgradeCounts?: Record<string, number>;
   emptyState?: React.ReactNode;
   className?: string;
+  /** Optional id applied to the outer <section>, for #hash scroll targets (e.g. pagination, stat links). */
+  id?: string;
 }
 
 export function ListingSection({
@@ -58,11 +60,12 @@ export function ListingSection({
   upgradeCounts,
   emptyState,
   className,
+  id,
 }: ListingSectionProps) {
   if (listings.length === 0 && !emptyState) return null;
 
   return (
-    <section className={className}>
+    <section id={id} className={className}>
       <div className="mb-4">
         <div className="flex items-end justify-between gap-4">
           <div>
