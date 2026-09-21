@@ -10,9 +10,11 @@ interface ExpansionStepProps {
   expansions: Array<{ id: number; name: string; year?: number; thumbnail?: string | null; alternate_names?: string[] | null }>;
   selectedExpansionIds: number[];
   onSelectionChange: (ids: number[]) => void;
+  /** Hide the internal heading so a parent can render its own (e.g. a card heading). */
+  hideHeading?: boolean;
 }
 
-function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: ExpansionStepProps) {
+function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange, hideHeading }: ExpansionStepProps) {
   const [filter, setFilter] = useState('');
 
   const filtered = useMemo(() => {
@@ -34,9 +36,11 @@ function ExpansionStep({ expansions, selectedExpansionIds, onSelectionChange }: 
 
   return (
     <div className="space-y-4">
-      <h2 className={SECTION_HEADING_CLASS}>
-        Select included expansions
-      </h2>
+      {!hideHeading && (
+        <h2 className={SECTION_HEADING_CLASS}>
+          Select included expansions
+        </h2>
+      )}
 
       {/* Selected expansion cards */}
       {selectedExpansionIds.length > 0 && (
