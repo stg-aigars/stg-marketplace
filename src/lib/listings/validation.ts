@@ -24,6 +24,7 @@ export interface ListingFieldsToValidate {
   version_name: string | null;
   bgg_version_id: number | null;
   component_upgrades?: ComponentUpgrade[] | null;
+  local_pickup_note?: string | null;
 }
 
 /**
@@ -121,6 +122,10 @@ export function validateListingFields(
 
   if (data.version_name && data.version_name.length > MAX_TEXT_FIELD_LENGTH) {
     return `Version name must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`;
+  }
+
+  if (data.local_pickup_note && data.local_pickup_note.length > MAX_TEXT_FIELD_LENGTH) {
+    return `Local pickup note must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`;
   }
 
   if (data.bgg_version_id != null && (!Number.isInteger(data.bgg_version_id) || data.bgg_version_id <= 0)) {

@@ -75,6 +75,18 @@ describe('validateListingFields', () => {
         `Publisher must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`
       );
     });
+
+    it('rejects local_pickup_note beyond the text-field cap', () => {
+      const local_pickup_note = 'x'.repeat(MAX_TEXT_FIELD_LENGTH + 1);
+      expect(validateListingFields(validFields({ local_pickup_note }), PHOTO_PREFIX)).toBe(
+        `Local pickup note must be ${MAX_TEXT_FIELD_LENGTH} characters or fewer`
+      );
+    });
+
+    it('accepts local_pickup_note at the text-field cap', () => {
+      const local_pickup_note = 'x'.repeat(MAX_TEXT_FIELD_LENGTH);
+      expect(validateListingFields(validFields({ local_pickup_note }), PHOTO_PREFIX)).toBeNull();
+    });
   });
 
   describe('component upgrades', () => {

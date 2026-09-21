@@ -11,6 +11,7 @@ import { PriceStep } from '@/app/[locale]/sell/_components/PriceStep';
 import { VersionStep } from '@/app/[locale]/sell/_components/VersionStep';
 import { ExpansionStep } from '@/app/[locale]/sell/_components/ExpansionStep';
 import { ComponentUpgradesPicker } from '@/app/[locale]/sell/_components/ComponentUpgradesPicker';
+import { LocalPickupSection } from '@/app/[locale]/sell/_components/LocalPickupSection';
 import { buildEnrichedGame, type EnrichedGame } from '@/app/[locale]/sell/_components/GameSearchStep';
 import { updateListing } from '@/lib/listings/actions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +38,8 @@ interface EditListingFormProps {
     edition_year: VersionData['edition_year'];
     version_thumbnail: string | null;
     component_upgrades: ComponentUpgrade[] | null;
+    local_pickup_available: boolean;
+    local_pickup_note: string | null;
     games: {
       name: string | null;
       thumbnail: string | null;
@@ -86,6 +89,8 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     version: JSON.stringify(initialVersion(listing)),
     expansionIds: JSON.stringify(existingExpansions.map((e) => e.bgg_game_id).sort()),
     componentUpgrades: JSON.stringify(listing.component_upgrades ?? []),
+    localPickupAvailable: listing.local_pickup_available,
+    localPickupNote: listing.local_pickup_note ?? '',
   }));
 
   // Editable state
@@ -97,6 +102,8 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
   const [componentUpgrades, setComponentUpgrades] = useState<ComponentUpgrade[]>(
     listing.component_upgrades ?? []
   );
+  const [localPickupAvailable, setLocalPickupAvailable] = useState(listing.local_pickup_available);
+  const [localPickupNote, setLocalPickupNote] = useState(listing.local_pickup_note ?? '');
   const [version, setVersion] = useState<VersionData>(initialVersion(listing));
 
   // Expansion state
@@ -208,7 +215,9 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
     JSON.stringify(photos) !== initial.photos ||
     JSON.stringify(version) !== initial.version ||
     JSON.stringify([...selectedExpansionIds].sort()) !== initial.expansionIds ||
-    JSON.stringify(componentUpgrades) !== initial.componentUpgrades;
+    JSON.stringify(componentUpgrades) !== initial.componentUpgrades ||
+    localPickupAvailable !== initial.localPickupAvailable ||
+    localPickupNote !== initial.localPickupNote;
 
   // Validation
   const isValid = condition !== null &&
@@ -253,6 +262,8 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
       photos,
       expansions,
       component_upgrades: componentUpgrades,
+      local_pickup_available: localPickupAvailable,
+      local_pickup_note: localPickupAvailable ? localPickupNote : null,
     });
 
     if ('error' in result) {
@@ -377,6 +388,14 @@ export function EditListingForm({ listing, alternateNames, locale, existingExpan
         gameId={listing.bgg_game_id}
         value={componentUpgrades}
         onChange={setComponentUpgrades}
+      />
+
+      {/* Local pickup */}
+      <LocalPickupSection
+        available={localPickupAvailable}
+        note={localPickupNote}
+        onAvailableChange={setLocalPickupAvailable}
+        onNoteChange={setLocalPickupNote}
       />
 
       {/* Price & Description */}

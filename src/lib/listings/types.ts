@@ -6,6 +6,8 @@ export type ListingStatus = 'active' | 'sold' | 'cancelled' | 'reserved' | 'auct
 
 export type VersionSource = 'bgg' | 'manual';
 
+export type ListingRemovalReason = 'sold_elsewhere' | 'sold_in_person' | 'no_longer_selling' | 'other';
+
 export interface VersionData {
   version_source: VersionSource;
   bgg_version_id: number | null;
@@ -63,6 +65,8 @@ export interface CreateListingData {
   drop_interval_days?: number;
   expansions?: ListingExpansion[];
   component_upgrades?: ComponentUpgrade[];
+  local_pickup_available?: boolean;
+  local_pickup_note?: string | null;
 }
 
 export interface UpdateListingData {
@@ -81,6 +85,8 @@ export interface UpdateListingData {
   photos: string[];
   expansions?: ListingExpansion[];
   component_upgrades?: ComponentUpgrade[];
+  local_pickup_available?: boolean;
+  local_pickup_note?: string | null;
 }
 
 /** Camel-case mirror of `ListingCondition`. The DB stores snake_case (`like_new`); the UI codepath
@@ -135,6 +141,17 @@ export function formatUpgradeCount(count: number): string {
 export const MAX_COMPONENT_UPGRADES = 20;
 /** Max length of a single component-upgrade name. */
 export const MAX_UPGRADE_NAME_LENGTH = 100;
+
+export const LISTING_REMOVAL_REASON_LABELS: Record<ListingRemovalReason, string> = {
+  sold_elsewhere: 'Sold elsewhere',
+  sold_in_person: 'Sold in person',
+  no_longer_selling: 'No longer selling',
+  other: 'Other',
+};
+
+export const LISTING_REMOVAL_REASON_OPTIONS = (
+  Object.keys(LISTING_REMOVAL_REASON_LABELS) as ListingRemovalReason[]
+).map((value) => ({ value, label: LISTING_REMOVAL_REASON_LABELS[value] }));
 
 export const MIN_PRICE_CENTS = 50; // €0.50
 export const MAX_GAME_NAME_LENGTH = 200;
