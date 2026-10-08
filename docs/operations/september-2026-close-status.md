@@ -42,7 +42,7 @@ directions agree.
 |---------|--------:|-|
 | 2610 | 249.49 | = statement ✓ |
 | 2620 | 355.49 | = statement ✓ |
-| 2630 | 34.10 | UJRJ only (see below) |
+| 2630 | 0.00 | UJRJ €34.10 written off to 7790 (see below) |
 | 5351 seller wallets | 400.05 Cr | = Σ wallets ✓ (Sept-end; October activity excluded) |
 | 5590 suspense | 0 | ✓ |
 | 5710-LV-IN / -OUT | 0 / 0 | cleared by P.1 |
@@ -80,10 +80,21 @@ existing GL:
 3. **Meta duplicate in August's PVN1-II?** Check the August filing; see the
    prep sheet's last section. This is the accountant's call: amend or leave
    it (net zero either way).
-4. **UJRJ €34.10 on 2630 since June.** July's PVN prep calls it a
-   "non-payment write-off, deferred to August". It is still open three
-   months later. It needs a decision: write it off, or check the EveryPay
-   report for a settlement.
+4. ~~UJRJ €34.10 on 2630~~ **Written off 08.10.2026** (staff decision:
+   write off, no claw-back of the €28.80 seller credit). Entry
+   `ujrj-writeoff-b7a371ed`: Dr 7790 bad debt / Cr 2630 €34.10, dated
+   30.09. Root cause: EveryPay auto-refunded the buyer 1.3 seconds after
+   payment (the cart-rollback incident,
+   `docs/plans/2026-06-24-cart-rollback-refund-fix.md`), but the order
+   completed anyway. There is no VAT effect: the June commission and
+   shipping supply to the seller did happen. Typed as C.3 with the
+   EveryPay payment id in `included_txn_refs`, so the period-close
+   checklist sees the card receipt as cleared. Two things left for the
+   accountant: (a) whether a €34.10 write-off that doesn't meet the UIN
+   doubtful-debt criteria is a non-business expense for CIT; (b) the
+   order row still shows `everypay_payment_state='settled'` and
+   `refund_status=null`. That is untouched app data and can be fixed
+   separately if wanted.
 5. **Lock periods.** 2026-08 and 2026-09 are both still `open`. Soft-lock
    them, and hard-lock after the PVN is filed (lifecycle-cutover runbook
    discipline).
