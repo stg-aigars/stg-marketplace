@@ -178,6 +178,17 @@ function daysBetween(fromIso: string, toIso: string): number {
   return Math.floor((toMs - fromMs) / (24 * 60 * 60 * 1000));
 }
 
+/**
+ * Helper: exclusive upper bound for "on or before date X" against a
+ * timestamptz column — the UTC midnight that starts the following day.
+ * `nextUtcMidnightIso('2026-09-30')` → `'2026-10-01T00:00:00.000Z'`.
+ */
+function nextUtcMidnightIso(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString();
+}
+
 
 // =============================================================================
 // Helpers
@@ -774,10 +785,18 @@ export async function getWalletIntegrityAsOf(
   // balance_after_cents is a denormalized snapshot maintained by the wallet
   // RPCs (migrations 070/071) — same trust level as wallets.balance_cents in
   // getWalletIntegrity. See JSDoc above for the joint-migration discipline.
+  //
+  // asOf is a date ('YYYY-MM-DD') but created_at is a timestamptz, so
+  // `.lte('created_at', asOf)` would compare against asOf 00:00:00 and drop
+  // every wallet row written ON asOf, while the GL side above keeps the whole
+  // day (posting_date <= asOf). Use an exclusive next-UTC-midnight bound
+  // instead: lifecycle wraps stamp posting_date as the UTC date of the event,
+  // so both sides cut the day at the same instant. (Surfaced by WD-2026-00014,
+  // completed 30.09.2026 07:45 UTC: −€60.00 false delta on the 2026-09 close.)
   const { data: walletTxRows, error: walletError } = await supabase
     .from('wallet_transactions')
     .select('user_id, balance_after_cents, created_at')
-    .lte('created_at', asOf)
+    .lt('created_at', nextUtcMidnightIso(asOf))
     .order('created_at', { ascending: false });
 
   throwIfError(walletError, 'getWalletIntegrityAsOf: wallet_transactions SELECT failed');
