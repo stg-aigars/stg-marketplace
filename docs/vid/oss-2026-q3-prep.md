@@ -4,6 +4,8 @@ Prepared 08.10.2026 from production GL (O.3 / O.5 entries, completion-date
 basis per `docs/accounting_conventions.md` §2). Filing + payment deadline:
 **31.10.2026**.
 
+**FILED 08.10.2026, EDS 117020607.** LT 19.76/4.15 and EE 19.12/4.59, exactly as below. Recorded in `oss_submissions` (Q2 backfilled alongside it from EDS 115617661). Payment of €8.74 is due 31.10.2026 and not yet made.
+
 ## Per-order detail (GL)
 
 | Completed  | Type | Invoice / order         | Country | Net base | VAT (GL) |

@@ -4,7 +4,7 @@ Prepared 08.10.2026 from the GL (period `2026-09`, P.1 = `close_2026_09`) and
 the source documents (Swedbank camt.052 reports 1216347833 / 1216347881, plus
 5 PDF and 2 e-invoice XML documents).
 
-Deadline: file by **20.10.2026**. Pay by 23.10.2026.
+**FILED 08.10.2026, EDS 117020580.** Filed values match this sheet exactly (row 52 filed as 7.74 despite the expected EDS warning). Payment of €2.93 is due 23.10.2026 and not yet made.
 **Payable position: €2.93.**
 
 ## Main form

@@ -71,30 +71,28 @@ existing GL:
   `shipped_at`: 4 LV-EE (UDQV, LV87, QFWH, 97MN) and 4 LV-LV (3KRZ, 7DJ7,
   YMBP, MCJE).
 
-## Remaining
+## Remaining (updated 08.10.2026)
 
-1. **File the September PVN** by 20.10 (€2.93, pay by 23.10):
-   `docs/vid/pvn-2026-09-prep.md` + `pvn-2026-09-eds-import.xml`.
-2. **File Q3 OSS** by 31.10 (LT €4.15 + EE €4.59): `docs/vid/oss-2026-q3-prep.md` + `oss-2026-q3-eds-import.xml`.
-   After payment, post two C.12 events.
-3. ~~Meta duplicate in August's PVN1-II~~ **Decided 08.10.2026: leave August as filed** (no tax effect). See `pvn-2026-09-prep.md`.
-4. ~~UJRJ €34.10 on 2630~~ **Written off 08.10.2026** (staff decision:
-   write off, no claw-back of the €28.80 seller credit). Entry
-   `ujrj-writeoff-b7a371ed`: Dr 7790 bad debt / Cr 2630 €34.10, dated
-   30.09. Root cause: EveryPay auto-refunded the buyer 1.3 seconds after
-   payment (the cart-rollback incident,
-   `docs/plans/2026-06-24-cart-rollback-refund-fix.md`), but the order
-   completed anyway. There is no VAT effect: the June commission and
-   shipping supply to the seller did happen. Typed as C.3 with the
-   EveryPay payment id in `included_txn_refs`, so the period-close
-   checklist sees the card receipt as cleared. Two things left for the
-   accountant: (a) whether a €34.10 write-off that doesn't meet the UIN
-   doubtful-debt criteria is a non-business expense for CIT; (b) the
-   order row still shows `everypay_payment_state='settled'` and
-   `refund_status=null`. That is untouched app data and can be fixed
-   separately if wanted.
-5. **Lock periods.** 2026-08 and 2026-09 are both still `open`. Soft-lock
-   them, and hard-lock after the PVN is filed (lifecycle-cutover runbook
-   discipline).
-6. **October:** Hetzner ×2, Unisend 2603263 payment (06.10), Swedbank
-   V-invoice for 01–15.10.
+Done:
+- September PVN filed: EDS 117020580 (€2.93).
+- Q3 OSS filed: EDS 117020607 (€8.74).
+- `oss_submissions` rows recorded for Q2 (EDS 115617661, paid 11.07) and Q3,
+  each with an `oss.submission_recorded` audit row. The amounts come from
+  the filed XMLs, not from the `/staff/oss` recompute. That recompute
+  bucket-includes E93F in Q3 EE and would show ≈5.79 instead of the filed
+  4.59.
+- August decision recorded (leave as filed). UJRJ written off.
+- **2026-08 and 2026-09 soft-locked** 08.10.2026. All checklist items 1–9
+  were verified via SQL: Σ balanced, bank closures match, wallets
+  927.36 / 400.05, 5590 = in-flight (44.00 / 0), 2351 and 5410 at 0,
+  2630 = in-transit (51.00 / 0), P.1 present, no negative wallets.
+  `accounting.period_status_changed` audit rows written.
+
+Open:
+1. **Pay:** PVN €2.93 by 23.10, OSS €8.74 by 31.10. Then post C.11 (PVN)
+   and two C.12 entries (OSS: LT 4.15 / EE 4.59). These go in October,
+   where the cash moves. Set `oss_submissions.payment_cleared_at` for Q3.
+2. **Hard-lock 2026-08 and 2026-09.** Hard-lock is irreversible; waiting
+   for confirmation.
+3. **October:** Hetzner ×2 (RC, dated October), Unisend 2603263 payment
+   (06.10), Swedbank V-invoice for 01–15.10.
