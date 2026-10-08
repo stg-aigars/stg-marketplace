@@ -75,11 +75,9 @@ existing GL:
 
 1. **File the September PVN** by 20.10 (€2.93, pay by 23.10):
    `docs/vid/pvn-2026-09-prep.md` + `pvn-2026-09-eds-import.xml`.
-2. **File Q3 OSS** by 31.10 (LT €4.15 + EE €4.59): `docs/vid/oss-2026-q3-prep.md`.
+2. **File Q3 OSS** by 31.10 (LT €4.15 + EE €4.59): `docs/vid/oss-2026-q3-prep.md` + `oss-2026-q3-eds-import.xml`.
    After payment, post two C.12 events.
-3. **Meta duplicate in August's PVN1-II?** Check the August filing; see the
-   prep sheet's last section. This is the accountant's call: amend or leave
-   it (net zero either way).
+3. ~~Meta duplicate in August's PVN1-II~~ **Decided 08.10.2026: leave August as filed** (no tax effect). See `pvn-2026-09-prep.md`.
 4. ~~UJRJ €34.10 on 2630~~ **Written off 08.10.2026** (staff decision:
    write off, no claw-back of the €28.80 seller credit). Entry
    `ujrj-writeoff-b7a371ed`: Dr 7790 bad debt / Cr 2630 €34.10, dated

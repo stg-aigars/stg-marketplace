@@ -86,11 +86,20 @@ tax_period 2026-09). So GL's September RC sweep shows 2.73 (3.78 − 1.05),
 while this sheet files 3.78, using real September documents only. Net VAT
 effect is zero either way.
 
-**Decision needed:** check whether August's filed PVN1-II includes
-FBADS-046-106285148. If it does, file an August *precizējums* that removes
-the row (−5.00 / −1.05 on rows 50, 55 and 64; net payable unchanged at
-€1.20), or leave it as filed since the net effect is zero. This is the
-accountant's call.
+**Decision (08.10.2026): leave August as filed. No *precizējums*.** The
+error has no tax effect (RC output = RC input), so there is no unpaid tax
+and therefore no penalty or interest base. If VID ever asks, the answer is:
+a duplicate booking of a July invoice, corrected in GL on 30.09.2026
+(`meta-FBADS-046-106285148-rev-dupfix`).
+
+Accepted permanent differences:
+- August filing vs. corrected GL: rows 50/55/64 +5.00/+1.05/+1.05.
+- September filing (3.78) vs. GL September RC sweep (2.73).
+- Q3 reverse-charge base declared to VID is €5.00 above Meta's actual
+  invoices, which is what Meta's VIES report will show.
+- August PVN1-I probably also lists the Swedbank €0.84 invoice as
+  "6012050226 (16-31.07.2026)" dated 31.07. The real invoice is
+  V0000909660, dated 15.08. Same amount and VAT, left as filed.
 
 ## EDS import
 

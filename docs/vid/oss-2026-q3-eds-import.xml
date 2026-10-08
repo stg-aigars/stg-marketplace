@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DokOSSDv2 xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Precizejums>false</Precizejums>
+  <NmrKods>50203665371</NmrKods>
+  <ParskGads>2026</ParskGads>
+  <ParskMen xsi:nil="true" />
+  <ParskCeturksnis>3</ParskCeturksnis>
+  <TaksPusgads xsi:nil="true" />
+  <Sagatavotajs>AIGARS GRĒNIŅŠ</Sagatavotajs>
+  <Talrunis>+371 26779625</Talrunis>
+  <Epasts>info@secondturn.games</Epasts>
+  <TaksPeriodsNo xsi:nil="true" />
+  <TaksPeriodsLidz xsi:nil="true" />
+  <IesniegumaVeids>U</IesniegumaVeids>
+  <PvnNumurs>LV50203665371</PvnNumurs>
+  <Kopsavilkums>
+    <R>
+      <Valsts>LT</Valsts>
+      <PvnSumma>4.15</PvnSumma>
+    </R>
+    <R>
+      <Valsts>EE</Valsts>
+      <PvnSumma>4.59</PvnSumma>
+    </R>
+  </Kopsavilkums>
+  <Korekcija />
+  <PvnLV>
+    <R>
+      <Veids>Pakalpojums</Veids>
+      <Valsts>LT</Valsts>
+      <LikmesVeids>PVN standarta likme</LikmesVeids>
+      <Likme>21.00</Likme>
+      <CitaLikme>21.00</CitaLikme>
+      <DarSumma>19.76</DarSumma>
+      <Pvn>4.15</Pvn>
+    </R>
+    <R>
+      <Veids>Pakalpojums</Veids>
+      <Valsts>EE</Valsts>
+      <LikmesVeids>PVN standarta likme</LikmesVeids>
+      <Likme>24.00</Likme>
+      <CitaLikme>24.00</CitaLikme>
+      <DarSumma>19.12</DarSumma>
+      <Pvn>4.59</Pvn>
+    </R>
+  </PvnLV>
+  <PvnES />
+</DokOSSDv2>

@@ -47,6 +47,14 @@ declared twice.
 The leftover cent on 5712 is the permanent aggregate-vs-per-invoice rounding
 gap (§5). It is expected; don't investigate it.
 
+## EDS import
+
+`oss-2026-q3-eds-import.xml` (same folder) uses the `DokOSSDv2` format,
+modelled on the filed Q2 declaration (EDS 115617661). The Q2 file confirms
+the E93F treatment: Q2's EE base 29.35 = GL Q2 base 24.35 + E93F 5.00.
+LT 15.78 matches GL exactly. `Korekcija` is left empty on purpose: E93F is
+excluded from Q3 rather than corrected as a prior-quarter adjustment.
+
 ## After filing
 
 Post two C.12 events (§6), one per member state, crediting 2610:
