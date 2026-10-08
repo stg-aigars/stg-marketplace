@@ -66,12 +66,13 @@ function buildMockClient(tableResponses: Record<string, MockResponse[]>): {
       in: vi.fn(),
       is: vi.fn(),
       lte: vi.fn(),
+      lt: vi.fn(),
       gte: vi.fn(),
       order: vi.fn(),
       limit: vi.fn(),
       maybeSingle: vi.fn()
     };
-    for (const fn of ['select', 'eq', 'in', 'is', 'lte', 'gte', 'order', 'limit'] as const) {
+    for (const fn of ['select', 'eq', 'in', 'is', 'lte', 'lt', 'gte', 'order', 'limit'] as const) {
       builder[fn].mockReturnValue(builder);
     }
     builder.maybeSingle.mockImplementation(() => dequeue());
@@ -1408,6 +1409,25 @@ describe('getWalletIntegrityAsOf', () => {
     expect(result.wallet_table_sum_cents).toBe(500);
     expect(result.delta_cents).toBe(0);
     expect(result.is_reconciled).toBe(true);
+  });
+
+  it('bounds wallet_transactions at the next UTC midnight so rows created ON asOf are included', async () => {
+    // Regression: WD-2026-00014 (wallet debit 30.09.2026 07:45 UTC, GL C.4
+    // posting_date 2026-09-30). A `.lte('created_at', '2026-09-30')` bound means
+    // 30.09 00:00:00, which dropped the wallet row while the GL kept it —
+    // a false −€60.00 delta on the 2026-09 close. Both sides must include
+    // the whole of asOf.
+    const client = buildMockClient({
+      journal_lines: [{ data: [], error: null }],
+      wallet_transactions: [{ data: [], error: null }]
+    });
+
+    await getWalletIntegrityAsOf(client as never, '2026-09-30');
+
+    const walletCallIndex = client.from.mock.calls.findIndex(([table]) => table === 'wallet_transactions');
+    const walletBuilder = client.from.mock.results[walletCallIndex]!.value;
+    expect(walletBuilder.lt).toHaveBeenCalledWith('created_at', '2026-10-01T00:00:00.000Z');
+    expect(walletBuilder.lte).not.toHaveBeenCalled();
   });
 
   it('routes 5351 GL lines with null counterparty_id into unattributed_gl_cents (period-scoped)', async () => {
