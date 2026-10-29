@@ -175,14 +175,3 @@ export const LEGAL_DISCLAIMER_CLAUSE_BRIDGE: Record<
     et: 'autoriteetne originaal',
   },
 };
-
-/** Sunset date for the transitional PSD2 Art. 3(b) wording in Seller Agreement
- *  §3 (Payment authorisation and flow). The current wording does not
- *  affirmatively claim the exemption — it describes the fund flow and flags
- *  that if Art. 3(b) is determined not to apply, we will restructure through
- *  a licensed payment institution. The lawyer memo (2026-04-26) says this
- *  framing is valid for 3–6 months while EveryPay Option 1 (collecting-account
- *  through Maksekeskus) is scoped. Enforced by a Vitest assertion co-located
- *  in `constants.test.ts` — when the date passes, `pnpm test` fails and CI
- *  blocks every subsequent PR until the transitional wording is replaced. */
-export const PSD2_TRANSITIONAL_SUNSET = new Date('2026-10-26T00:00:00.000Z');
