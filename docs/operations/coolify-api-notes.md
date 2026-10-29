@@ -123,6 +123,16 @@ Coolify API tokens don't have a UI-side expiry. Operational discipline:
 
 ## Automated redeploy (DONE — supersedes the item below)
 
+> **2026-10-29 — Coolify v4.5.3 made `/api/v1/deploy` POST-only.** A `GET`
+> now returns `405 {"message":"This endpoint has changed to a POST request."}`.
+> The upgrade happened between the last working API deploy (2026-10-08) and
+> 2026-10-29, and auto-deploy failed silently on the #452 merge. The workflow
+> step now sends `POST /api/v1/deploy` with JSON body
+> `{"uuid":"<app-uuid>","force":false}`. It also reports Coolify's status and
+> response as an `::error` annotation on failure, instead of `curl -f`'s bare
+> exit 22. The `COOLIFY_TOKEN` repo secret now holds a dedicated deploy-only
+> token (created 2026-10-29).
+
 **Confirmed live 2026-08-03.** `.github/workflows/build-and-push.yml` has a
 "Trigger Coolify deploy" step that calls `GET /api/v1/deploy?uuid=<app-uuid>`
 after every push-to-main build (tolerant of missing `COOLIFY_HOST` /
