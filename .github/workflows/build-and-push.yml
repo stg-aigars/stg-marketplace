@@ -119,7 +119,24 @@ jobs:
             exit 0
           fi
           echo "Triggering Coolify deploy for app ${COOLIFY_APP_UUID:0:8}..."
-          response=$(curl -fsS -X GET \
-            "${COOLIFY_HOST}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}" \
-            -H "Authorization: Bearer ${COOLIFY_TOKEN}")
-          echo "Coolify response: $response"
+          # No `curl -f`: on an HTTP error it discards Coolify's response body,
+          # which is the only place the reason (bad token, missing permission,
+          # wrong UUID, server error) is spelled out. Capture status + body and
+          # surface both as an annotation so the cause is visible on the run
+          # summary without opening the raw log.
+          body_file=$(mktemp)
+          err_file=$(mktemp)
+          set +e
+          http_code=$(curl -sS --max-time 30 -o "$body_file" -w '%{http_code}' \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            -H "Accept: application/json" \
+            "${COOLIFY_HOST}/api/v1/deploy?uuid=${COOLIFY_APP_UUID}" 2>"$err_file")
+          curl_exit=$?
+          set -e
+          body=$(head -c 500 "$body_file" | tr '\n' ' ')
+          curl_err=$(head -c 300 "$err_file" | tr '\n' ' ')
+          echo "Coolify responded HTTP ${http_code} (curl exit ${curl_exit}): ${body}"
+          if [ "$curl_exit" -ne 0 ] || [ "${http_code:0:1}" != "2" ]; then
+            echo "::error title=Coolify deploy trigger failed::HTTP ${http_code}, curl exit ${curl_exit}. Response: ${body:-<empty>} ${curl_err}"
+            exit 1
+          fi
