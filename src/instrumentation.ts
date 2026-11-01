@@ -1,4 +1,11 @@
+import * as Sentry from '@sentry/nextjs';
 import { env, assertEnv } from '@/lib/env';
+
+// Reports errors thrown in Server Components, Server Actions, and Route
+// Handlers to Sentry. Without this hook those errors only reach stdout; the
+// browser receives a digest-only "error in the Server Components render"
+// message that carries no stack or cause.
+export const onRequestError = Sentry.captureRequestError;
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -16,7 +23,6 @@ export async function register() {
     // missing site key means every form gated on `!!turnstileToken` stays
     // permanently disabled. Both are alert-worthy on their own.
     if (process.env.NODE_ENV === 'production') {
-      const Sentry = await import('@sentry/nextjs');
       if (!env.turnstile.secretKey) {
         Sentry.captureMessage(
           'Turnstile secret key missing in production — bot protection silently disabled',
