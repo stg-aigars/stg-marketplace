@@ -7,7 +7,7 @@ import { ResourceAuditTimeline } from '@/components/staff/ResourceAuditTimeline'
 import { formatDate } from '@/lib/date-utils';
 import { getCountryName } from '@/lib/country-utils';
 import { SellerStatusForm } from './SellerStatusForm';
-import type { SellerStatus } from './actions';
+import type { SellerStatus } from '@/lib/auth/types';
 import { TraderSignalActions } from './TraderSignalActions';
 import type { DismissRationaleCategory } from './trader-signal-actions';
 import { TRADER_THRESHOLDS } from '@/lib/seller/trader-thresholds';

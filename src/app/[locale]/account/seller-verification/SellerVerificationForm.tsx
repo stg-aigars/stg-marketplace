@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { Alert, Button } from '@/components/ui';
-import { submitSellerVerification, type VerificationResponse } from './actions';
+import { submitSellerVerification } from './actions';
+import type { VerificationResponse } from '@/lib/auth/types';
 
 /**
  * The structured form is BINARY by design (lawyer correspondence 2026-04-28,
