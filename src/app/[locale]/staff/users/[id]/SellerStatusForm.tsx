@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react';
 import { Alert, Button, Select, Textarea } from '@/components/ui';
 import type { SelectOption } from '@/components/ui';
-import { updateSellerStatus, type SellerStatus } from './actions';
+import { updateSellerStatus } from './actions';
+import type { SellerStatus } from '@/lib/auth/types';
 
 interface Props {
   userId: string;

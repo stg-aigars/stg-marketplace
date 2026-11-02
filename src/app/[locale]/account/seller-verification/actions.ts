@@ -9,8 +9,6 @@ import type { VerificationResponse } from '@/lib/auth/types';
 
 type ActionResult = { success: true } | { error: string };
 
-export type { VerificationResponse };
-
 /**
  * Seller self-classification — writes verification_response + verification_responded_at,
  * fires seller.verification_responded.

@@ -9,8 +9,6 @@ import type { SellerStatus } from '@/lib/auth/types';
 
 type ActionResult = { success: true } | { error: string };
 
-export type { SellerStatus };
-
 /**
  * Staff-side mutation of seller_status. Captures from/to/reason in audit metadata,
  * plus the count of in-flight reserved and auction_ended listings — those are
