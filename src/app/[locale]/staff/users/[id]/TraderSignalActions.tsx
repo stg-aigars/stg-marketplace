@@ -48,9 +48,14 @@ export function TraderSignalActions({
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      const result = await sendVerificationRequest(userId);
-      if ('error' in result) setError(result.error);
-      else setSuccess('Verification request sent. The seller has 14 days to respond.');
+      try {
+        const result = await sendVerificationRequest(userId);
+        if ('error' in result) setError(result.error);
+        else setSuccess('Verification request sent. The seller has 14 days to respond.');
+      } catch (err) {
+        console.error('[TraderSignalActions] sendVerificationRequest failed:', err);
+        setError('Could not send the verification request. Please try again.');
+      }
     });
   };
 
@@ -62,12 +67,19 @@ export function TraderSignalActions({
       return;
     }
     startTransition(async () => {
-      const result = await dismissTraderSignal(
-        userId,
-        rationaleCategory as DismissRationaleCategory,
-        justification,
-        evidenceUrl || undefined,
-      );
+      let result: Awaited<ReturnType<typeof dismissTraderSignal>>;
+      try {
+        result = await dismissTraderSignal(
+          userId,
+          rationaleCategory as DismissRationaleCategory,
+          justification,
+          evidenceUrl || undefined,
+        );
+      } catch (err) {
+        console.error('[TraderSignalActions] dismissTraderSignal failed:', err);
+        setError('Could not record the dismissal. Please try again.');
+        return;
+      }
       if ('error' in result) {
         setError(result.error);
       } else {
