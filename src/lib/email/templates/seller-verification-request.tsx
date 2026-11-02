@@ -31,8 +31,10 @@ export function SellerVerificationRequest({
       <Text style={s.greeting}>Hi {sellerFirstName},</Text>
 
       <Text style={s.body}>
-        Wow, you recently crossed {salesCount} sales — you&apos;re officially one of STG&apos;s
-        most active sellers!
+        {/* One string, not `{salesCount} sales`: React separates adjacent text
+            nodes with <!-- --> markers, and some mail clients drop the space
+            next to them when stripping comments ("25sales"). */}
+        {`Wow, you recently crossed ${salesCount} sales — you're officially one of STG's most active sellers!`}
       </Text>
 
       <Text style={s.body}>
