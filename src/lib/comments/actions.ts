@@ -7,9 +7,42 @@ import { commentLimiter, checkUserRateLimit } from '@/lib/rate-limit';
 import { notify, notifyMany } from '@/lib/notifications';
 import { logAuditEvent } from '@/lib/services/audit';
 import { fetchPublicProfiles } from '@/lib/supabase/helpers';
+import { sendCommentReceivedToSeller, sendCommentReplyToCommenter } from '@/lib/email';
 import { MAX_COMMENT_LENGTH, type ListingComment } from './types';
+import { selectReplyRecipients } from './recipients';
 
 const COMMENTABLE_STATUSES = ['active', 'reserved', 'auction_ended'];
+
+/**
+ * Email each recipient sequentially (typically 1–3 people, keeps us under
+ * Resend's rate limit). Recipient emails live on user_profiles, which RLS
+ * hides from peers, so this needs the service-role client. A failure for one
+ * recipient is logged and doesn't stop the rest.
+ */
+async function emailCommentRecipients(
+  serviceClient: ReturnType<typeof createServiceClient>,
+  userIds: string[],
+  send: (recipient: { recipientName: string; recipientEmail: string }) => Promise<void>,
+): Promise<void> {
+  const { data: profiles, error } = await serviceClient
+    .from('user_profiles')
+    .select('id, full_name, email')
+    .in('id', userIds);
+
+  if (error) {
+    console.error('[Comments] Recipient lookup for email failed:', error.message);
+    return;
+  }
+
+  for (const profile of profiles ?? []) {
+    if (!profile.email) continue;
+    try {
+      await send({ recipientName: profile.full_name ?? 'there', recipientEmail: profile.email });
+    } catch (err) {
+      console.error(`[Comments] Email to ${profile.id} failed:`, err);
+    }
+  }
+}
 
 /**
  * Post a public comment on a listing.
@@ -71,62 +104,56 @@ export async function postComment(
       commenterName,
     };
 
+    const serviceClient = createServiceClient();
+
     if (!isSeller) {
       void notify(listing.seller_id, 'comment.received', notificationContext);
+      await emailCommentRecipients(serviceClient, [listing.seller_id], (recipient) =>
+        sendCommentReceivedToSeller({
+          ...recipient,
+          authorName: commenterName,
+          gameName: listing.game_name,
+          listingId: listing.id,
+          commentBody: trimmed,
+        }),
+      );
     } else {
       // Seller replied — notify previous commenters, but only those who commented
       // after their last notification for this listing (dedup consecutive seller replies)
-      const serviceClient = createServiceClient();
       const [{ data: previousComments }, { data: existingNotifications }] = await Promise.all([
         serviceClient
           .from('listing_comments')
           .select('user_id, created_at')
           .eq('listing_id', listingId)
+          .is('deleted_at', null)
           .not('user_id', 'is', null)
-          .neq('user_id', user.id)
-          .order('created_at', { ascending: false }),
+          .neq('user_id', user.id),
         serviceClient
           .from('notifications')
           .select('user_id, created_at')
           .eq('type', 'comment.received')
-          .eq('metadata->>listingId', listingId)
-          .order('created_at', { ascending: false }),
+          .eq('metadata->>listingId', listingId),
       ]);
 
-      if (previousComments && previousComments.length > 0) {
-        // Build map of each user's latest comment on this listing
-        const lastCommentByUser = new Map<string, string>();
-        for (const c of previousComments) {
-          const uid = c.user_id as string;
-          if (!lastCommentByUser.has(uid)) lastCommentByUser.set(uid, c.created_at);
-        }
+      const toNotify = selectReplyRecipients(previousComments ?? [], existingNotifications ?? []);
 
-        // Build map of each user's latest notification for this listing
-        const lastNotifByUser = new Map<string, string>();
-        if (existingNotifications) {
-          for (const n of existingNotifications) {
-            const uid = n.user_id as string;
-            if (!lastNotifByUser.has(uid)) lastNotifByUser.set(uid, n.created_at);
-          }
-        }
-
-        // Only notify users whose last comment is after their last notification
-        const toNotify = [...lastCommentByUser.entries()]
-          .filter(([uid, lastComment]) => {
-            const lastNotif = lastNotifByUser.get(uid);
-            return !lastNotif || lastComment > lastNotif;
-          })
-          .map(([uid]) => uid);
-
-        if (toNotify.length > 0) {
-          void notifyMany(
-            toNotify.map((userId) => ({
-              userId,
-              type: 'comment.received' as const,
-              context: notificationContext,
-            }))
-          );
-        }
+      if (toNotify.length > 0) {
+        void notifyMany(
+          toNotify.map((userId) => ({
+            userId,
+            type: 'comment.received' as const,
+            context: notificationContext,
+          }))
+        );
+        await emailCommentRecipients(serviceClient, toNotify, (recipient) =>
+          sendCommentReplyToCommenter({
+            ...recipient,
+            authorName: commenterName,
+            gameName: listing.game_name,
+            listingId: listing.id,
+            commentBody: trimmed,
+          }),
+        );
       }
     }
   })().catch((err) => console.error('[Comments] Notification dispatch failed:', err));

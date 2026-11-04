@@ -18,6 +18,7 @@ import { OrderCompletedSeller } from './templates/order-completed-seller';
 import { OrderDeclinedBuyer } from './templates/order-declined-buyer';
 import { OrderDisputedSeller } from './templates/order-disputed-seller';
 import { OrderMessageReceived } from './templates/order-message-received';
+import { CommentReceivedSeller, CommentReplyReceived } from './templates/listing-comment';
 import { DisputeResolvedRefund } from './templates/dispute-resolved-refund';
 import { DisputeResolvedNoRefund } from './templates/dispute-resolved-no-refund';
 import { DisputeEscalated } from './templates/dispute-escalated';
@@ -394,6 +395,51 @@ export async function sendOrderMessageReceivedToRecipient(params: {
       orderNumber: params.orderNumber,
       orderId: params.orderId,
       messageBody: params.messageBody,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+interface ListingCommentEmailParams {
+  recipientName: string;
+  recipientEmail: string;
+  authorName: string;
+  gameName: string;
+  listingId: string;
+  commentBody: string;
+}
+
+/**
+ * New public comment on a listing → the seller
+ */
+export async function sendCommentReceivedToSeller(params: ListingCommentEmailParams): Promise<void> {
+  await sendEmail({
+    to: params.recipientEmail,
+    subject: `${params.authorName} commented on your ${params.gameName} listing`,
+    react: React.createElement(CommentReceivedSeller, {
+      recipientName: params.recipientName,
+      authorName: params.authorName,
+      gameName: params.gameName,
+      listingId: params.listingId,
+      commentBody: params.commentBody,
+      appUrl: env.app.url,
+    }),
+  });
+}
+
+/**
+ * Seller replied in listing comments → each previous commenter
+ */
+export async function sendCommentReplyToCommenter(params: ListingCommentEmailParams): Promise<void> {
+  await sendEmail({
+    to: params.recipientEmail,
+    subject: `${params.authorName} replied on ${params.gameName}`,
+    react: React.createElement(CommentReplyReceived, {
+      recipientName: params.recipientName,
+      authorName: params.authorName,
+      gameName: params.gameName,
+      listingId: params.listingId,
+      commentBody: params.commentBody,
       appUrl: env.app.url,
     }),
   });
