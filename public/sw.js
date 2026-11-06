@@ -1,4 +1,7 @@
-const CACHE_NAME = 'stg-v1';
+// Bumped from stg-v1: before the middleware matcher fix, /offline.html 404'd
+// and the install step failed, so no visitor had a working stg-v1 cache. The
+// bump still clears any partial stg-v1 left behind (activate handler below).
+const CACHE_NAME = 'stg-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -38,10 +41,16 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         return fetch(request)
           .then((response) => {
-            const clone = response.clone();
-            event.waitUntil(
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
-            );
+            // Only cache successful responses. Cache-first means anything
+            // stored here is served forever — a cached 5xx/404 for a valid
+            // chunk would keep the site broken for that visitor until they
+            // cleared site data.
+            if (response.ok) {
+              const clone = response.clone();
+              event.waitUntil(
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+              );
+            }
             return response;
           })
           .catch(() => Response.error());
