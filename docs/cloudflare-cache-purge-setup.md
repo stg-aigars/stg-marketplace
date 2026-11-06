@@ -9,7 +9,7 @@ These rules live in the Cloudflare dashboard under Caching → Cache Rules. They
 | Priority | Name | Match | Action |
 |---:|---|---|---|
 | 1 | Cache Next.js static assets | URI Path starts with `/_next/static/` | Eligible. Edge TTL: **status-code-aware** — `200, 206 → 1 year`, all other status codes → `no cache` |
-| 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible. Edge TTL: **status-code-aware** — `200, 206 → 1 day`, all other status codes → `no cache` |
+| 2 | Cache Next.js images | URI Path starts with `/_next/image` | Eligible. Edge TTL: ignore cache-control, **1 day**, with status-code TTL overrides `400–499 → no cache` and `500–599 → no cache` (verified 2026-11-06) |
 | 3 | Bypass everything else | NOT (URI Path starts with `/_next/static/` OR `/_next/image`) | Bypass cache |
 
 **Why status-code-aware Edge TTL is load-bearing.** A flat "Edge TTL: 1 year" caches whatever response came back — including 404s. We hit this once on 2026-05-01: about 4 minutes after a deploy, a request for a freshly-built chunk under `/_next/static/chunks/` reached Cloudflare during the rollover window before the new container could serve the file; origin returned 404 with `content-type: text/plain`; Rule 1's flat 1-year TTL pinned that 404 in the edge cache for a year. The chunk was on disk on the origin — `?cb=...` cache-busting returned 200 application/javascript immediately — but every browser hitting the canonical URL got a cached 404, the browser's `nosniff` rejected it for MIME mismatch, and the page failed with `ChunkLoadError`. Setting the rule's Edge TTL per status code (`200, 206 → 1y`, `404 → no cache`, optionally `5xx → no cache`) makes the deploy-race window self-heal: origin recovers, the next request gets 200, the cache fills with the correct response. Without this, every transient origin error during a deploy is one stuck-for-a-year poisoning event.
@@ -33,11 +33,17 @@ Coolify's Post Deployment Command for the production application is intentionall
 
 Earlier setups invoked `purge_everything: true` after every deploy — first via a `scripts/purge-cloudflare-cache.sh` repo script (later removed), then via an inline Coolify Post Deployment Command (cleared 2026-04-26 as part of the Phase 3 image-pipeline work). See [docs/audits/image-pipeline-audit-2026-04-25.md](audits/image-pipeline-audit-2026-04-25.md) §2.2 F-6. The 2026-05-01 chunk-404 incident was the first time the no-purge model surfaced a correctness gap; it was closed by tightening the Cache Rule rather than re-introducing the global purge.
 
+**Why Rule 2 must not cache 4xx either.** Next's image optimizer passes the upstream status straight through when a remote source (BoardGameGeek's CDN) answers with an error, e.g. a 429 rate-limit or 403. It also returns 400 when an image can't be processed. With only `404` excluded, any of those would be pinned at the edge for a day after BGG had recovered. The `400–499` range override closes that.
+
 ## Persistent volume requirement
 
 The production container mounts a Coolify-managed Docker volume named `nextjs-image-cache` at `/app/.next/cache/images` so the Next.js image-optimization cache survives container restarts and redeploys. Without this volume, every container restart wipes the on-VPS transform cache, defeating the 30-day `minimumCacheTTL` set in [next.config.mjs](../next.config.mjs).
 
-Configured in Coolify dashboard: Projects → stg-marketplace → production → the Next.js app → Persistent Storage → one entry, name `nextjs-image-cache`, destination `/app/.next/cache/images`.
+Configured in Coolify dashboard: Projects → stg-marketplace → production → the Next.js app → Persistent Storage → **+ Add Mount → Volume**, name `nextjs-image-cache`, destination `/app/.next/cache/images`.
+
+**History.** The volume was added on 2026-04-26 (Phase 3). It was found missing on 2026-11-06: production had moved to a new Coolify resource that deploys the prebuilt `ghcr.io/stg-aigars/stg-marketplace` image (`docker-image-…`), and the volume did not carry over. If the application resource is ever recreated again, re-add the volume.
+
+**Ownership prerequisite.** The app runs as the non-root `nextjs` user. Docker initialises a *new* named volume from the image's directory, including ownership, only if that directory exists in the image; otherwise the mount point is created root-owned, writes fail, and Next.js silently skips caching while images still render. The [Dockerfile](../Dockerfile) therefore pre-creates `/app/.next/cache/images` owned by `nextjs:nodejs`. Order matters: deploy an image containing that line **before** the volume is first created, or delete and re-create the volume afterwards.
 
 ## Verifying the setup is intact
 
@@ -59,6 +65,14 @@ curl -sI 'https://secondturn.games/_next/image?url=%2Ficons%2Ficon-192.png&w=256
 # 3. Persistent volume actually mounted on the container (run on the Hetzner box).
 docker volume ls | grep nextjs-image-cache
 # Expect: one line of output naming the volume.
+
+# 3b. Off-box check that the origin cache survives a redeploy (no SSH needed).
+#     An unknown query param makes Cloudflare miss and forward to origin;
+#     x-nextjs-cache then reports the ORIGIN cache state. Request an image once,
+#     redeploy, then repeat with a fresh probe value:
+IMG='https://secondturn.games/_next/image?url=%2Ficons%2Ficon-192.png&w=256&q=75'
+curl -sI "$IMG&probe=$(date +%s%N)" | grep -i x-nextjs-cache
+# Expect after a redeploy: x-nextjs-cache: HIT  (MISS means the cache did not persist)
 
 # 4. 404 responses on /_next/static/* must NOT cache long-term.
 #    Use a UNIQUE URL each run (so the response can never be a stale pre-fix

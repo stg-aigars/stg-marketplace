@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare, Gavel } from '@phosphor-icons/react/ssr';
 import { requireServerAuth } from '@/lib/auth/helpers';
-import { isBggImage } from '@/lib/bgg/utils';
 import { getMyBids } from '@/lib/auctions/actions';
 import { Card, CardBody, Badge, EmptyState } from '@/components/ui';
 import { formatCentsToCurrency } from '@/lib/services/pricing';
@@ -80,7 +79,7 @@ function BidSection({ title, bids, userId }: {
                 <div className="flex gap-3">
                   <div className="relative w-14 h-14 shrink-0 bg-semantic-bg-surface rounded overflow-hidden flex items-center justify-center">
                     {bid.thumbnail ? (
-                      <Image src={bid.thumbnail} alt={bid.game_name} fill className="object-contain p-1" sizes="56px" unoptimized={isBggImage(bid.thumbnail)} />
+                      <Image src={bid.thumbnail} alt={bid.game_name} fill className="object-contain p-1" sizes="56px" />
                     ) : (
                       <ImageSquare size={24} className="text-semantic-text-muted" />
                     )}
