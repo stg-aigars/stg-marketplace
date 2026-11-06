@@ -18,7 +18,7 @@ import { getListingCardCounts } from '@/lib/listings/queries';
 import { isPriceDropActive, PRICE_DROP_WINDOW_DAYS } from '@/lib/listings/price-drop';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
-import { OG_IMAGES } from '@/lib/seo/og';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 const PAGE_SIZE = 24;
 
@@ -32,11 +32,9 @@ export async function generateMetadata(
     ? `Results for "${q}" — pre-loved board games in Latvia, Lithuania, and Estonia.`
     : 'Board games for sale in Latvia, Lithuania, and Estonia.';
 
-  return {
-    title,
-    description,
-    openGraph: { title: `${title} | Second Turn Games`, description, images: OG_IMAGES },
-  };
+  // Search, filter and page variants all canonicalize to /browse; listings
+  // are discovered via sitemap.xml.
+  return buildPageMetadata({ title, description, path: '/browse' });
 }
 
 interface ListingRow {

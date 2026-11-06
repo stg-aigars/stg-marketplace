@@ -5,12 +5,14 @@ import { conditionConfig, conditionGuide } from '@/lib/condition-config';
 import { conditionToBadgeKey, LISTING_CONDITIONS } from '@/lib/listings/types';
 import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Condition guide',
   description:
     'How sellers grade pre-loved board games on Second Turn Games — what each of the five tiers means and what to expect at each.',
-};
+  path: '/condition-guide',
+});
 
 export default function ConditionGuidePage() {
   return (

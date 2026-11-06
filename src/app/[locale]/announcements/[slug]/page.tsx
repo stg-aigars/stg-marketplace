@@ -11,6 +11,7 @@ import { markAnnouncementRead } from '@/lib/announcements/actions';
 import { formatDate } from '@/lib/date-utils';
 import { createClient } from '@/lib/supabase/server';
 import { env } from '@/lib/env';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 interface PageProps {
   params: Promise<{ slug: string; locale: string }>;
@@ -21,11 +22,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const a = await getPublishedAnnouncementBySlug(slug);
   if (!a) return { title: 'Announcement unavailable', robots: { index: false, follow: false } };
   const description = markdownExcerpt(a.body_markdown, 160);
-  return {
+  return buildPageMetadata({
     title: a.title,
     description,
-    openGraph: { title: a.title, description, type: 'article' },
-  };
+    path: `/announcements/${slug}`,
+    socialTitle: a.title,
+    type: 'article',
+  });
 }
 
 export default async function AnnouncementDetailPage({ params }: PageProps) {

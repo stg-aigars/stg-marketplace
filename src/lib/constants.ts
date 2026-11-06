@@ -48,4 +48,4 @@ export const IS_PRELAUNCH = false;
 
 /** Toggles the persistent feedback banner above <main>. Flip to false once the
  *  launch listening window is over and the footer link is enough. */
-export const IS_FEEDBACK_BANNER = true;
+export const IS_FEEDBACK_BANNER = false;

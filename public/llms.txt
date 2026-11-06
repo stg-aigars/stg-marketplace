@@ -6,15 +6,15 @@ Second Turn Games is a peer-to-peer marketplace for pre-loved board games in the
 
 ## What We Do
 
-Buyers and sellers trade used board games at fair prices. Every listing includes condition grading, seller photos, and ships via parcel locker networks across all three Baltic countries.
+Buyers and sellers trade pre-loved board games at fair prices. Every listing includes condition grading, seller photos, and ships via parcel locker networks across all three Baltic countries.
 
 ## How It Works
 
-- **Browse games** at /browse — filter by condition, price, player count, country, categories, and mechanics
+- **Browse games** at /browse — filter by player count, game weight, language, seller country, expansions, auctions, price drops, and local pickup; sort by newest or price
 - **Search games** at /browse?q={query} — text search by game name
 - **Listing pages** at /listings/{id} — individual game listings with price, condition, photos, seller info, and shipping options
 - **Wanted listings** at /wanted — buyers post what games they're looking for
-- **Seller profiles** at /sellers/{id} — seller ratings, trust badges, active listings, and game shelf
+- **Seller profiles** at /sellers/{id} — buyer reviews, trust badges, and active listings
 
 ## Pricing
 

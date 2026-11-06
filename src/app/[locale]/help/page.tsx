@@ -3,10 +3,14 @@ import Link from 'next/link';
 import { Accordion, Card, CardBody, type AccordionItem } from '@/components/ui';
 import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Help Center',
-};
+  description:
+    'Answers about buying, selling, shipping, auctions, wanted listings, wallet payouts, refunds, and disputes on Second Turn Games.',
+  path: '/help',
+});
 
 const buyingItems: AccordionItem[] = [
   {

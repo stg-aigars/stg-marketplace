@@ -11,17 +11,16 @@ import {
   hasActiveWantedFilters,
 } from '@/lib/wanted/filters';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 const PAGE_SIZE = 24;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Wanted games',
-  description: 'Games people are looking for in Latvia, Lithuania, and Estonia.',
-  openGraph: {
-    title: 'Wanted games | Second Turn Games',
-    description: 'Games people are looking for in Latvia, Lithuania, and Estonia.',
-  },
-};
+  description:
+    'Games people are looking for in Latvia, Lithuania, and Estonia.',
+  path: '/wanted',
+});
 
 interface WantedRow {
   id: string;

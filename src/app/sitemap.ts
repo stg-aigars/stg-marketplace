@@ -1,9 +1,15 @@
 import type { MetadataRoute } from 'next';
 import { createServiceClient } from '@/lib/supabase';
+import { LEGAL_DOC_TITLES, TRANSLATED_LANGS, type LegalDocId } from '@/lib/legal/constants';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
 
 export const revalidate = 3600;
+
+// Legal doc ids double as their URL paths (/terms, /seller-terms, ...).
+// Derived from the legal constants so a new doc or translation lands in the
+// sitemap without a separate edit here.
+const LEGAL_DOC_PATHS = Object.keys(LEGAL_DOC_TITLES) as LegalDocId[];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -16,13 +22,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/help/packing`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/condition-guide`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.3 },
-    { url: `${baseUrl}/terms`, changeFrequency: 'yearly', priority: 0.2 },
-    { url: `${baseUrl}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/about`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${baseUrl}/accessibility`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/imprint`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/report-illegal-content`, changeFrequency: 'yearly', priority: 0.2 },
+    // Legal documents: English original plus the LV/LT/ET translations
+    // (each translation page sets its own canonical + hreflang).
+    ...LEGAL_DOC_PATHS.flatMap((doc) => [
+      { url: `${baseUrl}/${doc}`, changeFrequency: 'yearly' as const, priority: 0.2 },
+      ...TRANSLATED_LANGS.map((lang) => ({
+        url: `${baseUrl}/${doc}/${lang}`,
+        changeFrequency: 'yearly' as const,
+        priority: 0.1,
+      })),
+    ]),
   ];
 
   let listingPages: MetadataRoute.Sitemap = [];
   let sellerPages: MetadataRoute.Sitemap = [];
   let announcementPages: MetadataRoute.Sitemap = [];
+  let wantedPages: MetadataRoute.Sitemap = [];
 
   try {
     const supabase = createServiceClient();
@@ -60,6 +79,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       );
     }
 
+    // Only active wanted listings — matches what /wanted shows publicly.
+    const { data: wanted } = await supabase
+      .from('wanted_listings')
+      .select('id, updated_at')
+      .eq('status', 'active')
+      .order('updated_at', { ascending: false })
+      .limit(5000);
+
+    if (wanted) {
+      wantedPages = wanted.map((w) => ({
+        url: `${baseUrl}/wanted/${w.id}`,
+        lastModified: w.updated_at,
+        changeFrequency: 'weekly' as const,
+        priority: 0.5,
+      }));
+    }
+
     const { data: announcements } = await supabase
       .from('announcements')
       .select('slug, updated_at')
@@ -80,5 +116,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Sitemap generation should not fail the build if DB is unreachable
   }
 
-  return [...staticPages, ...listingPages, ...sellerPages, ...announcementPages];
+  return [...staticPages, ...listingPages, ...sellerPages, ...wantedPages, ...announcementPages];
 }

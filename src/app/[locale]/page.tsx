@@ -14,21 +14,18 @@ import { FaqAccordion } from '@/components/marketing/FaqAccordion';
 import { HomeCta } from '@/components/marketing/HomeCta';
 import { IS_PRELAUNCH } from '@/lib/constants';
 import type { ListingCondition, ListingType } from '@/lib/listings/types';
-import { OG_IMAGES } from '@/lib/seo/og';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 const HOMEPAGE_TITLE = 'Second Turn Games — Pre-loved board games for the Baltic region';
 const HOMEPAGE_DESCRIPTION =
   'The Baltic marketplace for pre-loved board games. Buy and sell across Latvia, Lithuania, and Estonia — one shared marketplace, three countries.';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: HOMEPAGE_TITLE,
   description: HOMEPAGE_DESCRIPTION,
-  openGraph: {
-    title: HOMEPAGE_TITLE,
-    description: HOMEPAGE_DESCRIPTION,
-    images: OG_IMAGES,
-  },
-};
+  path: '/',
+  socialTitle: HOMEPAGE_TITLE,
+});
 
 interface RecentListingRow {
   id: string;

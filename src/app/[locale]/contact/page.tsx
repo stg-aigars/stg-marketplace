@@ -10,10 +10,14 @@ import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS } from '@/lib/heading
 import { cn } from '@/lib/cn';
 import { Card, CardBody } from '@/components/ui';
 import { FeedbackFooterButton } from '@/components/feedback/FeedbackFooterButton';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Contact',
-};
+  description:
+    'Questions about an order, buying, or selling on Second Turn Games? Email or call us — we aim to reply within 24 hours on business days.',
+  path: '/contact',
+});
 
 export default function ContactPage() {
   return (

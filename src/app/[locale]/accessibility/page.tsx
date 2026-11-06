@@ -3,10 +3,14 @@ import Link from 'next/link';
 import { TERMS_VERSION_DISPLAY } from '@/lib/legal/constants';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Accessibility Statement',
-};
+  description:
+    'How Second Turn Games meets WCAG 2.1 Level AA under the European Accessibility Act, known limitations, and how to report an accessibility problem.',
+  path: '/accessibility',
+});
 
 export default function AccessibilityPage() {
   return (
