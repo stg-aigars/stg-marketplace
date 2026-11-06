@@ -111,27 +111,12 @@ Not missing: no Inbox.eu charge in October (BEU-1107881 in September was a
 one-off payment); bank/card fees (€2.00 card, €5.00 account ×2, €0.57 / €0.21
 transfer fees, card acquiring fees) are VAT-exempt financial services.
 
-## GL close for October: not yet posted
+## GL close for October: posted 06.11.2026
 
-The VAT figures above do not depend on the GL. The October close entries
-(the September pattern, `created_by = 'oct_2026_close_claude'`) are **not
-posted yet** and are waiting for confirmation:
-
-| Group | Entries |
-|-------|---------|
-| EveryPay card settlements (C.3, 2630→2620) | GNV2 15.40→15.22 (06.10), G8VV 8.10→8.00 (19.10), 8FNF 20.10→19.86 (30.10); MDR €0.52 to 7710. 6YXW 9.10 stays in 2630 (settled 01.11) |
-| Vendor invoices (I.1) | Swedbank V0000921544 €0.96 (2610, 15.10) · Unisend 2603771 €10.14 (5310-UN, paid 06.11) |
-| Reverse charge (I.3) | Hetzner 085001260871 €8.98, 080001231263 €4.49 · Anthropic 9BF0758D-8362686 €18.00 (all 2610) |
-| Vendor payments (I.7) | Unisend 2603263 €15.58 (06.10) |
-| Bank fees (I.5) | 2610: 2.00 + 0.57×3 + 2.18 + 5.00 = €10.89 · 2620: 0.21 + 5.00 = €5.21 |
-| P.1 `close_2026_10` | Dr 5710-LV-OUT 2.93 / Cr 5710-LV-IN 1.92 / Cr 5710-09 1.01 |
-
-Already in GL: C.11 September PVN €2.93 and C.12 Q3 OSS LT 4.15 / EE 4.59
-(all 08.10), plus the lifecycle C.1/C.2/C.4/O.1 entries and P.6.
-
-Expected 31.10 bank closings (from statements): **2610 €178.92**,
-**2620 €370.66**. Both statements agree forward from the 01.10 opening and
-backward from the 06.11 closing.
+18 entries were posted (`created_by = 'oct_2026_close_claude'`). The GL now
+matches this sheet exactly: the tax_period 2026-10 sweep gives LV-OUT 2.93 /
+LV-IN 1.92 / RC 6.61 ↔ 6.61, and P.1 `close_2026_10` credits 5710-09 with
+€1.01. See `docs/operations/october-2026-close-status.md`.
 
 ## EDS import
 
