@@ -3,9 +3,8 @@
 Prepared 06.11.2026 from the GL (O.1 completions in period `2026-10`) and the
 source documents: Swedbank account statements for 2610 / 2620 (01.10–06.11),
 Swedbank e-invoice V0000921544, Unisend 2603771 and Anthropic
-9BF0758D-8362686. The Hetzner figures come from the bank card charges and the
-invoice numbers recorded in `docs/operations/september-2026-close-status.md`.
-The Hetzner PDFs were **not** in the upload (see "Missing documents").
+9BF0758D-8362686. It also uses Hetzner 085001260871 and 080001231263 (PDFs,
+received in a second upload).
 
 **Status: NOT FILED.** File by 20.11.2026. **Payable position: €1.01**, pay
 by 23.11.2026.
@@ -81,19 +80,32 @@ PVN2 (ESL): empty. **OSS Q4: nothing yet.** No LT/EE-seller completions in
 October; ML8U (LT seller, accepted 01.11) will be the first Q4 OSS item if it
 completes.
 
-## Missing documents
+## Documents: complete (updated 06.11.2026)
 
-1. **Hetzner 085001260871 (€8.98) and 080001231263 (€4.49).** The PDFs are
-   needed for the file, and to confirm the number/date/0% RC wording. The
-   figures above match the card charges exactly. If either number or date
-   differs on the PDF, correct the PVN1-II row before filing.
-2. **Swedbank "Maksājumu ierosināšanas darījumu komisija … EPLV_SECONDTURN;
-   09.2026", €2.18, debited 07.10 (2610).** This is not V0000915445: that
-   invoice was settled from 2610 on 15.09. It looks like the 16–30.09
-   platform charge. No e-invoice was uploaded, so it is treated as a fee with
-   no VAT deduction (I.5, same as the €3.33 "08.2026" line on 07.09). If a
-   Swedbank V-invoice exists for it (would be ~€1.80 + €0.38 VAT), it can be
-   claimed in November.
+Every October statement line maps to a document, to existing GL, or to a
+VAT-exempt fee. Nothing is missing for the return.
+
+- **Hetzner PDFs received, and they match this sheet.** 085001260871 is
+  dated 01.10.2026: €8.98, two months ("Default" 07/2026 + "STG" 08/2026).
+  080001231263 is dated 04.10.2026: €4.49, "STG" 09/2026. Both are tax code
+  A7, 0 % "Reverse Charge", and Hetzner's VAT number is DE812871812.
+- **There will be no Hetzner invoice for October usage.** Hetzner's email of
+  04.11 ("Minimum invoice amount not reached", K0393508326) says the
+  October costs (€4.49) are under the €10 minimum, so invoicing is
+  postponed until €10 is reached or for at most 3 months. Expect a combined
+  invoice (~€8.98 for Oct+Nov) around early December. It is recognised on
+  its invoice date, as usual. No accrual is needed (it is immaterial, and
+  RC VAT is net zero).
+- **Swedbank €2.18 debited 07.10 ("Maksājumu ierosināšanas darījumu
+  komisija … EPLV_SECONDTURN; 09.2026"): resolved.** This is the monthly
+  Swedbank payment-initiation (PIS) commission. It is not an e-invoice
+  line. V0000915445 was debited separately on 15.09 (bank refs
+  2026091500814483/-489, recorded on the September I.1). Precedent:
+  `july_2026_entry_8` (€5.20, 07.07) and `2026090700375648-1` (€3.33,
+  07.09) are both I.5, `fee_type = pis_commission`, VAT-exempt financial
+  service. Book the October one the same way. It gives no PVN1-I row. The
+  second upload (V0000909660, V0000915445) contains no invoice for it; both
+  of those invoices are already in the GL (August and September).
 
 Not missing: no Inbox.eu charge in October (BEU-1107881 in September was a
 one-off payment); bank/card fees (€2.00 card, €5.00 account ×2, €0.57 / €0.21
