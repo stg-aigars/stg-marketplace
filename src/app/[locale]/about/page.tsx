@@ -6,12 +6,14 @@ import { TrustBand } from '@/components/marketing/TrustBand';
 import { LEGAL_ENTITY_EMAIL } from '@/lib/constants';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
-  title: 'About — Second Turn Games',
+export const metadata: Metadata = buildPageMetadata({
+  title: 'About',
   description:
     'A small Latvian company building a Baltic board game marketplace. Listings via BoardGameGeek, parcel-locker shipping, secure payments.',
-};
+  path: '/about',
+});
 
 export default function AboutPage() {
   return (

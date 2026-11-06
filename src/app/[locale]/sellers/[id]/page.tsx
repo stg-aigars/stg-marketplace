@@ -19,6 +19,7 @@ import type { ListingCondition } from '@/lib/listings/types';
 import { PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
 import { parseSellerProfileSearchParams } from './_lib/parse-search-params';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 interface SellerProfile {
   id: string;
@@ -65,15 +66,7 @@ export async function generateMetadata(
   const name = profile?.full_name ?? 'Seller';
   const description = `${name} on Second Turn Games — pre-loved board games in the Baltic region.`;
 
-  return {
-    title: name,
-    description,
-    openGraph: {
-      title: `${name} | Second Turn Games`,
-      description,
-      type: 'profile',
-    },
-  };
+  return buildPageMetadata({ title: name, description, path: `/sellers/${id}`, type: 'profile' });
 }
 
 const PAGE_SIZE = 12;

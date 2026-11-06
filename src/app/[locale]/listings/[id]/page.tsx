@@ -43,6 +43,7 @@ import { RelatedListings } from './RelatedListings';
 import { ListingViewAnalytics } from '@/components/analytics/ListingViewAnalytics';
 import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 /**
  * Compact status panel shown in the price card when buy/bid actions don't apply
@@ -164,7 +165,6 @@ export async function generateMetadata(
       games: { image: string | null; thumbnail: string | null } | null;
     }>();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://secondturn.games';
   const title = data?.game_name ?? 'Listing';
   const image = data?.games?.image ?? data?.games?.thumbnail ?? undefined;
 
@@ -179,17 +179,14 @@ export async function generateMetadata(
   const price = formatCentsToCurrency(data.price_cents);
   const description = `Pre-loved ${data.game_name} in ${condLabel} condition. ${price} — ships across Latvia, Lithuania, Estonia.`;
 
-  return {
+  return buildPageMetadata({
     title,
     description,
-    openGraph: {
-      title: `${title} — ${price}`,
-      description: `${condLabel} condition. Ships across the Baltics.`,
-      url: `${baseUrl}/listings/${id}`,
-      siteName: 'Second Turn Games',
-      ...(image ? { images: [{ url: image, alt: data.game_name }] } : {}),
-    },
-  };
+    path: `/listings/${id}`,
+    socialTitle: `${title} — ${price}`,
+    socialDescription: `${condLabel} condition. Ships across the Baltics.`,
+    images: image ? [{ url: image, alt: data.game_name }] : undefined,
+  });
 }
 
 export default async function ListingDetailPage(

@@ -9,10 +9,14 @@ import {
 } from '@/lib/constants';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Imprint',
-};
+  description:
+    'Operator details for Second Turn Games: Second Turn Games SIA, registered in Riga, Latvia — registration and VAT numbers, address, and contact.',
+  path: '/imprint',
+});
 
 export default function ImprintPage() {
   return (

@@ -14,6 +14,7 @@ import { getWantedListingById } from '@/lib/wanted/actions';
 import { RelatedWants } from './RelatedWants';
 import { CARD_SUBSECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -27,15 +28,12 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const edition = listing.language ? ` (${listing.language} edition)` : '';
   const description = `Someone is looking for ${listing.game_name}${edition}. If you have a copy, you can list it for sale on Second Turn Games.`;
 
-  return {
+  return buildPageMetadata({
     title: `Wanted: ${listing.game_name}`,
     description,
-    openGraph: {
-      title: `Wanted: ${listing.game_name} | Second Turn Games`,
-      description,
-      ...(listing.image ? { images: [{ url: listing.image }] } : {}),
-    },
-  };
+    path: `/wanted/${params.id}`,
+    images: listing.image ? [{ url: listing.image, alt: listing.game_name }] : undefined,
+  });
 }
 
 export default async function WantedDetailPage(props: Props) {

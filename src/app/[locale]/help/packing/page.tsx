@@ -2,10 +2,14 @@ import type { Metadata } from 'next';
 import { BackLink } from '@/components/ui';
 import { CARD_SUBSECTION_HEADING_CLASS, PAGE_HEADING_CLASS, SECTION_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'How to Pack Your Board Game',
-};
+  description:
+    'How to pack a board game for parcel-locker shipping so it arrives in the same condition it left your shelf.',
+  path: '/help/packing',
+});
 
 export default function PackingGuidePage() {
   return (

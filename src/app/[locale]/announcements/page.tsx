@@ -5,6 +5,7 @@ import { Card, CardBody, EmptyState } from '@/components/ui';
 import { listPublishedAnnouncements } from '@/lib/announcements/queries';
 import { markdownExcerpt } from '@/lib/announcements/excerpt';
 import { formatDate } from '@/lib/date-utils';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
 // Anon-readable list of platform updates. Must render per request: the CSP
 // header carries a fresh nonce on every request (src/middleware.ts), and a
@@ -15,11 +16,12 @@ import { formatDate } from '@/lib/date-utils';
 // harmless no-ops for a dynamic page.
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Announcements',
   description:
     "What's new on Second Turn Games — platform updates, feature launches, and policy changes.",
-};
+  path: '/announcements',
+});
 
 export default async function AnnouncementsListPage() {
   const announcements = await listPublishedAnnouncements();

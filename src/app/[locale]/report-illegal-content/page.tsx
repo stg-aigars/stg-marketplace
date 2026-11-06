@@ -3,10 +3,14 @@ import Link from 'next/link';
 import { ReportIllegalContentForm } from './ReportIllegalContentForm';
 import { PAGE_HEADING_CLASS } from '@/lib/heading-classes';
 import { cn } from '@/lib/cn';
+import { buildPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Report illegal content',
-};
+  description:
+    'Report a listing, comment, or other content on Second Turn Games that you believe is illegal. Every notice is reviewed by a human.',
+  path: '/report-illegal-content',
+});
 
 export default function ReportIllegalContentPage() {
   return (
