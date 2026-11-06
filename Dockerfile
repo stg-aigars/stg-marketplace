@@ -115,6 +115,15 @@ RUN rm -rf ./node_modules/sharp
 # Overlay sharp with correct musl native bindings (sharp, @img, @emnapi, detect-libc, semver)
 COPY --from=sharp --chown=nextjs:nodejs /sharp/node_modules ./node_modules
 
+# Pre-create the image-optimization cache dir owned by the runtime user.
+# Production mounts a Coolify named volume here (docs/cloudflare-cache-purge-setup.md).
+# Docker initialises a NEW named volume from the image's directory, including
+# its ownership; if the directory doesn't exist in the image, Docker creates it
+# root-owned and the non-root `nextjs` user can't write to it. Next.js then
+# silently skips caching (images still render), so the volume looks mounted
+# but caches nothing.
+RUN mkdir -p /app/.next/cache/images && chown -R nextjs:nodejs /app/.next/cache
+
 USER nextjs
 EXPOSE 3000
 
