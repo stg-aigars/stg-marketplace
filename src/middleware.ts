@@ -138,6 +138,14 @@ export default async function middleware(request: NextRequest) {
 // (src/app/ingest/[...path]/route.ts). Removing it from this negative lookahead
 // would run intl middleware and CSP nonce injection on analytics traffic,
 // breaking the proxy and throwing locale redirects into the capture pipeline.
+//
+// robots.txt / sitemap.xml / llms.txt / offline.html are root-level files
+// (app/robots.ts, app/sitemap.ts, public/*). If the middleware runs on them,
+// next-intl rewrites them to /en/<file> and they 404 — which hid the sitemap
+// from crawlers and failed the service worker's install (it precaches
+// /offline.html). Listed by exact name, not by extension, so any future route
+// ending in .xml/.txt still gets auth redirects + CSP. Covered by
+// middleware.test.ts.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|ingest/|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|ingest/|sw\\.js|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|llms\\.txt|offline\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };
