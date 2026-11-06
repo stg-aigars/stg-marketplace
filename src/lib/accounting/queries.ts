@@ -242,6 +242,34 @@ function throwIfError(error: { message: string } | null, context: string): void 
   }
 }
 
+/**
+ * PostgREST caps every response at `max_rows` (1000 on this project) and
+ * truncates silently. Unbounded journal_lines reads must page through
+ * `.range()` or aggregates go wrong once the GL passes 1000 lines. This
+ * happened on 06.11.2026, when the trial balance reported a €6.38 "imbalance"
+ * at 1030 lines.
+ *
+ * `fetchPage` must apply a total order (end the chain with `.order('id')`)
+ * so the pages don't overlap or skip rows. The return shape matches a single
+ * PostgREST response, so call sites keep their `{ data, error }` destructuring.
+ */
+export const QUERY_PAGE_SIZE = 1000;
+
+type PagedResponse = { data: unknown[] | null; error: { message: string } | null };
+
+export async function selectAllPages(
+  fetchPage: (from: number, to: number) => PromiseLike<PagedResponse>
+): Promise<PagedResponse> {
+  const all: unknown[] = [];
+  for (let from = 0; ; from += QUERY_PAGE_SIZE) {
+    const { data, error } = await fetchPage(from, from + QUERY_PAGE_SIZE - 1);
+    if (error) return { data: null, error };
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < QUERY_PAGE_SIZE) return { data: all, error: null };
+  }
+}
+
 // =============================================================================
 // getTrialBalance
 // =============================================================================
@@ -264,12 +292,16 @@ export async function getTrialBalance(
   const includeBackfill = options.includeBackfill ?? true;
   const excludeTestArtifacts = options.excludeTestArtifacts ?? true;
 
-  const { data: lineRows, error: linesError } = await supabase
-    .from('journal_lines')
-    .select(
-      'account_code, debit_cents, credit_cents, journal_entries!inner(posting_date, posting_context)'
-    )
-    .lte('journal_entries.posting_date', asOf);
+  const { data: lineRows, error: linesError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_lines')
+      .select(
+        'account_code, debit_cents, credit_cents, journal_entries!inner(posting_date, posting_context)'
+      )
+      .lte('journal_entries.posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 
   throwIfError(linesError, 'getTrialBalance: journal_lines SELECT failed');
 
@@ -392,14 +424,18 @@ export async function getAccountLedger(
   // We do this in a single query and partition in memory rather than two
   // queries, since the line count per account in the seed window is small
   // (Phase 0 + initial production = ~hundreds at most).
-  const { data: lineRows, error: linesError } = await supabase
-    .from('journal_lines')
-    .select(
-      '*, journal_entries!inner(id, posting_date, accounting_period, tax_period, entry_type, type_id, source_doc_type, source_doc_id, reverses_entry_id, correction_reason, narrative, posting_context, created_by, created_at, period_close_adjustment)'
-    )
-    .eq('account_code', accountCode)
-    .lte('journal_entries.posting_date', range.to)
-    .order('posting_date', { foreignTable: 'journal_entries', ascending: true });
+  const { data: lineRows, error: linesError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_lines')
+      .select(
+        '*, journal_entries!inner(id, posting_date, accounting_period, tax_period, entry_type, type_id, source_doc_type, source_doc_id, reverses_entry_id, correction_reason, narrative, posting_context, created_by, created_at, period_close_adjustment)'
+      )
+      .eq('account_code', accountCode)
+      .lte('journal_entries.posting_date', range.to)
+      .order('posting_date', { foreignTable: 'journal_entries', ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 
   throwIfError(linesError, 'getAccountLedger: journal_lines SELECT failed');
 
@@ -538,10 +574,14 @@ export async function getWalletIntegrity(
   const as_of = new Date().toISOString();
 
   // 1. GL side: every line on account 5351, with counterparty for per-seller.
-  const { data: glLineRows, error: glError } = await supabase
-    .from('journal_lines')
-    .select('debit_cents, credit_cents, counterparty_id')
-    .eq('account_code', '5351');
+  const { data: glLineRows, error: glError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_lines')
+      .select('debit_cents, credit_cents, counterparty_id')
+      .eq('account_code', '5351')
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 
   throwIfError(glError, 'getWalletIntegrity: journal_lines 5351 SELECT failed');
 
@@ -740,11 +780,15 @@ export async function getWalletIntegrityAsOf(
   // counterparty for per-seller. The `journal_entries!inner(posting_date)`
   // join + .lte('journal_entries.posting_date', asOf) mirrors getTrialBalance
   // and getAccountLedger.
-  const { data: glLineRows, error: glError } = await supabase
-    .from('journal_lines')
-    .select('debit_cents, credit_cents, counterparty_id, journal_entries!inner(posting_date)')
-    .eq('account_code', '5351')
-    .lte('journal_entries.posting_date', asOf);
+  const { data: glLineRows, error: glError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_lines')
+      .select('debit_cents, credit_cents, counterparty_id, journal_entries!inner(posting_date)')
+      .eq('account_code', '5351')
+      .lte('journal_entries.posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 
   throwIfError(glError, 'getWalletIntegrityAsOf: journal_lines 5351 SELECT failed');
 
@@ -1109,12 +1153,16 @@ export async function getInFlightCartReceiptsTotal(
   // happen to set source_doc_id = cart_group_id, but backfill cart entries use
   // label source_doc_ids (e.g. 'may_2026_entry_6') which are not UUIDs and blow
   // up the orders.cart_group_id (uuid) filter in Step 2.
-  const { data: cartReceipts, error: receiptsError } = await supabase
-    .from('journal_entries')
-    .select('posting_context')
-    .eq('source_doc_type', 'cart_payment')
-    .in('type_id', CART_RECEIPT_TYPE_IDS)
-    .lte('posting_date', asOf);
+  const { data: cartReceipts, error: receiptsError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_entries')
+      .select('posting_context')
+      .eq('source_doc_type', 'cart_payment')
+      .in('type_id', CART_RECEIPT_TYPE_IDS)
+      .lte('posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(receiptsError, 'getInFlightCartReceiptsTotal: cart_receipts SELECT failed');
   if (!cartReceipts || cartReceipts.length === 0) return 0;
 
@@ -1142,12 +1190,16 @@ export async function getInFlightCartReceiptsTotal(
   // backfill order entries use label source_doc_ids (e.g. 'may_2026_entry_7').
   // Load order-side release entries by type + date, then bucket by order_id; the
   // candidate-order lookup in Step 4 matches the bucket key to orders.id.
-  const { data: releases, error: releasesError } = await supabase
-    .from('journal_entries')
-    .select('source_doc_id, type_id, posting_context')
-    .eq('source_doc_type', 'order')
-    .in('type_id', ALL_RELEASE_TYPE_IDS)
-    .lte('posting_date', asOf);
+  const { data: releases, error: releasesError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_entries')
+      .select('source_doc_id, type_id, posting_context')
+      .eq('source_doc_type', 'order')
+      .in('type_id', ALL_RELEASE_TYPE_IDS)
+      .lte('posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(releasesError, 'getInFlightCartReceiptsTotal: releases SELECT failed');
 
   // Bucket releases by order_id (posting_context.order_id, the order UUID; falls
@@ -1230,21 +1282,29 @@ export async function getInTransitEverypayClearingTotal(
   asOf: string
 ): Promise<number> {
   // Step 1 — card cart receipts (C.1). Bank-link (C.2) lands in 2610/2620, not 2630.
-  const { data: cardReceipts, error: receiptsError } = await supabase
-    .from('journal_entries')
-    .select('posting_context')
-    .eq('source_doc_type', 'cart_payment')
-    .eq('type_id', 'C.1')
-    .lte('posting_date', asOf);
+  const { data: cardReceipts, error: receiptsError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_entries')
+      .select('posting_context')
+      .eq('source_doc_type', 'cart_payment')
+      .eq('type_id', 'C.1')
+      .lte('posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(receiptsError, 'getInTransitEverypayClearingTotal: card receipts SELECT failed');
   if (!cardReceipts || cardReceipts.length === 0) return 0;
 
   // Step 2 — settled EveryPay refs (C.3 batches).
-  const { data: settlements, error: settlementsError } = await supabase
-    .from('journal_entries')
-    .select('posting_context')
-    .eq('type_id', 'C.3')
-    .lte('posting_date', asOf);
+  const { data: settlements, error: settlementsError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_entries')
+      .select('posting_context')
+      .eq('type_id', 'C.3')
+      .lte('posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(settlementsError, 'getInTransitEverypayClearingTotal: settlements SELECT failed');
 
   const settledRefs = new Set<string>();
@@ -1256,12 +1316,16 @@ export async function getInTransitEverypayClearingTotal(
   }
 
   // Step 3 — cart-time card partial refunds (C.9) for not-yet-settled refs.
-  const { data: cardRefunds, error: refundsError } = await supabase
-    .from('journal_entries')
-    .select('posting_context')
-    .eq('source_doc_type', 'cart_partial_refund')
-    .eq('type_id', 'C.9')
-    .lte('posting_date', asOf);
+  const { data: cardRefunds, error: refundsError } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_entries')
+      .select('posting_context')
+      .eq('source_doc_type', 'cart_partial_refund')
+      .eq('type_id', 'C.9')
+      .lte('posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(refundsError, 'getInTransitEverypayClearingTotal: card refunds SELECT failed');
 
   const refundByRef = new Map<string, number>();
@@ -1336,11 +1400,15 @@ export async function getBankClosureReconciliation(
   const codes = (accts as Array<{ code: string }>).map((a) => a.code);
 
   // Cumulative GL balance + activity per flagged account, through asOf.
-  const { data: lines, error: linesErr } = await supabase
-    .from('journal_lines')
-    .select('account_code, debit_cents, credit_cents, journal_entries!inner(posting_date)')
-    .in('account_code', codes)
-    .lte('journal_entries.posting_date', asOf);
+  const { data: lines, error: linesErr } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_lines')
+      .select('account_code, debit_cents, credit_cents, journal_entries!inner(posting_date)')
+      .in('account_code', codes)
+      .lte('journal_entries.posting_date', asOf)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(linesErr, 'getBankClosureReconciliation: journal_lines SELECT failed');
 
   const gl = new Map<string, { net: number; count: number }>();
@@ -1472,13 +1540,17 @@ export async function getNetVatPositionForPeriod(
   supabase: SupabaseClient,
   target: { period_key: string; posting_date: string }
 ): Promise<NetVatPosition> {
-  const { data: rows, error } = await supabase
-    .from('journal_lines')
-    .select(
-      'account_code, debit_cents, credit_cents, journal_entries!inner(tax_period)'
-    )
-    .in('account_code', LV_VAT_ACCOUNTS)
-    .eq('journal_entries.tax_period', target.period_key);
+  const { data: rows, error } = await selectAllPages((from, to) =>
+    supabase
+      .from('journal_lines')
+      .select(
+        'account_code, debit_cents, credit_cents, journal_entries!inner(tax_period)'
+      )
+      .in('account_code', LV_VAT_ACCOUNTS)
+      .eq('journal_entries.tax_period', target.period_key)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   throwIfError(error, `getNetVatPositionForPeriod: journal_lines SELECT failed for ${target.period_key}`);
 
   // Aggregate signed credit-normal balance per account: sum(credit) - sum(debit).

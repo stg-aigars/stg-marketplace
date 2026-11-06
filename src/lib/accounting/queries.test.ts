@@ -21,7 +21,9 @@ import {
   getRecentJournalEntries,
   getTrialBalance,
   getWalletIntegrity,
-  getWalletIntegrityAsOf
+  getWalletIntegrityAsOf,
+  QUERY_PAGE_SIZE,
+  selectAllPages
 } from './queries';
 
 // =============================================================================
@@ -70,9 +72,10 @@ function buildMockClient(tableResponses: Record<string, MockResponse[]>): {
       gte: vi.fn(),
       order: vi.fn(),
       limit: vi.fn(),
+      range: vi.fn(),
       maybeSingle: vi.fn()
     };
-    for (const fn of ['select', 'eq', 'in', 'is', 'lte', 'lt', 'gte', 'order', 'limit'] as const) {
+    for (const fn of ['select', 'eq', 'in', 'is', 'lte', 'lt', 'gte', 'order', 'limit', 'range'] as const) {
       builder[fn].mockReturnValue(builder);
     }
     builder.maybeSingle.mockImplementation(() => dequeue());
@@ -2196,5 +2199,77 @@ describe('getBankClosureReconciliation', () => {
     const client = buildMockClient({ accounts: [{ data: [], error: null }] });
     const rows = await getBankClosureReconciliation(client as never, '2026-05', '2026-05-31');
     expect(rows).toEqual([]);
+  });
+});
+
+// =============================================================================
+// selectAllPages — PostgREST max_rows truncation regression (06.11.2026)
+// =============================================================================
+
+describe('selectAllPages', () => {
+  it('pages until a short page and concatenates every row', async () => {
+    const calls: Array<[number, number]> = [];
+    const total = QUERY_PAGE_SIZE + 30;
+    const result = await selectAllPages(async (from, to) => {
+      calls.push([from, to]);
+      const end = Math.min(to + 1, total);
+      return { data: Array.from({ length: Math.max(0, end - from) }, (_, i) => from + i), error: null };
+    });
+    expect(calls).toEqual([
+      [0, QUERY_PAGE_SIZE - 1],
+      [QUERY_PAGE_SIZE, 2 * QUERY_PAGE_SIZE - 1]
+    ]);
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(total);
+  });
+
+  it('fetches one extra empty page when the total is an exact multiple of the page size', async () => {
+    let pages = 0;
+    const result = await selectAllPages(async (from) => {
+      pages += 1;
+      return { data: from === 0 ? new Array(QUERY_PAGE_SIZE).fill(0) : [], error: null };
+    });
+    expect(pages).toBe(2);
+    expect(result.data).toHaveLength(QUERY_PAGE_SIZE);
+  });
+
+  it('returns the error and no data when any page fails', async () => {
+    const result = await selectAllPages(async (from) =>
+      from === 0
+        ? { data: new Array(QUERY_PAGE_SIZE).fill(0), error: null }
+        : { data: null, error: { message: 'boom' } }
+    );
+    expect(result).toEqual({ data: null, error: { message: 'boom' } });
+  });
+});
+
+describe('getTrialBalance pagination', () => {
+  it('balances a GL larger than one PostgREST page', async () => {
+    // 515 balanced two-line entries = 1030 lines, the production count that
+    // exposed the truncation. A truncated read drops the tail and unbalances.
+    const allLines = Array.from({ length: 1030 }, (_, i) => ({
+      account_code: i % 2 === 0 ? '2610' : '5351',
+      debit_cents: i % 2 === 0 ? 100 + i : 0,
+      credit_cents: i % 2 === 0 ? 0 : 100 + i - 1,
+      journal_entries: { posting_date: '2026-10-31', posting_context: {} }
+    }));
+    const client = buildMockClient({
+      journal_lines: [
+        { data: allLines.slice(0, QUERY_PAGE_SIZE), error: null },
+        { data: allLines.slice(QUERY_PAGE_SIZE), error: null }
+      ],
+      accounts: [
+        {
+          data: [
+            { code: '2610', name_lv: 'Banka', name_en: 'Bank', type: 'asset' },
+            { code: '5351', name_lv: 'Maki', name_en: 'Wallets', type: 'liability' }
+          ],
+          error: null
+        }
+      ]
+    });
+    const tb = await getTrialBalance(client as never, '2026-10-31');
+    expect(tb.is_balanced).toBe(true);
+    expect(tb.total_debit_cents).toBe(allLines.reduce((s, l) => s + l.debit_cents, 0));
   });
 });
