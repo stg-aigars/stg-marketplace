@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
-import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
+import { toBggFullSize } from '@/lib/bgg/utils';
 import { Card } from '@/components/ui';
 import { GameTitle, GameMeta } from '@/components/listings/atoms';
 
@@ -44,7 +44,6 @@ export function WantedListingCard({
               fill
               className="object-contain p-2"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized={isBggImage(displayThumbnail)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />

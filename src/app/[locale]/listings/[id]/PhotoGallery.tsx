@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { ImageSquare, X, CaretLeft, CaretRight } from '@phosphor-icons/react/ssr';
-import { isBggImage } from '@/lib/bgg/utils';
 import { useTouchGestures } from './useTouchGestures';
 
 interface PhotoGalleryProps {
@@ -116,7 +115,6 @@ function Lightbox({
           fill
           className="object-contain"
           sizes="90vw"
-          unoptimized={isBggImage(activeUrl)}
           placeholder="blur"
           blurDataURL={BLUR_PLACEHOLDER}
         />
@@ -200,7 +198,6 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
             className="object-contain"
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority={activeIndex === 0}
-            unoptimized={isBggImage(activeUrl)}
             placeholder="blur"
             blurDataURL={BLUR_PLACEHOLDER}
             onError={() => markFailed(activeUrl)}
@@ -232,7 +229,6 @@ function PhotoGallery({ photos, gameImage, gameTitle }: PhotoGalleryProps) {
                   fill
                   className="object-contain"
                   sizes="64px"
-                  unoptimized={isBggImage(src)}
                   placeholder="blur"
                   blurDataURL={BLUR_PLACEHOLDER}
                   onError={() => markFailed(src)}

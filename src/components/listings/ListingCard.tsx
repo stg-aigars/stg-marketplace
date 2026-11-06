@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, ImageSquare, Gavel, ChatCircle, PuzzlePiece, Sparkle, TrendDown } from '@phosphor-icons/react/ssr';
-import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
+import { toBggFullSize } from '@/lib/bgg/utils';
 import { Badge, Card } from '@/components/ui';
 import { AuctionCountdown } from '@/components/auctions/AuctionCountdown';
 import { GameTitle, Price } from './atoms';
@@ -81,7 +81,6 @@ function ListingCard({
               fill
               className={`object-contain transition-transform duration-350 ease-out-custom group-hover:scale-105 ${isReserved ? 'opacity-60' : ''}`}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized={isBggImage(imageUrl)}
             />
           ) : (
             <ImageSquare size={48} className="text-semantic-text-muted" />

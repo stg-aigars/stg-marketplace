@@ -7,7 +7,7 @@ import { Card, CardBody, ShareButtons, Breadcrumb, Avatar, Alert, Button } from 
 import { GameDetailsCard } from '@/components/game/GameDetailsCard';
 import { MessageSellerCTA } from '@/components/messaging/MessageSellerCTA';
 import { getCountryFlag, getCountryName } from '@/lib/country-utils';
-import { toBggFullSize, isBggImage, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
+import { toBggFullSize, formatPlayerCount, formatPlayingTime } from '@/lib/bgg/utils';
 import { formatDate, formatMonthYear, formatRelativeTime } from '@/lib/date-utils';
 import { createClient } from '@/lib/supabase/server';
 import { getWantedListingById } from '@/lib/wanted/actions';
@@ -160,7 +160,6 @@ export default async function WantedDetailPage(props: Props) {
                   fill
                   className="object-contain p-4"
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  unoptimized={isBggImage(gameImage)}
                   priority
                 />
               ) : (

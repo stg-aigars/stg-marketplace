@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ImageSquare } from '@phosphor-icons/react/ssr';
-import { isBggImage, toBggFullSize } from '@/lib/bgg/utils';
+import { toBggFullSize } from '@/lib/bgg/utils';
 import { Card } from '@/components/ui';
 import { GameTitle, Price } from './atoms';
 import { getConditionLabel } from '@/lib/condition-config';
@@ -44,7 +44,6 @@ function ListingCardMini({
               fill
               className="object-contain"
               sizes="50vw"
-              unoptimized={isBggImage(imageUrl)}
             />
           ) : (
             <ImageSquare size={32} className="text-semantic-text-muted" />
