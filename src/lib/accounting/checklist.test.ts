@@ -56,6 +56,7 @@ function buildMockClient(tableResponses: Record<string, MockResponse[]>): {
       ilike: vi.fn(),
       order: vi.fn(),
       limit: vi.fn(),
+      range: vi.fn(),
       maybeSingle: vi.fn()
     };
     for (const fn of [
@@ -69,7 +70,8 @@ function buildMockClient(tableResponses: Record<string, MockResponse[]>): {
       'like',
       'ilike',
       'order',
-      'limit'
+      'limit',
+      'range'
     ] as const) {
       builder[fn].mockReturnValue(builder);
     }
